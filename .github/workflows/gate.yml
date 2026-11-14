@@ -314,6 +314,9 @@ jobs:
             weston
             dbus-x11 dbus-daemon gnome-keyring at-spi2-core
             libgtk-3-bin
+            # libatspi's own bindings: alo-shell's
+            # a_screen_readers_own_library_reads_the_tree reads the tree as Orca does.
+            python3-gi gir1.2-atspi-2.0
           )
           printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' \
             | sudo tee /etc/apt/apt.conf.d/80-gate-network > /dev/null

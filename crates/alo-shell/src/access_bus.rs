@@ -9,21 +9,26 @@
 //!
 //! The questions a reader asks of a thing that is read and pressed:
 //! `GetRole`, `GetState`, `GetInterfaces`, `GetChildren`, `GetChildAtIndex`,
-//! `GetAttributes`, and the `Name`, `Description`, `ChildCount` and `Parent`
-//! properties — and, on a node a reader can press, `org.a11y.atspi.Action`
+//! `GetApplication`, `GetRelationSet`, `GetAttributes`, and the `Name`,
+//! `Description`, `ChildCount` and `Parent` properties, each in the signature
+//! at-spi2-core's own `Accessible.xml` gives it (`crate::access_answers`) — and,
+//! on a node a reader can press, `org.a11y.atspi.Action`
 //! beside them (`crate::access_action`), whose press is handed to the desktop
-//! through [`ReadAloudBus::pressed`]. **Nothing else is served**: no `Component`, so nothing here is
+//! through [`ReadAloudBus::pressed`]. The whole tree is also answered at once,
+//! as `org.a11y.atspi.Cache` (`crate::access_cache`), which is how libatspi
+//! reads an application it has just met. **Nothing else is served**: no `Component`, so nothing here is
 //! asked or answered about where a thing is on the screen, and no `Text`,
 //! because none of these controls is a document a reader reads through — what
 //! each says is its name, in the person's language, and a name is not text a
 //! caret moves through.
 //!
-//! **Nothing is subscribed to, and only alo's own sheets emit anything.** A
-//! reader speaks when it is told the keyboard moved, so a sheet the shell puts
-//! up and every key goes to — the password sheet, *Open with* — is said to
-//! come to the front, where the keyboard is on it, and when what that control
-//! is called changes ([`ReadAloudBus::told`], decided by
-//! `crate::access_events`). *Until 2026-11-12 nothing at all was emitted, on
+//! **Nothing is subscribed to, and only alo's own sheets and the cache emit
+//! anything.** A reader speaks when it is told the keyboard moved, so a sheet
+//! the shell puts up and every key goes to — the password sheet, *Open with* —
+//! is said to come to the front, where the keyboard is on it, and when what
+//! that control is called changes ([`ReadAloudBus::told`], decided by
+//! `crate::access_events`). A reader holding the cache is told what changed in
+//! the tree when it is replaced ([`ReadAloudBus::now_showing`]). *Until 2026-11-12 nothing at all was emitted, on
 //! the reasoning that the surfaces draw everything they say; a reader cannot
 //! see a drawing, so a sheet came up in silence.*
 //!
@@ -41,23 +46,16 @@ use std::sync::mpsc::{self, Receiver, Sender};
 
 use zbus::blocking::connection::Builder;
 use zbus::blocking::{Connection, ObjectServer};
-use zbus::zvariant::{ObjectPath, OwnedObjectPath, Value};
+use zbus::zvariant::{ObjectPath, Value};
 
-use crate::access_action::{ACTION, Pressable, Pressed};
+use crate::access_action::{Pressable, Pressed};
+use crate::access_answers::{REGISTRY, ReadAloud};
+use crate::access_cache::{CACHE, CACHE_INTERFACE, Entry, TheCache, entry_of, what_changed};
 use crate::access_events::AnEvent;
-use crate::access_nodes::{Node, ROOT, ReadAloudTree};
-
-/// What an application that is not embedded answers with instead of a child.
-const NOTHING: &str = "/org/a11y/atspi/null";
-
-/// The registry every application's root is embedded in.
-const REGISTRY: &str = "org.a11y.atspi.Registry";
+use crate::access_nodes::{ROOT, ReadAloudTree};
 
 /// The interface an application is embedded through.
 const SOCKET: &str = "org.a11y.atspi.Socket";
-
-/// The interface every thing in a tree answers.
-const ACCESSIBLE: &str = "org.a11y.atspi.Accessible";
 
 /// Where a window's events are said.
 const WINDOW_EVENTS: &str = "org.a11y.atspi.Event.Window";
@@ -105,6 +103,10 @@ pub struct ReadAloudBus {
     /// answering about something that is gone. Remembered here because the
     /// server will not say what it is holding.
     served: Vec<String>,
+    /// What `org.a11y.atspi.Cache` answers now — what a reader that asked for
+    /// it holds, once it has been told every change since
+    /// (`crate::access_cache`).
+    cached: Vec<Entry>,
     /// Where a pressable node hands a reader's press, cloned into each one.
     to: Sender<Pressed>,
     /// Where the desktop takes those presses from, on its own thread.
@@ -138,6 +140,7 @@ impl ReadAloudBus {
             connection,
             answers_as,
             served: Vec::new(),
+            cached: Vec::new(),
             to,
             presses,
         };
@@ -145,15 +148,15 @@ impl ReadAloudBus {
         Ok(this)
     }
 
-    /// Every node of `tree` on the bus, remembered so it can be taken off.
+    /// Every node of `tree` on the bus, remembered so it can be taken off, and
+    /// the cache in step with them.
     fn put_on(&mut self, tree: &ReadAloudTree) -> Result<(), NotRead> {
         let server = self.connection.object_server();
+        let mut cached = Vec::with_capacity(tree.nodes().len());
         for node in tree.nodes() {
-            served_at(
-                &server,
-                node.path.as_str(),
-                ReadAloud::of(node, tree, &self.answers_as),
-            )?;
+            let answers = ReadAloud::of(node, tree, &self.answers_as);
+            cached.push(entry_of(&answers));
+            served_at(&server, node.path.as_str(), answers)?;
             self.served.push(node.path.clone());
             if let Some(pressed) = &node.press {
                 let pressable = Pressable {
@@ -164,6 +167,17 @@ impl ReadAloudBus {
                 served_at(&server, node.path.as_str(), pressable)?;
             }
         }
+        // The cache object answers for the tree as a whole, so it is replaced
+        // whole. Not being there yet, the first time, is not a failure.
+        let _ = server.remove::<TheCache, _>(CACHE);
+        served_at(
+            &server,
+            CACHE,
+            TheCache {
+                entries: cached.clone(),
+            },
+        )?;
+        self.cached = cached;
         Ok(())
     }
 
@@ -216,12 +230,48 @@ impl ReadAloudBus {
     /// window closing renumbers the ones after it — which is why this replaces
     /// all of them rather than trying to work out which one went.
     ///
+    /// **A reader holding the cache is told what changed** — every entry that
+    /// is new or different as `AddAccessible`, every path that went as
+    /// `RemoveAccessible` — because libatspi does not ask `GetItems` twice, and
+    /// a reader that is not told goes on reading the window that closed.
+    ///
     /// # Errors
     /// [`NotRead::NotServed`] when a node could not be put on the bus. Whatever
     /// was taken off stays off: a tree half-replaced would answer about two
     /// different moments at once, and an error a caller can retry is better than
-    /// a reader being told a mixture.
+    /// a reader being told a mixture. [`NotRead::NotTold`] when the tree is on
+    /// the bus and the cache's signals could not be sent.
     pub fn now_showing(&mut self, tree: &ReadAloudTree) -> Result<(), NotRead> {
+        let before = std::mem::take(&mut self.cached);
+        self.replaced_by(tree)?;
+        let changed = what_changed(&before, &self.cached);
+        for gone in &changed.removed {
+            self.connection
+                .emit_signal(
+                    None::<&str>,
+                    CACHE,
+                    CACHE_INTERFACE,
+                    "RemoveAccessible",
+                    &(gone,),
+                )
+                .map_err(|_| NotRead::NotTold)?;
+        }
+        for entry in &changed.added {
+            self.connection
+                .emit_signal(
+                    None::<&str>,
+                    CACHE,
+                    CACHE_INTERFACE,
+                    "AddAccessible",
+                    &(entry,),
+                )
+                .map_err(|_| NotRead::NotTold)?;
+        }
+        Ok(())
+    }
+
+    /// Every path served taken off, and `tree`'s put on.
+    fn replaced_by(&mut self, tree: &ReadAloudTree) -> Result<(), NotRead> {
         {
             let server = self.connection.object_server();
             for path in self.served.drain(..) {
@@ -232,6 +282,9 @@ impl ReadAloudBus {
                 let _ = server.remove::<ReadAloud, _>(path.as_str());
                 let _ = server.remove::<Pressable, _>(path.as_str());
             }
+            // And the cache goes with them, so a tree that fails to go back on
+            // is not still answered for in bulk.
+            let _ = server.remove::<TheCache, _>(CACHE);
         }
         // A press a reader made on the tree being replaced was made on a
         // window the person could hear; it is still handed over, and the
@@ -373,32 +426,13 @@ impl TheShellItself {
     fn get_locale(&self, _category: u32) -> String {
         String::new()
     }
-}
 
-/// One thing in the tree, answering for itself.
-struct ReadAloud {
-    /// What kind of thing it is.
-    role: u32,
-    /// What it is called, in the person's language.
-    name: String,
-    /// The line drawn under it, where there is one.
-    description: String,
-    /// Where it is among what its parent holds, `-1` for the shell itself.
-    index_in_parent: i32,
-    /// The two words `GetState` answers with, low word first.
-    states: Vec<u32>,
-    /// What a reader is told besides the name — the `live` attribute, on a
-    /// surface's own node the surface's typed name
-    /// ([`alo_access::THE_SURFACE_ATTRIBUTE`]), and what the node itself
-    /// carries ([`ReadAloudTree::attributes_of`]).
-    attributes: HashMap<String, String>,
-    /// What hangs under it, in reading order.
-    children: Vec<(String, OwnedObjectPath)>,
-    /// What it hangs under.
-    parent: (String, OwnedObjectPath),
-    /// Whether a reader can press it, which is whether `Action` is served
-    /// beside this.
-    pressable: bool,
+    /// A private bus to be read on instead of this one, which there is none
+    /// of: the empty answer is how `Application.xml` says *use the bus you
+    /// asked on*. libatspi asks this of every application before `GetItems`.
+    fn get_application_bus_address(&self) -> String {
+        String::new()
+    }
 }
 
 /// Put one interface on the bus at `path`.
@@ -411,131 +445,6 @@ fn served_at<I: zbus::object_server::Interface>(
         .at(path, interface)
         .map_err(|_| NotRead::NotServed)
         .and_then(|put| put.then_some(()).ok_or(NotRead::NotServed))
-}
-
-impl ReadAloud {
-    /// One node of `tree`, ready to answer as `answers_as`.
-    fn of(node: &Node, tree: &ReadAloudTree, answers_as: &str) -> Self {
-        let at = |index: usize| {
-            (
-                answers_as.to_owned(),
-                tree.nodes()
-                    .get(index)
-                    .and_then(|node| OwnedObjectPath::try_from(node.path.as_str()).ok())
-                    .unwrap_or_else(nothing),
-            )
-        };
-        let attributes = tree.attributes_of(node);
-        let index_in_parent = if node.path == ROOT {
-            -1
-        } else {
-            tree.nodes()
-                .get(node.parent)
-                .and_then(|parent| {
-                    parent.children.iter().position(|child| {
-                        tree.nodes()
-                            .get(*child)
-                            .is_some_and(|it| it.path == node.path)
-                    })
-                })
-                .and_then(|at| i32::try_from(at).ok())
-                .unwrap_or(-1)
-        };
-        Self {
-            role: node.role,
-            name: node.name.clone(),
-            description: node.description.clone(),
-            index_in_parent,
-            states: node.states.to_vec(),
-            attributes,
-            children: node.children.iter().map(|child| at(*child)).collect(),
-            parent: at(node.parent),
-            pressable: node.press.is_some(),
-        }
-    }
-}
-
-/// The object an application answers with where there is no thing at all.
-fn nothing() -> OwnedObjectPath {
-    ObjectPath::try_from(NOTHING)
-        .map(Into::into)
-        .unwrap_or_default()
-}
-
-#[zbus::interface(name = "org.a11y.atspi.Accessible")]
-impl ReadAloud {
-    /// What kind of thing this is.
-    fn get_role(&self) -> u32 {
-        self.role
-    }
-
-    /// The states, in the two words the interface answers with.
-    fn get_state(&self) -> Vec<u32> {
-        self.states.clone()
-    }
-
-    /// What this answers: it is read, and where a reader can press it, it is
-    /// pressed. Nothing here is a document, a picture or a place on a screen.
-    fn get_interfaces(&self) -> Vec<String> {
-        let mut answers = vec![ACCESSIBLE.to_owned()];
-        if self.pressable {
-            answers.push(ACTION.to_owned());
-        }
-        answers
-    }
-
-    /// What is inside this, in reading order.
-    fn get_children(&self) -> Vec<(String, OwnedObjectPath)> {
-        self.children.clone()
-    }
-
-    /// One of them, or nothing at all where there is no such child — which is
-    /// how the interface says *not there*, rather than an error.
-    fn get_child_at_index(&self, index: i32) -> (String, OwnedObjectPath) {
-        usize::try_from(index)
-            .ok()
-            .and_then(|index| self.children.get(index))
-            .cloned()
-            .unwrap_or_else(|| (String::new(), nothing()))
-    }
-
-    /// What a reader is told besides the name.
-    fn get_attributes(&self) -> HashMap<String, String> {
-        self.attributes.clone()
-    }
-
-    /// What it is called.
-    #[zbus(property)]
-    fn name(&self) -> String {
-        self.name.clone()
-    }
-
-    /// The line a surface draws under a control's name, where it draws one —
-    /// *Installed* under an application on the *Open with* sheet — and
-    /// nothing anywhere else: a description repeating the name would be read
-    /// twice.
-    #[zbus(property)]
-    fn description(&self) -> String {
-        self.description.clone()
-    }
-
-    /// Where this is among what its parent holds, which is how a reader says
-    /// *2 of 3* on a list.
-    fn get_index_in_parent(&self) -> i32 {
-        self.index_in_parent
-    }
-
-    /// How many things are inside this.
-    #[zbus(property)]
-    fn child_count(&self) -> i32 {
-        i32::try_from(self.children.len()).unwrap_or(i32::MAX)
-    }
-
-    /// What this is inside.
-    #[zbus(property)]
-    fn parent(&self) -> (String, OwnedObjectPath) {
-        self.parent.clone()
-    }
 }
 
 #[cfg(test)]
