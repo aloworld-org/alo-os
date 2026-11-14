@@ -66,6 +66,7 @@ pub mod the_persons_folders;
 pub mod the_window_offered;
 pub mod verb_as_told;
 pub mod what_it_may_reach;
+pub mod working_in_an_application;
 
 #[cfg(test)]
 mod testing;
@@ -97,3 +98,4 @@ pub use the_window_offered::{
     NotTheWindow, THE_LONGEST_TITLE, THE_LONGEST_WINDOW_LINE, THE_WINDOW_OFFERED, TheWindowOffered,
 };
 pub use what_it_may_reach::WhatItMayReach;
+pub use working_in_an_application::working_in_an_application;

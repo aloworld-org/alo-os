@@ -16,6 +16,7 @@ use crate::the_conversation_so_far::TheConversationSoFar;
 use crate::the_window_offered::TheWindowOffered;
 use crate::verb_as_told::as_told;
 use crate::what_it_may_reach::WhatItMayReach;
+use crate::working_in_an_application::working_in_an_application;
 
 /// **The whole text a model is shown**, under the given [`Instructions`]: how
 /// to answer, every verb the registry declares, **what it may reach**, and the
@@ -99,6 +100,9 @@ pub fn the_products_words(instructions: Instructions, verbs: &Verbs) -> String {
     for verb in verbs.all() {
         text.push_str(&as_told(verb));
     }
+    // After every verb, because it names two of them and says in which order
+    // they go — and only where the registry has them.
+    text.push_str(&working_in_an_application(verbs));
     text
 }
 
