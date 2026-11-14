@@ -38,8 +38,9 @@ mod running {
 
     use crate::starting_the_screen_reader::TheScreenReader;
     use crate::the_sign_in_screen_read_aloud::{
-        BETWEEN_KNOCKS, THE_SCREENS_UID, THE_VOICE, TheBus, TheRelay, TheVoice,
-        is_the_sign_in_screen, said_by, served, the_voice_for,
+        BETWEEN_KNOCKS, Saying, THE_SCREENS_UID, THE_SOUND_DEVICES, THE_VOICE, TheBus, TheRelay,
+        TheVoice, is_the_sign_in_screen, said_by, served, the_voice_for,
+        there_is_somewhere_to_play_it,
     };
 
     /// **Orca, in this login's manager**: the desktop's own switch worker, and
@@ -68,11 +69,11 @@ mod running {
 
         /// **The sentence, in the screen's language, said by eSpeak NG on a
         /// thread of its own**, so the door is still answered while it speaks.
-        fn says_how_to_hear_it(&mut self, language: Option<String>) {
+        fn says(&mut self, saying: Saying, language: Option<String>) {
             let Some(mut words) = self.words.clone() else {
                 eprintln!(
-                    "alo-reading-the-sign-in-screen: this machine's words would not read, so how \
-                     to hear the screen is not said"
+                    "alo-reading-the-sign-in-screen: this machine's words would not read, so \
+                     {saying:?} is not said"
                 );
                 return;
             };
@@ -83,28 +84,28 @@ mod running {
                 .collect();
             words.prefers(&chosen);
             let sentence = words
-                .say(
-                    &alo_shell::sign_in_words::HEAR_THE_SCREEN.key(),
-                    &alo_strings::Filling::nothing(),
-                )
+                .say(&saying.word().key(), &alo_strings::Filling::nothing())
                 .into_text();
             let voice = the_voice_for(language.as_deref());
             let spoken = std::thread::Builder::new()
-                .name("how-to-hear-the-screen".to_owned())
+                .name("the-voice-alone".to_owned())
                 .spawn(move || {
                     if let Err(why) = said_by(std::path::Path::new(THE_VOICE), voice, &sentence) {
                         eprintln!(
-                            "alo-reading-the-sign-in-screen: how to hear the screen was not \
-                             heard: {why}"
+                            "alo-reading-the-sign-in-screen: {saying:?} was not heard: {why}"
                         );
                     }
                 });
             if let Err(why) = spoken {
                 eprintln!(
-                    "alo-reading-the-sign-in-screen: how to hear the screen was not said, \
-                     because no thread could be made for it: {why}"
+                    "alo-reading-the-sign-in-screen: {saying:?} was not said, because no thread \
+                     could be made for it: {why}"
                 );
             }
+        }
+
+        fn has_somewhere_to_play_it(&self) -> bool {
+            there_is_somewhere_to_play_it(std::path::Path::new(THE_SOUND_DEVICES))
         }
     }
 

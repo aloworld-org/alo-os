@@ -53,6 +53,11 @@ pub enum TheScreenReaderAnswered {
     DidNotStart,
     /// It was asked to stop, and is still running.
     DidNotStop,
+    /// **It was asked to start, and this computer has nothing to play it on**
+    /// — no speakers, no headphones. Told apart from [`Self::DidNotStart`]
+    /// because the fix is a different one (ADR 0155 §7). The sign-in screen's
+    /// reader asks before it starts; a person's desktop does not yet.
+    NothingToPlayItOn,
 }
 
 impl TheScreenReaderAnswered {
@@ -66,6 +71,7 @@ impl TheScreenReaderAnswered {
             Self::NotOnThisComputer => w::SCREEN_READER_NOT_HERE,
             Self::DidNotStart => w::SCREEN_READER_DID_NOT_START,
             Self::DidNotStop => w::SCREEN_READER_DID_NOT_STOP,
+            Self::NothingToPlayItOn => crate::sign_in_words::NO_SOUND_FOR_THE_READER,
         };
         Some(crate::settings_page::said(strings, word))
     }
@@ -126,6 +132,12 @@ mod tests {
         }
         assert_ne!(not_here, did_not_start);
         assert_ne!(did_not_start, did_not_stop);
+        assert!(
+            TheScreenReaderAnswered::NothingToPlayItOn
+                .said(&strings)
+                .is_some_and(|said| !said.is_empty() && said != did_not_start),
+            "no sound is said, and said apart from not starting"
+        );
         // **A reader that did not start is one the person is told is still
         // switched on**, so they know it will be tried again.
         assert!(did_not_start.contains("switch stays on"));

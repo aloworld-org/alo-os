@@ -58,6 +58,7 @@ fn every_message_arrives_as_it_was_sent() {
         FromTheReader::Answered(TheScreenReaderAnswered::NotOnThisComputer),
         FromTheReader::Answered(TheScreenReaderAnswered::DidNotStart),
         FromTheReader::Answered(TheScreenReaderAnswered::DidNotStop),
+        FromTheReader::Answered(TheScreenReaderAnswered::NothingToPlayItOn),
         FromTheReader::SteppedAside,
     ] {
         assert_eq!(FromTheReader::read(&message.written()), Ok(message));
