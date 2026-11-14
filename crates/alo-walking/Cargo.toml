@@ -17,8 +17,15 @@ name = "alo-walk"
 path = "src/bin/alo-walk.rs"
 
 [dependencies]
+# The sentences the desktop says on its log for alo's acts, and the door's own
+# words for what it answered — read by the walk from the same declarations the
+# desktop writes them from, so the two cannot drift apart.
+alo-acting = { path = "../alo-acting" }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+
+[dev-dependencies]
+alo-applications = { path = "../alo-applications" }
 
 [lints]
 workspace = true
