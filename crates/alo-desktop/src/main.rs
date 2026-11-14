@@ -96,6 +96,11 @@ mod signing_in_to_github;
 #[cfg(target_os = "linux")]
 mod what_gh_says;
 
+/// Hearing from `alo-agentd` that a command alo ran needs a GitHub sign-in,
+/// so the sign-in sheet can go up.
+#[cfg(target_os = "linux")]
+mod hearing_that_github_needs_a_sign_in;
+
 #[cfg(target_os = "linux")]
 mod asking_for_the_persons_password;
 
@@ -476,6 +481,13 @@ mod running {
         /// Where the listening thread hands over what it was told. Drained on
         /// every frame, and never waited on.
         told: std::sync::mpsc::Receiver<alo_indicator::FromTheDaemon>,
+        /// **Each command alo ran that needed a GitHub sign-in**, as
+        /// `alo-agentd` told this desktop, one knock per failure
+        /// (`crate::hearing_that_github_needs_a_sign_in`). Drained on every
+        /// frame and never waited on.
+        github_needs_a_sign_in: std::sync::mpsc::Receiver<
+            crate::hearing_that_github_needs_a_sign_in::AGitHubSignInIsNeeded,
+        >,
         /// What polkit asked of the password sheet, handed over by the
         /// agent's own thread and drained on every frame (ADR 0150).
         passwords: std::sync::mpsc::Receiver<alo_shell::ToTheSheet>,
@@ -624,6 +636,22 @@ mod running {
                 .spawn(move || alo_indicator::watching::kept_listening(door, person, &tell))
             {
                 eprintln!("alo-desktop: nothing can listen for what alo-agentd sends: {why}");
+            }
+            // **And each command that needs a GitHub sign-in**, on a thread of
+            // its own through the same door and the same checks, so the shell
+            // can put the sign-in sheet up. A thread that could not start
+            // leaves the sheet to Settings → Accounts alone.
+            let (knock, github_needs_a_sign_in) = std::sync::mpsc::channel();
+            let door = alo_changing::this_persons_door();
+            if let Err(why) = std::thread::Builder::new()
+                .name("github-sign-ins".to_owned())
+                .spawn(move || {
+                    crate::hearing_that_github_needs_a_sign_in::kept_hearing(door, person, &knock);
+                })
+            {
+                eprintln!(
+                    "alo-desktop: nothing can hear when a command needs a GitHub sign-in: {why}"
+                );
             }
             let daemon = alo_indicator::FromTheDaemon::NotYetHeard;
             // **The password sheet, as polkit's agent for this session**
@@ -831,6 +859,7 @@ mod running {
                 indicating,
                 daemon,
                 told,
+                github_needs_a_sign_in,
                 passwords,
                 _the_agent: the_agent,
                 between_frames: alo_indicator::BetweenFrames::nothing_owed(),
@@ -920,6 +949,14 @@ mod running {
         /// What an ask of GitHub came to, once it has.
         fn what_github_answered(&mut self) -> Option<alo_shell::GitHubAnswered> {
             self.github.answered()
+        }
+
+        /// **Whether a command needed a GitHub sign-in since the last frame**,
+        /// as `alo-agentd` told this desktop: every knock waiting is taken, and
+        /// however many there were they are one ask of the shell
+        /// (`crate::hearing_that_github_needs_a_sign_in`).
+        fn a_command_needed_a_github_sign_in(&mut self) -> bool {
+            std::iter::from_fn(|| self.github_needs_a_sign_in.try_recv().ok()).count() > 0
         }
 
         /// **They turned over *Apps describe themselves***: applications

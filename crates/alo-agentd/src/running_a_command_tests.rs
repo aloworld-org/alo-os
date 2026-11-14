@@ -398,6 +398,123 @@ fn at_full_access_a_push_nobody_signed_in_for_says_how_to_sign_in() {
     );
 }
 
+/// What `git` prints when nobody is signed in to GitHub, and the status it
+/// ends with — a command nothing here sends anywhere.
+const A_PUSH_NOBODY_SIGNED_IN_FOR: &str = "echo 'fatal: could not read Username for https://github.com: terminal prompts disabled' >&2; exit 128";
+
+/// A desktop watching for a command that needs a GitHub sign-in, and the
+/// list it watches.
+fn a_desktop_watching_for_github() -> (
+    TheDesktopsToldGitHubNeedsASignIn,
+    std::os::unix::net::UnixStream,
+) {
+    let desktops = TheDesktopsToldGitHubNeedsASignIn::none_yet();
+    let (ours, theirs) = std::os::unix::net::UnixStream::pair().unwrap();
+    desktops.watching(ours);
+    theirs
+        .set_read_timeout(Some(std::time::Duration::from_millis(200)))
+        .unwrap();
+    (desktops, theirs)
+}
+
+/// Every line a desktop was told, until nothing more arrives.
+fn what_the_desktop_heard(desktop: std::os::unix::net::UnixStream) -> Vec<ToAPerson> {
+    use std::io::BufRead as _;
+    let mut heard = Vec::new();
+    let mut lines = std::io::BufReader::new(desktop);
+    loop {
+        let mut line = String::new();
+        match lines.read_line(&mut line) {
+            Ok(0) | Err(_) => return heard,
+            Ok(_) => heard.push(ToAPerson::read(&line).unwrap()),
+        }
+    }
+}
+
+/// **At full access, a command that failed because nobody is signed in to
+/// GitHub tells the desktop once**, and a command that failed for any other
+/// reason tells it nothing.
+#[test]
+fn at_full_access_a_push_nobody_signed_in_for_tells_the_desktop_once() {
+    let elsewhere = Elsewhere::with_the_level("tells-the-desktop", Some(HowCodeRuns::AtFullTrust));
+    let (desktops, desktop) = a_desktop_watching_for_github();
+    let here = elsewhere.here().telling_github_sign_ins_to(&desktops);
+    assert!(here.tells_anybody_about_github());
+    let mut record = Record::default();
+    let mut bracket = a_bracket();
+    on_a_turn(
+        "tells-the-desktop",
+        &mut record,
+        |turning, grants, strings, _| {
+            for command in [A_PUSH_NOBODY_SIGNED_IN_FOR, "echo nothing here >&2; exit 1"] {
+                let line = a_message(&format!(r#"{{"run":{{"command":"{command}"}}}}"#));
+                let said = the_agent_asked(&line, turning, grants, strings, &here, &mut bracket);
+                assert!(
+                    matches!(said, ToAnAgent::DoneWithoutAsking { .. }),
+                    "{said:?}"
+                );
+            }
+        },
+    );
+    assert_eq!(
+        what_the_desktop_heard(desktop),
+        [ToAPerson::AGitHubSignInIsNeeded],
+        "the desktop was not told exactly once"
+    );
+}
+
+/// **At *ask me each time*, the desktop is told when the OK ran the command**
+/// and it failed because nobody is signed in — never before the OK, when
+/// nothing had run.
+#[test]
+fn after_the_ok_a_push_nobody_signed_in_for_tells_the_desktop_once() {
+    let elsewhere =
+        Elsewhere::with_the_level("tells-after-the-ok", Some(HowCodeRuns::AskingEachTime));
+    let (desktops, desktop) = a_desktop_watching_for_github();
+    let here = elsewhere.here().telling_github_sign_ins_to(&desktops);
+    let line = a_message(&format!(
+        r#"{{"run":{{"command":"{A_PUSH_NOBODY_SIGNED_IN_FOR}"}}}}"#
+    ));
+    let mut record = Record::default();
+    let mut bracket = a_bracket();
+    let heard_before_the_ok = on_a_turn(
+        "tells-after-the-ok",
+        &mut record,
+        |turning, grants, strings, _| {
+            let number = match the_agent_asked(&line, turning, grants, strings, &here, &mut bracket)
+            {
+                ToAnAgent::Proposed(standing) => standing.number(),
+                other => unreachable!("not waiting: {other:?}"),
+            };
+            let mut before = [0_u8; 8];
+            let heard_before =
+                std::io::Read::read(&mut &desktop, &mut before).is_ok_and(|read| read > 0);
+            let approve = a_message(&format!(r#"{{"approve":{{"number":{number}}}}}"#));
+            let ran = the_person_said(&approve, turning, grants, strings, &here, &mut bracket);
+            assert!(ran.done().is_some(), "{ran:?}");
+            heard_before
+        },
+    );
+    assert!(
+        !heard_before_the_ok,
+        "the desktop was told before anything ran"
+    );
+    assert_eq!(
+        what_the_desktop_heard(desktop),
+        [ToAPerson::AGitHubSignInIsNeeded]
+    );
+}
+
+/// **Every road but the person's own tells nobody** — which is how a paired
+/// machine's turns run commands here, so nothing a paired machine causes puts
+/// the sheet up on this one.
+#[test]
+fn every_road_but_the_persons_own_tells_nobody() {
+    assert!(!CommandsHere::where_nothing_was_chosen().tells_anybody_about_github());
+    let elsewhere = Elsewhere::with_the_level("tells-nobody", Some(HowCodeRuns::AtFullTrust));
+    assert!(!elsewhere.here().tells_anybody_about_github());
+}
+
 /// **At *ask me each time* nothing runs before the OK; one OK runs it exactly
 /// once; the same number again is refused** — on the person's own door, with
 /// the command in the list of what waits.

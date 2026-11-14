@@ -205,6 +205,23 @@ pub enum ToAPerson {
     /// (`docs/contracts/daemon-protocol.md`, *What stops the service*), so a
     /// desktop that hears nothing has heard that.
     GitHubSignInKept,
+    /// The desktop that asked
+    /// [`FromAPerson::WatchWhatNeedsAGitHubSignIn`](crate::FromAPerson) is now
+    /// told each time a command needs a GitHub sign-in; nothing has needed one
+    /// yet. Added 2026-11-13, additively.
+    WatchingWhatNeedsAGitHubSignIn,
+    /// **A command alo ran on this machine failed because nobody is signed in
+    /// to GitHub**, so the desktop may put the sign-in sheet up — told once per
+    /// such failure, on the connection a desktop gave over to it.
+    ///
+    /// Added 2026-11-13, additively, for the owner's approval of the sheet
+    /// that *appears when alo can't publish because you're not signed in*.
+    /// **It carries nothing**, and a client that never asked for it is never
+    /// sent it: only a connection that sent
+    /// [`FromAPerson::WatchWhatNeedsAGitHubSignIn`](crate::FromAPerson) is
+    /// told, so a desktop written before it — and the one watching what
+    /// leaves — never meets an answer it has no arm for.
+    AGitHubSignInIsNeeded,
 }
 
 impl ToAPerson {
@@ -579,6 +596,8 @@ impl ToAPerson {
             }),
             Told::Leaving { lines } => Ok(Self::Leaving { lines }),
             Told::GithubSignInKept {} => Ok(Self::GitHubSignInKept),
+            Told::WatchingWhatNeedsAGithubSignIn {} => Ok(Self::WatchingWhatNeedsAGitHubSignIn),
+            Told::AGithubSignInIsNeeded {} => Ok(Self::AGitHubSignInIsNeeded),
             // A change carried out without the OK is told to the agent that
             // asked for it, which tells the person in its reply (ADR 0149).
             Told::Proposed(_) | Told::DoneWithoutAsking { .. } => {
@@ -684,6 +703,8 @@ impl From<ToAPerson> for Told {
             },
             ToAPerson::Leaving { lines } => Self::Leaving { lines },
             ToAPerson::GitHubSignInKept => Self::GithubSignInKept {},
+            ToAPerson::WatchingWhatNeedsAGitHubSignIn => Self::WatchingWhatNeedsAGithubSignIn {},
+            ToAPerson::AGitHubSignInIsNeeded => Self::AGithubSignInIsNeeded {},
         }
     }
 }
@@ -1073,6 +1094,14 @@ mod a_persons_own_question;
 )]
 #[path = "a_change_that_cannot_be_undone_tests.rs"]
 mod a_change_that_cannot_be_undone;
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+#[path = "a_github_sign_in_is_needed_tests.rs"]
+mod a_github_sign_in_is_needed;
 
 /// **What leaves crosses the person's door whole, and never reaches an agent**
 /// (ADR 0134).

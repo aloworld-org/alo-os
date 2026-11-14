@@ -156,7 +156,8 @@ impl AboutAPairing {
             | FromAPerson::APlaceToReturnTo
             | FromAPerson::PutBack { .. }
             | FromAPerson::GitHubSignIn(_)
-            | FromAPerson::WatchWhatLeaves => None,
+            | FromAPerson::WatchWhatLeaves
+            | FromAPerson::WatchWhatNeedsAGitHubSignIn => None,
         }
     }
 }

@@ -94,19 +94,74 @@ buttons, 8 between them; corner 18 and the FLOATING shadow.
   (`the_github_sheet_on_the_server.rs`), its words
   (`the_github_sheets_words.rs`), and *Copy* putting the code on the clipboard
   (`the_shell_copies.rs`). It opens when the person presses *Sign in* on
-  Settings → Accounts. The code is no longer said on the Accounts page; the
+  Settings → Accounts, and by itself when a command alo ran failed because
+  nobody is signed in (below). The code is no longer said on the Accounts page; the
   sheet shows it.
 - `crates/alo-desktop`: running gh (`signing_in_to_github.rs`) and reading what
   it says (`what_gh_says.rs`), tested against a gh written down in the tests for
   every failure.
-- **Not built: the sheet opening when a publication or a command alo ran fails
-  with *not signed in to GitHub*.** On 2026-11-13 that failure is recognised only
-  on an unmerged branch (`feat/commands-never-wait-on-a-prompt`, which adds
-  `alo_capability::not_signed_in_to_github` and `ItDidNotWork::NotSignedInToGitHub`),
-  and even there it becomes a sentence in a command's result — nothing carries
-  it to the shell or the desktop as something a surface can act on. Opening the
-  sheet from it needs that fact to reach the shell, which is a change to what a
-  turn tells the shell, not to this sheet; it is left until that branch lands.
+- **The sheet opening when a command alo ran fails with *not signed in to
+  GitHub*** (built 2026-11-13): `alo-agentd` tells each desktop watching
+  (`the_desktops_told_github_needs_a_sign_in.rs`, the protocol's
+  `watch-what-needs-a-github-sign-in`), the desktop hears it on a thread of its
+  own (`hearing_that_github_needs_a_sign_in.rs`), and the shell puts the sheet
+  up by the road *Sign in* takes (`the_github_sheet_rises_by_itself.rs`). See *When
+  the sheet opens by itself*, below.
+- **The same for a publication** (built 2026-11-13, once #1213 landed).
+  `publish_to_github_pages` answers a publication nobody signed in for as a
+  refusal (`NotDone::CouldNotPublish(NotPublished::NotSignedIn)`), not as a
+  command's answer, so both roads a change is refused on at the person's own
+  turns — after the OK and at full access — hand the refusal to
+  `CommandsHere::refused`, which tells the desktops once.
+
+## When the sheet opens by itself
+
+Decided 2026-11-13 from the promise (*appears when alo can't publish because
+you're not signed in*) and from the *Open with* sheet's rule
+(`the_open_with_sheet.rs`: one up, others wait behind it, never for ever):
+
+- **It waits for the person's press.** Asked on 2026-11-13 whether the sheet
+  that rises by itself should start `gh auth login --web` and open GitHub's
+  page at once, or wait, the owner chose **"Wait for my press"**: *the sheet
+  opens and explains, with a "Sign in" button; nothing starts and no browser
+  page opens until the person presses it.* So it rises in a **first state of
+  its own**, drawn in the sheet's own parts (480 wide, 25 inside, the title
+  14 above the line, 14 above the risk and the buttons):
+  - the title *Sign in to GitHub*;
+  - *A command alo ran did not work because you are not signed in to GitHub.
+    Sign in, and then ask alo again: alo won't try again by itself.*;
+  - *What it risks*, the owner's words, as on every state;
+  - *Cancel* (Quiet) and a navy *Sign in*, the keyboard on *Sign in*.
+
+  ***Sign in* moves it to waiting for the code** and only then asks gh, and
+  from there it is the sheet as drawn. *Cancel* and Escape close it and ask
+  gh nothing — not even to stop — so nothing is written down as a sign-in
+  that was cancelled, because none began. **Sign in on Settings → Accounts is
+  a press already**, so that road still starts at once, waiting for the code.
+- **Once per failure, and never stacked.** A failure while the sheet is up is
+  let go — it is already asking. Many failures before the next frame are one
+  sheet.
+- **Never over another sheet.** While the password sheet or *Open with* is up
+  it waits, and goes up the frame that sheet comes down — **at most five
+  minutes** (*Open with*'s own bound), after which it is let go rather than
+  rise over something the person has moved on from.
+- **Only for a command this machine ran** for the person's own turns. A paired
+  machine's turns run commands as the sealed box, which tells nobody.
+- **The person may dismiss it**: *Cancel* and Escape stop the sign-in, as from
+  Settings.
+- **alo never runs the command again by itself.** What the person reads — on
+  the card at *ask me each time*, in alo's reply at full access, in the
+  terminal — is *It did not work: you are not signed in to GitHub. Sign in from
+  Settings → Accounts, or type gh auth login --web …, and then ask alo again:
+  it does not try again by itself.* A command run again after the sign-in would
+  be a second run nobody approved.
+- **The record keeps the failed run and the sign-in as two entries**, as it did
+  before: *the agent ran a command, and it did not work*, and *you signed in to
+  GitHub*. **Not built: a record line that says to ask again.** The record's
+  entry for a run keeps its status and not what it wrote, so it cannot tell a
+  GitHub failure from any other; saying it there needs a new field on that
+  entry (`docs/contracts/record-file.md`), which is a record-format change of
+  its own.
 
 ## How the sheet behaves, where the pictures are silent
 

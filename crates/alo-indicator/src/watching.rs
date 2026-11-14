@@ -70,16 +70,10 @@ pub fn listened_once(
     person: u32,
     tell: &mut dyn FnMut(FromTheDaemon) -> bool,
 ) -> StoppedListening {
-    if !the_persons_alone(door, person) {
-        return StoppedListening::NotThePersonsAlone;
-    }
-    let Ok(mut connection) = UnixStream::connect(door) else {
-        return StoppedListening::NotThere;
+    let mut connection = match connected_to_the_persons_service(door, person) {
+        Ok(connection) => connection,
+        Err(why) => return why,
     };
-    match rustix::net::sockopt::socket_peercred(connection.as_fd()) {
-        Ok(peer) if peer.uid.as_raw() == person => {}
-        _ => return StoppedListening::NotThePersons,
-    }
     let Ok(mut asked) = FromAPerson::WatchWhatLeaves.written() else {
         return StoppedListening::Ended;
     };
@@ -137,6 +131,32 @@ pub fn kept_listening(door: PathBuf, person: u32, send: &Sender<FromTheDaemon>) 
             (wait * 2).min(LONGEST_WAIT)
         };
         std::thread::sleep(wait);
+    }
+}
+
+/// **A connection to the person's own service at `door`**, after the two
+/// checks this file's header names: the directory is the person's alone, and
+/// the process listening runs as them (`SO_PEERCRED`).
+///
+/// Public so that anything else the desktop is told by `alo-agentd` on the
+/// person's door — a command that needs a GitHub sign-in — is told through
+/// the same two checks rather than a second copy of them.
+///
+/// # Errors
+/// [`StoppedListening`]: which check failed, or that nothing was listening.
+pub fn connected_to_the_persons_service(
+    door: &Path,
+    person: u32,
+) -> Result<UnixStream, StoppedListening> {
+    if !the_persons_alone(door, person) {
+        return Err(StoppedListening::NotThePersonsAlone);
+    }
+    let Ok(connection) = UnixStream::connect(door) else {
+        return Err(StoppedListening::NotThere);
+    };
+    match rustix::net::sockopt::socket_peercred(connection.as_fd()) {
+        Ok(peer) if peer.uid.as_raw() == person => Ok(connection),
+        _ => Err(StoppedListening::NotThePersons),
     }
 }
 

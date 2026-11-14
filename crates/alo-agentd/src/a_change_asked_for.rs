@@ -98,7 +98,12 @@ pub fn a_change_asked_for(
             done_without_asking(as_a_client_sees_it(&did, now), sentence, kept, strings)
         }
         Ok(Changed::Waiting(number)) => crate::doing::waiting_under(turning, number, strings, now),
-        Err(why) => crate::doing::not_done(&why, strings),
+        // **A publication nobody signed in for tells the desktop**, so the
+        // sign-in sheet rises (`crate::the_desktops_told_github_needs_a_sign_in`).
+        Err(why) => {
+            here.refused(&why);
+            crate::doing::not_done(&why, strings)
+        }
     }
 }
 

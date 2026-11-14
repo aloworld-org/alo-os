@@ -347,8 +347,14 @@ pub fn until_stopped(
         // `main` read back, and every one given on the person's door since.
         naming: network.names(),
     };
+    // **And the desktops told when a command needs a GitHub sign-in**, so the
+    // sign-in sheet goes up (the owner's approval of 2026-11-13). A desktop
+    // asks `watch-what-needs-a-github-sign-in` and is given over to this list.
+    let told_of_github =
+        crate::the_desktops_told_github_needs_a_sign_in::TheDesktopsToldGitHubNeedsASignIn::none_yet();
     Ok(Serving::of(knocking, waking, wire, &network, terms)
         .telling(&watchers)
+        .telling_github_sign_ins_to(&told_of_github)
         .until_stopped(&mut machine, granted, &mut questions, &mut surface)?)
 }
 

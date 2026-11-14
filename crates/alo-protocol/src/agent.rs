@@ -156,6 +156,9 @@ impl FromAnAgent {
             | Asked::PutBack { .. }
             // What leaves is shown to the person, and watching it is theirs.
             | Asked::WatchWhatLeaves {}
+            // So is being told a command needs a GitHub sign-in: an agent
+            // told it would learn when another agent's command failed.
+            | Asked::WatchWhatNeedsAGithubSignIn {}
             // **There is no verb that signs in**, and an agent that could send
             // this could write a sign-in nobody made into the person's record.
             | Asked::GithubSignIn(_) => Err(NotUnderstood::NotForAnAgent),

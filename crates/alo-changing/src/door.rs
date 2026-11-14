@@ -173,7 +173,9 @@ impl TheDaemonsDoor {
             | ToAPerson::Advertised(_)
             | ToAPerson::Answered { .. }
             | ToAPerson::Leaving { .. }
-            | ToAPerson::GitHubSignInKept => None,
+            | ToAPerson::GitHubSignInKept
+            | ToAPerson::WatchingWhatNeedsAGitHubSignIn
+            | ToAPerson::AGitHubSignInIsNeeded => None,
         }
     }
 }

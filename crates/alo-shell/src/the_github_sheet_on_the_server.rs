@@ -67,6 +67,9 @@ impl crate::Server {
             Some(TheSheetAsks::StopSigningIn) => {
                 self.github_is_asked(AskingGitHub::StopSigningIn);
             }
+            // The person pressed *Sign in* on the sheet that rose by itself:
+            // the sheet is waiting for the code, and gh is asked for it now.
+            Some(TheSheetAsks::SignIn) => self.github_is_asked(AskingGitHub::SignIn),
             None => {}
         }
     }

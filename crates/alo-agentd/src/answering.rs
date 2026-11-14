@@ -326,8 +326,11 @@ fn answered_to(
         | FromAPerson::PutBack { .. }
         | FromAPerson::GitHubSignIn(_)
         // Watching what leaves is answered by the serving loop, which gives
-        // the connection over to it (`crate::watchers`).
-        | FromAPerson::WatchWhatLeaves => {
+        // the connection over to it (`crate::watchers`), and so is watching
+        // for a command that needs a GitHub sign-in
+        // (`crate::the_desktops_told_github_needs_a_sign_in`).
+        | FromAPerson::WatchWhatLeaves
+        | FromAPerson::WatchWhatNeedsAGitHubSignIn => {
             ToAPerson::refused(&rereading::what_to_say(strings))
         }
         FromAPerson::Approve { number } => match under(turning, number, now) {
@@ -394,7 +397,13 @@ fn answered_to(
                         as_a_client_sees_it(&answer, now),
                         bracket.taken_at().is_some(),
                     ),
-                    Err(why) => ToAPerson::refused(&why.said(strings)),
+                    // **A publication nobody signed in for tells the desktop**,
+                    // so the sign-in sheet rises
+                    // (`crate::the_desktops_told_github_needs_a_sign_in`).
+                    Err(why) => {
+                        commands.refused(&why);
+                        ToAPerson::refused(&why.said(strings))
+                    }
                 }
             }
             // **A command waiting under the number** (ADR 0149): run once, if

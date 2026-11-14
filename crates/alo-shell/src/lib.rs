@@ -299,6 +299,8 @@ mod the_github_sheet;
 mod the_github_sheet_as_read;
 mod the_github_sheet_drawn;
 mod the_github_sheet_on_the_server;
+/// The sheet going up when a command alo ran needed a GitHub sign-in.
+mod the_github_sheet_rises_by_itself;
 mod the_github_sheets_words;
 mod the_keyboard_on_the_docks_surfaces;
 /// The *Open with* sheet: an application asked for the person to choose what

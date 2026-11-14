@@ -62,9 +62,32 @@ pub const SIGNED_IN_AND_WHERE_TO_SIGN_OUT: Word = Word::saying(
 pub const DONE: Word = Word::saying("shell.github-sign-in.done", "Done")
     .noting("A button: close the window after signing in to GitHub worked. One short word.");
 
+/// The line under the title when the sheet rose by itself: what failed, and
+/// that alo will not try again by itself (the owner, 2026-11-13: *"Wait for my
+/// press"*).
+pub const A_COMMAND_NEEDED_IT: Word = Word::saying(
+    "shell.github-sign-in.a-command-needed-it",
+    "A command alo ran did not work because you are not signed in to GitHub. Sign in, and then \
+     ask alo again: alo won't try again by itself.",
+)
+.noting(
+    "Under the title of a small window that appeared by itself after something alo did for the \
+     person failed because this computer is not signed in to GitHub. Nothing has started yet: \
+     the person may press Sign in, or Cancel. 'ask alo again' matters — alo will not repeat the \
+     command on its own. GitHub and alo are names: keep them as they are.",
+);
+
+/// The navy button on the sheet that rose by itself: signing in begins.
+pub const SIGN_IN: Word = Word::saying("shell.github-sign-in.sign-in", "Sign in").noting(
+    "A button: begin signing this computer in to GitHub. Nothing starts until it is pressed. Two \
+     short words.",
+);
+
 /// Every sentence the sheet says of its own.
-pub const THE_GITHUB_SHEETS_WORDS: [Word; 7] = [
+pub const THE_GITHUB_SHEETS_WORDS: [Word; 9] = [
     SIGN_IN_TO_GITHUB,
+    A_COMMAND_NEEDED_IT,
+    SIGN_IN,
     COPY,
     CANCEL,
     OPEN_THE_PAGE,

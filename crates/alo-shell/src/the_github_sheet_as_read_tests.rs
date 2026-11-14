@@ -199,3 +199,31 @@ fn with_no_sheet_the_tree_is_as_it_was() {
     let tree = plain.clone().with_the_github_sheet(&strings, None);
     assert_eq!(tree, plain);
 }
+
+/// **Risen by itself, it is read as it is drawn**: what failed and that alo
+/// won't try again, what it risks, Cancel and Sign in — with the keyboard on
+/// Sign in, and no code or *Checking…*, because nothing has started.
+#[test]
+fn risen_by_itself_it_is_read_as_it_is_drawn() {
+    let strings = words();
+    let mut sheet = TheGitHubSheet::default();
+    assert!(sheet.opened_for_a_command());
+    let tree = read(&strings, &sheet);
+    let in_front = tree.in_front().unwrap();
+    assert_eq!(tree.nodes()[in_front.at].name, "Sign in to GitHub");
+    let names: Vec<String> = read_in_order(&tree)
+        .into_iter()
+        .map(|(_, name)| name)
+        .collect();
+    assert_eq!(
+        names,
+        [
+            "A command alo ran did not work because you are not signed in to GitHub. Sign in, \
+             and then ask alo again: alo won't try again by itself.",
+            "What it risks",
+            "Cancel",
+            "Sign in",
+        ]
+    );
+    assert_eq!(tree.nodes()[in_front.keyboard].name, "Sign in");
+}

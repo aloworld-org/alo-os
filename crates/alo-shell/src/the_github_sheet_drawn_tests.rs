@@ -204,3 +204,36 @@ fn a_display_too_small_is_refused() {
         assert!(drawn_at(&sheet, (1440, 200), 100).is_err());
     }
 }
+
+/// **Risen by itself, it says what failed and offers *Sign in***, at every
+/// display: the title, the line saying alo won't try again by itself, *What
+/// it risks*, and *Cancel* with the navy *Sign in* at the right — and no code
+/// card, because nothing has started.
+#[test]
+fn risen_by_itself_it_says_what_failed_and_offers_sign_in() {
+    let mut sheet = TheGitHubSheet::default();
+    assert!(sheet.opened_for_a_command());
+    for (size, per_cent, _) in DISPLAYS {
+        let drawn = drawn_at(&sheet, size, per_cent).unwrap();
+        let texts: Vec<&str> = drawn.texts.iter().map(|(text, _)| text.as_str()).collect();
+        assert!(texts.contains(&"Sign in to GitHub"), "{texts:?}");
+        assert!(
+            texts
+                .iter()
+                .any(|text| text.contains("not signed in to GitHub")
+                    && text.contains("won't try again by itself")),
+            "{texts:?}"
+        );
+        assert!(texts.contains(&"What it risks"), "{texts:?}");
+        assert!(!texts.contains(&"Checking…"), "{texts:?}");
+        let on: Vec<OnTheGitHubSheet> = drawn.buttons.iter().map(|(on, _)| *on).collect();
+        assert_eq!(
+            on,
+            [OnTheGitHubSheet::SignIn, OnTheGitHubSheet::Cancel],
+            "drawn right to left"
+        );
+        for (_, area) in &drawn.buttons {
+            assert!(inside(*area, drawn.sheet), "{size:?}");
+        }
+    }
+}

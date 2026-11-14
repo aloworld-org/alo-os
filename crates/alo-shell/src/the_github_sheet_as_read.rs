@@ -16,6 +16,10 @@
 //!   description;
 //! - **Cancel**, then **Open github.com/login/device** once there is a page.
 //!
+//! Risen by itself, before anything started: the dialogue named *Sign in to
+//! GitHub*; the label saying what failed and that alo will not try again by
+//! itself; *What it risks*; **Cancel** and **Sign in**.
+//!
 //! Signed in: the dialogue named *Signed in to GitHub as* the login; the label
 //! *Signed in. You can sign out in Settings → Accounts.*; *What it risks*; and
 //! **Done**.
@@ -67,9 +71,9 @@ impl ReadAloudTree {
                     &Filling::of("login", login.clone()),
                 )
                 .into_text(),
-            TheSheetIs::WaitingForTheCode | TheSheetIs::TheCodeIs { .. } => {
-                said(strings, words::SIGN_IN_TO_GITHUB)
-            }
+            TheSheetIs::ACommandNeededIt
+            | TheSheetIs::WaitingForTheCode
+            | TheSheetIs::TheCodeIs { .. } => said(strings, words::SIGN_IN_TO_GITHUB),
         };
         let sheet = self.push(
             0,
@@ -91,6 +95,13 @@ impl ReadAloudTree {
                     ),
                 );
             }
+            // Rose by itself: what failed, and nothing started.
+            TheSheetIs::ACommandNeededIt => {
+                self.push(
+                    sheet,
+                    label(said(strings, words::A_COMMAND_NEEDED_IT), String::new()),
+                );
+            }
             TheSheetIs::WaitingForTheCode | TheSheetIs::TheCodeIs { .. } => {
                 self.push(
                     sheet,
@@ -101,9 +112,9 @@ impl ReadAloudTree {
                 );
                 let code = match shows.is {
                     TheSheetIs::TheCodeIs { code, .. } => code.clone(),
-                    TheSheetIs::WaitingForTheCode | TheSheetIs::SignedInAs(_) => {
-                        said(strings, w::CHECKING)
-                    }
+                    TheSheetIs::ACommandNeededIt
+                    | TheSheetIs::WaitingForTheCode
+                    | TheSheetIs::SignedInAs(_) => said(strings, w::CHECKING),
                 };
                 self.push(sheet, label(code, String::new()));
                 if shows.is.buttons().contains(&OnTheGitHubSheet::Copy) {
@@ -151,10 +162,13 @@ impl ReadAloudTree {
             OnTheGitHubSheet::Copy => said(strings, words::COPY),
             OnTheGitHubSheet::Cancel => said(strings, words::CANCEL),
             OnTheGitHubSheet::Done => said(strings, words::DONE),
+            OnTheGitHubSheet::SignIn => said(strings, words::SIGN_IN),
             OnTheGitHubSheet::OpenThePage => {
                 let page = match shows.is {
                     TheSheetIs::TheCodeIs { page, .. } => page.as_str(),
-                    TheSheetIs::WaitingForTheCode | TheSheetIs::SignedInAs(_) => "",
+                    TheSheetIs::ACommandNeededIt
+                    | TheSheetIs::WaitingForTheCode
+                    | TheSheetIs::SignedInAs(_) => "",
                 };
                 strings
                     .say(
