@@ -36,6 +36,47 @@ fn every_line_with_any_phrase() {
     assert_eq!(found.len(), 1);
 }
 
+/// **A journal line a kernel line landed inside is read whole** — the tear
+/// measured on the walk of 2026-11-14, byte for byte but for the audit
+/// record's length.
+#[test]
+fn a_line_torn_by_a_kernel_line_is_mended() {
+    let log = b"[  127.851670] alo-shipping[2168]: 8 of this machine's applications arrived, 0 s[  128.234364] audit: type=1130 msg='unit=alo-shipping res=success'\ntill owed\n[  129.000001] next\n";
+    let records = lines_after(log, 0);
+    assert_eq!(
+        records,
+        vec![
+            "[  127.851670] alo-shipping[2168]: 8 of this machine's applications arrived, 0 still owed"
+                .to_owned(),
+            "[  128.234364] audit: type=1130 msg='unit=alo-shipping res=success'".to_owned(),
+            "[  129.000001] next".to_owned(),
+        ]
+    );
+}
+
+/// A bracket that is not a timestamp does not cut a line, and a line with no
+/// timestamp after a whole one is its own.
+#[test]
+fn only_a_timestamp_cuts_a_line() {
+    let log = b"[    1.000000] a [list] of [1.5] things\nplain words\n";
+    assert_eq!(
+        lines_after(log, 0),
+        vec![
+            "[    1.000000] a [list] of [1.5] things".to_owned(),
+            "plain words".to_owned()
+        ]
+    );
+}
+
+/// **Half a line is not read**: the end of a log still being written is
+/// judged only once its line is whole.
+#[test]
+fn half_a_line_is_not_read() {
+    let log = b"[    1.000000] whole\n[    2.000000] 8 arrived, 0 s";
+    assert_eq!(first_with(log, 0, "arrived"), None);
+    assert!(first_with(log, 0, "whole").is_some());
+}
+
 /// A mark past the end reads as nothing said, and a byte that is not text
 /// does not hide its line.
 #[test]
