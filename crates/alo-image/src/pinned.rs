@@ -155,7 +155,7 @@ impl ThePin {
 }
 
 /// Whether this is `sha256:` and a whole digest, in lowercase.
-fn is_a_digest(stated: &str) -> bool {
+pub(crate) fn is_a_digest(stated: &str) -> bool {
     stated
         .strip_prefix(SHA256)
         .is_some_and(|hex| is_lowercase_hex(hex, A_WHOLE_DIGEST))

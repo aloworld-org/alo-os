@@ -1,0 +1,136 @@
+# Copy one base the recipe is built on into alo's own registry, byte for byte.
+#
+# ADR 0154, the owner's decision of 2026-11-13: *"alo's GitHub registry"*.
+# Fedora rebuilds `fedora-bootc:44` every day and Quay deletes the manifest the
+# tag stops naming, so the digest ADR 0152 pinned was gone the day it landed and
+# every image build from main failed. A copy in `ghcr.io/aloworld-org` is kept
+# for as long as alo keeps it.
+#
+# What it does, in order, and each step fails closed with a sentence:
+#
+# - finds the one line of `image/bases.toml` naming the digest it was given, so
+#   it only ever copies a base somebody recorded, from where they recorded it;
+# - reads the base from Fedora **by that digest** and hashes what came back, so
+#   a registry answering with other bytes is caught before anything is copied;
+# - copies every platform of it with `--preserve-digests`, which makes skopeo
+#   refuse rather than write a copy whose digest differs;
+# - reads the copy back and hashes it, so the digest the recipe names is the one
+#   alo's registry serves;
+# - reads it back again **with no credentials**, because a lane machine building
+#   a walk image, and the installer's workflows, pull it without signing in.
+#
+# What it may never do, and `crates/alo-image`
+# (`tests/the_base_is_a_copy_alo_keeps.rs`) holds it to each: run unless a person
+# asks, run from anything but main, build anything, sign anything, or write
+# anywhere but `ghcr.io/aloworld-org`.
+
+name: Copying a base
+
+on:
+  workflow_dispatch:
+    inputs:
+      digest:
+        description: "The base's digest, sha256:…, exactly as image/bases.toml records it"
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  copy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    env:
+      DIGEST: ${{ inputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find the base in image/bases.toml
+        run: |
+          case "$DIGEST" in
+            sha256:[0-9a-f]*) ;;
+            *)
+              echo "'$DIGEST' is not a digest; give the sha256:… image/bases.toml records" >&2
+              exit 1
+              ;;
+          esac
+          count=$(grep -cF "digest = \"$DIGEST\"" image/bases.toml || true)
+          if [ "$count" != "1" ]; then
+            echo "image/bases.toml names $DIGEST on $count lines; a base is copied only once it is recorded there, on one line" >&2
+            exit 1
+          fi
+          line=$(grep -F "digest = \"$DIGEST\"" image/bases.toml)
+          field() { printf '%s\n' "$line" | sed -n "s/.*[{ ,]$1 = \"\\([^\"]*\\)\".*/\\1/p"; }
+          copy=$(field copy)
+          tag=$(field tag)
+          upstream=$(field upstream)
+          case "$copy" in
+            ghcr.io/aloworld-org/?*) ;;
+            *)
+              echo "the copy is '$copy', and alo keeps its copies under ghcr.io/aloworld-org/ only" >&2
+              exit 1
+              ;;
+          esac
+          if [ -z "$tag" ] || [ -z "$upstream" ]; then
+            echo "the line for $DIGEST does not say both where it came from and what the copy is tagged" >&2
+            exit 1
+          fi
+          echo "COPY=$copy" >> "$GITHUB_ENV"
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+          echo "UPSTREAM=${upstream%:*}" >> "$GITHUB_ENV"
+
+      - name: Read the base from where it was recorded, by its digest
+        run: |
+          if ! skopeo inspect --raw "docker://$UPSTREAM@$DIGEST" > upstream.json; then
+            echo "$UPSTREAM no longer serves $DIGEST, so there is nothing left to copy; record a base that still exists" >&2
+            exit 1
+          fi
+          read_back="sha256:$(sha256sum upstream.json | cut -d' ' -f1)"
+          if [ "$read_back" != "$DIGEST" ]; then
+            echo "$UPSTREAM answered $DIGEST with bytes whose digest is $read_back; nothing is copied" >&2
+            exit 1
+          fi
+
+      - name: Log in to the registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | skopeo login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      # A tag alo already holds is never moved to other bytes. The same bytes
+      # under the same tag is a copy already made, and the steps below still
+      # read it back, so running this twice is a check rather than a second copy.
+      - name: Refuse a tag that already names something else
+        run: |
+          if skopeo inspect --raw "docker://$COPY:$TAG" > held.json 2> /dev/null; then
+            held="sha256:$(sha256sum held.json | cut -d' ' -f1)"
+            if [ "$held" != "$DIGEST" ]; then
+              echo "$COPY:$TAG already names $held, and a tag alo holds is never moved to other bytes" >&2
+              exit 1
+            fi
+          fi
+
+      - name: Copy every platform, keeping the digest
+        run: |
+          skopeo copy --all --preserve-digests --retry-times 3 \
+            "docker://$UPSTREAM@$DIGEST" "docker://$COPY:$TAG"
+
+      - name: Read the copy back and compare
+        run: |
+          skopeo inspect --raw "docker://$COPY@$DIGEST" > copied.json
+          copied="sha256:$(sha256sum copied.json | cut -d' ' -f1)"
+          if [ "$copied" != "$DIGEST" ]; then
+            echo "alo's copy reads back as $copied, not $DIGEST; the recipe must not name it" >&2
+            exit 1
+          fi
+
+      # A package GitHub creates is private until somebody makes it public, and
+      # there is no API to do that: it is one choice on the package's settings
+      # page, made once per package. Until it is made, nothing that pulls
+      # without signing in can build from the copy, so this fails rather than
+      # reporting a copy nobody can use.
+      - name: Read the copy back as anybody would
+        run: |
+          if ! skopeo inspect --raw --no-creds "docker://$COPY@$DIGEST" > /dev/null; then
+            echo "the copy is made, but nobody who has not signed in can read it. Make the package public once — https://github.com/orgs/aloworld-org/packages/container/package/${COPY##*/}, Package settings, Change visibility — and run this again." >&2
+            exit 1
+          fi
+          echo "$COPY:$TAG is $DIGEST, copied from $UPSTREAM, read back byte for byte and readable by anybody. The recipe may now name $COPY@$DIGEST."

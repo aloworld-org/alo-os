@@ -88,6 +88,7 @@
 
 mod accounts;
 mod asserted;
+mod bases;
 mod booting;
 mod checking;
 mod converter;
@@ -124,6 +125,7 @@ mod wrong;
 
 pub use accounts::{TheStore, where_a_sign_in_looks};
 pub use asserted::Asserted;
+pub use bases::{ALOS_REGISTRY, Base, THE_BASES, TheBases};
 pub use booting::TheDocument;
 pub use checking::{THE_DOOR, everything_wrong_with};
 pub use converter::{THE_CONVERTER, THE_CONVERTERS_BINARY, THE_CONVERTERS_SOCKET, TheConverter};
@@ -142,7 +144,7 @@ pub use notes::{THE_NOTES, THE_SECURE_BOOT, TheNotes};
 pub use pinned::{THE_PIN, THE_REGISTRY, ThePin};
 pub use reaching::{THE_BPF_FILESYSTEM, THE_PASSAGES_MODE};
 pub use refusing::{
-    NotAService, NotAUnit, NotAnImage, NotDeclared, NotDescribed, NotMade, NotPinned,
+    NotABase, NotAService, NotAUnit, NotAnImage, NotDeclared, NotDescribed, NotMade, NotPinned,
 };
 pub use released::{ACCEPTED, everything_wrong_with_the_try_it};
 pub use releasing::{THE_RELEASE, TheRelease};

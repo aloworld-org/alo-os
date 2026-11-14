@@ -67,6 +67,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # ADR 0154, and `image.yml`'s step of the same name: the base is alo's
+      # own copy, and a build that cannot pull it says so first.
+      - name: Refuse a base that cannot be pulled
+        run: |
+          base=$(sed -n 's/^ARG THE_BASE=//p' image/installing/Containerfile | sed 's/:[^/@]*@/@/')
+          if [ -z "$base" ]; then
+            echo "image/installing/Containerfile names no base, so nothing is built" >&2
+            exit 1
+          fi
+          if ! skopeo inspect --raw --no-creds "docker://$base" > /dev/null; then
+            echo "image/installing/Containerfile is built on $base, and the registry would not give it to somebody who has not signed in (its answer is above), so nothing is built. Where it is alo's copy, a person runs the Copying a base workflow with its digest; where it is not, the recipe should name alo's copy (ADR 0154)." >&2
+            exit 1
+          fi
+
       - name: Build the boot environment the installer stages
         run: |
           podman build -f image/installing/Containerfile \

@@ -77,7 +77,9 @@ could have said so.
   **This only moves the problem a day**: a pin that can vanish is not a pin.
   Keeping a copy of the pinned base where alo controls it is the real fix, and
   where that copy lives is the owner's decision; until then, every image build
-  from `main` depends on the digest still being on Quay.
+  from `main` depends on the digest still being on Quay. **Decided the same
+  day:** alo's own copy in `ghcr.io/aloworld-org`,
+  [ADR 0154](0154-the-base-is-a-copy-alo-keeps.md).
 - `image/usr/lib/os-release` says `VERSION_ID=44` and states **no
   `PLATFORM_ID`**, because Fedora 44's own file has none. Repeating a field the
   base no longer states would be alo saying something about Fedora that Fedora
