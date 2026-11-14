@@ -1,0 +1,42 @@
+# The first start and the sign-in screen, read aloud (ADR 0155, the owner's
+# "Build it" of 2026-11-14).
+#
+# A user unit, run by the sign-in login's own manager and as that login:
+# alo-greeter, uid 60990, whose manager is started at boot because the login
+# lingers (image/usr/lib/tmpfiles.d/alo.conf). That manager is what gives the
+# screens before sign-in a session bus, an accessibility bus and a PulseAudio
+# socket on PipeWire, none of which exists for root's compositor.
+#
+# It knocks at the sign-in screen's door (/run/alo-sign-in-read-aloud/reading,
+# 0750 root:alo-greeter), puts the screen on this login's accessibility bus as
+# the compositor sends it, and starts or stops Orca in this manager -- the same
+# alo-screen-reader.service a person's desktop starts -- when the person
+# presses Ctrl+Alt+S or Accessibility. It never reads the screen aloud by
+# itself: until the person asks, it only waits.
+[Unit]
+Description=alo OS sign-in screen reader: the screens before sign-in, read aloud when the person asks
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0155-the-screens-before-sign-in-speak.md
+After=dbus.socket pipewire-pulse.socket
+
+# **Only the sign-in login.** Every person's manager reads this directory too,
+# and a person's own desktop already has its own reader.
+ConditionUser=alo-greeter
+
+[Service]
+Type=exec
+ExecStart=/usr/libexec/alo-reading-the-sign-in-screen
+
+# **Nothing it handles leaves this computer** (ADR 0151 §3, ADR 0155 §5): it
+# needs the compositor's Unix socket and this login's own buses, and is allowed
+# no internet socket at all.
+RestrictAddressFamilies=AF_UNIX
+NoNewPrivileges=yes
+
+# A relay that fell over is a sign-in screen nobody can hear, so it comes back.
+Restart=on-failure
+RestartSec=2
+
+[Install]
+# **default.target, which is this login's own**: enabled `--global` in the
+# image, and run only where ConditionUser= above holds.
+WantedBy=default.target

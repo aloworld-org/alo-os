@@ -1637,6 +1637,18 @@ It must work from Welcome onward, independent of account creation
 contract for a conflict before registering it** — `alo-shortcuts` prices every
 chord, and silently overriding another action is not open to this surface.
 
+**Built 2026-11-14, and one deliberate departure** ([ADR
+0155](../decisions/0155-the-screens-before-sign-in-speak.md), the owner's
+*"Build it"*). Before sign-in, `Ctrl`+`Alt`+`S` turns the screen reader on and
+off on every first-start sheet and on the sign-in screen; no `alo-shortcuts`
+chord is registered, because the desktop's shortcuts are not served there and
+no application is running. **The *Accessibility* button does the same thing
+directly, rather than opening `375:30435`**: that sheet's three rows are not
+built (Text size and More options have nothing behind them before sign-in), and
+a sheet with one working row would be a different design rather than this one.
+Until the sheet is built, the button turns the reader over. The *Screen reader ·
+On* row and its sentence (`384:26446`) are therefore not drawn either.
+
 **The file's keyboard reactions demonstrate the interaction; they do not prove
 native screen-reader support.** Implement through the OS accessibility and
 shortcut systems and test with assistive technology.

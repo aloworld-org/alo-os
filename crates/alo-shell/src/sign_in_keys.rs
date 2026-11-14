@@ -48,6 +48,13 @@ pub enum SignInKey {
     Earlier,
     /// Move to the row below, on a screen that offers a list.
     Later,
+    /// **`Ctrl`+`Alt`+`S`: turn the screen reader on or off**, on every screen
+    /// before sign-in — the design's chord (`docs/design/the-first-start.md`,
+    /// *Press Ctrl + Alt + S at any time to turn the screen reader on or off*;
+    /// ADR 0155 §3). It is taken by the sign-in screen's driver before any
+    /// sheet sees it, so no sheet and no field ever acts on it: on every
+    /// sheet it does what [`Self::Nothing`] does.
+    TheScreenReader,
     /// Anything else, which does nothing at all.
     Nothing,
 }
@@ -72,6 +79,9 @@ impl SignInKey {
             Keysym::Escape => return Self::Clear,
             Keysym::Up | Keysym::KP_Up => return Self::Earlier,
             Keysym::Down | Keysym::KP_Down => return Self::Later,
+            Keysym::s | Keysym::S if held.ctrl && held.alt && !held.logo => {
+                return Self::TheScreenReader;
+            }
             _ => {}
         }
         if held.ctrl || held.alt || held.logo {
@@ -247,5 +257,42 @@ mod the_arrows_move_a_list {
         assert_eq!(SignInKey::of(Keysym::Down, &held), SignInKey::Later);
         // And the rule it is contrasted with still holds: a letter is not.
         assert_eq!(SignInKey::of(Keysym::a, &held), SignInKey::Nothing);
+    }
+
+    /// **`Ctrl`+`Alt`+`S` is the screen reader's chord, and only that chord
+    /// is**: `S` alone is a letter, `Ctrl`+`S` and `Alt`+`S` are nothing, and
+    /// the chord never types an `s` into a field.
+    #[test]
+    fn ctrl_alt_s_turns_the_screen_reader_over_and_nothing_else_does() {
+        let both = ModifiersState {
+            ctrl: true,
+            alt: true,
+            ..ModifiersState::default()
+        };
+        assert_eq!(SignInKey::of(Keysym::s, &both), SignInKey::TheScreenReader);
+        assert_eq!(SignInKey::of(Keysym::S, &both), SignInKey::TheScreenReader);
+        assert_eq!(
+            SignInKey::of(Keysym::s, &nothing_held()),
+            SignInKey::Letter('s')
+        );
+        for one in [
+            ModifiersState {
+                ctrl: true,
+                ..ModifiersState::default()
+            },
+            ModifiersState {
+                alt: true,
+                ..ModifiersState::default()
+            },
+            ModifiersState {
+                ctrl: true,
+                alt: true,
+                logo: true,
+                ..ModifiersState::default()
+            },
+        ] {
+            assert_eq!(SignInKey::of(Keysym::s, &one), SignInKey::Nothing);
+        }
+        assert_eq!(SignInKey::of(Keysym::a, &both), SignInKey::Nothing);
     }
 }

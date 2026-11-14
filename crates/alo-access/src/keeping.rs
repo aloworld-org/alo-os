@@ -114,6 +114,33 @@ pub fn keep_for_this_machine(at: &Path, turned_on: &TurnedOn) -> Result<(), File
     keep(at, turned_on)
 }
 
+/// **Where this machine keeps what its sign-in screen turns on**: `/etc/alo`,
+/// beside the language and region the machine was set up in. Written by the
+/// sign-in screen when somebody turns the screen reader over there (ADR 0155
+/// §6), and by nothing else.
+pub const THE_MACHINES_FOLDER: &str = "/etc/alo";
+
+/// **What a person has turned on — or, for a person who has kept nothing of
+/// their own yet, what the machine's sign-in screen turns on** (ADR 0155 §6).
+///
+/// This is how a screen reader somebody turned on at the first start is still
+/// on in the account they made there, and in Settings: they have no file yet,
+/// so they start with the machine's. **The moment they keep anything of their
+/// own, theirs is what is read**, and the machine's no longer reaches them —
+/// so turning a reader on at the sign-in screen never overrides a choice a
+/// person made for themselves.
+///
+/// Never fails, as [`at_sign_in`]: what could not be read is handed back
+/// beside the settings.
+#[must_use]
+pub fn for_this_person(person: &Path, machine: &Path) -> (TurnedOn, Option<FileNotRead>) {
+    if person.join(THE_FILE).exists() {
+        at_sign_in(person)
+    } else {
+        at_sign_in(machine)
+    }
+}
+
 /// **What the sign-in screen turns on**, and what went wrong reading it.
 ///
 /// Never fails: a sign-in screen that refused to draw because a settings file
@@ -174,6 +201,29 @@ mod tests {
         assert_eq!(read_back, turned_on);
         assert!(read_back.has(Setting::ScreenReader));
         assert!(!read_back.has(Setting::Magnifier));
+    }
+
+    /// **A person with nothing of their own starts with the sign-in screen's**
+    /// — a reader turned on at the first start is on in the account made there
+    /// — **and once they keep anything, theirs is what counts**, even where
+    /// it turns the reader off.
+    #[test]
+    fn a_person_with_nothing_of_their_own_starts_with_the_machines() {
+        let (person, machine) = (a_folder(), a_folder());
+        let mut at_the_sign_in_screen = TurnedOn::nothing();
+        at_the_sign_in_screen.turn_on(Setting::ScreenReader);
+        keep_for_this_machine(&machine, &at_the_sign_in_screen).unwrap();
+
+        let (turned_on, why) = for_this_person(&person, &machine);
+        assert!(turned_on.has(Setting::ScreenReader));
+        assert!(why.is_none());
+
+        keep(&person, &TurnedOn::nothing()).unwrap();
+        let (turned_on, _) = for_this_person(&person, &machine);
+        assert!(
+            !turned_on.has(Setting::ScreenReader),
+            "the person's own choice is not overridden by the machine's"
+        );
     }
 
     /// **The sign-in screen draws whatever happens to the file.** A person

@@ -10,6 +10,11 @@ Documentation=https://github.com/aloworld-org/alo-os/blob/main/crates/alo-their-
 
 # Nothing to wait for. It writes under $HOME, which the manager that started
 # this already has, and it talks to no bus, no socket and no network.
+
+# **A person's, never the sign-in login's** (ADR 0155): alo-greeter has a
+# manager of its own from boot, for the screen reader before sign-in, and no
+# folders to make.
+ConditionUser=!alo-greeter
 [Service]
 Type=oneshot
 RemainAfterExit=no

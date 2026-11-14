@@ -165,9 +165,11 @@ impl HowMuchAloCanDo {
             },
             // **Nothing else means anything here**: there is no field to type
             // in and no way back to clear to.
-            SignInKey::Letter(_) | SignInKey::Erase | SignInKey::Clear | SignInKey::Nothing => {
-                Went::Stayed
-            }
+            SignInKey::Letter(_)
+            | SignInKey::Erase
+            | SignInKey::Clear
+            | SignInKey::Nothing
+            | SignInKey::TheScreenReader => Went::Stayed,
         }
     }
 
