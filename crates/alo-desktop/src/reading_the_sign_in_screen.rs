@@ -38,7 +38,8 @@ mod running {
 
     use crate::starting_the_screen_reader::TheScreenReader;
     use crate::the_sign_in_screen_read_aloud::{
-        BETWEEN_KNOCKS, THE_SCREENS_UID, TheBus, TheRelay, TheVoice, is_the_sign_in_screen, served,
+        BETWEEN_KNOCKS, THE_SCREENS_UID, THE_VOICE, TheBus, TheRelay, TheVoice,
+        is_the_sign_in_screen, said_by, served, the_voice_for,
     };
 
     /// **Orca, in this login's manager**: the desktop's own switch worker, and
@@ -48,6 +49,9 @@ mod running {
         reader: TheScreenReader,
         /// The language the next start speaks in.
         language: Arc<Mutex<Option<String>>>,
+        /// Every sentence this machine can say, for the one the voice says
+        /// alone; [`None`] where the bundle would not read.
+        words: Option<alo_strings::Strings>,
     }
 
     impl TheVoice for OrcaHere {
@@ -60,6 +64,47 @@ mod running {
 
         fn answered(&mut self) -> Option<TheScreenReaderAnswered> {
             self.reader.answered()
+        }
+
+        /// **The sentence, in the screen's language, said by eSpeak NG on a
+        /// thread of its own**, so the door is still answered while it speaks.
+        fn says_how_to_hear_it(&mut self, language: Option<String>) {
+            let Some(mut words) = self.words.clone() else {
+                eprintln!(
+                    "alo-reading-the-sign-in-screen: this machine's words would not read, so how \
+                     to hear the screen is not said"
+                );
+                return;
+            };
+            let chosen: Vec<alo_strings::Language> = language
+                .as_deref()
+                .and_then(|tag| alo_strings::Language::written(tag).ok())
+                .into_iter()
+                .collect();
+            words.prefers(&chosen);
+            let sentence = words
+                .say(
+                    &alo_shell::sign_in_words::HEAR_THE_SCREEN.key(),
+                    &alo_strings::Filling::nothing(),
+                )
+                .into_text();
+            let voice = the_voice_for(language.as_deref());
+            let spoken = std::thread::Builder::new()
+                .name("how-to-hear-the-screen".to_owned())
+                .spawn(move || {
+                    if let Err(why) = said_by(std::path::Path::new(THE_VOICE), voice, &sentence) {
+                        eprintln!(
+                            "alo-reading-the-sign-in-screen: how to hear the screen was not \
+                             heard: {why}"
+                        );
+                    }
+                });
+            if let Err(why) = spoken {
+                eprintln!(
+                    "alo-reading-the-sign-in-screen: how to hear the screen was not said, \
+                     because no thread could be made for it: {why}"
+                );
+            }
         }
     }
 
@@ -102,7 +147,23 @@ mod running {
             crate::watching_the_screen_reader::OnThisMachine::default(),
             crate::watching_the_screen_reader::BETWEEN_WATCHES,
         );
-        let mut relay = TheRelay::of(OrcaHere { reader, language }, TheLoginsBus::default());
+        let words = match alo_shell::what_this_machine_can_say() {
+            Ok(words) => Some(words),
+            Err(why) => {
+                eprintln!(
+                    "alo-reading-the-sign-in-screen: this machine's words would not read: {why}"
+                );
+                None
+            }
+        };
+        let mut relay = TheRelay::of(
+            OrcaHere {
+                reader,
+                language,
+                words,
+            },
+            TheLoginsBus::default(),
+        );
         eprintln!(
             "alo-reading-the-sign-in-screen: waiting for the sign-in screen at {THE_READING_DOOR}"
         );

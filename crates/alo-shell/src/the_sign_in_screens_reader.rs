@@ -195,6 +195,18 @@ impl TheSignInScreensReader {
         }
     }
 
+    /// **Ask the reader to say, once, how to hear the screen**, in `language`
+    /// (`crate::the_spoken_hint`). Answers whether there was a reader to ask:
+    /// with none, nothing is said, and the screen asks again on a later frame.
+    pub fn says_how_to_hear_it(&mut self, language: Option<String>) -> bool {
+        if self.reader.is_none() {
+            return false;
+        }
+        self.send(&ToTheReader::SayHowToHearIt { language });
+        self.flush();
+        true
+    }
+
     /// Whether the person asked for the screen to be read aloud.
     #[must_use]
     pub const fn is_reading(&self) -> bool {
