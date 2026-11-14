@@ -1130,7 +1130,7 @@ fn the_persons_folders_to_send(server: &Server) -> Option<alo_instructing::ThePe
 /// trait implementation. `crate::what_the_agent_may_reach` holds why the
 /// person's own side is what names them.
 fn the_folders_to_send(server: &Server) -> crate::what_the_agent_may_reach::WhatTheAgentMayReach {
-    server
+    let reach = server
         .settings_places
         .as_ref()
         .map_or_else(Default::default, |places| {
@@ -1138,7 +1138,11 @@ fn the_folders_to_send(server: &Server) -> crate::what_the_agent_may_reach::What
                 places,
                 std::time::SystemTime::now(),
             )
-        })
+        });
+    // **And the applications installed, by name**, taken now from what the
+    // Dock holds (`crate::the_applications_alo_is_told`; the owner,
+    // 2026-11-14: *"Yes, send app names"*).
+    reach.with_these_applications(Some(server.the_applications_alo_is_told()))
 }
 
 impl LoopInput for TheDesktopLane<'_> {

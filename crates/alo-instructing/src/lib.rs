@@ -31,6 +31,7 @@
 //! | [`TheWindowOffered`] | The window a person offered with *Help with this window*, the line it travels on, and how a model is told it |
 //! | [`ThePersonsFolders`] | Where the person's home and standard folders are on this computer, the line it travels on, and how a model is told it |
 //! | [`at_full_access`] | Whether the person chose full access, and the line it travels on (ADR 0149) |
+//! | [`TheApplicationsInstalled`] | The applications installed, by name and identifier, the line it travels on, and how a model is told it (ADR 0001, amended 2026-11-14) |
 //!
 //! # What this crate does not do
 //!
@@ -59,6 +60,7 @@ pub mod answering_in;
 pub mod at_full_access;
 pub mod instructions;
 pub mod shown;
+pub mod the_applications_installed;
 pub mod the_conversation_on_the_wire;
 pub mod the_conversation_so_far;
 pub mod the_language_asked_in;
@@ -84,6 +86,10 @@ pub use instructions::{
 pub use shown::{
     shown_to_a_model, shown_to_a_model_about, shown_to_a_model_after, shown_to_a_turn,
     the_products_words,
+};
+pub use the_applications_installed::{
+    NotTheApplications, THE_APPLICATIONS_INSTALLED, THE_LONGEST_APPLICATIONS_LINE,
+    TheApplicationsInstalled,
 };
 pub use the_conversation_on_the_wire::{
     NotTheConversation, THE_EARLIER_CONVERSATION, THE_LONGEST_LINE, THE_MOST_A_QUESTION_IS,

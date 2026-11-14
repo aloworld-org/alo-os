@@ -1,7 +1,7 @@
 //! **What a person's shell sent**, read off the connection `alo-asking.socket`
 //! hands this process (ADR 0109; `docs/contracts/asking-socket.md`).
 //!
-//! Up to six lines, each with its own reason to be there:
+//! Up to seven lines, each with its own reason to be there:
 //!
 //! 1. `alo-may-reach:` and the folders this person granted, tab-separated —
 //!    only when there are any. A hint for the model, never a capability.
@@ -27,6 +27,12 @@
 //!    [`WhatThePersonSent::may_reach`] too: without it a person at full access,
 //!    who has granted no folder because none is needed, had a model told that
 //!    every read would be refused.
+//! 7. `alo-their-applications:` and the applications installed, each by
+//!    identifier and name (`alo_instructing::TheApplicationsInstalled`; the
+//!    owner, 2026-11-14: *"Yes, send app names"*), read on the person's side as
+//!    they sent the request. A current shell always sends it, the marker alone
+//!    where it knows none. It travels inside [`WhatThePersonSent::may_reach`]
+//!    too, and like the folders it permits nothing.
 //!
 //! # Why the later lines are after the request, and waited for briefly
 //!
@@ -52,7 +58,8 @@ use std::path::Path;
 use std::time::Duration;
 
 use alo_instructing::{
-    TheConversationSoFar, ThePersonsFolders, TheWindowOffered, WhatItMayReach, at_full_access,
+    TheApplicationsInstalled, TheConversationSoFar, ThePersonsFolders, TheWindowOffered,
+    WhatItMayReach, at_full_access,
 };
 
 /// The marker a line of granted folders begins with.
@@ -120,13 +127,23 @@ pub fn read_what_the_person_sent(
             .to_owned(),
         );
     }
-    let (earlier, window, home, at_full_access, may_stop) = match socket {
+    let (earlier, window, home, at_full_access, applications, may_stop) = match socket {
         Some(socket) => the_lines_after_the_request(input, socket)?,
-        None => (TheConversationSoFar::nothing(), None, None, false, false),
+        None => (
+            TheConversationSoFar::nothing(),
+            None,
+            None,
+            false,
+            None,
+            false,
+        ),
     };
     Ok(WhatThePersonSent {
         request,
-        may_reach: may_reach.in_this_home(home).at_full_access(at_full_access),
+        may_reach: may_reach
+            .in_this_home(home)
+            .at_full_access(at_full_access)
+            .with_these_applications(applications),
         earlier,
         window,
         may_stop,
@@ -171,12 +188,14 @@ fn a_line(input: &mut dyn BufRead, most: usize, what: &str) -> Result<ALine, Str
 
 /// What the lines after the request carried: the conversation so far, the
 /// window offered, where the person's folders are, whether they chose full
-/// access, and whether the caller left its sending side open.
+/// access, the applications installed, and whether the caller left its
+/// sending side open.
 type AfterTheRequest = (
     TheConversationSoFar,
     Option<TheWindowOffered>,
     Option<ThePersonsFolders>,
     bool,
+    Option<TheApplicationsInstalled>,
     bool,
 );
 
@@ -196,7 +215,14 @@ fn the_lines_after_the_request(
     .is_err()
     {
         // Not a socket after all: nobody could have sent a third line.
-        return Ok((TheConversationSoFar::nothing(), None, None, false, false));
+        return Ok((
+            TheConversationSoFar::nothing(),
+            None,
+            None,
+            false,
+            None,
+            false,
+        ));
     }
     let read = the_third_and_fourth(input);
     // Back to waiting as long as it takes; `crate::holding_the_turn` sets its
@@ -217,8 +243,26 @@ fn the_third_and_fourth(input: &mut dyn BufRead) -> Result<AfterTheRequest, Stri
     let earlier = match third {
         // **It has finished writing**: the end of the input came where a
         // third line could have.
-        ALine::Ended => return Ok((TheConversationSoFar::nothing(), None, None, false, false)),
-        ALine::NotSent => return Ok((TheConversationSoFar::nothing(), None, None, false, true)),
+        ALine::Ended => {
+            return Ok((
+                TheConversationSoFar::nothing(),
+                None,
+                None,
+                false,
+                None,
+                false,
+            ));
+        }
+        ALine::NotSent => {
+            return Ok((
+                TheConversationSoFar::nothing(),
+                None,
+                None,
+                false,
+                None,
+                true,
+            ));
+        }
         ALine::Read(line) => TheConversationSoFar::read(&line).map_err(|why| why.to_string())?,
     };
     let window = match a_line(
@@ -231,7 +275,7 @@ fn the_third_and_fourth(input: &mut dyn BufRead) -> Result<AfterTheRequest, Stri
         }
         // A shell from before the fourth line: a request about no window, and
         // nothing after it to wait for.
-        ALine::Ended | ALine::NotSent => return Ok((earlier, None, None, false, true)),
+        ALine::Ended | ALine::NotSent => return Ok((earlier, None, None, false, None, true)),
     };
     let home = match a_line(
         input,
@@ -243,7 +287,9 @@ fn the_third_and_fourth(input: &mut dyn BufRead) -> Result<AfterTheRequest, Stri
         }
         // A shell from before the fifth line: no home was said, and nothing
         // after it to wait for.
-        ALine::Ended | ALine::NotSent => return Ok((earlier, window, None, false, true)),
+        ALine::Ended | ALine::NotSent => {
+            return Ok((earlier, window, None, false, None, true));
+        }
     };
     let at_full_access = match a_line(
         input,
@@ -254,9 +300,23 @@ fn the_third_and_fourth(input: &mut dyn BufRead) -> Result<AfterTheRequest, Stri
         // **A shell from before the sixth line**: not said, so not full
         // access. The model is then told what it was told before this line
         // existed, which is what that shell's agent would have told it.
-        ALine::Ended | ALine::NotSent => false,
+        ALine::Ended | ALine::NotSent => {
+            return Ok((earlier, window, home, false, None, true));
+        }
     };
-    Ok((earlier, window, home, at_full_access, true))
+    let applications = match a_line(
+        input,
+        alo_instructing::THE_LONGEST_APPLICATIONS_LINE,
+        "the applications installed",
+    )? {
+        ALine::Read(line) => {
+            TheApplicationsInstalled::read_the_line(&line).map_err(|why| why.to_string())?
+        }
+        // **A shell from before the seventh line**: no applications were said,
+        // and the model is told what it was told before this line existed.
+        ALine::Ended | ALine::NotSent => None,
+    };
+    Ok((earlier, window, home, at_full_access, applications, true))
 }
 
 #[cfg(test)]

@@ -22,7 +22,7 @@ the agent is `crates/alo-agent`'s `what_the_person_sent.rs`.
 
 ## What the shell writes
 
-Up to six lines, each ending in a newline, written at once:
+Up to seven lines, each ending in a newline, written at once:
 
 | Line | When | Shape |
 |---|---|---|
@@ -32,6 +32,7 @@ Up to six lines, each ending in a newline, written at once:
 | 4 | always, from a shell that knows this line | `alo-this-window:` and the window the person offered, or nothing after the marker for a request about no window |
 | 5 | always, from a shell that knows this line | `alo-their-folders:` and where the person's home and standard folders are, or nothing after the marker where the shell knows no home |
 | 6 | always, from a shell that knows this line | `alo-full-access:` and `yes` when the person chose full access, or nothing after the marker at every other level |
+| 7 | always, from a shell that knows this line | `alo-their-applications:` and the applications installed, each by identifier and name, or nothing after the marker where the shell knows none |
 
 The folders are **a hint for the model, never a capability**: every verb is
 still decided by `alo-agentd` against the grants it reads itself. So is the
@@ -93,6 +94,42 @@ can open, and **no folder is named** (`alo_instructing::WhatItMayReach::told`).
 `alo-full-access:`, or that has anything after the marker but `yes`. A shell
 that sends five lines is answered as below full access, after the sixth is waited
 for briefly.
+
+### The applications installed
+
+*Added 2026-11-14 by the owner's decision, "Yes, send app names", after a boot
+walk where* open vscodium *was refused on a machine that had
+`com.vscodium.codium`. [ADR 0001](../decisions/0001-the-capability-model.md),
+§4 as amended that day.*
+
+One JSON object on one line after the marker: each application's identifier,
+and the name its desktop entry gives it — or its identifier, where it gives
+none.
+
+```text
+alo-their-applications:{"com.vscodium.codium":"VSCodium","org.gnome.Geary":"Geary"}
+```
+
+**When.** Taken on the person's side **at the moment they send the request**,
+from what their shell already holds to draw the Dock, for that request only.
+**Names and identifiers, and nothing else.** It **allows nothing**: the model is
+told to name the identifier of the application meant and not to install a
+stand-in, and every application verb is decided by `alo-agentd` against the
+grants and the installed list it reads itself
+(`alo_instructing::TheApplicationsInstalled::told`). It reaches a provider only
+inside the question, under the egress indicator.
+
+At most 512 applications (`alo_instructing::THE_MOST_APPLICATIONS`), identifiers
+of at most 255 bytes with no space, names of at most 128 characters on one line.
+
+**Refused, in words, and nothing driven:** a seventh line that does not begin
+with `alo-their-applications:`, one that is not one object of names by
+identifier, an identifier or a name outside those bounds, and a line over
+`alo_instructing::THE_LONGEST_APPLICATIONS_LINE` bytes. A shell that sends six
+lines is answered with no applications said, after the seventh is waited for
+briefly. **`alo-ask` — a request typed as `alo …` in a terminal — writes
+nothing after line 5, so it says no applications yet**; the desktop's alo Bar,
+task windows and *Help with this window* write all seven.
 
 ### The window offered
 
@@ -172,8 +209,9 @@ stands. A shell never sends it on a timer, a focus change or a keystroke.
   shell from before both waits once. A shell from before line 4 is a request
   about no window. The window is told to the model after the conversation and
   before the request.
-- Lines 5 and 6 are waited for the same way, each only after the one before it
-  arrived. A shell from before line 6 is answered as below full access.
+- Lines 5, 6 and 7 are waited for the same way, each only after the one before
+  it arrived. A shell from before line 6 is answered as below full access, and
+  one from before line 7 with no applications said.
 - A conversation is put to the model **inside the question the turn asks the
   daemon**, between what the turn may reach and the request, marked as an
   earlier exchange that is not a request now. It reaches a provider only as that

@@ -73,6 +73,12 @@ pub struct WhatTheAgentMayReach {
     /// Whether the person chose full access (ADR 0149), where no folder needs
     /// granting.
     pub at_full_access: bool,
+    /// **The applications installed, by name**, sent with the request so the
+    /// model names the right one (the owner, 2026-11-14: *"Yes, send app
+    /// names"*). Not reach: what is here, never what may be reached
+    /// (`alo_instructing::TheApplicationsInstalled`). [`None`] sends the
+    /// marker alone.
+    pub applications: Option<alo_instructing::TheApplicationsInstalled>,
 }
 
 impl WhatTheAgentMayReach {
@@ -82,6 +88,19 @@ impl WhatTheAgentMayReach {
         Self {
             folders,
             at_full_access: false,
+            applications: None,
+        }
+    }
+
+    /// The same, with the applications installed told as well.
+    #[must_use]
+    pub fn with_these_applications(
+        self,
+        applications: Option<alo_instructing::TheApplicationsInstalled>,
+    ) -> Self {
+        Self {
+            applications,
+            ..self
         }
     }
 }
@@ -98,6 +117,7 @@ pub fn what_the_agent_may_reach(places: &SettingsPlaces, now: SystemTime) -> Wha
     WhatTheAgentMayReach {
         folders: the_folders_granted(places, now),
         at_full_access: the_person_chose_full_access(places),
+        applications: None,
     }
 }
 

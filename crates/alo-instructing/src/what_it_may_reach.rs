@@ -55,6 +55,7 @@
 
 use std::path::Path;
 
+use crate::the_applications_installed::TheApplicationsInstalled;
 use crate::the_persons_folders::ThePersonsFolders;
 
 /// The folders a model is told it may reach.
@@ -74,6 +75,11 @@ pub struct WhatItMayReach {
     /// said (`crate::at_full_access`). A hint, as the folders are: the daemon
     /// reads the level itself before anything is reached.
     at_full_access: bool,
+    /// **The applications installed on this computer, by name**, when the
+    /// person's shell said (`crate::the_applications_installed`; the owner,
+    /// 2026-11-14: *"Yes, send app names"*). What is here, never what may be
+    /// reached: the daemon reads the grants and the installed list itself.
+    applications: Option<TheApplicationsInstalled>,
 }
 
 impl WhatItMayReach {
@@ -94,6 +100,7 @@ impl WhatItMayReach {
             folders: None,
             home: None,
             at_full_access: false,
+            applications: None,
         }
     }
 
@@ -104,6 +111,7 @@ impl WhatItMayReach {
             folders: Some(Vec::new()),
             home: None,
             at_full_access: false,
+            applications: None,
         }
     }
 
@@ -126,6 +134,7 @@ impl WhatItMayReach {
             folders: Some(folders),
             home: None,
             at_full_access: false,
+            applications: None,
         }
     }
 
@@ -150,6 +159,25 @@ impl WhatItMayReach {
             at_full_access,
             ..self
         }
+    }
+
+    /// **The same, with the applications installed on this computer**, or
+    /// nothing where the person's shell did not say.
+    ///
+    /// Told first, before where the folders are, so a model learns what is
+    /// here before what it may touch.
+    #[must_use]
+    pub fn with_these_applications(self, applications: Option<TheApplicationsInstalled>) -> Self {
+        Self {
+            applications,
+            ..self
+        }
+    }
+
+    /// The applications installed, when the person's shell said.
+    #[must_use]
+    pub const fn applications(&self) -> Option<&TheApplicationsInstalled> {
+        self.applications.as_ref()
     }
 
     /// Whether the person's shell said they chose full access.
@@ -188,9 +216,12 @@ impl WhatItMayReach {
     #[must_use]
     pub fn told(&self) -> String {
         let mut text = self
-            .home
+            .applications
             .as_ref()
-            .map_or_else(String::new, ThePersonsFolders::told);
+            .map_or_else(String::new, TheApplicationsInstalled::told);
+        if let Some(home) = &self.home {
+            text.push_str(&home.told());
+        }
         text.push_str(&self.what_may_be_reached());
         text
     }
