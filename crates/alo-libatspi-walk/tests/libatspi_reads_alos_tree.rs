@@ -56,7 +56,7 @@ use std::time::{Duration, Instant, SystemTime};
 use alo_access::{Surface, TurnedOn};
 use alo_adapters::{AccessibilityTree, AccessibleSession, Facts, NodeAt};
 use alo_portals::Sandboxes;
-use alo_shell::{ReadAloudBus, ReadAloudTree};
+use alo_shell::{ReadAloudBus, ReadAloudTree, SignInShows};
 use alo_strings::{Filling, Strings};
 use zbus::blocking::MessageIterator;
 use zbus::blocking::connection::Builder;
@@ -376,7 +376,120 @@ fn libatspi_reads_the_whole_tree_with_nothing_to_complain_of() {
     let session = ASession::started();
     let strings = Strings::of(alo_saying::everything_this_machine_can_say().unwrap());
     let tree = ReadAloudTree::of(&strings, &Surface::ALL, &TurnedOn::nothing());
-    let bus = ReadAloudBus::serving(&session.accessibility, &tree).expect("the tree is served");
+    for (how, walked) in read_by_libatspi(&session, &tree) {
+        for control in Surface::Settings.read_aloud() {
+            let name = strings
+                .say(&control.name.key(), &Filling::nothing())
+                .text()
+                .to_owned();
+            assert!(
+                walked
+                    .iter()
+                    .any(|line| line.ends_with(&format!("\t{name}"))),
+                "libatspi ({how}) did not read Settings' {name:?}"
+            );
+        }
+    }
+}
+
+/// Every sentence the screens before sign-in say: the machine's, and the
+/// shell's own two lists, which `alo-saying` cannot collect
+/// (`alo_shell::what_this_machine_can_say` gives the reason).
+fn the_words_before_sign_in() -> Strings {
+    let mut vocabulary = alo_saying::everything_this_machine_can_say().unwrap();
+    alo_shell::sign_in_words::declare_sign_in_words(&mut vocabulary).unwrap();
+    alo_shell::first_start_words::declare_first_start_words(&mut vocabulary).unwrap();
+    Strings::of(vocabulary)
+}
+
+/// Whether libatspi's walk read a thing called `name`.
+fn read_a_thing_called(walked: &[String], name: &str) -> bool {
+    walked
+        .iter()
+        .any(|line| line.ends_with(&format!("\t{name}")))
+}
+
+/// **libatspi reads the first screen of a fresh machine** — the question, its
+/// three rows, the way on and *Accessibility* — as the shell serves it, and
+/// says nothing about any of it (ADR 0155). Before this nothing was served
+/// before sign-in at all, so a blind person could not set a machine up.
+#[test]
+fn libatspi_reads_the_first_screen_of_a_fresh_machine() {
+    use alo_shell::first_start_words as say;
+
+    let session = ASession::started();
+    let strings = the_words_before_sign_in();
+    let said = |word: alo_strings::Word| {
+        strings
+            .say(&word.key(), &Filling::nothing())
+            .text()
+            .to_owned()
+    };
+    let first_start = alo_shell::the_first_start::TheFirstStart::arriving(None);
+    let tree = ReadAloudTree::before_sign_in(&strings, SignInShows::FirstStart(&first_start));
+    let wanted = [
+        said(say::OVERVIEW_TITLE),
+        said(say::ROW_LANGUAGE),
+        said(say::ROW_REGION),
+        said(say::ROW_KEYBOARD),
+        said(say::CONTINUE),
+        said(alo_shell::sign_in_words::ACCESSIBILITY),
+    ];
+    for (how, walked) in read_by_libatspi(&session, &tree) {
+        for name in &wanted {
+            assert!(
+                read_a_thing_called(&walked, name),
+                "libatspi ({how}) did not read {name:?} on the first screen:\n{}",
+                walked.join("\n")
+            );
+        }
+    }
+}
+
+/// **libatspi reads the sign-in screen**: the greeting and the one field, and
+/// nothing of what is typed into it.
+#[test]
+fn libatspi_reads_the_sign_in_screen() {
+    let session = ASession::started();
+    let strings = the_words_before_sign_in();
+    let tree = ReadAloudTree::before_sign_in(
+        &strings,
+        SignInShows::Fields {
+            whose: "disan",
+            name: "",
+            password_typed: true,
+            field: alo_shell::SignInField::Password,
+            said: None,
+        },
+    );
+    let pin = strings
+        .say(
+            &alo_shell::sign_in_words::ENTER_YOUR_PIN.key(),
+            &Filling::nothing(),
+        )
+        .text()
+        .to_owned();
+    for (how, walked) in read_by_libatspi(&session, &tree) {
+        assert!(
+            read_a_thing_called(&walked, &pin),
+            "libatspi ({how}) did not read the PIN field:\n{}",
+            walked.join("\n")
+        );
+        assert!(
+            walked.iter().any(|line| line.contains("disan")),
+            "libatspi ({how}) did not read the greeting:\n{}",
+            walked.join("\n")
+        );
+    }
+}
+
+/// **What libatspi read of `tree`**, served on `session`'s accessibility bus:
+/// each walk's lines, beside how it walked — after holding what must be true
+/// of any tree alo serves. Both walks read the same tree the agent's reader
+/// reads, libatspi says nothing on its standard error, and every answer on
+/// the wire carries the signature at-spi2-core's XML gives it.
+fn read_by_libatspi(session: &ASession, tree: &ReadAloudTree) -> Vec<(&'static str, Vec<String>)> {
+    let bus = ReadAloudBus::serving(&session.accessibility, tree).expect("the tree is served");
     let monitor = AMonitor::of(&session.accessibility);
     bus.embedded().expect("the registry embedded this machine");
     let reader = session.reader();
@@ -396,6 +509,7 @@ fn libatspi_reads_the_whole_tree_with_nothing_to_complain_of() {
         .collect();
     assert!(expected.len() > 1, "the agent's reader read no tree");
 
+    let mut walks = Vec::new();
     for how in ["one-question-at-a-time", "cached"] {
         let (walked, said) = session.libatspi_walks(how);
         assert!(
@@ -407,18 +521,7 @@ fn libatspi_reads_the_whole_tree_with_nothing_to_complain_of() {
             read, expected,
             "libatspi ({how}) read a different tree from the one served"
         );
-        for control in Surface::Settings.read_aloud() {
-            let name = strings
-                .say(&control.name.key(), &Filling::nothing())
-                .text()
-                .to_owned();
-            assert!(
-                walked
-                    .iter()
-                    .any(|line| line.ends_with(&format!("\t{name}"))),
-                "libatspi ({how}) did not read Settings' {name:?}"
-            );
-        }
+        walks.push((how, walked));
     }
 
     let answers = monitor.answers_to(bus.answers_as());
@@ -450,4 +553,5 @@ fn libatspi_reads_the_whole_tree_with_nothing_to_complain_of() {
         assert!(said.is_ok(), "{asked} was refused: {said:?}");
     }
     drop(bus);
+    walks
 }

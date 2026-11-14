@@ -318,6 +318,7 @@ mod the_password_sheets_words;
 mod the_pointer_drawn;
 mod the_pointers_look;
 mod the_screen_reader_switch;
+mod the_screens_before_sign_in_as_read;
 /// alo putting words of its own on the clipboard.
 mod the_shell_copies;
 pub mod what_is_on_the_clipboard;
