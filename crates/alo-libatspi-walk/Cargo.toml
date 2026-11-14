@@ -1,0 +1,55 @@
+[package]
+name = "alo-libatspi-walk"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+description = "Walks an accessibility tree with libatspi itself, the C library Orca reads through, so alo's own tree is tested by the reader's library rather than by one we wrote."
+
+# A test instrument, never shipped: nothing in the image depends on this
+# package, and no crate that ships depends on it.
+
+[[bin]]
+name = "alo-libatspi-walk"
+path = "src/main.rs"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# libatspi, GLib and GObject are opened when the walk starts, by their
+# sonames, rather than linked: the runtime libraries come with at-spi2-core
+# and GTK on every machine that runs the suite, and linking would need their
+# development packages on every one of them too.
+libloading = "0.8"
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+alo-access = { path = "../alo-access" }
+alo-adapters = { path = "../alo-adapters" }
+alo-portals = { path = "../alo-portals" }
+alo-saying = { path = "../alo-saying" }
+alo-shell = { path = "../alo-shell" }
+alo-strings = { path = "../alo-strings" }
+rustix.workspace = true
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+
+# **Not `workspace = true`, and this is the one difference.** The workspace
+# forbids `unsafe_code`, and a level of *forbid* cannot be lifted by any module.
+# Calling a C library is `unsafe` by definition, so this package **denies** it
+# instead, and exactly one file — `src/libatspi.rs` — allows it, the shape
+# `alo-bounding-kernel` uses for the one file that talks to the kernel. Every
+# other lint below is the workspace's, copied, so nothing else is looser here.
+[lints.rust]
+unsafe_code = "deny"
+missing_docs = "warn"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+indexing_slicing = "deny"
+missing_docs_in_private_items = "warn"
+undocumented_unsafe_blocks = "deny"
+
+[lints.rustdoc]
+private_intra_doc_links = "deny"
