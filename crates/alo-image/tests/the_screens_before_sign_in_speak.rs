@@ -85,6 +85,7 @@ fn the_recipe_ships_enables_and_starts_the_relay() {
         "test -L /etc/systemd/user/default.target.wants/alo-reading-the-sign-in-screen.service",
         "timeout 2 /usr/libexec/alo-reading-the-sign-in-screen",
         "grep -q 'waiting for the sign-in screen'",
+        "grep -q '^audio:' /etc/group || grep '^audio:' /usr/lib/group >> /etc/group",
         "id -nG alo-greeter | tr ' ' '\\n' | grep -qx audio",
     ] {
         assert!(recipe.contains(asked), "the recipe no longer asks: {asked}");
