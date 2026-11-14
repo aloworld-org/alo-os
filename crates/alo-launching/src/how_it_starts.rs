@@ -77,6 +77,7 @@ pub fn how_it_starts(
         name: entry.name.as_deref(),
         location,
         link: None,
+        file: None,
     };
     road_for(identifier, entry, &filling)
 }
@@ -114,6 +115,7 @@ pub fn how_it_starts_with_a_link(
         name: entry.name.as_deref(),
         location,
         link: Some(link),
+        file: None,
     };
     let with = road_for(identifier, entry, &filling).map_err(WhyNotWithALink::CannotStart)?;
     match (with, without) {
@@ -139,7 +141,7 @@ pub fn how_it_starts_with_a_link(
 }
 
 /// The road for an entry already found fit to start, with these field codes.
-fn road_for(
+pub(crate) fn road_for(
     identifier: &str,
     entry: &TheEntry,
     filling: &Filling<'_>,

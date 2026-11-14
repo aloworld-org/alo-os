@@ -309,6 +309,7 @@ appearance.verb.set-the-scheme.scheme	which of the two to use
 appearance.verb.set-the-scheme.sentence	use the {scheme} appearance from now on, whatever the time is
 applications.called	{called} ({application})
 applications.could-not-ask	this machine could not reach {application} — nothing was changed
+applications.could-not-start-with-it	{application} could not be started with {path} — nothing was opened
 applications.entry.no-identifier	an application with no identifier cannot be reached — an identifier is what a grant is made over and what a verb names
 applications.entry.not-an-identifier	{application} is not an identifier — an identifier has no spaces and no folders in it, so this one could never arrive as an argument
 applications.it-did-not	{application} was asked and has not done it — it may be waiting for an answer from you
@@ -327,8 +328,11 @@ applications.links.no-web-browser	No web browser is installed on this machine, s
 applications.links.no-web-browser-choice-a-terminal	{chosen}, which you chose as your web browser, is a terminal, and a link is never handed to a terminal. No web browser is installed, so the web link was not opened
 applications.links.no-web-browser-choice-gone	{chosen}, which you chose as your web browser, is no longer installed, and no other web browser is, so the web link was not opened
 applications.no-window	{application} has no window open here — open it first, or name one that is open
+applications.not-a-file-to-hand-over	{path} cannot be handed to an application from here, because its name is not text or is too long — nothing was opened
 applications.not-installed	nothing installed on this machine is {application} — install it, or name one that is here
 applications.nothing-starts-it	{application}'s entry gives this machine no way to start it — nothing was changed
+applications.opened-in-alos-copy	{path} was opened in alo's own copy of {application}
+applications.opened-in-their-window	{path} was opened in your own window of {application}, as you chose in Settings
 applications.opens.chosen	{application} opens {what}, because you chose it for that
 applications.opens.declared	{application} opens {what}, because it says it can and you have not chosen an application for it
 applications.opens.declared-instead	{application} opens {what}, because it says it can — {chosen}, which you chose for it, is no longer installed
@@ -337,6 +341,7 @@ applications.opens.nothing-choice-not-installed	nothing on this machine opens {w
 applications.ours.settings	Settings
 applications.starts-from-its-command	{application} starts from the command its own entry names, never from one alo wrote
 applications.starts-over-the-bus	{application} starts by being asked over the session bus, as its entry says
+applications.takes-no-file	{application}'s entry gives this machine no way to hand it a file — nothing was opened
 applications.verb.arrange-application.argument.application	which application's window to move
 applications.verb.arrange-application.argument.where	where on the screen the window goes
 applications.verb.arrange-application.purpose	put an application's window somewhere on the screen
@@ -356,6 +361,12 @@ applications.verb.open-application.changes	Opens it, or brings its window to the
 applications.verb.open-application.leaves	No second copy is started, and no other window is moved or closed.
 applications.verb.open-application.purpose	start an application, so it is running and on the screen
 applications.verb.open-application.sentence	open {application}
+applications.verb.open-file-in-application.argument.application	which application opens it
+applications.verb.open-file-in-application.argument.path	the file or folder to open
+applications.verb.open-file-in-application.changes	Opens it in alo's own copy of the application, or in your own window if you chose that in Settings.
+applications.verb.open-file-in-application.leaves	The file is not changed, and no other window is moved or closed.
+applications.verb.open-file-in-application.purpose	open a file or folder in an application the person names
+applications.verb.open-file-in-application.sentence	open {path} in {application}
 applications.where.left-half	on the left half of the screen
 applications.where.right-half	on the right half of the screen
 applications.where.whole-screen	across the whole screen

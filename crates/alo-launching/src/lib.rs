@@ -25,7 +25,10 @@
 //! the choice the law requires. And what runs is never text a caller supplied:
 //! it is the `Exec` line of a desktop entry already installed on the machine,
 //! found by its identifier, the same line every other desktop would run. There
-//! is no argument a caller can add.
+//! is no argument a caller can add — **except what the entry's own field codes
+//! stand for**: a link the person followed (2026-11-12), or a file alo was
+//! approved to open there (`how_it_starts_with_a_file`, 2026-11-14), each one
+//! argument where the entry put `%u`, `%U`, `%f` or `%F`, and nowhere else.
 //!
 //! **The agent's approved `open` takes this road too**, by the owner's
 //! decision of 2026-10-31 (ADR 0108): after the person's approval and their
@@ -45,6 +48,7 @@
 pub mod alos_copy;
 pub mod describing_themselves;
 pub mod how_it_starts;
+pub mod how_it_starts_with_a_file;
 pub mod the_command;
 pub mod the_entry;
 pub mod the_environment;
@@ -60,6 +64,7 @@ pub use describing_themselves::{
 pub use how_it_starts::{
     HowItStarts, WhyItCannotStart, WhyNotWithALink, how_it_starts, how_it_starts_with_a_link,
 };
+pub use how_it_starts_with_a_file::{WhyNotWithAFile, how_it_starts_with_a_file};
 pub use the_command::{Filling, WhyNotACommand, the_command_in};
 pub use the_entry::TheEntry;
 pub use the_environment::{what_an_application_is_handed, what_the_session_is_told};

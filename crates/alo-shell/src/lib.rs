@@ -179,6 +179,9 @@ pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
 mod a_reader_presses_in_settings;
 pub use a_reader_presses::WhatAReaderPressCameTo;
+/// A file alo was approved to open in an application, handed to the desktop
+/// with the connection that asked (2026-11-14).
+pub mod a_file_alo_opens;
 /// The keyboard layouts a text alo types is typed through (ADR 0153).
 mod a_layout_for_a_text;
 mod a_scale_held_to_what_draws;
