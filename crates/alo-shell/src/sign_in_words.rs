@@ -37,7 +37,36 @@ pub const ENTER_YOUR_PIN: Word = Word::saying("shell.sign-in.enter-your-pin", "E
          the three letters.",
     );
 
+/// What the entry says before anything is typed into it, for a person who
+/// chose *Use password only* at the first start — the design's *Password*
+/// state (`367:25544`).
+pub const ENTER_YOUR_PASSWORD: Word =
+    Word::saying("shell.sign-in.enter-your-password", "Enter your password").noting(
+        "Inside the empty field on the sign-in screen, for a person who signs in with a password \
+         rather than a PIN, telling them what to type.",
+    );
+
+/// What the entry says for a person who signs in with this kind of secret.
+///
+/// **One choice, made here**, so the drawing and the tree a screen reader
+/// reads cannot name the field differently. Until 2026-11-14 both said *Enter
+/// your PIN* to everybody, and a person who chose *Use password only* was
+/// asked for a PIN they never set.
+#[must_use]
+pub const fn enter_your(secret: alo_greeting::SecretKind) -> Word {
+    match secret {
+        alo_greeting::SecretKind::Pin => ENTER_YOUR_PIN,
+        alo_greeting::SecretKind::Password => ENTER_YOUR_PASSWORD,
+    }
+}
+
 /// The line that opens the other ways this person can sign in.
+///
+/// **Declared and not drawn**, since 2026-11-14. The design's rule is *other
+/// methods only when available*, and no account on alo OS has a second way in
+/// yet — one secret, a PIN or a password, and no fingerprint. The line opened
+/// nothing when pressed, so drawing it offered a person something that does
+/// not exist. The change that gives an account a second way draws it again.
 pub const OTHER_WAYS: Word = Word::saying("shell.sign-in.other-ways", "Other ways to sign in")
     .noting(
         "A line under the entry on the sign-in screen. Pressing it offers the other ways this \
@@ -59,9 +88,10 @@ pub const SWITCH_PERSON: Word = Word::saying("shell.sign-in.switch-person", "Swi
     );
 
 /// Every string this screen draws.
-pub const SIGN_IN_WORDS: [Word; 5] = [
+pub const SIGN_IN_WORDS: [Word; 6] = [
     GREETING,
     ENTER_YOUR_PIN,
+    ENTER_YOUR_PASSWORD,
     OTHER_WAYS,
     ACCESSIBILITY,
     SWITCH_PERSON,

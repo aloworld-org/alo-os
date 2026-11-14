@@ -28,7 +28,7 @@
 //! never sees it again. `tests/nothing_here_keeps_the_password.rs` reads the
 //! source for that rather than trusting this paragraph.
 
-use alo_accounts::{Accounts, Session};
+use alo_accounts::{Accounts, SecretKind, Session};
 use alo_sessiond::{Answered, Knock};
 
 use crate::greeted::Greeted;
@@ -175,6 +175,17 @@ impl<K: Knocking> Greeting<K> {
         self.accounts.name_of(self.person)
     }
 
+    /// Whether that person signs in with a PIN or a password, as they chose
+    /// at the first start — so the sign-in screen asks for the one they have.
+    ///
+    /// [`None`] when this machine has no account with that number, as for
+    /// [`Self::whose_name`], and only ever this greeter's own person, for the
+    /// reason given there.
+    #[must_use]
+    pub fn whose_secret(&self) -> Option<SecretKind> {
+        self.accounts.kind_of(self.person)
+    }
+
     /// The door this greeter knocks at.
     ///
     /// Borrowed rather than handed over: a surface that took the door out of a
@@ -220,8 +231,15 @@ impl<K: Knocking> Greeting<K> {
     /// The signing-in half is [`Self::signs_in`] **called and not copied**.
     /// A second road to a knock is the one thing this file's shape exists to
     /// prevent, and making an account would be a tempting place to open one.
+    ///
+    /// # Which kind of secret it is
+    ///
+    /// `kind` is what the person chose on the first start — *Add a PIN?* or
+    /// *Use password only* — and is kept with the account, so the sign-in
+    /// screen on every later boot asks for that one ([`Self::whose_secret`]).
+    /// It changes nothing about how the secret is checked.
     #[cfg(unix)]
-    pub fn makes_an_account(&mut self, name: &str, password: &str) -> Greeted {
+    pub fn makes_an_account(&mut self, name: &str, password: &str, kind: SecretKind) -> Greeted {
         // **Refused here rather than trusted to the screen.** The surface
         // offers this only at `MakeAnAccount`, and a door that believed the
         // surface would be a door that creates a second account the day a
@@ -238,7 +256,7 @@ impl<K: Knocking> Greeting<K> {
         // `Session::opened` will insist on below; a surface that could choose
         // it could make an account that authenticates and can never sign in.
         let person = self.person;
-        if let Err(why) = self.accounts.created(name, person, password) {
+        if let Err(why) = self.accounts.created_with(name, person, password, kind) {
             return Greeted::Refused(why.word().key());
         }
         if let Err(why) = alo_accounts::kept(&store, &self.accounts) {

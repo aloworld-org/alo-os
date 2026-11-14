@@ -1177,6 +1177,11 @@ pub use lock_background::LockBackground;
 pub use lock_raster::LockLook;
 pub use lock_surface::{LockPressed, LockSurface};
 
+/// Whether a person signs in with a PIN or a password, as
+/// [`SignInShows::Fields`] carries it — handed on so whoever builds one need
+/// not reach `alo-greeting` for it.
+pub use alo_greeting::SecretKind;
+
 #[cfg(test)]
 #[cfg(test)]
 mod buffers_clients_hand_over_tests;

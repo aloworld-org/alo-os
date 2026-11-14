@@ -249,6 +249,7 @@ fn the_sign_in_screen_greets_and_its_one_field_has_the_keyboard() {
         &strings,
         SignInShows::Fields {
             whose: "disan",
+            secret: alo_greeting::SecretKind::Pin,
             name: "",
             password_typed: true,
             field: SignInField::Name,
@@ -277,6 +278,76 @@ fn the_sign_in_screen_greets_and_its_one_field_has_the_keyboard() {
     assert!(keyboard.description.is_empty());
 }
 
+/// **A person who chose a password hears *Enter your password*, and never a
+/// PIN.**
+///
+/// Three walks of a booted machine (2026-11-12, -13, -14) pressed *Use
+/// password only* at the first start and met a field called *Enter your PIN*
+/// on every boot after; a screen reader read them the same wrong name.
+#[test]
+fn a_person_who_chose_a_password_is_asked_for_a_password() {
+    let strings = words();
+    let tree = ReadAloudTree::before_sign_in(
+        &strings,
+        SignInShows::Fields {
+            whose: "disan",
+            secret: alo_greeting::SecretKind::Password,
+            name: "",
+            password_typed: false,
+            field: SignInField::Password,
+            said: None,
+        },
+    );
+    let keyboard = the_keyboard(&tree);
+    assert_eq!(keyboard.role, access_roles::number_of(Role::PasswordEntry));
+    assert_eq!(
+        keyboard.name,
+        word(&strings, crate::sign_in_words::ENTER_YOUR_PASSWORD)
+    );
+    let pin = word(&strings, crate::sign_in_words::ENTER_YOUR_PIN);
+    let (_, on_it) = the_screen(&tree);
+    assert!(
+        on_it.iter().all(|node| node.name != pin),
+        "a person with no PIN is read a PIN field"
+    );
+}
+
+/// **The screen offers no other way to sign in**, for a PIN or a password,
+/// because no account has one: a reader that announced a button the screen
+/// does not draw would send somebody looking for it.
+#[test]
+fn no_other_way_to_sign_in_is_read_out() {
+    let strings = words();
+    let other_ways = word(&strings, crate::sign_in_words::OTHER_WAYS);
+    for secret in [
+        alo_greeting::SecretKind::Pin,
+        alo_greeting::SecretKind::Password,
+    ] {
+        let tree = ReadAloudTree::before_sign_in(
+            &strings,
+            SignInShows::Fields {
+                whose: "disan",
+                secret,
+                name: "",
+                password_typed: false,
+                field: SignInField::Password,
+                said: None,
+            },
+        );
+        let (_, on_it) = the_screen(&tree);
+        assert!(
+            on_it.iter().all(|node| node.name != other_ways),
+            "{secret:?}: *Other ways to sign in* is read out, and there is no other way"
+        );
+        assert!(
+            on_it.iter().any(|node| node.name
+                == word(&strings, crate::sign_in_words::SWITCH_PERSON)
+                && node.role == access_roles::number_of(Role::Button)),
+            "{secret:?}: *Switch person* went with it"
+        );
+    }
+}
+
 /// **A refusal is announced as it appears**, so somebody who cannot see the
 /// line under the field hears that the PIN was not right.
 #[test]
@@ -287,6 +358,7 @@ fn a_refusal_is_announced() {
         &strings,
         SignInShows::Fields {
             whose: "disan",
+            secret: alo_greeting::SecretKind::Pin,
             name: "",
             password_typed: false,
             field: SignInField::Password,

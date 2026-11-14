@@ -456,6 +456,7 @@ fn libatspi_reads_the_sign_in_screen() {
         &strings,
         SignInShows::Fields {
             whose: "disan",
+            secret: alo_shell::SecretKind::Pin,
             name: "",
             password_typed: true,
             field: alo_shell::SignInField::Password,

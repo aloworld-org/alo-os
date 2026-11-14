@@ -380,7 +380,6 @@ fn every_label_and_mark_is_drawn_and_not_merely_placed() {
         ("the greeting", at.account),
         ("the submit arrow", at.submit),
         ("back to lock", at.back),
-        ("other ways to sign in", at.other_ways),
         ("accessibility", at.accessibility),
         ("switch person", at.switch_person),
     ] {
@@ -429,6 +428,99 @@ fn every_label_and_mark_is_drawn_and_not_merely_placed() {
         "the power control has only {marked} marked pixels: it is laid out, answered by the \
          hit test, and not drawn"
     );
+}
+
+/// The screen of a machine whose one account, *ada*, signs in with this kind
+/// of secret.
+fn whose_secret_is(kind: alo_greeting::SecretKind) -> SignInPicture {
+    let mut store = Accounts::none().unwrap();
+    store.created_with("ada", 1000, "irrelevant", kind).unwrap();
+    let words = crate::what_this_machine_can_say().unwrap();
+    drawn(
+        &SignInScreen::of(Ok(Greeting::of(store, 1000, NoDoor)), words),
+        light(),
+    )
+}
+
+/// Every inked box whose area meets this rectangle.
+fn inked_within(
+    picture: &SignInPicture,
+    box_of: smithay::utils::Rectangle<i32, smithay::utils::Logical>,
+) -> Vec<&crate::painted::Inked> {
+    let same: smithay::utils::Rectangle<i32, smithay::utils::Physical> =
+        smithay::utils::Rectangle::new(
+            (box_of.loc.x, box_of.loc.y).into(),
+            (box_of.size.w, box_of.size.h).into(),
+        );
+    picture
+        .inked
+        .iter()
+        .filter(|ink| {
+            ink.area
+                .intersection(crate::painted::drawn_at(same))
+                .is_some()
+        })
+        .collect()
+}
+
+/// **A person who chose a PIN and a person who chose a password are asked
+/// for different things, inside the entry and nowhere else.**
+///
+/// Three walks of a booted machine (2026-11-12, -13, -14) pressed *Use
+/// password only* at the first start and were asked *Enter your PIN* on every
+/// boot after. The words themselves are held by
+/// `crate::the_screens_before_sign_in_as_read`'s tests, which read the field's
+/// name; this holds that the drawing moved with them, and only where the
+/// placeholder is.
+#[test]
+fn a_pin_and_a_password_are_asked_for_differently_inside_the_entry() {
+    let pin = whose_secret_is(alo_greeting::SecretKind::Pin);
+    let password = whose_secret_is(alo_greeting::SecretKind::Password);
+    let at = crate::sign_in_layout::sign_in_laid_out(smithay::utils::Size::from((800, 600)))
+        .expect("this size lays out");
+    assert_ne!(
+        inked_within(&pin, at.entry),
+        inked_within(&password, at.entry),
+        "the entry says the same to a PIN and to a password"
+    );
+    let outside = |picture: &SignInPicture| -> Vec<crate::painted::Inked> {
+        let entry = inked_within(picture, at.entry);
+        picture
+            .inked
+            .iter()
+            .filter(|ink| !entry.contains(ink))
+            .cloned()
+            .collect()
+    };
+    assert_eq!(
+        outside(&pin),
+        outside(&password),
+        "choosing a password changed something on the screen besides the entry"
+    );
+    assert_eq!(pin.surface, password.surface);
+}
+
+/// **Nothing is drawn where *Other ways to sign in* was laid out**, because no
+/// account has another way in (`crate::sign_in_words::OTHER_WAYS`) — for a
+/// PIN, and for a password.
+#[test]
+fn no_other_way_to_sign_in_is_offered_where_none_exists() {
+    let at = crate::sign_in_layout::sign_in_laid_out(smithay::utils::Size::from((800, 600)))
+        .expect("this size lays out");
+    for kind in [
+        alo_greeting::SecretKind::Pin,
+        alo_greeting::SecretKind::Password,
+    ] {
+        let picture = whose_secret_is(kind);
+        let found: usize = inked_within(&picture, at.other_ways)
+            .into_iter()
+            .map(marked)
+            .sum();
+        assert_eq!(
+            found, 0,
+            "{kind:?}: ink where *Other ways to sign in* was, and there is no other way"
+        );
+    }
 }
 
 /// How many pixels of an inked box are ink rather than the ground it was

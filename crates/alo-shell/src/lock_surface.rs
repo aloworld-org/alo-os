@@ -98,6 +98,9 @@ impl<N> LockSurface<N> {
             // this is unused rather than wrong — and empty rather than a name
             // this surface would have to go and look up.
             whose: "",
+            // **A password**, for the same reason: no account is read here,
+            // and `WhoseScreen::InsideAnother` draws no placeholder.
+            secret: alo_greeting::SecretKind::Password,
             name: self.entry.name(),
             password_typed: self.entry.has_password(),
             field: self.entry.field(),

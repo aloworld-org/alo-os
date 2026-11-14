@@ -22,7 +22,7 @@
 //! | *Switch person* | clears everything typed and waits at the name again | that **is** the whole of it: the owner's direction says switching people clears the previous credential entry, and the screen's `Clear` does precisely that |
 //! | *Back to lock* | nothing | there is no lock screen on this machine to go back to until `crate::lock_raster`'s composition is decided — the question is written where `WhoseScreen` is declared |
 //! | *Accessibility* | nothing | the surface it opens does not exist yet. The keyboard road the owner asked for — *accessibility must work before sign-in, including keyboard navigation* — is `crate::sign_in_seat`'s and already works |
-//! | *Other ways to sign in* | nothing | fingerprint needs a real sensor result, which `ADR 0024`'s authenticator does not offer yet |
+//! | *Other ways to sign in* | nothing | fingerprint needs a real sensor result, which `ADR 0024`'s authenticator does not offer yet — and since 2026-11-14 the line **is not drawn**, because no account has another way in (`crate::sign_in_words::OTHER_WAYS`); its place is still laid out and a press there is still nothing |
 //! | the power target | **nothing, and that is enforced here** | see below |
 //!
 //! # The power target is answered with nothing, on purpose

@@ -125,7 +125,11 @@ fn nothing_here_verifies_a_password_itself() {
             if line.starts_with("//") || line.contains("fn ") {
                 continue;
             }
-            if line.contains("password)") {
+            // **And where it is handed on beside the kind of secret it is**
+            // (2026-11-14): `password, kind)` ends no `password)`, so the
+            // line that makes the first account would otherwise have left
+            // this check without anybody noticing.
+            if line.contains("password)") || line.contains("password, kind)") {
                 handed_on.push(format!("{}: {line}", at.display()));
             }
         }
@@ -134,10 +138,17 @@ fn nothing_here_verifies_a_password_itself() {
         !handed_on.is_empty(),
         "no line carrying a password was found at all, so nothing below was checked"
     );
+    assert!(
+        handed_on
+            .iter()
+            .any(|one| one.contains("self.accounts.created_with(name, person, password, kind)")),
+        "the line that makes the first account was not read, so its road was not checked: \
+         {handed_on:#?}"
+    );
     for one in &handed_on {
         assert!(
             one.contains("self.accounts.signs_in(name, password)")
-                || one.contains("self.accounts.created(name, person, password)")
+                || one.contains("self.accounts.created_with(name, person, password, kind)")
                 || one.contains("self.signs_in(name, password)")
                 // ADR 0150: once verified, to what keeps the system's list in
                 // step — the one other place it goes, and it goes nowhere here.

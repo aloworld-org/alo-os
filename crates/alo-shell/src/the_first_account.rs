@@ -132,6 +132,16 @@ impl TheFirstAccount {
         &self.name
     }
 
+    /// **Which kind of secret is being typed** — a PIN, or a password after
+    /// *Use password only* — and so which the account is made with; [`None`]
+    /// on the name sheet, where no secret is asked for yet.
+    pub(crate) const fn the_secret_is(&self) -> Option<ASecret> {
+        match self.sheet {
+            TheAccountSheet::Secret(kind) => Some(kind),
+            TheAccountSheet::Name => None,
+        }
+    }
+
     /// The secret, lent for the one call that makes the account.
     pub(crate) fn secret(&self) -> &str {
         self.secret.as_str()

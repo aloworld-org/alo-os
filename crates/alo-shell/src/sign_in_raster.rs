@@ -293,6 +293,7 @@ pub(crate) fn picture(
         }
         SignInShows::Fields {
             whose: who,
+            secret,
             name,
             password_typed,
             field,
@@ -413,9 +414,14 @@ pub(crate) fn picture(
                 // **What the entry says before anything is typed into it.**
                 // Nothing typed, so nothing to mask: the placeholder is drawn
                 // only while the field is empty, and never over the dots.
+                //
+                // **It names the secret this person chose**: *Enter your PIN*,
+                // or *Enter your password* for somebody who pressed *Use
+                // password only* (the design's `367:25544`). It said PIN to
+                // everybody until 2026-11-14.
                 if !password_typed {
                     let hint = words.say(
-                        &crate::sign_in_words::ENTER_YOUR_PIN.key(),
+                        &crate::sign_in_words::enter_your(secret).key(),
                         &alo_strings::Filling::nothing(),
                     );
                     let shaped = sentence(
@@ -441,25 +447,16 @@ pub(crate) fn picture(
                 // 2026-10-12, while **nothing drew a single one of their
                 // labels** — four controls a person could press and could not
                 // see. This is the half that was missing.
-                for (word, box_of, centred, metrics) in [
-                    (
-                        crate::sign_in_words::OTHER_WAYS,
-                        at.other_ways,
-                        true,
-                        measure.metrics(),
-                    ),
-                    (
-                        crate::sign_in_words::ACCESSIBILITY,
-                        at.accessibility,
-                        false,
-                        measure.label_metrics(),
-                    ),
-                    (
-                        crate::sign_in_words::SWITCH_PERSON,
-                        at.switch_person,
-                        false,
-                        measure.label_metrics(),
-                    ),
+                //
+                // **The row below the entry is left empty**, since 2026-11-14.
+                // It held *Other ways to sign in*, and the design's rule is
+                // *other methods only when available*: no account here has a
+                // second way in — one secret, a PIN or a password — and the
+                // line opened nothing when pressed. Drawing it offered a person
+                // something that does not exist (`crate::sign_in_words::OTHER_WAYS`).
+                for (word, box_of) in [
+                    (crate::sign_in_words::ACCESSIBILITY, at.accessibility),
+                    (crate::sign_in_words::SWITCH_PERSON, at.switch_person),
                 ] {
                     if box_of.size.w <= 0 {
                         continue;
@@ -469,18 +466,13 @@ pub(crate) fn picture(
                         fonts,
                         said.text(),
                         box_of.size.w,
-                        metrics,
+                        measure.label_metrics(),
                         colours.ground,
                         colours.ink,
                     )
                     .cropped_to_its_ink();
-                    let x = if centred {
-                        box_of.loc.x + (box_of.size.w - shaped.width) / 2
-                    } else {
-                        box_of.loc.x
-                    };
                     let y = box_of.loc.y + (box_of.size.h - shaped.height) / 2;
-                    drawn.inked.extend(shaped.placed(x, y, height));
+                    drawn.inked.extend(shaped.placed(box_of.loc.x, y, height));
                 }
 
                 // **What is typed, masked.** A band per nothing: the design shows
