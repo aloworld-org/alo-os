@@ -272,7 +272,7 @@ mod the_arrows_move_a_list {
         assert_eq!(SignInKey::of(Keysym::s, &both), SignInKey::TheScreenReader);
         assert_eq!(SignInKey::of(Keysym::S, &both), SignInKey::TheScreenReader);
         assert_eq!(
-            SignInKey::of(Keysym::s, &nothing_held()),
+            SignInKey::of(Keysym::s, &ModifiersState::default()),
             SignInKey::Letter('s')
         );
         for one in [

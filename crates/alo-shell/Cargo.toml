@@ -233,6 +233,9 @@ thiserror.workspace = true
 # at-spi2's (ADR 0011) and this crate serves its own surfaces on it; no
 # reader of our own is written, here or anywhere.
 zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+# What crosses between the sign-in screen and the reader that speaks it, one
+# line of JSON per message (`the_sign_in_screen_on_the_wire`, ADR 0155).
+serde_json = "1"
 drm = "=0.14.1"
 
 [dev-dependencies]
