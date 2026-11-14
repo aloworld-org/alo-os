@@ -219,6 +219,12 @@ impl Server {
             self.shortcuts = Some(shortcuts);
             return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
         }
+        // **And Alt+F3 and Super+Up on the terminal or a task window**, for
+        // the same reason: `crate::a_chord_places_alos_own_window`.
+        if self.a_chord_places_alos_own_window(&shortcuts, chord) {
+            self.shortcuts = Some(shortcuts);
+            return names.map_or(WhatTheChordCameTo::NotBound, WhatTheChordCameTo::Carried);
+        }
         // **A terminal, answered next and for the same reason: it borrows
         // nothing.** One push onto `Server::asked_to_start`, no window, no
         // places and no clock — so the layers below are never entered for it

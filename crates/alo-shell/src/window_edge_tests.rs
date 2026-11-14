@@ -179,10 +179,12 @@ fn revealing_an_applications_added_controls_never_moves_its_window() {
     }
 }
 
-/// **A task window and alo's own windows carry Minimise and Close** — alo's
-/// own windows Close alone until they could be put aside (design `27:2`).
+/// **The terminal and a task window carry all three; Settings and the record
+/// Minimise and Close** — the owner's *"Yes add that"* and *"Yes, it too"* of
+/// 2026-11-14, and Settings and the record until their pages lay out at any
+/// size.
 #[test]
-fn a_task_window_and_alos_own_windows_carry_minimise_and_close() {
+fn alos_windows_carry_what_their_panels_can_reach() {
     let does = |decorations| -> Vec<OnTheEdge> {
         edge_of(specimen(), decorations, true, roomy())
             .controls
@@ -190,10 +192,13 @@ fn a_task_window_and_alos_own_windows_carry_minimise_and_close() {
             .map(|it| it.does)
             .collect()
     };
-    assert_eq!(
-        does(Decorations::ATaskWindow),
-        vec![OnTheEdge::Minimise, OnTheEdge::Close]
-    );
+    let all_three = vec![
+        OnTheEdge::WindowActions,
+        OnTheEdge::Minimise,
+        OnTheEdge::Close,
+    ];
+    assert_eq!(does(Decorations::ATaskWindow), all_three);
+    assert_eq!(does(Decorations::AlosOwnWindowThatIsPlaced), all_three);
     assert_eq!(
         does(Decorations::AlosOwnWindow),
         vec![OnTheEdge::Minimise, OnTheEdge::Close]
@@ -202,11 +207,16 @@ fn a_task_window_and_alos_own_windows_carry_minimise_and_close() {
         edge_of(specimen(), Decorations::ATaskWindow, true, roomy()).title,
         None
     );
-    assert!(
-        edge_of(specimen(), Decorations::AlosOwnWindow, true, roomy())
-            .title
-            .is_some()
-    );
+    for carries_its_title in [
+        Decorations::AlosOwnWindow,
+        Decorations::AlosOwnWindowThatIsPlaced,
+    ] {
+        assert!(
+            edge_of(specimen(), carries_its_title, true, roomy())
+                .title
+                .is_some()
+        );
+    }
 }
 
 /// **The band sits above the window, and the window is not moved.**

@@ -468,3 +468,4 @@ that part is **not built**.
 | 4 | Capture & export | not built |
 | 5 | Every application's window offers the three; alo adds only the ones an application that draws its own header does not show (the owner, 2026-11-12) | #1189 |
 | 5a | alo's own windows — the terminal, Settings, the record and the task windows — draw no controls at rest, through the same reveal as every band; the KVM walk checks the terminal at rest | this change |
+| 5b | Window actions on the terminal and the task windows (the owner, 2026-11-14: *"Yes add that"*, *"Yes, it too"*, *"Terminal first"*): the one panel, keyed to any band; Left, Maximise / Restore and Right, previewed, by pointer, by Alt+F3 and the arrows and by Super+Up; the KVM walk maximises the terminal. **Not yet:** Full screen and Help with this window on alo's windows (not drawn until they work), Settings and the record (their pages lay out at one size), a reader's press on a task window's Window actions | this change |

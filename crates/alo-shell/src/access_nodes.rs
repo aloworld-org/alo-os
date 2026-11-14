@@ -493,7 +493,14 @@ impl ReadAloudTree {
                     attributes: Vec::new(),
                 },
             );
-            for control in what_a_reader_is_told(Decorations::ATaskWindow) {
+            // **Window actions is not in a task window's tree yet**: a reader's
+            // press has no road to its panel (`Pressed` has none), and a node a
+            // reader can find and not press is worse than none. The panel is
+            // reached with Alt+F3, which a reader's keyboard has.
+            for control in what_a_reader_is_told(Decorations::ATaskWindow)
+                .into_iter()
+                .filter(|control| control.does != Some(alo_shortcuts::Action::WindowOptions))
+            {
                 let press = match control.does {
                     Some(alo_shortcuts::Action::CloseWindow) => Some(Pressed::CloseTheTask(*which)),
                     Some(alo_shortcuts::Action::MinimiseWindow) => {

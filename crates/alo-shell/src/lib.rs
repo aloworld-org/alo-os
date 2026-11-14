@@ -81,6 +81,8 @@ mod a_chord_moves_the_keyboard_between_areas;
 mod a_chord_opens_a_terminal;
 mod a_chord_opens_the_bar;
 mod a_chord_opens_the_record;
+/// Alt+F3 and Super+Up on the terminal or a task window with the keys.
+mod a_chord_places_alos_own_window;
 /// The Minimise chord puts the one of alo's own windows with the keys aside.
 mod a_chord_puts_alos_own_window_aside;
 mod a_chord_reaches_its_action;
@@ -684,6 +686,8 @@ mod the_windows_on_this_place;
 /// Typing into the window in front, as key presses, to that one client (ADR 0153).
 pub mod typing_into_the_window_in_front;
 pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};
+mod alos_window_placed;
+mod alos_windows_panel;
 /// Closing alo's terminal: at once when idle, after a question when a command
 /// is running.
 mod closing_the_terminal;
@@ -809,6 +813,7 @@ mod where_the_bars_matches_rise;
 mod where_the_dock_is;
 mod where_the_market_opens;
 pub mod which_area_has_the_keyboard;
+mod which_band;
 mod which_card_the_seat_holds;
 mod which_display_a_window_is_on;
 pub mod which_preview_the_pointer_is_on;

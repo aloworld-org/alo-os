@@ -37,13 +37,14 @@
 
 use std::time::Instant;
 
-use alo_dock::revealing::{AMenu, Revealing, TheKeyboard, ThePointer};
+use alo_dock::revealing::{Revealing, ThePointer};
 use alo_put_aside::AlosOwnWindow;
 use smithay::utils::{Logical, Physical, Point, Rectangle, Size};
 
 use crate::the_controls_fade::TheFade;
 use crate::the_tasks_a_person_opened::WhichTask;
 use crate::the_window_edge_reveals::{a_band_is_told, how_shown, what_the_pointer_is};
+use crate::which_band::ABand;
 use crate::window_edge::{Decorations, WindowEdge, edge_of};
 
 /// Which of alo's windows a band hangs over.
@@ -60,7 +61,10 @@ impl AlosBand {
     #[must_use]
     pub(crate) const fn decorations(self) -> Decorations {
         match self {
-            Self::Its(_) => Decorations::AlosOwnWindow,
+            Self::Its(AlosOwnWindow::TheTerminal) => Decorations::AlosOwnWindowThatIsPlaced,
+            Self::Its(AlosOwnWindow::Settings | AlosOwnWindow::TheRecord) => {
+                Decorations::AlosOwnWindow
+            }
             Self::ATask(_) => Decorations::ATaskWindow,
         }
     }
@@ -116,6 +120,9 @@ impl crate::Server {
         // rest.
         self.alos_bands
             .retain(|band| present.iter().any(|(which, _)| *which == band.which));
+        let open: Vec<AlosBand> = present.iter().map(|(which, _)| *which).collect();
+        self.only_alos_bands_still_open(&open);
+        self.only_alos_windows_still_open_are_placed();
         let always = self.window_controls.are_always_shown();
         for (which, window) in present {
             let was = self.alos_bands.iter().find(|band| band.which == which);
@@ -127,11 +134,17 @@ impl crate::Server {
                 room,
             );
             let pointer = at.map_or(ThePointer::Elsewhere, |at| what_the_pointer_is(&edge, at));
-            // **No keyboard and no panel on these bands yet**: neither reaches
-            // them, so neither holds one open.
+            // **The keyboard and the panel hold it shown**, as on any band: the
+            // one table `crate::the_edge_takes_the_keyboard` keeps for every
+            // band says where they are.
+            let keyboard = self.where_the_keyboard_is_on_this_band(&ABand::Alos(which));
             let (revealed, fade) = a_band_is_told(
                 (revealed, was.map(|band| band.fade)),
-                (pointer, TheKeyboard::IsElsewhere, AMenu::IsNot),
+                (
+                    pointer,
+                    keyboard.whether_the_keyboard_holds_it(),
+                    keyboard.whether_a_menu_holds_it(),
+                ),
                 always,
                 (now, less_motion),
             );

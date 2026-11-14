@@ -199,3 +199,32 @@ fn help_with_this_window_is_there_only_while_alo_may_be_asked() {
         Some(WhatARowDoes::HelpWithThisWindow)
     );
 }
+
+/// **A panel without Full screen draws no row for it**, and with no row under
+/// the pictures it ends under them — the panel alo's own windows open until
+/// Full screen reaches them (`crate::alos_windows_panel`). Every application's
+/// panel keeps the frame's figures, which the tests above hold.
+#[test]
+fn a_panel_without_full_screen_ends_under_its_pictures() {
+    let how = HowTheWindowIs {
+        full_screen_is_not_offered: true,
+        ..HowTheWindowIs::default()
+    };
+    let menu = the_menu_of(&notes(), how, roomy()).expect("a panel");
+    let rows: Vec<WhatARowDoes> = menu.rows.iter().map(|it| it.does).collect();
+    assert_eq!(
+        rows,
+        vec![
+            WhatARowDoes::Left,
+            WhatARowDoes::Maximise,
+            WhatARowDoes::Right
+        ]
+    );
+    assert_eq!(menu.panel.size.h, 50 + 94 + 20);
+    assert_eq!(
+        menu.divider.size,
+        Size::from((0, 0)),
+        "a divider over nothing"
+    );
+    assert_eq!(menu.before_alo, None);
+}

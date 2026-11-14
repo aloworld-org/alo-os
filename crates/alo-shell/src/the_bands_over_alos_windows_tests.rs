@@ -107,14 +107,14 @@ fn the_terminals_band_draws_no_controls_at_rest() {
     );
 
     the_pointer_at(&mut server, on_the_band_over(window));
-    assert_eq!(drawn(&server), 2, "the control: its band shows two in it");
+    assert_eq!(drawn(&server), 3, "the control: its band shows three in it");
 
     the_pointer_at(&mut server, FAR_AWAY);
     assert_eq!(drawn(&server), 0, "they stayed after the pointer left");
 
     server.the_window_controls_are(alo_appearance::WindowControls::Always);
     the_pointer_at(&mut server, FAR_AWAY);
-    assert_eq!(drawn(&server), 2, "Always show window controls was ignored");
+    assert_eq!(drawn(&server), 3, "Always show window controls was ignored");
 }
 
 /// **A press where a hidden control would be reaches no control**: Close is
@@ -132,7 +132,7 @@ fn a_hidden_close_on_the_terminal_is_not_pressed() {
                 .expect("the terminal is drawn"),
             100,
         ),
-        crate::window_edge::Decorations::AlosOwnWindow,
+        crate::window_edge::Decorations::AlosOwnWindowThatIsPlaced,
         true,
         Size::from((10_000, 10_000)),
     )
@@ -212,5 +212,5 @@ fn a_task_windows_band_draws_no_controls_at_rest() {
     );
 
     the_pointer_at(&mut server, on_the_band_over(window));
-    assert_eq!(drawn(&server), 2, "the control: its band shows two in it");
+    assert_eq!(drawn(&server), 3, "the control: its band shows three in it");
 }

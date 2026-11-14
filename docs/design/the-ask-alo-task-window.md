@@ -256,6 +256,10 @@ decided on 2026-10-28**: the frames' `External window edge` is drawn on task
 windows with **Close** only — minimise and maximise come with the right-hand
 panel — and closing a running task will offer **Stop and close** and
 **Cancel**, with *Keep running* added when the panel holds tasks.
+*The edge half of that decision is overruled by the owner's "Yes, it too" of
+2026-11-14: a task window carries Window actions, Minimise and Close, and its
+panel places it like any window (`docs/features.md`, *Window actions on
+alo's own windows*). What closing does is unchanged.*
 
 **What is built:** the edge, laid out by the same code as a client window's,
 Close 44 × 44 at its trailing end, scaled with the display. *Until 2026-11-14 it
