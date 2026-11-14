@@ -62,6 +62,9 @@ use zbus::blocking::MessageIterator;
 use zbus::blocking::connection::Builder;
 use zbus::message::Type;
 
+/// How long anything here is waited for.
+const PATIENCE: Duration = Duration::from_secs(40);
+
 /// A program this test needs, wherever the machine keeps it.
 fn found(candidates: &[&str], what: &str) -> PathBuf {
     for candidate in candidates {
