@@ -25,9 +25,9 @@
 # `crates/alo-walking/tests/the_walk_workflow_publishes_nothing.rs` holds this
 # file to each of those.
 #
-# The `push` trigger on this one branch exists only so the walk can run before
-# the workflow is on main — a `workflow_dispatch` workflow cannot be started
-# until it is — and is removed before this lands.
+# **A person starts it**, and nothing else does: whether it should also run on
+# every merge is the owner's call. Its first four runs, on 2026-11-14, ran from
+# a `push` trigger on the branch that added it, removed before it landed.
 
 name: Walk
 
@@ -38,8 +38,6 @@ on:
         description: "Also add an AI provider, typing its key from the ALO_WALK_PROVIDER_KEY secret (unverified steps)"
         type: boolean
         default: false
-  push:
-    branches: [walks-on-kvm]
 
 permissions:
   contents: read

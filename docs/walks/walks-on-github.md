@@ -15,8 +15,8 @@ boots it and walks it with `crates/alo-walking`, with nobody at a keyboard.
 
 ## How to run it
 
-On GitHub: **Actions → Walk → Run workflow**, on `main`. It takes about
-MEASURED (below). When it ends, the run's summary page has a table of every
+On GitHub: **Actions → Walk → Run workflow**, on `main`. It took 25 to 45
+minutes on the four runs below, most of it building the image. When it ends, the run's summary page has a table of every
 check, and the artifact **the-walk** has:
 
 - one picture per look, numbered in the order taken (`01-first-start.png`, …);
@@ -101,3 +101,37 @@ performed once or runs forever*: the harness's own unit tests run on every gate
 should run on every merge is the owner's call.
 
 ## Measured on the first runs
+
+**Measured once each, by hand, on 2026-11-14**, from the logs of four runs of
+this workflow on branch `walks-on-kvm` (the image each time from `main` at
+`912a756e`), on GitHub-hosted `ubuntu-24.04` runners with 4 processors and 16
+GB. **Nothing re-measures these**; each run's summary page prints its own
+image, disk and walk times, so a later run can be compared with them.
+
+| | run 1 (boot only) | run 2 | run 3 | run 4 |
+|---|---|---|---|---|
+| `/dev/kvm` usable, with GitHub's udev rule | yes | yes | yes | yes |
+| building the image | 2078 s | 1970 s | 1122 s | 1727 s |
+| writing the disk (6.8 GB used of 20) | 228 s | 195 s | 106 s | 150 s |
+| power-on to the sign-in screen | 20 s | 14 s | 12 s | 12 s |
+| power-on to *8 of this machine's applications arrived, 0 still owed* | 270 s | — | 128 s (line torn, below) | 201 s |
+| the walk's verdict | — | failed at check 13 | failed at check 16 | **passed: 24 passed, 5 skipped** |
+
+What changed against the walk by hand under emulation: the first-boot
+applications arrived in **2 to 4½ minutes instead of about 75**, every look
+**settled within 3 to 4 seconds** of its key, and a 9-character password typed
+twice arrived whole. Run 4's whole walk, from power-on to the end of the
+two-minute watch on the screen reader, took 5 minutes 46 seconds.
+
+The two failures were the walk's, not the machine's, and both are fixed:
+
+- **Run 2** waited for `alo-sessiond: a desktop is running` after *How much
+  can alo do*, but the session opens when the account is made, before that
+  screen (52 s, against 56 s for the answer). The check moved.
+- **Run 3**'s applications line was torn on the serial port by a kernel audit
+  record written into the middle of it, so *0 still owed* read as *0 s*. The
+  log is now read as records, and the tear is
+  `docs/quirks/the-serial-port-tears-a-journal-line.md`.
+
+The runner had 86 GB free before anything ran, and the image and disk used
+about 9 GB of it, so nothing is deleted to make room.
