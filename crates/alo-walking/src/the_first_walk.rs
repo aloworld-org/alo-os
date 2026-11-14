@@ -14,6 +14,11 @@
 //!   times reaches *Use password only*; the password is typed twice, Tab
 //!   between, and Enter makes the account (`the_first_account_tests.rs`, and
 //!   the walk by hand of 2026-11-14).
+//! - **The session opens when the account is made**, before *How much can
+//!   alo do*, which is drawn inside it: measured on the first run on GitHub,
+//!   2026-11-14, `alo-sessiond: a desktop is running` at 52 s and the question
+//!   answered at 56 s. So the session's sentence is checked after the
+//!   password, and the question's own (`how much can alo do: …`) after it.
 //! - **How much can alo do**: Tab, then Enter, as the walk by hand did.
 //! - **Settings**: Super+I opens it; End is Accessibility in the side column;
 //!   Tab enters the page at its first row, which is *Screen reader*, first on
@@ -77,18 +82,25 @@ pub fn the_first_walk() -> Walk {
         .press(tab.clone())
         .type_text(PASSWORD)
         .look("the-password-typed-twice", look)
+        .mark()
         .press(Chord::key("ret"))
+        .expect_line(
+            "the account is made and its session runs",
+            "alo-sessiond: a desktop is running",
+            Since::Mark,
+            minutes(3),
+        )
         .look("how-much-can-alo-do", look.at_most(minutes(3)))
         .mark()
         .press(tab.clone())
         .press(Chord::key("ret"))
         .expect_line(
-            "a desktop is running",
-            "alo-sessiond: a desktop is running",
+            "how much alo can do is answered",
+            "how much can alo do:",
             Since::Mark,
-            minutes(5),
+            minutes(1),
         )
-        .look("the-desktop", look.at_most(minutes(5)))
+        .look("the-desktop", look.at_most(minutes(3)))
         .expect_line_saying(
             "the applications arrived",
             "of this machine's applications arrived",
