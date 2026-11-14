@@ -327,3 +327,59 @@ fn continue_chooses_the_keyboard_the_overview_names() {
     assert_eq!(first_start.the_language_chosen(), Some("de"));
     assert_eq!(first_start.the_keyboard_chosen(), Some(german()));
 }
+
+/// **Continue accepts the language, the region and the region's one zone the
+/// overview names**, with no row touched — and a person who goes back,
+/// changes language and continues again has that language's region instead.
+/// A region with several zones names none on the overview, so Continue
+/// accepts none there.
+#[test]
+fn continue_accepts_the_language_region_and_zone_the_overview_names() {
+    let mut first_start = TheFirstStart::arriving(RegionCode::named("AT").ok());
+    assert_eq!(first_start.the_language_chosen(), None);
+    assert_eq!(first_start.the_region_chosen(), None);
+    assert_eq!(first_start.the_zone_chosen(), None);
+    assert_eq!(
+        walked(&mut first_start, &[SignInKey::OtherField, SignInKey::Enter]),
+        Went::Onward
+    );
+    assert_eq!(first_start.the_language_chosen(), Some("en"));
+    assert_eq!(
+        first_start.the_region_chosen().map(RegionCode::code),
+        Some("AT")
+    );
+    assert_eq!(first_start.the_zone_chosen(), Some("Europe/Vienna"));
+
+    // Nothing on the machine's clock: English's usual region, the United
+    // States, has several zones and the overview names none.
+    let mut first_start = TheFirstStart::arriving(None);
+    walked(&mut first_start, &[SignInKey::OtherField, SignInKey::Enter]);
+    assert_eq!(
+        first_start.the_region_chosen().map(RegionCode::code),
+        Some("US")
+    );
+    assert_eq!(first_start.the_zone_chosen(), None, "a zone nobody saw");
+
+    // Back at the overview, choose German and continue again.
+    walked(
+        &mut first_start,
+        &[
+            SignInKey::OtherField,
+            SignInKey::Enter,
+            SignInKey::Earlier,
+            SignInKey::Earlier,
+            SignInKey::Enter,
+            SignInKey::Enter,
+        ],
+    );
+    assert_eq!(first_start.the_language_chosen(), Some("de"));
+    assert_eq!(
+        walked(&mut first_start, &[SignInKey::OtherField, SignInKey::Enter]),
+        Went::Onward
+    );
+    assert_eq!(
+        first_start.the_region_chosen().map(RegionCode::code),
+        Some("DE")
+    );
+    assert_eq!(first_start.the_zone_chosen(), Some("Europe/Berlin"));
+}
