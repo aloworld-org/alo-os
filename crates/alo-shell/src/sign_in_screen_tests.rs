@@ -12,6 +12,13 @@ use alo_sessiond::{Answered, Knock};
 use std::cell::RefCell;
 use std::rc::Rc;
 
+/// A machine whose clock says Ireland, whose one time zone Continue sets
+/// without asking which (the owner, 2026-11-14) — a clock that says nothing
+/// would be the United States, where Continue asks first.
+fn on_a_clock_in_ireland() -> Option<alo_formats::RegionCode> {
+    alo_formats::RegionCode::named("IE").ok()
+}
+
 /// The uid the machine description names, and the account made for it.
 const PERSON: u32 = 1000;
 /// The one account's name.
@@ -399,7 +406,8 @@ fn a_machine_with_nobody_on_it_is_offered_a_sheet_and_refused_without_a_store() 
     let mut screen = SignInScreen::of(
         Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
         the_machines_words(),
-    );
+    )
+    .where_the_machine_is(on_a_clock_in_ireland());
     // Past the first-start overview, then a name, a secret and submit — the
     // walk a person actually takes: Tab to *Continue*, and take it.
     for key in [SignInKey::OtherField, SignInKey::Enter] {
@@ -494,7 +502,8 @@ fn every_sentence_the_screen_can_show_is_collected_and_none_is_written_here() {
     let mut fresh = SignInScreen::of(
         Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
         the_machines_words(),
-    );
+    )
+    .where_the_machine_is(on_a_clock_in_ireland());
     for key in [
         // Past the first-start overview: Tab to *Continue*, and take it.
         SignInKey::OtherField,
@@ -629,7 +638,8 @@ fn at_the_first_account_sheet() -> SignInScreen<CountingDoor> {
     let mut screen = SignInScreen::of(
         Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
         the_machines_words(),
-    );
+    )
+    .where_the_machine_is(on_a_clock_in_ireland());
     for key in [SignInKey::OtherField, SignInKey::Enter] {
         screen = still(screen.pressed(key));
     }
@@ -870,7 +880,8 @@ fn continue_on_the_overview_keeps_the_keyboard_it_named_and_the_desktop_starts_o
     let mut screen = SignInScreen::of(
         Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
         the_machines_words(),
-    );
+    )
+    .where_the_machine_is(on_a_clock_in_ireland());
     let SignInShows::FirstStart(first_start) = screen.shows() else {
         panic!("a fresh machine did not open on the first-start overview");
     };
@@ -912,4 +923,73 @@ fn continue_on_the_overview_keeps_the_keyboard_it_named_and_the_desktop_starts_o
         "the desktop would start on the unit file's layout, not the one the person accepted"
     );
     assert_eq!(after.from(), &WhoSaidSo::ThisMachinesFile);
+}
+
+/// **Continue on an untouched overview keeps the language, the region and
+/// the region's one zone it named**, and the person's session starts in them.
+///
+/// The sibling of the keyboard's fault, found the same day: the overview read
+/// *Language · English* and *Region · …*, the person pressed Continue, and
+/// nothing was written — so the desktop was given no language it was set up
+/// in, dates followed no region, and the clock's zone was never set. This
+/// walks the road as `direct_sign_in` does, asking after every press, to the
+/// file the desktop reads at start (`alo_formats::set_up_in::read`) and the
+/// link the clock reads.
+#[test]
+fn continue_on_the_overview_keeps_the_language_region_and_zone_it_named() {
+    use crate::the_language_a_person_chose::TheLanguageAPersonChose;
+    use crate::the_region_a_person_chose::TheRegionAPersonChose;
+    use crate::the_zone_a_person_chose::TheZoneAPersonChose;
+
+    let folder = tempfile::tempdir().unwrap();
+    let set_up_in = folder.path().join("set-up-in.toml");
+    let zoneinfo = folder.path().join("zoneinfo");
+    std::fs::create_dir_all(zoneinfo.join("Europe")).unwrap();
+    std::fs::write(zoneinfo.join("Europe/Vienna"), "TZif").unwrap();
+    let localtime = folder.path().join("localtime");
+
+    let (door, _heard) = a_door(Ok(Answered::Opened));
+    let mut screen = SignInScreen::of(
+        Ok(Greeting::of(Accounts::none().unwrap(), PERSON, door)),
+        the_machines_words(),
+    )
+    .where_the_machine_is(alo_formats::RegionCode::named("AT").ok());
+    let mut language = TheLanguageAPersonChose::nothing_yet();
+    let mut region = TheRegionAPersonChose::nothing_yet();
+    let mut zone = TheZoneAPersonChose::nothing_yet();
+
+    // Tab to Continue and press it, touching no row; the compositor asks
+    // after every press.
+    for key in [SignInKey::OtherField, SignInKey::Enter] {
+        // Before Continue nothing is written.
+        assert!(!set_up_in.exists(), "a file was written before Continue");
+        screen = still(screen.pressed(key));
+        let _ = language.chose(screen.the_language_chosen(), &set_up_in);
+        let _ = region.chose(screen.the_region_chosen(), &set_up_in);
+        let _ = zone.chose(screen.the_zone_chosen(), &localtime, &zoneinfo);
+    }
+    assert!(
+        matches!(screen.shows(), SignInShows::FirstAccount { .. }),
+        "Continue did not go on to the first account"
+    );
+
+    let read = alo_formats::set_up_in::read(&set_up_in).unwrap();
+    assert_eq!(
+        read.language().map(|it| it.tag().to_owned()).as_deref(),
+        Some("en"),
+        "the desktop would start in no language anybody accepted"
+    );
+    assert_eq!(
+        read.region().map(alo_formats::RegionCode::code),
+        Some("AT"),
+        "dates would follow no region"
+    );
+    // A time zone link is a thing only a Unix machine has.
+    if cfg!(unix) {
+        assert_eq!(
+            std::fs::read_link(&localtime).unwrap(),
+            zoneinfo.join("Europe/Vienna"),
+            "the clock's zone was not set"
+        );
+    }
 }
