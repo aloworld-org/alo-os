@@ -285,8 +285,9 @@ fn every_page_draws_and_can_be_looked_at() {
 
     // **And the country list open, with *Bel* typed** — frame `551:751`.
     let mut window = machine.opened();
-    // Region and time is the seventh page since Default apps came before it.
-    for _ in 0..6 {
+    // Region and time is the eighth page since Default apps and Accounts came
+    // before it.
+    for _ in 0..7 {
         press(&mut window, SettingsKey::Next);
     }
     press(&mut window, SettingsKey::Choose);

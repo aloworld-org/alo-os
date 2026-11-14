@@ -316,6 +316,7 @@ fn the_settings_files() -> Vec<(String, Vec<(usize, String)>)> {
         names,
         [
             "nested_settings.rs",
+            "settings_accounts.rs",
             "settings_along_a_row.rs",
             "settings_answering.rs",
             "settings_as_drawn.rs",
@@ -343,6 +344,7 @@ fn the_settings_files() -> Vec<(String, Vec<(usize, String)>)> {
             "settings_on_the_plane.rs",
             "settings_page.rs",
             "settings_page_accessibility.rs",
+            "settings_page_accounts.rs",
             "settings_page_alo.rs",
             "settings_page_appearance.rs",
             "settings_page_default_apps.rs",

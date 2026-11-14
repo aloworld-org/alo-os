@@ -106,6 +106,10 @@ pub enum SettingsSection {
     /// Which application opens a web link and an email address
     /// (`crate::settings_default_apps`).
     DefaultApps,
+    /// The services this computer is signed in to: GitHub, through its own
+    /// command, `gh` (`crate::settings_accounts`). Nothing of it is kept in a
+    /// file of alo's: gh keeps its own sign-in.
+    Accounts,
     /// The shortcuts.
     Shortcuts,
     /// The terminal: today, whether alo may read what a person types in it.
@@ -328,6 +332,12 @@ pub enum SettingsRow {
     /// **By identifier**, as every choice of an application is: two
     /// applications may both call themselves *Browser*.
     DefaultFor(alo_applications::LinkKind, String),
+    /// *Sign in* beside GitHub on the Accounts page: Enter asks the desktop
+    /// to sign in with GitHub's own command (`crate::asking_github`).
+    SignInToGitHub,
+    /// *Sign out* beside GitHub on the Accounts page: Enter asks the desktop
+    /// to sign out with GitHub's own command.
+    SignOutOfGitHub,
 }
 
 impl SettingsRow {
@@ -364,6 +374,7 @@ impl SettingsRow {
             Self::HowCodeRuns(_) => SettingsSection::HowCodeRuns,
             Self::WhereAloWorks(_) => SettingsSection::InApplications,
             Self::DefaultFor(..) => SettingsSection::DefaultApps,
+            Self::SignInToGitHub | Self::SignOutOfGitHub => SettingsSection::Accounts,
             Self::ShellIntegration | Self::APlaceToReturnTo | Self::ActWithoutAsking => {
                 SettingsSection::Terminal
             }
@@ -453,6 +464,12 @@ pub enum SettingsDid {
     /// **The window says so and does not do it**, for `AddingAProvider`'s
     /// reason: the record window lives on the `Server`.
     OpeningTheRecord,
+    /// A person asked to sign in to GitHub, or out of it, on the Accounts
+    /// page.
+    ///
+    /// **The window says so and does not do it**: GitHub's own command is the
+    /// desktop's to run (`crate::asking_github`).
+    AskedGitHub(crate::asking_github::AskingGitHub),
 }
 
 /// What opening Settings read, for the host's log: every file of the
@@ -526,6 +543,9 @@ pub(crate) struct Open {
     /// Where the side column is scrolled, on a screen where its categories
     /// do not all fit (`crate::settings_side_column_scrolls`).
     pub(crate) side_column: crate::settings_side_column_scrolls::TheSideColumnsScroll,
+    /// Whether this computer is signed in to GitHub, as the desktop last
+    /// said since Settings opened (`crate::settings_accounts`).
+    pub(crate) github: crate::settings_accounts::TheGitHubSignIn,
 }
 
 /// The Settings window.
@@ -605,6 +625,9 @@ impl SettingsWindow {
             focus: 0,
             waiting_for_a_chord: false,
             side_column: crate::settings_side_column_scrolls::TheSideColumnsScroll::at_the_top(),
+            // **Not known until the desktop says**, asked once on the next
+            // frame (`crate::settings_accounts`).
+            github: crate::settings_accounts::TheGitHubSignIn::default(),
         });
         SettingsOpened { not_remembered }
     }
@@ -1025,6 +1048,9 @@ impl Open {
             // **Every installed application that opens a web link, then every
             // one that opens an email address**, in the order they declared it.
             SettingsCategory::DefaultApps => self.default_apps.rows(),
+            // **One button**, *Sign in* or *Sign out*, and none until the
+            // desktop has said which.
+            SettingsCategory::Accounts => self.github.rows(),
             // **Two rows, each opening its list**; every region and zone is a
             // row of the list it opens.
             SettingsCategory::RegionAndTime => {
@@ -1703,6 +1729,18 @@ impl Open {
                 SettingsSection::DefaultApps,
                 self.default_apps.choose(*kind, identifier, doors.strings),
             ),
+            // **Asked rather than done**: gh is the desktop's to run, so the
+            // window says what the person asked for and the server hands it
+            // on (`crate::asking_github`). What the page said before goes,
+            // because it was about the last thing asked.
+            SettingsRow::SignInToGitHub => {
+                self.github.told.clear();
+                SettingsDid::AskedGitHub(crate::asking_github::AskingGitHub::SignIn)
+            }
+            SettingsRow::SignOutOfGitHub => {
+                self.github.told.clear();
+                SettingsDid::AskedGitHub(crate::asking_github::AskingGitHub::SignOut)
+            }
         }
     }
 
@@ -1742,6 +1780,9 @@ impl Open {
             | SettingsSection::HowCodeRuns
             | SettingsSection::InApplications
             | SettingsSection::Accessibility
+            // **Nor for Accounts**: nothing of it is a file of alo's, and
+            // signing out is the button beside it.
+            | SettingsSection::Accounts
             | SettingsSection::TimeZone => {
                 return None;
             }

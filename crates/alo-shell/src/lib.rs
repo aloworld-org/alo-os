@@ -350,6 +350,9 @@ mod an_alo_windows_edge;
 mod an_application_verb_is_carried_out;
 /// Closing a running task asks: Stop and close, or Cancel (ADR 0139).
 mod asking_before_closing;
+/// What the desktop is asked to do with GitHub's own command, and what it
+/// answered.
+mod asking_github;
 /// The alo Bar's matches, rising from the Dock's field.
 mod bar_matches_raster;
 mod dock_room;
@@ -499,6 +502,8 @@ mod server_desk;
 mod session_desktop;
 mod session_device;
 mod session_input;
+/// Settings → Accounts: who is signed in to GitHub, as the desktop said.
+mod settings_accounts;
 /// Left and Right along a row of choices in Settings.
 mod settings_along_a_row;
 mod settings_answering;
@@ -533,6 +538,8 @@ mod settings_old_names;
 mod settings_on_the_plane;
 mod settings_page;
 mod settings_page_accessibility;
+/// The Accounts page.
+mod settings_page_accounts;
 mod settings_page_alo;
 mod settings_page_appearance;
 mod settings_page_default_apps;
@@ -971,6 +978,7 @@ pub use capture_flatten::{NotFlattened, burnt_in};
 // drawable by this crate and by nobody else, including the fixture whose whole
 // job is to draw a frame with them on it. What is exported is what a caller must
 // hand in; every picture the tools become stays private.
+pub use asking_github::{AskingGitHub, GitHubAnswered, WhyGitHubDidNotWork};
 pub use canvas_command::CanvasCommandError;
 pub use canvas_fixed_controls::{FixedControlsDrawn, Recovery};
 pub use canvas_never_lost::{

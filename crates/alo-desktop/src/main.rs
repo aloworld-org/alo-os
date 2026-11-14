@@ -87,6 +87,15 @@ mod watching_the_screen_reader;
 #[cfg(target_os = "linux")]
 mod putting_back;
 
+/// Signing in to GitHub and out with GitHub's own command, `gh`, from
+/// Settings → Accounts (the owner's approval of 2026-11-13).
+#[cfg(target_os = "linux")]
+mod signing_in_to_github;
+
+/// What `gh` said: its one-time code, the page, the login, a failure's line.
+#[cfg(target_os = "linux")]
+mod what_gh_says;
+
 #[cfg(target_os = "linux")]
 mod asking_for_the_persons_password;
 
@@ -375,6 +384,9 @@ mod running {
         /// the one worker that starts and stops it
         /// (`crate::starting_the_screen_reader`).
         screen_reader: crate::starting_the_screen_reader::TheScreenReader,
+        /// GitHub's sign-in, run with `gh` on one worker, every sign-in,
+        /// sign-out and failure recorded (`crate::signing_in_to_github`).
+        github: crate::signing_in_to_github::TheGitHubSignIn,
         /// Where the dock is, and so where the status area is.
         dock: alo_dock::Dock,
         /// The windows this person has put aside, which the panel at the edge
@@ -743,6 +755,22 @@ mod running {
                     crate::watching_the_screen_reader::OnThisMachine::default(),
                     crate::watching_the_screen_reader::BETWEEN_WATCHES,
                 ),
+                // **gh from the person's own PATH**, and each sign-in, sign-out
+                // and failure kept by the daemon in their record; a record the
+                // daemon could not keep is said on the journal.
+                github: crate::signing_in_to_github::TheGitHubSignIn::running(
+                    std::path::PathBuf::from("gh"),
+                    Box::new(|what: &alo_changing::AtGitHub| {
+                        let door =
+                            alo_changing::TheDaemonsDoor::at(&alo_changing::this_persons_door());
+                        if let Err(why) = door.keep_a_github_sign_in(what) {
+                            eprintln!(
+                                "alo-desktop: a GitHub sign-in could not be written in the \
+                                 record: {why:?}"
+                            );
+                        }
+                    }),
+                ),
                 dock: alo_dock::Dock::shipped(),
                 put_aside: alo_put_aside::Panel::new(),
                 // Nothing has been asked to be put back.
@@ -881,6 +909,17 @@ mod running {
             &mut self,
         ) -> Option<alo_shell::TheScreenReaderAnswered> {
             self.screen_reader.answered()
+        }
+
+        /// **Something is asked of GitHub's own command**: handed to the one
+        /// worker, in order (`crate::signing_in_to_github`).
+        fn github_is_asked(&mut self, asked: alo_shell::AskingGitHub) {
+            self.github.asked(asked);
+        }
+
+        /// What an ask of GitHub came to, once it has.
+        fn what_github_answered(&mut self) -> Option<alo_shell::GitHubAnswered> {
+            self.github.answered()
         }
 
         /// **They turned over *Apps describe themselves***: applications

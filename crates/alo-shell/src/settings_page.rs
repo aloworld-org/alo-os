@@ -288,6 +288,7 @@ pub(crate) fn the_page(
         SettingsCategory::DefaultApps => {
             crate::settings_page_default_apps::the_blocks(open, strings)
         }
+        SettingsCategory::Accounts => crate::settings_page_accounts::the_blocks(open, strings),
         SettingsCategory::KeyboardAndShortcuts => {
             crate::settings_page_keyboard::the_blocks(open, strings)
         }
