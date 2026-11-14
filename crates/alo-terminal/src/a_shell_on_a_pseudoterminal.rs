@@ -140,12 +140,32 @@ pub struct AShellOnAPseudoterminal {
 /// child *starts* with, and a line in their own shell startup replaces it.
 const WHAT_THIS_TERMINAL_IS_CALLED: &str = "xterm-256color";
 
-/// The environment a shell started here is given.
+/// The environment a shell started here is given, on top of the one this
+/// process has: what the session told it (`session`, `NAME=value` each), and
+/// what this terminal is called.
+///
+/// **The session's part is what lets a program started here draw.** The
+/// terminal runs inside the desktop, so a shell inherits the desktop's own
+/// environment — and the desktop is the display, so nothing ever told *it*
+/// where the display is. Until 2026-11-14 a shell here had no
+/// `WAYLAND_DISPLAY`, and every graphical program typed into it started with
+/// no display: VSCodium's launcher then asks Chromium for X11, which alo does
+/// not have, and Chromium stops itself with a trap
+/// (`docs/quirks/vscodium-from-alos-terminal-asks-for-x11-and-traps.md`).
+///
+/// **`TERM` is set last**, so a session entry can never change what this
+/// terminal claims to understand. An entry with no `=` is not a variable and
+/// is left out; the caller builds these from a typed function, so none
+/// arrives that way.
 ///
 /// Its own function so a test can read it without starting a shell, which needs
 /// a pseudoterminal and a machine to put one on.
-fn what_the_child_is_told() -> HashMap<String, String> {
-    let mut env = HashMap::new();
+fn what_the_child_is_told(session: &[String]) -> HashMap<String, String> {
+    let mut env: HashMap<String, String> = session
+        .iter()
+        .filter_map(|entry| entry.split_once('='))
+        .map(|(name, value)| (name.to_owned(), value.to_owned()))
+        .collect();
     env.insert("TERM".to_owned(), WHAT_THIS_TERMINAL_IS_CALLED.to_owned());
     env
 }
@@ -163,11 +183,20 @@ impl AShellOnAPseudoterminal {
     /// [`Self::where_it_started`] says why; `crate::where_a_shell_starts` gives
     /// the reasons for both halves of that.
     ///
+    /// `session` is what the person's session is told, `NAME=value` each —
+    /// for the desktop, where it draws (`alo_launching::what_the_session_is_told`)
+    /// — so a program typed here starts with what a program the desktop or the
+    /// bus starts is given. Empty for a terminal with no display to name.
+    ///
     /// # Errors
     /// [`NoShell::ItWouldNotStart`] if the pseudoterminal could not be opened
     /// or the shell could not be run.
-    pub fn the_persons_own(size: HowBig, home: Option<&OsStr>) -> Result<Self, NoShell> {
-        Self::started(size, None, WhereItStarts::for_a_home(home))
+    pub fn the_persons_own(
+        size: HowBig,
+        home: Option<&OsStr>,
+        session: &[String],
+    ) -> Result<Self, NoShell> {
+        Self::started(size, None, WhereItStarts::for_a_home(home), session)
     }
 
     /// Which folder this shell was started in, and whether it was the person's
@@ -197,7 +226,7 @@ impl AShellOnAPseudoterminal {
             program.to_owned(),
             args.iter().map(|arg| (*arg).to_owned()).collect(),
         );
-        Self::started(size, Some(shell), WhereItStarts::for_a_home(None))
+        Self::started(size, Some(shell), WhereItStarts::for_a_home(None), &[])
     }
 
     /// The one road the two above take.
@@ -209,6 +238,7 @@ impl AShellOnAPseudoterminal {
         size: HowBig,
         shell: Option<Shell>,
         started_in: WhereItStarts,
+        session: &[String],
     ) -> Result<Self, NoShell> {
         let options = Options {
             shell,
@@ -218,7 +248,7 @@ impl AShellOnAPseudoterminal {
             // program said; this is a library, and whoever owns the terminal
             // decides that.
             drain_on_exit: false,
-            env: what_the_child_is_told(),
+            env: what_the_child_is_told(session),
         };
         let pty =
             tty::new(&options, how_the_child_is_told(size), 0).map_err(NoShell::ItWouldNotStart)?;

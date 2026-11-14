@@ -1885,6 +1885,7 @@ dependencies = [
  "alo-keeping",
  "alo-keeping-up",
  "alo-keyboards",
+ "alo-launching",
  "alo-locking",
  "alo-measuring",
  "alo-models",
