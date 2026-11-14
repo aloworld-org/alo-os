@@ -69,6 +69,13 @@ pub enum CallError {
         verb: String,
         /// The argument that was given.
         argument: String,
+        /// **Every argument the verb does take**, by name, in the order it
+        /// declares them — so the refusal says what to send instead. Walked on
+        /// a booted machine on 2026-11-14: told only *accessible.type_text
+        /// does not take Untitled-1*, `gpt-4o-mini` guessed four more times
+        /// and then reached for a command. These are names in the contract,
+        /// never values, so nothing a call carried is repeated by them.
+        takes: Vec<String>,
     },
     /// An argument the verb takes, that nothing gave.
     Missing {
@@ -114,9 +121,25 @@ impl CallError {
                 &words::NO_SUCH_VERB.key(),
                 &Filling::of("verb", name.clone()),
             ),
-            Self::NoSuchArgument { verb, argument } => strings.say(
+            // A verb that takes nothing has nothing to list, and says what it
+            // said before the arguments were listed at all.
+            Self::NoSuchArgument {
+                verb,
+                argument,
+                takes,
+            } if takes.is_empty() => strings.say(
                 &words::NO_SUCH_ARGUMENT.key(),
                 &Filling::of("verb", verb.clone()).and("argument", argument.clone()),
+            ),
+            Self::NoSuchArgument {
+                verb,
+                argument,
+                takes,
+            } => strings.say(
+                &words::NOT_AN_ARGUMENT_IT_TAKES.key(),
+                &Filling::of("verb", verb.clone())
+                    .and("argument", argument.clone())
+                    .and("takes", takes.join(", ")),
             ),
             Self::Missing {
                 verb,
@@ -189,6 +212,11 @@ impl Call {
             let arg = verb.arg(name).ok_or_else(|| CallError::NoSuchArgument {
                 verb: verb.name().to_owned(),
                 argument: name.to_owned(),
+                takes: verb
+                    .args()
+                    .iter()
+                    .map(|arg| arg.name().to_owned())
+                    .collect(),
             })?;
             if values.contains_key(name) {
                 return Err(CallError::SameArgumentTwice {
@@ -784,6 +812,7 @@ mod tests {
             CallError::NoSuchArgument {
                 verb: "move_file".to_owned(),
                 argument: "overwrite".to_owned(),
+                takes: vec!["file".to_owned(), "into".to_owned()],
             }
         );
         assert_eq!(

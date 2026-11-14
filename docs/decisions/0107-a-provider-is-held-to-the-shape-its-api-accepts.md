@@ -105,3 +105,33 @@ A provider that accepts `response_format` and handles it badly would answer
 worse than it does today, and the first sign would be a grade falling rather
 than anything breaking — which the fixed ten measures on demand. Reverting is
 one `bool` at one call site.
+
+## Amended 2026-11-14: the verbs and their arguments are named
+
+*What it does not decide* above is now decided, on a new fact rather than a
+measurement. Walked on a booted machine on 2026-11-14 (image from `main`
+`3959dd65`, `gpt-4o-mini` at OpenAI, full access, VSCodium open), *type hello
+from alo into the new file that is open* went: `accessible.type_text` given an
+argument named `Untitled-1`, then `Untitled`; `accessible.read_window` given
+`name`, then `window` — every one refused as *does not take*, every one
+admitted by this schema — and then the run door, `xdotool type …`, three times,
+exit 127. The content error this ADR recorded for `list_folder` is the error a
+person meets.
+
+So an agent turn's question to a provider is held to
+`alo_turn::the_shape_a_provider_is_held_to::the_envelope_naming_the_verbs`: this
+envelope, with the read and propose doors each holding one of the machine's
+verbs of that kind by name, and each verb's `given` holding only that verb's
+arguments by their exact names, with a value of the type each declares. The
+other doors are unchanged, and `the_envelope_a_provider_accepts` is kept as
+what that function starts from and what a measurement through
+`Asking::to_a_provider_in_the_envelope` is held to.
+
+**What is still true from the paragraph it answers.** It is a larger schema; it
+changes whenever the verb list does, and is built from the same registry the
+model is shown, so the two cannot disagree; and **it has not been measured** —
+not against the fixed ten, and not on a booted machine. The first is a run of
+`alo-driving`'s provider measurement; the second is the walk above, again. A
+provider that refuses the schema answers 400, which the person is told as
+*something answered, and not with an answer* — decision 2, unchanged. Reverting
+is one call site in `alo-turn`'s `asking.rs`.

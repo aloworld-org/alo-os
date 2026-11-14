@@ -430,6 +430,7 @@ capability.argument.wanted-text	give {argument} as text, not as a number
 capability.call.missing	{verb} needs {argument} — {purpose}
 capability.call.no-such-argument	{verb} does not take {argument}
 capability.call.no-such-verb	there is no verb called {verb} — the list is closed, so a verb that is not on it does not exist
+capability.call.not-an-argument-it-takes	{verb} takes {takes} — it does not take {argument}
 capability.call.same-argument-twice	{argument} was given twice — a call gives each argument one value
 capability.facility.appearance-settings	your appearance settings
 capability.facility.camera	the camera

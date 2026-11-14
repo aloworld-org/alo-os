@@ -502,6 +502,17 @@ pub const NO_SUCH_ARGUMENT: Word = Word::saying(
 )
 .noting("Both gaps are names in the contract and are never translated.");
 
+/// An argument the verb does not take, said with the ones it does — so the
+/// next attempt can be the right one rather than another guess.
+pub const NOT_AN_ARGUMENT_IT_TAKES: Word = Word::saying(
+    "capability.call.not-an-argument-it-takes",
+    "{verb} takes {takes} — it does not take {argument}",
+)
+.noting(
+    "{verb}, {argument} and {takes} are names in the contract and are never translated. {takes} \
+     is every argument the verb takes, separated by commas, such as: application, name, text.",
+);
+
 /// An argument the verb takes, that nothing gave.
 pub const ARGUMENT_MISSING: Word = Word::saying(
     "capability.call.missing",
@@ -1331,7 +1342,7 @@ pub const TEXT_HOLDS_ANOTHER_ALPHABET: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 116] = [
+pub const EVERY_WORD: [Word; 117] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -1376,6 +1387,7 @@ pub const EVERY_WORD: [Word; 116] = [
     NOT_ON_THE_LIST,
     NO_SUCH_VERB,
     NO_SUCH_ARGUMENT,
+    NOT_AN_ARGUMENT_IT_TAKES,
     ARGUMENT_MISSING,
     SAME_ARGUMENT_TWICE,
     READ_DOES_NOT_WAIT,

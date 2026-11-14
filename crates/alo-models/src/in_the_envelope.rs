@@ -105,9 +105,12 @@ pub fn the_envelope() -> Value {
 /// `ArgumentRefused` rather than as an unreadable message, which is a better
 /// refusal to be given: it names the argument, and an agent can act on it.
 ///
-/// Enumerating the verbs and their arguments would close that too, and is the
-/// next thing rather than this one — `alo_driving::grammar_for` already builds
-/// exactly that knowledge in GBNF for the local road.
+/// Enumerating the verbs and their arguments closes that too, and since
+/// 2026-11-14 an agent turn's question is held to this envelope **with them
+/// named**: `alo_turn::the_shape_a_provider_is_held_to` starts from this and
+/// narrows the read and propose doors, because the verbs are a registry this
+/// crate does not hold. This rendering is still what a measurement through
+/// `alo_asking::Asking::to_a_provider_in_the_envelope` is held to.
 #[must_use]
 pub fn the_envelope_a_provider_accepts() -> Value {
     let argument = json!({

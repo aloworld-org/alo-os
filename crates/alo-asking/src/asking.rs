@@ -187,7 +187,7 @@ impl<'a> Asking<'a> {
         now: SystemTime,
         to: &[SocketAddr],
     ) -> Result<Asked, NotAsked> {
-        self.the_provider_road(question, hosted, indicator, now, to, false)
+        self.the_provider_road(question, hosted, indicator, now, to, None)
     }
 
     /// **Put an agent turn's question to a provider, holding the answer to the
@@ -232,7 +232,42 @@ impl<'a> Asking<'a> {
         now: SystemTime,
         to: &[SocketAddr],
     ) -> Result<Asked, NotAsked> {
-        self.the_provider_road(question, hosted, indicator, now, to, true)
+        self.the_provider_road(
+            question,
+            hosted,
+            indicator,
+            now,
+            to,
+            Some(alo_models::in_the_envelope::the_envelope_a_provider_accepts()),
+        )
+    }
+
+    /// **Put an agent turn's question to a provider, holding the answer to a
+    /// schema the caller wrote** — [`Asking::to_a_provider_in_the_envelope`]
+    /// with the shape handed in rather than the envelope alone.
+    ///
+    /// It exists so that `alo-turn` can hold a hosted model to the envelope
+    /// **with this machine's verbs and their arguments named in it**, which
+    /// this crate cannot write: the verbs are `alo-capability`'s and the turn
+    /// holds the registry. The schema is sent under
+    /// [`THE_ENVELOPE_IS_CALLED`], strict, and nothing about what is shown,
+    /// permitted or recorded differs from the door beside it.
+    ///
+    /// # Errors
+    /// [`NotAsked`], exactly as [`Asking::to_a_provider_in_the_envelope`]
+    /// answers it — including a provider that refuses the schema, which
+    /// arrives as *something answered, and not with an answer* and never falls
+    /// back to asking unheld.
+    pub fn to_a_provider_held_to(
+        self,
+        question: &Question,
+        hosted: &Hosted<'_>,
+        indicator: &mut Indicator,
+        now: SystemTime,
+        to: &[SocketAddr],
+        schema: serde_json::Value,
+    ) -> Result<Asked, NotAsked> {
+        self.the_provider_road(question, hosted, indicator, now, to, Some(schema))
     }
 
     /// Both provider doors, so law 1 happens once and in one order.
@@ -242,7 +277,8 @@ impl<'a> Asking<'a> {
     /// reads to clippy as a conversion that should borrow. The name says what
     /// it is instead.
     ///
-    /// `in_the_envelope` is the only difference between them, and it changes
+    /// `held_to` — the schema the answer is held to, or none — is the only
+    /// difference between them, and it changes
     /// the request and nothing about what is shown, permitted or recorded —
     /// which is why they share this rather than each doing the showing. A
     /// second copy of the order *showable, then permitted, then asked* is a
@@ -254,7 +290,7 @@ impl<'a> Asking<'a> {
         indicator: &mut Indicator,
         now: SystemTime,
         to: &[SocketAddr],
-        in_the_envelope: bool,
+        held_to: Option<serde_json::Value>,
     ) -> Result<Asked, NotAsked> {
         let source = self.answering.source().clone();
         match &source {
@@ -288,17 +324,16 @@ impl<'a> Asking<'a> {
             .map_err(NotAsked::HeldBack)?;
 
         // And only now.
-        let said = if in_the_envelope {
-            hosted.ask_held_to_a_schema(
+        let said = match held_to {
+            Some(schema) => hosted.ask_held_to_a_schema(
                 question,
                 to,
                 crate::openai::AShape {
                     named: THE_ENVELOPE_IS_CALLED,
-                    schema: alo_models::in_the_envelope::the_envelope_a_provider_accepts(),
+                    schema,
                 },
-            )
-        } else {
-            hosted.ask(question, to)
+            ),
+            None => hosted.ask(question, to),
         };
         match said {
             Ok(said) => Ok(Asked::new(
