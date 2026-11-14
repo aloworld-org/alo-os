@@ -1,0 +1,98 @@
+# Build the alo OS image on every pull request and on the merge queue's commit,
+# and keep nothing of it but the build's own log.
+#
+# **Why it exists.** On 2026-11-14 #1245 changed the step in
+# `image/Containerfile` that puts alo-greeter in the audio group, the image
+# stopped building on main, and nobody saw it for hours: the only builds were
+# the image candidate, which a person starts, and the walk, which a person
+# starts. The gate builds and tests the Rust; it never builds the recipe. The
+# owner decided that day that the image is built on every pull request, so a
+# change that breaks it is refused before it lands rather than found after.
+#
+# **This is a check, not an image.** CLAUDE.md's rule — *no real image is built
+# while any branch but main exists* — is about an image a person installs, or
+# one called a candidate or a release. This is the same kind of thing as the
+# walk image: a build that answers one question and is then thrown away. So
+# unlike `image.yml` it does not ask for every branch first (the pull request's
+# own branch would always be there), and in exchange it may never do any of
+# what makes an image real:
+#
+# - nothing is pushed, signed or published, and no registry is logged in to;
+# - the image is never saved, exported or uploaded; it is removed from the
+#   runner when the build ends;
+# - what leaves the runner is the build log alone, kept for three days;
+# - no secret is read, and the token may only read the repository.
+#
+# `crates/alo-image/tests/the_image_check_publishes_nothing.rs` holds this file
+# to each of those, and fails if a push or a publish is ever added to it.
+#
+# **It builds what would land, not main.** On a pull request the checkout is
+# GitHub's merge of the branch into main, and in the merge queue it is the
+# queue's own commit — the tree that becomes main. That is the difference from
+# the walk, which builds main whatever started it.
+#
+# The build itself is the walk's (`walk.yml`, "Build the walk image from main"):
+# the same `sudo podman build` of the same recipe, with the log kept aside and
+# its last forty lines printed on failure. There is no build cache to share —
+# the walk has none — and none is added here: the recipe copies the whole tree
+# before it compiles, so a cache keyed on anything less than the tree would be
+# invalidated by every pull request anyway. Measured on the walk's run of
+# 2026-11-14 at 14:24Z, that build took 1737 s on `ubuntu-24.04`. It runs beside
+# the gate, not after it, so it adds to how long a pull request waits only where
+# it is the slower of the two.
+#
+# **Whether the merge queue requires it is a branch-protection setting**, and
+# that is the owner's to make. Until it is required, a red run here is a
+# warning nobody is made to read.
+
+name: Image check
+
+on:
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+# A newer push to the same pull request replaces the build still running for
+# the old one. A merge-queue build is never cancelled: it is the verdict on the
+# tree about to become main.
+concurrency:
+  group: image-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  builds:
+    name: the image builds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Say which tree the image is built from
+        run: |
+          echo "The image is built from \`$(git rev-parse HEAD)\` (${{ github.event_name }}). It is checked and thrown away: never pushed, signed, saved or published." | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Say how much room the runner has
+        run: df -h /
+
+      - name: Build the image
+        run: |
+          start=$(date +%s)
+          sudo podman build -f image/Containerfile -t localhost/alo-os:check . > "$RUNNER_TEMP/image-build.log" 2>&1 || { tail -40 "$RUNNER_TEMP/image-build.log"; echo "The image did not build after $(( $(date +%s) - start )) s; the last forty lines of its log are above, and the whole log is kept with this run for three days." | tee -a "$GITHUB_STEP_SUMMARY"; exit 1; }
+          echo "The image built in $(( $(date +%s) - start )) s." | tee -a "$GITHUB_STEP_SUMMARY"
+          df -h /
+
+      - name: Throw the image away
+        if: always()
+        run: |
+          sudo podman rmi -f localhost/alo-os:check > /dev/null 2>&1 || true
+          sudo podman image prune -f > /dev/null
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: image-build-log
+          path: ${{ runner.temp }}/image-build.log
+          retention-days: 3
+          if-no-files-found: warn
