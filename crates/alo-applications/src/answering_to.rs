@@ -222,8 +222,10 @@ mod tests {
     /// the reason `alo-app` reads no display name, answered here instead.
     #[test]
     fn two_applications_with_one_name_make_it_name_neither() {
+        // Names that are neither one's short name, so the shown name is the
+        // step that answers.
         let installed = Installed::holding([
-            the_text_editor(),
+            Application::called("org.example.Jot", "Text Editor").unwrap(),
             Application::called("org.kde.kwrite", "Text Editor").unwrap(),
         ]);
         let AnsweringTo::Several(both) = installed.answering_to("TextEditor") else {
@@ -233,12 +235,16 @@ mod tests {
             .iter()
             .map(|application| application.identifier())
             .collect();
-        assert_eq!(both, ["org.gnome.TextEditor", "org.kde.kwrite"]);
+        assert_eq!(both, ["org.example.Jot", "org.kde.kwrite"]);
         assert!(installed.answering_to("TextEditor").is_here());
-        // And the identifier still names exactly one.
+        // And the identifier, or the short name, still names exactly one.
         assert_eq!(
             identifier(&installed.answering_to("org.kde.kwrite")),
             Some("org.kde.kwrite")
+        );
+        assert_eq!(
+            identifier(&installed.answering_to("jot")),
+            Some("org.example.Jot")
         );
     }
 
