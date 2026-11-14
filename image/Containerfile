@@ -1671,6 +1671,16 @@ RUN described="$(sed -n 's/^name *= *"\(.*\)"/\1/p' /etc/alo/agentd.toml | head 
  && test "$described" = "$unit" \
  && echo "the agent is called '$described' in both the description and the desktop's unit"
 
+# **`audio` is put in `/etc/group` before `systemd-sysusers` runs**, because on
+# the pinned base it is only in `/usr/lib/group`, which nss-altfiles reads.
+# Measured there: sysusers finds the group through NSS, so it creates nothing,
+# and then writes `m alo-greeter audio` nowhere, with no error and no line in
+# the log, and the assertion below stopped the build (2026-11-14,
+# `docs/quirks/a-membership-in-a-group-only-usr-lib-group-holds-is-written-nowhere.md`).
+# `wheel` worked because the base already has it in `/etc/group`. If a base
+# ever drops `audio` altogether, the second grep fails and so does the build.
+RUN grep -q '^audio:' /etc/group || grep '^audio:' /usr/lib/group >> /etc/group
+
 RUN systemd-sysusers \
  && test "$(id -u alo)" = 1000 \
  && test "$(id -u alo-agent)" = 60989 \
