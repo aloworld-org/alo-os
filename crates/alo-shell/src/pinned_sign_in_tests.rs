@@ -81,12 +81,12 @@ const BEFORE: [Drawn; 6] = [
     Drawn {
         scale: 100,
         text: 100,
-        hash: 0xdaf1_5848_5596_6952,
+        hash: 0xdaaf_c237_3d90_0b96,
     },
     Drawn {
         scale: 100,
         text: 125,
-        hash: 0xe681_1e43_cf5e_403b,
+        hash: 0xf63f_74ea_fd68_9c0a,
     },
     Drawn {
         scale: 150,

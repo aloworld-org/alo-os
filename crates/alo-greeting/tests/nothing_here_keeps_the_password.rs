@@ -240,7 +240,7 @@ fn nothing_on_those_two_lines_keeps_or_prints_anything() {
                 // make an account, and from one door to the other.
                 if shape == "self."
                     && (line.contains("self.accounts.signs_in(")
-                        || line.contains("self.accounts.created(")
+                        || line.contains("self.accounts.created_with(")
                         || line.contains("self.signs_in(name, password)")
                         // ADR 0150: the described number, beside the password,
                         // handed to the keeper — a handing on, as above.

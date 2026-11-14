@@ -672,6 +672,11 @@ fn fnv_of(value: &impl std::fmt::Debug) -> u64 {
 /// the text changed and the pixels did not. What says the pixels did not is
 /// `crate::the_desktops_pictures_pinned`'s sign-in table, which hashes the
 /// pixels and areas themselves and was left exactly as it was.
+///
+/// **Re-taken on 2026-11-14 from this test's failure on CI, on purpose**: the
+/// screen stopped drawing *Other ways to sign in*, and the account in this
+/// fixture is a password's, so its entry now says *Enter your password*. All
+/// six moved, as both changes reach all three screens.
 #[test]
 fn at_one_hundred_the_pixels_are_mains() {
     let mut labels = WindowControlLabels::new().unwrap();
@@ -708,12 +713,12 @@ fn at_one_hundred_the_pixels_are_mains() {
     assert_eq!(
         hashes,
         [
-            0x3b58_3c5e_4446_cd14,
-            0x4767_bfba_8119_313c,
-            0xe6a9_bfc2_7ca5_089d,
-            0xbc9a_8076_c9e2_e6e2,
-            0xa6aa_2276_5bbc_1a75,
-            0xe60b_bbce_312d_be0f,
+            0x54a6_52fd_addf_e3d6,
+            0x8d6a_c977_ed70_51e0,
+            0xfce1_a778_c2b4_f3f5,
+            0x2318_1cd6_7e9a_160c,
+            0xbbaf_0e3b_3658_9923,
+            0xf3ea_5e30_83ca_c713,
         ],
         "a screen at 100 per cent is not the pixels main drew"
     );
