@@ -43,8 +43,10 @@
 //! bytes yet* as *finished* would close a terminal the moment a program paused
 //! to think. [`WhatArrived`] is those three, by name.
 
+use crate::what_a_shell_starts_with::{
+    ENV, TheSession, WhatTheShellStartsWith, WhyNotKeptOut, what_a_shell_starts_with,
+};
 use crate::why_a_command_is_waiting::WhyItIsWaiting;
-use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::io::{Read as _, Write as _};
 
@@ -110,6 +112,9 @@ pub struct AShellOnAPseudoterminal {
     >,
     /// Which folder the shell was started in, kept so it can be asked.
     started_in: WhereItStarts,
+    /// Why the shell was given the person's whole session and still inherited
+    /// this process's own names, kept so the caller can say it.
+    not_kept_out: Option<WhyNotKeptOut>,
 }
 
 /// What this terminal calls itself to the programs it runs.
@@ -140,53 +145,26 @@ pub struct AShellOnAPseudoterminal {
 /// child *starts* with, and a line in their own shell startup replaces it.
 const WHAT_THIS_TERMINAL_IS_CALLED: &str = "xterm-256color";
 
-/// The environment a shell started here is given, on top of the one this
-/// process has: what the session told it (`session`, `NAME=value` each), and
-/// what this terminal is called.
-///
-/// **The session's part is what lets a program started here draw.** The
-/// terminal runs inside the desktop, so a shell inherits the desktop's own
-/// environment — and the desktop is the display, so nothing ever told *it*
-/// where the display is. Until 2026-11-14 a shell here had no
-/// `WAYLAND_DISPLAY`, and every graphical program typed into it started with
-/// no display: VSCodium's launcher then asks Chromium for X11, which alo does
-/// not have, and Chromium stops itself with a trap
-/// (`docs/quirks/vscodium-from-alos-terminal-asks-for-x11-and-traps.md`).
-///
-/// **`TERM` is set last**, so a session entry can never change what this
-/// terminal claims to understand. An entry with no `=` is not a variable and
-/// is left out; the caller builds these from a typed function, so none
-/// arrives that way.
-///
-/// Its own function so a test can read it without starting a shell, which needs
-/// a pseudoterminal and a machine to put one on.
-fn what_the_child_is_told(session: &[String]) -> HashMap<String, String> {
-    let mut env: HashMap<String, String> = session
-        .iter()
-        .filter_map(|entry| entry.split_once('='))
-        .map(|(name, value)| (name.to_owned(), value.to_owned()))
-        .collect();
-    env.insert("TERM".to_owned(), WHAT_THIS_TERMINAL_IS_CALLED.to_owned());
-    env
-}
-
 impl AShellOnAPseudoterminal {
-    /// Start the person's own shell, in their home folder.
+    /// Start the person's own shell, in their home folder, with their
+    /// session's environment.
     ///
-    /// **Names no program**, so the system answers with theirs. `home` is the
-    /// session's `$HOME`, and the shell starts there — which is the behaviour
-    /// of every terminal a person has used. Until 2026-10-28 this said *the
-    /// working directory is where this process already is*, and on a machine
-    /// that is `/`, because the compositor is started there.
+    /// **Their shell, as their session names it.** `home` is the session's
+    /// `$HOME`, and the shell starts there — which is the behaviour of every
+    /// terminal a person has used. Until 2026-10-28 this said *the working
+    /// directory is where this process already is*, and on a machine that is
+    /// `/`, because the compositor is started there.
     ///
     /// **A home that cannot be used still gets a shell**, in `/`, and
     /// [`Self::where_it_started`] says why; `crate::where_a_shell_starts` gives
     /// the reasons for both halves of that.
     ///
-    /// `session` is what the person's session is told, `NAME=value` each —
-    /// for the desktop, where it draws (`alo_launching::what_the_session_is_told`)
-    /// — so a program typed here starts with what a program the desktop or the
-    /// bus starts is given. Empty for a terminal with no display to name.
+    /// `session` is what the shell's environment is built from, and
+    /// `crate::what_a_shell_starts_with` says how: the person's whole session
+    /// where it could be asked, and nothing of this process — which is the
+    /// desktop, and whose own variables are not the person's. Where the
+    /// desktop's names could not be kept out the shell still starts, and
+    /// [`Self::why_its_own_names_were_not_kept_out`] says why.
     ///
     /// # Errors
     /// [`NoShell::ItWouldNotStart`] if the pseudoterminal could not be opened
@@ -194,9 +172,40 @@ impl AShellOnAPseudoterminal {
     pub fn the_persons_own(
         size: HowBig,
         home: Option<&OsStr>,
-        session: &[String],
+        session: &TheSession,
     ) -> Result<Self, NoShell> {
-        Self::started(size, None, WhereItStarts::for_a_home(home), session)
+        let mut this_process = Vec::new();
+        let mut not_text = 0_usize;
+        for (name, _) in std::env::vars_os() {
+            match name.into_string() {
+                Ok(name) => this_process.push(name),
+                Err(_) => not_text += 1,
+            }
+        }
+        let own_shell = std::env::var("SHELL").ok();
+        let mut starts = what_a_shell_starts_with(
+            session,
+            WHAT_THIS_TERMINAL_IS_CALLED,
+            &this_process,
+            own_shell.as_deref(),
+            std::path::Path::new(ENV).is_file(),
+        );
+        if starts.program.is_some() && not_text > 0 {
+            starts.not_kept_out = Some(WhyNotKeptOut::NamesThatAreNotText(not_text));
+        }
+        let shell = starts
+            .program
+            .take()
+            .map(|(program, arguments)| Shell::new(program, arguments));
+        Self::started(size, shell, WhereItStarts::for_a_home(home), starts)
+    }
+
+    /// **Why the shell inherited this process's own names** although it was
+    /// given the person's whole session — or [`None`], which is the ordinary
+    /// answer, and the answer for a session that could not be asked.
+    #[must_use]
+    pub const fn why_its_own_names_were_not_kept_out(&self) -> Option<WhyNotKeptOut> {
+        self.not_kept_out
     }
 
     /// Which folder this shell was started in, and whether it was the person's
@@ -226,7 +235,14 @@ impl AShellOnAPseudoterminal {
             program.to_owned(),
             args.iter().map(|arg| (*arg).to_owned()).collect(),
         );
-        Self::started(size, Some(shell), WhereItStarts::for_a_home(None), &[])
+        let starts = what_a_shell_starts_with(
+            &TheSession::OnTopOfThisProcess(Vec::new()),
+            WHAT_THIS_TERMINAL_IS_CALLED,
+            &[],
+            None,
+            false,
+        );
+        Self::started(size, Some(shell), WhereItStarts::for_a_home(None), starts)
     }
 
     /// The one road the two above take.
@@ -238,7 +254,7 @@ impl AShellOnAPseudoterminal {
         size: HowBig,
         shell: Option<Shell>,
         started_in: WhereItStarts,
-        session: &[String],
+        starts: WhatTheShellStartsWith,
     ) -> Result<Self, NoShell> {
         let options = Options {
             shell,
@@ -248,7 +264,7 @@ impl AShellOnAPseudoterminal {
             // program said; this is a library, and whoever owns the terminal
             // decides that.
             drain_on_exit: false,
-            env: what_the_child_is_told(session),
+            env: starts.env,
         };
         let pty =
             tty::new(&options, how_the_child_is_told(size), 0).map_err(NoShell::ItWouldNotStart)?;
@@ -257,6 +273,7 @@ impl AShellOnAPseudoterminal {
             hearing: crate::what_the_shell_says_about_the_prompt::WhatTheShellSays::new(),
             heard: Vec::new(),
             started_in,
+            not_kept_out: starts.not_kept_out,
         })
     }
 

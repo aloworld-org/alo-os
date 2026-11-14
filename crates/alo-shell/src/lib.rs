@@ -706,6 +706,9 @@ pub mod the_markets_words;
 mod the_panel_reveals;
 /// The person pressed Stop in a task (ADR 0139).
 pub mod the_person_stops_a_task;
+/// The person's session environment, read from their systemd manager when
+/// alo's own terminal opens, so its shell starts with what their apps start with.
+mod the_persons_session;
 pub mod the_pickers_words;
 mod the_pointer_in_pixels;
 pub mod the_providers_words;

@@ -55,6 +55,8 @@ pub mod the_snippet_a_person_installs;
 pub mod what_a_cell_looks_like;
 pub mod what_a_command_will_do;
 pub mod what_a_person_typed;
+#[cfg(target_os = "linux")]
+mod what_a_shell_starts_with;
 pub mod what_alo_said;
 pub mod what_is_blocking_it;
 pub mod what_the_kernel_says;
@@ -78,6 +80,8 @@ pub use a_shell_on_a_pseudoterminal::{
 };
 pub use a_test_result_a_program_printed::{ATestResult, a_test_result_in};
 pub use how_big_the_grid_is::{HowBig, NotASize};
+#[cfg(target_os = "linux")]
+pub use what_a_shell_starts_with::{TheSession, WhyNotKeptOut};
 // Gated with its module, for `alo-portals`' reason. Found by sweeping for the
 // shape rather than by meeting it: nothing outside this crate names
 // `NotStopped`, so it broke no caller and would have waited for whoever next
