@@ -19,7 +19,7 @@
 //! (4,074 bytes on 44) and `/usr/sbin/clear`.
 //!
 //! ```text
-//! podman run --rm quay.io/fedora/fedora-bootc:44@sha256:ea70c130… \
+//! podman run --rm quay.io/fedora/fedora-bootc:44@sha256:5a347216… \
 //!     ls /usr/share/terminfo/x/xterm-256color
 //! ```
 //!
