@@ -52,10 +52,51 @@ pub trait TheVoice {
     fn is(&mut self, on: bool, language: Option<String>);
     /// The next thing starting or stopping came to, where one has come.
     fn answered(&mut self) -> Option<TheScreenReaderAnswered>;
-    /// **Say, once, how to hear the screen**, in `language` — with the voice
-    /// alone, the screen reader left off. A machine with nothing to play it
-    /// on says nothing, and that is said on the journal, not a failure.
-    fn says_how_to_hear_it(&mut self, language: Option<String>);
+    /// **Say one sentence with the voice alone**, in `language`, without the
+    /// screen reader: how to hear the screen, or that the reader is off. A
+    /// machine with nothing to play it on says nothing, and that is said on
+    /// the journal, not a failure.
+    fn says(&mut self, saying: Saying, language: Option<String>);
+    /// Whether this computer has anything to play a voice on.
+    fn has_somewhere_to_play_it(&self) -> bool;
+}
+
+/// **The sentences the voice says alone**, before sign-in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Saying {
+    /// *Press Control, Alt and S to hear the screen read aloud* — once, on a
+    /// new machine's first screen (`alo_shell`'s `the_spoken_hint`).
+    HowToHearIt,
+    /// *Screen reader off* — as the person turns it off.
+    TheReaderIsOff,
+}
+
+impl Saying {
+    /// The word it is, in the sign-in screen's vocabulary.
+    #[must_use]
+    pub const fn word(self) -> alo_strings::Word {
+        match self {
+            Self::HowToHearIt => alo_shell::sign_in_words::HEAR_THE_SCREEN,
+            Self::TheReaderIsOff => alo_shell::sign_in_words::SCREEN_READER_OFF,
+        }
+    }
+}
+
+/// Where the kernel lists this computer's sound devices.
+pub const THE_SOUND_DEVICES: &str = "/dev/snd";
+
+/// **Whether `devices` lists anything to play sound on**: a playback device,
+/// which the kernel names `pcmC<card>D<device>p`. A folder that is not there
+/// or cannot be read is nothing to play it on.
+#[must_use]
+pub fn there_is_somewhere_to_play_it(devices: &std::path::Path) -> bool {
+    std::fs::read_dir(devices).is_ok_and(|listed| {
+        listed.filter_map(Result::ok).any(|device| {
+            let name = device.file_name();
+            let name = name.to_string_lossy();
+            name.starts_with("pcmC") && name.ends_with('p')
+        })
+    })
 }
 
 /// **The accessibility bus**, as the relay puts a screen on it.
@@ -110,26 +151,49 @@ impl<V: TheVoice, B: TheBus> TheRelay<V, B> {
                 Vec::new()
             }
             ToTheReader::Read { on, language } => {
+                let mut told = Vec::new();
                 match (self.reading, on) {
-                    // **A new language while reading starts the voice again
-                    // in it**: Orca reads its language once, as it starts.
-                    (true, true) if language != self.language => {
-                        self.voice.is(false, None);
-                        self.voice.is(true, language.clone());
+                    (true, true) if language == self.language => {}
+                    (false, false) => {}
+                    // **On, or a new language while on** — which starts the
+                    // voice again in it, because Orca reads its language once,
+                    // as it starts. **Not on a machine with nothing to play it
+                    // on**: that is said, apart from *did not start*.
+                    (_, true) => {
+                        if self.reading {
+                            self.voice.is(false, None);
+                        }
+                        if self.voice.has_somewhere_to_play_it() {
+                            self.voice.is(true, language.clone());
+                        } else {
+                            eprintln!(
+                                "alo-reading-the-sign-in-screen: the screen reader was turned on \
+                                 and this computer has no sound device to play it on"
+                            );
+                            told.push(FromTheReader::Answered(
+                                TheScreenReaderAnswered::NothingToPlayItOn,
+                            ));
+                        }
                     }
-                    (true, true) | (false, false) => {}
-                    (false, true) | (true, false) => self.voice.is(on, language.clone()),
+                    // **Off is said before the voice stops**, so the person
+                    // hears that it worked.
+                    (true, false) => {
+                        self.voice
+                            .says(Saying::TheReaderIsOff, self.language.clone());
+                        self.voice.is(false, language.clone());
+                    }
                 }
                 self.reading = on;
                 self.language = language;
-                self.answers()
+                told.extend(self.answers());
+                told
             }
             ToTheReader::SomebodyIsSigningIn => self.steps_aside(PATIENCE_AT_SIGN_IN),
             // **Once a boot, and never over the reader.**
             ToTheReader::SayHowToHearIt { language } => {
                 if !self.said_how_to_hear_it && !self.reading {
                     self.said_how_to_hear_it = true;
-                    self.voice.says_how_to_hear_it(language);
+                    self.voice.says(Saying::HowToHearIt, language);
                 }
                 Vec::new()
             }

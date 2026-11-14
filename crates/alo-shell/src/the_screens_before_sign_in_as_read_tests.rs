@@ -337,3 +337,20 @@ fn the_next_screen_is_heard_as_a_new_one() {
         "opening the region's list is a new screen: {told:?}"
     );
 }
+
+/// **What the reader came to is told on the screen in front, announced**, and
+/// nothing is added where there is nothing to say.
+#[test]
+fn what_the_reader_came_to_is_told_on_the_screen() {
+    let strings = words();
+    let first_start = TheFirstStart::arriving(None);
+    let plain = as_read(&strings, &first_start);
+    assert_eq!(plain.clone().with_what_the_reader_said(None), plain);
+    let said = "The screen reader is on, and this computer has nothing to play it on.";
+    let told = plain.with_what_the_reader_said(Some(said));
+    let (_, on_it) = the_screen(&told);
+    assert!(
+        on_it.iter().any(|node| node.name == said && node.announced),
+        "the sentence is on the screen in front and announced"
+    );
+}

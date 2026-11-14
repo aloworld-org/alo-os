@@ -158,6 +158,31 @@ impl ReadAloudTree {
     }
 }
 
+impl ReadAloudTree {
+    /// **The same tree, with what the screen reader came to said on the screen
+    /// in front** — *did not start*, *nothing to play it on* — as the screen
+    /// draws it above *Accessibility* (`crate::the_readers_sentence_drawn`),
+    /// announced as it appears. `said` is [`None`] where there is nothing to
+    /// say, and the tree is left as it was.
+    #[must_use]
+    pub(crate) fn with_what_the_reader_said(mut self, said: Option<&str>) -> Self {
+        let (Some(said), Some(screen)) = (said, self.in_front().map(|sheet| sheet.at)) else {
+            return self;
+        };
+        self.push(
+            screen,
+            Node {
+                role: access_roles::number_of(Role::Label),
+                name: said.to_owned(),
+                states: access_roles::words_of(State::AnnouncedWhenItChanges, None),
+                announced: true,
+                ..Node::default()
+            },
+        );
+        self
+    }
+}
+
 /// One reading of a screen in progress.
 struct Reading<'t, 's> {
     /// The tree being added to.

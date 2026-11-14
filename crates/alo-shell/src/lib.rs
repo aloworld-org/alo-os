@@ -711,6 +711,7 @@ pub mod the_pickers_words;
 mod the_pointer_in_pixels;
 pub mod the_providers_words;
 mod the_reader_at_the_sign_in_screen_kept;
+mod the_readers_sentence_drawn;
 /// The record window's ten icons, read from the design file's SVG and drawn
 /// at the display's scale.
 mod the_records_icons;

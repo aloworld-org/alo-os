@@ -15,8 +15,21 @@ struct AVoice {
     will_answer: VecDeque<TheScreenReaderAnswered>,
     /// Whether it answers each ask at once, as a voice that works does.
     answers_at_once: bool,
+    /// Every sentence it was asked to say alone, and in what language.
+    said: Vec<(Saying, Option<String>)>,
+    /// Whether the computer it is on has nothing to play it on.
+    silent: bool,
+}
+
+impl AVoice {
     /// Every time it was asked to say how to hear the screen, and in what.
-    hinted: Vec<Option<String>>,
+    fn hinted(&self) -> Vec<Option<String>> {
+        self.said
+            .iter()
+            .filter(|(saying, _)| *saying == Saying::HowToHearIt)
+            .map(|(_, language)| language.clone())
+            .collect()
+    }
 }
 
 impl TheVoice for AVoice {
@@ -35,9 +48,83 @@ impl TheVoice for AVoice {
         self.will_answer.pop_front()
     }
 
-    fn says_how_to_hear_it(&mut self, language: Option<String>) {
-        self.hinted.push(language);
+    fn says(&mut self, saying: Saying, language: Option<String>) {
+        self.said.push((saying, language));
     }
+
+    fn has_somewhere_to_play_it(&self) -> bool {
+        !self.silent
+    }
+}
+
+/// **Off is said before the voice stops**, in the language it was reading in,
+/// and only when it was reading.
+#[test]
+fn off_is_said_before_the_voice_stops() {
+    let mut relay = a_relay();
+    relay.heard(ToTheReader::Read {
+        on: false,
+        language: None,
+    });
+    assert!(relay.voice.said.is_empty(), "nothing was reading");
+    relay.heard(read_in("de"));
+    relay.heard(ToTheReader::Read {
+        on: false,
+        language: Some("de".to_owned()),
+    });
+    assert_eq!(
+        relay.voice.said,
+        vec![(Saying::TheReaderIsOff, Some("de".to_owned()))]
+    );
+    assert_eq!(
+        relay.voice.asked.last(),
+        Some(&(false, Some("de".to_owned())))
+    );
+}
+
+/// **With nothing to play it on, the reader is not started and that is said
+/// apart from *did not start*** — and the choice stands, so turning it off
+/// is still heard as off.
+#[test]
+fn nothing_to_play_it_on_is_said_apart() {
+    let mut relay = TheRelay::of(
+        AVoice {
+            silent: true,
+            answers_at_once: true,
+            ..AVoice::default()
+        },
+        ABus::default(),
+    );
+    assert_eq!(
+        relay.heard(read_in("en")),
+        vec![FromTheReader::Answered(
+            TheScreenReaderAnswered::NothingToPlayItOn
+        )]
+    );
+    assert!(relay.voice.asked.is_empty(), "nothing was started");
+}
+
+/// **Something to play it on is a playback device**, and a capture device, a
+/// control device or no folder at all is nothing.
+#[test]
+fn somewhere_to_play_it_is_a_playback_device() {
+    let folder = std::env::temp_dir().join(format!(
+        "alo-sound-devices-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    assert!(!there_is_somewhere_to_play_it(&folder), "no folder");
+    std::fs::create_dir_all(&folder).unwrap();
+    for name in ["controlC0", "pcmC0D0c", "timer"] {
+        std::fs::write(folder.join(name), "").unwrap();
+    }
+    assert!(!there_is_somewhere_to_play_it(&folder), "nothing plays");
+    std::fs::write(folder.join("pcmC0D3p"), "").unwrap();
+    assert!(there_is_somewhere_to_play_it(&folder));
+    let _ = std::fs::remove_dir_all(folder);
 }
 
 /// **How to hear the screen is said once a boot, in the language asked, and
@@ -51,7 +138,7 @@ fn how_to_hear_the_screen_is_said_once_and_never_over_the_reader() {
     assert!(relay.heard(hint("fr")).is_empty());
     relay.heard(hint("fr"));
     relay.heard(hint("de"));
-    assert_eq!(relay.voice.hinted, vec![Some("fr".to_owned())]);
+    assert_eq!(relay.voice.hinted(), vec![Some("fr".to_owned())]);
     assert!(
         relay.voice.asked.is_empty(),
         "the screen reader is not started to say it"
@@ -60,7 +147,7 @@ fn how_to_hear_the_screen_is_said_once_and_never_over_the_reader() {
     let mut reading = a_relay();
     reading.heard(read_in("en"));
     reading.heard(hint("en"));
-    assert!(reading.voice.hinted.is_empty(), "never over the reader");
+    assert!(reading.voice.hinted().is_empty(), "never over the reader");
 }
 
 /// **The voice is the screen's language where eSpeak NG has one**, and English
