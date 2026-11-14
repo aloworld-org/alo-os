@@ -221,7 +221,7 @@ fn another_verbs_authority_does_not_reach_the_record() {
 #[test]
 fn a_whole_machine_offers_the_record_verb_it_can_carry_out() {
     let offered =
-        crate::machine::the_verbs_a_whole_machine_offers().expect("the fifteen verbs declare");
+        crate::machine::the_verbs_a_whole_machine_offers().expect("the sixteen verbs declare");
     assert!(
         offered
             .of(alo_record::what_touched_a_file::THE_VERB)

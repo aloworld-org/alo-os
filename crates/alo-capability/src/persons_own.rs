@@ -16,7 +16,8 @@
 //! list types. `docs/contracts/app-adapters.md` carries two verbs that reach an
 //! application — `accessible.read_window`, a read, and
 //! `accessible.activate_control`, which presses a named control — and neither
-//! sends text. [`crate::a_terminal_for_the_agent`] holds that argument in full.
+//! sends text. The third, `accessible.type_text` (2026-11-13), types into a
+//! field and refuses every terminal. [`crate::a_terminal_for_the_agent`] holds that argument in full.
 //!
 //! So this list is still the list, and the three places that ask it now ask the
 //! person's choice beside it. **A grant to `/` stays refused at every setting**,

@@ -142,6 +142,33 @@ fn where_it_does_not_fit_the_keyboard_scrolls_it_and_nothing_shrinks() {
     }
 }
 
+/// **With Accounts as the tenth entry, 1280 × 800 at the ordinary text size
+/// scrolls** — the case the owner ruled on, *"The side column scrolls"* — at
+/// one and at twice the density, and the last entry is reached whole.
+#[test]
+fn ten_entries_scroll_at_1280_by_800_and_the_last_is_reached() {
+    for (size, display) in [
+        ((1280, 800), DisplayScale::ONE),
+        ((2560, 1600), DisplayScale::of_per_cent(200)),
+    ] {
+        let machine = a_persons_machine("side-ten");
+        let mut window = machine.opened();
+        let before = drawn(&window, size, light(), display);
+        let side = before.side_column.unwrap();
+        assert!(
+            side.scrolls(),
+            "{size:?}: ten entries were expected to run over"
+        );
+        press(&mut window, SettingsKey::Last);
+        let after = drawn(&window, size, light(), display);
+        assert!(after.side_column.unwrap().scrolled > 0, "{size:?}");
+        assert!(
+            the_whole_of(&after, SettingsCategory::Accessibility),
+            "{size:?}"
+        );
+    }
+}
+
 /// **The arithmetic**: where it fits, nothing; while following, as little as
 /// brings the chosen whole into view; after a wheel, where the wheel left it;
 /// and never past either end.

@@ -293,11 +293,12 @@ the owner's decision of 2026-11-13: "Keys, in alo's own copy". Additive: the two
 verbs above keep their meaning, and an adapter still cannot declare
 `synthetic`.*
 
-The fallback gains a third verb:
+The fallback gains a third verb, **offered by a turn since 2026-11-13**
+(`crates/alo-turn/src/typing_into_an_application.rs`):
 
 | Verb | Effect | Takes | Sentence |
 |---|---|---|---|
-| `accessible.type_text` | change | `application`; `name`, the editable control's name, up to 200 characters; `text`, the text kind | *type the text below into “{name}” in {application}, and save it* |
+| `accessible.type_text` | change | `application`; `name`, the editable control's name, up to 200 characters; `text`, the text kind | *type {text} into “{name}” in {application}, and save it* |
 
 It requires a grant over the application, as the other two do. What anyone
 building on it can rely on:
@@ -325,7 +326,9 @@ building on it can rely on:
   what was found. A control whose text the tree does not show cannot be read
   back, and nothing is saved either.
 - **One approval types once**: one call types one text into one control and
-  saves it. The record keeps the whole text, the application, the control and
+  saves it. It answers the agent with `typed`: the application, the field's name,
+  how many characters, whether it went in through the tree, and whether it was
+  saved — never the text itself, which the person approved and the record keeps. The record keeps the whole text, the application, the control and
   the road, for a typing and for every refusal.
 
 ## Amended 2026-11-12 — an adapter may come from a crate alo OS pins, with its licence stated
