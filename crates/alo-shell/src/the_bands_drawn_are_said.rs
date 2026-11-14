@@ -30,7 +30,7 @@ pub(crate) struct WhatTheBandsSaid {
 }
 
 /// The bands one frame is about to paint over alo's own windows.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub(crate) struct TheseBands<'a> {
     /// The terminal's, if it has one on this display.
     pub(crate) terminal: Option<&'a EdgePicture>,
