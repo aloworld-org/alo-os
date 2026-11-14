@@ -51,3 +51,14 @@ fn a_difference_is_counted_in_pixels() {
     assert_eq!(before.differs_from(&after), 2);
     assert_eq!(before.differs_from(&Frame::filled(8, 2, [1, 2, 3])), 32);
 }
+
+/// **A pixel reads as its colour, and a place off the picture reads as
+/// nothing** rather than as a neighbour's colour.
+#[test]
+fn a_pixel_reads_as_its_colour_and_off_the_picture_as_nothing() {
+    let picture = Frame::filled(3, 2, [1, 2, 3]).with_pixel(2, 1, [9, 8, 7]);
+    assert_eq!(picture.rgb(0, 0), Some([1, 2, 3]));
+    assert_eq!(picture.rgb(2, 1), Some([9, 8, 7]));
+    assert_eq!(picture.rgb(3, 0), None);
+    assert_eq!(picture.rgb(0, 2), None);
+}

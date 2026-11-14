@@ -17,6 +17,11 @@ name = "alo-walk"
 path = "src/bin/alo-walk.rs"
 
 [dependencies]
+# **alo's pointer, from the source the compositor draws it with**, so the
+# pointer checks compare the screen with the same pixels `alo-shell` asks
+# `alo-cursors` for, never with a picture somebody saved.
+alo-appearance = { path = "../alo-appearance" }
+alo-cursors = { path = "../alo-cursors" }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 

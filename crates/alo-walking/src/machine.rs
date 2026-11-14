@@ -24,6 +24,15 @@ pub trait Machine {
     /// When the machine did not take it.
     fn stroke(&mut self, stroke: &Stroke) -> Result<(), MachineError>;
 
+    /// Move the pointer `dx` right and `dy` down, relative, in one step of
+    /// at most `crate::pointer_moves::LARGEST_STEP` on each axis. Where it
+    /// lands is read off the screen, never from what was asked.
+    ///
+    /// # Errors
+    ///
+    /// When the machine did not take it.
+    fn nudge(&mut self, dx: i32, dy: i32) -> Result<(), MachineError>;
+
     /// A picture of the screen now, to compare.
     ///
     /// # Errors
