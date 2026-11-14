@@ -201,6 +201,70 @@ pub enum NotPinned {
     },
 }
 
+/// Why `image/bases.toml` does not record a base alo keeps a copy of
+/// (ADR 0154).
+#[derive(Debug, Error, PartialEq, Eq)]
+pub enum NotABase {
+    /// A missing key, a key nobody declared, or a value of the wrong kind.
+    #[error(
+        "the bases file is not a list of `copy`, `tag`, `digest`, `upstream` and `recorded`: {why}"
+    )]
+    NotToml {
+        /// What the reader said about it.
+        why: String,
+    },
+    /// A base whose fields are not all on the one line naming its digest.
+    #[error(
+        "the base `{digest}` is not written on one line, and the workflow that copies it reads one line"
+    )]
+    NotOnOneLine {
+        /// The digest whose line was read.
+        digest: String,
+    },
+    /// A copy kept anywhere but alo's own registry.
+    #[error(
+        "the copy is `{stated}`, and alo keeps its copies under `ghcr.io/aloworld-org/`, named with no tag and no digest"
+    )]
+    NotAlosRegistry {
+        /// What the file said.
+        stated: String,
+    },
+    /// A digest that is not `sha256:` and 64 lowercase hexadecimal characters.
+    #[error(
+        "the base's digest is `{stated}`, and a digest is `sha256:` and 64 lowercase hexadecimal characters"
+    )]
+    NotADigest {
+        /// What the file said.
+        stated: String,
+    },
+    /// A tag a registry would not accept.
+    #[error("the copy's tag is `{stated}`, which a registry would not accept as a tag")]
+    NotATag {
+        /// What the file said.
+        stated: String,
+    },
+    /// An origin that is alo's own registry, or that names no tag or a digest.
+    #[error(
+        "the base came from `{stated}`, and an origin is the maker's repository and the tag that named the digest — never alo's own copy, and never a digest"
+    )]
+    NotAnOrigin {
+        /// What the file said.
+        stated: String,
+    },
+    /// A day that is not `YYYY-MM-DD`.
+    #[error("the base was recorded on `{stated}`, and a day is written YYYY-MM-DD")]
+    NotADay {
+        /// What the file said.
+        stated: String,
+    },
+    /// One digest recorded twice.
+    #[error("the base `{digest}` is recorded twice, and the copying workflow reads one line")]
+    Twice {
+        /// The digest.
+        digest: String,
+    },
+}
+
 /// Why a directory is not an image this crate can check.
 #[derive(Debug, Error)]
 pub enum NotAnImage {
