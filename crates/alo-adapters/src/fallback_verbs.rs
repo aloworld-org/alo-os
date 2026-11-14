@@ -32,6 +32,7 @@ use alo_capability::{Arg, Effect, Requires, Takes, Verb, Verbs};
 use crate::fallback_words as words;
 use crate::not_loaded::NotLoaded;
 use crate::pressable::Pressable;
+use crate::typing_words as typing;
 
 /// The prefix both verbs are named under.
 pub const PREFIX: &str = "accessible";
@@ -41,6 +42,13 @@ pub const READ_WINDOW: &str = "accessible.read_window";
 
 /// The verb that presses one control.
 pub const ACTIVATE_CONTROL: &str = "accessible.activate_control";
+
+/// The verb that types one approved text into one field, and saves it (ADR
+/// 0153).
+pub const TYPE_TEXT: &str = "accessible.type_text";
+
+/// The argument carrying the text, whole.
+pub const TEXT: &str = "text";
 
 /// The argument naming the application, in both verbs.
 pub const APPLICATION: &str = "application";
@@ -109,6 +117,22 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
         // **What it changes and leaves alone**, on the approval card — held to
         // what a press does by `tests/the_accessibility_fallback.rs`.
         .and_then(|verb| verb.changing(words::PRESS_CHANGES, Some(words::PRESS_LEAVES))),
+    )?)?;
+    verbs.declare(checked(
+        TYPE_TEXT,
+        Verb::checked(
+            TYPE_TEXT,
+            typing::TYPE_PURPOSE,
+            Effect::Change,
+            vec![
+                Arg::taking(APPLICATION, typing::TYPE_APPLICATION, Takes::Application),
+                Arg::taking(NAME, typing::TYPE_NAME, Takes::name(LONGEST_NAME)),
+                Arg::taking(TEXT, typing::TYPE_THE_TEXT, Takes::Text),
+            ],
+            Requires::grants_over([APPLICATION]),
+            typing::TYPE_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(typing::TYPE_CHANGES, Some(typing::TYPE_LEAVES))),
     )?)?;
     Ok(())
 }

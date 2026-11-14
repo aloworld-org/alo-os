@@ -314,8 +314,13 @@ pub(crate) fn drawn(
     })
 }
 
-/// One thing laid out from the sheet's left edge, moved `by` across.
-fn shifted(one: crate::settings_drawn_page::Drawn, by: i32) -> crate::settings_drawn_page::Drawn {
+/// One thing laid out from the sheet's left edge, moved `by` across — shared
+/// with the GitHub sign-in sheet (`crate::the_github_sheet_drawn`), which is
+/// placed the same way.
+pub(crate) fn shifted(
+    one: crate::settings_drawn_page::Drawn,
+    by: i32,
+) -> crate::settings_drawn_page::Drawn {
     use crate::settings_drawn_page::Drawn;
     let across = |area: Area| Rectangle::new((area.loc.x + by, area.loc.y).into(), area.size);
     match one {

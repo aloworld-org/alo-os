@@ -281,6 +281,12 @@ impl Server {
         // go. The other order loses a fast client's paste.
         self.clipboard
             .reading(std::os::unix::io::OwnedFd::from(reading));
+        // **What alo copied itself is written straight back**, because no
+        // client holds it to be asked (`crate::the_shell_copies`).
+        if let Some(copied) = crate::the_shell_copies::what_the_shell_copied(&seat) {
+            crate::the_shell_copies::written(std::os::unix::io::OwnedFd::from(writing), &copied);
+            return;
+        }
         let _ = smithay::wayland::selection::data_device::request_data_device_client_selection(
             &seat,
             crate::what_is_on_the_clipboard::TheClipboard::as_text().to_owned(),

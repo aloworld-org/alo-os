@@ -473,6 +473,7 @@ impl DesktopPictures {
             settings: None,
             approval: self.approval.as_ref(),
             open_with: None,
+            github_sheet: None,
             status: Some(&self.status),
             in_use: Some(&self.in_use),
             notifications: Some(&self.notifications),

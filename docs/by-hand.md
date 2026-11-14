@@ -348,6 +348,15 @@ screen reader's *activate* sends, and a person needs no approval to press a
 button in front of them: the approval is what an agent needs, because it is the
 agent choosing to press it.
 
+### accessible.type_text
+
+**By hand:** a person clicks in the application's window and types the text
+themselves, then saves it — `Sticky keys, slow keys, and keyboard-only
+operation of everything`. The verb types the same text into the same field, as
+key presses or through the field's own accessibility interface, and saves it
+only once it reads back exactly; the approval is what an agent needs, because it
+is the agent choosing what to type (ADR 0153).
+
 ### set_the_scheme
 
 **By hand:** a person opens the appearance pane of `Settings, as one place` and

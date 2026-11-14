@@ -70,6 +70,7 @@ use crate::pressing_a_control::pressing_a_control;
 use crate::publishing_a_folder::publishing_a_folder;
 use crate::reading_an_applications_windows::reading_an_applications_windows;
 use crate::refusing::NotDone;
+use crate::typing_into_an_application::typing_into_an_application;
 use crate::what_a_verb_did::WhatAVerbDid;
 
 /// The verbs `crate::acting_on_an_application` carries out.
@@ -152,6 +153,10 @@ pub(crate) fn carrying_out(
     if authorised.verb() == alo_adapters::ACTIVATE_CONTROL {
         let (entry, pressed) = pressing_a_control(machine, authorised, grants);
         return (entry, pressed.map(WhatAVerbDid::from));
+    }
+    if authorised.verb() == alo_adapters::TYPE_TEXT {
+        let (entry, typed) = typing_into_an_application(machine, authorised, grants);
+        return (entry, typed.map(WhatAVerbDid::from));
     }
     if THE_APPLICATION_ACTS.contains(&authorised.verb()) {
         let (entry, reached) = acting_on_an_application(machine, authorised, grants);

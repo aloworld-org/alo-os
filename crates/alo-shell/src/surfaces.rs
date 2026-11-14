@@ -787,18 +787,28 @@ impl XdgShellHandler for Surfaces {
 }
 
 delegate_compositor!(Surfaces);
-/// **What the compositor itself does with a selection: nothing.**
+/// **What the compositor itself does with a selection: hands over what alo
+/// copied** (`crate::the_shell_copies`).
 ///
-/// `SelectionUserData` is `()` because this shell never *offers* a selection of
-/// its own — it carries what one client put there to whichever client asks. The
-/// moment the shell wants to paste something itself, that unit type is where
-/// the thing being pasted goes, and the compiler will say so.
-///
-/// Both methods keep their defaults. `new_selection` is a notification, and
-/// `send_selection` only fires for a selection the *compositor* set, which is
-/// the case this shell does not have yet.
+/// Mostly this shell carries what one client put there to whichever client
+/// asks. Since the GitHub sign-in sheet's *Copy* it also offers text of its
+/// own, and `send_selection` — which fires only for a selection the
+/// *compositor* set — writes that text down the pipe an application handed
+/// over, on a thread, so a slow reader never holds the frame loop.
+/// `new_selection` keeps its default: it is a notification.
 impl SelectionHandler for Surfaces {
-    type SelectionUserData = ();
+    type SelectionUserData = crate::the_shell_copies::CopiedByTheShell;
+
+    fn send_selection(
+        &mut self,
+        _ty: smithay::wayland::selection::SelectionTarget,
+        _mime_type: String,
+        fd: std::os::unix::io::OwnedFd,
+        _seat: smithay::input::Seat<Self>,
+        user_data: &Self::SelectionUserData,
+    ) {
+        crate::the_shell_copies::written(fd, user_data);
+    }
 }
 
 /// A client's own drag, which this shell does not decorate or interfere with.

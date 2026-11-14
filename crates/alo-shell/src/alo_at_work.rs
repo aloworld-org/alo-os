@@ -102,6 +102,13 @@ pub trait StartsAlosCopy {
 
     /// Every control group any of alo's copies runs in now.
     fn every_copys_groups(&mut self) -> BTreeSet<u64>;
+
+    /// Whether the process `pid` runs in alo's copy of this application —
+    /// the one question typing into a window asks (ADR 0153). **No** unless
+    /// the copies can say yes.
+    fn runs_as_alos_copy(&mut self, _application: &str, _pid: u32) -> bool {
+        false
+    }
 }
 
 /// A connection the door was asked to work on, handed over whole.
@@ -196,6 +203,12 @@ impl WorkingInApplications {
             works: Vec::new(),
             lingering: Vec::new(),
         }
+    }
+
+    /// Whether the process `pid` runs in alo's own copy of `application`
+    /// (ADR 0153), as the copies say.
+    pub fn runs_as_alos_copy(&mut self, application: &str, pid: u32) -> bool {
+        self.copies.runs_as_alos_copy(application, pid)
     }
 
     /// How many applications alo is working in now.

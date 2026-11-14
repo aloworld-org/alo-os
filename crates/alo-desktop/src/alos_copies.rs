@@ -40,7 +40,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsString;
-use std::os::unix::fs::{DirBuilderExt as _, PermissionsExt as _};
+use std::os::unix::fs::{DirBuilderExt as _, MetadataExt as _, PermissionsExt as _};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 
@@ -361,6 +361,20 @@ impl StartsAlosCopy for AlosCopies {
         found.sort_unstable();
         found.dedup();
         found
+    }
+
+    fn runs_as_alos_copy(&mut self, application: &str, pid: u32) -> bool {
+        // The control group the kernel says this process is in, held to the
+        // person's own slice, by the kernel's number for it — and that number
+        // among the groups alo's copy runs in, which never holds one of the
+        // person's own (`groups_of`).
+        let Some(group) = where_it_runs(pid, &self.slice) else {
+            return false;
+        };
+        let Ok(about) = std::fs::symlink_metadata(&group) else {
+            return false;
+        };
+        self.groups_of(application).contains(&about.ino())
     }
 
     fn every_copys_groups(&mut self) -> BTreeSet<u64> {

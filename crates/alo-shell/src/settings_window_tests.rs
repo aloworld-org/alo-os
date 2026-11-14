@@ -1929,13 +1929,13 @@ fn moving_between_pages_rows_and_sections_changes_nothing() {
     assert!(!window.is_in_the_page());
     assert_eq!(window.focused(noon()), None);
     let mut pages = Vec::new();
-    for _ in 0..10 {
+    for _ in 0..11 {
         pages.push(window.category().unwrap());
         press(&mut window, SettingsKey::Next);
     }
-    assert_eq!(pages[..9], SettingsCategory::ALL);
+    assert_eq!(pages[..10], SettingsCategory::ALL);
     assert_eq!(
-        pages[9],
+        pages[10],
         SettingsCategory::Accessibility,
         "it stays on the last"
     );

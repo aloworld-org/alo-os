@@ -95,6 +95,7 @@ mod a_key_reaches_a_windows_band;
 mod a_key_reaches_settings;
 mod a_key_reaches_the_bar;
 mod a_key_reaches_the_docks_surfaces;
+mod a_key_reaches_the_github_sheet;
 mod a_key_reaches_the_market;
 mod a_key_reaches_the_open_with_sheet;
 mod a_key_reaches_the_password_sheet;
@@ -178,9 +179,13 @@ pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
 mod a_reader_presses_in_settings;
 pub use a_reader_presses::WhatAReaderPressCameTo;
+/// The keyboard layouts a text alo types is typed through (ADR 0153).
+mod a_layout_for_a_text;
 mod a_scale_held_to_what_draws;
 /// Typing into a task window's reply box.
 mod a_screen_arrives_or_leaves;
+/// A text alo asked to type, read off the application door whole (ADR 0153).
+pub mod a_text_at_the_door;
 mod access_action;
 mod access_attributes;
 mod access_bus;
@@ -289,6 +294,12 @@ mod how_a_panel_is_raised;
 /// A full-screen window's band, out of sight until the top edge is reached.
 mod the_band_over_full_screen;
 mod the_buttons_an_application_draws;
+/// The GitHub sign-in sheet (`docs/design/github-sign-in.md`).
+mod the_github_sheet;
+mod the_github_sheet_as_read;
+mod the_github_sheet_drawn;
+mod the_github_sheet_on_the_server;
+mod the_github_sheets_words;
 mod the_keyboard_on_the_docks_surfaces;
 /// The *Open with* sheet: an application asked for the person to choose what
 /// opens a link (frame `25:52`). Public for the one type the door hands it.
@@ -303,6 +314,8 @@ mod the_password_sheets_words;
 mod the_pointer_drawn;
 mod the_pointers_look;
 mod the_screen_reader_switch;
+/// alo putting words of its own on the clipboard.
+mod the_shell_copies;
 pub mod what_is_on_the_clipboard;
 mod where_a_travelling_window_lands;
 mod where_the_docks_surface_is;
@@ -350,6 +363,9 @@ mod an_alo_windows_edge;
 mod an_application_verb_is_carried_out;
 /// Closing a running task asks: Stop and close, or Cancel (ADR 0139).
 mod asking_before_closing;
+/// What the desktop is asked to do with GitHub's own command, and what it
+/// answered.
+mod asking_github;
 /// The alo Bar's matches, rising from the Dock's field.
 mod bar_matches_raster;
 mod dock_room;
@@ -499,6 +515,8 @@ mod server_desk;
 mod session_desktop;
 mod session_device;
 mod session_input;
+/// Settings → Accounts: who is signed in to GitHub, as the desktop said.
+mod settings_accounts;
 /// Left and Right along a row of choices in Settings.
 mod settings_along_a_row;
 mod settings_answering;
@@ -533,6 +551,8 @@ mod settings_old_names;
 mod settings_on_the_plane;
 mod settings_page;
 mod settings_page_accessibility;
+/// The Accounts page.
+mod settings_page_accounts;
 mod settings_page_alo;
 mod settings_page_appearance;
 mod settings_page_default_apps;
@@ -632,6 +652,8 @@ mod the_edge_takes_the_keyboard;
 /// The egress indicator's two arrows, from the design file's SVG.
 mod the_egress_indicators_arrows;
 mod the_first_account;
+/// The names the person's keyboard layout was made from, to make it again (ADR 0153).
+mod the_layouts_names;
 /// The title and the application name a window's band shows.
 mod the_name_on_the_band;
 /// The nearest empty space on a Place for a window with no room in view.
@@ -651,6 +673,8 @@ mod the_view_travels_to_a_window;
 mod the_window_before_this_terminal;
 /// Every window on the Place being looked at, for a new one to be placed beside.
 mod the_windows_on_this_place;
+/// Typing into the window in front, as key presses, to that one client (ADR 0153).
+pub mod typing_into_the_window_in_front;
 pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};
 /// Closing alo's terminal: at once when idle, after a question when a command
 /// is running.
@@ -966,11 +990,13 @@ pub use booting::{
     AMachineToStandOn, Stood, WouldNotStand, stand_the_sign_in_screen_up, what_this_machine_can_say,
 };
 pub use capture_flatten::{NotFlattened, burnt_in};
+pub use the_github_sheet::OnTheGitHubSheet;
 // `DesktopFrame::capturing` is a public field of this type, so without these a
 // caller outside this crate could only ever pass `None` — the capture tools were
 // drawable by this crate and by nobody else, including the fixture whose whole
 // job is to draw a frame with them on it. What is exported is what a caller must
 // hand in; every picture the tools become stays private.
+pub use asking_github::{AskingGitHub, GitHubAnswered, WhyGitHubDidNotWork};
 pub use canvas_command::CanvasCommandError;
 pub use canvas_fixed_controls::{FixedControlsDrawn, Recovery};
 pub use canvas_never_lost::{

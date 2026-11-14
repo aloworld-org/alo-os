@@ -629,3 +629,65 @@ fn a_link_to_choose_for_is_handed_on_with_its_connection_held() {
     door.taken_away();
     let _ = std::fs::remove_dir_all(root);
 }
+
+/// **A text alo asked to type is handed on whole, however it arrives**, and
+/// nothing is carried out as an act (ADR 0153).
+#[test]
+fn a_text_to_type_is_read_whole_across_visits_and_handed_on() {
+    let (root, place) = a_place("typing");
+    let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
+    let mut hand = AHand::answering(Answer::Acted);
+
+    let mut daemon = UnixStream::connect(place.socket()).unwrap();
+    daemon
+        .write_all(b"type-into com.vscodium.codium 9\nline\n")
+        .unwrap();
+    assert_eq!(door.answered(&mut hand), 0);
+    assert!(
+        door.asked_to_type().is_empty(),
+        "four bytes are still to come"
+    );
+    daemon.write_all("\t日".as_bytes()).unwrap();
+    assert_eq!(door.answered(&mut hand), 0);
+    let typing = door.asked_to_type();
+    assert_eq!(typing.len(), 1);
+    assert!(hand.carried.is_empty());
+    let Some(one) = typing.into_iter().next() else {
+        panic!("one typing");
+    };
+    assert_eq!(one.text(), "line\n\t日");
+    one.answered(alo_acting::Typed::NotAlosCopy);
+    assert_eq!(one_line(&mut daemon).as_deref(), Some("not-alos-copy"));
+    let _ = std::fs::remove_dir_all(root);
+}
+
+/// **A save is handed on at once**, and a line meant as typing that is not one
+/// is closed with nothing written.
+#[test]
+fn a_save_is_handed_on_and_a_bad_typing_line_is_closed() {
+    let (root, place) = a_place("saving");
+    let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
+    let mut hand = AHand::answering(Answer::Acted);
+
+    let daemon = {
+        let mut daemon = UnixStream::connect(place.socket()).unwrap();
+        daemon.write_all(b"save-in com.vscodium.codium\n").unwrap();
+        daemon
+    };
+    let mut wrong = UnixStream::connect(place.socket()).unwrap();
+    wrong
+        .write_all(b"type-into com.vscodium.codium many\n")
+        .unwrap();
+    door.answered(&mut hand);
+    let typing = door.asked_to_type();
+    assert_eq!(typing.len(), 1);
+    assert!(matches!(
+        typing
+            .first()
+            .map(crate::a_text_at_the_door::AskedToType::asked),
+        Some(alo_acting::ToType::Save { .. })
+    ));
+    assert_eq!(one_line(&mut wrong), None);
+    drop(daemon);
+    let _ = std::fs::remove_dir_all(root);
+}

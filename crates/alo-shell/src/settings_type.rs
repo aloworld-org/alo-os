@@ -46,6 +46,11 @@ pub(crate) enum TheType {
     SmallLabel,
     /// A file's name: System/Mono, Geist Mono Medium 12 / 18 (`551:178`).
     Mono,
+    /// A one-time code a person types somewhere else: the design's mono,
+    /// Geist Mono Medium, at 32 — the GitHub sign-in sheet's code
+    /// (`docs/design/github-sign-in.md`). Its line is 40, so it sits inside
+    /// the code card's 48 with room for its descenders.
+    ACode,
 }
 
 /// Regular, which the bodies are drawn at.
@@ -63,6 +68,7 @@ impl TheType {
             Self::Body | Self::Name => (14.0, 22.0),
             Self::Label => (13.0, 18.0),
             Self::Mono => (12.0, 18.0),
+            Self::ACode => (32.0, 40.0),
             Self::SmallLabel => (11.0, 16.0),
         }
     }
@@ -74,7 +80,7 @@ impl TheType {
             Self::PageHeading | Self::Title | Self::Name | Self::Label | Self::SmallLabel => {
                 SEMI_BOLD
             }
-            Self::Mono => Weight(500),
+            Self::Mono | Self::ACode => Weight(500),
         }
     }
 
@@ -94,7 +100,9 @@ impl TheType {
     /// How it is asked for.
     fn attrs<'a>(self) -> Attrs<'a> {
         match self {
-            Self::Mono => crate::painted_text::alos_own_mono_face().weight(self.weight()),
+            Self::Mono | Self::ACode => {
+                crate::painted_text::alos_own_mono_face().weight(self.weight())
+            }
             _ => Attrs::new()
                 .family(Family::Name(ALOS_OWN_FACE))
                 .weight(self.weight()),

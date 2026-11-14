@@ -11,6 +11,7 @@
 //! | `open_application`, `focus_application`, `close_application` | `crates/alo-shell/tests/what_an_application_verb_says_it_does` |
 //! | `install_application` | `crates/alo-software/tests/installing_updating_and_removing.rs` |
 //! | `accessible.activate_control` | `crates/alo-adapters/tests/the_accessibility_fallback.rs` |
+//! | `accessible.type_text` | `crates/alo-adapters/tests/typing_into_a_field.rs` |
 //! | `publish_to_github_pages` | `crates/alo-publishing/tests/a_folder_published_through_real_git.rs` |
 //!
 //! This file is the other half: a change added to the list the daemon offers
@@ -23,7 +24,7 @@
 )]
 
 /// The change verbs the table above names.
-const HELD: [&str; 9] = [
+const HELD: [&str; 10] = [
     "rename_file",
     "move_file",
     "archive_folder",
@@ -32,6 +33,7 @@ const HELD: [&str; 9] = [
     "close_application",
     "install_application",
     "accessible.activate_control",
+    "accessible.type_text",
     "publish_to_github_pages",
 ];
 

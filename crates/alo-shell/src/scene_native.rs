@@ -75,6 +75,10 @@ pub(crate) struct NativeLayers<'a> {
     /// The *Open with* sheet, while a portal waits on the person — above every
     /// window and below the egress indicator, as the question is.
     pub(crate) open_with: Option<&'a crate::the_open_with_sheet_drawn::OpenWithPicture>,
+    /// The GitHub sign-in sheet, while a sign-in waits on the person or has
+    /// just worked — in the question's place, below the *Open with* sheet
+    /// (`crate::the_github_sheet_drawn`).
+    pub(crate) github_sheet: Option<&'a crate::painted::Washed>,
     /// The egress indicator, when the frame carries a status area.
     pub(crate) status: Option<&'a crate::egress_status_raster::EgressStatusPicture>,
     /// What on this machine is watching or listening, beside the egress
@@ -149,6 +153,7 @@ impl NativeLayers<'_> {
             settings: None,
             approval: None,
             open_with: None,
+            github_sheet: None,
             status: None,
             in_use: None,
             notifications: None,

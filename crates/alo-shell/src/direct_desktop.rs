@@ -200,6 +200,16 @@ pub trait TheDesktop {
         }
     }
 
+    /// **Whether the window of `application` whose process is `pid` may be
+    /// typed into** (ADR 0153): alo's own copy of it at the person's default
+    /// setting, and the person's own window only where they chose that.
+    ///
+    /// **No by default**, for [`Self::alo_at_work`]'s reason: a desktop that
+    /// does not hold alo's copies cannot tell one from the person's window.
+    fn may_type_into(&mut self, _application: &str, _pid: u32) -> bool {
+        false
+    }
+
     /// The panel this desktop keeps, for the one act that has to change it.
     ///
     /// **Lent mutably, and only here.** Every other seam in this trait hands the compositor
@@ -542,6 +552,24 @@ pub trait TheDesktop {
     /// **What the screen reader's start or stop came to**, once it has: asked
     /// every frame, and [`None`] while nothing new has been answered.
     fn what_the_screen_reader_answered(&mut self) -> Option<crate::TheScreenReaderAnswered> {
+        None
+    }
+
+    /// **Something is asked of GitHub's own command, `gh`** — who is signed
+    /// in, sign in, stop signing in, or sign out — from Settings → Accounts
+    /// (`crate::asking_github`).
+    ///
+    /// Called on the frame after the person asked, in the order they asked.
+    /// It must not wait: a sign-in waits minutes for the person to type a code
+    /// in their browser, and the answer is given later, through
+    /// [`Self::what_github_answered`]. **Nothing by default**, and then nothing
+    /// is ever answered: a desktop that runs no programs has no gh to ask, and
+    /// Settings says *Checking…* rather than inventing an answer.
+    fn github_is_asked(&mut self, _asked: crate::AskingGitHub) {}
+
+    /// **What an ask of GitHub came to**, once it has: asked every frame,
+    /// and [`None`] while nothing new has been answered.
+    fn what_github_answered(&mut self) -> Option<crate::GitHubAnswered> {
         None
     }
 
@@ -916,6 +944,8 @@ impl crate::DirectSession {
                             open_with: crate::the_open_with_sheet::TheOpenWithSheet::none(),
                             open_with_drawn:
                                 crate::a_key_reaches_the_open_with_sheet::WhereTheSheetIs::default(),
+                            github_sheet_drawn:
+                                crate::a_key_reaches_the_github_sheet::WhereTheGitHubSheetIs::default(),
                         }
                     },
                 ),
@@ -1055,6 +1085,10 @@ struct TheDesktopLane<'a> {
     open_with: crate::the_open_with_sheet::TheOpenWithSheet,
     /// Where that sheet was last drawn, for a press to land on.
     open_with_drawn: crate::a_key_reaches_the_open_with_sheet::WhereTheSheetIs,
+    /// Where the GitHub sign-in sheet was last drawn, for a press to land on.
+    /// The sheet itself is the server's (`crate::the_github_sheet`), because
+    /// what GitHub answered reaches the server.
+    github_sheet_drawn: crate::a_key_reaches_the_github_sheet::WhereTheGitHubSheetIs,
 }
 
 /// **Where this person's home and standard folders are, read now**, as the
@@ -1130,6 +1164,7 @@ impl LoopInput for TheDesktopLane<'_> {
         let password_sheet = &mut self.password_sheet;
         let open_with = &mut self.open_with;
         let open_with_drawn = &self.open_with_drawn;
+        let github_sheet_drawn = &self.github_sheet_drawn;
         self.input.owner.dispatch(
             || poll().map_err(std::io::Error::other),
             |update| {
@@ -1163,6 +1198,16 @@ impl LoopInput for TheDesktopLane<'_> {
                         server,
                         open_with,
                         open_with_drawn,
+                        update,
+                        extent,
+                    )
+                }
+                // **Then the GitHub sign-in sheet**, over Settings, which it
+                // was opened from: every key and press is its while it is up.
+                else if server.github_sheet.is_up() {
+                    crate::a_key_reaches_the_github_sheet::a_key_reaches_the_github_sheet(
+                        server,
+                        github_sheet_drawn,
                         update,
                         extent,
                     )
@@ -1361,6 +1406,14 @@ impl LoopInput for TheDesktopLane<'_> {
         // way and for the same reason.
         let work = self.door.asked_to_work();
         self.desktop.alo_at_work(work, std::time::Instant::now());
+        // **And whatever alo was approved to type** (ADR 0153), into the window
+        // in front only, answered in the same frame it was read whole.
+        for one in self.door.asked_to_type() {
+            let mut asking =
+                crate::typing_into_the_window_in_front::TheDesktopAnswers(&mut *self.desktop);
+            let typed = server.typed_into_the_window_in_front(one.asked(), one.text(), &mut asking);
+            one.answered(typed);
+        }
         // **And every link an application asked the person to choose for**,
         // shown one at a time on the *Open with* sheet; a sheet whose portal
         // hung up, or nobody answered in five minutes, comes down here.
@@ -1473,6 +1526,19 @@ impl LoopInput for TheDesktopLane<'_> {
             server
                 .settings
                 .the_screen_reader_answered(answered.said(self.strings));
+        }
+        // **GitHub's own command is the desktop's to run** (`crate::asking_github`):
+        // Settings asks who is signed in once each time it opens, a person's
+        // *Sign in* and *Sign out* are handed on in order, and what each came
+        // to is told back to Settings.
+        if server.settings.who_is_signed_in_to_github_is_asked() {
+            server.github_is_asked(crate::AskingGitHub::WhoIsSignedIn);
+        }
+        for asked in server.the_github_asks_to_tell() {
+            self.desktop.github_is_asked(asked);
+        }
+        while let Some(answered) = self.desktop.what_github_answered() {
+            server.github_answered(&answered, self.strings);
         }
         // **A provider form that just opened learns where this machine is**,
         // once, from the desktop that may read it.
@@ -2281,6 +2347,44 @@ impl LoopInput for TheDesktopLane<'_> {
                 open: Some(drawn.open),
             },
         );
+        // **The GitHub sign-in sheet, while a sign-in waits on the person or
+        // has just worked** (`docs/design/github-sign-in.md`). One this
+        // display cannot hold comes down and stops the sign-in, rather than
+        // hold every key with nothing on the screen.
+        let github_sheet_drawn = server.github_sheet.shows().map(|shows| {
+            crate::the_github_sheet_drawn::drawn(
+                shows,
+                self.strings,
+                self.labels,
+                (size.w, size.h),
+                crate::SettingsLook {
+                    scheme: frame.look.scheme(),
+                    scale: frame.look.scale(),
+                    reading: frame.look.reading(),
+                    contrast: frame.look.contrast(),
+                    accent: frame.look.accent(),
+                },
+                crate::display_scale::DisplayScale::of_per_cent(frame.display_scale),
+            )
+        });
+        let the_github_sheet = match github_sheet_drawn {
+            Some(Ok(drawn)) => Some(drawn),
+            Some(Err(why)) => {
+                eprintln!(
+                    "alo-shell: the GitHub sign-in sheet could not be drawn on {named:?}, so the \
+                     sign-in is stopped: {why}"
+                );
+                server.the_github_sheet_could_not_be_drawn();
+                None
+            }
+            None => None,
+        };
+        self.github_sheet_drawn = the_github_sheet.as_ref().map_or_else(
+            crate::a_key_reaches_the_github_sheet::WhereTheGitHubSheetIs::default,
+            |drawn| crate::a_key_reaches_the_github_sheet::WhereTheGitHubSheetIs {
+                buttons: drawn.buttons.clone(),
+            },
+        );
         // **A question that could not be drawn is left out of this frame, not
         // the desktop** — see `crate::a_surface_that_cannot_draw`.
         if let Some(why) = &pictures.approval_refused {
@@ -2932,6 +3036,8 @@ impl LoopInput for TheDesktopLane<'_> {
                 approval: the_password_sheet.as_ref(),
                 // **And the *Open with* sheet above it**, while one is up.
                 open_with: the_open_with_sheet.as_ref(),
+                // **And the GitHub sign-in sheet**, below it, while one is up.
+                github_sheet: the_github_sheet.as_ref().map(|drawn| &drawn.washed),
                 // **Only on the display being worked on**, whose camera the
                 // window was drawn through when it was put aside.
                 travelling_aside: &travelling_aside,
@@ -3031,6 +3137,7 @@ impl LoopInput for TheDesktopLane<'_> {
                     &[alo_access::Surface::Desktop],
                     &alo_access::TurnedOn::nothing(),
                 )
+                .with_the_github_sheet(self.strings, server.github_sheet.shows())
                 .with_the_open_with_sheet(self.strings, self.open_with.shows(), &called)
                 .with_the_password_sheet(self.strings, self.password_sheet.shows());
             let _ = reader.following(&tree);
