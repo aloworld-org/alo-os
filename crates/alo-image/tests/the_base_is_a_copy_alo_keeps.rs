@@ -190,3 +190,31 @@ fn every_build_asks_for_its_base_first() {
         );
     }
 }
+
+/// The pull-request check that asks the registry for each recipe's base.
+const THE_PULL_REQUEST_CHECK: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../.github/workflows/the-base-can-be-pulled.yml"
+);
+
+/// **A change to a recipe or the record asks whether its bases can be pulled**,
+/// for both recipes, without credentials, before it lands.
+#[test]
+fn a_change_to_a_recipe_asks_for_its_base() {
+    let workflow = TheWorkflow::read(&text(Path::new(THE_PULL_REQUEST_CHECK)));
+    assert_eq!(workflow.triggers(), ["pull_request"]);
+    for named in [
+        "image/Containerfile",
+        "image/installing/Containerfile",
+        "image/bases.toml",
+        THE_ARGUMENT,
+        "skopeo inspect --raw --no-creds \"docker://$base\"",
+    ] {
+        assert!(
+            workflow.runs_something_naming(named),
+            "the-base-can-be-pulled.yml no longer names `{named}`"
+        );
+    }
+    assert!(!workflow.signs());
+    assert!(!workflow.runs_something_naming("skopeo copy"));
+}

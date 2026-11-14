@@ -61,7 +61,10 @@ the content.
    (`crates/alo-image`, `tests/the_base_is_a_copy_alo_keeps.rs`), and every
    workflow that builds a recipe — `image.yml`, `installer-candidate.yml`,
    `release.yml` — asks whether the base can be pulled before it builds, and
-   says in one sentence what to do when it cannot.
+   says in one sentence what to do when it cannot. A pull request that changes
+   a recipe or the record asks the same question
+   (`.github/workflows/the-base-can-be-pulled.yml`). **That check is not one
+   the merge queue requires**; which checks it requires is the owner's setting.
 
 ### Landed in two changes
 
@@ -75,8 +78,9 @@ recipe naming a copy that does not exist is a recipe nobody can build. So:
   public once on its settings page — GitHub offers no way to do that from a
   workflow.
 - **Second**, the recipes and every test that holds their base move to the
-  copy, and the allowance for the original is removed. That change cannot pass
-  until the copy exists, which is the point.
+  copy, and the allowance for the original is removed. Its pull-request check
+  stays red until the copy exists, which is the point; the gate's own tests
+  would pass either way, because they do not reach the network.
 
 ## What it does not do
 
@@ -84,8 +88,9 @@ recipe naming a copy that does not exist is a recipe nobody can build. So:
   new line in the record, a run of the workflow, and a change to the recipe —
   the same decision as any other move of the base, made by somebody, never by a
   schedule.
-- **It does not check that the copy exists.** The repository's tests do not
-  reach the network. The build workflows' first step does, every time they run.
+- **The tests do not check that the copy exists.** They do not reach the
+  network. The build workflows' first step does, every time they run, and so
+  does the pull-request check, whenever a recipe or the record changes.
 - **The builder image is not covered.** `THE_BUILDER`
   (`docker.io/library/ubuntu:26.04@sha256:…`) is pinned the same way and could
   vanish the same way; whether Docker Hub keeps it was not measured. Copying
