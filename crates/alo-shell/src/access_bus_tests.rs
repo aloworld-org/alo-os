@@ -17,6 +17,7 @@ use zbus::blocking::MessageIterator;
 use zbus::zvariant::OwnedValue;
 
 use super::*;
+use crate::access_answers::ACCESSIBLE;
 use crate::the_password_sheet::{PasswordAsked, ThePasswordSheet, ToTheSheet, WhatItIsFor};
 
 /// A session bus of this test's own, stopped when dropped.
@@ -189,4 +190,153 @@ fn a_sheet_coming_up_is_heard_on_the_bus() {
         index, 1,
         "the field is second on the sheet, after the command"
     );
+}
+
+/// One call on `served`'s tree, and the signature its reply carried.
+fn signature_of<B>(
+    listening: &Connection,
+    served: &ReadAloudBus,
+    path: &str,
+    interface: &str,
+    method: &str,
+    body: &B,
+) -> String
+where
+    B: zbus::export::serde::Serialize + zbus::zvariant::DynamicType,
+{
+    listening
+        .call_method(
+            Some(served.answers_as()),
+            path,
+            Some(interface),
+            method,
+            body,
+        )
+        .unwrap()
+        .body()
+        .signature()
+        .to_string()
+}
+
+/// **Every answer naming another thing crosses the bus as at-spi2-core's own
+/// `Accessible.xml` and `Cache.xml` give it** — read off the reply's own
+/// header, on a real bus. Until 2026-11-13 `GetChildAtIndex` went out as `so`,
+/// two loose values, and libatspi logged *strange signature so* for every
+/// child Orca asked for.
+#[test]
+fn every_reference_crosses_the_bus_in_at_spis_signature() {
+    let bus = ABus::started();
+    let tree = ReadAloudTree::of(&words(), &Surface::ALL, &TurnedOn::nothing());
+    let served = ReadAloudBus::serving(&bus.address, &tree).unwrap();
+    let listening = Builder::address(bus.address.as_str())
+        .and_then(Builder::build)
+        .unwrap();
+    let root = crate::access_nodes::ROOT;
+    let asked = |path: &str, interface: &str, method: &str| {
+        signature_of(&listening, &served, path, interface, method, &())
+    };
+    assert_eq!(
+        signature_of(
+            &listening,
+            &served,
+            root,
+            ACCESSIBLE,
+            "GetChildAtIndex",
+            &(0_i32,)
+        ),
+        "(so)"
+    );
+    assert_eq!(
+        signature_of(
+            &listening,
+            &served,
+            root,
+            ACCESSIBLE,
+            "GetChildAtIndex",
+            &(10_000_i32,)
+        ),
+        "(so)",
+        "a child that is not there is the null reference, in the same shape"
+    );
+    assert_eq!(asked(root, ACCESSIBLE, "GetApplication"), "(so)");
+    assert_eq!(asked(root, ACCESSIBLE, "GetChildren"), "a(so)");
+    assert_eq!(asked(root, ACCESSIBLE, "GetRelationSet"), "a(ua(so))");
+    assert_eq!(
+        asked(
+            crate::access_cache::CACHE,
+            crate::access_cache::CACHE_INTERFACE,
+            "GetItems"
+        ),
+        "a((so)(so)(so)iiassusau)"
+    );
+    let parent: OwnedValue = listening
+        .call_method(
+            Some(served.answers_as()),
+            tree.nodes()[1].path.as_str(),
+            Some("org.freedesktop.DBus.Properties"),
+            "Get",
+            &(ACCESSIBLE, "Parent"),
+        )
+        .unwrap()
+        .body()
+        .deserialize()
+        .unwrap();
+    assert_eq!(parent.value_signature().to_string(), "(so)");
+}
+
+/// **The cache follows the tree, and a reader holding it is told.** A surface
+/// coming up is sent as `AddAccessible` for what changed, and `GetItems` asked
+/// afterwards answers for the new tree.
+#[test]
+fn a_reader_holding_the_cache_is_told_what_changed() {
+    let bus = ABus::started();
+    let strings = words();
+    let before = ReadAloudTree::of(&strings, &[Surface::Desktop], &TurnedOn::nothing());
+    let after = ReadAloudTree::of(&strings, &Surface::ALL, &TurnedOn::nothing());
+    let mut served = ReadAloudBus::serving(&bus.address, &before).unwrap();
+    let listening = Builder::address(bus.address.as_str())
+        .and_then(Builder::build)
+        .unwrap();
+    let rule = zbus::MatchRule::builder()
+        .msg_type(zbus::message::Type::Signal)
+        .sender(served.answers_as())
+        .unwrap()
+        .interface(crate::access_cache::CACHE_INTERFACE)
+        .unwrap()
+        .build();
+    let heard = MessageIterator::for_match_rule(rule, &listening, Some(1024)).unwrap();
+    let (to, hearing) = channel::<(String, String)>();
+    std::thread::spawn(move || {
+        for message in heard.flatten() {
+            let member = message
+                .header()
+                .member()
+                .map(ToString::to_string)
+                .unwrap_or_default();
+            if to
+                .send((member, message.body().signature().to_string()))
+                .is_err()
+            {
+                return;
+            }
+        }
+    });
+    served.now_showing(&after).unwrap();
+    let (member, signature) = hearing.recv_timeout(Duration::from_secs(10)).unwrap();
+    assert_eq!(member, "AddAccessible");
+    assert_eq!(signature, "((so)(so)(so)iiassusau)");
+
+    let items: Vec<crate::access_cache::Entry> = listening
+        .call_method(
+            Some(served.answers_as()),
+            crate::access_cache::CACHE,
+            Some(crate::access_cache::CACHE_INTERFACE),
+            "GetItems",
+            &(),
+        )
+        .unwrap()
+        .body()
+        .deserialize()
+        .unwrap();
+    assert_eq!(items.len(), after.nodes().len());
 }

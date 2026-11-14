@@ -1,0 +1,52 @@
+# Whether anybody can pull the base each recipe names, asked on every pull
+# request that changes a recipe or the record of bases.
+#
+# ADR 0154. The repository's tests do not reach the network, so a change that
+# moves a recipe to a base nobody can pull passes all of them — which is how the
+# digest ADR 0152 pinned reached main the day Quay deleted it. This asks the
+# registry, the same way the build workflows' first step does, before such a
+# change lands rather than after.
+#
+# **It is not a required check**, and this file cannot make it one: what the
+# merge queue requires is set on the repository, by its owner. A red run here
+# says that merging this change would leave main with a recipe nobody can
+# build.
+#
+# It also only runs when a recipe or the record changes. A base deleted from
+# under an unchanged recipe is caught by the build workflows, when somebody next
+# builds.
+
+name: The base can be pulled
+
+on:
+  pull_request:
+    paths:
+      - image/Containerfile
+      - image/installing/Containerfile
+      - image/bases.toml
+
+permissions:
+  contents: read
+
+jobs:
+  pulled:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ask for each recipe's base without signing in
+        run: |
+          status=0
+          for recipe in image/Containerfile image/installing/Containerfile; do
+            base=$(sed -n 's/^ARG THE_BASE=//p' "$recipe" | sed 's/:[^/@]*@/@/')
+            if [ -z "$base" ]; then
+              echo "$recipe names no base" >&2
+              status=1
+            elif skopeo inspect --raw --no-creds "docker://$base" > /dev/null; then
+              echo "$recipe is built on $base, and anybody can pull it."
+            else
+              echo "$recipe is built on $base, and the registry would not give it to somebody who has not signed in (its answer is above). Where it is alo's copy, a person runs the Copying a base workflow with its digest and makes the package public; until then this change would leave main unable to build (ADR 0154)." >&2
+              status=1
+            fi
+          done
+          exit "$status"
