@@ -17,6 +17,13 @@
 //! every surface, the claim is measured rather than asserted. It also holds the
 //! role numbers to the only other place in this workspace that has them.
 //!
+//! **What it cannot see is the shape of an answer.** The agent's reader is
+//! built on zbus, as the shell is, and read a `GetChildAtIndex` sent as two
+//! loose values as happily as one sent as the `(so)` libatspi requires — so
+//! this file was green while Orca could not read a child. What a screen
+//! reader's own library makes of the tree is
+//! `a_screen_readers_own_library_reads_the_tree`'s.
+//!
 //! If a program this needs is missing the test fails rather than skipping: a
 //! skipped test here would be green on a machine that proved nothing.
 
