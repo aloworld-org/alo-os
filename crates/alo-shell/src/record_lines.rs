@@ -230,6 +230,11 @@ fn words_of(
             after.push(folder.as_str().to_owned());
         }
     }
+    // **Who GitHub knows them by**, beneath a sign-in or a sign-out, as
+    // GitHub writes it.
+    if let Some(login) = told.github_login() {
+        after.push(login.as_str().to_owned());
+    }
     let (day, date) = heading.map_or((None, None), |(day, date)| (Some(day), date));
     EntryWords {
         day,
@@ -249,3 +254,7 @@ fn words_of(
         confirmation: None,
     }
 }
+
+#[cfg(test)]
+#[path = "record_github_sign_ins_tests.rs"]
+mod github_sign_ins;

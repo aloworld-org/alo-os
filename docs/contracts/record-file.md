@@ -66,7 +66,8 @@ thing it was — `ran`, `stopped`, `turned-away`, `answered-here`,
 `never-put-anywhere`, `grants-not-read-again`, `paired`, `workspace-opened`,
 `not-bounded`, `ran-a-command`, `a-command-was-not-run`, `left`,
 `held-back`, `left-on-its-own`, `updated`, `rolled-back`, `brokered`, `slept-through`,
-`undone`, `let-go`, `put-back` — and the fields under it depend on that tag.
+`undone`, `let-go`, `put-back`, `asked-an-application`, `at-github` — and the
+fields under it depend on that tag.
 `crates/alo-record` is the shape as working code; ADR 0001 §7 is why each of
 them is kept.
 
@@ -193,6 +194,40 @@ change and also before a command a person typed (ADR 0130), which has no entry
 to copy. **No `agent` and no field for one**: putting back is the person's
 act, and there is no verb that does it. A failed one is a refusal a reader
 looking for refusals finds.
+
+**`at-github` is the person signing in to GitHub or out of it from their own
+desktop**, added 2026-11-13 and additive (`format` stays `1`), for the owner's
+decision that *every sign-in, sign-out and failure is recorded*. The desktop
+runs GitHub's own command, `gh`, and is not this record's writer: it tells
+`alo-agentd` what came of it on the person's own door (`github-sign-in`,
+`docs/contracts/daemon-protocol.md`), and `alo-agentd` writes the entry. It
+carries `what`, which is one of:
+
+```
+{"at-github":{"what":{"signed-in":{"login":"anna"}}}}
+{"at-github":{"what":{"signed-out":{"login":"anna"}}}}
+{"at-github":{"what":{"signed-out":{}}}}
+{"at-github":{"what":{"did-not-sign-in":{"why":"gh-is-not-here"}}}}
+{"at-github":{"what":{"did-not-sign-in":{"why":{"gh-failed":{"said":"HTTP 502"}}}}}}
+{"at-github":{"what":{"did-not-sign-in":{"why":"no-code-arrived"}}}}
+{"at-github":{"what":{"did-not-sign-in":{"why":"they-cancelled"}}}}
+{"at-github":{"what":{"did-not-sign-out":{"said":"not logged in to any hosts"}}}}
+```
+
+**Identities, not sentences**: what happened and why are tags a reader words in
+their own language. The only text is `login`, the name GitHub knows the person
+by — letters, digits, hyphens and underscores, not beginning with a hyphen, at
+most 100 characters, and never anything else — and `said`, the last line `gh`
+printed when it failed, quoted as that program's own words through the same
+one-line rule as every line here. `login` is absent from a `signed-out` the
+desktop could not name, and `said` is absent when `gh` printed nothing. **Never
+a token, the one-time code, or a password**: there is no field for one. **No
+`agent` and no field for one**: the person acted, and there is no verb that
+signs in. **Not egress** as this record counts it: `gh` reached GitHub under the
+person's own account, and nothing this service or an agent caused left. A
+`did-not-sign-in` for any reason but `they-cancelled`, and every
+`did-not-sign-out`, is a refusal a reader looking for refusals finds; a
+cancelled one is the person changing their mind and is not.
 
 **`kept_as` names the place kept before a change**, added 2026-11-01 and
 additive. Any entry may carry it, a string, and today what a changing turn

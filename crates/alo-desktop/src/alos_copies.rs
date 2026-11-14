@@ -184,6 +184,18 @@ impl AlosCopies {
                 ),
             ));
         }
+        // A code editor's copy is set so that what alo types is what lands
+        // (ADR 0153), in this profile only. Not a reason to refuse the copy:
+        // what alo types is read back before it is saved.
+        if let Some(file) = alo_launching::its_settings_file(application, &copy)
+            && let Err(why) = crate::typing_left_as_it_is::leave_typing_alone_in(&file)
+        {
+            eprintln!(
+                "alo-desktop: alo's own copy of {application} was not set to type exactly, \
+                 so what alo types there may be changed by the editor and will then not be \
+                 saved: {why}"
+            );
+        }
         let child = Command::new(program)
             .args(rest)
             .args(copy.arguments())

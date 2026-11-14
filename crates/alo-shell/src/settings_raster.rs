@@ -41,9 +41,7 @@ use crate::settings_categories::SettingsCategory;
 use crate::settings_drawn_page::{ATargetDrawn, Laying, SettingsText, laid_out, painted};
 use crate::settings_frame::TheFrame;
 use crate::settings_measures as m;
-use crate::settings_page::said;
 use crate::settings_palette::SettingsPalette;
-use crate::settings_type::{TheType, written};
 use crate::{Contrast, RenderError, SettingsRow, SettingsWindow, WindowControlLabels};
 
 /// How Settings looks, as the person's appearance and language decide.
@@ -91,6 +89,9 @@ pub(crate) struct SettingsPicture {
     /// its own and drawn there, scaled by the zoom. [`None`] draws the raster
     /// where it was laid out, which is the nested lane's fixed Settings.
     pub(crate) drawn_at: Option<smithay::utils::Rectangle<i32, smithay::utils::Physical>>,
+    /// The side column's view and how far it is scrolled, while Settings is
+    /// open.
+    pub(crate) side_column: Option<crate::settings_drawn_side_column::TheSideColumnDrawn>,
 }
 
 impl SettingsPicture {
@@ -108,6 +109,7 @@ impl SettingsPicture {
             list: None,
             entries: Vec::new(),
             drawn_at: None,
+            side_column: None,
         }
     }
 
@@ -230,7 +232,7 @@ pub(crate) fn picture(
         palette.edge,
         1.0,
     );
-    the_side_column(
+    crate::settings_drawn_side_column::the_side_column(
         &mut canvas,
         &mut picture,
         labels,
@@ -395,7 +397,7 @@ fn scrolled_to(target: Option<&ATargetDrawn>, tall: i32, view: i32) -> i32 {
 /// and the one thing the design (`551:*`) does not draw. It is the same navy,
 /// the same thickness, and still on every row the keyboard reaches; it is no
 /// bigger than the row.
-fn a_focus_ring(
+pub(crate) fn a_focus_ring(
     canvas: &mut Canvas,
     area: Area,
     corner: u32,
@@ -424,140 +426,6 @@ fn a_focus_ring(
     }
 }
 
-/// The side column's contents: the heading, the two groups of categories, and
-/// the footer at its foot.
-fn the_side_column(
-    canvas: &mut Canvas,
-    picture: &mut SettingsPicture,
-    labels: &mut WindowControlLabels,
-    (side, measure): (Area, Measure),
-    (palette, strings): (SettingsPalette, &Strings),
-    open: &crate::settings_window::Open,
-) {
-    let px = |logical: u32| measure.px(i32::try_from(logical).unwrap_or(i32::MAX));
-    let fonts = &mut labels.fonts;
-    let line = px(m::A_HAIRLINE);
-    let left = side.loc.x + px(m::INSIDE_THE_SIDE_COLUMN);
-    let wide = side.size.w - line - 2 * px(m::INSIDE_THE_SIDE_COLUMN);
-    let inside_heading = px(m::INSIDE_THE_HEADING);
-    let beside = px(m::BESIDE_A_CATEGORY);
-    let mut y = side.loc.y + px(m::INSIDE_THE_SIDE_COLUMN);
-    let mut put = |canvas: &mut Canvas,
-                   fonts: &mut cosmic_text::FontSystem,
-                   words: String,
-                   style: TheType,
-                   (x, y, width): (i32, i32, i32),
-                   colours: ([u8; 3], [u8; 3])|
-     -> i32 {
-        let shaped = written(fonts, &words, style, width, measure, colours).cropped_to_its_ink();
-        let tall = shaped.height;
-        picture.texts.push(SettingsText {
-            text: words,
-            area: Rectangle::new((x, y).into(), (shaped.width_of_box, tall).into()),
-        });
-        canvas.words(x, y, &shaped);
-        tall
-    };
-
-    let heading_x = left + inside_heading;
-    let heading_wide = wide - 2 * inside_heading;
-    let tall = put(
-        canvas,
-        fonts,
-        said(strings, crate::the_settings_words::SETTINGS),
-        TheType::Title,
-        (heading_x, y + inside_heading, heading_wide),
-        (palette.canvas, palette.ink),
-    );
-    let under_at = y + inside_heading + tall + px(m::UNDER_THE_TITLE);
-    let under = put(
-        canvas,
-        fonts,
-        said(strings, crate::the_settings_words::EVERYTHING_IN_ONE_PLACE),
-        TheType::Body,
-        (heading_x, under_at, heading_wide),
-        (palette.canvas, palette.muted),
-    );
-    y = under_at + under + inside_heading + px(m::BETWEEN_SIDE_ITEMS);
-
-    let mut group = None;
-    let mut chosen_at = None;
-    for category in SettingsCategory::ALL {
-        if group != Some(category.group()) {
-            group = Some(category.group());
-            let tall = put(
-                canvas,
-                fonts,
-                said(strings, category.group().word()),
-                TheType::SmallLabel,
-                (left + beside, y + px(m::ABOVE_A_GROUP), wide - 2 * beside),
-                (palette.canvas, palette.muted),
-            );
-            y += px(m::ABOVE_A_GROUP) + tall + px(m::BELOW_A_GROUP) + px(m::BETWEEN_SIDE_ITEMS);
-        }
-        let item = Rectangle::new((left, y).into(), (wide, px(m::A_TARGET)).into());
-        let chosen = category == open.category;
-        let (style, ground, ink) = if chosen {
-            canvas.fill(item, px(m::A_SMALL_CORNER) as f32, palette.chosen, 1.0);
-            chosen_at = Some(item);
-            (TheType::Name, palette.chosen, palette.ink)
-        } else {
-            (TheType::Body, palette.canvas, palette.secondary)
-        };
-        // **The icon in the accent when its page is shown**, `550:106`, and in
-        // `text/secondary` otherwise.
-        let side = px(m::A_CATEGORYS_ICON);
-        category.icon().drawn(
-            canvas,
-            Rectangle::new(
-                (left + beside, y + (item.size.h - side) / 2).into(),
-                (side, side).into(),
-            ),
-            if chosen {
-                palette.accent
-            } else {
-                palette.secondary
-            },
-        );
-        let before = beside + px(m::A_CATEGORYS_ICON) + px(m::AFTER_A_CATEGORYS_ICON);
-        let line_tall = px(style.line());
-        put(
-            canvas,
-            fonts,
-            category.said(strings),
-            style,
-            (
-                left + before,
-                y + (item.size.h - line_tall) / 2,
-                wide - before - beside,
-            ),
-            (ground, ink),
-        );
-        picture.categories.push((category, item));
-        y += item.size.h + px(m::BETWEEN_SIDE_ITEMS);
-    }
-
-    let footer_tall = px(TheType::SmallLabel.line());
-    let bottom = side.loc.y + side.size.h - px(m::INSIDE_THE_SIDE_COLUMN) - px(m::BELOW_THE_FOOTER);
-    put(
-        canvas,
-        fonts,
-        said(strings, crate::the_settings_words::YOURS_TO_CHANGE),
-        TheType::SmallLabel,
-        (
-            left + beside,
-            (bottom - footer_tall).max(y),
-            wide - 2 * beside,
-        ),
-        (palette.canvas, palette.muted),
-    );
-    // **The keyboard's outline last**, so nothing in the column covers it.
-    if let Some(item) = chosen_at.filter(|_| !open.in_the_page) {
-        a_focus_ring(canvas, item, m::A_SMALL_CORNER, measure, palette, false);
-        picture.focused = Some(item);
-    }
-}
-
 /// The record of where each thing is drawn, turned round the window for a
 /// reader of a right-to-left language — the canvas drew it turned already
 /// (`crate::settings_canvas::Canvas::turned_round`), so a test reads where it
@@ -571,6 +439,9 @@ fn turned_round(window: Area, picture: &mut SettingsPicture) {
         )
     };
     picture.focused = picture.focused.map(flip);
+    if let Some(side) = picture.side_column.as_mut() {
+        side.view = flip(side.view);
+    }
     for (_, area) in &mut picture.categories {
         *area = flip(*area);
     }

@@ -200,6 +200,7 @@ dependencies = [
  "alo-nearby",
  "alo-protocol",
  "alo-proxy",
+ "alo-publishing",
  "alo-record",
  "alo-remembering",
  "alo-running",
@@ -340,6 +341,7 @@ dependencies = [
  "alo-instructing",
  "alo-models",
  "alo-protocol",
+ "alo-publishing",
  "alo-remembering",
  "alo-strings",
  "alo-their-folders",
@@ -753,6 +755,7 @@ dependencies = [
  "alo-finding",
  "alo-measuring",
  "alo-printing",
+ "alo-publishing",
  "alo-record",
  "alo-software",
  "thiserror 2.0.20",
@@ -807,6 +810,7 @@ dependencies = [
  "jiff",
  "resvg",
  "rustix 1.1.4",
+ "serde_json",
  "tempfile",
  "zbus",
 ]
@@ -1584,6 +1588,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-publishing"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-egress",
+ "alo-running",
+ "alo-strings",
+ "tempfile",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-put-aside"
 version = "0.0.1"
 dependencies = [
@@ -1754,6 +1770,7 @@ dependencies = [
  "alo-printing",
  "alo-protocol",
  "alo-proxy",
+ "alo-publishing",
  "alo-record",
  "alo-recounting",
  "alo-remembering",
@@ -1863,6 +1880,7 @@ dependencies = [
  "alo-picking",
  "alo-portals",
  "alo-power",
+ "alo-publishing",
  "alo-put-aside",
  "alo-record",
  "alo-recounting",
@@ -2074,6 +2092,7 @@ dependencies = [
  "alo-kept-undo",
  "alo-models",
  "alo-nearby",
+ "alo-publishing",
  "alo-record",
  "alo-software",
  "alo-strings",

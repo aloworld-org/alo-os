@@ -176,6 +176,8 @@ impl ToAnAgent {
             | Told::APlaceToReturnTo { .. }
             | Told::PutBack { .. }
             | Told::Declined {}
+            // A GitHub sign-in is the person's, and so is being told it was kept.
+            | Told::GithubSignInKept {}
             | Told::Granted { .. }
             | Told::Pairing(_)
             | Told::Confirmed { .. }

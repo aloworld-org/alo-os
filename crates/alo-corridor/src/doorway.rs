@@ -553,6 +553,11 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> Option<alo_pro
             pressed.name(),
             pressed.unanswered(),
         ),
+        // **Unreachable too, and nothing crosses**: `alo_turn::Arriving::proposing`
+        // refuses `publish_to_github_pages` by name, because it sends this
+        // person's folder to the internet under their own GitHub sign-in, and a
+        // pairing permits neither.
+        alo_turn::WhatAVerbDid::AFolderWasPublished(_) => return None,
     })
 }
 

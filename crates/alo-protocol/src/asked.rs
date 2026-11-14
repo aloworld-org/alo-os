@@ -51,6 +51,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::answered::Answered;
 use crate::argument::Argument;
+use crate::github_sign_in::OnTheWire;
 
 /// Everything a client can put on the wire.
 ///
@@ -159,6 +160,15 @@ pub(crate) enum Asked {
     /// that could watch what leaves could learn when another agent's turn
     /// reached the network, and the indicator is the person's.
     WatchWhatLeaves {},
+    /// The person's desktop says what happened when they signed in to GitHub
+    /// or out of it, so that this service — the record's one writer — keeps
+    /// it (the owner's decision of 2026-11-13).
+    ///
+    /// Added 2026-11-13, additively. **A person's and never an agent's**:
+    /// there is no verb that signs in, and an agent that could send this could
+    /// write a sign-in nobody made into the person's record.
+    /// `github_sign_in.rs` has the shape and why it is checked.
+    GithubSignIn(OnTheWire),
     /// The person approved the change waiting under this number.
     Approve {
         /// The number they answered.

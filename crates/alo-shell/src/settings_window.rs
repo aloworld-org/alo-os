@@ -523,6 +523,9 @@ pub(crate) struct Open {
     pub(crate) focus: usize,
     /// Whether Settings waits for a chord for the focused shortcut.
     pub(crate) waiting_for_a_chord: bool,
+    /// Where the side column is scrolled, on a screen where its categories
+    /// do not all fit (`crate::settings_side_column_scrolls`).
+    pub(crate) side_column: crate::settings_side_column_scrolls::TheSideColumnsScroll,
 }
 
 /// The Settings window.
@@ -601,6 +604,7 @@ impl SettingsWindow {
             the_screen_reader: self.the_screen_reader.clone(),
             focus: 0,
             waiting_for_a_chord: false,
+            side_column: crate::settings_side_column_scrolls::TheSideColumnsScroll::at_the_top(),
         });
         SettingsOpened { not_remembered }
     }
@@ -1269,6 +1273,9 @@ impl Open {
         doors: SettingsDoors<'_>,
     ) -> Option<SettingsDid> {
         let before = self.category;
+        // **A key in the side column brings the chosen category into view**,
+        // wherever a wheel left the column.
+        self.side_column.a_category_was_chosen();
         match key {
             SettingsKey::Previous => self.category = self.category.previous(),
             SettingsKey::Next => self.category = self.category.next(),
@@ -1613,6 +1620,7 @@ impl Open {
             // row**, which is where a person reaches for it.
             SettingsRow::GoTo(category) => {
                 self.category = *category;
+                self.side_column.a_category_was_chosen();
                 self.told = None;
                 self.in_the_page = !self.rows_on(*category, doors.now).is_empty();
                 self.focus = 0;

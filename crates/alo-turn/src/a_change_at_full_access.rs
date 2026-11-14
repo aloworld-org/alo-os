@@ -104,7 +104,12 @@ impl Turning<'_, '_> {
             Err(refused) => return self.stopped_under(refused, grants, now),
         };
         let sentence = authorised.sentence(strings);
-        if let Some(named) = before(&sentence) {
+        // **No snapshot before a change that changes nothing on this
+        // computer** — a publication — because a place kept beside it would put
+        // *Put back* on a thing it cannot recall (ADR 0110 §2).
+        if !alo_publishing::changes_nothing_on_this_computer(authorised.verb())
+            && let Some(named) = before(&sentence)
+        {
             self.a_place_was_kept(&named);
         }
         let did = self.running(authorised, grants, now)?;

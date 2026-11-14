@@ -258,6 +258,7 @@ fn on_a_machine<T>(
 ) -> (T, Record) {
     let strings = in_english();
     let tool = NoTool;
+    let publisher = crate::testing::APublisher::that_publishes();
     let mut door = NoDoor;
     let mut indicator = Indicator::default();
     let mut record = Record::default();
@@ -272,6 +273,7 @@ fn on_a_machine<T>(
             WhatASoftwareVerbNeeds {
                 tool: &tool,
                 bound: Bound::Nobodys,
+                publishing: crate::testing::publishing_through(&publisher),
             },
             WhatAnApplicationVerbNeeds {
                 installed: Installed::holding([
