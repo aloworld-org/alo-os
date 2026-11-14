@@ -109,6 +109,21 @@ pub struct TheFirstStart {
     /// language still gets that language's keyboard, as the overview would
     /// then name it.
     continued: bool,
+    /// **The region the overview named when *Continue* was pressed**, where
+    /// none was taken on the region sheet — worked out again at every press of
+    /// Continue, so a person who goes back and changes language and continues
+    /// again keeps the region the overview then names.
+    ///
+    /// Kept rather than worked out on asking, because the compositor is
+    /// handed it by reference after every key, and because *Continue* is the
+    /// moment a person accepted it: a region that moved with the language
+    /// after that, before they continued again, would be one nobody accepted.
+    accepted_region: Option<RegionCode>,
+    /// **The time zone that region sets**, where it has exactly one. A region
+    /// with several — the United States, Russia, Brazil — names no zone on the
+    /// overview, so Continue accepts none there and the machine keeps the
+    /// zone its clock already had: only a zone the screen showed is kept.
+    accepted_zone: Option<alo_formats::zones::NamedZone>,
     /// The time zone the region taken sets, by its database name, and what
     /// it is called in the person's language.
     zone: Option<alo_formats::zones::NamedZone>,
@@ -136,6 +151,8 @@ impl TheFirstStart {
             region: None,
             keyboard: None,
             continued: false,
+            accepted_region: None,
+            accepted_zone: None,
             zone: None,
             one_of_several: false,
             where_the_machine_is,
@@ -214,9 +231,14 @@ impl TheFirstStart {
     }
 
     /// **The language a person chose**, for the compositor to keep — on the
-    /// language sheet as soon as a row is chosen, so the screen speaks it.
+    /// language sheet as soon as a row is chosen, so the screen speaks it;
+    /// and once *Continue* is pressed, the one the overview names, which
+    /// Continue accepted.
     pub fn the_language_chosen(&self) -> Option<&'static str> {
-        self.languages.chosen().map(|it| it.tag)
+        self.languages
+            .chosen()
+            .map(|it| it.tag)
+            .or_else(|| self.continued.then(|| self.the_language()))
     }
 
     /// **The keyboard to type on now**: chosen, or the chosen language's, or
@@ -231,14 +253,36 @@ impl TheFirstStart {
         something_chosen.then(|| self.the_keyboard())
     }
 
-    /// **The region a person took** with *Use this region*.
+    /// **The region a person took** with *Use this region*, or — once
+    /// *Continue* is pressed with none taken — the one the overview named.
     pub fn the_region_chosen(&self) -> Option<&RegionCode> {
-        self.region.as_ref()
+        self.region.as_ref().or(self.accepted_region.as_ref())
     }
 
-    /// **The time zone the region taken sets**, by its database name.
+    /// **The time zone the region taken sets**, by its database name — or,
+    /// where none was taken, the one zone of the region Continue accepted.
     pub fn the_zone_chosen(&self) -> Option<&str> {
-        self.zone.as_ref().map(|it| it.iana.as_str())
+        let zone = if self.region.is_some() {
+            self.zone.as_ref()
+        } else {
+            self.accepted_zone.as_ref()
+        };
+        zone.map(|it| it.iana.as_str())
+    }
+
+    /// *Continue* accepts what the overview names: the flag the language and
+    /// keyboard follow, and — where no region was taken — the region it names
+    /// and that region's zone, if it has only one.
+    fn continue_accepts_what_the_overview_names(&mut self) {
+        self.continued = true;
+        if self.region.is_some() {
+            return;
+        }
+        self.accepted_region = self.the_region();
+        self.accepted_zone = self.accepted_region.as_ref().and_then(|region| {
+            let mut zones = alo_formats::zones::the_zones_in(region, self.the_language());
+            if zones.len() == 1 { zones.pop() } else { None }
+        });
     }
 
     /// What the zone is called, for the region row — only where the region
@@ -360,7 +404,7 @@ impl TheFirstStart {
             }
             SignInKey::Enter => match self.ring {
                 WhereTheRingIs::OnTheWayOn => {
-                    self.continued = true;
+                    self.continue_accepts_what_the_overview_names();
                     return Went::Onward;
                 }
                 WhereTheRingIs::OnTheList => self.open(self.row()),

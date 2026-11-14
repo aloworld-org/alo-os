@@ -456,29 +456,30 @@ impl<K: Knocking> SignInScreen<K> {
         Signing::Still(Box::new(self))
     }
 
-    /// **The region the person took** with *Use this region*, for whoever
-    /// keeps it — [`None`] until they take one, and on every other screen.
+    /// **The region the person took** with *Use this region*, or the one the
+    /// overview named when *Continue* was pressed, for whoever keeps it —
+    /// [`None`] until either, and on the sign-in screen itself. The first
+    /// account's sheets answer from the first start they carry, for the
+    /// reason [`Self::the_keyboard_chosen`] gives.
     #[must_use]
     pub fn the_region_chosen(&self) -> Option<&str> {
         match &self.stands {
-            WhatItStandsAt::FirstStart(first_start, _, _) => first_start
+            WhatItStandsAt::FirstStart(first_start, _, _)
+            | WhatItStandsAt::MakeAnAccount(_, _, first_start, _) => first_start
                 .the_region_chosen()
                 .map(alo_formats::RegionCode::code),
-            WhatItStandsAt::SignIn(_)
-            | WhatItStandsAt::MakeAnAccount(..)
-            | WhatItStandsAt::Unreadable(_, _) => None,
+            WhatItStandsAt::SignIn(_) | WhatItStandsAt::Unreadable(_, _) => None,
         }
     }
 
-    /// **The time zone the region taken sets**, by its database name, for
-    /// whoever sets it — [`None`] until one is, and on every other screen.
+    /// **The time zone the region sets**, by its database name, for whoever
+    /// sets it — [`None`] until one is, and on the sign-in screen itself.
     #[must_use]
     pub fn the_zone_chosen(&self) -> Option<&str> {
         match &self.stands {
-            WhatItStandsAt::FirstStart(first_start, _, _) => first_start.the_zone_chosen(),
-            WhatItStandsAt::SignIn(_)
-            | WhatItStandsAt::MakeAnAccount(..)
-            | WhatItStandsAt::Unreadable(_, _) => None,
+            WhatItStandsAt::FirstStart(first_start, _, _)
+            | WhatItStandsAt::MakeAnAccount(_, _, first_start, _) => first_start.the_zone_chosen(),
+            WhatItStandsAt::SignIn(_) | WhatItStandsAt::Unreadable(_, _) => None,
         }
     }
 
@@ -504,19 +505,21 @@ impl<K: Knocking> SignInScreen<K> {
 
     /// The language the person chose, for whoever keeps and applies it.
     ///
-    /// [`None`] until they choose one, and on every screen that is not the
-    /// language sheet. The compositor asks after each press: a layout that
-    /// changed is written to `alo_keyboards::THE_MACHINES_KEYBOARDS` and
-    /// handed to `Server::the_keyboard_is_now`, so the next key a person
-    /// presses is already in their own layout — which is the whole point of
-    /// the sheet coming before the name.
+    /// [`None`] until they choose one or press *Continue* — which accepts the
+    /// language the overview names — and on the sign-in screen itself. The
+    /// first account's sheets answer from the first start they carry, for
+    /// the reason [`Self::the_keyboard_chosen`] gives. The compositor asks
+    /// after each press and keeps what changed in
+    /// `alo_formats::set_up_in::THE_MACHINES_SET_UP_IN`, which the person's
+    /// desktop reads when it starts.
     #[must_use]
     pub fn the_language_chosen(&self) -> Option<&str> {
         match &self.stands {
-            WhatItStandsAt::FirstStart(first_start, _, _) => first_start.the_language_chosen(),
-            WhatItStandsAt::SignIn(_)
-            | WhatItStandsAt::MakeAnAccount(..)
-            | WhatItStandsAt::Unreadable(_, _) => None,
+            WhatItStandsAt::FirstStart(first_start, _, _)
+            | WhatItStandsAt::MakeAnAccount(_, _, first_start, _) => {
+                first_start.the_language_chosen()
+            }
+            WhatItStandsAt::SignIn(_) | WhatItStandsAt::Unreadable(_, _) => None,
         }
     }
 
