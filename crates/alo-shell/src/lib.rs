@@ -187,8 +187,10 @@ mod a_screen_arrives_or_leaves;
 /// A text alo asked to type, read off the application door whole (ADR 0153).
 pub mod a_text_at_the_door;
 mod access_action;
+mod access_answers;
 mod access_attributes;
 mod access_bus;
+mod access_cache;
 mod access_contrast;
 mod access_events;
 mod access_magnifier;

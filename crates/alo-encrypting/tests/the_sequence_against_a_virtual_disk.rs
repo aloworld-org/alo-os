@@ -67,7 +67,7 @@ use alo_encrypting::{
 };
 
 /// The base alo OS is built on, exactly as `image/Containerfile` pins it.
-const THE_BASE: &str = "quay.io/fedora/fedora-bootc:44@sha256:5a3472162ba7781a01d249b9a56bc5a9b9fa01c08edae1f73c77dfa1e504e868";
+const THE_BASE: &str = "ghcr.io/aloworld-org/fedora-bootc@sha256:5a3472162ba7781a01d249b9a56bc5a9b9fa01c08edae1f73c77dfa1e504e868";
 
 /// The disk the virtual one answers to, by the identity udev would have given
 /// it.

@@ -73,7 +73,12 @@ pub(crate) const SIGNING: [&str; 6] = [
 const PUSH: &str = "podman push";
 
 /// What asks the registry whether a tag already exists.
-const LOOK: &str = "skopeo inspect";
+///
+/// The registry the candidate is pushed to, by name, and not every `skopeo
+/// inspect`: since ADR 0154 the workflow also asks whether the recipe's *base*
+/// can be pulled, which is a look at another registry and says nothing about
+/// whether this push would move a published tag.
+const LOOK: &str = "skopeo inspect --raw \"docker://$REGISTRY:";
 
 /// The branch a candidate is built from.
 const MAIN: &str = "refs/heads/main";
