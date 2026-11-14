@@ -8,6 +8,10 @@ members = [
   "crates/alo-before",
   "crates/alo-reached",
   "crates/alo-shell",
+  # A test instrument with its own lint table: it calls libatspi's C API, the
+  # one `unsafe` the workspace's `forbid` cannot allow, so it denies `unsafe`
+  # and lifts it in one file. Its `main.rs` says why.
+  "crates/alo-libatspi-walk",
   "crates/alo-terminal",
   "crates/alo-desktop",
   "tools/graphics-check",

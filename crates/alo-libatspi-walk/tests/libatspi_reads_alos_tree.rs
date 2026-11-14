@@ -1,20 +1,21 @@
 //! **The shell's tree, read by the library Orca reads it through.**
 //!
-//! `the_tree_a_reader_finds` reads the shell's tree back with `alo-adapters`,
-//! the agent's own reader — and it passed for weeks while Orca, on a booted
-//! machine, logged *AT-SPI: Called _atspi_dbus_return_accessible_from_message
-//! with strange signature so* for every child it asked for, and *Error in
-//! GetItems … Unknown object '/org/a11y/atspi/cache'* for the tree as a whole.
-//! The agent's reader is built on zbus, and zbus reads a reply of two loose
-//! values and a reply of one structure into the same Rust tuple, so it could
-//! not tell the shell's wrong answer from a right one
+//! `alo-shell`'s `the_tree_a_reader_finds` reads the shell's tree back with
+//! `alo-adapters`, the agent's own reader — and it passed for weeks while Orca,
+//! on a booted machine, logged *AT-SPI: Called
+//! _atspi_dbus_return_accessible_from_message with strange signature so* for
+//! every child it asked for, and *Error in GetItems … Unknown object
+//! '/org/a11y/atspi/cache'* for the tree as a whole. The agent's reader is
+//! built on zbus, as the shell is, and could not tell the shell's wrong answer
+//! from a right one
 //! (`docs/misreadings/a-reader-we-wrote-agreed-with-the-tree-we-wrote.md`).
 //!
 //! So here the reader is **libatspi itself**, the C library every screen reader
-//! on this desktop reads through, driven by its own GObject bindings — the road
-//! Orca takes. Nothing in this file decides what a right answer looks like:
-//! libatspi does, by warning on what it cannot read and by reading it as
-//! nothing. The tree is walked twice:
+//! on this desktop reads through, called through its C API by this package's
+//! own `alo-libatspi-walk` — the road Orca takes. Nothing in this file decides
+//! what a right answer looks like: libatspi does, by warning on what it cannot
+//! read and by reading it as nothing. The tree is walked twice, each time by a
+//! fresh process, as a fresh screen reader would:
 //!
 //! - **one question at a time**, libatspi's cache off, which is
 //!   `GetChildAtIndex`, `Parent`, `GetIndexInParent`, `GetRole` and `Name` for
@@ -27,12 +28,11 @@
 //! on its standard error. A monitor on the accessibility bus holds the wire to
 //! the same: each answer carries the signature at-spi2-core's XML gives it.
 //!
-//! **What this needs**, beyond `the_tree_a_reader_finds`': `python3`, PyGObject
-//! and the `Atspi-2.0` typelib (`python3-gi`, `gir1.2-atspi-2.0` on Ubuntu).
-//! The few lines of Python below are the bindings' calls and nothing else — the
-//! library being exercised is libatspi, which is C, rented and unpatched. If any
-//! of it is missing the test fails rather than skipping: a skipped test here
-//! would be green on a machine that proved nothing.
+//! **What this needs** is what `the_tree_a_reader_finds` needs — `dbus-daemon`
+//! and at-spi2's bus launcher — and libatspi's runtime library, which comes
+//! with at-spi2-core. If any of it is missing the test fails rather than
+//! skipping: a skipped test here would be green on a machine that proved
+//! nothing.
 
 #![cfg(target_os = "linux")]
 #![expect(
@@ -43,7 +43,7 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
-#[path = "support/one_heavy_fixture_at_a_time.rs"]
+#[path = "../../alo-shell/tests/support/one_heavy_fixture_at_a_time.rs"]
 mod one_heavy_fixture_at_a_time;
 
 use std::io::{BufRead as _, BufReader};
@@ -61,65 +61,6 @@ use alo_strings::{Filling, Strings};
 use zbus::blocking::MessageIterator;
 use zbus::blocking::connection::Builder;
 use zbus::message::Type;
-
-/// How long anything here is waited for.
-const PATIENCE: Duration = Duration::from_secs(40);
-
-/// libatspi, through its bindings: find the application whose toolkit is
-/// `alo`, let the main loop take in what it was sent (`GetItems`' answer among
-/// it), and walk it — with the cache on when asked to. One line per thing:
-/// depth, role, child count, index in parent, whether its parent is the thing
-/// that listed it, and its name.
-const WALK: &str = r#"
-import sys
-import gi
-gi.require_version("Atspi", "2.0")
-from gi.repository import Atspi, GLib
-
-cached = sys.argv[1] == "cached"
-Atspi.init()
-context = GLib.MainContext.default()
-
-def pump(seconds):
-    until = GLib.get_monotonic_time() + int(seconds * 1000000)
-    while GLib.get_monotonic_time() < until:
-        context.iteration(False)
-
-desktop = Atspi.get_desktop(0)
-ours = None
-for index in range(desktop.get_child_count()):
-    application = desktop.get_child_at_index(index)
-    if application is not None and application.get_toolkit_name() == "alo":
-        ours = application
-if ours is None:
-    print("no application with the toolkit alo on the desktop")
-    sys.exit(3)
-pump(2)
-if cached:
-    ours.set_cache_mask(Atspi.Cache.DEFAULT)
-
-def walk(node, depth, listed_by, as_index):
-    count = node.get_child_count()
-    parent = node.get_parent()
-    index = node.get_index_in_parent()
-    where = listed_by is None or (parent == listed_by and index == as_index)
-    print("%d\t%d\t%d\t%d\t%s\t%s" % (
-        depth,
-        int(node.get_role()),
-        count,
-        index,
-        "parent" if where else "stray",
-        node.get_name(),
-    ))
-    for index in range(count):
-        child = node.get_child_at_index(index)
-        if child is None:
-            print("missing\t%d\t%d" % (depth + 1, index))
-            continue
-        walk(child, depth + 1, node, index)
-
-walk(ours, 0, None, -1)
-"#;
 
 /// A program this test needs, wherever the machine keeps it.
 fn found(candidates: &[&str], what: &str) -> PathBuf {
@@ -278,10 +219,10 @@ impl ASession {
     /// standard error.
     fn libatspi_walks(&self, how: &str) -> (Vec<String>, String) {
         let ran = self
-            .environment(on_the_path("python3"))
-            .args(["-I", "-c", WALK, how])
+            .environment(PathBuf::from(env!("CARGO_BIN_EXE_alo-libatspi-walk")))
+            .arg(how)
             .output()
-            .expect("python3 started");
+            .expect("the walk started");
         let walked = String::from_utf8_lossy(&ran.stdout).into_owned();
         let said = String::from_utf8_lossy(&ran.stderr).into_owned();
         assert!(

@@ -1,6 +1,6 @@
 //! What one node answers, read off the node rather than off a bus — the
 //! signatures on a real bus are `access_bus_tests`', and what libatspi itself
-//! makes of them is `tests/a_screen_readers_own_library_reads_the_tree.rs`'.
+//! makes of them is `alo-libatspi-walk`'s `tests/libatspi_reads_alos_tree.rs`.
 
 use alo_access::{Surface, TurnedOn};
 use zbus::zvariant::Type as _;

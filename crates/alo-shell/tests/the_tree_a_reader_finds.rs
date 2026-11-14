@@ -22,7 +22,7 @@
 //! loose values as happily as one sent as the `(so)` libatspi requires — so
 //! this file was green while Orca could not read a child. What a screen
 //! reader's own library makes of the tree is
-//! `a_screen_readers_own_library_reads_the_tree`'s.
+//! `alo-libatspi-walk`'s `tests/libatspi_reads_alos_tree.rs`'s.
 //!
 //! If a program this needs is missing the test fails rather than skipping: a
 //! skipped test here would be green on a machine that proved nothing.

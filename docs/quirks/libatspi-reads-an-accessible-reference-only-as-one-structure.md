@@ -53,7 +53,7 @@ ways.
   sends `AddAccessible` and `RemoveAccessible` for what changed whenever the tree
   is replaced.
 - What holds it, on every gate:
-  - `crates/alo-shell/tests/a_screen_readers_own_library_reads_the_tree.rs` reads
+  - `crates/alo-libatspi-walk/tests/libatspi_reads_alos_tree.rs` reads
     the tree with libatspi itself, both ways, and fails on any line libatspi
     prints;
   - `access_bus_tests` reads each reply's signature off a real bus.

@@ -54,5 +54,5 @@ person switching the screen reader on.
 - **Hold the rented library's warnings to silence.** libatspi said exactly what was
   wrong, on stderr. A test that fails on any line there catches the next fault of
   this kind without anyone having to predict it:
-  `crates/alo-shell/tests/a_screen_readers_own_library_reads_the_tree.rs` does
+  `crates/alo-libatspi-walk/tests/libatspi_reads_alos_tree.rs` does
   that on every gate.

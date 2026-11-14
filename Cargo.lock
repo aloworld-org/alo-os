@@ -1303,6 +1303,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-libatspi-walk"
+version = "0.0.1"
+dependencies = [
+ "alo-access",
+ "alo-adapters",
+ "alo-portals",
+ "alo-saying",
+ "alo-shell",
+ "alo-strings",
+ "libloading",
+ "rustix 1.1.4",
+ "zbus",
+]
+
+[[package]]
 name = "alo-locking"
 version = "0.0.1"
 dependencies = [

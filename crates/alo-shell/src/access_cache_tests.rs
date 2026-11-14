@@ -1,6 +1,6 @@
 //! What a reader holding the cache is told, decided without a bus. The cache
 //! on a real bus is `access_bus_tests`', and libatspi reading it is
-//! `tests/a_screen_readers_own_library_reads_the_tree.rs`'.
+//! `alo-libatspi-walk`'s `tests/libatspi_reads_alos_tree.rs`.
 
 use alo_access::{Surface, TurnedOn};
 use zbus::zvariant::Type as _;
