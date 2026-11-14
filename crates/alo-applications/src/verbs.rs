@@ -139,6 +139,25 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), Declaring> {
     Ok(())
 }
 
+/// Put **every verb this crate ships** on a list: the four, and
+/// `open_file_in_application` (`crate::opening_a_file`, 2026-11-14).
+///
+/// What `alo-declared` hands in for this crate, so *every verb alo OS ships, on
+/// one list* holds the fifth too. All or none, as [`declare_into`] is: the
+/// fifth's name is looked for before any of the four is added.
+///
+/// # Errors
+/// [`Declaring::List`] if the list already holds one of these names.
+pub fn declare_every_verb_into(verbs: &mut Verbs) -> Result<(), Declaring> {
+    if verbs.of(crate::OPEN_FILE_IN_APPLICATION).is_some() {
+        return Err(Declaring::List(VerbsError::AlreadyDeclared {
+            name: crate::OPEN_FILE_IN_APPLICATION.to_owned(),
+        }));
+    }
+    declare_into(verbs)?;
+    crate::opening_a_file::declare_opening_a_file_into(verbs)
+}
+
 /// Put only the application verbs a machine can really carry out on a list.
 ///
 /// **Three of the four**, and the absent one is `arrange_application`.

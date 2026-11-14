@@ -513,6 +513,43 @@ word **ask** is therefore in the approval sentence rather than only in
 documentation, and a translation that promised otherwise would be promising
 something alo OS does not do.
 
+### `open_file_in_application` — added 2026-11-14, additively
+
+*The owner, 2026-11-14: "Yes, add it."* A fifth verb on this family, declared
+by `alo-applications` (`crate::opening_a_file`) and carried out by
+`alo-turn`'s `opening_a_file_in_an_application`. Nothing above changed.
+
+| Verb | Effect | Arguments | Sentence |
+|---|---|---|---|
+| `open_file_in_application` | change | `application` (application), `path` (path) | open {path} in {application} |
+
+- **The grant is over both arguments**: the application, as for every verb in
+  this family, and the path, as for every file verb — a file under a granted
+  folder, or at full access any file the person's account can open (ADR 0149).
+  The application is matched by name exactly as the section below says.
+- **It is carried out in this order, and every step that refuses is
+  recorded**: the application, granted and then installed (the order below);
+  the path, granted, resolved, and its real place granted (the file verbs'
+  three questions); then the compositor door's `open-file` with the **real**
+  path ([`application-door.md`](application-door.md)).
+- **Where it opens is not an argument.** At the default it opens in alo's own
+  copy of the application (ADR 0143 Q6, ADR 0153); where the person chose
+  *alo may work in your own window*, as their press would. The desktop reads
+  that from the person's own file at the moment it opens, and answers which.
+- **Refused, in words, with nothing opened**: the application not granted, the
+  file not granted, the application not installed, the file not there or
+  leading outside the grants, the application's entry giving no way to hand it
+  a file (`takes-no-file`), an application that cannot open a copy of its own
+  at the default (`no-copy-of-its-own`), one that could not be started with
+  it, and a request from a paired machine — refused by name before any grant
+  is asked, as `publish_to_github_pages` is.
+- **What runs is the installed entry's own `Exec` line**, with the file where
+  its `%f`, `%F`, `%u` or `%U` stands — or `Open` with its `file://` address
+  over the bus — never a command alo wrote.
+- On the daemon's socket a done one is `reached` with `act` `open-file`
+  ([`daemon-protocol.md`](daemon-protocol.md)); the file and where it opened
+  are in the record.
+
 ### The identifier is approved; the name is only shown
 
 An application has two names: the identifier this machine knows it by

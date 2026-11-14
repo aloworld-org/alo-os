@@ -91,6 +91,15 @@ impl TheDoorOnTheDesktop {
             .unwrap_or_default()
     }
 
+    /// The files alo was approved to open since the last frame (2026-11-14),
+    /// or none while the door is not served.
+    pub(crate) fn asked_to_open_files(&mut self) -> Vec<crate::a_file_alo_opens::AskedToOpenAFile> {
+        self.served
+            .as_mut()
+            .map(TheApplicationDoor::asked_to_open_files)
+            .unwrap_or_default()
+    }
+
     /// Typing alo was approved for since the last frame, read whole (ADR
     /// 0153), or none while the door is not served.
     pub(crate) fn asked_to_type(&mut self) -> Vec<crate::a_text_at_the_door::AskedToType> {

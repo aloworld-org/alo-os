@@ -245,6 +245,13 @@ impl<'a, 'm> Arriving<'a, 'm> {
         if verb == alo_publishing::PUBLISH_TO_GITHUB_PAGES {
             return Err(self.turning.not_for_another_machine(verb, now));
         }
+        // **Nor does opening a file in an application** (2026-11-14): it puts
+        // a window with this person's file in it in front of them, and a
+        // pairing made to share a model is not one made to let another machine
+        // open their files on their screen. Refused by name, before any grant.
+        if verb == alo_applications::OPEN_FILE_IN_APPLICATION {
+            return Err(self.turning.not_for_another_machine(verb, now));
+        }
         let call = self.turning.calling(verb, given, now)?;
         if let Some(said) = self.pairing_ended(pairings, now) {
             let why = ProposalError::NotGrantedElsewhere(said);
@@ -669,7 +676,7 @@ fn no_longer_paired(origin: &Origin, strings: &Strings) -> Said {
     clippy::unwrap_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
-mod tests {
+pub(crate) mod tests {
     use std::path::Path;
 
     use alo_capability::{Ask, Authorised, Grant, Reach};
@@ -726,7 +733,7 @@ mod tests {
 
     /// The reception machine, as a place a verb arrives from — proven, with
     /// a proof made on its own row.
-    fn origin() -> Origin {
+    pub(crate) fn origin() -> Origin {
         let (on_reception, on_here) = paired_both_ways();
         let mut pairings = Pairings::none();
         pairings.keep(on_here);

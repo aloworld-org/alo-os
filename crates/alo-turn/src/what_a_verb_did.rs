@@ -31,6 +31,7 @@ use alo_record::WhatTouchedIt;
 use alo_software::{Installed, WhatTheCatalogueHolds};
 
 use crate::acting_on_an_application::Reached;
+use crate::opening_a_file_in_an_application::AFileOpened;
 use crate::pressing_a_control::AControlPressed;
 use crate::reading_an_applications_windows::TheWindowsShowed;
 use crate::typing_into_an_application::ATextTyped;
@@ -84,9 +85,21 @@ pub enum WhatAVerbDid {
     /// A folder was published to the person's GitHub Pages site, or found to
     /// be there already (added 2026-11-13).
     AFolderWasPublished(Published),
+    /// A file was opened in an application the person named, in alo's own
+    /// copy or in their own window (`open_file_in_application`, 2026-11-14).
+    AFileWasOpened(AFileOpened),
 }
 
 impl WhatAVerbDid {
+    /// The file opened, when one was.
+    #[must_use]
+    pub const fn opened(&self) -> Option<&AFileOpened> {
+        match self {
+            Self::AFileWasOpened(opened) => Some(opened),
+            _ => None,
+        }
+    }
+
     /// What was published, when a folder was.
     #[must_use]
     pub const fn published(&self) -> Option<&Published> {
@@ -99,7 +112,8 @@ impl WhatAVerbDid {
             | Self::WhatTouchedAFile(_)
             | Self::WhatTheWindowsShowed(_)
             | Self::AControlWasPressed(_)
-            | Self::TextWasTyped(_) => None,
+            | Self::TextWasTyped(_)
+            | Self::AFileWasOpened(_) => None,
         }
     }
 
@@ -119,7 +133,8 @@ impl WhatAVerbDid {
             | Self::WhatTheWindowsShowed(_)
             | Self::AControlWasPressed(_)
             | Self::TextWasTyped(_)
-            | Self::AFolderWasPublished(_) => None,
+            | Self::AFolderWasPublished(_)
+            | Self::AFileWasOpened(_) => None,
         }
     }
 
@@ -135,7 +150,8 @@ impl WhatAVerbDid {
             | Self::WhatTheWindowsShowed(_)
             | Self::AControlWasPressed(_)
             | Self::TextWasTyped(_)
-            | Self::AFolderWasPublished(_) => None,
+            | Self::AFolderWasPublished(_)
+            | Self::AFileWasOpened(_) => None,
         }
     }
 
@@ -151,7 +167,8 @@ impl WhatAVerbDid {
             | Self::WhatTheWindowsShowed(_)
             | Self::AControlWasPressed(_)
             | Self::TextWasTyped(_)
-            | Self::AFolderWasPublished(_) => None,
+            | Self::AFolderWasPublished(_)
+            | Self::AFileWasOpened(_) => None,
         }
     }
 
@@ -167,7 +184,8 @@ impl WhatAVerbDid {
             | Self::WhatTheWindowsShowed(_)
             | Self::AControlWasPressed(_)
             | Self::TextWasTyped(_)
-            | Self::AFolderWasPublished(_) => None,
+            | Self::AFolderWasPublished(_)
+            | Self::AFileWasOpened(_) => None,
         }
     }
 
@@ -210,7 +228,8 @@ impl WhatAVerbDid {
             | Self::WhatTheWindowsShowed(_)
             | Self::AControlWasPressed(_)
             | Self::TextWasTyped(_)
-            | Self::AFolderWasPublished(_) => None,
+            | Self::AFolderWasPublished(_)
+            | Self::AFileWasOpened(_) => None,
         }
     }
 }
@@ -266,6 +285,12 @@ impl From<WhatTouchedIt> for WhatAVerbDid {
 impl From<Published> for WhatAVerbDid {
     fn from(published: Published) -> Self {
         Self::AFolderWasPublished(published)
+    }
+}
+
+impl From<AFileOpened> for WhatAVerbDid {
+    fn from(opened: AFileOpened) -> Self {
+        Self::AFileWasOpened(opened)
     }
 }
 

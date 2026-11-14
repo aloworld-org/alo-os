@@ -66,6 +66,7 @@ use crate::bounding::Doing;
 use crate::installing_an_application::installing_an_application;
 use crate::looking_at_the_catalogue::looking_at_the_catalogue;
 use crate::machine::Machine;
+use crate::opening_a_file_in_an_application::opening_a_file_in_an_application;
 use crate::pressing_a_control::pressing_a_control;
 use crate::publishing_a_folder::publishing_a_folder;
 use crate::reading_an_applications_windows::reading_an_applications_windows;
@@ -157,6 +158,15 @@ pub(crate) fn carrying_out(
     if authorised.verb() == alo_adapters::TYPE_TEXT {
         let (entry, typed) = typing_into_an_application(machine, authorised, grants);
         return (entry, typed.map(WhatAVerbDid::from));
+    }
+    // **Opening a file in an application, routed by name like the rest**
+    // (2026-11-14). Before the boundary, for the accessibility verbs' reason:
+    // the path it carries is resolved and asked about by `alo_files::Touching`
+    // inside the executor, and what opens it is the person's application under
+    // their own session — no work of ours touches the disk.
+    if authorised.verb() == alo_applications::OPEN_FILE_IN_APPLICATION {
+        let (entry, opened) = opening_a_file_in_an_application(machine, authorised, grants);
+        return (entry, opened.map(WhatAVerbDid::from));
     }
     if THE_APPLICATION_ACTS.contains(&authorised.verb()) {
         let (entry, reached) = acting_on_an_application(machine, authorised, grants);

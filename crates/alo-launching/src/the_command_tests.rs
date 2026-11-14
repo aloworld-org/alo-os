@@ -6,6 +6,7 @@ use super::*;
 /// Nothing to fill a code with.
 const NOTHING: Filling<'static> = Filling {
     link: None,
+    file: None,
     icon: None,
     name: None,
     location: None,
@@ -54,6 +55,7 @@ fn a_flatpak_line_becomes_flatpak_run() {
 fn the_codes_that_are_not_files_are_filled() {
     let filling = Filling {
         link: None,
+        file: None,
         icon: Some("org.kde.dolphin"),
         name: Some("Dolphin"),
         location: Some("/usr/share/applications/org.kde.dolphin.desktop"),
@@ -201,5 +203,66 @@ fn a_line_that_names_nothing_is_refused() {
         the_command_in(r#""" app"#, &NOTHING),
         Err(WhyNotACommand::Empty),
         "an empty program is not a program"
+    );
+}
+
+/// **A file alo was approved to open is what each file code becomes**, as one
+/// argument, spaces and all — and Flatpak's own export carries it between its
+/// forwarding markers, so the sandbox is handed that one file.
+#[test]
+fn a_file_fills_each_file_code_as_one_argument() {
+    let filling = Filling {
+        file: Some("/var/home/anna/My Notes/hello.txt"),
+        ..NOTHING
+    };
+    for (exec, expected) in [
+        (
+            "gedit %F",
+            vec!["gedit", "/var/home/anna/My Notes/hello.txt"],
+        ),
+        (
+            "gedit %f",
+            vec!["gedit", "/var/home/anna/My Notes/hello.txt"],
+        ),
+        (
+            "dolphin %u",
+            vec!["dolphin", "/var/home/anna/My Notes/hello.txt"],
+        ),
+        (
+            "libreoffice --writer %U",
+            vec![
+                "libreoffice",
+                "--writer",
+                "/var/home/anna/My Notes/hello.txt",
+            ],
+        ),
+        (
+            "/usr/bin/flatpak run --branch=stable --arch=x86_64 --command=codium \
+             --file-forwarding com.vscodium.codium @@ %F @@",
+            vec![
+                "/usr/bin/flatpak",
+                "run",
+                "--branch=stable",
+                "--arch=x86_64",
+                "--command=codium",
+                "--file-forwarding",
+                "com.vscodium.codium",
+                "@@",
+                "/var/home/anna/My Notes/hello.txt",
+                "@@",
+            ],
+        ),
+    ] {
+        assert_eq!(the_command_in(exec, &filling), words(&expected), "{exec}");
+    }
+    // **A link wins `%u` and `%U` where both are given**, and never `%f`.
+    let both = Filling {
+        link: Some("https://example.com/"),
+        file: Some("/var/home/anna/hello.txt"),
+        ..NOTHING
+    };
+    assert_eq!(
+        the_command_in("app %u %f", &both),
+        words(&["app", "https://example.com/", "/var/home/anna/hello.txt"])
     );
 }

@@ -89,6 +89,9 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
             published.address(),
             published.nothing_new(),
         ),
+        alo_turn::WhatAVerbDid::AFileWasOpened(opened) => {
+            Done::of_an_application_act("open-file", opened.application())
+        }
     }
 }
 

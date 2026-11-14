@@ -78,5 +78,12 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
             published.address(),
             published.nothing_new(),
         ),
+        // The eighth: a file opened in an application the person named
+        // (2026-11-14). It crosses as an application act, `open-file`, which
+        // is the compositor door's own word for it; the file and where it
+        // opened are in the record.
+        WhatAVerbDid::AFileWasOpened(opened) => {
+            Done::of_an_application_act(alo_acting::OPEN_FILE, opened.application())
+        }
     }
 }

@@ -29,7 +29,7 @@
 //! sentence as a compositor that answered `could-not-ask`, because from the
 //! person's side they are the same fact: nothing was changed.
 
-use alo_acting::{Answer, Request, ToType, Typed};
+use alo_acting::{Answer, Opened, Request, ToOpenAFile, ToType, Typed};
 
 /// Whatever can put one request to the compositor and read one answer.
 ///
@@ -58,6 +58,20 @@ pub trait TheDoorTheCompositorServes {
     /// [`NotAtTheDoor`], as for [`Self::asking`].
     fn typing(&mut self, asked: &ToType, text: &str) -> Result<Typed, NotAtTheDoor> {
         let _ = (asked, text);
+        Err(NotAtTheDoor::NoCompositor)
+    }
+
+    /// Put `open-file` to the compositor — open this file in this application
+    /// (`open_file_in_application`, 2026-11-14) — and wait for its answer,
+    /// which says where it opened or why it did not.
+    ///
+    /// **No compositor by default**, as for [`Self::typing`], so a door that
+    /// does not know this act opens nothing.
+    ///
+    /// # Errors
+    /// [`NotAtTheDoor`], as for [`Self::asking`].
+    fn opening_a_file(&mut self, asked: &ToOpenAFile) -> Result<Opened, NotAtTheDoor> {
+        let _ = asked;
         Err(NotAtTheDoor::NoCompositor)
     }
 }

@@ -51,6 +51,11 @@ pub struct AlosCopy {
     profile: PathBuf,
     /// What follows the entry's own command.
     arguments: Vec<String>,
+    /// What follows it instead when the copy is **already running** and is
+    /// handed a file to open (`open_file_in_application`, 2026-11-14): the
+    /// same profile, so the start is handed to the copy that has it, and
+    /// nothing that would refuse that or open a second window.
+    handing_over: Vec<String>,
 }
 
 impl AlosCopy {
@@ -65,6 +70,18 @@ impl AlosCopy {
     #[must_use]
     pub fn arguments(&self) -> &[String] {
         &self.arguments
+    }
+
+    /// What follows the entry's own command to hand a file to the copy
+    /// **already running** over this profile.
+    ///
+    /// **From each application's own documentation, not a measurement**, as
+    /// the arguments above are: Firefox hands a start to the instance running
+    /// over the same profile unless told `--no-remote`, and VSCodium and VS
+    /// Code hand one to the instance running over the same data folder.
+    #[must_use]
+    pub fn handing_over(&self) -> &[String] {
+        &self.handing_over
     }
 }
 
@@ -96,22 +113,34 @@ pub fn alos_copy(identifier: &str, home: &Path) -> Option<AlosCopy> {
         .join(identifier)
         .join("alos-copy");
     let at = profile.to_str()?.to_owned();
-    let arguments = if identifier == "org.mozilla.firefox" {
+    let (arguments, handing_over) = if identifier == "org.mozilla.firefox" {
         // `--no-remote` stops this start handing over to a Firefox already
-        // running, and `--profile` names the folder.
-        vec!["--no-remote".to_owned(), "--profile".to_owned(), at]
+        // running, and `--profile` names the folder. Handing a file over, the
+        // profile alone: a start over the same profile goes to the copy.
+        (
+            vec!["--no-remote".to_owned(), "--profile".to_owned(), at.clone()],
+            vec!["--profile".to_owned(), at],
+        )
     } else {
         // A second data folder is a second editor: a running one is asked to
-        // open the window only when the data folder is the same.
-        vec![
-            "--new-window".to_owned(),
+        // open the window only when the data folder is the same. Handing a
+        // file over, the same folders and no `--new-window`, so the file opens
+        // in the copy's window.
+        let folders = vec![
             "--user-data-dir".to_owned(),
             format!("{at}/data"),
             "--extensions-dir".to_owned(),
             format!("{at}/extensions"),
-        ]
+        ];
+        let mut arguments = vec!["--new-window".to_owned()];
+        arguments.extend(folders.iter().cloned());
+        (arguments, folders)
     };
-    Some(AlosCopy { profile, arguments })
+    Some(AlosCopy {
+        profile,
+        arguments,
+        handing_over,
+    })
 }
 
 /// The unit alo's copy of the application with this identifier runs in — a

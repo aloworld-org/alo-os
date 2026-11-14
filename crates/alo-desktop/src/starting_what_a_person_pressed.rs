@@ -43,7 +43,7 @@ use std::os::unix::fs::PermissionsExt as _;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use alo_launching::{HowItStarts, TheEntry, WhyItCannotStart, WhyNotWithALink};
+use alo_launching::{HowItStarts, TheEntry, WhyItCannotStart, WhyNotWithAFile, WhyNotWithALink};
 use alo_shell::WhoAskedToStart;
 use zbus::zvariant::Value;
 
@@ -105,6 +105,73 @@ impl HowThisMachineStartsThings {
             }
         );
         self.as_its_entry_says(identifier, link.as_deref())
+    }
+
+    /// **Open `file` in the person's own window of `identifier`** — where they
+    /// chose *alo may work in your own window* — the road a press takes, with
+    /// the file where the entry says a file goes (`open_file_in_application`,
+    /// 2026-11-14): `Open` with its `file://` address over the bus, or the
+    /// entry's own `%f`, `%F`, `%u` or `%U` filled with it.
+    ///
+    /// Answers where it opened or why it did not, for the daemon to record.
+    #[must_use]
+    pub fn started_with_a_file(&self, identifier: &str, file: &Path) -> alo_acting::Opened {
+        use alo_acting::Opened;
+        eprintln!(
+            "alo-desktop: {identifier} is asked to open a file, by alo, with the person's \
+             approval, in the person's own window as they chose"
+        );
+        let Some(text) = file.to_str() else {
+            return Opened::CouldNotStart;
+        };
+        let Some(location) = alo_launching::where_the_entry_is(identifier, &self.entries) else {
+            let _ = said(identifier, "no entry by that name is installed");
+            return Opened::NotInstalled;
+        };
+        let Some(entry) = std::fs::read_to_string(&location)
+            .ok()
+            .as_deref()
+            .and_then(TheEntry::read)
+        else {
+            let _ = said(identifier, "its entry could not be read");
+            return Opened::CouldNotStart;
+        };
+        let road = match alo_launching::how_it_starts_with_a_file(
+            identifier,
+            &entry,
+            location.to_str(),
+            text,
+        ) {
+            Ok(road) => road,
+            Err(WhyNotWithAFile::TakesNoFile) => {
+                let _ = said(
+                    identifier,
+                    "its entry's command has nowhere to put a file (no %f, %F, %u or %U), so \
+                     it was not started without the file",
+                );
+                return Opened::TakesNoFile;
+            }
+            Err(WhyNotWithAFile::CannotStart(why)) => {
+                let _ = said(identifier, &the_reason(&why));
+                return Opened::CouldNotStart;
+            }
+        };
+        let started = match road {
+            HowItStarts::OverTheBus { or_else } => {
+                zbus::block_on(alo_portals::opened_in(&self.connection, identifier, file))
+                    || or_else.is_some_and(|command| {
+                        self.started_from_its_command(identifier, &entry, &command)
+                    })
+            }
+            HowItStarts::FromItsCommand(command) => {
+                self.started_from_its_command(identifier, &entry, &command)
+            }
+        };
+        if started {
+            Opened::InTheirWindow
+        } else {
+            Opened::CouldNotStart
+        }
     }
 
     /// The one road: the entry decides — with `link` in it, where there is one.
