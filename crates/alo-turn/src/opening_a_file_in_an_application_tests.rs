@@ -579,6 +579,8 @@ fn a_paired_machine_cannot_open_a_file_here() {
     let mut door = ADoor {
         answering: Ok(Opened::InAlosCopy),
         asked: Rc::clone(&asked),
+        not_in_front_for: 0,
+        checks: Rc::new(RefCell::new(0)),
     };
     let mut no_tree = crate::testing::NoTreeHere;
     let mut indicator = Indicator::default();
