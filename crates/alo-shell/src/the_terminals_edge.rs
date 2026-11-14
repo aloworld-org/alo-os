@@ -195,11 +195,7 @@ impl Server {
                 );
                 true
             }
-            Some(
-                UnderThePointer::Control(_)
-                | UnderThePointer::Drag
-                | UnderThePointer::TheEdgeAndNothingOnIt,
-            ) => {
+            Some(UnderThePointer::Drag | UnderThePointer::TheEdgeAndNothingOnIt) => {
                 self.the_composer.it_gave_the_keyboard_up();
                 self.the_keyboard_is_now_in(None);
                 self.the_person_went_to(

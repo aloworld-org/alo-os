@@ -96,13 +96,14 @@ fn the_choices_read_restore_and_exit_while_the_window_is_so() {
     );
 }
 
-/// **No Window actions, no panel** — a task window's band, which carries Close
-/// alone, opens nothing.
+/// **No Window actions, no panel** — Settings' or the record's band, which
+/// carries Minimise and Close until their pages lay out at any size, opens
+/// nothing.
 #[test]
 fn a_band_without_window_actions_opens_no_panel() {
     let window = Rectangle::new(Point::from((112, 314)), Size::from((1056, 466)));
-    let task = edge_of(window, Decorations::ATaskWindow, true, roomy());
-    assert!(the_menu_of(&task, HowTheWindowIs::default(), roomy()).is_none());
+    let settings = edge_of(window, Decorations::AlosOwnWindow, true, roomy());
+    assert!(the_menu_of(&settings, HowTheWindowIs::default(), roomy()).is_none());
     let concealed = edge_of(window, Decorations::TheShellDraws, false, roomy());
     assert!(
         the_menu_of(&concealed, HowTheWindowIs::default(), roomy()).is_none(),

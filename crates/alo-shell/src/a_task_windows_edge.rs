@@ -201,11 +201,9 @@ impl Server {
                     );
                     return true;
                 }
-                Some(
-                    UnderThePointer::Control(_)
-                    | UnderThePointer::Drag
-                    | UnderThePointer::TheEdgeAndNothingOnIt,
-                ) => return true,
+                Some(UnderThePointer::Drag | UnderThePointer::TheEdgeAndNothingOnIt) => {
+                    return true;
+                }
             }
         }
         false

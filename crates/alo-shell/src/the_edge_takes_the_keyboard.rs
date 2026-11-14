@@ -147,22 +147,11 @@ impl crate::Server {
         did
     }
 
-    /// A key, for the window whose edge has the keyboard.
+    /// A key, for the band that has the keyboard, an application's or alo's.
     ///
     /// `menu` is the laid-out menu where the host has one, which it does
     /// whenever it is drawing a menu. [`None`] is honest and the machine
     /// refuses rather than guessing at rows.
-    pub fn this_windows_edge_was_told_a_key(
-        &mut self,
-        surface: &WlSurface,
-        key: AnEdgeKey,
-        edge: &WindowEdge,
-        menu: Option<&WindowMenu>,
-    ) -> WhatTheEdgeKeyDid {
-        self.this_band_was_told_a_key(&ABand::App(surface.clone()), key, edge, menu)
-    }
-
-    /// A key, for the band that has the keyboard, an application's or alo's.
     pub(crate) fn this_band_was_told_a_key(
         &mut self,
         band: &ABand,
