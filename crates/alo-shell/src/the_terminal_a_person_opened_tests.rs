@@ -72,7 +72,7 @@ fn a_terminal_runs_a_shell_and_answers_what_was_typed() {
     let mut terminal = TheTerminal::opened(
         A_SENSIBLE_FIRST_GRID,
         None,
-        std::path::Path::new("/run/alo-test/wayland"),
+        &alo_terminal::TheSession::OnTopOfThisProcess(Vec::new()),
     )
     .expect("this machine can open a terminal");
 
@@ -101,7 +101,7 @@ fn without_enter_the_shell_does_not_act() {
     let mut terminal = TheTerminal::opened(
         A_SENSIBLE_FIRST_GRID,
         None,
-        std::path::Path::new("/run/alo-test/wayland"),
+        &alo_terminal::TheSession::OnTopOfThisProcess(Vec::new()),
     )
     .expect("this machine can open a terminal");
 
@@ -130,7 +130,7 @@ fn control_c_interrupts_what_is_running() {
     let mut terminal = TheTerminal::opened(
         A_SENSIBLE_FIRST_GRID,
         None,
-        std::path::Path::new("/run/alo-test/wayland"),
+        &alo_terminal::TheSession::OnTopOfThisProcess(Vec::new()),
     )
     .expect("this machine can open a terminal");
 
@@ -172,7 +172,7 @@ fn a_terminal_whose_shell_has_gone_takes_nothing() {
     let mut terminal = TheTerminal::opened(
         A_SENSIBLE_FIRST_GRID,
         None,
-        std::path::Path::new("/run/alo-test/wayland"),
+        &alo_terminal::TheSession::OnTopOfThisProcess(Vec::new()),
     )
     .expect("this machine can open a terminal");
 
@@ -206,7 +206,7 @@ fn a_key_with_nothing_to_send_is_not_sent() {
     let mut terminal = TheTerminal::opened(
         A_SENSIBLE_FIRST_GRID,
         None,
-        std::path::Path::new("/run/alo-test/wayland"),
+        &alo_terminal::TheSession::OnTopOfThisProcess(Vec::new()),
     )
     .expect("this machine can open a terminal");
     assert!(
@@ -229,7 +229,7 @@ fn the_shell_is_told_the_starting_grid() {
     let mut terminal = TheTerminal::opened(
         A_SENSIBLE_FIRST_GRID,
         None,
-        std::path::Path::new("/run/alo-test/wayland"),
+        &alo_terminal::TheSession::OnTopOfThisProcess(Vec::new()),
     )
     .expect("this machine can open a terminal");
 

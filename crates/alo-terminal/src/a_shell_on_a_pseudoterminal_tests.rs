@@ -23,6 +23,7 @@ use std::time::{Duration, Instant};
 use super::{AShellOnAPseudoterminal, WhatArrived};
 use crate::how_big_the_grid_is::HowBig;
 use crate::terminal_output_becomes_a_grid::TerminalOutput;
+use crate::what_a_shell_starts_with::TheSession;
 use crate::why_a_command_is_waiting::WhyItIsWaiting;
 
 /// Long enough for a process to start and print on a loaded machine, short
@@ -441,8 +442,15 @@ fn when_the_command_finishes_there_is_nothing_waiting_again() {
 /// that a name is given at all and that it is shaped like one.
 #[test]
 fn a_shell_is_told_what_terminal_it_is_on() {
-    let told = super::what_the_child_is_told(&[]);
+    let told = crate::what_a_shell_starts_with::what_a_shell_starts_with(
+        &TheSession::OnTopOfThisProcess(Vec::new()),
+        super::WHAT_THIS_TERMINAL_IS_CALLED,
+        &[],
+        None,
+        true,
+    );
     let name = told
+        .env
         .get("TERM")
         .expect("a shell is told what terminal it is on");
     assert!(
@@ -455,74 +463,129 @@ fn a_shell_is_told_what_terminal_it_is_on() {
     );
 }
 
-/// **What the session tells the terminal reaches its shell, and cannot change
-/// what the terminal is called.** An entry that is not `NAME=value` is left
-/// out rather than turned into a variable with no name.
-#[test]
-fn the_session_is_handed_on_and_term_stays_the_terminals() {
-    let told = super::what_the_child_is_told(&[
-        "WAYLAND_DISPLAY=/run/alo-desktop/session/wayland".to_owned(),
-        "XDG_SESSION_TYPE=wayland".to_owned(),
-        "TERM=dumb".to_owned(),
-        "not a variable".to_owned(),
-    ]);
-    assert_eq!(
-        told.get("WAYLAND_DISPLAY").map(String::as_str),
-        Some("/run/alo-desktop/session/wayland"),
-        "a program typed in the terminal is not told where alo draws"
-    );
-    assert_eq!(
-        told.get("XDG_SESSION_TYPE").map(String::as_str),
-        Some("wayland")
-    );
-    assert_eq!(
-        told.get("TERM").map(String::as_str),
-        Some(super::WHAT_THIS_TERMINAL_IS_CALLED),
-        "the session changed what the terminal claims to understand"
-    );
-    assert_eq!(told.len(), 3, "an entry with no `=` became a variable");
-}
-
 /// The environment a running process started with, as the kernel says.
 fn the_environment_of(process: u32) -> Vec<String> {
     std::fs::read(format!("/proc/{process}/environ"))
         .expect("the kernel says what it was started with")
         .split(|byte| *byte == 0)
+        .filter(|entry| !entry.is_empty())
         .map(|entry| String::from_utf8_lossy(entry).into_owned())
         .collect()
 }
 
-/// **A real shell starts with the display the session named**, asked of the
-/// kernel rather than of the map above — the half the unit test cannot show,
-/// because it is the engine underneath that hands the map to the child.
+/// Wait until `process` is running `program` — the shell `env` becomes — and
+/// say whether it did before the deadline.
 ///
-/// The value is one no machine has, so a `WAYLAND_DISPLAY` the test runner
-/// happened to inherit cannot pass it; and the control is the second shell,
-/// told nothing, which must not have it.
+/// **Read before this, the environment is `env`'s**, which still has every name
+/// it is about to remove; a test that did not wait would be reading the step
+/// before the one it means to check.
+fn until_it_is(process: u32, program: &str) -> bool {
+    for _ in 0..200 {
+        let first = std::fs::read(format!("/proc/{process}/cmdline"))
+            .ok()
+            .and_then(|line| {
+                line.split(|byte| *byte == 0)
+                    .next()
+                    .map(|it| String::from_utf8_lossy(it).into_owned())
+            });
+        if first.as_deref() == Some(program) {
+            return true;
+        }
+        std::thread::sleep(Duration::from_millis(25));
+    }
+    false
+}
+
+/// **A real shell given the person's whole session starts with exactly that
+/// and `TERM`**, asked of the kernel — nothing of the process that started it,
+/// which on a machine is the desktop.
+///
+/// The control is in the same test: this process must itself have a name the
+/// session does not, or a shell that inherited everything would pass too.
 #[test]
-fn a_real_shell_starts_with_the_display_the_session_named() {
+fn a_real_shell_starts_with_exactly_the_persons_session() {
     let home = tempfile::tempdir().expect("a folder to be a home");
-    let display = "WAYLAND_DISPLAY=/run/alo-desktop/a-terminal-test/wayland".to_owned();
-    let told = AShellOnAPseudoterminal::the_persons_own(
+    let session = vec![
+        "SHELL=/bin/sh".to_owned(),
+        format!("HOME={}", home.path().display()),
+        "PATH=/usr/bin:/bin".to_owned(),
+        "WAYLAND_DISPLAY=/run/alo-desktop/a-terminal-test/wayland".to_owned(),
+        "ALO_A_NAME_ONLY_THE_SESSION_HAS=yes".to_owned(),
+    ];
+    let names: Vec<&str> = session
+        .iter()
+        .filter_map(|entry| entry.split_once('=').map(|(name, _)| name))
+        .collect();
+    assert!(
+        std::env::vars_os().any(|(name, _)| name
+            .to_str()
+            .is_some_and(|name| !names.contains(&name) && name != "TERM")),
+        "this test process has no name the session lacks, so it cannot show one is kept out"
+    );
+
+    let shell = AShellOnAPseudoterminal::the_persons_own(
         HowBig::of(80, 24, 100).expect("a terminal"),
         Some(home.path().as_os_str()),
-        std::slice::from_ref(&display),
+        &TheSession::Whole(session.clone()),
     )
     .expect("the person's own shell on a pseudoterminal");
-    let not_told = AShellOnAPseudoterminal::the_persons_own(
+    assert!(
+        until_it_is(shell.the_shell_itself(), "/bin/sh"),
+        "the shell the session names never started"
+    );
+    assert_eq!(shell.why_its_own_names_were_not_kept_out(), None);
+
+    let mut started_with = the_environment_of(shell.the_shell_itself());
+    started_with.sort();
+    let mut expected = session;
+    expected.push(format!("TERM={}", super::WHAT_THIS_TERMINAL_IS_CALLED));
+    expected.sort();
+    assert_eq!(
+        started_with, expected,
+        "the shell did not start with exactly the person's session and TERM"
+    );
+}
+
+/// **A session that could not be asked** is handed on top of this process, as
+/// before: the shell has what it was given and what this process has.
+#[test]
+fn a_shell_whose_session_could_not_be_asked_inherits_this_process() {
+    let home = tempfile::tempdir().expect("a folder to be a home");
+    let display = "WAYLAND_DISPLAY=/run/alo-desktop/a-terminal-test/wayland".to_owned();
+    // Not one the engine sets or removes on every child itself, and not one
+    // this test hands over: those would be there whether or not anything was
+    // inherited.
+    let (name, value) = std::env::vars_os()
+        .filter_map(|(name, value)| Some((name.into_string().ok()?, value.into_string().ok()?)))
+        .find(|(name, _)| {
+            ![
+                "TERM",
+                "HOME",
+                "USER",
+                "WINDOWID",
+                "ALACRITTY_WINDOW_ID",
+                "XDG_ACTIVATION_TOKEN",
+                "DESKTOP_STARTUP_ID",
+                "WAYLAND_DISPLAY",
+            ]
+            .contains(&name.as_str())
+        })
+        .expect("this test process has a variable of its own");
+    let shell = AShellOnAPseudoterminal::the_persons_own(
         HowBig::of(80, 24, 100).expect("a terminal"),
         Some(home.path().as_os_str()),
-        &[],
+        &TheSession::OnTopOfThisProcess(vec![display.clone()]),
     )
     .expect("the person's own shell on a pseudoterminal");
 
+    let started_with = the_environment_of(shell.the_shell_itself());
     assert!(
-        the_environment_of(told.the_shell_itself()).contains(&display),
+        started_with.contains(&display),
         "the shell did not start with the display it was handed"
     );
     assert!(
-        !the_environment_of(not_told.the_shell_itself()).contains(&display),
-        "a shell told nothing has the display anyway, so the test above proves nothing"
+        started_with.contains(&format!("{name}={value}")),
+        "the shell did not inherit {name} from this process"
     );
 }
 
@@ -650,7 +713,7 @@ fn the_persons_shell_starts_in_their_home() {
     let shell = AShellOnAPseudoterminal::the_persons_own(
         HowBig::of(80, 24, 100).expect("a terminal"),
         Some(home.path().as_os_str()),
-        &[],
+        &TheSession::OnTopOfThisProcess(Vec::new()),
     )
     .expect("the person's own shell on a pseudoterminal");
 
@@ -676,7 +739,7 @@ fn a_home_that_does_not_exist_starts_the_shell_at_the_top_of_the_disk() {
     let shell = AShellOnAPseudoterminal::the_persons_own(
         HowBig::of(80, 24, 100).expect("a terminal"),
         Some(missing.as_os_str()),
-        &[],
+        &TheSession::OnTopOfThisProcess(Vec::new()),
     )
     .expect("a missing home does not stop the shell starting");
 

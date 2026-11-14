@@ -79,11 +79,23 @@ holds it on every build, by reading the shell's environment from the kernel.
 **Not yet seen on a booted alo machine.** The next walk checks it with
 `echo $WAYLAND_DISPLAY` in alo's terminal, then the same `flatpak run`.
 
-**What the terminal still does not hand on**, because the desktop's own
-environment does not have it either: the person's `XDG_DATA_DIRS` with
-Flatpak's exports (Flatpak warns about it in the terminal), and the
-*applications describe themselves* variables from
+**And then the whole session, not only the display.** The display alone left
+the shell without the person's `XDG_DATA_DIRS` with Flatpak's exports (Flatpak
+warned about it in the terminal) and without the *applications describe
+themselves* variables from
 `/usr/lib/environment.d/60-alo-apps-describe-themselves.conf`, which only the
-person's systemd manager reads. Neither stops a window opening; the second
-means a Chromium application started from the terminal is not described to
-alo or a screen reader the way one started from the Dock is.
+person's systemd manager reads — so a Chromium application started from the
+terminal was not described to alo or a screen reader the way one started from
+the Dock is. It also left the desktop's own variables in the shell. The
+terminal's shell now starts with **exactly** the environment the person's
+systemd manager holds, read when the terminal opens
+(`alo-shell`'s `the_persons_session`), with the display laid over it and
+`TERM`; the desktop's own names are removed by starting the shell through
+`/usr/bin/env -u NAME … -- <their shell>`
+(`alo-terminal`'s `what_a_shell_starts_with`). Where the manager cannot be
+asked, the shell gets the desktop's environment and the display, as above, and
+the desktop's log says so. `alo-terminal`'s
+`a_real_shell_starts_with_exactly_the_persons_session` holds the exact
+environment on every build, read from the kernel. Reading the manager itself
+needs a person's session bus, which no test runner has: **that half is checked
+only on a booted machine**, with `env` typed into alo's terminal.

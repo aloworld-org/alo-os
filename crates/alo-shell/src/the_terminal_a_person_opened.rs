@@ -127,12 +127,12 @@ impl TheTerminal {
     /// a silent fallback*: a person whose terminal opens somewhere unexpected
     /// is owed a line somebody mending the machine can find.
     ///
-    /// `display` is the socket this desktop listens on. The shell is told it as
-    /// the session is (`alo_launching::what_the_session_is_told`), because the
-    /// shell inherits this process's environment and this process *is* the
-    /// display — nothing else would ever tell it. A display that cannot be
-    /// spelled as a variable is said on the error stream, and the shell still
-    /// starts: a terminal with no graphical programs is still a terminal.
+    /// `session` is the person's session environment
+    /// (`crate::the_persons_session`), which the shell starts with in place of
+    /// this process's: this process is the desktop, and its environment is not
+    /// the person's. Where the desktop's own names could not be kept out the
+    /// shell still starts, and the reason goes to the error stream for the same
+    /// reason as the home's.
     ///
     /// # Errors
     /// Whatever stopped the pseudoterminal from opening or the shell from
@@ -140,19 +140,14 @@ impl TheTerminal {
     pub(crate) fn opened(
         size: HowBig,
         home: Option<&std::ffi::OsStr>,
-        display: &std::path::Path,
+        session: &alo_terminal::TheSession,
     ) -> Result<Self, alo_terminal::NoShell> {
-        let session = alo_launching::what_the_session_is_told(display).unwrap_or_else(|| {
-            eprintln!(
-                "alo-shell: alo's own terminal cannot be told the display at {}, so a \
-                 graphical program started in it will find no display",
-                display.display()
-            );
-            Vec::new()
-        });
-        let shell = AShellOnAPseudoterminal::the_persons_own(size, home, &session)?;
+        let shell = AShellOnAPseudoterminal::the_persons_own(size, home, session)?;
         if let alo_terminal::WhereItStarts::NotTheirHome(why) = shell.where_it_started() {
             eprintln!("alo-shell: alo's own terminal did not open at home: {why}");
+        }
+        if let Some(why) = shell.why_its_own_names_were_not_kept_out() {
+            eprintln!("alo-shell: alo's own terminal: {why}");
         }
         let mut terminal = Self {
             shell,
@@ -462,8 +457,16 @@ impl crate::Server {
         // **The session's own `$HOME`**, which is the person's: the compositor
         // runs in their session, and `crate::settings_places` reads the same
         // variable for the same person.
-        let display = self.socket_path().to_path_buf();
-        match TheTerminal::opened(size, std::env::var_os("HOME").as_deref(), &display) {
+        // **The person's session, asked for now**: once, as the terminal opens,
+        // because a shell's environment is fixed when it starts.
+        let (session, said) = crate::the_persons_session::the_session_for_a_terminal(
+            crate::the_persons_session::what_their_manager_holds(),
+            self.socket_path(),
+        );
+        for line in said {
+            eprintln!("alo-shell: {line}");
+        }
+        match TheTerminal::opened(size, std::env::var_os("HOME").as_deref(), &session) {
             Ok(terminal) => {
                 self.alos_own_terminal = Some(terminal);
                 true
