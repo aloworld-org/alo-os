@@ -40,12 +40,14 @@
 //! **alo's copies are not the person's application**: their groups are handed
 //! to [`CountingForCommands`](crate::counting_during_their_commands::CountingForCommands) so that a person's own command never counts them.
 //!
-//! # Nothing calls this yet
+//! # What reaches it
 //!
-//! **No turn drives an application until stage 4 of the Demo 2 plan**, which
-//! offers the accessibility verbs. Until then nothing asks the door to work in
-//! an application, and a person can see none of this. It is built first so
-//! that nothing that publishes is ever driven before what it sends is shown.
+//! **A file alo opens in its own copy** (`open_file_in_application`, since
+//! 2026-11-14) is counted from the frame the copy is started, for as long as
+//! the copy runs ([`WorkingInApplications::opened_in_alos_copy`](crate::alo_at_work::WorkingInApplications::opened_in_alos_copy)):
+//! there is no connection to hold, and the copy is alo's whoever later types in
+//! it. **No turn asks the door to work in an application yet**, so the held
+//! connection above is reached by nothing a person can do.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::{ErrorKind, Read as _, Write as _};
@@ -119,6 +121,13 @@ pub trait StartsAlosCopy {
     fn started_with_a_file(&mut self, _application: &str, _file: &std::path::Path) -> Opened {
         Opened::CouldNotStart
     }
+
+    /// Whether alo's copy of this application is running now. **No by
+    /// default**, so a copy that cannot say is counted no longer than the frame
+    /// it opened in — and its line, once up, still stays to be seen.
+    fn is_running(&mut self, _application: &str) -> bool {
+        false
+    }
 }
 
 /// A connection the door was asked to work on, handed over whole.
@@ -158,8 +167,10 @@ impl AskedToWork {
 
 /// alo, working in one application.
 struct OneWork {
-    /// The connection.
-    talking: UnixStream,
+    /// The connection alo holds while it works — or [`None`] for a copy alo
+    /// opened a file in, which is counted for as long as it runs
+    /// ([`WorkingInApplications::opened_in_alos_copy`]).
+    talking: Option<UnixStream>,
     /// What it has said so far of its next line.
     heard: Vec<u8>,
     /// The application, by its identifier.
@@ -222,9 +233,58 @@ impl WorkingInApplications {
     }
 
     /// Open `file` in alo's own copy of `application`, as the copies say
-    /// (`open_file_in_application`, 2026-11-14).
-    pub fn opened_in_alos_copy(&mut self, application: &str, file: &std::path::Path) -> Opened {
-        self.copies.started_with_a_file(application, file)
+    /// (`open_file_in_application`, 2026-11-14) — and **count what that copy
+    /// sends from the moment it opened**, on the indicator, for as long as it
+    /// runs.
+    ///
+    /// Law 1: a copy alo started is alo's, and what it sends is alo's egress.
+    /// Nothing else would count it — no turn holds a connection to work in it —
+    /// so the counting is begun here, in the frame the copy is started, before
+    /// it can have sent anything. A machine that cannot count, or a copy whose
+    /// groups cannot be held, puts *this machine cannot count what it sends* up
+    /// at once instead, exactly as working in it does. A copy alo is already
+    /// working in is counted once, not twice.
+    ///
+    /// `called` is what a person calls the application.
+    pub fn opened_in_alos_copy(
+        &mut self,
+        application: &str,
+        file: &std::path::Path,
+        called: &str,
+        counts: &mut CountingForCommands,
+        indicator: &mut Indicator,
+        now: (Instant, SystemTime),
+    ) -> Opened {
+        let opened = self.copies.started_with_a_file(application, file);
+        if opened != Opened::InAlosCopy
+            || self
+                .works
+                .iter()
+                .any(|work| work.application == application)
+            || AloAtWork::of(application, called, HowItIsShown::Counted).is_err()
+        {
+            return opened;
+        }
+        let mut work = OneWork {
+            talking: None,
+            heard: Vec::new(),
+            application: application.to_owned(),
+            called: called.to_owned(),
+            began: now.0,
+            counted: false,
+            groups: BTreeMap::new(),
+            line: None,
+        };
+        if counts.can_count() {
+            work.counted = true;
+            if !self.joined(&mut work, counts) {
+                uncounted(&mut work, counts, indicator, now);
+            }
+        } else {
+            put_up(&mut work, HowItIsShown::Uncounted, indicator, now);
+        }
+        self.works.push(work);
+        opened
     }
 
     /// How many applications alo is working in now.
@@ -266,7 +326,7 @@ impl WorkingInApplications {
             return;
         }
         let mut work = OneWork {
-            talking,
+            talking: Some(talking),
             heard,
             application,
             called: called.to_owned(),
@@ -279,7 +339,7 @@ impl WorkingInApplications {
             // **The person's window only where the person chose it**: the word
             // alo sent is a request, and the setting is the answer.
             Where::InTheirWindow if !chosen.may_work_in_their_window() => {
-                say(&mut work.talking, Working::NotChosen.written());
+                work.say(Working::NotChosen.written());
                 return;
             }
             Where::InTheirWindow => {
@@ -294,11 +354,11 @@ impl WorkingInApplications {
                     Working::Showing
                 }
                 Err(NoCopy::OfItsOwn) => {
-                    say(&mut work.talking, Working::NoCopyOfItsOwn.written());
+                    work.say(Working::NoCopyOfItsOwn.written());
                     return;
                 }
                 Err(NoCopy::CouldNotStart) => {
-                    say(&mut work.talking, Working::CouldNotStart.written());
+                    work.say(Working::CouldNotStart.written());
                     return;
                 }
                 Ok(()) if counts.can_count() => {
@@ -318,7 +378,7 @@ impl WorkingInApplications {
                 }
             },
         };
-        if say(&mut work.talking, answer.written()) {
+        if work.say(answer.written()) {
             self.works.push(work);
         } else {
             self.finished(work, counts, indicator, now.0);
@@ -353,19 +413,29 @@ impl WorkingInApplications {
                 Worked::Uncounted
             };
             let too_long = now.0.saturating_duration_since(work.began) >= THE_LONGEST;
-            match heard_from(&mut work.talking, &mut work.heard) {
+            // **A copy alo opened a file in is counted while it runs**: it has
+            // no connection to hang up, so its work ends when the copy does.
+            if work.talking.is_none() && !self.copies.is_running(&work.application) {
+                self.finished(work, counts, indicator, now.0);
+                continue;
+            }
+            let said = match work.talking.as_mut() {
+                Some(talking) => heard_from(talking, &mut work.heard),
+                None => Said::Nothing,
+            };
+            match said {
                 Said::Done => {
-                    say(&mut work.talking, &at_the_end.written());
+                    work.say(&at_the_end.written());
                     self.finished(work, counts, indicator, now.0);
                 }
                 Said::Gone => self.finished(work, counts, indicator, now.0),
-                Said::Nothing if too_long => {
+                Said::Nothing if too_long && work.talking.is_some() => {
                     let stopped = if work.counted {
                         Worked::Stopped(sent)
                     } else {
                         Worked::Uncounted
                     };
-                    say(&mut work.talking, &stopped.written());
+                    work.say(&stopped.written());
                     self.finished(work, counts, indicator, now.0);
                 }
                 Said::Nothing => still.push(work),
@@ -458,6 +528,16 @@ fn put_up(
     if let Ok(at_work) = AloAtWork::of(&work.application, &work.called, how) {
         let line = indicator.beginning_alo_at_work(at_work, now.1);
         work.line = Some((line, now.0));
+    }
+}
+
+impl OneWork {
+    /// Say one line on this work's connection; `false` if it could not be
+    /// said, and `true` for work with no connection, which has nobody to tell.
+    fn say(&mut self, line: &str) -> bool {
+        self.talking
+            .as_mut()
+            .is_none_or(|talking| say(talking, line))
     }
 }
 

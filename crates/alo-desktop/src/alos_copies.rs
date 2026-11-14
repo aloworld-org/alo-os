@@ -452,6 +452,10 @@ impl StartsAlosCopy for AlosCopies {
         }
     }
 
+    fn is_running(&mut self, application: &str) -> bool {
+        self.still_running(application)
+    }
+
     fn groups_of(&mut self, application: &str) -> Vec<u64> {
         if !self.still_running(application) {
             return Vec::new();

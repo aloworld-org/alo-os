@@ -1705,8 +1705,22 @@ mod running {
                             starting.started_with_a_file(one.application(), one.file())
                         })
                 } else {
-                    self.working
-                        .opened_in_alos_copy(one.application(), one.file())
+                    // What a person calls it, for the indicator's line, read
+                    // for this opening as `alo_at_work` reads it.
+                    let called = alo_installed::read(&self.entries)
+                        .knows(one.application())
+                        .map_or_else(
+                            || one.application().to_owned(),
+                            |application| application.shown(&self.strings),
+                        );
+                    self.working.opened_in_alos_copy(
+                        one.application(),
+                        one.file(),
+                        &called,
+                        &mut self.counting,
+                        &mut self.indicator,
+                        (std::time::Instant::now(), std::time::SystemTime::now()),
+                    )
                 };
                 eprintln!(
                     "alo-desktop: {}",

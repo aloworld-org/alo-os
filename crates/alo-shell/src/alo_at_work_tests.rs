@@ -114,6 +114,16 @@ impl StartsAlosCopy for FakeCopies {
     fn every_copys_groups(&mut self) -> BTreeSet<u64> {
         self.groups_of(FIREFOX).into_iter().collect()
     }
+    fn started_with_a_file(&mut self, application: &str, _file: &std::path::Path) -> Opened {
+        match self.started(application) {
+            Ok(()) => Opened::InAlosCopy,
+            Err(NoCopy::OfItsOwn) => Opened::NoCopyOfItsOwn,
+            Err(NoCopy::CouldNotStart) => Opened::CouldNotStart,
+        }
+    }
+    fn is_running(&mut self, application: &str) -> bool {
+        application == FIREFOX && self.0.borrow().running
+    }
 }
 
 struct Machine {
@@ -201,6 +211,21 @@ impl Machine {
 
     fn ever_begun(&self) -> Vec<u64> {
         self.kernel.borrow().begun.clone()
+    }
+}
+
+impl Machine {
+    /// alo opens a file in its own copy of `application`.
+    fn opened(&mut self, application: &str, seconds: u64) -> Opened {
+        let at = self.at(seconds);
+        self.working.opened_in_alos_copy(
+            application,
+            std::path::Path::new("/var/home/anna/hello.txt"),
+            "Firefox",
+            &mut self.counts,
+            &mut self.indicator,
+            at,
+        )
     }
 }
 
@@ -447,4 +472,63 @@ fn a_desktop_with_no_indicator_refuses() {
     let asked = ToWorkIn::at(Application::identified(FIREFOX).unwrap(), Where::InAlosCopy);
     AskedToWork::of(asked, door, Vec::new()).refused();
     assert_eq!(next(&alo), "cannot-show");
+}
+
+/// **A copy alo opened a file in is counted from the frame it started, for as
+/// long as it runs** (law 1), with no turn holding a connection to it — and
+/// the person's own window is still not counted.
+///
+/// What would have to be true for this to pass while broken: the desktop
+/// opening a file in alo's copy some other way than
+/// `WorkingInApplications::opened_in_alos_copy` — `alo-desktop`'s
+/// `alo_opens_files` calls it for every opening at the default.
+#[test]
+fn a_copy_alo_opened_a_file_in_is_counted_while_it_runs() {
+    let mut machine = Machine::new(true);
+    assert_eq!(machine.opened(FIREFOX, 0), Opened::InAlosCopy);
+    assert!(
+        machine.ever_begun().contains(&ALOS) && machine.ever_begun().contains(&ALOS_SCOPE),
+        "the copy was not held in the frame it opened: {:?}",
+        machine.ever_begun()
+    );
+    machine.looked(0);
+    assert!(machine.lines().is_empty(), "nothing has been sent yet");
+
+    machine.sends(ALOS, 400);
+    machine.sends(THEIRS, 9_000);
+    machine.looked(1);
+    assert_eq!(machine.lines(), [HowItIsShown::Counted]);
+    // **Not ended by the time a held connection is**: it has none.
+    machine.looked(THE_LONGEST.as_secs() + 1);
+    assert_eq!(machine.lines(), [HowItIsShown::Counted]);
+    assert!(!machine.ever_begun().contains(&THEIRS));
+
+    // The copy closes: the work ends, and the line comes off once seen.
+    machine.copies.borrow_mut().running = false;
+    machine.looked(THE_LONGEST.as_secs() + 2);
+    machine.looked(THE_LONGEST.as_secs() + 10);
+    assert!(machine.lines().is_empty(), "the line outlived the copy");
+}
+
+/// **A second opening in the same copy is counted once**, and an opening that
+/// opened nothing counts nothing.
+#[test]
+fn a_second_opening_is_counted_once_and_a_refused_one_not_at_all() {
+    let mut machine = Machine::new(true);
+    machine.opened(FIREFOX, 0);
+    machine.opened(FIREFOX, 1);
+    assert_eq!(machine.working.how_many(), 1);
+    assert_eq!(machine.opened(TEXT_EDITOR, 2), Opened::NoCopyOfItsOwn);
+    assert_eq!(machine.working.how_many(), 1);
+}
+
+/// **On a machine that cannot count, the line says so from the first frame**
+/// and stays while the copy runs: never silence.
+#[test]
+fn a_copy_alo_opened_on_a_machine_with_no_counter_says_it_cannot_count() {
+    let mut machine = Machine::new(false);
+    machine.opened(FIREFOX, 0);
+    assert_eq!(machine.lines(), [HowItIsShown::Uncounted]);
+    machine.looked(THE_LONGEST.as_secs() + 1);
+    assert_eq!(machine.lines(), [HowItIsShown::Uncounted]);
 }
