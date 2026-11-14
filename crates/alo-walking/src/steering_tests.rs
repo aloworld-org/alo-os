@@ -1,5 +1,5 @@
 //! Steering a pointer by looking, on a screen whose pointer is drawn by the real
-//! artwork and moves more or less than it is asked.
+//! artwork and lands a little away from where it was put.
 
 use alo_cursors::CursorIcon;
 
@@ -22,24 +22,24 @@ fn the_kite() -> impl Fn(&Frame, (usize, usize)) -> Option<(usize, usize)> {
     }
 }
 
-/// **It gets there whether a move is multiplied or shrunk**, and says how
-/// many rounds it took.
+/// **It gets there whether the pointer lands short of or past where it was
+/// put**, and says how many rounds it took.
 #[test]
 fn it_gets_there_however_the_moves_are_multiplied() {
-    for acceleration in [40, 100, 180, 260] {
+    for lands_at in [70, 100, 130] {
         let mut machine = AScreenWithAPointer {
-            acceleration,
+            lands_at,
             ..AScreenWithAPointer::grey()
         };
-        let steered = steer(&mut machine, (100, 100), (500, 300), the_kite());
+        let steered = steer(&mut machine, (100, 100), (300, 200), the_kite());
         let Ok(Steered::There { at, rounds }) = steered else {
-            unreachable!("at {acceleration} per cent: {steered:?}");
+            unreachable!("landing at {lands_at} per cent: {steered:?}");
         };
         assert!(
-            at.0.abs_diff(500) <= CLOSE && at.1.abs_diff(300) <= CLOSE,
-            "at {acceleration} per cent it stopped at {at:?}"
+            at.0.abs_diff(300) <= CLOSE && at.1.abs_diff(200) <= CLOSE,
+            "landing at {lands_at} per cent it stopped at {at:?}"
         );
-        assert!(rounds >= 1, "at {acceleration} per cent");
+        assert!(rounds >= 1, "landing at {lands_at} per cent");
     }
 }
 
@@ -55,7 +55,7 @@ fn already_there_moves_nothing() {
             rounds: 0
         })
     );
-    assert!(machine.nudges.is_empty());
+    assert!(machine.pointed.is_empty());
 }
 
 /// **The refusal: a pointer the screen does not show is lost**, after the

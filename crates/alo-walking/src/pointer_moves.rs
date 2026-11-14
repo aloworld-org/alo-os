@@ -1,57 +1,49 @@
-//! **A pointer move as the steps qemu's PS/2 mouse carries whole**, and the QMP
-//! command that sends one of them.
+//! **Putting the pointer at a place on the screen**, as the QMP command that
+//! does it on the walk machine.
 //!
-//! The walk machine has the q35 PS/2 mouse and no tablet (`crate::booting`), so
-//! a move is relative: *this far right, this far down*. qemu 8.2's PS/2 mouse
-//! sends at most 508 units a command and carries the rest forward as a debt it
-//! pays toward the corner on every later move
-//! (`docs/quirks/qemu-ps2-carries-a-huge-move-forward.md`). So a move here is
-//! cut into steps of at most [`LARGEST_STEP`] on each axis, and each is its own
-//! command.
+//! The walk machine has the q35 defaults: a PS/2 mouse and qemu's VMware mouse
+//! port beside it, and no tablet (`crate::booting`). **Relative moves did not
+//! reach the pointer.** Measured on the first walk run with pointer checks
+//! (GitHub run 43646031636, 2026-11-14): `input-send-event` with `rel` events
+//! of 24 and 16 changed no pixel of the screen, and the picture kept shows alo's
+//! pointer at the top-left corner, where it started. The guest's kernel had
+//! bound the mouse as `VirtualPS/2 VMware VMMouse` (`serial.log`, 0.83 s), and
+//! that driver takes **absolute** positions from qemu's mouse port — which fits
+//! the relative packets going nowhere; it was not taken apart further.
 //!
-//! **Where the pointer lands is never read from what was asked.** libinput
-//! accelerates the motion, so a commanded distance is not a measured one; the
-//! walk reads the pointer back off the screen after every move
-//! (`crate::steering`).
+//! So a move here is an **absolute** position, which qemu hands to the mouse
+//! port: `0` to [`ABS_MOST`] across and down, whatever the screen's size.
+//! libinput delivers it as an absolute motion and the shell maps it onto the
+//! display (`alo_shell::direct_pointer`).
+//!
+//! **Where the pointer lands is still read back off the screen**, never assumed
+//! from what was asked (`crate::steering`): the mapping from qemu's range to
+//! pixels is the guest's, and a pixel or two off is the guest's to decide.
 
 use serde_json::{Value, json};
 
-/// The most one step moves on either axis: well inside what one PS/2 packet
-/// carries, and small enough, a step every 30 ms, that libinput sees a slow
-/// hand and accelerates it little.
-pub const LARGEST_STEP: i32 = 20;
+/// The largest absolute position qemu takes on either axis.
+pub const ABS_MOST: u32 = 0x7FFF;
 
-/// The steps that make a move of `dx` right and `dy` down, each at most
-/// [`LARGEST_STEP`] on each axis, adding up to exactly the move. No move is no
-/// steps.
+/// The absolute value for pixel `at` on an axis `extent` pixels long.
 #[must_use]
-pub fn in_steps(dx: i32, dy: i32) -> Vec<(i32, i32)> {
-    let longest = dx.unsigned_abs().max(dy.unsigned_abs());
-    if longest == 0 {
-        return Vec::new();
-    }
-    let largest = LARGEST_STEP.unsigned_abs();
-    let count = i64::from(longest.div_ceil(largest));
-    let share = |whole: i32, step: i64| {
-        let whole = i64::from(whole);
-        let to = whole * (step + 1) / count;
-        let from = whole * step / count;
-        i32::try_from(to - from).unwrap_or(0)
-    };
-    (0..count)
-        .map(|step| (share(dx, step), share(dy, step)))
-        .collect()
+pub fn absolute(at: usize, extent: usize) -> u32 {
+    let last = u64::try_from(extent.saturating_sub(1).max(1)).unwrap_or(u64::MAX);
+    let at = u64::try_from(at).unwrap_or(u64::MAX).min(last);
+    let value = (at * u64::from(ABS_MOST) + last / 2) / last;
+    u32::try_from(value).unwrap_or(ABS_MOST).min(ABS_MOST)
 }
 
-/// The QMP command that sends one step.
+/// The QMP command that puts the pointer at pixel `(x, y)` of a screen
+/// `size` pixels across and down.
 #[must_use]
-pub fn command(dx: i32, dy: i32) -> Value {
+pub fn command((x, y): (usize, usize), size: (usize, usize)) -> Value {
     json!({
         "execute": "input-send-event",
         "arguments": {
             "events": [
-                { "type": "rel", "data": { "axis": "x", "value": dx } },
-                { "type": "rel", "data": { "axis": "y", "value": dy } }
+                { "type": "abs", "data": { "axis": "x", "value": absolute(x, size.0) } },
+                { "type": "abs", "data": { "axis": "y", "value": absolute(y, size.1) } }
             ]
         }
     })

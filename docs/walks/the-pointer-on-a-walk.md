@@ -33,11 +33,13 @@ keyline's (`the_pointer_seen.rs`). Every shape the walk names, in all eighteen
 looks, is told apart from every other by a test
 (`the_pointer_seen_tests.rs`).
 
-**Where the pointer goes is read back, never assumed.** The walk machine has a
-PS/2 mouse and libinput accelerates it, so a commanded move is not a measured
-one. Each move is small steps, then the pointer is found on the screen again,
-and the next move asks for what is left (`steering.rs`). A pointer that cannot
-be found after a move is *lost*, and the walk stops.
+**Where the pointer goes is read back, never assumed.** The walk puts the
+pointer at an absolute place through qemu's VMware mouse port, which the
+guest's kernel binds as `VirtualPS/2 VMware VMMouse` (`pointer_moves.rs`
+says why: relative moves did not reach the pointer at all). Then it finds the
+pointer on the screen again, and aims again by what the last place missed by
+(`steering.rs`). A pointer that cannot be found after a move is *lost*, and
+the walk stops.
 
 **A found pointer must move with the hand.** After a match the pointer is
 nudged a few pixels and must be found again, moved. A picture of a pointer does
@@ -83,12 +85,19 @@ the page is a picture of a pointer.
   the same for every look and a test holds all eighteen.
 - **The pointer flowing between shapes**, which `docs/features.md` stars and is
   not built.
-- **A person's machine.** It is still qemu: a virtio display at one scale, a
-  PS/2 mouse, no hardware cursor. A machine whose display driver puts the
+- **A person's machine.** It is still qemu: a virtio display at one scale, an
+  absolute mouse port rather than a mouse a hand moves, no hardware cursor. A machine whose display driver puts the
   pointer on a cursor plane is not what this measures.
 
 ## Measured
 
-*Nothing yet.* The first run of these checks is the measurement of whether the
-capture shows the pointer at all, and its result goes here with the run's
-address and the commit its image was built from.
+**Run 43646031636, 2026-11-14, image from main at `09597d7d`, once.** The
+first check failed, and failed the right way: moving the pointer by relative
+steps of 24 and 16 changed no pixel. The picture it kept
+(`20-pointer-the-screen-capture-shows-the-pointer.png`) **does** show a navy
+arrow at the top-left corner — so the capture includes alo's pointer, read by
+eye from that picture; what did not happen is the pointer moving. The serial
+log shows the mouse bound as `VirtualPS/2 VMware VMMouse`, which takes
+absolute positions, and that fits; it was not taken apart further. The walk
+now places the pointer absolutely. Every pointer check after the first read NOT
+REACHED on that run, and nothing about the pointer's shape was measured.

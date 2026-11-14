@@ -42,11 +42,12 @@ pub const SCALES: [u16; 8] = [100, 125, 150, 175, 200, 225, 250, 300];
 /// The shapes looked for everywhere when nothing says where the pointer is.
 const THE_THREE: [CursorIcon; 3] = [CursorIcon::Default, CursorIcon::Text, CursorIcon::Pointer];
 
-/// The move that shows whether the capture has the pointer in it.
-const A_SMALL_MOVE: (i32, i32) = (24, 16);
+/// The move that shows whether the capture has the pointer in it, from a
+/// third of the way across and down the screen.
+const A_SMALL_MOVE: (usize, usize) = (24, 16);
 
 /// The nudge that shows a pointer found is the one the hand moves.
-const A_NUDGE: (i32, i32) = (6, 4);
+const A_NUDGE: (usize, usize) = (6, 4);
 
 /// How far around where the pointer should be a search looks first, before it
 /// looks everywhere.
@@ -121,9 +122,12 @@ impl Walking {
     /// Move the pointer a little: the capture must change, and only by a
     /// pointer's worth.
     fn seen_at_all(&mut self, machine: &mut impl Machine, check: &str) -> Result<(), MachineError> {
+        let (width, height) = machine.frame()?.size();
+        let from = (width / 3, height / 3);
+        let to = (from.0 + A_SMALL_MOVE.0, from.1 + A_SMALL_MOVE.1);
+        steering::put(machine, from)?;
         let before = machine.frame()?;
-        steering::move_by(machine, A_SMALL_MOVE)?;
-        machine.wait(steering::BEFORE_LOOKING);
+        steering::put(machine, to)?;
         let after = machine.frame()?;
         let kept = machine.keep_picture(&picture_name(check))?;
         let changed = after.differs_from(&before);
@@ -131,7 +135,7 @@ impl Walking {
             (
                 Verdict::Failed,
                 format!(
-                    "moving the pointer by {A_SMALL_MOVE:?} changed no pixel of the screen \
+                    "moving the pointer from {from:?} to {to:?} changed no pixel of the screen \
                      capture: the capture does not show the pointer, or the pointer did not \
                      move, and every pointer check after this would be a check of nothing; \
                      kept as {kept}"
@@ -141,7 +145,7 @@ impl Walking {
             (
                 Verdict::Failed,
                 format!(
-                    "moving the pointer by {A_SMALL_MOVE:?} changed {changed} pixels, more than \
+                    "moving the pointer from {from:?} to {to:?} changed {changed} pixels, more than \
                      a pointer's {MOST_A_POINTER_CHANGES}: something else changed too, so this \
                      cannot say the pointer is in the capture; kept as {kept}"
                 ),
@@ -150,7 +154,7 @@ impl Walking {
             (
                 Verdict::Passed,
                 format!(
-                    "moving the pointer by {A_SMALL_MOVE:?} changed {changed} pixels; kept as \
+                    "moving the pointer from {from:?} to {to:?} changed {changed} pixels; kept as \
                      {kept}"
                 ),
             )
@@ -275,8 +279,7 @@ impl Walking {
             return Ok(());
         };
         self.pointer.scale = Some(reference.drawn.scale);
-        steering::move_by(machine, A_NUDGE)?;
-        machine.wait(steering::BEFORE_LOOKING);
+        steering::put(machine, (place.0 + A_NUDGE.0, place.1 + A_NUDGE.1))?;
         let after = machine.frame()?;
         let around = Around {
             x: place.0,

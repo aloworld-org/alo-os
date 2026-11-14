@@ -1,6 +1,7 @@
 //! **A screen with alo's pointer on it**, for the tests: patches of colour, each
 //! asking for a cursor, and the pointer drawn over them by the real artwork
-//! where a move put it — multiplied, as libinput's acceleration multiplies it.
+//! where it was put — a little off, as a guest's own mapping from qemu's range
+//! may put it.
 //!
 //! It can also be made wrong in the ways the walk has to catch: drawing no
 //! pointer at all, as a capture without the cursor plane would show, or
@@ -44,10 +45,10 @@ pub struct AScreenWithAPointer {
     pub draws_the_pointer: bool,
     /// Where the hotspot is.
     pub at: (i64, i64),
-    /// How much a move is multiplied, in per cent.
-    pub acceleration: i64,
-    /// Every pointer step sent, in order.
-    pub nudges: Vec<(i32, i32)>,
+    /// Where the pointer lands, as a percentage of where it was put.
+    pub lands_at: i64,
+    /// Every place the pointer was put, in order.
+    pub pointed: Vec<(usize, usize)>,
     /// Every stroke sent, in order.
     pub strokes: Vec<Stroke>,
     /// The names of the pictures kept.
@@ -58,7 +59,7 @@ pub struct AScreenWithAPointer {
 
 impl AScreenWithAPointer {
     /// A grey screen 640 by 400 with the pointer in the shipped look at
-    /// `(100, 100)`, moving one and a half times what it is asked.
+    /// `(100, 100)`, landing where it is put.
     #[must_use]
     pub fn grey() -> Self {
         Self {
@@ -69,8 +70,8 @@ impl AScreenWithAPointer {
             look: Look::SHIPPED,
             draws_the_pointer: true,
             at: (100, 100),
-            acceleration: 150,
-            nudges: Vec::new(),
+            lands_at: 100,
+            pointed: Vec::new(),
             strokes: Vec::new(),
             kept: Vec::new(),
             now: Duration::ZERO,
@@ -115,10 +116,10 @@ impl Machine for AScreenWithAPointer {
         Ok(())
     }
 
-    fn nudge(&mut self, dx: i32, dy: i32) -> Result<(), MachineError> {
-        self.nudges.push((dx, dy));
-        self.at.0 += i64::from(dx) * self.acceleration / 100;
-        self.at.1 += i64::from(dy) * self.acceleration / 100;
+    fn point_at(&mut self, at: (usize, usize)) -> Result<(), MachineError> {
+        self.pointed.push(at);
+        let landed = |it: usize| i64::try_from(it).unwrap_or(i64::MAX) * self.lands_at / 100;
+        self.at = (landed(at.0), landed(at.1));
         Ok(())
     }
 

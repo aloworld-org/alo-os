@@ -21,8 +21,8 @@ pub struct PicturesAndLines {
     lines: Vec<(Duration, String)>,
     /// Every stroke sent, in order.
     pub strokes: Vec<Stroke>,
-    /// Every pointer step sent, in order.
-    pub nudges: Vec<(i32, i32)>,
+    /// Every place the pointer was put, in order.
+    pub pointed: Vec<(usize, usize)>,
     /// The names of the pictures kept, in order.
     pub kept: Vec<String>,
     /// The clock.
@@ -63,8 +63,8 @@ impl Machine for PicturesAndLines {
         Ok(())
     }
 
-    fn nudge(&mut self, dx: i32, dy: i32) -> Result<(), MachineError> {
-        self.nudges.push((dx, dy));
+    fn point_at(&mut self, at: (usize, usize)) -> Result<(), MachineError> {
+        self.pointed.push(at);
         Ok(())
     }
 

@@ -1,55 +1,43 @@
-//! A move cut into steps qemu's PS/2 mouse carries whole.
+//! A place on the screen as qemu's absolute pointer takes it.
 
 use serde_json::json;
 
-use super::{LARGEST_STEP, command, in_steps};
+use super::{ABS_MOST, absolute, command};
 
-/// **Every step is inside the largest, and the steps add up to the move** —
-/// for moves either way, on either axis, and much longer on one than the other.
+/// **The first pixel is nought, the last is the most, and the middle is the
+/// middle**, on screens of different sizes.
 #[test]
-fn the_steps_add_up_to_the_move_and_none_is_too_long() {
-    for (dx, dy) in [
-        (0, 1),
-        (1, 0),
-        (100, 100),
-        (101, -3),
-        (-640, 400),
-        (7, -1999),
-        (-1, -1),
-    ] {
-        let steps = in_steps(dx, dy);
-        assert!(!steps.is_empty(), "({dx}, {dy}) made no steps");
-        for &(x, y) in &steps {
-            assert!(
-                x.abs() <= LARGEST_STEP && y.abs() <= LARGEST_STEP,
-                "({dx}, {dy}) has a step ({x}, {y})"
-            );
-        }
-        let summed = steps
-            .iter()
-            .fold((0, 0), |(x, y), &(sx, sy)| (x + sx, y + sy));
-        assert_eq!(summed, (dx, dy));
+fn the_ends_and_the_middle_map_onto_qemus_range() {
+    for extent in [800_usize, 1280, 1920, 3] {
+        assert_eq!(absolute(0, extent), 0);
+        assert_eq!(absolute(extent - 1, extent), ABS_MOST);
+        let middle = absolute((extent - 1) / 2, extent);
+        let one_pixel = ABS_MOST / u32::try_from(extent).unwrap_or(1);
+        assert!(
+            middle.abs_diff(ABS_MOST / 2) <= one_pixel,
+            "{extent}: {middle}"
+        );
     }
 }
 
-/// **No move is no command at all**, rather than a command of nothing.
+/// **A place past the edge is the edge**, never past qemu's range.
 #[test]
-fn no_move_is_no_steps() {
-    assert!(in_steps(0, 0).is_empty());
+fn past_the_edge_is_the_edge() {
+    assert_eq!(absolute(5000, 1280), ABS_MOST);
+    assert!(absolute(1, 1) <= ABS_MOST);
 }
 
-/// **A step is one command carrying both axes**, relative, which is what a
-/// PS/2 mouse takes.
+/// **One command carries both axes**, absolute.
 #[test]
-fn a_step_is_one_relative_command() {
+fn a_place_is_one_absolute_command() {
     assert_eq!(
-        command(12, -7),
+        command((0, 799), (1280, 800)),
         json!({
             "execute": "input-send-event",
             "arguments": {
                 "events": [
-                    { "type": "rel", "data": { "axis": "x", "value": 12 } },
-                    { "type": "rel", "data": { "axis": "y", "value": -7 } }
+                    { "type": "abs", "data": { "axis": "x", "value": 0 } },
+                    { "type": "abs", "data": { "axis": "y", "value": ABS_MOST } }
                 ]
             }
         })
