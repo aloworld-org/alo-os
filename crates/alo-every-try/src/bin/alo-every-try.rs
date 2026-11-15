@@ -82,7 +82,7 @@ fn running() -> Result<Verdict, String> {
         None,
     )
     .map_err(|why| format!("the provider was refused: {why:?}"))?;
-    let mut asking = AtAProvider::asking(provider, key, &model, &verbs);
+    let mut asking = AtAProvider::asking(provider, key, &model, &verbs, set.places());
     let shown = said("ALO_EVERY_TRY_SHOWN", "");
     if !shown.is_empty() {
         asking = asking.writing_what_it_is_shown_to(shown.into());

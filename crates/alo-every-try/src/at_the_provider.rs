@@ -45,16 +45,23 @@ pub struct AtAProvider {
 
 impl AtAProvider {
     /// `model` at `provider`, asked with `key`, its answers held to the shape
-    /// a turn holds them to for `verbs`.
+    /// a turn holds them to for `verbs`, on a machine installing from `places`.
     #[must_use]
-    pub fn asking(provider: Provider, key: Secret, model: &str, verbs: &Verbs) -> Self {
+    pub fn asking(
+        provider: Provider,
+        key: Secret,
+        model: &str,
+        verbs: &Verbs,
+        places: &[String],
+    ) -> Self {
         Self {
             provider,
             key,
             model: model.to_owned(),
-            held_to: alo_turn::the_shape_a_provider_is_held_to::the_envelope_naming_the_verbs(
-                verbs,
-            ),
+            held_to:
+                alo_turn::the_shape_a_provider_is_held_to::the_envelope_naming_the_verbs_and_places(
+                    verbs, places,
+                ),
             indicator: Indicator::default(),
             calls: 0,
             shown_to: None,

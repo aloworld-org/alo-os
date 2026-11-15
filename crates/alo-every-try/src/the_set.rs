@@ -43,7 +43,7 @@ use crate::a_road::{ARequest, Answered, Step};
 
 /// The version of the set. Up by one for every change to a request, a road or
 /// the machine.
-pub const THE_VERSION: u32 = 4;
+pub const THE_VERSION: u32 = 5;
 
 /// The person's home on the machine the walk boots: Fedora's atomic layout
 /// puts homes under `/var/home`, measured on 2026-11-10
@@ -82,6 +82,8 @@ pub struct TheSet {
     requests: Vec<ARequest>,
     /// What a turn on the machine is told it may reach.
     may_reach: WhatItMayReach,
+    /// The places the machine installs from.
+    places: Vec<String>,
 }
 
 impl TheSet {
@@ -95,6 +97,15 @@ impl TheSet {
     #[must_use]
     pub const fn may_reach(&self) -> &WhatItMayReach {
         &self.may_reach
+    }
+
+    /// **The places the machine installs from**: every place a fresh
+    /// machine's applications come from (`shipped.toml`), once each — the
+    /// places the image sets the rented tool up with, which a booted machine
+    /// reads back with `Enabled::read` and holds a model's answer to.
+    #[must_use]
+    pub fn places(&self) -> &[String] {
+        &self.places
     }
 
     /// Only the request called `named`, for a run that tries one.
@@ -187,9 +198,17 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
 
     let mut requests = vec![writing, publishing, opening];
     requests.extend(crate::every_other_verb::every_other_verb(home, &shipped)?);
+    let mut places: Vec<String> = shipped
+        .every()
+        .iter()
+        .map(|pinned| pinned.source().as_str().to_owned())
+        .collect();
+    places.sort_unstable();
+    places.dedup();
     Ok(TheSet {
         requests,
         may_reach,
+        places,
     })
 }
 

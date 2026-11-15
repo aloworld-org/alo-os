@@ -39,6 +39,7 @@
 
 use alo_capability::{Effect, Offered, Takes, Verb, Verbs};
 use alo_models::in_the_envelope::the_envelope_a_provider_accepts;
+use alo_software::Enabled;
 use serde_json::{Value, json};
 
 /// **The provider's envelope, with the read and propose doors naming this
@@ -161,4 +162,102 @@ fn a_value_of(takes: &Takes) -> Value {
             json!({ "type": "string" })
         }
     }
+}
+
+/// **The places a model may name as an installation's source**: every place
+/// this machine is set up with that `alo_software::Enabled::usable` would let
+/// an installation use — the rented tool's own list, under the rule an
+/// organisation set, the same `Enabled::read` the person's own installs go
+/// through (`alo-shell`'s `what_a_person_installs`) — by name, in its order.
+///
+/// **Only usable places, on purpose**: offering one the machine would refuse
+/// invites a proposal certain to be refused. What that costs: a person who
+/// names a place outside the rule is answered with a place inside it, and the
+/// sentence they approve names it, so nothing is changed silently.
+///
+/// A place switched off, outside the rule, unsigned or with nowhere to reach is
+/// left out, because the machine would refuse an installation from it.
+#[must_use]
+pub fn the_places_a_model_may_name(enabled: &Enabled) -> Vec<String> {
+    enabled
+        .all()
+        .map(|source| source.name().as_str())
+        .filter(|name| enabled.usable(name).is_ok())
+        .map(str::to_owned)
+        .collect()
+}
+
+/// **[`the_envelope_naming_the_verbs`], with an installation's source held to
+/// `places`**: the one argument whose right values only this machine knows.
+///
+/// `install_application`'s `source` becomes one of `places`, and its
+/// description names them, so a hosted model is shown where this machine
+/// installs from and cannot send anything else. Every other argument of every
+/// verb is held exactly as before.
+///
+/// **No places, no narrowing**: a provider refuses an empty `enum`, and a
+/// machine that installs from nowhere refuses every installation itself
+/// (`alo_software::NotDone::NotEnabled`), so the envelope is the one
+/// [`the_envelope_naming_the_verbs`] gives.
+///
+/// This narrows to what already worked: a source outside `places` was refused
+/// by the machine before (`Enabled::usable`), only later, and after the person
+/// had been asked.
+#[must_use]
+pub fn the_envelope_naming_the_verbs_and_places(verbs: &Verbs, places: &[String]) -> Value {
+    let mut envelope = the_envelope_naming_the_verbs(verbs);
+    if places.is_empty() {
+        return envelope;
+    }
+    let Some(doors) = envelope
+        .pointer_mut("/properties/asks/anyOf")
+        .and_then(Value::as_array_mut)
+    else {
+        return envelope;
+    };
+    for call in doors
+        .iter_mut()
+        .filter_map(|door| door.pointer_mut("/properties/propose/anyOf"))
+        .filter_map(Value::as_array_mut)
+        .flatten()
+    {
+        let names_it = call
+            .pointer("/properties/verb/enum/0")
+            .and_then(Value::as_str)
+            == Some(alo_software::INSTALL_APPLICATION);
+        if !names_it {
+            continue;
+        }
+        let Some(source) = call.pointer_mut(&format!(
+            "/properties/given/properties/{}",
+            alo_software::words::SOURCE
+        )) else {
+            continue;
+        };
+        let was = source
+            .get("description")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_owned();
+        *source = json!({
+            "type": "string",
+            "enum": places,
+            "description": format!(
+                "{was}; the places this machine installs from: {}",
+                places.join(", ")
+            ),
+        });
+    }
+    envelope
+}
+
+/// **The envelope a turn's question on `machine` is held to**: its verbs,
+/// with an installation's source held to the places it may install from now.
+/// The one place `asking.rs` takes the schema from, so the test that holds
+/// this holds what a provider is sent.
+pub(crate) fn the_envelope_a_turn_on(machine: &crate::machine::Machine<'_>) -> Value {
+    the_envelope_naming_the_verbs_and_places(
+        machine.verbs(),
+        &machine.the_places_a_model_may_name(),
+    )
 }
