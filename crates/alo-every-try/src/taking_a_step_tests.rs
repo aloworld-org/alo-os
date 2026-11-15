@@ -2,6 +2,11 @@
 //! arguments the machine accepts and the values the road decides — and each
 //! way of leaving the road is told apart.
 
+#![expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected Err is the failure being reported"
+)]
+
 use alo_applications::OPEN_FILE_IN_APPLICATION;
 use alo_applications::opening_a_file::PATH;
 use alo_applications::verbs::APPLICATION;
@@ -188,4 +193,65 @@ fn a_read_sent_as_a_change_is_the_wrong_door() {
             door: "change",
         })
     );
+}
+
+/// An installation of the catalogue's GIMP, from the place it comes from.
+fn installing_gimp() -> (Step, String) {
+    let catalogue = alo_software::Catalogue::decided().expect("the catalogue reads");
+    let gimp = catalogue
+        .every()
+        .iter()
+        .find(|listed| listed.application().identifier().ends_with(".GIMP"))
+        .expect("the catalogue offers GIMP");
+    let step = Step::of(
+        alo_software::INSTALL_APPLICATION,
+        Answered::With(alo_protocol::Done::Installed {
+            application: gimp.application().identifier().to_owned(),
+            sandboxed: true,
+        }),
+    )
+    .expecting(
+        alo_software::words::APPLICATION,
+        gimp.application().identifier(),
+    )
+    .expecting(alo_software::words::SOURCE, gimp.source().as_str());
+    (step, gimp.source().as_str().to_owned())
+}
+
+/// **An application named by its name takes the step**, as the machine reads
+/// it: the catalogue's identifier, by the turn's own function.
+#[test]
+fn an_installation_named_by_its_name_is_read_as_the_machine_reads_it() {
+    let (step, source) = installing_gimp();
+    let line = proposing(
+        alo_software::INSTALL_APPLICATION,
+        &[
+            (alo_software::words::APPLICATION, "GIMP"),
+            (alo_software::words::SOURCE, &source),
+        ],
+    );
+    assert_eq!(
+        taking(&step, 1, &read(&line), &the_verbs(), &the_words()).map(|_| ()),
+        Ok(())
+    );
+}
+
+/// **The refusal case**: a wrong identifier is still the wrong application,
+/// and a name nothing answers to is refused, as on a machine.
+#[test]
+fn a_wrong_identifier_or_an_unknown_name_leaves_the_road() {
+    let (step, source) = installing_gimp();
+    for said in ["org.gnome.GIMP", "Paintbox"] {
+        let line = proposing(
+            alo_software::INSTALL_APPLICATION,
+            &[
+                (alo_software::words::APPLICATION, said),
+                (alo_software::words::SOURCE, &source),
+            ],
+        );
+        assert!(
+            taking(&step, 1, &read(&line), &the_verbs(), &the_words()).is_err(),
+            "{said} took the step"
+        );
+    }
 }

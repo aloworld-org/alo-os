@@ -338,6 +338,74 @@ mod tests {
         doing(&mut turning, &mut grants, &tool)
     }
 
+    /// **An application asked for by its name is installed by the identifier
+    /// the catalogue gives it**, matched the way a name of an installed
+    /// application is (`alo_applications::Installed::answering_to`), and the
+    /// person approves the identifier. Every-try, set 5, 2026-11-15: asked to
+    /// *install GIMP*, the model named `gimp` or a wrong identifier in 9 of
+    /// 10 tries, with the source right in all ten.
+    #[test]
+    fn an_application_named_by_its_name_is_installed_by_the_catalogues_identifier() {
+        for said in ["GIMP", "gimp"] {
+            on_a_machine_that_can_install(Bound::Nobodys, |turning, grants, tool| {
+                let id = turning
+                    .proposing(
+                        INSTALL_APPLICATION,
+                        &[
+                            ("application", Given::text(said)),
+                            ("source", Given::text("flathub")),
+                        ],
+                        grants,
+                        hour(),
+                        noon(),
+                    )
+                    .expect("a name the catalogue answers to is proposed");
+                turning.approving(id, grants, noon()).expect("approved");
+                assert_eq!(*tool.installed.borrow(), ["org.gimp.GIMP"], "{said}");
+            });
+        }
+    }
+
+    /// **The refusal case**: a name the catalogue does not answer to is not
+    /// guessed, and nothing is proposed for the person to approve.
+    #[test]
+    fn a_name_the_catalogue_does_not_answer_to_is_refused() {
+        on_a_machine_that_can_install(Bound::Nobodys, |turning, grants, tool| {
+            let refused = turning.proposing(
+                INSTALL_APPLICATION,
+                &[
+                    ("application", Given::text("Paintbox")),
+                    ("source", Given::text("flathub")),
+                ],
+                grants,
+                hour(),
+                noon(),
+            );
+            assert!(refused.is_err(), "a name nothing answers to was proposed");
+            assert!(tool.installed.borrow().is_empty());
+        });
+    }
+
+    /// **And a name two applications answer to is refused, not guessed.**
+    #[test]
+    fn a_name_several_applications_answer_to_is_not_resolved() {
+        let installable = alo_applications::Installed::holding([
+            Application::identified("org.example.Paint").unwrap(),
+            Application::identified("com.other.Paint").unwrap(),
+        ]);
+        assert_eq!(
+            crate::naming_an_application::installable_answering_to(&installable, "paint"),
+            None
+        );
+        assert_eq!(
+            crate::naming_an_application::installable_answering_to(
+                &installable,
+                "org.example.Paint"
+            ),
+            Some("org.example.Paint".to_owned())
+        );
+    }
+
     /// **The whole road, in one test**: a machine that can install offers the
     /// verb, a person approves the sentence, the tool is reached once, and what
     /// comes back says what was installed and that it is sandboxed.
