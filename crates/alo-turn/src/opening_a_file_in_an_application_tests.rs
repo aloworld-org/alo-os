@@ -17,7 +17,7 @@ use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use alo_acting::{Answer, Opened, Request, ToOpenAFile};
+use alo_acting::{Answer, Opened, Request, ToOpenAFile, ToType, Typed};
 use alo_applications::{Application, Installed, OPEN_FILE_IN_APPLICATION};
 use alo_capability::{Given, Grant, Grantee, Grants, Reach};
 use alo_egress::Indicator;
@@ -90,6 +90,11 @@ struct ADoor {
     answering: Result<Opened, NotAtTheDoor>,
     /// Every `open-file` it was asked, readable while the machine holds it.
     asked: Rc<RefCell<Vec<ToOpenAFile>>>,
+    /// How many `may-type-into` asks it answers *not in front* before *may*:
+    /// how many looks the opened window takes to come.
+    not_in_front_for: usize,
+    /// How many `may-type-into` asks it was asked.
+    checks: Rc<RefCell<usize>>,
 }
 
 impl TheDoorTheCompositorServes for ADoor {
@@ -100,6 +105,20 @@ impl TheDoorTheCompositorServes for ADoor {
     fn opening_a_file(&mut self, asked: &ToOpenAFile) -> Result<Opened, NotAtTheDoor> {
         self.asked.borrow_mut().push(asked.clone());
         self.answering.clone()
+    }
+
+    fn typing(&mut self, asked: &ToType, _: &str) -> Result<Typed, NotAtTheDoor> {
+        assert!(
+            matches!(asked, ToType::Check { .. }),
+            "opening a file typed or saved: {asked:?}"
+        );
+        let mut checks = self.checks.borrow_mut();
+        *checks += 1;
+        Ok(if *checks > self.not_in_front_for {
+            Typed::MayType
+        } else {
+            Typed::NotInFront
+        })
     }
 }
 
@@ -115,6 +134,8 @@ struct Arranged {
     the_folder: bool,
     /// Whether the person chose full access.
     full_access: bool,
+    /// How many looks the opened window takes to come in front.
+    not_in_front_for: usize,
 }
 
 impl Arranged {
@@ -127,6 +148,7 @@ impl Arranged {
             the_editor: true,
             the_folder: true,
             full_access: false,
+            not_in_front_for: 0,
         }
     }
 }
@@ -146,6 +168,8 @@ struct Ran {
     unchanged: bool,
     /// The file, as it really is on this machine.
     file: PathBuf,
+    /// How many times the door was asked whether the window is in front.
+    checks: usize,
 }
 
 /// Arrange the machine, then do `doing` with the turn, the grants and the file
@@ -158,9 +182,12 @@ fn on_a_machine(
     let tool = NoTool;
     let publisher = crate::testing::APublisher::that_publishes();
     let asked = Rc::new(RefCell::new(Vec::new()));
+    let checks = Rc::new(RefCell::new(0));
     let mut door = ADoor {
         answering: arranged.answering,
         asked: Rc::clone(&asked),
+        not_in_front_for: arranged.not_in_front_for,
+        checks: Rc::clone(&checks),
     };
     let mut no_tree = crate::testing::NoTreeHere;
     let mut indicator = Indicator::default();
@@ -233,6 +260,7 @@ fn on_a_machine(
         entries: record.answering(&anything).count(),
         unchanged: std::fs::read_to_string(&file).is_ok_and(|now| now == WHAT_IT_SAYS),
         file,
+        checks: *checks.borrow(),
     }
 }
 
@@ -294,6 +322,46 @@ fn an_approved_opening_asks_the_door_once_and_is_recorded_with_where_it_opened()
         )]
     );
     assert!(ran.unchanged, "opening a file changed it");
+}
+
+/// **The opening is answered once its window is in front**, so the typing
+/// that follows finds the editor rather than a window not yet drawn — and the
+/// wait asks only whether it may type, never types.
+///
+/// What would have to be true for this to pass while broken: the desktop
+/// answering `may` before the window it opened has the keyboard, which
+/// `alo_shell`'s `typed_into_the_window_in_front` does not — it answers from
+/// the window that holds the keyboard now.
+#[test]
+fn an_opening_is_answered_once_its_window_is_in_front() {
+    let mut arranged = Arranged::answering(Ok(Opened::InAlosCopy));
+    arranged.not_in_front_for = 3;
+    let ran = on_a_machine(arranged, |turning, grants, file| {
+        proposed_and_approved(turning, grants, EDITOR, file)
+    });
+    assert!(
+        ran.answered
+            .unwrap()
+            .unwrap()
+            .opened()
+            .unwrap()
+            .in_alos_copy()
+    );
+    assert_eq!(
+        ran.checks, 4,
+        "it did not wait for the window, or kept asking"
+    );
+}
+
+/// **An opening that opened nothing waits for nothing.**
+#[test]
+fn a_refused_opening_does_not_wait_for_a_window() {
+    let ran = on_a_machine(
+        Arranged::answering(Ok(Opened::CouldNotStart)),
+        |turning, grants, file| proposed_and_approved(turning, grants, EDITOR, file),
+    );
+    assert!(ran.answered.is_err());
+    assert_eq!(ran.checks, 0);
 }
 
 /// **Where the person chose their own window, the record says that.**
@@ -511,6 +579,8 @@ fn a_paired_machine_cannot_open_a_file_here() {
     let mut door = ADoor {
         answering: Ok(Opened::InAlosCopy),
         asked: Rc::clone(&asked),
+        not_in_front_for: 0,
+        checks: Rc::new(RefCell::new(0)),
     };
     let mut no_tree = crate::testing::NoTreeHere;
     let mut indicator = Indicator::default();

@@ -1688,7 +1688,11 @@ mod running {
         /// from their file for these asks as `alo_at_work` reads it; in their
         /// own window, as their press would, only where they chose that. Each
         /// is answered with where it opened, or why it did not.
-        fn alo_opens_files(&mut self, asked: Vec<alo_shell::a_file_alo_opens::AskedToOpenAFile>) {
+        fn alo_opens_files(
+            &mut self,
+            asked: Vec<alo_shell::a_file_alo_opens::AskedToOpenAFile>,
+        ) -> Vec<String> {
+            let mut opened_in = Vec::new();
             let chosen = alo_remembering::alo_in_applications_remembered(std::path::Path::new(
                 alo_remembering::THE_LEVEL,
             ))
@@ -1708,8 +1712,12 @@ mod running {
                     "alo-desktop: {}",
                     alo_acting::said_on_the_log::a_file_was_opened(one.application(), opened)
                 );
+                if opened.was_opened() {
+                    opened_in.push(one.application().to_owned());
+                }
                 one.answered(opened);
             }
+            opened_in
         }
 
         /// The panel this desktop keeps, lent for the one act that changes it.

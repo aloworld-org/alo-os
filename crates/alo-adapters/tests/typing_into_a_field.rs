@@ -303,6 +303,37 @@ fn an_unnamed_document_in_a_window_titled_with_the_name_is_found() {
     assert!(!field.has_the_keyboard);
 }
 
+/// **The field with the keyboard, in a window titled with the approved name,
+/// is that document** whatever the editor calls the field itself — and one
+/// without the keyboard, named otherwise, is not.
+///
+/// What would have to be true for this to pass while broken: VSCodium putting
+/// the keyboard in a field of its window other than the editor — its search
+/// box, say — which the read-back then catches: the text would not be in the
+/// document, and nothing is saved.
+#[test]
+fn the_field_with_the_keyboard_in_a_window_titled_with_the_name_is_found() {
+    let tree = ATree::of(
+        "hello.txt - VSCodium",
+        vec![a(ENTRY, "Editor content", FOCUSED)],
+    );
+    let field = typing("hello.txt", "x")
+        .the_field(&tree, &in_english())
+        .unwrap();
+    assert!(field.has_the_keyboard);
+
+    let tree = ATree::of(
+        "hello.txt - VSCodium",
+        vec![a(ENTRY, "Editor content", EDITABLE)],
+    );
+    assert!(
+        typing("hello.txt", "x")
+            .the_field(&tree, &in_english())
+            .is_err(),
+        "a field without the keyboard, named otherwise, was taken for the document"
+    );
+}
+
 #[test]
 fn no_field_of_that_name_is_refused() {
     let tree = ATree::of("x", vec![a(ENTRY, "other.html", FOCUSED)]);
@@ -312,12 +343,39 @@ fn no_field_of_that_name_is_refused() {
     assert!(said(&refused).contains("no field"), "{}", said(&refused));
 }
 
+/// **Of two fields of that name, the one with the keyboard is the one** —
+/// alo's own copy of VSCodium beside the person's, both showing the same file.
+///
+/// What would have to be true for this to pass while broken: the keyboard
+/// being in the person's window rather than alo's copy, which this cannot see
+/// and does not need to: the compositor then answers `not-alos-copy` and
+/// nothing is typed.
+#[test]
+fn of_two_fields_of_that_name_the_one_with_the_keyboard_is_found() {
+    let tree = ATree::of(
+        "x",
+        vec![
+            a(ENTRY, "index.html", EDITABLE),
+            a(ENTRY, "index.html", FOCUSED),
+        ],
+    );
+    let field = typing("index.html", "x")
+        .the_field(&tree, &in_english())
+        .unwrap();
+    assert!(field.has_the_keyboard);
+    assert_eq!(
+        field.at,
+        at("/t/1"),
+        "the field without the keyboard was chosen"
+    );
+}
+
 #[test]
 fn two_fields_of_that_name_are_refused_rather_than_guessed() {
     let tree = ATree::of(
         "x",
         vec![
-            a(ENTRY, "index.html", FOCUSED),
+            a(ENTRY, "index.html", EDITABLE),
             a(ENTRY, "index.html", EDITABLE),
         ],
     );

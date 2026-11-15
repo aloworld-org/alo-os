@@ -213,15 +213,21 @@ pub trait TheDesktop {
     /// **The files alo was approved to open in an application**, once a frame
     /// (`open_file_in_application`, 2026-11-14): each opened in alo's own copy
     /// at the person's default, or in their own window where they chose that,
-    /// and answered with where (`crate::a_file_alo_opens`).
+    /// and answered with where (`crate::a_file_alo_opens`). Answers the
+    /// applications a file **was** opened in, by identifier, so their window can
+    /// come in front (`crate::a_file_alo_opened_comes_in_front`).
     ///
     /// **By default each is answered *could not start***, for
     /// [`Self::alo_at_work`]'s reason: a desktop that holds no copies and no
     /// way to start an application opens nothing, and says so.
-    fn alo_opens_files(&mut self, asked: Vec<crate::a_file_alo_opens::AskedToOpenAFile>) {
+    fn alo_opens_files(
+        &mut self,
+        asked: Vec<crate::a_file_alo_opens::AskedToOpenAFile>,
+    ) -> Vec<String> {
         for one in asked {
             one.answered(alo_acting::Opened::CouldNotStart);
         }
+        Vec::new()
     }
 
     /// The panel this desktop keeps, for the one act that has to change it.
@@ -1440,7 +1446,18 @@ impl LoopInput for TheDesktopLane<'_> {
         // the desktop that holds alo's copies and reads the person's setting.
         let opening = self.door.asked_to_open_files();
         if !opening.is_empty() {
-            self.desktop.alo_opens_files(opening);
+            let now = std::time::Instant::now();
+            for opened in self.desktop.alo_opens_files(opening) {
+                server.alo_opened_a_file_in(&opened, now);
+            }
+        }
+        // **And the window alo opened a file in comes in front once it is
+        // there**, the one alo may type into, with the keyboard — rule 8's
+        // *authorised interaction that calls for it*.
+        {
+            let mut asking =
+                crate::typing_into_the_window_in_front::TheDesktopAnswers(&mut *self.desktop);
+            server.what_alo_opened_comes_in_front(&mut asking, std::time::Instant::now());
         }
         // **And whatever alo was approved to type** (ADR 0153), into the window
         // in front only, answered in the same frame it was read whole.

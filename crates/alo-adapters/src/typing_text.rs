@@ -10,7 +10,8 @@
 //!   touched: the grants at this moment, the application installed, no
 //!   adapter of its own.
 //! - [`Typing::the_field`] looks for the field **then**, in the windows as they
-//!   are: exactly one showing field or document of the approved name — never a
+//!   are: exactly one showing field or document of the approved name (of several,
+//!   the one with the keyboard, where exactly one has it) — never a
 //!   password field, never a terminal — and says whether it has the keyboard
 //!   and whether it takes text through the tree.
 //! - [`Typing::put_in`] is the direct road: the text inserted at the field's
@@ -198,11 +199,16 @@ impl Typing {
                 matches!(role, Role::TextField | Role::Document | Role::PasswordField)
                     || facts.role == TERMINAL;
             // **Named as approved**, or — where an application names its
-            // document nothing, as GNOME Text Editor does — an unnamed one in
-            // a window whose title holds the approved name. Which of several
-            // unnamed ones is never guessed: two are refused below.
+            // document nothing, as GNOME Text Editor does, or names it
+            // something other than the file, as a code editor may — an unnamed
+            // one, or the one with the keyboard, in a window whose title holds
+            // the approved name. A model asked to write in hello.txt names it
+            // hello.txt, which is what the window says (the walk of 2026-11-14
+            // saw one guess "Document" instead). Which of several is never
+            // guessed: two are refused below.
+            let in_its_window = !window.is_empty() && window.contains(&self.name);
             let named = facts.name == self.name
-                || (facts.name.is_empty() && !window.is_empty() && window.contains(&self.name));
+                || (in_its_window && (facts.name.is_empty() || holds(&facts.states, FOCUSED)));
             if a_place_for_text && named && holds(&facts.states, SHOWING) {
                 found.push((at.clone(), facts.role, facts.states.clone()));
             }
@@ -218,6 +224,21 @@ impl Typing {
                         .into_iter()
                         .map(|child| (child, depth + 1, window.clone())),
                 );
+            }
+        }
+        // **Of several, the one that has the keyboard**: with the person's own
+        // VSCodium open beside alo's copy, both show an editor of the same
+        // name, and the one alo may type into is the one the keyboard is in —
+        // which only one field can be. Two that both say so, or none of
+        // several, is still not guessed.
+        if found.len() > 1 {
+            let focused: Vec<_> = found
+                .iter()
+                .filter(|(_, _, states)| holds(states, FOCUSED))
+                .cloned()
+                .collect();
+            if focused.len() == 1 {
+                found = focused;
             }
         }
         let (at, role, states) = match found.len() {
