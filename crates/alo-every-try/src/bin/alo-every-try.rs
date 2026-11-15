@@ -8,6 +8,7 @@
 //! ALO_EVERY_TRY_TRIES=5                           # the default
 //! ALO_EVERY_TRY_ONLY="write in VSCodium"          # one request, optional
 //! ALO_EVERY_TRY_SUMMARY=summary.md                # where the summary goes, optional
+//! ALO_EVERY_TRY_SHOWN=shown.txt                   # every question's whole text, optional
 //!   alo-every-try
 //! ```
 //!
@@ -82,6 +83,10 @@ fn running() -> Result<Verdict, String> {
     )
     .map_err(|why| format!("the provider was refused: {why:?}"))?;
     let mut asking = AtAProvider::asking(provider, key, &model, &verbs);
+    let shown = said("ALO_EVERY_TRY_SHOWN", "");
+    if !shown.is_empty() {
+        asking = asking.writing_what_it_is_shown_to(shown.into());
+    }
 
     let asked_of = format!("{model} at {endpoint}");
     println!(

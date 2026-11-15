@@ -17,6 +17,7 @@ use alo_capability::words::DONE_AT_FULL_ACCESS;
 use alo_capability::{Call, Value};
 use alo_protocol::{Done, ToAnAgent};
 use alo_publishing::WhatWasPublished;
+use alo_software::{Catalogue, Category, WhatTheCatalogueHolds};
 use alo_strings::{Filling, Strings};
 
 use crate::a_road::Answered;
@@ -79,7 +80,25 @@ pub fn answering(answered: &Answered, call: &Call, strings: &Strings) -> ToAnAge
             );
             ToAnAgent::done_without_asking(Done::of_a_publication(&folder, &address, false), &said)
         }
+        Answered::TheCatalogue(catalogue) => the_catalogue_under(catalogue, call),
+        Answered::With(done) if call.waits_for_approval() => {
+            done_at_full_access(done.clone(), call, strings)
+        }
+        Answered::With(done) => ToAnAgent::did(done.clone()),
     }
+}
+
+/// What `catalogue` holds under the kind of work `call` chose: matched
+/// against the same list the options are built from, as
+/// `alo_software::looked_at` matches it, and everything for `everything`.
+fn the_catalogue_under(catalogue: &Catalogue, call: &Call) -> ToAnAgent {
+    let chosen = the_value_of(call, alo_software::words::KIND_OF_WORK);
+    let kind = Category::EVERY
+        .into_iter()
+        .find(|kind| kind.as_an_option() == chosen);
+    ToAnAgent::did(Done::of_a_catalogue_read(&WhatTheCatalogueHolds::under(
+        catalogue, kind,
+    )))
 }
 
 /// What `argument` was given as, or nothing.

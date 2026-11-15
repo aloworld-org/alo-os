@@ -230,6 +230,12 @@ pub fn declare_the_three_with_a_road_into(verbs: &mut Verbs) -> Result<(), Decla
 /// check of what a model chose reads it from here rather than copying it.
 pub const OPEN_APPLICATION: &str = "open_application";
 
+/// The name `focus_application` is asked for by.
+pub const FOCUS_APPLICATION: &str = "focus_application";
+
+/// The name `close_application` is asked for by.
+pub const CLOSE_APPLICATION: &str = "close_application";
+
 /// The argument naming the application, in `open_application` and in
 /// `open_file_in_application`.
 pub const APPLICATION: &str = "application";
@@ -257,15 +263,15 @@ fn open_application() -> Result<Verb, VerbError> {
 /// Bring an application to the front.
 fn focus_application() -> Result<Verb, VerbError> {
     Verb::checked(
-        "focus_application",
+        FOCUS_APPLICATION,
         words::FOCUS_APPLICATION,
         Effect::Change,
         vec![Arg::taking(
-            "application",
+            APPLICATION,
             words::FOCUS_APPLICATION_APPLICATION,
             Takes::Application,
         )],
-        Requires::grants_over(["application"]),
+        Requires::grants_over([APPLICATION]),
         words::FOCUS_APPLICATION_SENTENCE,
     )?
     .changing(
@@ -277,15 +283,15 @@ fn focus_application() -> Result<Verb, VerbError> {
 /// Ask an application to close.
 fn close_application() -> Result<Verb, VerbError> {
     Verb::checked(
-        "close_application",
+        CLOSE_APPLICATION,
         words::CLOSE_APPLICATION,
         Effect::Change,
         vec![Arg::taking(
-            "application",
+            APPLICATION,
             words::CLOSE_APPLICATION_APPLICATION,
             Takes::Application,
         )],
-        Requires::grants_over(["application"]),
+        Requires::grants_over([APPLICATION]),
         words::CLOSE_APPLICATION_SENTENCE,
     )?
     .changing(

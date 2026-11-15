@@ -164,18 +164,39 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), Declaring> {
     Ok(())
 }
 
+/// The verb that lists what is in a folder, by the name a model asks for it by.
+pub const LIST_FOLDER: &str = "list_folder";
+/// The verb that reads what is in a file.
+pub const READ_FILE: &str = "read_file";
+/// The verb that finds files in a folder by what they are called.
+pub const FIND_IN_FOLDER: &str = "find_in_folder";
+/// The verb that gives a file a different name, where it already is.
+pub const RENAME_FILE: &str = "rename_file";
+/// The verb that moves a file into a folder.
+pub const MOVE_FILE: &str = "move_file";
+/// The verb that makes one archive file out of a folder.
+pub const ARCHIVE_FOLDER: &str = "archive_folder";
+/// The argument naming a folder: what is listed, searched or archived.
+pub const FOLDER: &str = "folder";
+/// The argument naming a file: what is read, renamed or moved.
+pub const FILE: &str = "file";
+/// The argument holding the words a file's name has to contain.
+pub const NAMED: &str = "named";
+/// The argument holding how many files a search answers with at most.
+pub const MOST: &str = "most";
+/// The argument holding a new name: a file's, or an archive's.
+pub const NAME: &str = "name";
+/// The argument naming the folder something goes into.
+pub const INTO: &str = "into";
+
 /// List what is in a folder.
 fn list_folder() -> Result<Verb, VerbError> {
     Verb::checked(
-        "list_folder",
+        LIST_FOLDER,
         words::LIST_FOLDER,
         Effect::Read,
-        vec![Arg::taking(
-            "folder",
-            words::LIST_FOLDER_FOLDER,
-            Takes::Path,
-        )],
-        Requires::grants_over(["folder"]),
+        vec![Arg::taking(FOLDER, words::LIST_FOLDER_FOLDER, Takes::Path)],
+        Requires::grants_over([FOLDER]),
         words::LIST_FOLDER_SENTENCE,
     )
 }
@@ -183,11 +204,11 @@ fn list_folder() -> Result<Verb, VerbError> {
 /// Read what is in a file.
 fn read_file() -> Result<Verb, VerbError> {
     Verb::checked(
-        "read_file",
+        READ_FILE,
         words::READ_FILE,
         Effect::Read,
-        vec![Arg::taking("file", words::READ_FILE_FILE, Takes::Path)],
-        Requires::grants_over(["file"]),
+        vec![Arg::taking(FILE, words::READ_FILE_FILE, Takes::Path)],
+        Requires::grants_over([FILE]),
         words::READ_FILE_SENTENCE,
     )
 }
@@ -199,23 +220,23 @@ fn read_file() -> Result<Verb, VerbError> {
 /// the place somebody would most reasonably ask for a pattern language.
 fn find_in_folder() -> Result<Verb, VerbError> {
     Verb::checked(
-        "find_in_folder",
+        FIND_IN_FOLDER,
         words::FIND_IN_FOLDER,
         Effect::Read,
         vec![
-            Arg::taking("folder", words::FIND_IN_FOLDER_FOLDER, Takes::Path),
+            Arg::taking(FOLDER, words::FIND_IN_FOLDER_FOLDER, Takes::Path),
             Arg::taking(
-                "named",
+                NAMED,
                 words::FIND_IN_FOLDER_NAMED,
                 Takes::name(LONGEST_NAME),
             ),
             Arg::taking(
-                "most",
+                MOST,
                 words::FIND_IN_FOLDER_MOST,
                 Takes::count(1, MOST_FOUND),
             ),
         ],
-        Requires::grants_over(["folder"]),
+        Requires::grants_over([FOLDER]),
         words::FIND_IN_FOLDER_SENTENCE,
     )
 }
@@ -223,14 +244,14 @@ fn find_in_folder() -> Result<Verb, VerbError> {
 /// Give a file a different name, where it already is.
 fn rename_file() -> Result<Verb, VerbError> {
     Verb::checked(
-        "rename_file",
+        RENAME_FILE,
         words::RENAME_FILE,
         Effect::Change,
         vec![
-            Arg::taking("file", words::RENAME_FILE_FILE, Takes::Path),
-            Arg::taking("name", words::RENAME_FILE_NAME, Takes::name(LONGEST_NAME)),
+            Arg::taking(FILE, words::RENAME_FILE_FILE, Takes::Path),
+            Arg::taking(NAME, words::RENAME_FILE_NAME, Takes::name(LONGEST_NAME)),
         ],
-        Requires::grants_over(["file"]),
+        Requires::grants_over([FILE]),
         words::RENAME_FILE_SENTENCE,
     )?
     .changing(words::RENAME_FILE_CHANGES, Some(words::RENAME_FILE_LEAVES))
@@ -239,14 +260,14 @@ fn rename_file() -> Result<Verb, VerbError> {
 /// Move a file into a folder.
 fn move_file() -> Result<Verb, VerbError> {
     Verb::checked(
-        "move_file",
+        MOVE_FILE,
         words::MOVE_FILE,
         Effect::Change,
         vec![
-            Arg::taking("file", words::MOVE_FILE_FILE, Takes::Path),
-            Arg::taking("into", words::MOVE_FILE_INTO, Takes::Path),
+            Arg::taking(FILE, words::MOVE_FILE_FILE, Takes::Path),
+            Arg::taking(INTO, words::MOVE_FILE_INTO, Takes::Path),
         ],
-        Requires::grants_over(["file", "into"]),
+        Requires::grants_over([FILE, INTO]),
         words::MOVE_FILE_SENTENCE,
     )?
     .changing(words::MOVE_FILE_CHANGES, Some(words::MOVE_FILE_LEAVES))
@@ -255,19 +276,15 @@ fn move_file() -> Result<Verb, VerbError> {
 /// Make one archive file out of a folder.
 fn archive_folder() -> Result<Verb, VerbError> {
     Verb::checked(
-        "archive_folder",
+        ARCHIVE_FOLDER,
         words::ARCHIVE_FOLDER,
         Effect::Change,
         vec![
-            Arg::taking("folder", words::ARCHIVE_FOLDER_FOLDER, Takes::Path),
-            Arg::taking("into", words::ARCHIVE_FOLDER_INTO, Takes::Path),
-            Arg::taking(
-                "name",
-                words::ARCHIVE_FOLDER_NAME,
-                Takes::name(LONGEST_NAME),
-            ),
+            Arg::taking(FOLDER, words::ARCHIVE_FOLDER_FOLDER, Takes::Path),
+            Arg::taking(INTO, words::ARCHIVE_FOLDER_INTO, Takes::Path),
+            Arg::taking(NAME, words::ARCHIVE_FOLDER_NAME, Takes::name(LONGEST_NAME)),
         ],
-        Requires::grants_over(["folder", "into"]),
+        Requires::grants_over([FOLDER, INTO]),
         words::ARCHIVE_FOLDER_SENTENCE,
     )?
     .changing(
