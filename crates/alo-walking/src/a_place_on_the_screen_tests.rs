@@ -83,7 +83,7 @@ fn an_l_shaped_patch_is_aimed_at_inside_it() {
 fn nothing_there_is_nowhere() {
     let screen = Frame::filled(320, 200, GREY);
     assert_eq!(where_is(Target::Colour(MAGENTA), &screen, None), None);
-    let speck = with_block(screen.clone(), (32, 32, 16, 16), MAGENTA);
+    let speck = with_block(screen.clone(), (32, 32, 8, 8), MAGENTA);
     assert_eq!(where_is(Target::Colour(MAGENTA), &speck, None), None);
     assert_eq!(where_is(Target::WhatChanged, &screen, Some(&screen)), None);
     assert_eq!(where_is(Target::WhatChanged, &screen, None), None);
@@ -96,4 +96,20 @@ fn the_middle_is_the_middle() {
         where_is(Target::Middle, &Frame::filled(1280, 800, GREY), None),
         Some((640, 400))
     );
+}
+
+/// **A button with its label across the middle is found**: Firefox's
+/// *Continue*, 92 by 32 pixels with white letters through its middle, is aimed
+/// at on its colour, not on a letter.
+#[test]
+fn a_button_with_a_label_is_aimed_at_on_its_colour() {
+    let button = with_block(
+        with_block(Frame::filled(320, 200, GREY), (138, 80, 92, 32), MAGENTA),
+        (150, 91, 68, 11),
+        [255, 255, 255],
+    );
+    let Some((x, y)) = where_is(Target::Colour(MAGENTA), &button, None) else {
+        panic!("the button was not found");
+    };
+    assert_eq!(button.rgb(x, y), Some(MAGENTA), "aimed at ({x}, {y})");
 }

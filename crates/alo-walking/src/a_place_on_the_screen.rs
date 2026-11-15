@@ -10,7 +10,8 @@
 //!
 //! # A patch, not a pixel
 //!
-//! The screen is read in cells of [`CELL`] pixels, and a cell counts when three
+//! The screen is read in cells of [`CELL`] pixels ([`COLOUR_CELL`] for a
+//! colour), and a cell counts when three
 //! quarters of it match. The largest group of touching cells is the patch, and
 //! the place aimed at is the cell of it nearest its middle — inside the patch
 //! even where the patch is not a rectangle. So the clock changing in the panel,
@@ -21,8 +22,15 @@ use std::collections::VecDeque;
 
 use crate::frame::Frame;
 
-/// How many pixels across and down one cell is.
+/// How many pixels across and down one cell is, for what changed.
 pub const CELL: usize = 16;
+
+/// How many pixels across and down one cell is, for a colour: smaller,
+/// because a button is a colour too, and a 32-pixel button with its label
+/// across the middle has almost no 16-pixel cell three quarters its colour —
+/// measured on Firefox's *Continue* (run 43662980364), which the walk then
+/// could not find.
+pub const COLOUR_CELL: usize = 8;
 
 /// The fewest cells a patch must have to be aimed at.
 pub const FEWEST_CELLS: usize = 2;
@@ -72,7 +80,7 @@ pub fn where_is(target: Target, now: &Frame, kept: Option<&Frame>) -> Option<(us
             let (width, height) = now.size();
             Some((width / 2, height / 2))
         }
-        Target::Colour(colour) => largest_patch(now, |x, y| {
+        Target::Colour(colour) => largest_patch(now, COLOUR_CELL, |x, y| {
             now.rgb(x, y).is_some_and(|it| {
                 it.iter()
                     .zip(colour)
@@ -84,7 +92,7 @@ pub fn where_is(target: Target, now: &Frame, kept: Option<&Frame>) -> Option<(us
             if kept.size() != now.size() {
                 return None;
             }
-            largest_patch(now, |x, y| match (now.rgb(x, y), kept.rgb(x, y)) {
+            largest_patch(now, CELL, |x, y| match (now.rgb(x, y), kept.rgb(x, y)) {
                 (Some(one), Some(two)) => one.iter().zip(two).any(|(a, b)| a.abs_diff(b) > CHANGED),
                 _ => false,
             })
@@ -94,19 +102,23 @@ pub fn where_is(target: Target, now: &Frame, kept: Option<&Frame>) -> Option<(us
 
 /// The middle of the largest group of touching cells in which three quarters
 /// of the pixels are `marked`.
-fn largest_patch(frame: &Frame, marked: impl Fn(usize, usize) -> bool) -> Option<(usize, usize)> {
+fn largest_patch(
+    frame: &Frame,
+    cell: usize,
+    marked: impl Fn(usize, usize) -> bool,
+) -> Option<(usize, usize)> {
     let (width, height) = frame.size();
-    let (across, down) = (width / CELL, height / CELL);
+    let (across, down) = (width / cell, height / cell);
     let counts = |cx: usize, cy: usize| {
         let mut count = 0;
-        for y in cy * CELL..(cy + 1) * CELL {
-            for x in cx * CELL..(cx + 1) * CELL {
+        for y in cy * cell..(cy + 1) * cell {
+            for x in cx * cell..(cx + 1) * cell {
                 if marked(x, y) {
                     count += 1;
                 }
             }
         }
-        count * 4 >= CELL * CELL * 3
+        count * 4 >= cell * cell * 3
     };
     let cells: Vec<bool> = (0..down)
         .flat_map(|cy| (0..across).map(move |cx| (cx, cy)))
@@ -134,8 +146,8 @@ fn largest_patch(frame: &Frame, marked: impl Fn(usize, usize) -> bool) -> Option
         cx.abs_diff(mean_x).pow(2) + cy.abs_diff(mean_y).pow(2)
     })?;
     Some((
-        nearest % across * CELL + CELL / 2,
-        nearest / across * CELL + CELL / 2,
+        nearest % across * cell + cell / 2,
+        nearest / across * cell + cell / 2,
     ))
 }
 
