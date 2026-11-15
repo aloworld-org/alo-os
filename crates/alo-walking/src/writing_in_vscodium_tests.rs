@@ -121,8 +121,10 @@ fn the_checks_come_in_the_roads_order() {
         vec![
             THE_FILE_IS_MADE.to_owned(),
             opened_in_vscodium(),
+            alo_wears_vscodium(),
             typed_into_vscodium(),
             saved_in_vscodium(),
+            alos_work_in_vscodium_is_over(),
             THE_TAG.to_owned(),
         ]
     );
@@ -182,4 +184,55 @@ fn the_command_that_makes_the_file_is_pinned_and_makes_the_file_checked_later() 
                 if phrase == THE_FILE_IS_MADE && also == THE_FILE)
         });
     assert!(checks_the_tag, "nothing checks the line the command writes");
+}
+
+/// **The phrases for alo's presence are the shell's own sentences**, built by
+/// the functions the shell writes them with.
+#[test]
+fn the_presence_phrases_are_the_shells_own_sentences() {
+    use alo_acting::said_on_the_log::{alo_wears_a_window_of, alos_work_is_over_in_a_window_of};
+    assert_eq!(alo_wears_vscodium(), alo_wears_a_window_of(VSCODIUM));
+    assert_eq!(
+        alos_work_in_vscodium_is_over(),
+        alos_work_is_over_in_a_window_of(VSCODIUM)
+    );
+}
+
+/// **The teal edge is checked round VSCodium while alo works in it, and gone
+/// once the turn has ended**: drawn after the shell says alo wears the window
+/// and before the typing is checked; gone after the shell says the work is
+/// over — and the edge drawn is checked first, so *gone* is never the
+/// verdict of a check that could not see an edge at all.
+#[test]
+fn the_edge_is_checked_on_while_alo_works_and_off_after() {
+    let walk = at_full_access(Walk::named("vscodium"));
+    let steps = walk.steps();
+    let at = |wanted: &dyn Fn(&Step) -> bool, what: &str| {
+        steps
+            .iter()
+            .position(|step| wanted(step))
+            .unwrap_or_else(|| panic!("the walk has no step: {what}"))
+    };
+    let on = at(
+        &|step| matches!(step, Step::ExpectLine { phrase, .. } if *phrase == alo_wears_vscodium()),
+        "alo wears VSCodium",
+    );
+    let drawn = at(
+        &|step| matches!(step, Step::TheEdge { drawn: true, .. }),
+        "the edge drawn",
+    );
+    let typed = at(
+        &|step| matches!(step, Step::ExpectLine { phrase, .. } if *phrase == typed_into_vscodium()),
+        "the typing",
+    );
+    let over = at(
+        &|step| matches!(step, Step::ExpectLine { phrase, .. } if *phrase == alos_work_in_vscodium_is_over()),
+        "alo's work is over",
+    );
+    let gone = at(
+        &|step| matches!(step, Step::TheEdge { drawn: false, .. }),
+        "the edge gone",
+    );
+    assert!(on < drawn && drawn < typed, "{on} {drawn} {typed}");
+    assert!(typed < over && over < gone, "{typed} {over} {gone}");
 }

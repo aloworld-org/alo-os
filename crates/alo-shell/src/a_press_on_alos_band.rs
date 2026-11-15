@@ -48,6 +48,11 @@ impl crate::Server {
         let location = self.surfaces.pointer.as_ref().map(|it| it.location)?;
         let in_front = self.the_window_under(location)?;
         let here = self.alo_in_this_window(&in_front)?;
+        // **A window alo operates has no band to press**: the border is the
+        // whole sign, and its Stop is the task window's.
+        if here.wears != crate::alo_in_a_window::Wears::TheBand {
+            return None;
+        }
         let at = self.where_the_pointer_is_in_logical_pixels()?;
         let scale = self.the_scale_an_edge_is_measured_at();
         let at = crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale);

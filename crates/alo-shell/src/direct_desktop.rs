@@ -1780,6 +1780,9 @@ impl LoopInput for TheDesktopLane<'_> {
         // window* is in a window's panel only while it may, and an offer made
         // while it could is let go the moment it cannot.
         server.alo_may_be_asked(self.desktop.where_a_question_would_go().is_some());
+        // **And a window alo operated for a turn that has ended is bare
+        // again**, said on the log once (`crate::the_window_alo_acts_in`).
+        server.the_windows_alo_acts_in_are_looked_at();
         // **A request about a window becomes a task that wears that window**,
         // and goes to the agent with the window it was about — read when the
         // person sent it (`crate::alo_in_a_window`).

@@ -106,6 +106,10 @@ impl Server {
         for mut awaited in std::mem::take(&mut self.alo_opened_a_file_in) {
             match self.the_window_alo_may_type_into(&awaited, may) {
                 Found::It(surface) => {
+                    // **The window alo opened a file in is alo's for the
+                    // turn**: it wears the task at work from the moment it
+                    // comes (`crate::the_window_alo_acts_in`).
+                    let _ = self.alo_acts_in(&surface);
                     let came = self.the_person_goes_to_this_window(&surface);
                     eprintln!(
                         "alo-shell: the window alo opened a file in, of {}, {}",

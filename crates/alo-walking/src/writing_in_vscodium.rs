@@ -31,6 +31,13 @@
 //!    the only one that is not the machine's own account of itself: the person
 //!    hands the file to the journal from the terminal (`systemd-cat`), and the
 //!    walk reads the text in the serial log.
+//! 6. **VSCodium wears alo's teal edge while alo works in it, and not after**
+//!    — the shell's own sentences say when the window starts to wear alo and
+//!    when that is over (`alo_acting::said_on_the_log::alo_wears_a_window_of`),
+//!    and between them the edge is found in the screen's own pixels
+//!    (`crate::the_edge_seen`); after the second it is gone with VSCodium still
+//!    there. The owner's ruling of 2026-11-15: *if the window is being operated
+//!    by alo it should just have a border with one of our brand colors.*
 //!
 //! # What is not walked yet
 //!
@@ -49,7 +56,9 @@
 
 use std::time::Duration;
 
-use alo_acting::said_on_the_log::{A_FILE_WAS_OPENED, ALO_TYPED};
+use alo_acting::said_on_the_log::{
+    A_FILE_WAS_OPENED, ALO_TYPED, alo_wears_a_window_of, alos_work_is_over_in_a_window_of,
+};
 use alo_acting::{Opened, Typed};
 
 use crate::keys::Chord;
@@ -114,6 +123,18 @@ pub fn saved_in_vscodium() -> String {
     format!("{ALO_TYPED} {VSCODIUM}: save,")
 }
 
+/// The phrase the shell says when VSCodium's window starts to wear alo.
+#[must_use]
+pub fn alo_wears_vscodium() -> String {
+    alo_wears_a_window_of(VSCODIUM)
+}
+
+/// The phrase the shell says when alo's work in VSCodium's window is over.
+#[must_use]
+pub fn alos_work_in_vscodium_is_over() -> String {
+    alos_work_is_over_in_a_window_of(VSCODIUM)
+}
+
 /// Then write in VSCodium at full access.
 #[must_use]
 pub fn at_full_access(walk: Walk) -> Walk {
@@ -152,6 +173,23 @@ pub fn at_full_access(walk: Walk) -> Walk {
             Since::Mark,
             minutes(5),
         )
+        // **alo's teal edge round VSCodium while alo works in it** (ADR 0143;
+        // the owner, 2026-11-15: *if the window is being operated by alo it
+        // should just have a border with one of our brand colors*). The shell
+        // says when the window starts to wear alo, and the edge is then
+        // looked for in the screen's own pixels.
+        .expect_line(
+            "VSCodium's window wears alo while alo works in it",
+            &alo_wears_vscodium(),
+            Since::Mark,
+            minutes(2),
+        )
+        .the_edge(
+            "alo's teal edge is drawn round the window it works in",
+            "vscodium-wearing-alo",
+            true,
+            Duration::from_secs(30),
+        )
         .look("vscodium-with-the-file", look.at_most(minutes(2)))
         .expect_line_saying(
             "alo types the text into its copy of VSCodium",
@@ -166,6 +204,21 @@ pub fn at_full_access(walk: Walk) -> Walk {
             &Typed::AskedToSave.written(),
             Since::Mark,
             minutes(2),
+        )
+        // **And gone once the turn has ended**: the shell says alo's work in
+        // the window is over when the task stops being worked on, and the
+        // edge must then be off the screen with VSCodium still there.
+        .expect_line(
+            "alo's work in VSCodium's window is over when the turn ends",
+            &alos_work_in_vscodium_is_over(),
+            Since::Mark,
+            minutes(5),
+        )
+        .the_edge(
+            "alo's teal edge is gone once the turn has ended",
+            "vscodium-after-alo",
+            false,
+            Duration::from_secs(30),
         )
         .look("vscodium-after-saving", look.at_most(minutes(1)))
         .press(terminal)

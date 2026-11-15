@@ -47,6 +47,7 @@ pub fn walk(
         mark: 0,
         stopped: None,
         pointer: the_pointer::ThePointer::default(),
+        edge: the_edge::TheEdge::default(),
     };
     for step in walk.steps() {
         if let Some((verdict, why)) = walking.stopped.clone() {
@@ -79,6 +80,8 @@ struct Walking {
     stopped: Option<(Verdict, String)>,
     /// What the walk knows about the pointer.
     pointer: the_pointer::ThePointer,
+    /// What the walk knows about alo's edge round a window.
+    edge: the_edge::TheEdge,
 }
 
 impl Walking {
@@ -145,6 +148,12 @@ impl Walking {
                 during,
             } => self.expect_no_line(machine, check, phrases, *since, *during)?,
             Step::Pointer(pointing) => self.pointing(machine, pointing)?,
+            Step::TheEdge {
+                check,
+                picture,
+                drawn,
+                within,
+            } => self.the_edge(machine, check, picture, *drawn, *within)?,
             Step::OnlyWith(variable) => {
                 if secret(variable).is_none_or(|it| it.is_empty()) {
                     self.stopped = Some((
@@ -365,7 +374,9 @@ fn press(machine: &mut impl Machine, chord: &Chord, pace: Pace) -> Result<(), Ma
 fn check_name(step: &Step) -> Option<String> {
     match step {
         Step::Look { name, .. } => Some(format!("the screen {name}")),
-        Step::ExpectLine { check, .. } | Step::ExpectNoLine { check, .. } => Some(check.clone()),
+        Step::ExpectLine { check, .. }
+        | Step::ExpectNoLine { check, .. }
+        | Step::TheEdge { check, .. } => Some(check.clone()),
         Step::Pointer(pointing) => pointing.check().map(str::to_owned),
         _ => None,
     }
@@ -379,6 +390,9 @@ fn at(elapsed: Duration) -> String {
 
 #[path = "walking_the_pointer.rs"]
 mod the_pointer;
+
+#[path = "walking_the_edge.rs"]
+mod the_edge;
 
 #[cfg(test)]
 #[path = "walking_tests.rs"]

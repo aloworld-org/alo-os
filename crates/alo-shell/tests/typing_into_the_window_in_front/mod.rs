@@ -241,3 +241,144 @@ fn asking_whether_it_may_makes_every_check_and_sends_nothing() {
     assert_eq!(app.events.keyboard.keys.len(), keys);
     assert_eq!(app.events.keyboard.keymaps.len(), layouts);
 }
+
+/// A task the person asked for in the Bar, at work: the request alo acts for.
+fn a_task_at_work(f: &Fixture) {
+    f.backend(|s| {
+        let _ = s.tasks_mut().and_now_this_one(alo_tasks::ATask::asked_for(
+            "Open hello.txt in the editor and type a line",
+            alo_models::InferenceSource::ThisMachine,
+        ));
+    });
+}
+
+/// How each window on the screen wears alo, in the order they were mapped.
+fn how_each_wears_alo(f: &Fixture) -> Vec<Option<alo_shell::alo_in_a_window::HowAloIsHere>> {
+    f.backend(|s| {
+        let windows: Vec<_> = s.mapped_surfaces().cloned().collect();
+        windows
+            .iter()
+            .map(|window| s.alo_in_this_window(window).map(|here| here.how))
+            .collect()
+    })
+}
+
+/// **The window alo types into wears alo's presence while the task works, and
+/// the other window on the screen does not** — on real clients' windows,
+/// through the road the door takes — whether alo types a text, saves, or only
+/// asks whether it may (the road typing through the accessibility tree takes).
+///
+/// What would have to be true for this to pass while broken: the frame never
+/// drawing what `alo_in_this_window` answers — which the walk checks, by the
+/// teal edge's pixels on a real VSCodium.
+#[test]
+fn the_window_alo_types_into_wears_alo_while_the_task_works() {
+    use alo_shell::alo_in_a_window::HowAloIsHere::Working;
+    let check = || ToType::Check {
+        application: Named::identified(EDITOR).expect("an identifier"),
+    };
+    let save = || ToType::Save {
+        application: Named::identified(EDITOR).expect("an identifier"),
+    };
+    for (asked, what, answered) in [
+        (text(EDITOR, 2), "hi", Typed::Typed),
+        (save(), "", Typed::AskedToSave),
+        (check(), "", Typed::MayType),
+    ] {
+        let f = Fixture::keyboard();
+        let mut other = mapped(&f, "org.example.Payroll");
+        let mut app = mapped(&f, EDITOR);
+        f.focus(Some(1)).expect("the editor takes the keyboard");
+        app.sync();
+        other.sync();
+        a_task_at_work(&f);
+        assert_eq!(
+            how_each_wears_alo(&f),
+            vec![None, None],
+            "a window wore alo before alo acted"
+        );
+        assert_eq!(typed(&f, asked, what, true), answered);
+        assert_eq!(
+            how_each_wears_alo(&f),
+            vec![None, Some(Working)],
+            "after {answered:?}, the editor does not wear alo, or the other window does"
+        );
+    }
+}
+
+/// **A typing that was refused puts alo on no window**: not alo's copy, not
+/// the application in front, a character with no key, no keyboard — alo's
+/// hands never reached it, for a text, a save or a check alike.
+#[test]
+fn a_refused_typing_marks_no_window() {
+    let f = Fixture::keyboard();
+    let mut app = mapped(&f, EDITOR);
+    f.focus(Some(0)).expect("the window takes the keyboard");
+    app.sync();
+    a_task_at_work(&f);
+    let to = |application: &str| Named::identified(application).expect("an identifier");
+    for (asked, what, may, answered) in [
+        (text(EDITOR, 3), "abc", false, Typed::NotAlosCopy),
+        (
+            ToType::Save {
+                application: to(EDITOR),
+            },
+            "",
+            false,
+            Typed::NotAlosCopy,
+        ),
+        (
+            ToType::Check {
+                application: to(EDITOR),
+            },
+            "",
+            false,
+            Typed::NotAlosCopy,
+        ),
+        (
+            text("org.example.Payroll", 3),
+            "abc",
+            true,
+            Typed::NotInFront,
+        ),
+        (
+            ToType::Save {
+                application: to("org.example.Payroll"),
+            },
+            "",
+            true,
+            Typed::NotInFront,
+        ),
+        (
+            ToType::Check {
+                application: to("org.example.Payroll"),
+            },
+            "",
+            true,
+            Typed::NotInFront,
+        ),
+        (
+            text(EDITOR, 4),
+            "ab\u{7}c",
+            true,
+            Typed::CannotType('\u{7}'),
+        ),
+    ] {
+        assert_eq!(typed(&f, asked, what, may), answered);
+        assert_eq!(
+            how_each_wears_alo(&f),
+            vec![None],
+            "a refusal ({answered:?}) put alo on the window"
+        );
+    }
+}
+
+/// **With no keyboard, nothing is typed and no window wears alo.**
+#[test]
+fn with_no_keyboard_no_window_wears_alo() {
+    let f = Fixture::new();
+    let _app = mapped(&f, EDITOR);
+    a_task_at_work(&f);
+    assert_eq!(typed(&f, text(EDITOR, 3), "abc", true), Typed::NoKeyboard);
+    assert_eq!(how_each_wears_alo(&f), vec![None]);
+}
