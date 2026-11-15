@@ -28,6 +28,9 @@
 //! - **The terminal at rest**: Escape closes Settings; Ctrl+Alt+T opens the
 //!   terminal (`alo_shortcuts`' defaults), and its band must draw no controls
 //!   while the pointer is elsewhere.
+//! - **The terminal maximised**: Alt+F3 opens its Window actions panel on
+//!   Left (`alo_shell`'s `a_chord_places_alos_own_window`), Right moves to
+//!   Maximise, Enter carries it out, and the shell says it fills the work area.
 //!
 //! **The provider section** types an AI provider's key from
 //! [`THE_PROVIDER_KEY`], and runs only when that is set: on every walk after
@@ -172,10 +175,28 @@ fn then_the_terminal_at_rest(walk: Walk) -> Walk {
             Duration::from_secs(60),
         )
         .look("the-terminal-at-rest", look)
+        .mark()
+        .press(Chord::with("alt", "f3"))
+        .look("the-terminals-panel", look)
+        .press(Chord::key("right"))
+        .press(Chord::key("ret"))
+        .expect_line(
+            "Window actions maximises the terminal to fill the work area",
+            THE_TERMINAL_MAXIMISED,
+            Since::Mark,
+            Duration::from_secs(60),
+        )
+        .look("the-terminal-maximised", look)
 }
 
 /// What the shell says when the terminal's band draws no controls.
 pub const THE_TERMINAL_AT_REST: &str = "window band over the terminal: 0 controls drawn";
+
+/// What the shell says when the window panel has maximised the terminal and
+/// it fills the work area of its display — the start of the line, which goes
+/// on to say the size.
+pub const THE_TERMINAL_MAXIMISED: &str =
+    "window panel: the terminal maximised, filling the work area";
 
 /// Then add a provider, typing its key from [`THE_PROVIDER_KEY`] — and
 /// nothing at all without it.

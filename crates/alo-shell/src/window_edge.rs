@@ -105,20 +105,31 @@ pub enum Decorations {
     /// The application leaves it to the shell: the band carries the title, the
     /// application's name and all three controls.
     TheShellDraws,
-    /// A task window, which is alo's own and carries its title inside it.
+    /// A task window — the alo chat window — which is alo's own and carries
+    /// its title inside it.
     ///
-    /// **Minimise and Close**: a task window does not move (the owner, 2026-10-28),
-    /// and minimising puts the task in the right-hand panel, still running, now
-    /// that the panel holds tasks (design `23:2`, approved 2026-11-11).
+    /// **Window actions, Minimise and Close**, since the owner's *"Yes, it
+    /// too"* of 2026-11-14, which overruled *a task window does not move* of
+    /// 2026-10-28: its panel places it as any window's does
+    /// (`crate::alos_window_placed`). Minimising puts the task in the
+    /// right-hand panel, still running (design `23:2`).
     /// `crate::a_task_windows_edge` draws and presses it.
     ATaskWindow,
-    /// One of alo's own windows that is an application in its own right — the
-    /// terminal first (ADR 0145): **its title, Minimise and Close**. Minimise
-    /// puts it in the right-hand panel (`crate::alos_own_window_goes_aside`);
-    /// nothing can maximise one yet, and a control that reaches nothing looks
-    /// live and is not. `crate::the_terminals_edge` and
-    /// `crate::an_alo_windows_edge` draw and press it.
+    /// One of alo's own windows that is an application in its own right and
+    /// cannot yet take any size — Settings and the record (ADR 0145): **its
+    /// title, Minimise and Close**. Minimise puts it in the right-hand panel
+    /// (`crate::alos_own_window_goes_aside`); their pages are laid out at one
+    /// size, so nothing can place them yet, and a control that reaches nothing
+    /// looks live and is not. `crate::an_alo_windows_edge` draws and presses
+    /// it.
     AlosOwnWindow,
+    /// **alo's terminal**: its title, **Window actions, Minimise and Close**,
+    /// since the owner's *"Yes add that"* and *"Terminal first"* of
+    /// 2026-11-14. It lays its grid out at whatever size its window is, so
+    /// the panel's Left, Maximise and Right reach it
+    /// (`crate::alos_window_placed`). `crate::the_terminals_edge` draws and
+    /// presses it.
+    AlosOwnWindowThatIsPlaced,
 }
 
 /// Which of the band's controls an application that draws its own header
@@ -335,7 +346,9 @@ pub fn edge_of(
     // own header has its own, and a task window carries its title inside it.
     let carries_a_title = matches!(
         decorations,
-        Decorations::TheShellDraws | Decorations::AlosOwnWindow
+        Decorations::TheShellDraws
+            | Decorations::AlosOwnWindow
+            | Decorations::AlosOwnWindowThatIsPlaced
     );
     let title = carries_a_title.then(|| Point::from((title_at, region.loc.y + THE_TITLE_SITS_AT)));
 

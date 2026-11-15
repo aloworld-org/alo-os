@@ -1287,7 +1287,19 @@ impl LoopInput for TheDesktopLane<'_> {
                 // Super+A in a task window is typing into the Bar, and when the
                 // Bar lets go the keys come back here. Until 2026-10-26 nothing
                 // routed a key to a task window at all.
-                else if server.a_task_is_taking_the_keys() {
+                //
+                // **Except while a task window's own band or panel has the
+                // keyboard**: Alt+F3 in a task window opens its panel, and the
+                // arrows then walk the panel rather than the conversation
+                // (`crate::alos_windows_panel`).
+                else if server.an_alo_windows_band_is_taking_the_keys()
+                    && (!server.a_task_is_taking_the_keys()
+                        || crate::a_key_reaches_a_windows_band::a_key_a_band_takes(&update))
+                {
+                    crate::a_key_reaches_a_windows_band::a_key_reaches_a_windows_band(
+                        server, update, extent,
+                    )
+                } else if server.a_task_is_taking_the_keys() {
                     crate::a_key_reaches_the_task_in_front::a_key_reaches_the_task(
                         server, update, extent, strings,
                     )

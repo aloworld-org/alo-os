@@ -102,15 +102,21 @@ pub fn the_controls_of(decorations: Decorations) -> Vec<OnTheEdge> {
         .into_iter()
         .flatten()
         .collect(),
-        // **Minimise and Close** on a task window: minimising puts the task in
-        // the right-hand panel, still running (`crate::a_task_goes_aside`), the
-        // owner's *minimise later with the right-hand panel* of 2026-10-28.
-        // It does not move, so there are no window actions.
-        Decorations::ATaskWindow => vec![OnTheEdge::Minimise, OnTheEdge::Close],
-        // **Minimise and Close** on alo's own windows: minimising puts one in
-        // the right-hand panel like any window (design `27:2`,
-        // `crate::alos_own_window_goes_aside`). They do not maximise yet, and a
-        // control that reaches nothing would look live.
+        // **All three on the terminal and on a task window** — the owner's
+        // *"Yes add that"* and *"Yes, it too"* of 2026-11-14: each lays itself
+        // out at whatever size its window is, so the panel's placements reach
+        // it (`crate::alos_window_placed`). Minimising puts either in the
+        // right-hand panel, still running.
+        Decorations::ATaskWindow | Decorations::AlosOwnWindowThatIsPlaced => vec![
+            OnTheEdge::WindowActions,
+            OnTheEdge::Minimise,
+            OnTheEdge::Close,
+        ],
+        // **Minimise and Close** on Settings and the record: minimising puts
+        // one in the right-hand panel like any window (design `27:2`,
+        // `crate::alos_own_window_goes_aside`). Their pages are laid out at one
+        // size, so nothing can place them yet, and a control that reaches
+        // nothing would look live.
         Decorations::AlosOwnWindow => vec![OnTheEdge::Minimise, OnTheEdge::Close],
     }
 }
