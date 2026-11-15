@@ -234,7 +234,7 @@ pub struct Server {
     /// their window may still come, with what was last said about why it has
     /// not: when a window alo may type into comes, it is brought in front with
     /// the keyboard — `crate::a_file_alo_opened_comes_in_front`.
-    pub(crate) alo_opened_a_file_in: Vec<(alo_dock::AppId, std::time::Instant, String)>,
+    pub(crate) alo_opened_a_file_in: Vec<crate::a_file_alo_opened_comes_in_front::Awaited>,
     /// Which application this machine's terminal is, when something has told
     /// it.
     ///
