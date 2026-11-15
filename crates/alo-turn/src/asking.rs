@@ -254,15 +254,11 @@ impl Turning<'_, '_> {
                 // the one argument whose right values only the machine knows.
                 let schema = match held {
                     Held::InWords => None,
-                    Held::ToTheEnvelope => {
-                        let places = self.machine().the_places_a_model_may_name();
-                        Some(
-                            crate::the_shape_a_provider_is_held_to::the_envelope_naming_the_verbs_and_places(
-                                self.machine().verbs(),
-                                &places,
-                            ),
-                        )
-                    }
+                    Held::ToTheEnvelope => Some(
+                        crate::the_shape_a_provider_is_held_to::the_envelope_a_turn_on(
+                            self.machine(),
+                        ),
+                    ),
                 };
                 self.put_off_this_machine(&to, None, &agent, now, |indicator| match schema {
                     None => asking.to_a_provider(&question, hosted, indicator, now, &to),

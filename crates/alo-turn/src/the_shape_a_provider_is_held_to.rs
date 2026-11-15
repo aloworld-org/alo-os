@@ -166,8 +166,14 @@ fn a_value_of(takes: &Takes) -> Value {
 
 /// **The places a model may name as an installation's source**: every place
 /// this machine is set up with that `alo_software::Enabled::usable` would let
-/// an installation use — the list Settings → Software reads, under the rule an
-/// organisation set — by name, in its order.
+/// an installation use — the rented tool's own list, under the rule an
+/// organisation set, the same `Enabled::read` the person's own installs go
+/// through (`alo-shell`'s `what_a_person_installs`) — by name, in its order.
+///
+/// **Only usable places, on purpose**: offering one the machine would refuse
+/// invites a proposal certain to be refused. What that costs: a person who
+/// names a place outside the rule is answered with a place inside it, and the
+/// sentence they approve names it, so nothing is changed silently.
 ///
 /// A place switched off, outside the rule, unsigned or with nowhere to reach is
 /// left out, because the machine would refuse an installation from it.
@@ -215,7 +221,9 @@ pub fn the_envelope_naming_the_verbs_and_places(verbs: &Verbs, places: &[String]
         .filter_map(Value::as_array_mut)
         .flatten()
     {
-        let names_it = call.pointer("/properties/verb/enum/0").and_then(Value::as_str)
+        let names_it = call
+            .pointer("/properties/verb/enum/0")
+            .and_then(Value::as_str)
             == Some(alo_software::INSTALL_APPLICATION);
         if !names_it {
             continue;
@@ -241,4 +249,15 @@ pub fn the_envelope_naming_the_verbs_and_places(verbs: &Verbs, places: &[String]
         });
     }
     envelope
+}
+
+/// **The envelope a turn's question on `machine` is held to**: its verbs,
+/// with an installation's source held to the places it may install from now.
+/// The one place `asking.rs` takes the schema from, so the test that holds
+/// this holds what a provider is sent.
+pub(crate) fn the_envelope_a_turn_on(machine: &crate::machine::Machine<'_>) -> Value {
+    the_envelope_naming_the_verbs_and_places(
+        machine.verbs(),
+        &machine.the_places_a_model_may_name(),
+    )
 }

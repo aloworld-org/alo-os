@@ -1074,6 +1074,13 @@ nothing on the machine for a grant to be over, the application arrives granted
 nothing, and the approval of the sentence naming the application and the place
 installs once.
 
+**Where a hosted model's answer is held to the protocol's shape, `source` is
+held to the places this machine may install from**, read from the rented
+tool's own configuration under the organisation's bound when the question is
+put, and named in the argument's description (since 2026-11-15). That narrows
+it to what was already accepted; nothing that worked before is refused. A local
+model's answer is not held to the whole call (ADR 0032), so on that road:
+
 **The place is checked when it runs, not when it is proposed.** A `source` not
 set up on the machine, outside the organisation's bound, or set up without
 signature checking is refused at the moment of installation, in words, whatever

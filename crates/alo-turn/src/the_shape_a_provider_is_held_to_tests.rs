@@ -329,14 +329,13 @@ fn the_source_held_to(schema: &Value) -> &Value {
 /// rented tool's own configuration: one usable, one switched off, and one
 /// that checks no signatures and so may not be installed from.
 fn three_places_set_up() -> alo_software::Enabled {
-    let set_up = |name: &str, checks_signatures: bool, switched_off: bool| {
-        alo_software::Configured {
+    let set_up =
+        |name: &str, checks_signatures: bool, switched_off: bool| alo_software::Configured {
             name: name.to_owned(),
             address: format!("https://{name}.example/repo/"),
             checks_signatures,
             switched_off,
-        }
-    };
+        };
     alo_software::Enabled::of(
         &[
             set_up("flathub", true, false),
@@ -373,7 +372,10 @@ fn the_source_of_an_installation_is_one_of_this_machines_places() {
         Some(&serde_json::json!(["flathub"])),
         "{source}"
     );
-    let told = source.pointer("/description").and_then(Value::as_str).unwrap();
+    let told = source
+        .pointer("/description")
+        .and_then(Value::as_str)
+        .unwrap();
     assert!(told.contains("flathub"), "the places are named: {told}");
 }
 
@@ -419,10 +421,11 @@ fn only_the_source_of_an_installation_is_narrowed() {
     for door in ["read", "propose"] {
         for verb in verbs.all() {
             let named = verb.name();
-            let Some(was) = the_calls_through(&before, door)
-                .into_iter()
-                .find(|call| call.pointer("/properties/verb/enum/0").and_then(Value::as_str) == Some(named))
-            else {
+            let Some(was) = the_calls_through(&before, door).into_iter().find(|call| {
+                call.pointer("/properties/verb/enum/0")
+                    .and_then(Value::as_str)
+                    == Some(named)
+            }) else {
                 continue;
             };
             let is = the_call_of(&after, door, named);

@@ -588,10 +588,39 @@ mod tests {
         };
         assert_eq!(named(Bound::Nobodys), ["acme-apps", "flathub"]);
         let only_flathub = Bound::Only {
-            permitted: [SourceName::checked("flathub").unwrap()].into_iter().collect(),
+            permitted: [SourceName::checked("flathub").unwrap()]
+                .into_iter()
+                .collect(),
             set_by: alo_software::SetBy::AnAdministrator,
         };
         assert_eq!(named(only_flathub), ["flathub"]);
+    }
+
+    /// **And the envelope a turn's question is sent with holds them**: the one
+    /// `asking.rs` takes, built from this machine.
+    #[test]
+    fn the_envelope_a_turns_question_is_sent_with_holds_the_places() {
+        let strings = in_english();
+        let tool = TwoPlaces::default();
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+        let mut bounding = crate::testing::NothingIsBounded;
+        let machine = Machine::carrying_out_file_and_software_verbs(
+            &strings,
+            &OnThisMachine,
+            &tool,
+            Bound::Nobodys,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
+        let envelope = crate::the_shape_a_provider_is_held_to::the_envelope_a_turn_on(&machine);
+        let written = envelope.to_string();
+        assert!(
+            written.contains(r#""enum":["acme-apps","flathub"]"#),
+            "the places are held to: {written}"
+        );
     }
 
     /// **The refusal case**: a machine with nothing to install with names no

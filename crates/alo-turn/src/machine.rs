@@ -436,13 +436,19 @@ impl<'a> Machine<'a> {
 
     /// **The places a model may name as an installation's source, now**:
     /// read from the rented tool's own configuration under the machine's
-    /// rule, at the moment a turn's question is put — the list Settings →
-    /// Software reads (`alo_shell::what_a_person_installs`), never one written
-    /// down. Nothing where this machine offers no installation, or where the
-    /// tool did not answer: the question is then held as it was, and an
-    /// installation is refused by the machine as it always was.
+    /// rule, at the moment a turn's question is put — the `Enabled::read` a
+    /// person's own installs go through, never a list written down. Nothing
+    /// where this machine offers no installation, or where the tool did not
+    /// answer: the question is then held as it was, and an installation is
+    /// refused by the machine as it always was. A tool that did not answer is
+    /// not reported here; the installation that follows asks it again and says
+    /// so in the person's words (`NotDone::DidNotAnswer`).
     ///
-    /// `pub(crate)`, and the only caller is `asking.rs`.
+    /// Read on every question held to the shape, one local `flatpak remotes`
+    /// each: nothing leaves the machine, and a list cached across steps could be
+    /// the one a person changed in between.
+    ///
+    /// `pub(crate)`; the caller is `the_shape_a_provider_is_held_to`.
     pub(crate) fn the_places_a_model_may_name(&self) -> Vec<String> {
         self.installing_with
             .and_then(|tool| alo_software::Enabled::read(tool, self.bound.clone()).ok())
