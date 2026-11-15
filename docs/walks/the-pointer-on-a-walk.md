@@ -144,3 +144,24 @@ Escape, Enter and the whole typed address — **nothing typed reached Firefox**,
 which fits Firefox not having the keyboard after opening from the Bar; that is
 not confirmed, and it is not a pointer fault. The walk now clicks *Continue*
 with the pointer, as a person would, and types the address after that.
+
+**Run 43667201920, 2026-11-15, image from main, harness at `ba840a78`, once —
+the whole walk passed: 57 checks, 0 failed, 5 skipped (the provider section,
+which needs a secret).** Every pointer check passed:
+
+| Check | What was found |
+|---|---|
+| the capture shows the pointer | 500 pixels changed for a move of 24 by 16 |
+| on the desktop | the navy kite, 24 pixels |
+| over Text Editor | the navy text cursor, 24 pixels |
+| over VSCodium | the navy text cursor, 24 pixels |
+| over Settings, after *Large* and *White* | the white kite, 36 pixels |
+| after *Classic* | the white familiar arrow, 36 pixels |
+| after *Kite* again | the white kite, 36 pixels |
+| over Firefox's page, Firefox opened after the change | the white kite, 36 pixels |
+| over a text field in Firefox | the white text cursor, 36 pixels |
+| over a link in Firefox | the white hand, 36 pixels |
+
+Each was found again a few pixels on after the pointer was nudged. The walk
+runs after every merge to main (`walk.yml`), so these run again there; this
+table is one run's result, not a standing property.
