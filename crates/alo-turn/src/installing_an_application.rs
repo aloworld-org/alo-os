@@ -367,42 +367,110 @@ mod tests {
     }
 
     /// **The refusal case**: a name the catalogue does not answer to is not
-    /// guessed, and nothing is proposed for the person to approve.
+    /// guessed, nothing is proposed for the person to approve, and the refusal
+    /// is written down, as every refusal is.
     #[test]
-    fn a_name_the_catalogue_does_not_answer_to_is_refused() {
-        on_a_machine_that_can_install(Bound::Nobodys, |turning, grants, tool| {
+    fn a_name_the_catalogue_does_not_answer_to_is_refused_and_recorded() {
+        let strings = in_english();
+        let tool = TwoPlaces::default();
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+        let mut bounding = crate::testing::NothingIsBounded;
+        let folder = crate::testing::a_folder_of_our_own("installing-a-name");
+        let there = folder.join("a-note.txt");
+        std::fs::write(&there, "anything").unwrap();
+        {
+            let mut machine = Machine::carrying_out_file_and_software_verbs(
+                &strings,
+                &OnThisMachine,
+                &tool,
+                Bound::Nobodys,
+                &mut bounding,
+                &mut indicator,
+                &mut record,
+            )
+            .unwrap();
+            let mut grants = Grants::default();
+            let mut turning = Turning::beginning(
+                offering(&there),
+                "@software",
+                hour(),
+                &mut grants,
+                &mut machine,
+            )
+            .unwrap();
             let refused = turning.proposing(
                 INSTALL_APPLICATION,
                 &[
                     ("application", Given::text("Paintbox")),
                     ("source", Given::text("flathub")),
                 ],
-                grants,
+                &grants,
                 hour(),
                 noon(),
             );
-            assert!(refused.is_err(), "a name nothing answers to was proposed");
-            assert!(tool.installed.borrow().is_empty());
-        });
+            assert!(
+                matches!(
+                    refused,
+                    Err(NotDone::CouldNotInstall(
+                        alo_software::NotDone::NotOffered { .. }
+                    ))
+                ),
+                "a name nothing answers to was proposed: {refused:?}"
+            );
+        }
+        assert!(tool.installed.borrow().is_empty());
+        assert_eq!(
+            record.answering(&alo_record::Asking::anything()).count(),
+            1,
+            "the refusal was not written down"
+        );
     }
 
-    /// **And a name two applications answer to is refused, not guessed.**
+    /// **And a name two applications answer to is refused in its own words,
+    /// not guessed**; a dotted identifier one holds is that one, and one it
+    /// does not hold is left as it was given.
     #[test]
-    fn a_name_several_applications_answer_to_is_not_resolved() {
+    fn a_name_several_applications_answer_to_is_refused_as_meaning_more_than_one() {
+        use crate::naming_an_application::as_these_name_it;
         let installable = alo_applications::Installed::holding([
             Application::identified("org.example.Paint").unwrap(),
             Application::identified("com.other.Paint").unwrap(),
         ]);
+        let naming = |said: &str| {
+            as_these_name_it(
+                Some(&installable),
+                INSTALL_APPLICATION,
+                vec![
+                    ("application", Given::text(said)),
+                    ("source", Given::text("flathub")),
+                ],
+            )
+        };
+        assert!(
+            matches!(
+                naming("paint"),
+                Err(NotDone::CouldNotInstall(
+                    alo_software::NotDone::NamesMoreThanOne { .. }
+                ))
+            ),
+            "{:?}",
+            naming("paint")
+        );
+        let first = |said: &str| {
+            naming(said)
+                .unwrap()
+                .first()
+                .map(|(_, value)| value.clone())
+        };
         assert_eq!(
-            crate::naming_an_application::installable_answering_to(&installable, "paint"),
-            None
+            first("org.example.paint"),
+            Some(Given::text("org.example.Paint"))
         );
         assert_eq!(
-            crate::naming_an_application::installable_answering_to(
-                &installable,
-                "org.example.Paint"
-            ),
-            Some("org.example.Paint".to_owned())
+            first("org.gnome.Paint"),
+            Some(Given::text("org.gnome.Paint")),
+            "an identifier was rewritten"
         );
     }
 

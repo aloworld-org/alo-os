@@ -57,7 +57,17 @@ impl Turning<'_, '_> {
             .iter()
             .map(|(argument, value)| (*argument, value.clone()))
             .collect();
-        let named = as_the_catalogue_names_it(verb, named)?;
+        // **A refusal here is written down**, as `Turning::calling` writes the
+        // ones it makes: every refusal leaves a record.
+        let named = match as_the_catalogue_names_it(verb, named) {
+            Ok(named) => named,
+            Err(refused) => {
+                let said = refused.said(self.machine().strings()).into_text();
+                let entry = alo_record::Entry::turned_away(verb, &said, self.grantee(), now);
+                self.writing_down(entry)?;
+                return Err(refused);
+            }
+        };
         self.calling(verb, &named, now)
     }
 
@@ -111,18 +121,6 @@ impl Turning<'_, '_> {
     }
 }
 
-/// **The identifier of the one application in `installable` that `said`
-/// names**, matched as a name of an installed application is
-/// (`Installed::answering_to`): an identifier exactly, or a short name or a
-/// name with no dots that only one answers to. Several, or none, is [`None`]:
-/// nothing is guessed.
-pub(crate) fn installable_answering_to(installable: &Installed, said: &str) -> Option<String> {
-    match installable.answering_to(said) {
-        AnsweringTo::One(application) => Some(application.identifier().to_owned()),
-        AnsweringTo::Several(_) | AnsweringTo::Nothing => None,
-    }
-}
-
 /// What the decided catalogue offers, as applications a name can be matched
 /// against — or nothing, where the catalogue would not read, which a test of
 /// `alo-software` makes impossible on a machine that shipped.
@@ -140,17 +138,32 @@ fn the_catalogue_as_installable() -> Option<Installed> {
 /// **An application to install, named by its name, is the one the catalogue
 /// gives that name** (the owner, 2026-11-15, relayed): `given` with
 /// `install_application`'s application put as the catalogue's identifier
-/// where it was a name the catalogue answers to.
+/// where it was a name the catalogue answers to, matched as a name of an
+/// installed application is (`Installed::answering_to`).
 ///
 /// A dotted identifier the catalogue does not hold is left as it was — a
 /// person may install any application by its identifier, and the place says
-/// whether it offers it. A name with no dots that no one application answers
-/// to is refused here, before anything is proposed: there is no identifier to
-/// put in the sentence the person would approve.
+/// whether it offers it. **That matching is case-insensitive on an
+/// identifier**, so `org.gimp.gimp` is the catalogue's `org.gimp.GIMP`; a
+/// different identifier, such as `org.gnome.GIMP`, is never rewritten. A name
+/// with no dots that several answer to, or none, is refused here, before
+/// anything is proposed: there is no one identifier to put in the sentence the
+/// person would approve.
 ///
 /// # Errors
-/// [`NotDone::CouldNotInstall`], as the place not offering what was named.
+/// [`NotDone::CouldNotInstall`]: the place not offering what was named, or the
+/// name meaning more than one application.
 pub fn as_the_catalogue_names_it<'g>(
+    verb: &str,
+    given: Vec<(&'g str, Given)>,
+) -> Result<Vec<(&'g str, Given)>, NotDone> {
+    as_these_name_it(the_catalogue_as_installable().as_ref(), verb, given)
+}
+
+/// [`as_the_catalogue_names_it`], against `installable` rather than the
+/// decided catalogue — so a test can hold the rule to a list it wrote.
+pub(crate) fn as_these_name_it<'g>(
+    installable: Option<&Installed>,
     verb: &str,
     given: Vec<(&'g str, Given)>,
 ) -> Result<Vec<(&'g str, Given)>, NotDone> {
@@ -165,7 +178,6 @@ pub fn as_the_catalogue_names_it<'g>(
             Given::Number(_) => None,
         })
         .unwrap_or_default();
-    let installable = the_catalogue_as_installable();
     given
         .into_iter()
         .map(|(argument, value)| {
@@ -175,11 +187,19 @@ pub fn as_the_catalogue_names_it<'g>(
             if argument.trim() != alo_software::words::APPLICATION {
                 return Ok((argument, value));
             }
-            if let Some(identifier) = installable
-                .as_ref()
-                .and_then(|installable| installable_answering_to(installable, said))
-            {
-                return Ok((argument, Given::text(identifier)));
+            let answered = installable.map(|installable| installable.answering_to(said));
+            match answered {
+                Some(AnsweringTo::One(application)) => {
+                    return Ok((argument, Given::text(application.identifier())));
+                }
+                Some(AnsweringTo::Several(_)) if !said.contains('.') => {
+                    return Err(NotDone::CouldNotInstall(
+                        alo_software::NotDone::NamesMoreThanOne {
+                            application: said.trim().to_owned(),
+                        },
+                    ));
+                }
+                Some(AnsweringTo::Several(_) | AnsweringTo::Nothing) | None => {}
             }
             if said.contains('.') {
                 return Ok((argument, value));

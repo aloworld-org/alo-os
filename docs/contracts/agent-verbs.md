@@ -1081,6 +1081,14 @@ put, and named in the argument's description (since 2026-11-15). That narrows
 it to what was already accepted; nothing that worked before is refused. A local
 model's answer is not held to the whole call (ADR 0032), so on that road:
 
+**`application` may be the application's name** (since 2026-11-15): a name
+with no dots is the application the catalogue gives that name, matched as a
+name of an installed application is, and the person approves its exact
+identifier. A name several answer to, or none, is refused before anything is
+proposed, and written down. An identifier is matched without regard to case;
+one the catalogue does not hold is left as given, and the place says whether it
+offers it.
+
 **The place is checked when it runs, not when it is proposed.** A `source` not
 set up on the machine, outside the organisation's bound, or set up without
 signature checking is refused at the moment of installation, in words, whatever

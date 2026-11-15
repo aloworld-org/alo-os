@@ -218,6 +218,17 @@ pub const NOT_INSTALLED: Word = Word::saying(
      identifier exactly as it was given.",
 );
 
+/// A name more than one application in what can be installed answers to.
+pub const NAMES_MORE_THAN_ONE: Word = Word::saying(
+    "software.refused.names-more-than-one",
+    "“{application}” could be more than one application that can be installed, so alo did not \
+     guess which and nothing was proposed. Name the one you mean by its identifier",
+)
+.noting(
+    "Said when a model named an application to install by a name several in the catalogue \
+     answer to. {application} is the name as it was given, and is not translated.",
+);
+
 /// The application is open, so its update waits.
 pub const STILL_OPEN: Word = Word::saying(
     "software.refused.still-open",
@@ -350,7 +361,7 @@ pub const THE_NAMES: [Word; 5] = [
 ];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 34] = [
+pub const THE_SENTENCES: [Word; 35] = [
     READ_SENTENCE,
     INSTALLED,
     INSTALLED_UNSANDBOXED,
@@ -363,6 +374,7 @@ pub const THE_SENTENCES: [Word; 34] = [
     NOT_VERIFIED,
     SIGNATURE_NOT_SHOWN,
     NOT_OFFERED,
+    NAMES_MORE_THAN_ONE,
     ALREADY_INSTALLED,
     NOT_INSTALLED,
     STILL_OPEN,
@@ -389,13 +401,14 @@ pub const THE_SENTENCES: [Word; 34] = [
 
 /// Every refusal, so that a test can hold each of them to saying what did not
 /// happen **and** what a person does about it.
-pub const THE_REFUSALS: [Word; 11] = [
+pub const THE_REFUSALS: [Word; 12] = [
     NOT_ENABLED,
     OUTSIDE_THE_BOUND_BY_AN_ADMINISTRATOR,
     OUTSIDE_THE_BOUND_BY_THIS_PERSON,
     NOT_VERIFIED,
     SIGNATURE_NOT_SHOWN,
     NOT_OFFERED,
+    NAMES_MORE_THAN_ONE,
     ALREADY_INSTALLED,
     NOT_INSTALLED,
     STILL_OPEN,
@@ -541,7 +554,7 @@ pub const VERB_LEAVES: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 39] = [
+pub const EVERY_WORD: [Word; 40] = [
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
@@ -559,6 +572,7 @@ pub const EVERY_WORD: [Word; 39] = [
     NOT_VERIFIED,
     SIGNATURE_NOT_SHOWN,
     NOT_OFFERED,
+    NAMES_MORE_THAN_ONE,
     ALREADY_INSTALLED,
     NOT_INSTALLED,
     STILL_OPEN,
