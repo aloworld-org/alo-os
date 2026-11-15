@@ -62,6 +62,17 @@ pub const TYPED_AS_IT_IS: [(&str, &str); 20] = [
     ("editor.accessibilitySupport", r#""on""#),
 ];
 
+/// **Every setting alo puts in its copy's settings file**: these, so that what
+/// alo types is what lands, and [`crate::ASKS_FOR_NOTHING_IT_NEED_NOT`], so that
+/// the copy does not look for updates or send telemetry. The one list a writer
+/// reads, so a list added here cannot be left out of the file.
+pub fn every_setting_in_alos_copy() -> impl Iterator<Item = (&'static str, &'static str)> {
+    TYPED_AS_IT_IS
+        .iter()
+        .chain(crate::ASKS_FOR_NOTHING_IT_NEED_NOT.iter())
+        .copied()
+}
+
 /// The settings file of alo's copy of this application, when it is one whose
 /// editor rewrites what is typed — or [`None`].
 ///

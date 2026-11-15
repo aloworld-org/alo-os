@@ -85,3 +85,16 @@ fn alos_copy_shows_its_editor_to_the_accessibility_tree() {
         "alo's copy is not told to show its editor's text"
     );
 }
+
+/// **No setting is given two values**: each list alo writes into its copy
+/// names its own settings, and none names one another list does.
+#[test]
+fn every_setting_in_alos_copy_is_named_once() {
+    let mut names: Vec<&str> = super::every_setting_in_alos_copy()
+        .map(|(name, _)| name)
+        .collect();
+    let all = names.len();
+    names.sort_unstable();
+    names.dedup();
+    assert_eq!(names.len(), all);
+}

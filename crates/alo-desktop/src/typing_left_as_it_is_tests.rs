@@ -18,7 +18,7 @@ fn read(text: &str) -> serde_json::Map<String, Value> {
 
 #[test]
 fn every_value_alo_sets_reads_as_json() {
-    for (name, value) in alo_launching::TYPED_AS_IT_IS {
+    for (name, value) in alo_launching::every_setting_in_alos_copy() {
         assert!(
             serde_json::from_str::<Value>(value).is_ok(),
             "{name}: {value}"
@@ -29,7 +29,10 @@ fn every_value_alo_sets_reads_as_json() {
 #[test]
 fn a_copy_with_no_settings_is_given_every_one() {
     let written = read(&with_typing_left_alone(None).unwrap());
-    assert_eq!(written.len(), alo_launching::TYPED_AS_IT_IS.len());
+    assert_eq!(
+        written.len(),
+        alo_launching::every_setting_in_alos_copy().count()
+    );
     assert_eq!(
         written.get("editor.autoIndent").cloned(),
         Some(Value::from("none"))
@@ -76,7 +79,10 @@ fn the_file_is_written_whole_and_private_and_a_file_left_alone_is_unchanged() {
     let file = home.path().join("alos-copy/data/User/settings.json");
     leave_typing_alone_in(&file).unwrap();
     let written = read(&std::fs::read_to_string(&file).unwrap());
-    assert_eq!(written.len(), alo_launching::TYPED_AS_IT_IS.len());
+    assert_eq!(
+        written.len(),
+        alo_launching::every_setting_in_alos_copy().count()
+    );
     let mode = std::fs::metadata(&file).unwrap().permissions().mode() & 0o777;
     assert_eq!(mode, 0o600);
     assert!(!file.with_file_name(".settings.json.alo").exists());
@@ -85,4 +91,22 @@ fn the_file_is_written_whole_and_private_and_a_file_left_alone_is_unchanged() {
     std::fs::write(&file, commented).unwrap();
     assert!(leave_typing_alone_in(&file).is_err());
     assert_eq!(std::fs::read_to_string(&file).unwrap(), commented);
+}
+
+/// **alo's copy of VSCodium is told not to look for updates and not to send
+/// telemetry** — the owner's of 2026-11-15, after a walk where the copy was
+/// seen sending. Flatpak updates the application, so its own check costs the
+/// person nothing; neither was measured sending in VSCodium 1.143.17232, and
+/// these keep it that way if a later build adds an address for either.
+#[test]
+fn alos_copy_is_told_not_to_check_for_updates_or_send_telemetry() {
+    let written = read(&with_typing_left_alone(None).unwrap());
+    assert_eq!(
+        written.get("update.mode").cloned(),
+        Some(Value::from("none"))
+    );
+    assert_eq!(
+        written.get("telemetry.telemetryLevel").cloned(),
+        Some(Value::from("off"))
+    );
 }

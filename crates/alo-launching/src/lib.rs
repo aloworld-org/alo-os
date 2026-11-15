@@ -46,6 +46,7 @@
 //! manager could not do on a gate machine.
 
 pub mod alos_copy;
+pub mod asks_for_nothing_it_need_not;
 pub mod describing_themselves;
 pub mod how_it_starts;
 pub mod how_it_starts_with_a_file;
@@ -57,6 +58,7 @@ pub mod typed_as_it_is;
 pub mod where_it_is;
 
 pub use alos_copy::{AlosCopy, WITH_A_COPY_OF_THEIR_OWN, alos_copy, the_unit_for_alos_copy};
+pub use asks_for_nothing_it_need_not::ASKS_FOR_NOTHING_IT_NEED_NOT;
 pub use describing_themselves::{
     DRAWN_BY_CHROMIUM, THE_PAGE_FULLY, THE_PAGE_TOO, Told, is_drawn_by_chromium,
     what_a_start_is_handed, what_its_command_gains,
@@ -71,5 +73,7 @@ pub use the_environment::{
     alos_copy_starts_with, what_an_application_is_handed, what_the_session_is_told,
 };
 pub use the_unit::{is_a_unit_of, the_unit_for};
-pub use typed_as_it_is::{TYPED_AS_IT_IS, WITH_AN_EDITOR_THAT_REWRITES, its_settings_file};
+pub use typed_as_it_is::{
+    TYPED_AS_IT_IS, WITH_AN_EDITOR_THAT_REWRITES, every_setting_in_alos_copy, its_settings_file,
+};
 pub use where_it_is::{the_program, where_the_entry_is};
