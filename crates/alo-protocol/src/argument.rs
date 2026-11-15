@@ -16,7 +16,8 @@
 //! place a person's approval sentence is built from.
 //!
 //! So arguments arrive as a list of these, duplicates and all, and the closed
-//! list of verbs is what refuses them.
+//! list of verbs is what refuses two different values for one argument. The
+//! same value twice is one value (since 2026-11-14): there is no *which*.
 //!
 //! [`SameArgumentTwice`]: alo_capability::CallError::SameArgumentTwice
 

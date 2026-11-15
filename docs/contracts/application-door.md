@@ -337,7 +337,7 @@ Like a count, it holds its connection for as long as alo works:
 
 - `work-in-alos-copy` starts **alo's own copy** of the application, with a
   profile of its own (`alo_launching::alos_copy`), or finds the one already
-  running, and counts **only that copy** — its scope, `app-alocopy-<id>@<n>.scope`,
+  running, and counts **only that copy** — its scope, `app-alocopy-<id>-<n>.scope`,
   and the scope Flatpak moved its process into. **The person's own windows of
   the same application are never counted**, and a person's own `count` no longer
   counts alo's copy either.

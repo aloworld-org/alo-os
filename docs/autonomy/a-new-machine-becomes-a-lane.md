@@ -840,10 +840,13 @@ above the tasks, which says what your plan may not do; `docs/autonomy/LOOP.md`;
 and the ADRs your plan cites. `docs/features.md` is the only list of what gets
 built and `ROADMAP.md` the only order.
 
-**The five laws you are held to.** Nothing leaves the machine silently. No code
+**The laws you are held to.** Nothing leaves the machine silently. No code
 runs unless the person chose it. Done means the machine still works — on real
 hardware, not in a test. One file, one responsibility. The person chooses, and
-alo never takes the choice away. A change that breaks one
+alo never takes the choice away. Tests are written first, and seen to fail.
+The author of the code is not the only author of its tests. A test must be
+able to fail. What the model chooses is tested many times, not once. A change
+that breaks one
 of these is wrong however well it is written.
 
 **Git, and the others.**

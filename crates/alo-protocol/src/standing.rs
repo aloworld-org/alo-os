@@ -75,6 +75,13 @@ pub struct Standing {
     /// What the change leaves alone, likewise.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     leaves: Option<Wording>,
+    /// **Every text the change would put somewhere, whole** — the text
+    /// `accessible.type_text` types, beneath *type the text below …*. Added
+    /// 2026-11-14, additively: absent, not empty, for a change that carries
+    /// none, and a message written before it reads back exactly as it was
+    /// written (`crate::a_text_to_approve`).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    texts: Vec<crate::ATextToApprove>,
 }
 
 impl Standing {
@@ -110,6 +117,12 @@ impl Standing {
                 .call()
                 .what_it_leaves(strings)
                 .map(|said| Wording::of(&said)),
+            texts: waiting
+                .proposal
+                .texts()
+                .into_iter()
+                .map(|(argument, text)| crate::ATextToApprove::of(argument, text.as_given()))
+                .collect(),
         }
     }
 
@@ -131,6 +144,7 @@ impl Standing {
             touches: Vec::new(),
             changes: None,
             leaves: None,
+            texts: Vec::new(),
         }
     }
 
@@ -144,6 +158,14 @@ impl Standing {
     #[must_use]
     pub const fn leaves(&self) -> Option<&Wording> {
         self.leaves.as_ref()
+    }
+
+    /// Every text the change would put somewhere, whole, in the order its
+    /// call names them — empty for one that carries none, and for a message
+    /// written before 2026-11-14.
+    #[must_use]
+    pub fn texts(&self) -> &[crate::ATextToApprove] {
+        &self.texts
     }
 
     /// Every file, folder and application this change touches — empty for one
@@ -341,5 +363,69 @@ mod tests {
         let (approvals, strings) = a_change_waiting();
         let standing = Standing::of(the_change(&approvals), &strings, the_moment());
         assert!(!standing.sentence().is_a_bug(), "{standing:?}");
+    }
+
+    /// **A waiting typing carries its whole text, exactly, to whoever draws
+    /// the card** — newline, tab, an accented letter, an emoji and a character
+    /// nobody can see among it — and an older message reads as carrying none.
+    ///
+    /// What would have to be true for this to pass while broken: the card not
+    /// drawing `Standing::texts`. It does not yet: the block's look is the
+    /// owner's or the design file's to settle
+    /// (`docs/design/the-ask-alo-task-window.md`, *A change that carries text*).
+    #[test]
+    fn a_waiting_typing_carries_its_whole_text_on_the_wire() {
+        use alo_capability::{Approvals, Given, Grant, Grantee, Grants, Proposal, Reach};
+        let text = "Hello\n\tcaf\u{e9} \u{1f30d} \u{200b}end";
+        let mut grants = Grants::default();
+        grants.grant(
+            Grant::checked(
+                "@typing",
+                Reach::Application("com.vscodium.codium".to_owned()),
+                the_moment(),
+                std::time::Duration::from_secs(3600),
+            )
+            .unwrap(),
+        );
+        let verbs = alo_adapters::fallback_verbs::fallback_verbs().unwrap();
+        let call = verbs
+            .call(
+                alo_adapters::fallback_verbs::TYPE_TEXT,
+                &[
+                    ("application", Given::text("com.vscodium.codium")),
+                    ("name", Given::text("hello.txt")),
+                    ("text", Given::text(text)),
+                ],
+            )
+            .unwrap();
+        let proposal = Proposal::checked(
+            &call,
+            &Grantee::named("@typing"),
+            &grants,
+            the_moment(),
+            std::time::Duration::from_secs(300),
+        )
+        .unwrap();
+        let mut approvals = Approvals::default();
+        approvals.propose(proposal);
+        let waiting = approvals.waiting_at(the_moment()).next().unwrap();
+        let (_, strings) = a_change_waiting();
+        let standing = Standing::of(waiting, &strings, the_moment());
+        assert_eq!(standing.texts(), [crate::ATextToApprove::of("text", text)]);
+
+        let back: Standing =
+            serde_json::from_str(&serde_json::to_string(&standing).unwrap()).unwrap();
+        let carried = back.texts().first().unwrap();
+        assert_eq!(carried.text(), text, "the text changed on the wire");
+        let shown = carried.shown();
+        assert_eq!(shown.as_given(), text);
+        assert_eq!(shown.unseen(), 1, "the invisible character is not marked");
+
+        let older =
+            r#"{"number":7,"sentence":{"text":"…","came_from":"the-source"},"lapses_in":300}"#;
+        let older: Standing = serde_json::from_str(older).unwrap();
+        assert!(older.texts().is_empty());
+        let rename = Standing::of(the_change(&a_change_waiting().0), &strings, the_moment());
+        assert!(!serde_json::to_string(&rename).unwrap().contains("texts"));
     }
 }
