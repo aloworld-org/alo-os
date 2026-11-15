@@ -110,3 +110,24 @@ fn alos_copy_is_told_not_to_check_for_updates_or_send_telemetry() {
         Some(Value::from("off"))
     );
 }
+
+/// **alo's copy shows no Restricted Mode banner, and its protection stays** —
+/// the owner's of 2026-11-15. The banner covered the top of the editor alo
+/// works in; *Restricted Mode* stays in the status bar, and a folder nobody
+/// trusted still runs none of its code, because trust itself is not touched.
+#[test]
+fn alos_copy_hides_the_restricted_mode_banner_and_keeps_workspace_trust() {
+    let written = read(&with_typing_left_alone(None).unwrap());
+    assert_eq!(
+        written.get("security.workspace.trust.banner").cloned(),
+        Some(Value::from("never"))
+    );
+    for kept in [
+        "security.workspace.trust.enabled",
+        "security.workspace.trust.startupPrompt",
+        "security.workspace.trust.untrustedFiles",
+        "security.workspace.trust.emptyWindow",
+    ] {
+        assert!(written.get(kept).is_none(), "{kept} is left as VSCodium has it");
+    }
+}

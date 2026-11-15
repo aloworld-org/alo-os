@@ -50,6 +50,7 @@ pub mod asks_for_nothing_it_need_not;
 pub mod describing_themselves;
 pub mod how_it_starts;
 pub mod how_it_starts_with_a_file;
+pub mod no_trust_banner;
 pub mod the_command;
 pub mod the_entry;
 pub mod the_environment;
@@ -67,6 +68,7 @@ pub use how_it_starts::{
     HowItStarts, WhyItCannotStart, WhyNotWithALink, how_it_starts, how_it_starts_with_a_link,
 };
 pub use how_it_starts_with_a_file::{WhyNotWithAFile, how_it_starts_with_a_file};
+pub use no_trust_banner::NO_TRUST_BANNER;
 pub use the_command::{Filling, WhyNotACommand, the_command_in};
 pub use the_entry::TheEntry;
 pub use the_environment::{
