@@ -58,6 +58,36 @@ pub fn what_the_session_is_told(wayland: &Path) -> Option<Vec<String>> {
     ])
 }
 
+/// **What alo's own copy of an application starts with**: the person's
+/// session as their systemd manager holds it (`session`, `NAME=value` each),
+/// with what the desktop hands every start it makes (`handed`) laid over it.
+///
+/// The session first, because an application started by a press is started by
+/// that manager with exactly that environment: `HOME`, `PATH`,
+/// `XDG_RUNTIME_DIR` and the session bus among it. A Flatpak application
+/// started without them has no runtime folder and no bus to start in, and
+/// alo's copy is then a copy nobody can see (the trace of 2026-11-14 found it
+/// started with almost nothing). **What is handed is laid over it and wins**,
+/// because where alo draws, and whether applications describe themselves, are
+/// this desktop's to say for the copy it starts, not an older value the
+/// manager may hold.
+///
+/// An entry with no `=` is not a variable and is left out; a name given twice
+/// takes its last value. An empty `session` — the manager could not be asked —
+/// is what the copy was started with before, and the caller says so on its log.
+#[must_use]
+pub fn alos_copy_starts_with(session: &[String], handed: &[String]) -> Vec<(String, String)> {
+    let mut by_name = std::collections::BTreeMap::new();
+    for pair in session.iter().chain(handed) {
+        if let Some((name, value)) = pair.split_once('=')
+            && !name.is_empty()
+        {
+            by_name.insert(name.to_owned(), value.to_owned());
+        }
+    }
+    by_name.into_iter().collect()
+}
+
 #[cfg(test)]
 #[path = "the_environment_tests.rs"]
 mod tests;

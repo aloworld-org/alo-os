@@ -128,6 +128,7 @@ what it would otherwise do to typed text:
 | `editor.linkedEditing` | `false` | edits a matching tag as well |
 | `html.autoClosingTags` | `false` | after `<div>`, adds `</div>` |
 | `files.autoSave` | `off` | saves before alo has read the text back |
+| `editor.accessibilitySupport` | `on` | *(not a typed key: the read-back)* keeps the editor's text out of the accessibility tree, so alo cannot read back what it typed and never saves. **Added 2026-11-14**, the owner's *"Yes, in alo's copy only"* |
 
 Which of these were needed was not separated in the measurement.
 `autoClosingDelete`, `acceptSuggestionOnCommitCharacter` and

@@ -68,3 +68,20 @@ fn the_three_that_changed_the_measured_file_are_on_the_list() {
         );
     }
 }
+
+/// **alo's copy shows its editor's text to the accessibility tree**, so the
+/// read-back before saving can see what was typed — the owner's *"Yes, in
+/// alo's copy only"* of 2026-11-14.
+///
+/// What would have to be true for this to pass while broken: the desktop not
+/// writing this list into alo's copy, which `alo-desktop`'s
+/// `typing_left_as_it_is_tests` checks key by key.
+#[test]
+fn alos_copy_shows_its_editor_to_the_accessibility_tree() {
+    assert!(
+        TYPED_AS_IT_IS
+            .iter()
+            .any(|(name, value)| *name == "editor.accessibilitySupport" && *value == r#""on""#),
+        "alo's copy is not told to show its editor's text"
+    );
+}

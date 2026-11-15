@@ -162,13 +162,14 @@ impl AlosCopies {
         let Some(mut handed) = self.handed.clone() else {
             return Err(said(application, "there is no display to hand it"));
         };
-        // **alo's copy is started with nothing else in its environment**, so
-        // whether it describes itself is handed whether or not the person
-        // answered: the image's default never reaches a process started here.
-        // Off, it does not describe itself, and alo cannot work inside it —
-        // which is what the switch says it costs.
+        // **alo's copy starts with the person's session, and whether it
+        // describes itself is handed on top**, so the person's answer is what
+        // it gets whatever the session last held. Off, it does not describe
+        // itself, and alo cannot work inside it — which is what the switch
+        // says it costs.
         let answer = crate::telling_applications_to_describe_themselves::the_persons_answer();
         handed.extend(alo_launching::what_a_start_is_handed(answer.describe));
+        let environment = in_the_persons_session(application, &handed);
         let gains = alo_launching::what_its_command_gains(
             application,
             answer.describe,
@@ -204,7 +205,7 @@ impl AlosCopies {
             .args(copy.arguments())
             .args(gains)
             .env_clear()
-            .envs(handed.iter().filter_map(|pair| pair.split_once('=')))
+            .envs(environment)
             .current_dir(&home)
             .stdin(Stdio::null())
             .spawn();
@@ -328,7 +329,7 @@ impl AlosCopies {
             .args(rest)
             .args(copy.handing_over())
             .env_clear()
-            .envs(handed.iter().filter_map(|pair| pair.split_once('=')))
+            .envs(in_the_persons_session(application, &handed))
             .current_dir(&home)
             .stdin(Stdio::null())
             .spawn();
@@ -532,6 +533,23 @@ fn began_in(stat: &str) -> Option<u64> {
         return None;
     }
     fields.nth(18)?.parse().ok()
+}
+
+/// **What a process of alo's copy of `application` starts with**: the
+/// person's session, as their systemd manager holds it, with `handed` laid
+/// over it (`alo_launching::alos_copy_starts_with`) — or, where the manager
+/// cannot be asked, `handed` alone, which is said on the log because a copy
+/// with no session bus or runtime folder may start and show nothing.
+fn in_the_persons_session(application: &str, handed: &[String]) -> Vec<(String, String)> {
+    let read = alo_shell::the_persons_session::what_their_manager_holds();
+    let session = read.unwrap_or_else(|why| {
+        eprintln!(
+            "alo-desktop: the person's session could not be read from their systemd manager \
+             ({why}), so alo's own copy of {application} starts with only where alo draws"
+        );
+        Vec::new()
+    });
+    alo_launching::alos_copy_starts_with(&session, handed)
 }
 
 /// Say why alo's copy of `application` did not start, and answer so.
