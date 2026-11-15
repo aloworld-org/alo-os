@@ -38,13 +38,14 @@ pub fn installing_an_application(verbs: &Verbs) -> String {
         return String::new();
     }
     format!(
-        "\n\nTo install an application, send {WHAT_CAN_BE_INSTALLED} first unless the person \
-         gave you its identifier: an identifier is never guessed, and the example in a verb's \
-         description is an example, not an answer. Never look for it with a run line either: \
-         {WHAT_CAN_BE_INSTALLED} is what this machine installs from. Then send \
-         {INSTALL_APPLICATION} with the identifier and the source exactly as that answer showed \
-         them. When the answer does not list the application, look under {EVERYTHING} before \
-         you install anything."
+        "\n\nWhen the person asks you to install an application, send {WHAT_CAN_BE_INSTALLED} \
+         first unless they gave you its identifier: an identifier is never guessed, and the \
+         example in a verb's description is an example, not an answer. Never look for it with \
+         a run line either: {WHAT_CAN_BE_INSTALLED} is what this machine installs from. Then \
+         send {INSTALL_APPLICATION} with the identifier and the source exactly as that answer \
+         showed them. When the answer does not list the application, look under {EVERYTHING} \
+         before you install anything. When the person only asks what could be installed, \
+         answer from {WHAT_CAN_BE_INSTALLED}'s answer and install nothing."
     )
 }
 
