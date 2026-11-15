@@ -290,16 +290,18 @@ fn a_verb_nobody_declared_comes_off_the_wire_and_is_turned_away_by_the_list() {
     );
 }
 
-/// **An argument named twice survives the wire and is refused by the registry.**
-/// This is what a JSON object would have thrown away before anybody could
-/// refuse it, in the one place a person's approval sentence is built from.
+/// **An argument named twice with two values survives the wire and is refused
+/// by the registry.** This is what a JSON object would have thrown away before
+/// anybody could refuse it, in the one place a person's approval sentence is
+/// built from. (The same value twice is one value since 2026-11-14 —
+/// `alo_capability::Call::of` — because there is no *which* to choose.)
 #[test]
 fn an_argument_named_twice_reaches_the_registry_and_is_refused_there() {
     let mut record = Record::default();
     on_a_machine("twice", &mut record, |turning, grants, _, invoice| {
         let path = invoice.display().to_string().replace('\\', "\\\\");
         let line = a_message(&format!(
-            r#"{{"read":{{"verb":"read_file","given":[{{"named":"file","is":"{path}"}},{{"named":"file","is":"{path}"}}]}}}}"#
+            r#"{{"read":{{"verb":"read_file","given":[{{"named":"file","is":"{path}"}},{{"named":"file","is":"{path}.other"}}]}}}}"#
         ));
         let asked = FromAnAgent::read(&line).unwrap();
         assert_eq!(asked.given().len(), 2);

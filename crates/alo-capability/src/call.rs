@@ -88,7 +88,7 @@ pub enum CallError {
         /// carrying the key rather than the words is for.
         purpose: Key,
     },
-    /// The same argument given twice.
+    /// The same argument given twice, with two different values.
     SameArgumentTwice {
         /// The argument that was given twice.
         argument: String,
@@ -218,12 +218,22 @@ impl Call {
                     .map(|arg| arg.name().to_owned())
                     .collect(),
             })?;
-            if values.contains_key(name) {
-                return Err(CallError::SameArgumentTwice {
-                    argument: name.to_owned(),
-                });
+            let validated = arg.validate(value)?;
+            // **The same value twice is one value**: a model held to a list of
+            // arguments repeated `application` in every call of eight on the
+            // walk of 2026-11-14, and was refused eight times. Two **different**
+            // values are still refused, because which was meant is not this
+            // machine's to choose.
+            match values.get(name) {
+                Some(earlier) if *earlier == validated => continue,
+                Some(_) => {
+                    return Err(CallError::SameArgumentTwice {
+                        argument: name.to_owned(),
+                    });
+                }
+                None => {}
             }
-            values.insert(name.to_owned(), arg.validate(value)?);
+            values.insert(name.to_owned(), validated);
         }
         for arg in verb.args() {
             if !values.contains_key(arg.name()) {
@@ -828,6 +838,19 @@ mod tests {
             CallError::SameArgumentTwice {
                 argument: "file".to_owned(),
             }
+        );
+        // The same value twice is one value, and the call is whole.
+        assert!(
+            Call::of(
+                &verb,
+                &[
+                    ("file", Given::text("/home/anna/x.pdf")),
+                    ("file", Given::text("/home/anna/x.pdf")),
+                    ("into", Given::text("/home/anna/Archive")),
+                ],
+            )
+            .is_ok(),
+            "an argument repeated with the same value was refused"
         );
         assert!(matches!(
             Call::of(

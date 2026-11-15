@@ -1161,7 +1161,10 @@ refused.
 duplicates, so a message naming `file` twice would arrive as one `file` with the
 JSON reader having silently chosen which — in the one place a person's approval
 sentence is built from. As a list, both arrive, and
-`alo_capability::CallError::SameArgumentTwice` refuses them.
+`alo_capability::CallError::SameArgumentTwice` refuses them when their values
+differ. **The same value twice is one value** (since 2026-11-14): there is no
+*which* for a reader to choose, and a model held to a list repeated an
+argument in every call of a walk.
 
 A name is carried exactly as it was written. Trimming or matching it loosely is
 the verb registry's decision to make or refuse (ADR 0001: identities are matched
