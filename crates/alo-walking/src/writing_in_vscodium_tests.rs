@@ -137,3 +137,49 @@ fn the_ask_names_the_file_the_application_and_the_text() {
         assert!(ask.contains(needed), "{ask:?} does not say {needed}");
     }
 }
+
+/// **The command that makes the file is pinned, and makes the file the walk
+/// later reads**: exactly this line, typed in the walk before the first check
+/// that reads its tag, creating `~/hello.txt` — the path the last check hands
+/// to the journal.
+///
+/// What would have to be true for this to pass while broken: the terminal's
+/// shell reading `~` as something other than the person's home, which is the
+/// same for both lines, so the two still name one file.
+#[test]
+fn the_command_that_makes_the_file_is_pinned_and_makes_the_file_checked_later() {
+    assert_eq!(
+        making_the_file(),
+        " touch ~/hello.txt && systemd-cat -t alo-walk-the-file-is-made ls ~/hello.txt"
+    );
+    let typed: Vec<String> = at_full_access(Walk::named("vscodium"))
+        .steps()
+        .iter()
+        .filter_map(|step| match step {
+            Step::Type(text) => Some(text.clone()),
+            _ => None,
+        })
+        .collect();
+    let Some(made) = typed.iter().position(|text| *text == making_the_file()) else {
+        panic!("the walk never types the command that makes the file: {typed:?}");
+    };
+    let Some(read) = typed
+        .iter()
+        .position(|text| text.contains(&format!("cat ~/{THE_FILE}")))
+    else {
+        panic!("the walk never reads the file back: {typed:?}");
+    };
+    assert!(made < read, "the file is read before it is made: {typed:?}");
+    // The file made is the file read, and the one the ask names.
+    assert!(making_the_file().contains(&format!("touch ~/{THE_FILE}")));
+    assert!(the_ask().contains(THE_FILE));
+    // The check that follows reads the tag this line writes, and the file's name.
+    let checks_the_tag = at_full_access(Walk::named("vscodium"))
+        .steps()
+        .iter()
+        .any(|step| {
+            matches!(step, Step::ExpectLine { phrase, and_says: Some(also), .. }
+                if phrase == THE_FILE_IS_MADE && also == THE_FILE)
+        });
+    assert!(checks_the_tag, "nothing checks the line the command writes");
+}
