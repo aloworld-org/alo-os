@@ -15,6 +15,8 @@ use alo_models::{Provider, Secret, SourcePolicy};
 use alo_protocol::ToAnAgent;
 use alo_strings::Strings;
 use serde_json::Value;
+use std::io::Write as _;
+use std::path::PathBuf;
 
 use crate::a_try::TheModel;
 
@@ -36,6 +38,9 @@ pub struct AtAProvider {
     indicator: Indicator,
     /// How many times the provider was asked.
     calls: usize,
+    /// Where every question's whole text is written as it is put, when a run
+    /// asked for that ([`AtAProvider::writing_what_it_is_shown_to`]).
+    shown_to: Option<PathBuf>,
 }
 
 impl AtAProvider {
@@ -52,7 +57,42 @@ impl AtAProvider {
             ),
             indicator: Indicator::default(),
             calls: 0,
+            shown_to: None,
         }
+    }
+
+    /// The same, appending the whole text of every question it puts to the
+    /// file at `to`, each headed by its number: **what the model was told**,
+    /// the evidence a wrong choice is read against (rule 6 of ADR 0156). The
+    /// text holds no key, which travels in a header and never in a question.
+    #[must_use]
+    pub fn writing_what_it_is_shown_to(mut self, to: PathBuf) -> Self {
+        self.shown_to = Some(to);
+        self
+    }
+
+    /// Write `shown`, the question about to be put, where the run asked.
+    ///
+    /// # Errors
+    /// Why it could not be written: a run that asked for the text and cannot
+    /// have it stops, rather than measuring without its evidence.
+    fn writing_down(&self, shown: &str) -> Result<(), String> {
+        let Some(to) = &self.shown_to else {
+            return Ok(());
+        };
+        let failed =
+            |why: std::io::Error| format!("what the model is shown was not written: {why}");
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(to)
+            .map_err(failed)?;
+        writeln!(
+            file,
+            "=== question {} ===\n{shown}",
+            self.calls.saturating_add(1)
+        )
+        .map_err(failed)
     }
 
     /// Whether every question this run put has come back: the indicator is
@@ -135,6 +175,7 @@ impl TheModel for AtAProvider {
     fn answering(&mut self, shown: &str, strings: &Strings) -> Result<ToAnAgent, String> {
         let question =
             Question::asked(shown, &self.model).map_err(|_| "nothing could be asked".to_owned())?;
+        self.writing_down(shown)?;
         let mut last = String::new();
         for _ in 0..ATTEMPTS {
             match self.once(&question, strings) {

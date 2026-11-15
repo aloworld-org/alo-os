@@ -139,3 +139,81 @@ fn an_application_opened_is_done_without_asking() {
     assert!(!said.is_a_bug(), "{}", said.text());
     assert!(written(&answer).contains("org.mozilla.firefox"));
 }
+
+/// **What a read did is its answer**, carried as it came, and never said to
+/// have been done without asking: a read asks nobody.
+#[test]
+fn what_a_read_did_is_told_as_the_answer_to_it() {
+    let read = Done::Read {
+        text: "Buy bread.".to_owned(),
+    };
+    let answer = answering(
+        &Answered::With(read.clone()),
+        &call(
+            alo_files::verbs::READ_FILE,
+            &[(alo_files::verbs::FILE, "/var/home/alo/Documents/notes.txt")],
+        ),
+        &the_words(),
+    );
+    assert_eq!(answer, ToAnAgent::did(read));
+}
+
+/// **What a change did is told as done without asking**, in the call's own
+/// sentence, as a machine at full access tells it.
+#[test]
+fn what_a_change_did_is_told_as_done_without_asking() {
+    let renamed = Done::Renamed {
+        now_at: Some("/var/home/alo/Documents/old-notes.txt".to_owned()),
+    };
+    let answer = answering(
+        &Answered::With(renamed.clone()),
+        &call(
+            alo_files::verbs::RENAME_FILE,
+            &[
+                (alo_files::verbs::FILE, "/var/home/alo/Documents/notes.txt"),
+                (alo_files::verbs::NAME, "old-notes.txt"),
+            ],
+        ),
+        &the_words(),
+    );
+    let ToAnAgent::DoneWithoutAsking { did, said } = &answer else {
+        panic!("{answer:?}");
+    };
+    assert_eq!(did, &renamed);
+    assert!(!said.is_a_bug(), "{}", said.text());
+    assert!(said.text().contains("old-notes.txt"), "{}", said.text());
+}
+
+/// **The catalogue is shown under the kind of work the call chose**, as the
+/// machine shows it: one kind holds only its own, and `everything` holds all.
+#[test]
+fn the_catalogue_is_shown_under_the_kind_chosen() {
+    let catalogue = alo_software::Catalogue::decided().expect("the catalogue reads");
+    let under = |chosen: &str| {
+        let answer = answering(
+            &Answered::TheCatalogue(catalogue.clone()),
+            &call(
+                alo_software::WHAT_CAN_BE_INSTALLED,
+                &[(alo_software::words::KIND_OF_WORK, chosen)],
+            ),
+            &the_words(),
+        );
+        let ToAnAgent::Did(Done::CanBeInstalled { applications, .. }) = answer else {
+            panic!("{answer:?}");
+        };
+        applications
+    };
+    let photographs = alo_software::Category::Photographs;
+    let shown = under(&photographs.as_an_option());
+    assert_eq!(shown.len(), catalogue.under(photographs).count());
+    assert!(!shown.is_empty());
+    assert!(
+        shown
+            .iter()
+            .all(|one| one.kind_of_work == photographs.as_an_option())
+    );
+    assert_eq!(
+        under(alo_software::verbs::EVERYTHING).len(),
+        catalogue.how_many()
+    );
+}
