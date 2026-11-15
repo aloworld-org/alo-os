@@ -235,6 +235,7 @@ pub use machine::{
     Machine, WhatASoftwareVerbNeeds, WhatAnApplicationVerbNeeds, WhatPublishingNeeds,
     the_verbs_a_whole_machine_offers,
 };
+pub use naming_an_application::as_the_catalogue_names_it;
 pub use opening_a_file_in_an_application::AFileOpened;
 pub use places::Places;
 pub use pressing_a_control::AControlPressed;

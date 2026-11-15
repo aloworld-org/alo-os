@@ -47,8 +47,18 @@ pub fn taking(
             asked: named.to_owned(),
         });
     }
+    // **As the machine reads it**: an application to install named by its
+    // name is the catalogue's identifier, by the turn's own function, so the
+    // check holds the model to what the machine accepts and no more.
+    let given = alo_turn::as_the_catalogue_names_it(named, asked.given()).map_err(|why| {
+        WentWrong::ArgumentsRefused {
+            step: at,
+            verb: named.to_owned(),
+            why: why.said(strings).into_text(),
+        }
+    })?;
     let call = verbs
-        .call(named, &asked.given())
+        .call(named, &given)
         .map_err(|why| WentWrong::ArgumentsRefused {
             step: at,
             verb: named.to_owned(),

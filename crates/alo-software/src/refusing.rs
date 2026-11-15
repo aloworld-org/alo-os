@@ -52,6 +52,12 @@ pub enum NotDone {
         /// The application asked for.
         application: String,
     },
+    /// The name given answers to more than one application that can be
+    /// installed, so none was chosen.
+    NamesMoreThanOne {
+        /// The name, as it was given.
+        application: String,
+    },
     /// The application is already here.
     AlreadyInstalled {
         /// The application.
@@ -115,6 +121,7 @@ impl NotDone {
             Self::NowhereToReach { .. } => words::NOWHERE_TO_REACH,
             Self::SignatureNotShown { .. } => words::SIGNATURE_NOT_SHOWN,
             Self::NotOffered { .. } => words::NOT_OFFERED,
+            Self::NamesMoreThanOne { .. } => words::NAMES_MORE_THAN_ONE,
             Self::AlreadyInstalled { .. } => words::ALREADY_INSTALLED,
             Self::NotInstalled { .. } => words::NOT_INSTALLED,
             Self::StillOpen { .. } => words::STILL_OPEN,
@@ -140,6 +147,7 @@ impl NotDone {
             } => Filling::of(words::SOURCE, source.clone())
                 .and(words::APPLICATION, application.clone()),
             Self::AlreadyInstalled { application }
+            | Self::NamesMoreThanOne { application }
             | Self::NotInstalled { application }
             | Self::StillOpen { application } => {
                 Filling::of(words::APPLICATION, application.clone())
@@ -189,6 +197,9 @@ mod tests {
             NotDone::NotOffered {
                 source: source(),
                 application: application(),
+            },
+            NotDone::NamesMoreThanOne {
+                application: "Paint".to_owned(),
             },
             NotDone::AlreadyInstalled {
                 application: application(),

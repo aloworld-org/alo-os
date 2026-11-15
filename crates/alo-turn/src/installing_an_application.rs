@@ -338,6 +338,142 @@ mod tests {
         doing(&mut turning, &mut grants, &tool)
     }
 
+    /// **An application asked for by its name is installed by the identifier
+    /// the catalogue gives it**, matched the way a name of an installed
+    /// application is (`alo_applications::Installed::answering_to`), and the
+    /// person approves the identifier. Every-try, set 5, 2026-11-15: asked to
+    /// *install GIMP*, the model named `gimp` or a wrong identifier in 9 of
+    /// 10 tries, with the source right in all ten.
+    #[test]
+    fn an_application_named_by_its_name_is_installed_by_the_catalogues_identifier() {
+        for said in ["GIMP", "gimp"] {
+            on_a_machine_that_can_install(Bound::Nobodys, |turning, grants, tool| {
+                let id = turning
+                    .proposing(
+                        INSTALL_APPLICATION,
+                        &[
+                            ("application", Given::text(said)),
+                            ("source", Given::text("flathub")),
+                        ],
+                        grants,
+                        hour(),
+                        noon(),
+                    )
+                    .expect("a name the catalogue answers to is proposed");
+                turning.approving(id, grants, noon()).expect("approved");
+                assert_eq!(*tool.installed.borrow(), ["org.gimp.GIMP"], "{said}");
+            });
+        }
+    }
+
+    /// **The refusal case**: a name the catalogue does not answer to is not
+    /// guessed, nothing is proposed for the person to approve, and the refusal
+    /// is written down, as every refusal is.
+    #[test]
+    fn a_name_the_catalogue_does_not_answer_to_is_refused_and_recorded() {
+        let strings = in_english();
+        let tool = TwoPlaces::default();
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+        let mut bounding = crate::testing::NothingIsBounded;
+        let folder = crate::testing::a_folder_of_our_own("installing-a-name");
+        let there = folder.join("a-note.txt");
+        std::fs::write(&there, "anything").unwrap();
+        {
+            let mut machine = Machine::carrying_out_file_and_software_verbs(
+                &strings,
+                &OnThisMachine,
+                &tool,
+                Bound::Nobodys,
+                &mut bounding,
+                &mut indicator,
+                &mut record,
+            )
+            .unwrap();
+            let mut grants = Grants::default();
+            let mut turning = Turning::beginning(
+                offering(&there),
+                "@software",
+                hour(),
+                &mut grants,
+                &mut machine,
+            )
+            .unwrap();
+            let refused = turning.proposing(
+                INSTALL_APPLICATION,
+                &[
+                    ("application", Given::text("Paintbox")),
+                    ("source", Given::text("flathub")),
+                ],
+                &grants,
+                hour(),
+                noon(),
+            );
+            assert!(
+                matches!(
+                    refused,
+                    Err(NotDone::CouldNotInstall(
+                        alo_software::NotDone::NotOffered { .. }
+                    ))
+                ),
+                "a name nothing answers to was proposed: {refused:?}"
+            );
+        }
+        assert!(tool.installed.borrow().is_empty());
+        assert_eq!(
+            record.answering(&alo_record::Asking::anything()).count(),
+            1,
+            "the refusal was not written down"
+        );
+    }
+
+    /// **And a name two applications answer to is refused in its own words,
+    /// not guessed**; a dotted identifier one holds is that one, and one it
+    /// does not hold is left as it was given.
+    #[test]
+    fn a_name_several_applications_answer_to_is_refused_as_meaning_more_than_one() {
+        use crate::naming_an_application::as_these_name_it;
+        let installable = alo_applications::Installed::holding([
+            Application::identified("org.example.Paint").unwrap(),
+            Application::identified("com.other.Paint").unwrap(),
+        ]);
+        let naming = |said: &str| {
+            as_these_name_it(
+                Some(&installable),
+                INSTALL_APPLICATION,
+                vec![
+                    ("application", Given::text(said)),
+                    ("source", Given::text("flathub")),
+                ],
+            )
+        };
+        assert!(
+            matches!(
+                naming("paint"),
+                Err(NotDone::CouldNotInstall(
+                    alo_software::NotDone::NamesMoreThanOne { .. }
+                ))
+            ),
+            "{:?}",
+            naming("paint")
+        );
+        let first = |said: &str| {
+            naming(said)
+                .unwrap()
+                .first()
+                .map(|(_, value)| value.clone())
+        };
+        assert_eq!(
+            first("org.example.paint"),
+            Some(Given::text("org.example.Paint"))
+        );
+        assert_eq!(
+            first("org.gnome.Paint"),
+            Some(Given::text("org.gnome.Paint")),
+            "an identifier was rewritten"
+        );
+    }
+
     /// **The whole road, in one test**: a machine that can install offers the
     /// verb, a person approves the sentence, the tool is reached once, and what
     /// comes back says what was installed and that it is sandboxed.
