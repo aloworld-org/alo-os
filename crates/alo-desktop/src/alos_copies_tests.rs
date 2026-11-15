@@ -68,7 +68,9 @@ fn this_process_has_a_beginning() {
 /// cgroup v2's own interface and what this machine runs.
 #[test]
 fn a_group_holds_a_process_when_it_or_one_beneath_lists_one() {
-    let Ok(at) = tempfile::tempdir() else {
+    let made = tempfile::tempdir();
+    assert!(made.is_ok(), "no folder to stand in for the groups");
+    let Ok(at) = made else {
         return;
     };
     let scope = at

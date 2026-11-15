@@ -139,8 +139,14 @@ impl AlosCopies {
             None => began_at(copy.pid) == Some(copy.began),
         };
         // **Where it is now, kept**, while the process alo started still says.
+        // Where this desktop did not start it (a copy found again after a
+        // restart), the process is not held unreaped, so its number could be
+        // given to another process between the two reads: it is asked when it
+        // began again after its group is read, and a changed answer keeps
+        // nothing.
         if launcher
             && let Some(now) = where_it_runs(copy.pid, &self.slice)
+            && (copy.child.is_some() || began_at(copy.pid) == Some(copy.began))
             && !copy.seen.contains(&now)
             && copy.seen.len() < THE_MOST_SEEN
         {
@@ -496,11 +502,16 @@ impl StartsAlosCopy for AlosCopies {
                 &mut found,
             );
         }
-        if let Some(moved) = where_it_runs(copy.pid, &self.slice) {
-            crate::where_an_application_runs::with_everything_beneath(&moved, 0, &mut found);
-        }
-        for seen in &copy.seen {
-            crate::where_an_application_runs::with_everything_beneath(seen, 0, &mut found);
+        // Each group once: where the process is now, and where it was seen,
+        // which usually holds the same one — walked twice it would count twice
+        // towards how many groups can be held.
+        let mut walked: Vec<PathBuf> = Vec::new();
+        let now = where_it_runs(copy.pid, &self.slice);
+        for group in now.iter().chain(copy.seen.iter()) {
+            if !walked.contains(group) {
+                crate::where_an_application_runs::with_everything_beneath(group, 0, &mut found);
+                walked.push(group.clone());
+            }
         }
         found.sort_unstable();
         found.dedup();
@@ -659,7 +670,9 @@ impl AlosCopies {
                 |it| it.display().to_string(),
             ));
         }
-        if let Some(moved) = where_it_runs(copy.pid, &self.slice) {
+        if let Some(moved) = where_it_runs(copy.pid, &self.slice)
+            && !copy.seen.contains(&moved)
+        {
             named.push(moved.strip_prefix(&self.slice).map_or_else(
                 |_| moved.display().to_string(),
                 |it| it.display().to_string(),
