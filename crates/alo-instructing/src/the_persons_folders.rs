@@ -240,7 +240,16 @@ impl ThePersonsFolders {
              The person's home folder is ",
         );
         text.push_str(&self.home);
-        text.push_str(", and ~ means that folder.");
+        // **Not "~ means that folder"**, as this said until 2026-11-15: every
+        // path argument refuses a path that does not start at the root
+        // (`alo_capability::path::is_usable`), so a model that wrote `~/…`
+        // lost a step to a refusal. `alo-turn`'s
+        // `a_path_the_model_is_told_to_write_is_one_the_verbs_accept` holds the
+        // two together.
+        text.push_str(
+            ". Write it out in full wherever the person says their home or ~: a path that \
+             starts with ~ is refused.",
+        );
         if !self.folders.is_empty() {
             text.push_str(" Their own folders, under the names they have on this computer:\n");
             for (role, at) in &self.folders {
@@ -254,6 +263,20 @@ impl ThePersonsFolders {
                 "When the person names one of these, such as their documents, use the path \
                  above, even where it is named in another language.",
             );
+            // **A thing inside one is that path and its name**, said with an
+            // example built from the first folder: asked to publish *the folder
+            // site in my Documents*, `gpt-4o-mini` named the Documents folder
+            // itself in every try that chose the right verb (every-try, set 2,
+            // 2026-11-15).
+            if let Some((role, at)) = self.folders.first() {
+                text.push_str(" A file or folder they name inside one of these is that path, a slash and its name: the folder they call holiday in their ");
+                text.push_str(role);
+                text.push_str(" is ");
+                text.push_str(at);
+                text.push_str("/holiday, never ");
+                text.push_str(at);
+                text.push_str(" itself.");
+            }
         }
         text.push_str(
             " Never name a path from another computer's layout, such as /Users/name or \
