@@ -157,3 +157,67 @@ fn the_read_end_is_not_inherited() {
         "the read end {fd} was inherited"
     );
 }
+
+/// **A group is kept once, and no more than there is room for** — so a copy
+/// that moves between scopes is remembered in each, and a copy that keeps
+/// moving cannot grow the list for ever.
+#[test]
+fn a_group_is_kept_once_and_only_while_there_is_room() {
+    let mut seen = Vec::new();
+    kept(&mut seen, PathBuf::from("/g/a"));
+    kept(&mut seen, PathBuf::from("/g/a"));
+    assert_eq!(seen, [PathBuf::from("/g/a")], "one group kept twice");
+    for n in 1..THE_MOST_SEEN {
+        kept(&mut seen, PathBuf::from(format!("/g/{n}")));
+    }
+    assert_eq!(
+        seen.len(),
+        THE_MOST_SEEN,
+        "room was refused before it ran out"
+    );
+    kept(&mut seen, PathBuf::from("/g/one-too-many"));
+    assert_eq!(seen.len(), THE_MOST_SEEN, "a group was kept past the room");
+}
+
+/// **A copy runs while the process alo started does, or while anything runs
+/// in a group it was seen in — and not otherwise** — which is what keeps the
+/// copy known after `flatpak run` ends (the walk of 2026-11-15, run
+/// 43726518930) and lets it go when VSCodium closes.
+#[test]
+fn a_copy_runs_while_its_launcher_or_anything_in_its_groups_does() {
+    let made = tempfile::tempdir();
+    assert!(made.is_ok(), "no folder to stand in for the groups");
+    let Ok(at) = made else {
+        return;
+    };
+    let scope = at.path().join("app-flatpak-com.vscodium.codium-1.scope");
+    assert!(std::fs::create_dir_all(&scope).is_ok());
+    assert!(std::fs::write(scope.join("cgroup.procs"), "").is_ok());
+    let seen = vec![scope.clone()];
+
+    assert!(still_alive(true, &[]), "the launcher alone was not enough");
+    assert!(!still_alive(false, &[]), "nothing was read as running");
+    assert!(
+        !still_alive(false, &seen),
+        "an empty scope was read as running"
+    );
+    assert!(std::fs::write(scope.join("cgroup.procs"), "7175\n").is_ok());
+    assert!(
+        still_alive(false, &seen),
+        "the copy was forgotten while it ran"
+    );
+}
+
+/// **A read that fails for any reason but *not yet* is *never***, so a pipe
+/// that cannot be read is let go rather than looked at for ever.
+#[test]
+fn a_pipe_that_cannot_be_read_is_never() {
+    let made = an_instance_pipe();
+    assert!(made.is_some(), "the kernel made no pipe");
+    let Some((_read, write)) = made else {
+        return;
+    };
+    // The write end cannot be read: the kernel answers that it is not open
+    // for reading, which is neither *not yet* nor an interruption.
+    assert_eq!(the_instance_heard(&write), Heard::Never);
+}

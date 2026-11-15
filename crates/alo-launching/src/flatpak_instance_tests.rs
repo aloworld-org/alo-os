@@ -46,7 +46,11 @@ fn a_command_that_is_not_flatpak_run_is_told_nothing() {
     ] {
         assert_eq!(told_its_instance(&command, 9), None, "{command:?}");
     }
-    assert_eq!(told_its_instance(&vscodium(), -1), None);
+    // Flatpak refuses 0, 1 and 2; the first it takes is 3.
+    for refused in [-1, 0, 2] {
+        assert_eq!(told_its_instance(&vscodium(), refused), None, "{refused}");
+    }
+    assert!(told_its_instance(&vscodium(), 3).is_some());
 }
 
 /// **Only a number is an instance**, as Flatpak writes one.

@@ -34,6 +34,10 @@ use crate::the_unit::escaped;
 /// The option Flatpak writes its instance number on.
 pub const INSTANCE_ID_FD: &str = "--instance-id-fd";
 
+/// The lowest descriptor Flatpak takes: it refuses 0, 1 and 2, which are a
+/// program's own input, output and errors (`flatpak_accept_fd_argument`).
+const THE_LOWEST_FD: i32 = 3;
+
 /// The longest instance number read: a 32-bit number in decimal, with room.
 const THE_LONGEST_INSTANCE: usize = 20;
 
@@ -47,7 +51,7 @@ pub fn told_its_instance(command: &[String], fd: i32) -> Option<Vec<String>> {
     let is_flatpak = std::path::Path::new(program)
         .file_name()
         .is_some_and(|name| name == "flatpak");
-    if !is_flatpak || rest.first().map(String::as_str) != Some("run") || fd < 0 {
+    if !is_flatpak || rest.first().map(String::as_str) != Some("run") || fd < THE_LOWEST_FD {
         return None;
     }
     let mut told = Vec::with_capacity(command.len() + 1);

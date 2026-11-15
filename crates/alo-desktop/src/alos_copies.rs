@@ -155,10 +155,7 @@ impl AlosCopies {
                     if let Some(scope) =
                         alo_launching::the_scope_of_an_instance(application, &instance)
                     {
-                        let group = self.slice.join(scope);
-                        if !copy.seen.contains(&group) && copy.seen.len() < THE_MOST_SEEN {
-                            copy.seen.push(group);
-                        }
+                        kept(&mut copy.seen, self.slice.join(scope));
                     }
                     copy.instance = None;
                 }
@@ -174,14 +171,10 @@ impl AlosCopies {
         if launcher
             && let Some(now) = where_it_runs(copy.pid, &self.slice)
             && (copy.child.is_some() || began_at(copy.pid) == Some(copy.began))
-            && !copy.seen.contains(&now)
-            && copy.seen.len() < THE_MOST_SEEN
         {
-            copy.seen.push(now);
+            kept(&mut copy.seen, now);
         }
-        // **Running while anything of it runs**: the process alo started, or
-        // any process still in a group it was seen in.
-        let alive = launcher || copy.seen.iter().any(|group| holds_a_process(group, 0));
+        let alive = still_alive(launcher, &copy.seen);
         if !alive {
             self.running.remove(application);
             if let Some(file) = self.the_file_for(application) {
@@ -780,6 +773,20 @@ fn the_instance_heard(read: &OwnedFd) -> Heard {
         }
         Err(_) => Heard::Never,
     }
+}
+
+/// **Keep `group` among those a copy was seen in** — once, and only while there
+/// is room for it.
+fn kept(seen: &mut Vec<PathBuf>, group: PathBuf) {
+    if !seen.contains(&group) && seen.len() < THE_MOST_SEEN {
+        seen.push(group);
+    }
+}
+
+/// **Whether a copy still runs**: the process alo started does, or a process
+/// still runs in a group the copy was seen in.
+fn still_alive(launcher: bool, seen: &[PathBuf]) -> bool {
+    launcher || seen.iter().any(|group| holds_a_process(group, 0))
 }
 
 /// The most groups one copy is remembered in: the unit, Flatpak's scope, and
