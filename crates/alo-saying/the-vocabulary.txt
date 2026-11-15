@@ -119,6 +119,7 @@ adapters.fallback.type-text.more-than-one	{application} shows more than one fiel
 adapters.fallback.type-text.name	the name of the field or document, as the application shows it
 adapters.fallback.type-text.no-keyboard	This machine could not type into {application} just now, so nothing was typed
 adapters.fallback.type-text.no-such-field	{application} shows no field or document named “{name}” now, so nothing was typed
+adapters.fallback.type-text.no-such-field-but-these	{application} shows no field or document named “{name}” now, so nothing was typed. It shows: {there}
 adapters.fallback.type-text.not-alos-copy	That {application} window is yours, not alo's own copy, so nothing was typed. To let alo type in your own windows, choose “alo may work in your own window” in Settings → Folders alo can use
 adapters.fallback.type-text.not-in-front	“{name}” in {application} does not have the keyboard, so nothing was typed. alo types only where the keyboard is: bring the window forward and click in it first
 adapters.fallback.type-text.password-field	“{name}” in {application} is a password field, and alo never types into one, so nothing was typed
@@ -333,6 +334,7 @@ applications.not-installed	nothing installed on this machine is {application} �
 applications.nothing-starts-it	{application}'s entry gives this machine no way to start it — nothing was changed
 applications.opened-in-alos-copy	{path} was opened in alo's own copy of {application}
 applications.opened-in-their-window	{path} was opened in your own window of {application}, as you chose in Settings
+applications.opened-it-types-into	alo read the window “{window}” and was told that typing into the file goes into “{name}”
 applications.opens.chosen	{application} opens {what}, because you chose it for that
 applications.opens.declared	{application} opens {what}, because it says it can and you have not chosen an application for it
 applications.opens.declared-instead	{application} opens {what}, because it says it can — {chosen}, which you chose for it, is no longer installed

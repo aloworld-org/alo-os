@@ -28,33 +28,11 @@ use crate::adapters::Adapters;
 use crate::fallback_reach::reached;
 use crate::fallback_verbs::{NAME, TEXT, TYPE_TEXT};
 use crate::fallback_words as fallback;
-use crate::role::Role;
+use crate::places_for_text::{
+    FOCUSED, TypingRefuses, holds, the_ones_meant, the_places_for_text, what_is_there,
+    why_typing_refuses,
+};
 use crate::typing_words as words;
-use crate::walking::{DEEPEST, MOST_THINGS};
-
-/// `ATSPI_STATE_EDITABLE`.
-const EDITABLE: u32 = 7;
-
-/// `ATSPI_STATE_FOCUSED`.
-const FOCUSED: u32 = 12;
-
-/// `ATSPI_STATE_SHOWING`.
-const SHOWING: u32 = 25;
-
-/// `ATSPI_ROLE_TERMINAL`.
-const TERMINAL: u32 = 60;
-
-/// The class Chromium gives the field a web terminal (xterm.js) types
-/// through — VSCodium's built-in terminal, measured 2026-11-13.
-const A_WEB_TERMINAL: &str = "xterm-helper-textarea";
-
-/// Whether the tree's two words of states hold this one.
-fn holds(states: &[u32], state: u32) -> bool {
-    let word = usize::try_from(state / 32).unwrap_or(usize::MAX);
-    states
-        .get(word)
-        .is_some_and(|bits| bits & (1_u32 << (state % 32)) != 0)
-}
 
 /// The field the approved text goes into, found at the moment of typing.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -171,93 +149,38 @@ impl Typing {
         strings: &Strings,
     ) -> Result<TheField, Refused> {
         let unreadable = |_: TreeFault| self.refused(words::NO_SUCH_FIELD, None, strings);
-        let roots: Vec<NodeAt> = tree
-            .applications()
-            .map_err(unreadable)?
-            .into_iter()
-            .filter(|running| running.is.as_deref() == Some(self.application.as_str()))
-            .map(|running| running.at)
-            .collect();
-        let mut found = Vec::new();
-        // Each thing waiting, with how deep it is and the title of the window
-        // it is in.
-        let mut waiting: Vec<(NodeAt, usize, String)> =
-            roots.into_iter().map(|at| (at, 0, String::new())).collect();
-        let mut seen = 0_usize;
-        while let Some((at, depth, window)) = waiting.pop() {
-            seen += 1;
-            if seen > MOST_THINGS {
-                break;
+        let places = the_places_for_text(tree, &self.application).map_err(unreadable)?;
+        let meant = the_ones_meant(&places, &self.name);
+        let (at, role, states) = match meant.as_slice() {
+            // **Said with what is there**, so a model that guessed the name can
+            // name one that is (the owner, 2026-11-15, relayed): the places'
+            // own names, and the window's title for those with none.
+            [] => {
+                let there = what_is_there(tree, &places);
+                if there.is_empty() {
+                    return Err(self.refused(words::NO_SUCH_FIELD, None, strings));
+                }
+                let quoted: Vec<String> = there.iter().map(|named| format!("“{named}”")).collect();
+                return Err(self.refused(
+                    words::NO_SUCH_FIELD_BUT_THESE,
+                    Some((words::THERE, quoted.join(", "))),
+                    strings,
+                ));
             }
-            let facts = match tree.facts(&at) {
-                Ok(facts) => facts,
-                Err(TreeFault::Vanished) => continue,
-                Err(fault) => return Err(unreadable(fault)),
-            };
-            let role = Role::of_the_tree(facts.role);
-            let a_place_for_text =
-                matches!(role, Role::TextField | Role::Document | Role::PasswordField)
-                    || facts.role == TERMINAL;
-            // **Named as approved**, or — where an application names its
-            // document nothing, as GNOME Text Editor does, or names it
-            // something other than the file, as a code editor may — an unnamed
-            // one, or the one with the keyboard, in a window whose title holds
-            // the approved name. A model asked to write in hello.txt names it
-            // hello.txt, which is what the window says (the walk of 2026-11-14
-            // saw one guess "Document" instead). Which of several is never
-            // guessed: two are refused below.
-            let in_its_window = !window.is_empty() && window.contains(&self.name);
-            let named = facts.name == self.name
-                || (in_its_window && (facts.name.is_empty() || holds(&facts.states, FOCUSED)));
-            if a_place_for_text && named && holds(&facts.states, SHOWING) {
-                found.push((at.clone(), facts.role, facts.states.clone()));
-            }
-            let window = if role == Role::Window {
-                facts.name.clone()
-            } else {
-                window
-            };
-            if depth < DEEPEST {
-                waiting.extend(
-                    facts
-                        .children
-                        .into_iter()
-                        .map(|child| (child, depth + 1, window.clone())),
-                );
-            }
-        }
-        // **Of several, the one that has the keyboard**: with the person's own
-        // VSCodium open beside alo's copy, both show an editor of the same
-        // name, and the one alo may type into is the one the keyboard is in —
-        // which only one field can be. Two that both say so, or none of
-        // several, is still not guessed.
-        if found.len() > 1 {
-            let focused: Vec<_> = found
-                .iter()
-                .filter(|(_, _, states)| holds(states, FOCUSED))
-                .cloned()
-                .collect();
-            if focused.len() == 1 {
-                found = focused;
-            }
-        }
-        let (at, role, states) = match found.len() {
-            0 => return Err(self.refused(words::NO_SUCH_FIELD, None, strings)),
-            1 => found.remove(0),
+            [one] => (one.at.clone(), one.role, one.states.clone()),
             _ => return Err(self.refused(words::MORE_THAN_ONE_FIELD, None, strings)),
         };
-        if Role::of_the_tree(role) == Role::PasswordField {
-            return Err(self.refused(words::A_PASSWORD_FIELD, None, strings));
-        }
-        let a_web_terminal = tree.attributes(&at).is_ok_and(|said| {
-            said.iter()
-                .any(|(name, value)| name == "class" && value.contains(A_WEB_TERMINAL))
-        });
-        if role == TERMINAL || a_web_terminal {
-            return Err(self.refused(words::A_TERMINAL, None, strings));
-        }
-        if !holds(&states, EDITABLE) {
-            return Err(self.refused(words::NO_SUCH_FIELD, None, strings));
+        match why_typing_refuses(tree, &at, role, &states) {
+            Some(TypingRefuses::APasswordField) => {
+                return Err(self.refused(words::A_PASSWORD_FIELD, None, strings));
+            }
+            Some(TypingRefuses::ATerminal) => {
+                return Err(self.refused(words::A_TERMINAL, None, strings));
+            }
+            Some(TypingRefuses::NotEditable) => {
+                return Err(self.refused(words::NO_SUCH_FIELD, None, strings));
+            }
+            None => {}
         }
         Ok(TheField {
             has_the_keyboard: holds(&states, FOCUSED),

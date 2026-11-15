@@ -473,3 +473,147 @@ fn a_text_that_reads_back_differently_is_not_saved() {
     let refused = typing.read_back(&tree, &field, &strings).unwrap_err();
     assert!(said(&refused).contains("not saved"), "{}", said(&refused));
 }
+
+/// **A name that means no field is refused with what is there** (the owner,
+/// 2026-11-15, relayed: option D): the fields' own names, and the window's
+/// title for one with none — each a name typing would take.
+///
+/// Every-try, set 5: after opening hello.txt in VSCodium, `gpt-4o-mini` named
+/// the editor `Document` or `TextEditor` in about half its tries.
+#[test]
+fn a_name_that_means_no_field_is_refused_with_what_is_there() {
+    let tree = ATree::of(
+        "hello.txt - VSCodium",
+        vec![a(TEXT, "", FOCUSED), a(ENTRY, "Search", EDITABLE)],
+    );
+    let refused = typing("Document", "x")
+        .the_field(&tree, &in_english())
+        .unwrap_err();
+    let said = said(&refused);
+    assert!(said.contains("“Document”"), "{said}");
+    assert!(said.contains("“hello.txt - VSCodium”"), "{said}");
+    assert!(said.contains("“Search”"), "{said}");
+    // **And every name it says is one typing takes.**
+    assert!(
+        typing("hello.txt - VSCodium", "x")
+            .the_field(&tree, &in_english())
+            .is_ok()
+    );
+    assert!(
+        typing("Search", "x")
+            .the_field(&tree, &in_english())
+            .is_ok()
+    );
+}
+
+/// **The refusal case**: with nothing for text showing, nothing is listed and
+/// the refusal is the one it always was.
+#[test]
+fn with_nothing_there_the_refusal_lists_nothing() {
+    let tree = ATree::of("hello.txt - VSCodium", vec![a(FRAME, "", EDITABLE)]);
+    let refused = typing("Document", "x")
+        .the_field(&tree, &in_english())
+        .unwrap_err();
+    assert!(!said(&refused).contains("It shows"), "{}", said(&refused));
+}
+
+/// **After a file is opened, the place typing into it goes is the file's
+/// name** (option A), and typing with that name reaches it.
+#[test]
+fn where_a_file_is_typed_into_is_its_name_and_typing_takes_it() {
+    use alo_adapters::places_for_text::where_a_file_is_typed_into;
+    let tree = ATree::of("hello.txt - VSCodium", vec![a(TEXT, "", FOCUSED)]);
+    let (name, window) =
+        where_a_file_is_typed_into(&tree, EDITOR, "hello.txt").expect("one place is meant");
+    assert_eq!(name, "hello.txt");
+    assert_eq!(window, "hello.txt - VSCodium");
+    assert!(typing(&name, "x").the_field(&tree, &in_english()).is_ok());
+}
+
+/// **The refusal cases**: no window titled with the file, two editors and
+/// neither with the keyboard, a password field, or another application — and
+/// nothing is offered.
+#[test]
+fn where_no_one_place_is_meant_nothing_is_offered() {
+    use alo_adapters::places_for_text::where_a_file_is_typed_into;
+    let elsewhere = ATree::of("Welcome - VSCodium", vec![a(TEXT, "", FOCUSED)]);
+    assert_eq!(
+        where_a_file_is_typed_into(&elsewhere, EDITOR, "hello.txt"),
+        None
+    );
+    let two = ATree::of(
+        "hello.txt - VSCodium",
+        vec![a(TEXT, "", EDITABLE), a(TEXT, "", EDITABLE)],
+    );
+    assert_eq!(where_a_file_is_typed_into(&two, EDITOR, "hello.txt"), None);
+    let secret = ATree::of("hello.txt - VSCodium", vec![a(PASSWORD, "", FOCUSED)]);
+    assert_eq!(
+        where_a_file_is_typed_into(&secret, EDITOR, "hello.txt"),
+        None
+    );
+    let tree = ATree::of("hello.txt - VSCodium", vec![a(TEXT, "", FOCUSED)]);
+    assert_eq!(
+        where_a_file_is_typed_into(&tree, "org.example.Payroll", "hello.txt"),
+        None
+    );
+}
+
+/// **A terminal with the keyboard is never offered or listed**: VSCodium's
+/// built-in terminal is a web terminal by its class, and typing refuses it.
+#[test]
+fn a_terminal_with_the_keyboard_is_never_offered_or_listed() {
+    use alo_adapters::places_for_text::where_a_file_is_typed_into;
+    let web_terminal = Thing {
+        class: "xterm-helper-textarea",
+        ..a(ENTRY, "", FOCUSED)
+    };
+    let tree = ATree::of(
+        "hello.txt - VSCodium",
+        vec![
+            web_terminal,
+            a(TEXT, "", EDITABLE),
+            a(PASSWORD, "Secret", EDITABLE),
+        ],
+    );
+    assert_eq!(where_a_file_is_typed_into(&tree, EDITOR, "hello.txt"), None);
+    let refused = typing("Document", "x")
+        .the_field(&tree, &in_english())
+        .unwrap_err();
+    let said = said(&refused);
+    assert!(
+        !said.contains("Secret"),
+        "a password field is listed: {said}"
+    );
+}
+
+/// **Only the web terminal's own class marks a terminal**: an editor whose
+/// class is anything else is still offered — and a field that is not showing
+/// is never one.
+#[test]
+fn another_class_is_no_terminal_and_a_hidden_field_is_no_place() {
+    use alo_adapters::places_for_text::where_a_file_is_typed_into;
+    let an_editor = Thing {
+        class: "monaco-editor",
+        ..a(TEXT, "", FOCUSED)
+    };
+    let tree = ATree::of("hello.txt - VSCodium", vec![an_editor]);
+    assert_eq!(
+        where_a_file_is_typed_into(&tree, EDITOR, "hello.txt"),
+        Some(("hello.txt".to_owned(), "hello.txt - VSCodium".to_owned()))
+    );
+    // Editable and with the keyboard, but not showing.
+    let hidden = ATree::of(
+        "hello.txt - VSCodium",
+        vec![a(TEXT, "", (1 << 7) | (1 << 12))],
+    );
+    assert_eq!(
+        where_a_file_is_typed_into(&hidden, EDITOR, "hello.txt"),
+        None
+    );
+    // Showing, but no place for text at all.
+    let a_label = ATree::of("hello.txt - VSCodium", vec![a(FRAME, "hello.txt", FOCUSED)]);
+    assert_eq!(
+        where_a_file_is_typed_into(&a_label, EDITOR, "hello.txt"),
+        None
+    );
+}

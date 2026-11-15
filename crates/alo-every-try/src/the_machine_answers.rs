@@ -32,6 +32,15 @@ pub fn answering(answered: &Answered, call: &Call, strings: &Strings) -> ToAnAge
             call,
             strings,
         ),
+        Answered::AFileOpenedTypingInto { name, window } => done_at_full_access(
+            Done::of_a_file_opened(
+                OPEN_FILE,
+                &application,
+                Some((name.clone(), window.clone())),
+            ),
+            call,
+            strings,
+        ),
         Answered::AnApplicationOpened => {
             let act = Application::identified(&application)
                 .map(|which| Acting::Open(which).on_the_wire())

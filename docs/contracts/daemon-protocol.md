@@ -1012,8 +1012,27 @@ for; nothing was renamed or removed.
 was renamed or removed). They are the compositor door's own spellings
 ([`application-door.md`](application-door.md)), so one vocabulary crosses two
 sockets rather than two that have to be kept in step. For `open-file` the file
-and where it opened are in the record, not on this line. The fourth application
-verb, `arrange_application`, **cannot appear here**: nothing on this machine can
+and where it opened are in the record, not on this line.
+
+**And for `open-file`, added additively on 2026-11-15, `types_into`**: where
+text typed into the file just opened goes, once its window was in front and
+could be read — `{"name":"hello.txt","window":"hello.txt - VSCodium"}`, the
+name `accessible.type_text` takes for it and the window's title. It is the
+file's own name, offered only where typing with it reaches exactly one place
+(`alo_adapters::places_for_text`). **Absent when nothing could be said, and
+then left off the line entirely**, so an answer without it is the line written
+before 2026-11-15. A client that refuses unknown fields reads it as a field it
+does not know, which is why it is absent rather than empty. It is said only
+for a file opened in alo's own copy, and it is on the record. **What it carries
+leaves the machine with an online model**: the answer is part of the next
+question the model is asked, under the egress indicator like the rest of it;
+with a local model it stays here.
+
+```json
+{"did":{"reached":{"act":"open-file","application":"com.vscodium.codium","types_into":{"name":"hello.txt","window":"hello.txt - VSCodium"}}}}
+```
+
+The fourth application verb, `arrange_application`, **cannot appear here**: nothing on this machine can
 carry it out, so it is not declared and never authorised — `docs/features.md`
 promises it and no machine offers it yet.
 
