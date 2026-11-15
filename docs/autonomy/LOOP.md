@@ -512,7 +512,7 @@ runtime sees it, and the image has no `/bin/sh` on its `PATH` for
 | `docs/autonomy/QUEUE.md` | The work, in order, with what each is blocked on |
 | `docs/autonomy/STATE.md` | The journal: one entry per iteration, newest last |
 | `ROADMAP.md` | What a person outside the loop reads to know where the product is. Moved every iteration, per step 6 |
-| `CLAUDE.md` | The five laws and the gate |
+| `CLAUDE.md` | The laws and the gate |
 | `docs/decisions/` | Why things are the way they are. Read before proposing otherwise |
 
 ## Running it

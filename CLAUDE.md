@@ -21,7 +21,7 @@ repository is the system underneath both: the shell a person signs
 into, the service that lets an agent reach the machine, and the image
 that boots.
 
-## The five laws
+## The laws
 
 1. **Nothing leaves silently.** Every network egress an agent causes
    is visible at the moment it happens and afterwards in a record. On
@@ -102,6 +102,33 @@ that boots.
    question, because its headline is broader than its body and two
    careful readers disagreed about which bound.*
 
+**Laws 6 to 9 are about how the code is written**, and the owner made them
+laws on 2026-11-15 ([ADR 0157](docs/decisions/0157-a-bug-is-caught-by-a-check-its-author-did-not-write.md)):
+*"Yes add them also make them laws. Another law will be to write tests first
+before coding."* They share one reason. Code written by an AI is usually
+wrong in a way its author's own checks agree with, so a bug is caught by a
+check the author did not write, and by a check that has been seen to fail.
+
+6. **Tests are written first.** Before a line of the code, the tests for
+   it exist and have been run and **seen to fail**, each for the reason the
+   code will fix. A test written after the code is written to match it. The
+   walk of ADR 0156 is the first of these tests, not an exception to it.
+7. **The author of the code is not the only author of its tests.** A
+   second lane or helper writes or reviews the tests from the promise
+   (`docs/features.md`, the design, the walk), without being handed the
+   implementation or its writer's explanation. A model checking its own
+   work agrees with its own mistakes.
+8. **A test must be able to fail.** Every change is checked by breaking
+   the code it touches on purpose (mutation testing, `cargo-mutants`) and
+   watching a test go red. A break that leaves every test green is a test
+   missing, and it is reported with the change. *The screen changed* is the
+   commonest test here that cannot fail for the right reason.
+9. **What the model chooses is tested many times, not once.** Any change to
+   what a model is told or offered — its instructions, its verbs, their
+   descriptions — is tried against the real model on a fixed set of
+   requests, several times each, and passes only if **every** try takes the
+   road expected. One success is a coin that landed once.
+
 ## The gate — nothing is done until all of this passes
 
 There is no "and we will add the tests afterwards". A change that ships
@@ -171,7 +198,7 @@ without them has not been finished, it has been abandoned.
 - **A feature is done when its walk passes, not when its pieces pass**
   ([ADR 0156](docs/decisions/0156-a-feature-is-done-when-its-walk-passes.md)).
   *The owner, 2026-11-14: "Yes please adopt all of them"*, accepting that each
-  change takes about 20–30% longer. Five rules:
+  change takes about 20–30% longer. Six rules (the sixth added 2026-11-15):
   1. **Walk first** — the person's steps are written as an automated walk
      (`docs/walks/`, `.github/workflows/walk.yml`) before the code.
   2. **Seam tests** — every hand-over (socket line, verb argument, app id,
@@ -182,6 +209,15 @@ without them has not been finished, it has been abandoned.
   4. **The image is built on every pull request** — as a check that never
      publishes (`image-check.yml`), and required before anything lands.
   5. **One lane owns one feature from start to finish.**
+  6. **Analyse before running.** Before a push or a walk: trace the request
+     through the real code, quoting `file:line` at every hand-over, down to
+     the exact line the walk waits for; try the model's turn alone, with its
+     real instructions and verbs, at least three times; have a second reader
+     review the diff, given the code rather than the writer's conclusion.
+     The trace and the tries go in the pull request's body. *The owner,
+     2026-11-15: "pay attention during the writing so as we analyse well the
+     code before we run it"*, after three hour-long walks failed on a break
+     that reading the code could have found.
   Rule 4 is a required check and a walk checks rule 1 when it runs; the
   rest is discipline nothing enforces, and the ADR says which.
 
