@@ -79,6 +79,18 @@ pub const NO_SUCH_FIELD: Word = Word::saying(
 )
 .noting("Said when the place the person approved typing into is not on the screen.");
 
+/// The placeholder [`NO_SUCH_FIELD_BUT_THESE`] lists what is there in.
+pub const THERE: &str = "there";
+
+/// No field of that name, and what is there instead.
+pub const NO_SUCH_FIELD_BUT_THESE: Word = Word::saying(
+    "adapters.fallback.type-text.no-such-field-but-these",
+    "{application} shows no field or document named “{name}” now, so nothing was typed. It      shows: {there}",
+)
+.noting(
+    "Said when the place the person approved typing into is not on the screen, but others are.      {there} is the names of the fields and documents the application shows, each in quotes,      separated by commas, as the application names them.",
+);
+
 /// More than one field of that name.
 pub const MORE_THAN_ONE_FIELD: Word = Word::saying(
     "adapters.fallback.type-text.more-than-one",
@@ -159,7 +171,7 @@ pub const CANNOT_READ_BACK: Word = Word::saying(
 .noting("Said when the text was typed and could not be checked.");
 
 /// Every word typing declares.
-pub const EVERY_WORD: [Word; 19] = [
+pub const EVERY_WORD: [Word; 20] = [
     TYPE_PURPOSE,
     TYPE_APPLICATION,
     TYPE_NAME,
@@ -169,6 +181,7 @@ pub const EVERY_WORD: [Word; 19] = [
     TYPE_CHANGES,
     TYPE_LEAVES,
     NO_SUCH_FIELD,
+    NO_SUCH_FIELD_BUT_THESE,
     MORE_THAN_ONE_FIELD,
     A_PASSWORD_FIELD,
     A_TERMINAL,

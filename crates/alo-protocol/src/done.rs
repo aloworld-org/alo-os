@@ -122,6 +122,13 @@ pub enum Done {
         act: String,
         /// The application it was asked of.
         application: String,
+        /// **Where text typed into the file just opened goes**, for an
+        /// `open-file` whose window could be read in time: the name the typing
+        /// verb takes for it and the window's title. Absent everywhere else,
+        /// and absent from the wire when absent, so an answer without it is
+        /// written exactly as before 2026-11-15.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        types_into: Option<WhereItTypes>,
     },
     /// What the catalogue holds, under one kind of work or all of them.
     ///
@@ -363,6 +370,17 @@ pub struct CanBeInstalled {
     pub kind_of_work: String,
 }
 
+/// **Where text typed into a file just opened goes**: the name to give
+/// `accessible.type_text`, and the title of the window it is in.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WhereItTypes {
+    /// The name the typing verb takes for it.
+    pub name: String,
+    /// The window's title.
+    pub window: String,
+}
+
 impl Done {
     /// What an installation answered, as it goes on the wire.
     ///
@@ -411,6 +429,23 @@ impl Done {
         Self::Reached {
             act: act.to_owned(),
             application: application.to_owned(),
+            types_into: None,
+        }
+    }
+
+    /// **A file opened in `application`**, and where typing into it goes
+    /// where its window could be read: `(name, window)`, from
+    /// `alo_adapters::places_for_text::where_a_file_is_typed_into`.
+    #[must_use]
+    pub fn of_a_file_opened(
+        act: &str,
+        application: &str,
+        types_into: Option<(String, String)>,
+    ) -> Self {
+        Self::Reached {
+            act: act.to_owned(),
+            application: application.to_owned(),
+            types_into: types_into.map(|(name, window)| WhereItTypes { name, window }),
         }
     }
 
@@ -777,6 +812,37 @@ mod tests {
     // `tests/what_the_daemon_answers_with.rs`, and what is here is everything
     // that can be built without one — including the whole of the rule about a
     // path that cannot be shown, which `crate::naming` owns and tests.
+
+    /// **A file opened says where typing into it goes, and an answer without
+    /// it is written exactly as before**: the field is left off the wire when
+    /// absent, so a client from before 2026-11-15 reads every act it read.
+    #[test]
+    fn a_file_opened_says_where_typing_goes_and_without_it_nothing_changed() {
+        let before = serde_json::to_string(&Done::of_an_application_act("open-file", "com.vscodium.codium")).unwrap();
+        assert_eq!(
+            before,
+            r#"{"reached":{"act":"open-file","application":"com.vscodium.codium"}}"#
+        );
+        assert_eq!(
+            serde_json::to_string(&Done::of_a_file_opened("open-file", "com.vscodium.codium", None))
+                .unwrap(),
+            before
+        );
+        let with = Done::of_a_file_opened(
+            "open-file",
+            "com.vscodium.codium",
+            Some(("hello.txt".to_owned(), "hello.txt - VSCodium".to_owned())),
+        );
+        let written = serde_json::to_string(&with).unwrap();
+        assert!(
+            written.contains(r#""types_into":{"name":"hello.txt","window":"hello.txt - VSCodium"}"#),
+            "{written}"
+        );
+        let back: Done = serde_json::from_str(&written).unwrap();
+        assert_eq!(back, with);
+        // **And what it carries is refused if it carries anything else.**
+        assert!(serde_json::from_str::<Done>(&written.replace("\"window\"", "\"pane\"")).is_err());
+    }
 
     /// A read crosses as it was read, control characters and all: a file with
     /// a line break in it is an ordinary file, and JSON is what keeps the

@@ -7,6 +7,15 @@
 pub enum Answered {
     /// The file was opened in the application.
     AFileOpened,
+    /// The file was opened, and the machine read its window and says where
+    /// typing into it goes, as `alo-agentd` does once the window is in front
+    /// (`Done::of_a_file_opened`).
+    AFileOpenedTypingInto {
+        /// The name the typing verb takes for it.
+        name: String,
+        /// The window's title.
+        window: String,
+    },
     /// The application was started.
     AnApplicationOpened,
     /// The application's window was read: its title, and one empty field or

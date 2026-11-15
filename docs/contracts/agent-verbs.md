@@ -548,7 +548,14 @@ by `alo-applications` (`crate::opening_a_file`) and carried out by
   over the bus — never a command alo wrote.
 - On the daemon's socket a done one is `reached` with `act` `open-file`
   ([`daemon-protocol.md`](daemon-protocol.md)); the file and where it opened
-  are in the record.
+  are in the record. **Since 2026-11-15 it also says where typing into the file
+  goes** (`types_into`: the name `accessible.type_text` takes, and the window's
+  title), read once from the window when it is in front; nothing where it could
+  not be read.
+- **`accessible.type_text` refused for a name that means no field says what is
+  there** (since 2026-11-15): the names of the fields and documents the
+  application shows, and a window's title for one with none, each one a name
+  the verb takes.
 
 ### The identifier is approved; the name is only shown
 

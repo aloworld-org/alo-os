@@ -473,3 +473,77 @@ fn a_text_that_reads_back_differently_is_not_saved() {
     let refused = typing.read_back(&tree, &field, &strings).unwrap_err();
     assert!(said(&refused).contains("not saved"), "{}", said(&refused));
 }
+
+/// **A name that means no field is refused with what is there** (the owner,
+/// 2026-11-15, relayed: option D): the fields' own names, and the window's
+/// title for one with none — each a name typing would take.
+///
+/// Every-try, set 5: after opening hello.txt in VSCodium, `gpt-4o-mini` named
+/// the editor `Document` or `TextEditor` in about half its tries.
+#[test]
+fn a_name_that_means_no_field_is_refused_with_what_is_there() {
+    let tree = ATree::of(
+        "hello.txt - VSCodium",
+        vec![a(TEXT, "", FOCUSED), a(ENTRY, "Search", EDITABLE)],
+    );
+    let refused = typing("Document", "x")
+        .the_field(&tree, &in_english())
+        .unwrap_err();
+    let said = said(&refused);
+    assert!(said.contains("“Document”"), "{said}");
+    assert!(said.contains("“hello.txt - VSCodium”"), "{said}");
+    assert!(said.contains("“Search”"), "{said}");
+    // **And every name it says is one typing takes.**
+    assert!(
+        typing("hello.txt - VSCodium", "x")
+            .the_field(&tree, &in_english())
+            .is_ok()
+    );
+    assert!(typing("Search", "x").the_field(&tree, &in_english()).is_ok());
+}
+
+/// **The refusal case**: with nothing for text showing, nothing is listed and
+/// the refusal is the one it always was.
+#[test]
+fn with_nothing_there_the_refusal_lists_nothing() {
+    let tree = ATree::of("hello.txt - VSCodium", vec![a(FRAME, "", EDITABLE)]);
+    let refused = typing("Document", "x")
+        .the_field(&tree, &in_english())
+        .unwrap_err();
+    assert!(!said(&refused).contains("It shows"), "{}", said(&refused));
+}
+
+/// **After a file is opened, the place typing into it goes is the file's
+/// name** (option A), and typing with that name reaches it.
+#[test]
+fn where_a_file_is_typed_into_is_its_name_and_typing_takes_it() {
+    use alo_adapters::places_for_text::where_a_file_is_typed_into;
+    let tree = ATree::of("hello.txt - VSCodium", vec![a(TEXT, "", FOCUSED)]);
+    let (name, window) =
+        where_a_file_is_typed_into(&tree, EDITOR, "hello.txt").expect("one place is meant");
+    assert_eq!(name, "hello.txt");
+    assert_eq!(window, "hello.txt - VSCodium");
+    assert!(typing(&name, "x").the_field(&tree, &in_english()).is_ok());
+}
+
+/// **The refusal cases**: no window titled with the file, two editors and
+/// neither with the keyboard, a password field, or another application — and
+/// nothing is offered.
+#[test]
+fn where_no_one_place_is_meant_nothing_is_offered() {
+    use alo_adapters::places_for_text::where_a_file_is_typed_into;
+    let elsewhere = ATree::of("Welcome - VSCodium", vec![a(TEXT, "", FOCUSED)]);
+    assert_eq!(where_a_file_is_typed_into(&elsewhere, EDITOR, "hello.txt"), None);
+    let two = ATree::of(
+        "hello.txt - VSCodium",
+        vec![a(TEXT, "", EDITABLE), a(TEXT, "", EDITABLE)],
+    );
+    assert_eq!(where_a_file_is_typed_into(&two, EDITOR, "hello.txt"), None);
+    let secret = ATree::of("hello.txt - VSCodium", vec![a(PASSWORD, "", FOCUSED)]);
+    assert_eq!(where_a_file_is_typed_into(&secret, EDITOR, "hello.txt"), None);
+    let tree = ATree::of("hello.txt - VSCodium", vec![a(TEXT, "", FOCUSED)]);
+    assert_eq!(
+        where_a_file_is_typed_into(&tree, "org.example.Payroll", "hello.txt"),
+        None
+    );
+}

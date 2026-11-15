@@ -43,7 +43,7 @@ use crate::a_road::{ARequest, Answered, Step};
 
 /// The version of the set. Up by one for every change to a request, a road or
 /// the machine.
-pub const THE_VERSION: u32 = 4;
+pub const THE_VERSION: u32 = 5;
 
 /// The person's home on the machine the walk boots: Fedora's atomic layout
 /// puts homes under `/var/home`, measured on 2026-11-10
@@ -120,7 +120,15 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
         "write in VSCodium",
         the_ask(),
         vec![
-            Step::of(OPEN_FILE_IN_APPLICATION, Answered::AFileOpened)
+            // **As a booted machine answers it**: the window read once it is in
+            // front, and where typing goes said (the owner's option A).
+            Step::of(
+                OPEN_FILE_IN_APPLICATION,
+                Answered::AFileOpenedTypingInto {
+                    name: THE_FILE.to_owned(),
+                    window: format!("{THE_FILE} - VSCodium"),
+                },
+            )
                 .expecting(APPLICATION, editor.as_str())
                 .expecting(PATH, format!("{THE_HOME}/{THE_FILE}")),
             Step::of(
