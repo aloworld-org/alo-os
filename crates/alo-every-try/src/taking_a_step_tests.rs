@@ -58,11 +58,27 @@ fn another_verb_is_another_road() {
     );
 }
 
+/// The machine reads an argument given twice with the same value as one
+/// value (#1268), so the check must too, or it fails a try the machine runs.
 #[test]
-fn an_argument_given_twice_is_refused_as_the_machine_refuses_it() {
+fn an_argument_given_twice_with_one_value_is_taken_as_the_machine_takes_it() {
+    assert_eq!(
+        taken(&proposing(
+            OPEN_FILE_IN_APPLICATION,
+            &[(APPLICATION, EDITOR), (APPLICATION, EDITOR), (PATH, FILE)],
+        )),
+        Ok(())
+    );
+}
+
+/// Two different values for one argument are still refused, by the machine
+/// and so by the check. This is what the model sent most often on
+/// 2026-11-15: `path` twice, the second holding the text to type.
+#[test]
+fn an_argument_given_twice_with_two_values_is_refused_as_the_machine_refuses_it() {
     let went = taken(&proposing(
         OPEN_FILE_IN_APPLICATION,
-        &[(APPLICATION, EDITOR), (APPLICATION, EDITOR), (PATH, FILE)],
+        &[(APPLICATION, EDITOR), (PATH, FILE), (PATH, "hello, alo")],
     ));
     assert!(
         matches!(went, Err(WentWrong::ArgumentsRefused { step: 1, .. })),
