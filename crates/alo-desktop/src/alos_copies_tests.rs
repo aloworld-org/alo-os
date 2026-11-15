@@ -97,3 +97,63 @@ fn a_group_holds_a_process_when_it_or_one_beneath_lists_one() {
         "a group that has gone was read as running"
     );
 }
+
+/// **A program this desktop starts can write its instance on the pipe, by the
+/// number it is told, and this desktop hears it** — both sides real: a real
+/// child process inherits the write end under that number and writes to it,
+/// as `flatpak run --instance-id-fd` does (`flatpak-run.c:3219-3221`, read
+/// not run), and the read end hears nothing before and the number after.
+///
+/// What would have to be true for this to pass while broken: Flatpak not
+/// writing on the descriptor it is told, or writing something that is not a
+/// number — which the walk is where it is seen.
+#[test]
+fn a_started_program_can_say_its_instance_on_the_pipe_and_it_is_heard() {
+    use std::os::fd::AsRawFd as _;
+
+    let made = an_instance_pipe();
+    assert!(made.is_some(), "the kernel made no pipe");
+    let Some((read, write)) = made else {
+        return;
+    };
+    assert_eq!(the_instance_heard(&read), Heard::Nothing);
+    let fd = write.as_raw_fd();
+    let ran = std::process::Command::new("/bin/sh")
+        .arg("-c")
+        .arg(format!("printf 2042859277 >&{fd}"))
+        .status();
+    drop(write);
+    assert!(
+        ran.is_ok_and(|status| status.success()),
+        "the child could not write on {fd}"
+    );
+    assert_eq!(
+        the_instance_heard(&read),
+        Heard::It("2042859277".to_owned())
+    );
+    // *Never* once it closes is not asserted here: a test running beside this
+    // one may have started a program that inherited the write end too, and
+    // holds it open. Hearing the number is what the desktop waits for.
+}
+
+/// **The read end is never handed to a program this desktop starts**: only
+/// the write end crosses, so no started program can read what another said.
+#[test]
+fn the_read_end_is_not_inherited() {
+    use std::os::fd::AsRawFd as _;
+
+    let made = an_instance_pipe();
+    assert!(made.is_some(), "the kernel made no pipe");
+    let Some((read, _write)) = made else {
+        return;
+    };
+    let fd = read.as_raw_fd();
+    let ran = std::process::Command::new("/bin/sh")
+        .arg("-c")
+        .arg(format!("[ -e /proc/self/fd/{fd} ]"))
+        .status();
+    assert!(
+        ran.is_ok_and(|status| !status.success()),
+        "the read end {fd} was inherited"
+    );
+}

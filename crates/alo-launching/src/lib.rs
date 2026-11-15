@@ -47,6 +47,7 @@
 
 pub mod alos_copy;
 pub mod describing_themselves;
+pub mod flatpak_instance;
 pub mod how_it_starts;
 pub mod how_it_starts_with_a_file;
 pub mod the_command;
@@ -60,6 +61,9 @@ pub use alos_copy::{AlosCopy, WITH_A_COPY_OF_THEIR_OWN, alos_copy, the_unit_for_
 pub use describing_themselves::{
     DRAWN_BY_CHROMIUM, THE_PAGE_FULLY, THE_PAGE_TOO, Told, is_drawn_by_chromium,
     what_a_start_is_handed, what_its_command_gains,
+};
+pub use flatpak_instance::{
+    INSTANCE_ID_FD, an_instance_number, the_scope_of_an_instance, told_its_instance,
 };
 pub use how_it_starts::{
     HowItStarts, WhyItCannotStart, WhyNotWithALink, how_it_starts, how_it_starts_with_a_link,
