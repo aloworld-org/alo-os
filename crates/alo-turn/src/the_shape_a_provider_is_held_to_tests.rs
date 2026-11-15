@@ -302,3 +302,35 @@ fn the_steering_names_the_verbs_the_machine_really_has() {
         alo_instructing::the_products_words(alo_instructing::Instructions::SHOWN_TO_A_TURN, &verbs);
     assert!(words.ends_with(&told), "{words}");
 }
+
+/// **The paragraph about installing names the two verbs this machine
+/// declares**, by `alo-software`'s constants, and tells the model to look in
+/// the catalogue before it names an identifier it does not know.
+///
+/// Every-try, set 2, 2026-11-15: asked to *install GIMP*, `gpt-4o-mini` named
+/// `org.gnome.TextEditor` twice — the example in the application argument's
+/// description — and `gimp` or `org.gnome.GIMP` the other three times, in 5
+/// of 5 tries, where the catalogue holds `org.gimp.GIMP`.
+#[test]
+fn the_model_is_told_to_look_in_the_catalogue_before_installing() {
+    assert_eq!(
+        alo_instructing::installing_an_application::WHAT_CAN_BE_INSTALLED,
+        alo_software::WHAT_CAN_BE_INSTALLED
+    );
+    assert_eq!(
+        alo_instructing::installing_an_application::INSTALL_APPLICATION,
+        alo_software::INSTALL_APPLICATION
+    );
+    let verbs = the_whole_machine();
+    let told = alo_instructing::installing_an_application(&verbs);
+    let looking = told
+        .find(alo_software::WHAT_CAN_BE_INSTALLED)
+        .unwrap_or_else(|| panic!("the catalogue is named:\n{told}"));
+    let installing = told
+        .find(alo_software::INSTALL_APPLICATION)
+        .unwrap_or_else(|| panic!("installing is named:\n{told}"));
+    assert!(looking < installing, "{told}");
+    let words =
+        alo_instructing::the_products_words(alo_instructing::Instructions::SHOWN_TO_A_TURN, &verbs);
+    assert!(words.contains(&told), "{words}");
+}
