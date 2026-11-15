@@ -846,8 +846,10 @@ mod tests {
             )
             .unwrap_err(),
         );
-        assert!(said.contains("one of that name is at /home/anna/hello.txt"), "{said}");
+        assert!(
+            said.contains("one of that name is at /home/anna/hello.txt"),
+            "{said}"
+        );
         assert!(!said.contains("Projects"), "{said}");
     }
-
 }

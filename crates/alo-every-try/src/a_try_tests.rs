@@ -337,7 +337,10 @@ fn a_file_is_told_where_it_is_only_for_its_own_name_and_must_be_named_there() {
     let wrong = || {
         proposing(
             OPEN_FILE_IN_APPLICATION,
-            &[(APPLICATION, EDITOR), (PATH, "/var/home/alo/Documents/hello.txt")],
+            &[
+                (APPLICATION, EDITOR),
+                (PATH, "/var/home/alo/Documents/hello.txt"),
+            ],
         )
     };
     let (twice, _) = tried(&[wrong(), wrong(), answering("Done.")]);
@@ -348,7 +351,10 @@ fn a_file_is_told_where_it_is_only_for_its_own_name_and_must_be_named_there() {
     );
     let (other, _) = tried(&[another, answering("Done.")]);
     assert!(
-        matches!(other.went(), Went::WentWrong(WentWrong::AnotherValue { step: 1, .. })),
+        matches!(
+            other.went(),
+            Went::WentWrong(WentWrong::AnotherValue { step: 1, .. })
+        ),
         "{other:?}"
     );
 }
