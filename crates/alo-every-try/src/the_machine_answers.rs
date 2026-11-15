@@ -79,6 +79,10 @@ pub fn answering(answered: &Answered, call: &Call, strings: &Strings) -> ToAnAge
             );
             ToAnAgent::done_without_asking(Done::of_a_publication(&folder, &address, false), &said)
         }
+        Answered::With(done) if call.waits_for_approval() => {
+            done_at_full_access(done.clone(), call, strings)
+        }
+        Answered::With(done) => ToAnAgent::did(done.clone()),
     }
 }
 

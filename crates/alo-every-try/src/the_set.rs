@@ -43,7 +43,7 @@ use crate::a_road::{ARequest, Answered, Step};
 
 /// The version of the set. Up by one for every change to a request, a road or
 /// the machine.
-pub const THE_VERSION: u32 = 1;
+pub const THE_VERSION: u32 = 2;
 
 /// The person's home on the machine the walk boots: Fedora's atomic layout
 /// puts homes under `/var/home`, measured on 2026-11-10
@@ -66,6 +66,14 @@ pub struct NotTheSet(
     /// What would not build.
     String,
 );
+
+impl NotTheSet {
+    /// The set would not build, for the reason `why`.
+    #[must_use]
+    pub const fn because(why: String) -> Self {
+        Self(why)
+    }
+}
 
 /// The requests and the machine they are asked on.
 #[derive(Debug, Clone)]
@@ -174,8 +182,10 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
         .at_full_access(true)
         .with_these_applications(Some(installed));
 
+    let mut requests = vec![writing, publishing, opening];
+    requests.extend(crate::every_other_verb::every_other_verb(home, &shipped)?);
     Ok(TheSet {
-        requests: vec![writing, publishing, opening],
+        requests,
         may_reach,
     })
 }

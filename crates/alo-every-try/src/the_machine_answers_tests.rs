@@ -139,3 +139,47 @@ fn an_application_opened_is_done_without_asking() {
     assert!(!said.is_a_bug(), "{}", said.text());
     assert!(written(&answer).contains("org.mozilla.firefox"));
 }
+
+/// **What a read did is its answer**, carried as it came, and never said to
+/// have been done without asking: a read asks nobody.
+#[test]
+fn what_a_read_did_is_told_as_the_answer_to_it() {
+    let read = Done::Read {
+        text: "Buy bread.".to_owned(),
+    };
+    let answer = answering(
+        &Answered::With(read.clone()),
+        &call(
+            alo_files::verbs::READ_FILE,
+            &[(alo_files::verbs::FILE, "/var/home/alo/Documents/notes.txt")],
+        ),
+        &the_words(),
+    );
+    assert_eq!(answer, ToAnAgent::did(read));
+}
+
+/// **What a change did is told as done without asking**, in the call's own
+/// sentence, as a machine at full access tells it.
+#[test]
+fn what_a_change_did_is_told_as_done_without_asking() {
+    let renamed = Done::Renamed {
+        now_at: Some("/var/home/alo/Documents/old-notes.txt".to_owned()),
+    };
+    let answer = answering(
+        &Answered::With(renamed.clone()),
+        &call(
+            alo_files::verbs::RENAME_FILE,
+            &[
+                (alo_files::verbs::FILE, "/var/home/alo/Documents/notes.txt"),
+                (alo_files::verbs::NAME, "old-notes.txt"),
+            ],
+        ),
+        &the_words(),
+    );
+    let ToAnAgent::DoneWithoutAsking { did, said } = &answer else {
+        panic!("{answer:?}");
+    };
+    assert_eq!(did, &renamed);
+    assert!(!said.is_a_bug(), "{}", said.text());
+    assert!(said.text().contains("old-notes.txt"), "{}", said.text());
+}

@@ -25,6 +25,14 @@ pub enum Answered {
         /// The account.
         account: String,
     },
+    /// What the verb did, as the protocol carries it: told as done without
+    /// asking where the step changes something (the call's own sentence
+    /// inside the full-access words), and as the answer to a read otherwise.
+    ///
+    /// For the verbs whose answer has no shorter kind above: what a folder
+    /// holds, a file says, a search found, the catalogue offers, the record
+    /// holds, or what was renamed, moved, archived, installed or pressed.
+    With(alo_protocol::Done),
 }
 
 /// One step of a road: the verb the model is expected to ask for, the values

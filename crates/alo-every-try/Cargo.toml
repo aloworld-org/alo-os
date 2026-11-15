@@ -41,6 +41,8 @@ alo-strings = { path = "../alo-strings" }
 # VSCodium walk's own request.
 alo-adapters = { path = "../alo-adapters" }
 alo-applications = { path = "../alo-applications" }
+alo-files = { path = "../alo-files" }
+alo-record = { path = "../alo-record" }
 alo-acting = { path = "../alo-acting" }
 alo-software = { path = "../alo-software" }
 alo-publishing = { path = "../alo-publishing" }
