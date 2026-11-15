@@ -21,7 +21,7 @@ use std::time::SystemTime;
 use alo_acting::Acting;
 use alo_adapters::fallback_verbs::{self, ACTIVATE_CONTROL, KIND, NAME, READ_WINDOW};
 use alo_adapters::{Pressable, Role as OnScreen, Seen, Shown, ShownWindow};
-use alo_applications::Application;
+use alo_applications::{Application, AnsweringTo, Installed};
 use alo_applications::verbs::{APPLICATION, CLOSE_APPLICATION, FOCUS_APPLICATION};
 use alo_files::verbs::{
     ARCHIVE_FOLDER, FILE, FIND_IN_FOLDER, FOLDER, INTO, LIST_FOLDER, MOVE_FILE, NAMED, READ_FILE,
@@ -60,11 +60,15 @@ pub const RELOAD: &str = "Reload";
 /// The title of the browser's window the pressing request reads.
 pub const THE_BROWSERS_WINDOW: &str = "Mozilla Firefox";
 
-/// The kind of work the catalogue request asks about.
-const LOOKED_UNDER: Category = Category::Photographs;
+/// The kind of work the catalogue request asks about, by a word with one
+/// meaning in the catalogue (`catalogue.toml`): painting is Painting, where
+/// *editing photographs* could fairly be Pictures or Photographs.
+const LOOKED_UNDER: Category = Category::Painting;
 
-/// The kind of work whose application the installing request names.
-const INSTALLED_FOR: Category = Category::Pictures;
+/// The application the installing request names, as a person says it. Which
+/// identifier that is comes from the catalogue, matched the way the machine
+/// matches a name (`alo_applications::Installed::answering_to`).
+pub const TO_INSTALL: &str = "GIMP";
 
 /// A folder's path under `home`.
 fn in_their(home: &Path, folder: Folder) -> std::path::PathBuf {
@@ -82,12 +86,28 @@ fn a_file(name: &str, bytes: u64) -> Result<alo_protocol::Thing, NotTheSet> {
         .map_err(|why| NotTheSet::because(format!("a file in a listing: {why}")))
 }
 
-/// The first application the catalogue offers for `kind`.
-fn offered_for(catalogue: &Catalogue, kind: Category) -> Result<&alo_software::Listed, NotTheSet> {
+/// The one application in the catalogue that `said` names, matched as the
+/// machine matches a name a person or a model says.
+fn the_one_called<'c>(
+    catalogue: &'c Catalogue,
+    said: &str,
+) -> Result<&'c alo_software::Listed, NotTheSet> {
+    let listed = Installed::holding(
+        catalogue
+            .every()
+            .iter()
+            .map(|one| one.application().clone()),
+    );
+    let AnsweringTo::One(application) = listed.answering_to(said) else {
+        return Err(NotTheSet::because(format!(
+            "the catalogue has no one application called {said}"
+        )));
+    };
     catalogue
-        .under(kind)
-        .next()
-        .ok_or_else(|| NotTheSet::because(format!("the catalogue offers nothing for {kind:?}")))
+        .every()
+        .iter()
+        .find(|one| one.application() == application)
+        .ok_or_else(|| NotTheSet::because(format!("{said} is not in the catalogue")))
 }
 
 /// The requests, on a machine whose person's home is `home` and whose
@@ -108,7 +128,7 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
     let report = downloads.join(REPORT);
     let browser = shipped.the(Role::WebBrowser).application().identifier().to_owned();
     let catalogue = Catalogue::decided().map_err(|why| NotTheSet::because(format!("{why:?}")))?;
-    let to_install = offered_for(&catalogue, INSTALLED_FOR)?;
+    let to_install = the_one_called(&catalogue, TO_INSTALL)?;
     let documents_named = Folder::Documents.xdg_name();
     let downloads_named = Folder::Downloads.xdg_name();
     let pictures_named = Folder::Pictures.xdg_name();
@@ -211,7 +231,7 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
     );
     let looking = ARequest::asking(
         "see what can be installed",
-        "What could I install for editing photographs?",
+        "What could I install for painting?",
         vec![
             Step::of(WHAT_CAN_BE_INSTALLED, Answered::TheCatalogue)
             .expecting(
@@ -222,11 +242,11 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
     );
     let installing = ARequest::asking(
         "install an application",
-        "Install GIMP.",
+        format!("Install {TO_INSTALL}."),
         vec![
-            // **Look first**: the model is not told an identifier it was not
-            // shown, and the catalogue is where this one is.
-            Step::of(WHAT_CAN_BE_INSTALLED, Answered::TheCatalogue),
+            // **A look**: the catalogue is where the identifier is, and a
+            // model that already knows it may go straight on.
+            Step::of(WHAT_CAN_BE_INSTALLED, Answered::TheCatalogue(catalogue.clone())).a_look(),
             Step::of(
                 INSTALL_APPLICATION,
                 Answered::With(Done::Installed {
@@ -286,11 +306,14 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         "press a button in an application",
         format!("Press the {RELOAD} button in Firefox."),
         vec![
+            // **A look**: the person named the button, so a model that presses
+            // it straight away has what the machine needs.
             Step::of(
                 READ_WINDOW,
                 Answered::With(Done::of_a_window_read(&the_window, &[])),
             )
-            .expecting(fallback_verbs::APPLICATION, browser.as_str()),
+            .expecting(fallback_verbs::APPLICATION, browser.as_str())
+            .a_look(),
             Step::of(
                 ACTIVATE_CONTROL,
                 Answered::With(Done::of_a_press(

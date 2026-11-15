@@ -37,8 +37,19 @@ pub fn a_value_for(arg: &Arg, decided: Option<String>) -> Given {
                 .name(),
         ),
         (_, Some(is)) => Given::text(is),
-        (Takes::Path, None) => Given::text("/var/home/alo/Documents"),
-        (Takes::Application, None) => Given::text("org.mozilla.firefox"),
+        (Takes::Path, None) => Given::text(
+            std::path::Path::new(crate::THE_HOME)
+                .join(alo_their_folders::Folder::Documents.xdg_name())
+                .display()
+                .to_string(),
+        ),
+        (Takes::Application, None) => Given::text(
+            alo_software::Shipped::decided()
+                .expect("the shipped list reads")
+                .the(alo_software::Role::WebBrowser)
+                .application()
+                .identifier(),
+        ),
         (_, None) => Given::text("a"),
     }
 }

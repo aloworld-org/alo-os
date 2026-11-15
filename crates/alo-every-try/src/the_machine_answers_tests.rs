@@ -191,7 +191,7 @@ fn the_catalogue_is_shown_under_the_kind_chosen() {
     let catalogue = alo_software::Catalogue::decided().expect("the catalogue reads");
     let under = |chosen: &str| {
         let answer = answering(
-            &Answered::TheCatalogue,
+            &Answered::TheCatalogue(catalogue.clone()),
             &call(
                 alo_software::WHAT_CAN_BE_INSTALLED,
                 &[(alo_software::words::KIND_OF_WORK, chosen)],

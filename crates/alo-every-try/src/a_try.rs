@@ -251,7 +251,35 @@ impl TheDoor for Recording<'_> {
             FromAnAgent::Run { command } => format!("run: {command}"),
             other => other.verb().unwrap_or_default().to_owned(),
         });
-        let Some(step) = self.request.road().get(self.taken) else {
+        let road = self.request.road();
+        let asked = request.verb().unwrap_or_default().trim();
+        // **A look taken again** is answered again, and the road stays where
+        // it was.
+        if let Some(looked) = self
+            .taken
+            .checked_sub(1)
+            .and_then(|last| road.get(last))
+            .filter(|last| last.is_a_look() && last.verb() == asked)
+        {
+            return match taking(looked, self.taken, request, self.verbs, self.strings) {
+                Ok(call) => Ok(answering(looked.answered(), &call, self.strings)),
+                Err(wrong) => {
+                    self.wrong = Some(wrong);
+                    Err(NotAnswered::NotReached {
+                        why: THE_TRY_IS_OVER.to_owned(),
+                    })
+                }
+            };
+        }
+        // **A look skipped**: the model went straight on, so the step after it
+        // is the one this is held to.
+        if road
+            .get(self.taken)
+            .is_some_and(|next| next.is_a_look() && next.verb() != asked)
+        {
+            self.taken += 1;
+        }
+        let Some(step) = road.get(self.taken) else {
             self.wrong = Some(WentWrong::WentOn {
                 asked: self.chose.last().cloned().unwrap_or_default(),
             });

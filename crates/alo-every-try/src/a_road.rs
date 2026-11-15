@@ -28,7 +28,7 @@ pub enum Answered {
     /// What the catalogue holds under the kind of work the call chose, read
     /// from the decided catalogue (`catalogue.toml`) as the machine reads it,
     /// so a model that looked under another kind is shown what that kind holds.
-    TheCatalogue,
+    TheCatalogue(alo_software::Catalogue),
     /// What the verb did, as the protocol carries it: told as done without
     /// asking where the step changes something (the call's own sentence
     /// inside the full-access words), and as the answer to a read otherwise.
@@ -54,6 +54,8 @@ pub struct Step {
     expecting: Vec<(&'static str, String)>,
     /// What the machine answers when the step is taken.
     answered: Answered,
+    /// Whether this is a look the model may skip, or take more than once.
+    look: bool,
 }
 
 impl Step {
@@ -64,7 +66,26 @@ impl Step {
             verb,
             expecting: Vec::new(),
             answered,
+            look: false,
         }
+    }
+
+    /// **And it is a look**: a read the model may skip when it already knows
+    /// what the read would tell it, or take again — so a road holds the model
+    /// to the result the machine needs, not to one way of getting there. A
+    /// look is never a road's last step, because a road that ended on one
+    /// could not tell skipping it from stopping short; `the_set`'s tests hold
+    /// every look to being a read and not last.
+    #[must_use]
+    pub const fn a_look(mut self) -> Self {
+        self.look = true;
+        self
+    }
+
+    /// Whether this step is a look.
+    #[must_use]
+    pub const fn is_a_look(&self) -> bool {
+        self.look
     }
 
     /// And `argument` must be given as exactly `is`.

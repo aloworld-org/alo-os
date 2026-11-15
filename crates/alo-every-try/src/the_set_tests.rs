@@ -31,7 +31,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 3);
+    assert_eq!(THE_VERSION, 4);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -215,4 +215,31 @@ fn one_request_can_be_tried_alone_and_an_unknown_one_is_none() {
         .expect("it is in the set");
     assert_eq!(only.requests().len(), 1);
     assert!(set.only("nothing called this").is_none());
+}
+
+/// **A look is a read, and never a road's last step**: a change cannot be
+/// skipped, and a road ending on a look could not tell skipping it from
+/// stopping short.
+#[test]
+fn every_look_is_a_read_and_not_last() {
+    let verbs = the_verbs();
+    for request in the_set().expect("the set builds").requests() {
+        let road = request.road();
+        for (at, step) in road.iter().enumerate() {
+            if !step.is_a_look() {
+                continue;
+            }
+            let declared = verbs
+                .of(step.verb())
+                .unwrap_or_else(|| panic!("{} is offered", step.verb()));
+            assert_eq!(
+                declared.effect(),
+                alo_capability::Effect::Read,
+                "{}: a look at {} is a read",
+                request.named(),
+                step.verb()
+            );
+            assert!(at + 1 < road.len(), "{}: a look is not last", request.named());
+        }
+    }
 }

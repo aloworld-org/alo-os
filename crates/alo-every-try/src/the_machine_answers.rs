@@ -80,7 +80,7 @@ pub fn answering(answered: &Answered, call: &Call, strings: &Strings) -> ToAnAge
             );
             ToAnAgent::done_without_asking(Done::of_a_publication(&folder, &address, false), &said)
         }
-        Answered::TheCatalogue => the_catalogue_under(call),
+        Answered::TheCatalogue(catalogue) => the_catalogue_under(catalogue, call),
         Answered::With(done) if call.waits_for_approval() => {
             done_at_full_access(done.clone(), call, strings)
         }
@@ -88,24 +88,17 @@ pub fn answering(answered: &Answered, call: &Call, strings: &Strings) -> ToAnAge
     }
 }
 
-/// What the catalogue holds under the kind of work `call` chose: matched
+/// What `catalogue` holds under the kind of work `call` chose: matched
 /// against the same list the options are built from, as
 /// `alo_software::looked_at` matches it, and everything for `everything`.
-fn the_catalogue_under(call: &Call) -> ToAnAgent {
+fn the_catalogue_under(catalogue: &Catalogue, call: &Call) -> ToAnAgent {
     let chosen = the_value_of(call, alo_software::words::KIND_OF_WORK);
     let kind = Category::EVERY
         .into_iter()
         .find(|kind| kind.as_an_option() == chosen);
-    // The set built only because the catalogue did (`the_set`), so a
-    // catalogue that will not read here is a fault in the check, and the model
-    // is shown an empty one rather than an answer the machine never gives.
-    let holds = Catalogue::decided()
-        .map(|catalogue| Done::of_a_catalogue_read(&WhatTheCatalogueHolds::under(&catalogue, kind)))
-        .unwrap_or(Done::CanBeInstalled {
-            kind_of_work: kind.map(Category::as_an_option),
-            applications: Vec::new(),
-        });
-    ToAnAgent::did(holds)
+    ToAnAgent::did(Done::of_a_catalogue_read(&WhatTheCatalogueHolds::under(
+        catalogue, kind,
+    )))
 }
 
 /// What `argument` was given as, or nothing.

@@ -43,7 +43,7 @@ use crate::a_road::{ARequest, Answered, Step};
 
 /// The version of the set. Up by one for every change to a request, a road or
 /// the machine.
-pub const THE_VERSION: u32 = 3;
+pub const THE_VERSION: u32 = 4;
 
 /// The person's home on the machine the walk boots: Fedora's atomic layout
 /// puts homes under `/var/home`, measured on 2026-11-10
@@ -130,7 +130,10 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
                     field: THE_FILE.to_owned(),
                 },
             )
-            .expecting(fallback_verbs::APPLICATION, editor.as_str()),
+            .expecting(fallback_verbs::APPLICATION, editor.as_str())
+            // **A look**: a model that names the editor by its file, as
+            // VSCodium shows it, has what typing needs without reading first.
+            .a_look(),
             Step::of(TYPE_TEXT, Answered::TypedAndSaved)
                 .expecting(fallback_verbs::APPLICATION, editor.as_str())
                 .expecting(NAME, THE_FILE)
