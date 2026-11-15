@@ -110,6 +110,15 @@ jobs:
       - name: Test the check itself
         run: cargo test --release --locked -p alo-every-try
 
+      # Its lints and its documentation, as the gate holds every crate to them,
+      # so a fault in the check itself is named here in minutes.
+      - name: Lint and document the check itself
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: |
+          cargo clippy --release --locked -p alo-every-try --all-targets -- -D warnings
+          cargo doc --release --locked -p alo-every-try --no-deps
+
       - name: Build the check
         run: cargo build --release --locked -p alo-every-try
 

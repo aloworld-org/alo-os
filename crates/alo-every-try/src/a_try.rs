@@ -2,7 +2,7 @@
 //! records what the model chose instead of carrying it out.
 //!
 //! `alo_agent::driving_about` is the loop a person's turn runs. Here its door
-//! is [`Recording`]: a question goes to the model; a read, a change or a
+//! is `Recording`: a question goes to the model; a read, a change or a
 //! command is held against the next step of the road. A step taken is
 //! answered as the machine would answer it and the loop goes on; the first
 //! step not taken ends the try, so a try that has left the road spends no more
@@ -45,9 +45,13 @@ pub enum Went {
 /// the model was asked.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Tried {
+    /// What it chose, step by step.
     chose: Vec<String>,
+    /// How it ended.
     went: Went,
+    /// How many times the model was asked.
     asked: usize,
+    /// The last line the model wrote.
     said_last: Option<String>,
 }
 
@@ -202,14 +206,21 @@ fn the_start_of(said: &str) -> String {
 /// The door a try's loop asks: questions go to the model, and everything else
 /// is held against the road.
 struct Recording<'a> {
+    /// The request being tried.
     request: &'a ARequest,
+    /// The machine's verbs, which a step is validated against.
     verbs: &'a Verbs,
+    /// The words the answers are said in.
     strings: &'a Strings,
+    /// The model a question goes to.
     model: &'a mut dyn TheModel,
     /// How many steps have been taken.
     taken: usize,
+    /// What the model chose, in order.
     chose: Vec<String>,
+    /// How the try left the road, once it has.
     wrong: Option<WentWrong>,
+    /// Why the model could not be asked, if it could not.
     unanswered: Option<String>,
     /// How many times the model was asked.
     asked: usize,

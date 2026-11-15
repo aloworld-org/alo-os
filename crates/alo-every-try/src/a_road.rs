@@ -36,8 +36,11 @@ pub enum Answered {
 /// *value* the road decides — the application, the path, the text.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Step {
+    /// The verb the step expects.
     verb: &'static str,
+    /// The arguments whose values the road decides, and those values.
     expecting: Vec<(&'static str, String)>,
+    /// What the machine answers when the step is taken.
     answered: Answered,
 }
 
@@ -81,8 +84,11 @@ impl Step {
 /// One request in a person's words, and the road it is expected to take.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ARequest {
+    /// What the request is called in a summary.
     named: &'static str,
+    /// The request, as the person types it.
     words: String,
+    /// The steps, in order.
     road: Vec<Step>,
 }
 

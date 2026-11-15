@@ -10,7 +10,9 @@ use alo_strings::{Strings, Vocabulary};
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("the words of {from} could not be joined: {why}")]
 pub struct NotTheWords {
+    /// The crate whose vocabulary it was.
     from: &'static str,
+    /// What went wrong.
     why: String,
 }
 

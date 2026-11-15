@@ -24,11 +24,17 @@ const ASKING_AS: &str = "@every-try";
 /// A model at a provider, with the key it is asked with and the schema its
 /// answers are held to.
 pub struct AtAProvider {
+    /// Where the model is.
     provider: Provider,
+    /// The key it is asked with, never shown.
     key: Secret,
+    /// The model, as the provider names it.
     model: String,
+    /// The shape its answers are held to, a turn's own.
     held_to: Value,
+    /// This run's indicator, which every question is on while it is away.
     indicator: Indicator,
+    /// How many times the provider was asked.
     calls: usize,
 }
 

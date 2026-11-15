@@ -62,12 +62,17 @@ pub const THE_SITE: &str = "site";
 /// The set could not be built from its sources.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("the set could not be built: {0}")]
-pub struct NotTheSet(String);
+pub struct NotTheSet(
+    /// What would not build.
+    String,
+);
 
 /// The requests and the machine they are asked on.
 #[derive(Debug, Clone)]
 pub struct TheSet {
+    /// Every request, in order.
     requests: Vec<ARequest>,
+    /// What a turn on the machine is told it may reach.
     may_reach: WhatItMayReach,
 }
 

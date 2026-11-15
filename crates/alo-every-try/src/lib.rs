@@ -36,7 +36,7 @@
 //! that. What this shows is narrower and cheaper: **whether the model chooses
 //! the expected verb, with the expected arguments, at each step, every time.**
 //!
-//! The set is [`the_set`]: versioned, and every verb, argument and application
+//! The set is [`the_set()`]: versioned, and every verb, argument and application
 //! name in it read from the crate that declares it.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
