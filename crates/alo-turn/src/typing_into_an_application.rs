@@ -155,7 +155,19 @@ pub(crate) fn typing_into_an_application(
             return refusing(Refused::worded_elsewhere(call, said));
         }
     };
-    let field = match typing.the_field(tree.as_ref(), strings) {
+    let field = typing.the_field(tree.as_ref(), strings);
+    // **Which field the call named, and whether it was there**, on the log: a
+    // model names the editor `hello.txt` or `Document` about evenly, and only
+    // the first is found (measured by the every-try check, 2026-11-15).
+    eprintln!(
+        "alo-agentd: {}",
+        alo_acting::said_on_the_log::the_field_asked_for(
+            typing.application(),
+            typing.name(),
+            field.is_ok()
+        )
+    );
+    let field = match field {
         Ok(field) => field,
         Err(refused) => return refusing(refused),
     };
