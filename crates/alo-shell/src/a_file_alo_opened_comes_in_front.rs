@@ -45,6 +45,29 @@ pub const COMES_WITHIN: Duration = Duration::from_secs(90);
 /// so the bound is for a caller with a bug, which must not grow a list for ever.
 const AT_MOST_WAITED_FOR: usize = 8;
 
+/// One application alo opened a file in, waited for.
+#[derive(Debug)]
+pub(crate) struct Awaited {
+    /// The application.
+    app: alo_dock::AppId,
+    /// Until when its window may still come.
+    until: Instant,
+    /// The names windows went by when the file was opened, so what is said on
+    /// the log names only the windows that came since — never the person's
+    /// other applications.
+    there_before: Vec<String>,
+    /// What was last said about why no window was brought in front.
+    said: String,
+}
+
+/// What one look found: the window to bring in front, or why there is none.
+enum Found {
+    /// The most recently opened window of the application alo may type into.
+    It(WlSurface),
+    /// None, and why, for the log.
+    Not(String),
+}
+
 impl Server {
     /// **alo was approved to open a file in `application`, and it opened**:
     /// its window, once there is one alo may type into, comes in front.
@@ -53,11 +76,21 @@ impl Server {
             return;
         };
         self.alo_opened_a_file_in
-            .retain(|(waiting, _)| *waiting != app);
+            .retain(|awaited| awaited.app != app);
         if self.alo_opened_a_file_in.len() >= AT_MOST_WAITED_FOR {
             self.alo_opened_a_file_in.remove(0);
         }
-        self.alo_opened_a_file_in.push((app, now + COMES_WITHIN));
+        let there_before = self
+            .the_windows_the_dock_sees()
+            .each_as_opened()
+            .filter_map(|window| window.app().map(|it| it.name().to_owned()))
+            .collect();
+        self.alo_opened_a_file_in.push(Awaited {
+            app,
+            until: now + COMES_WITHIN,
+            there_before,
+            said: String::new(),
+        });
     }
 
     /// **Bring in front each window alo opened a file in that has come**, and
@@ -70,13 +103,13 @@ impl Server {
             return;
         }
         let mut still = Vec::new();
-        for (app, until) in std::mem::take(&mut self.alo_opened_a_file_in) {
-            match self.the_window_alo_may_type_into(&app, may) {
-                Some(surface) => {
+        for mut awaited in std::mem::take(&mut self.alo_opened_a_file_in) {
+            match self.the_window_alo_may_type_into(&awaited, may) {
+                Found::It(surface) => {
                     let came = self.the_person_goes_to_this_window(&surface);
                     eprintln!(
                         "alo-shell: the window alo opened a file in, of {}, {}",
-                        app.name(),
+                        awaited.app.name(),
                         if came.is_ok() {
                             "came in front with the keyboard"
                         } else {
@@ -84,43 +117,79 @@ impl Server {
                         }
                     );
                 }
-                None if now >= until => eprintln!(
+                Found::Not(why) if now >= awaited.until => eprintln!(
                     "alo-shell: no window of {} that alo may type into came within {}s of \
-                     opening a file in it, so nothing was brought in front",
-                    app.name(),
+                     opening a file in it, so nothing was brought in front: {why}",
+                    awaited.app.name(),
                     COMES_WITHIN.as_secs()
                 ),
-                None => still.push((app, until)),
+                Found::Not(why) => {
+                    // **Why not, said once each time it changes**: the walk of
+                    // 2026-11-14 (run 43679048665) saw VSCodium's window up and
+                    // never brought forward, and nothing said whether its name
+                    // or its process was the reason.
+                    if why != awaited.said {
+                        eprintln!(
+                            "alo-shell: no window of {} that alo may type into yet: {why}",
+                            awaited.app.name()
+                        );
+                        awaited.said = why;
+                    }
+                    still.push(awaited);
+                }
             }
         }
         self.alo_opened_a_file_in = still;
     }
 
-    /// The most recently opened window of `app` whose process `may` says may
-    /// be typed into.
-    fn the_window_alo_may_type_into(
-        &self,
-        app: &alo_dock::AppId,
-        may: &mut dyn MayTypeInto,
-    ) -> Option<WlSurface> {
+    /// **The most recently opened window of the application whose process
+    /// `may` says may be typed into** — or, in the same one pass, why there is
+    /// none: each window of it, with its process and the desktop's answer, and
+    /// the names of windows that came since the file was opened under a name
+    /// that is not the application's. Names and process numbers only, never a
+    /// title, and each name escaped, because a program names its own window.
+    fn the_window_alo_may_type_into(&self, awaited: &Awaited, may: &mut dyn MayTypeInto) -> Found {
         let windows = self.the_windows_the_dock_sees();
-        let theirs: Vec<alo_dock::WindowId> = windows
-            .each_as_opened()
-            .filter(|window| {
-                crate::typing_into_the_window_in_front::a_window_of(window.app(), app)
-                    && !window.sits().was_put_aside()
-            })
-            .map(alo_dock::Window::id)
-            .collect();
-        theirs.into_iter().rev().find_map(|id| {
-            let surface = self.the_window_numbered(id)?.clone();
-            let credentials = surface
-                .client()?
-                .get_credentials(&self.display_handle())
-                .ok()?;
-            let pid = u32::try_from(credentials.pid).ok()?;
-            may.may_type_into(app.name(), pid).then_some(surface)
-        })
+        let mut of_it = Vec::new();
+        let mut came_since = Vec::new();
+        let opened: Vec<&alo_dock::Window> = windows.each_as_opened().collect();
+        for window in opened.into_iter().rev() {
+            if !crate::typing_into_the_window_in_front::a_window_of(window.app(), &awaited.app) {
+                let name = window.app().map(|it| it.name().to_owned());
+                if !name
+                    .as_ref()
+                    .is_some_and(|it| awaited.there_before.contains(it))
+                {
+                    came_since.push(format!("{name:?}"));
+                }
+                continue;
+            }
+            let name = window.app().map(alo_dock::AppId::name).unwrap_or_default();
+            if window.sits().was_put_aside() {
+                of_it.push(format!("{name:?} put aside"));
+                continue;
+            }
+            let surface = self.the_window_numbered(window.id()).cloned();
+            let pid = surface
+                .as_ref()
+                .and_then(|surface| surface.client())
+                .and_then(|client| client.get_credentials(&self.display_handle()).ok())
+                .and_then(|credentials| u32::try_from(credentials.pid).ok());
+            match (surface, pid) {
+                (Some(surface), Some(pid)) if may.may_type_into(awaited.app.name(), pid) => {
+                    return Found::It(surface);
+                }
+                (_, Some(pid)) => {
+                    of_it.push(format!("{name:?} by process {pid}, not alo's to type into"));
+                }
+                (_, None) => of_it.push(format!("{name:?} by a process this machine cannot name")),
+            }
+        }
+        Found::Not(format!(
+            "windows of it: [{}]; windows that came since, named otherwise: [{}]",
+            of_it.join("; "),
+            came_since.join(", ")
+        ))
     }
 }
 
