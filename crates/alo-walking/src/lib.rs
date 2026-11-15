@@ -17,7 +17,10 @@
 //!   screen to differ from the one the key was pressed at, then to hold still,
 //!   and says which of three outcomes happened;
 //! - a monitor command lost because the socket closed — `qmp.rs` holds the
-//!   connection and reads each answer.
+//!   connection and reads each answer;
+//! - a pointer aimed at a commanded place it never reached — `steering.rs`
+//!   reads it back off the screen after every move, and `the_pointer_seen.rs`
+//!   finds it by the pixels `alo-cursors` draws it with.
 //!
 //! **What a walk here does not prove**, said where the instrument is: it is
 //! still qemu, with qemu's devices — a virtio display, a PS/2 keyboard, user
@@ -27,24 +30,33 @@
 //!
 //! A test instrument, never shipped: nothing in the image depends on it.
 
+pub mod a_place_on_the_screen;
 pub mod booting;
 pub mod frame;
 pub mod keys;
 pub mod machine;
+pub mod pointer_moves;
 pub mod qemu;
 pub mod qmp;
 pub mod redacting;
 pub mod report;
 pub mod settling;
+pub mod steering;
 pub mod step;
 pub mod strokes;
 pub mod the_first_walk;
 pub mod the_log;
+pub mod the_pointer_seen;
+pub mod the_pointer_walk;
 pub mod walking;
 pub mod writing_in_vscodium;
 
 #[cfg(test)]
 mod a_machine_of_pictures;
+#[cfg(test)]
+mod a_pointer_drawn_over;
+#[cfg(test)]
+mod a_screen_with_a_pointer;
 
 pub use booting::Booting;
 pub use frame::Frame;
@@ -52,7 +64,7 @@ pub use keys::Chord;
 pub use machine::{Machine, MachineError};
 pub use report::{Check, Report, Verdict};
 pub use settling::Settling;
-pub use step::{Since, Step, Walk};
+pub use step::{Pointing, Since, Step, Walk};
 pub use strokes::Pace;
 pub use the_first_walk::{THE_PROVIDER_KEY, the_first_walk};
 pub use walking::walk;

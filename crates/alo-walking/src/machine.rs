@@ -24,6 +24,21 @@ pub trait Machine {
     /// When the machine did not take it.
     fn stroke(&mut self, stroke: &Stroke) -> Result<(), MachineError>;
 
+    /// Put the pointer at pixel `at` of the screen. Where it lands is read off
+    /// the screen afterwards, never taken from what was asked.
+    ///
+    /// # Errors
+    ///
+    /// When the machine did not take it.
+    fn point_at(&mut self, at: (usize, usize)) -> Result<(), MachineError>;
+
+    /// Press the left button down, or let it up, where the pointer is.
+    ///
+    /// # Errors
+    ///
+    /// When the machine did not take it.
+    fn button(&mut self, down: bool) -> Result<(), MachineError>;
+
     /// A picture of the screen now, to compare.
     ///
     /// # Errors

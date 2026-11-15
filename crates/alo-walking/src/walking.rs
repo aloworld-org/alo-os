@@ -8,6 +8,10 @@
 //! - **The walk stops at its first failed check**, and every check after it
 //!   is written down as *not reached*: a check of a screen nobody knows the
 //!   walk is on would be a guess reported as a measurement.
+//! - **A pointer that is the wrong shape does not stop the walk.** Looking at
+//!   the pointer changes nothing on the screen, so the walk still knows where
+//!   it is, and the next pointer check is still a measurement. A pointer that
+//!   cannot be *found* or *moved* does stop it, as any other failure does.
 //! - **A secret is never said.** Typing one is reported by its variable's
 //!   name and its length; a character it has no key for is reported by
 //!   position only.
@@ -42,6 +46,7 @@ pub fn walk(
         before: None,
         mark: 0,
         stopped: None,
+        pointer: the_pointer::ThePointer::default(),
     };
     for step in walk.steps() {
         if let Some((verdict, why)) = walking.stopped.clone() {
@@ -72,6 +77,8 @@ struct Walking {
     mark: usize,
     /// Why the walk stopped, and what that makes every later check.
     stopped: Option<(Verdict, String)>,
+    /// What the walk knows about the pointer.
+    pointer: the_pointer::ThePointer,
 }
 
 impl Walking {
@@ -137,6 +144,7 @@ impl Walking {
                 since,
                 during,
             } => self.expect_no_line(machine, check, phrases, *since, *during)?,
+            Step::Pointer(pointing) => self.pointing(machine, pointing)?,
             Step::OnlyWith(variable) => {
                 if secret(variable).is_none_or(|it| it.is_empty()) {
                     self.stopped = Some((
@@ -358,6 +366,7 @@ fn check_name(step: &Step) -> Option<String> {
     match step {
         Step::Look { name, .. } => Some(format!("the screen {name}")),
         Step::ExpectLine { check, .. } | Step::ExpectNoLine { check, .. } => Some(check.clone()),
+        Step::Pointer(pointing) => pointing.check().map(str::to_owned),
         _ => None,
     }
 }
@@ -367,6 +376,9 @@ fn at(elapsed: Duration) -> String {
     let seconds = elapsed.as_secs();
     format!("[{:>2}:{:02}]", seconds / 60, seconds % 60)
 }
+
+#[path = "walking_the_pointer.rs"]
+mod the_pointer;
 
 #[cfg(test)]
 #[path = "walking_tests.rs"]
