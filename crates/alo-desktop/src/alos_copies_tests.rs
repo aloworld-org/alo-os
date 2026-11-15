@@ -57,3 +57,41 @@ fn an_ended_process_has_not_begun() {
 fn this_process_has_a_beginning() {
     assert!(began_at(std::process::id()).is_some());
 }
+
+/// **A group holds a process when its own list, or one beneath it, names
+/// one** — how alo's copy is still known after the process alo started has
+/// ended and VSCodium runs on in Flatpak's scope (the walk of 2026-11-15, run
+/// 43726518930).
+///
+/// What would have to be true for this to pass while broken: the kernel
+/// listing a scope's processes somewhere other than `cgroup.procs`, which is
+/// cgroup v2's own interface and what this machine runs.
+#[test]
+fn a_group_holds_a_process_when_it_or_one_beneath_lists_one() {
+    let Ok(at) = tempfile::tempdir() else {
+        return;
+    };
+    let scope = at
+        .path()
+        .join("app-flatpak-com.vscodium.codium-2042859277.scope");
+    let beneath = scope.join("inner");
+    assert!(std::fs::create_dir_all(&beneath).is_ok());
+    assert!(std::fs::write(scope.join("cgroup.procs"), "").is_ok());
+    assert!(std::fs::write(beneath.join("cgroup.procs"), "").is_ok());
+    assert!(
+        !holds_a_process(&scope, 0),
+        "an empty scope was read as running"
+    );
+
+    assert!(std::fs::write(beneath.join("cgroup.procs"), "7175\n").is_ok());
+    assert!(holds_a_process(&scope, 0), "a process beneath was missed");
+
+    assert!(std::fs::write(beneath.join("cgroup.procs"), "").is_ok());
+    assert!(std::fs::write(scope.join("cgroup.procs"), "7175\n7176\n").is_ok());
+    assert!(holds_a_process(&scope, 0));
+
+    assert!(
+        !holds_a_process(&at.path().join("a-scope-that-went.scope"), 0),
+        "a group that has gone was read as running"
+    );
+}
