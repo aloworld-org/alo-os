@@ -602,9 +602,18 @@ fn another_class_is_no_terminal_and_a_hidden_field_is_no_place() {
         Some(("hello.txt".to_owned(), "hello.txt - VSCodium".to_owned()))
     );
     // Editable and with the keyboard, but not showing.
-    let hidden = ATree::of("hello.txt - VSCodium", vec![a(TEXT, "", (1 << 7) | (1 << 12))]);
-    assert_eq!(where_a_file_is_typed_into(&hidden, EDITOR, "hello.txt"), None);
+    let hidden = ATree::of(
+        "hello.txt - VSCodium",
+        vec![a(TEXT, "", (1 << 7) | (1 << 12))],
+    );
+    assert_eq!(
+        where_a_file_is_typed_into(&hidden, EDITOR, "hello.txt"),
+        None
+    );
     // Showing, but no place for text at all.
     let a_label = ATree::of("hello.txt - VSCodium", vec![a(FRAME, "hello.txt", FOCUSED)]);
-    assert_eq!(where_a_file_is_typed_into(&a_label, EDITOR, "hello.txt"), None);
+    assert_eq!(
+        where_a_file_is_typed_into(&a_label, EDITOR, "hello.txt"),
+        None
+    );
 }
