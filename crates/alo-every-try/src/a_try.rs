@@ -122,7 +122,6 @@ pub fn one_try(
         unanswered: None,
         asked: 0,
         said_last: None,
-        told_where: Vec::new(),
     };
     let happened = driving_about(
         &TheConversationSoFar::nothing(),
@@ -227,9 +226,6 @@ struct Recording<'a> {
     asked: usize,
     /// The last line the model wrote.
     said_last: Option<String>,
-    /// The steps at which the machine has already said where a file of the
-    /// name the model gave is: it says so once a step.
-    told_where: Vec<usize>,
 }
 
 /// Why the loop is stopped once the road is left: the try is over.
@@ -298,10 +294,11 @@ impl TheDoor for Recording<'_> {
             }
             Err(wrong) => {
                 // **As the machine answers a file named where there is none**:
-                // refused, with where one of that name is in the home itself,
-                // once a step (`alo_files::Touching::of_looking_in`).
+                // refused, with where one of that name is in the home itself
+                // (`alo_files::Touching::of_looking_in`), as often as it is
+                // named wrongly — the machine sets no limit, and the turn's own
+                // bound on rounds is what ends a model that never listens.
                 if let Some(refused) = self.where_it_is(&wrong) {
-                    self.told_where.push(self.taken);
                     return Ok(refused);
                 }
                 self.wrong = Some(wrong);
@@ -316,8 +313,9 @@ impl TheDoor for Recording<'_> {
 impl Recording<'_> {
     /// The machine's refusal for a path named where there is nothing, saying
     /// where one of that name is — where the road expected a file of the same
-    /// name directly in the person's home, and this step has not been told
-    /// already. [`None`] for any other way of leaving the road.
+    /// name directly in the person's home. The set's machine is at full
+    /// access, so every path is one the grants permit, as on that machine.
+    /// [`None`] for any other way of leaving the road.
     fn where_it_is(&self, wrong: &WentWrong) -> Option<ToAnAgent> {
         let WentWrong::AnotherValue {
             expected, given, ..
@@ -329,7 +327,7 @@ impl Recording<'_> {
         let same_name =
             expected_at.file_name().is_some() && expected_at.file_name() == given_at.file_name();
         let in_the_home = expected_at.parent() == Some(std::path::Path::new(crate::THE_HOME));
-        if !same_name || !in_the_home || self.told_where.contains(&self.taken) {
+        if !same_name || !in_the_home {
             return None;
         }
         let said = self.strings.say(

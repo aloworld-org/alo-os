@@ -138,7 +138,7 @@ impl Touching {
                                 Some(found) => strings.say(
                                     &words::NOTHING_THERE_BUT_ONE_IS.key(),
                                     &Filling::of("path", path.clone())
-                                        .and("found", found.describe()),
+                                        .and("found", found.display().to_string()),
                                 ),
                                 None => why.said(strings),
                             }
@@ -220,8 +220,9 @@ impl Touching {
 
 /// **The one file named like `given` in the person's `home` folder itself**,
 /// where the grants let `under` reach it, as written and where it really
-/// leads. Never a folder inside the home: what is said is one path, from a
-/// place the person already let alo look.
+/// leads — **named as written**, `home` and the name, so the path a model is
+/// told is in the home itself and is the one the grants were asked about,
+/// never where a link in the home leads. Never a folder inside the home.
 fn one_of_that_name(
     given: &Path,
     home: &Path,
@@ -229,7 +230,7 @@ fn one_of_that_name(
     under: &alo_capability::Grantee,
     at: SystemTime,
     resolving: &dyn Resolving,
-) -> Option<Real> {
+) -> Option<std::path::PathBuf> {
     let named = given.file_name()?;
     let there = home.join(named);
     if there == given {
@@ -242,7 +243,7 @@ fn one_of_that_name(
     grants
         .permitted_where_it_really_is(under, real.as_path(), at)
         .ok()?;
-    Some(real)
+    Some(there)
 }
 
 #[cfg(test)]
@@ -781,15 +782,6 @@ mod tests {
             "an ungranted home was looked in: {said}"
         );
         let home = granting(&["/home/anna"]);
-        let said = plain(
-            &home,
-            &["/home/anna/Pictures/hello.txt"],
-            Some("/home/anna"),
-        );
-        assert!(
-            !said.contains("Pictures"),
-            "a subfolder was looked in: {said}"
-        );
         let said = plain(&home, &["/home/anna/hello.txt"], None);
         assert!(
             !said.contains("/home/anna/hello.txt"),
@@ -797,4 +789,65 @@ mod tests {
         );
         assert!(said.contains("there is nothing at"), "{said}");
     }
+
+    /// **A link in the home that leads outside the grants is never named**,
+    /// and an ungranted home is **not looked at on disk at all** — each check
+    /// on its own, so neither hides the other.
+    #[test]
+    fn a_link_out_of_the_grants_is_never_named_and_an_ungranted_home_is_not_looked_at() {
+        let missing = "/home/anna/Documents/hello.txt";
+        let ask = |grants: &Grants, there: &Wherever| {
+            let call = reading(missing);
+            let authorised = Authorised::read(&call, &files(), grants, noon()).unwrap();
+            refusal(
+                &Touching::of_looking_in(
+                    authorised,
+                    grants,
+                    there,
+                    &in_english(),
+                    Some(Path::new("/home/anna")),
+                )
+                .unwrap_err(),
+            )
+        };
+        // Granted as written; really leads outside every grant.
+        let home = granting(&["/home/anna"]);
+        let out = Wherever::leading(&[("/home/anna/hello.txt", "/etc/shadow")]);
+        let said = ask(&home, &out);
+        assert!(!said.contains("/home/anna/hello.txt"), "{said}");
+        assert!(!said.contains("shadow"), "{said}");
+        // Not granted as written; really leads inside a grant.
+        let documents = granting(&["/home/anna/Documents"]);
+        let inward = Wherever::leading(&[("/home/anna/hello.txt", "/home/anna/Documents/x.txt")]);
+        let said = ask(&documents, &inward);
+        assert!(!said.contains("/home/anna/hello.txt"), "{said}");
+        assert!(
+            !inward
+                .was_asked_about()
+                .contains(&PathBuf::from("/home/anna/hello.txt")),
+            "an ungranted home was looked at on disk"
+        );
+    }
+
+    /// **What is named is the path as written in the home**, even where a link
+    /// there leads somewhere the grants also cover.
+    #[test]
+    fn what_is_named_is_the_home_and_the_name() {
+        let call = reading("/home/anna/Documents/hello.txt");
+        let grants = granting(&["/home/anna"]);
+        let authorised = Authorised::read(&call, &files(), &grants, noon()).unwrap();
+        let said = refusal(
+            &Touching::of_looking_in(
+                authorised,
+                &grants,
+                &Wherever::leading(&[("/home/anna/hello.txt", "/home/anna/Projects/notes-v2.txt")]),
+                &in_english(),
+                Some(Path::new("/home/anna")),
+            )
+            .unwrap_err(),
+        );
+        assert!(said.contains("one of that name is at /home/anna/hello.txt"), "{said}");
+        assert!(!said.contains("Projects"), "{said}");
+    }
+
 }

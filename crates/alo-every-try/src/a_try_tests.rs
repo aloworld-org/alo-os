@@ -329,38 +329,26 @@ fn a_file_named_in_the_wrong_folder_is_told_where_it_is_and_may_be_named_again()
     );
 }
 
-/// **The refusal cases**: a second wrong path at the same step leaves the
-/// road — the machine says where the file is once, and a model that ignores
-/// it has left — and a file of another name is never answered this way.
+/// **The refusal cases**: a model told where the file is that never names it
+/// there does not take the road, and a file of another name is never answered
+/// this way.
 #[test]
-fn a_file_is_told_where_it_is_once_and_only_for_its_own_name() {
+fn a_file_is_told_where_it_is_only_for_its_own_name_and_must_be_named_there() {
     let wrong = || {
         proposing(
             OPEN_FILE_IN_APPLICATION,
-            &[
-                (APPLICATION, EDITOR),
-                (PATH, "/var/home/alo/Documents/hello.txt"),
-            ],
+            &[(APPLICATION, EDITOR), (PATH, "/var/home/alo/Documents/hello.txt")],
         )
     };
     let (twice, _) = tried(&[wrong(), wrong(), answering("Done.")]);
-    assert!(
-        matches!(
-            twice.went(),
-            Went::WentWrong(WentWrong::AnotherValue { step: 1, .. })
-        ),
-        "{twice:?}"
-    );
+    assert!(!twice.took_the_road(), "{twice:?}");
     let another = proposing(
         OPEN_FILE_IN_APPLICATION,
         &[(APPLICATION, EDITOR), (PATH, "/var/home/alo/notes.txt")],
     );
     let (other, _) = tried(&[another, answering("Done.")]);
     assert!(
-        matches!(
-            other.went(),
-            Went::WentWrong(WentWrong::AnotherValue { step: 1, .. })
-        ),
+        matches!(other.went(), Went::WentWrong(WentWrong::AnotherValue { step: 1, .. })),
         "{other:?}"
     );
 }
