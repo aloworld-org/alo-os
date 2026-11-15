@@ -212,7 +212,10 @@ pub fn what_is_there(tree: &dyn AccessibilityTree, places: &[APlaceForText]) -> 
         return Vec::new();
     };
     let mut said: Vec<String> = Vec::new();
-    for place in places.iter().filter(|place| place.window == in_front.window) {
+    for place in places
+        .iter()
+        .filter(|place| place.window == in_front.window)
+    {
         let named = if place.name.trim().is_empty() {
             place.window.trim()
         } else {

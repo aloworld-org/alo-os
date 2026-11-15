@@ -569,12 +569,19 @@ fn a_terminal_with_the_keyboard_is_never_offered_or_listed() {
     };
     let tree = ATree::of(
         "hello.txt - VSCodium",
-        vec![web_terminal, a(TEXT, "", EDITABLE), a(PASSWORD, "Secret", EDITABLE)],
+        vec![
+            web_terminal,
+            a(TEXT, "", EDITABLE),
+            a(PASSWORD, "Secret", EDITABLE),
+        ],
     );
     assert_eq!(where_a_file_is_typed_into(&tree, EDITOR, "hello.txt"), None);
     let refused = typing("Document", "x")
         .the_field(&tree, &in_english())
         .unwrap_err();
     let said = said(&refused);
-    assert!(!said.contains("Secret"), "a password field is listed: {said}");
+    assert!(
+        !said.contains("Secret"),
+        "a password field is listed: {said}"
+    );
 }

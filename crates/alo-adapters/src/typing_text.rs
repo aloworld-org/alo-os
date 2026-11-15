@@ -32,9 +32,7 @@ use crate::places_for_text::{
     FOCUSED, TypingRefuses, holds, the_ones_meant, the_places_for_text, what_is_there,
     why_typing_refuses,
 };
-use crate::role::Role;
 use crate::typing_words as words;
-
 
 /// The field the approved text goes into, found at the moment of typing.
 #[derive(Debug, Clone, PartialEq, Eq)]
