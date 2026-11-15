@@ -342,6 +342,35 @@ mod tests {
     /// **A continued turn is told it may answer**, and is not told that a
     /// proposal is what finishes every request — the wording that left a
     /// question with no way to end.
+    /// **A continued turn is told to end once the request is done**, not only
+    /// when it asked a question; and to propose only what is not yet done.
+    /// Every-try, set 4, 2026-11-15: after *Open Firefox* was done the model
+    /// went on to read Firefox's window in 10 of 10 tries, and after the
+    /// catalogue answered *What could I install for painting?* it installed
+    /// one in 10 of 10.
+    #[test]
+    fn a_continued_turn_ends_once_what_was_asked_is_done() {
+        let next = super::WHAT_TO_SEND_NEXT;
+        assert!(next.contains("not been done yet"), "{next}");
+        assert!(next.contains("Once everything the request asked for is done"), "{next}");
+        assert!(next.contains("nothing the request did not ask for"), "{next}");
+        assert!(
+            !next.contains("a propose line if the request asks for anything to be done"),
+            "a done request is not steered to propose again: {next}"
+        );
+    }
+
+    /// **And to look before it types or presses**, at the moment it decides.
+    /// Every-try, set 4: after opening a file in VSCodium the model typed into
+    /// a field it had not seen (`Document`) in 3 of 5 tries.
+    #[test]
+    fn a_continued_turn_reads_a_window_before_typing_or_pressing_in_it() {
+        let next = super::WHAT_TO_SEND_NEXT;
+        let reading = next.find("read the window").unwrap_or(usize::MAX);
+        let typing = next.find("type into or press").unwrap_or(0);
+        assert!(typing < reading && reading != usize::MAX, "{next}");
+    }
+
     #[test]
     fn a_continued_turn_may_end_in_an_answer_and_is_not_steered_to_a_proposal() {
         assert!(super::WHAT_TO_SEND_NEXT.contains("an answer line"));
