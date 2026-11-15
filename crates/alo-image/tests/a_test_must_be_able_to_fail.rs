@@ -1,7 +1,8 @@
 //! **The mutation check breaks the code a pull request changes, and says out
 //! loud when no test noticed.**
 //!
-//! Law 8 in `CLAUDE.md`, from [ADR 0157]: *a test must be able to fail.* The code
+//! Law 8, which pull request #1270 adds to `CLAUDE.md` with the owner's
+//! decision of 2026-11-15: *a test must be able to fail.* The code
 //! a change touches is broken on purpose with `cargo-mutants`, and a break no
 //! test notices is reported with the change. `.github/workflows/mutants.yml` is
 //! what does that on every pull request, and a workflow is the file nobody reads
@@ -14,8 +15,6 @@
 //! Every rule is a function of the text, so each is shown to refuse a workflow
 //! that breaks it as well as to accept the one that ships. A rule that could not
 //! refuse anything would be the fault law 8 is about, in the test written for it.
-//!
-//! [ADR 0157]: ../../../docs/decisions/0157-a-bug-is-caught-by-a-check-its-author-did-not-write.md
 
 use alo_image::TheWorkflow;
 

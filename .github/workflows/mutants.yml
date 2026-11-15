@@ -1,8 +1,8 @@
 # Break the code a pull request changes, one small change at a time, and say
 # which breaks no test noticed.
 #
-# **Why it exists.** Law 8 in `CLAUDE.md`, from ADR 0157: *a test must be able
-# to fail.* A test written by the same hand as the code tends to agree with the
+# **Why it exists.** Law 8, which pull request #1270 adds to `CLAUDE.md` with
+# the owner's decision of 2026-11-15: *a test must be able to fail.* A test written by the same hand as the code tends to agree with the
 # code's mistakes, and it reads green whether or not it could ever go red. The
 # way to find out is to break the code on purpose and see whether any test
 # notices. `cargo-mutants` does exactly that: it makes one small change — a
@@ -58,7 +58,7 @@
 # each of those, and shows each rule refusing a workflow that breaks it.
 
 name: Mutants
-run-name: Mutants on pull request #${{ github.event.pull_request.number || inputs.pull_request }}
+run-name: "Mutants on pull request #${{ github.event.pull_request.number || inputs.pull_request }}"
 
 on:
   pull_request:
