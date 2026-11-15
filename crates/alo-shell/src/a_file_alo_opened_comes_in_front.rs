@@ -53,11 +53,12 @@ impl Server {
             return;
         };
         self.alo_opened_a_file_in
-            .retain(|(waiting, _)| *waiting != app);
+            .retain(|(waiting, _, _)| *waiting != app);
         if self.alo_opened_a_file_in.len() >= AT_MOST_WAITED_FOR {
             self.alo_opened_a_file_in.remove(0);
         }
-        self.alo_opened_a_file_in.push((app, now + COMES_WITHIN));
+        self.alo_opened_a_file_in
+            .push((app, now + COMES_WITHIN, String::new()));
     }
 
     /// **Bring in front each window alo opened a file in that has come**, and
@@ -70,7 +71,7 @@ impl Server {
             return;
         }
         let mut still = Vec::new();
-        for (app, until) in std::mem::take(&mut self.alo_opened_a_file_in) {
+        for (app, until, said) in std::mem::take(&mut self.alo_opened_a_file_in) {
             match self.the_window_alo_may_type_into(&app, may) {
                 Some(surface) => {
                     let came = self.the_person_goes_to_this_window(&surface);
@@ -90,10 +91,72 @@ impl Server {
                     app.name(),
                     COMES_WITHIN.as_secs()
                 ),
-                None => still.push((app, until)),
+                None => {
+                    // **Why not, said once each time it changes**: the walk of
+                    // 2026-11-14 (run 43679048665) saw VSCodium's window up and
+                    // never brought forward, and nothing said whether its name
+                    // or its process was the reason.
+                    let now_said = self.why_no_window_alo_may_type_into(&app, may);
+                    if now_said != said {
+                        eprintln!(
+                            "alo-shell: no window of {} that alo may type into yet: {now_said}",
+                            app.name()
+                        );
+                    }
+                    still.push((app, until, now_said));
+                }
             }
         }
         self.alo_opened_a_file_in = still;
+    }
+
+    /// **What is on the screen instead**, for the log: how each window names
+    /// itself, and for each window of `app` its process and whether `may` says
+    /// alo may type into it. Names and process numbers only — never a title,
+    /// which can hold what a person is working on.
+    fn why_no_window_alo_may_type_into(
+        &self,
+        app: &alo_dock::AppId,
+        may: &mut dyn MayTypeInto,
+    ) -> String {
+        let windows = self.the_windows_the_dock_sees();
+        let mut named: Vec<String> = Vec::new();
+        let mut of_it: Vec<String> = Vec::new();
+        for window in windows.each_as_opened() {
+            let name = window
+                .app()
+                .map_or_else(|| "(no name)".to_owned(), |it| it.name().to_owned());
+            if !crate::typing_into_the_window_in_front::a_window_of(window.app(), app) {
+                named.push(name);
+                continue;
+            }
+            let pid = self
+                .the_window_numbered(window.id())
+                .and_then(|surface| surface.client())
+                .and_then(|client| client.get_credentials(&self.display_handle()).ok())
+                .and_then(|credentials| u32::try_from(credentials.pid).ok());
+            of_it.push(match pid {
+                Some(pid) => format!(
+                    "{name} by process {pid}, {}{}",
+                    if may.may_type_into(app.name(), pid) {
+                        "alo may type into it"
+                    } else {
+                        "not alo's to type into"
+                    },
+                    if window.sits().was_put_aside() {
+                        ", put aside"
+                    } else {
+                        ""
+                    }
+                ),
+                None => format!("{name} by a process this machine cannot name"),
+            });
+        }
+        format!(
+            "windows of it: [{}]; other windows: [{}]",
+            of_it.join("; "),
+            named.join(", ")
+        )
     }
 
     /// The most recently opened window of `app` whose process `may` says may
