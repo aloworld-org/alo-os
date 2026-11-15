@@ -321,6 +321,10 @@ fn the_model_is_told_to_look_in_the_catalogue_before_installing() {
         alo_instructing::installing_an_application::INSTALL_APPLICATION,
         alo_software::INSTALL_APPLICATION
     );
+    assert_eq!(
+        alo_instructing::installing_an_application::EVERYTHING,
+        alo_software::verbs::EVERYTHING
+    );
     let verbs = the_whole_machine();
     let told = alo_instructing::installing_an_application(&verbs);
     let looking = told
