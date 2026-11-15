@@ -120,3 +120,20 @@ absolutely, the first sixteen pointer steps ran:
   than left in the report; the threshold is now 3.
 - The walk then stopped at *the pointer goes onto Settings* for the same
   reason.
+
+**Run 43654461272, 2026-11-14, image from main, once.** Twenty pointer checks
+passed before the walk stopped at Firefox:
+
+- **On the desktop, alo's navy kite**, 24 pixels.
+- **Over Text Editor, alo's navy text cursor**, now over its window (the
+  threshold fix held), and **over VSCodium, alo's navy text cursor**.
+- **Over Settings, the large white kite**, 36 pixels, at once; **the familiar
+  arrow** when *Classic* was chosen, and **the kite** again when *Kite* was —
+  each found again after a nudge.
+- **Firefox**, opened after the change, put its first-start dialog (*Welcome
+  to Firefox … Continue*) over everything, so the page was never typed into
+  the address bar and the walk stopped there. The picture kept
+  (`38-the-pointer-page.png`) shows a large white kite over Firefox — **read by
+  eye, not measured**. The walk now presses Escape and Enter past that dialog.
+  The address it typed also carried runs of spaces, from a string the walk
+  built wrongly; that is fixed and a test now refuses it.

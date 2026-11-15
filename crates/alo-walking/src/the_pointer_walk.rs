@@ -76,12 +76,17 @@ pub const LIME: [u8; 3] = [0, 255, 0];
 #[must_use]
 pub fn the_page() -> String {
     let rgb = |[red, green, blue]: [u8; 3]| format!("rgb({red},{green},{blue})");
-    format!(
-        "data:text/html,<body style=margin:0;background:{plain}>         <textarea style=display:block;width:100vw;height:35vh;border:0;margin:0;         background:{field};resize:none></textarea>         <div style=height:10vh></div>         <a href=x style=display:block;height:35vh;background:{link}></a></body>",
-        plain = rgb(CYAN),
-        field = rgb(MAGENTA),
-        link = rgb(LIME),
-    )
+    let (plain, field, link) = (rgb(CYAN), rgb(MAGENTA), rgb(LIME));
+    [
+        "data:text/html,".to_owned(),
+        format!("<body style=margin:0;background:{plain}>"),
+        format!(
+            "<textarea style=display:block;width:100vw;height:35vh;border:0;margin:0;resize:none;background:{field}></textarea>"
+        ),
+        "<div style=height:10vh></div>".to_owned(),
+        format!("<a href=x style=display:block;height:35vh;background:{link}></a></body>"),
+    ]
+    .concat()
 }
 
 /// The look the person chooses in Settings in this walk.
@@ -245,6 +250,14 @@ fn over_firefox(walk: Walk) -> Walk {
         .press(Chord::key("ret"))
         .wait(AN_APPLICATION_OPENS)
         .look("firefox", look.at_most(Duration::from_secs(120)))
+        // **Firefox's first start asks the person to continue**, in a dialog
+        // over everything with *Continue* chosen (run 43654461272, picture
+        // `38-the-pointer-page.png`); Escape, then Enter, gets past it the way a
+        // person's first start does, and Ctrl+L then reaches the address bar
+        // whatever the page behind it was.
+        .press(Chord::key("esc"))
+        .press(Chord::key("ret"))
+        .wait(Duration::from_secs(5))
         .press(Chord::with("ctrl", "l"))
         .type_text(&the_page())
         .press(Chord::key("ret"))

@@ -350,6 +350,7 @@ impl Walking {
                 }
             }
         }
+        seen.dedup();
         if seen.is_empty() {
             "no pointer alo draws, in any shape, colour or size, is there".to_owned()
         } else {

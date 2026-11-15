@@ -144,7 +144,7 @@ fn the_wrong_arrow_fails_saying_which_and_the_walk_goes_on() {
             shape: PointerShape::Classic,
             ..Look::SHIPPED
         },
-        ..a_page()
+        ..AScreenWithAPointer::grey()
     };
     let the_walk = Walk::named("pointer")
         .pointer(is_drawn_as("the kite", Some(CursorIcon::Default)))
@@ -186,7 +186,7 @@ fn the_size_and_colour_chosen_are_what_is_checked() {
 
     let mut right = AScreenWithAPointer {
         look: chosen,
-        ..a_page()
+        ..AScreenWithAPointer::grey()
     };
     let report = walk(&mut right, &checks, &nothing_set, QUICK);
     assert_eq!(
@@ -196,7 +196,7 @@ fn the_size_and_colour_chosen_are_what_is_checked() {
         report.as_text()
     );
 
-    let mut unchanged = a_page();
+    let mut unchanged = AScreenWithAPointer::grey();
     let report = walk(&mut unchanged, &checks, &nothing_set, QUICK);
     assert_eq!(
         verdicts(&report),

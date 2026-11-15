@@ -92,7 +92,8 @@ fn the_page_can_be_typed_and_is_only_an_address() {
     let page = the_page();
     assert!(keys::typing(&page).is_ok());
     assert!(page.starts_with("data:text/html,"));
-    assert!(!page.contains('#') && !page.contains('%') && !page.contains(' '));
+    assert!(!page.contains('#') && !page.contains('%'));
+    assert!(!page.contains("  "), "a run of spaces in {page:?}");
     for colour in ["rgb(255,0,255)", "rgb(0,255,255)", "rgb(0,255,0)"] {
         assert!(page.contains(colour), "{colour} is not on the page");
     }
