@@ -61,7 +61,7 @@ A look **fails when the screen did not change** within its time, and the walk
 stops at its first failure: every check after it reads **NOT REACHED** rather
 than being left out, so a short walk never reads as a walk that passed.
 
-After step 9 the walk checks **the pointer** — on the desktop, over Text
+After the terminal steps the walk checks **the pointer** — on the desktop, over Text
 Editor, VSCodium and Firefox, and as Settings changes it: [the pointer on a
 walk](the-pointer-on-a-walk.md) says what each check is and what would have to
 be true for it to pass while the pointer is broken.
