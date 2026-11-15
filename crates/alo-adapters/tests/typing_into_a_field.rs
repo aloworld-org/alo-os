@@ -585,3 +585,26 @@ fn a_terminal_with_the_keyboard_is_never_offered_or_listed() {
         "a password field is listed: {said}"
     );
 }
+
+/// **Only the web terminal's own class marks a terminal**: an editor whose
+/// class is anything else is still offered — and a field that is not showing
+/// is never one.
+#[test]
+fn another_class_is_no_terminal_and_a_hidden_field_is_no_place() {
+    use alo_adapters::places_for_text::where_a_file_is_typed_into;
+    let an_editor = Thing {
+        class: "monaco-editor",
+        ..a(TEXT, "", FOCUSED)
+    };
+    let tree = ATree::of("hello.txt - VSCodium", vec![an_editor]);
+    assert_eq!(
+        where_a_file_is_typed_into(&tree, EDITOR, "hello.txt"),
+        Some(("hello.txt".to_owned(), "hello.txt - VSCodium".to_owned()))
+    );
+    // Editable and with the keyboard, but not showing.
+    let hidden = ATree::of("hello.txt - VSCodium", vec![a(TEXT, "", (1 << 7) | (1 << 12))]);
+    assert_eq!(where_a_file_is_typed_into(&hidden, EDITOR, "hello.txt"), None);
+    // Showing, but no place for text at all.
+    let a_label = ATree::of("hello.txt - VSCodium", vec![a(FRAME, "hello.txt", FOCUSED)]);
+    assert_eq!(where_a_file_is_typed_into(&a_label, EDITOR, "hello.txt"), None);
+}
