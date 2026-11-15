@@ -168,6 +168,22 @@ without them has not been finished, it has been abandoned.
   use the thing. That is the argument: our tests check that each end works, and
   nothing checks that the two ends meet. `docs/walks/` is where the meeting is
   checked.
+- **A feature is done when its walk passes, not when its pieces pass**
+  ([ADR 0156](docs/decisions/0156-a-feature-is-done-when-its-walk-passes.md)).
+  *The owner, 2026-11-14: "Yes please adopt all of them"*, accepting that each
+  change takes about 20–30% longer. Five rules:
+  1. **Walk first** — the person's steps are written as an automated walk
+     (`docs/walks/`, `.github/workflows/walk.yml`) before the code.
+  2. **Seam tests** — every hand-over (socket line, verb argument, app id,
+     D-Bus call) has a test running both real sides, never one side against
+     its own copy of the other.
+  3. **One source for names** — app ids, verb and argument names are declared
+     once and read everywhere; a hand-copied name is a bug.
+  4. **The image is built on every pull request** — as a check that never
+     publishes (`image-check.yml`), and required before anything lands.
+  5. **One lane owns one feature from start to finish.**
+  Rule 4 is a required check and a walk checks rule 1 when it runs; the
+  rest is discipline nothing enforces, and the ADR says which.
 
 **A check that stands in for the thing is not the thing**, and this repository
 has rediscovered that four times in four sets of clothes. It is written here

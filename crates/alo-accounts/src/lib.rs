@@ -38,6 +38,7 @@
 //! | | |
 //! |---|---|
 //! | `account` | One account: name, number, and the hash of a password |
+//! | `secret_kind` | Whether an account's secret is a PIN or a password, so the screen asks for the right one |
 //! | `hashing` | Argon2id, and the decoy that keeps an unknown name honest |
 //! | `store` | The accounts, creation, and the sign-in they answer |
 //! | `written` | The store as TOML, read back believed or refused |
@@ -54,6 +55,7 @@ mod hashing;
 mod keeping;
 mod place;
 mod refusing;
+mod secret_kind;
 mod session;
 mod store;
 mod the_name_given;
@@ -65,6 +67,7 @@ pub use account::Account;
 pub use keeping::{found, kept};
 pub use place::THE_ACCOUNTS;
 pub use refusing::{CannotHash, NotCreated, NotKept, NotSetAgain, NotSignedIn};
+pub use secret_kind::SecretKind;
 pub use session::{Session, SignedIn};
 pub use store::Accounts;
 pub use the_name_given::{

@@ -44,7 +44,8 @@ use std::os::unix::fs::{DirBuilderExt as _, MetadataExt as _, PermissionsExt as 
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 
-use alo_launching::{HowItStarts, TheEntry};
+use alo_acting::Opened;
+use alo_launching::{HowItStarts, TheEntry, WhyNotWithAFile};
 use alo_shell::alo_at_work::{NoCopy, StartsAlosCopy};
 use zbus::zvariant::Value;
 
@@ -135,7 +136,10 @@ impl AlosCopies {
     }
 
     /// Start a copy, and answer whether it is running.
-    fn start(&mut self, application: &str) -> Result<(), NoCopy> {
+    ///
+    /// `command` is the installed entry's own, with a file in it where one was
+    /// asked to be opened (`Self::the_command_with_a_file`).
+    fn start(&mut self, application: &str, command: &[String]) -> Result<(), NoCopy> {
         let Some(home) = self.home.clone() else {
             return Err(said(
                 application,
@@ -145,7 +149,6 @@ impl AlosCopies {
         let Some(copy) = alo_launching::alos_copy(application, &home) else {
             return Err(NoCopy::OfItsOwn);
         };
-        let command = self.the_command(application)?;
         let Some((first, rest)) = command.split_first() else {
             return Err(said(application, "its command names nothing"));
         };
@@ -260,6 +263,93 @@ impl AlosCopies {
         }
     }
 
+    /// The installed entry's own command **with `file` where the entry says a
+    /// file goes** (`alo_launching::how_it_starts_with_a_file`), or what the
+    /// daemon is told instead.
+    fn the_command_with_a_file(
+        &self,
+        application: &str,
+        file: &str,
+    ) -> Result<Vec<String>, Opened> {
+        let Some(location) = alo_launching::where_the_entry_is(application, &self.entries) else {
+            return Err(Opened::NotInstalled);
+        };
+        let Some(entry) = std::fs::read_to_string(&location)
+            .ok()
+            .as_deref()
+            .and_then(TheEntry::read)
+        else {
+            eprintln!("alo-desktop: the entry of {application} could not be read");
+            return Err(Opened::CouldNotStart);
+        };
+        match alo_launching::how_it_starts_with_a_file(application, &entry, location.to_str(), file)
+        {
+            Ok(
+                HowItStarts::FromItsCommand(command)
+                | HowItStarts::OverTheBus {
+                    or_else: Some(command),
+                },
+            ) => Ok(command),
+            // Over the bus only: one name, one window, no copy of its own.
+            Ok(HowItStarts::OverTheBus { or_else: None }) => Err(Opened::NoCopyOfItsOwn),
+            Err(WhyNotWithAFile::TakesNoFile) => Err(Opened::TakesNoFile),
+            Err(WhyNotWithAFile::CannotStart(why)) => {
+                eprintln!("alo-desktop: the entry of {application} cannot start it: {why:?}");
+                Err(Opened::CouldNotStart)
+            }
+        }
+    }
+
+    /// **Hand `command` — the entry's own, with the file in it — to the copy
+    /// already running**, by starting it once more over the copy's own
+    /// profile (`alo_launching::AlosCopy::handing_over`). The process that
+    /// hands over ends by itself, and is waited for on a thread of its own so
+    /// it is reaped without this desktop waiting.
+    fn handed_over(&self, application: &str, command: &[String]) -> Opened {
+        let Some(home) = self.home.clone() else {
+            return Opened::CouldNotStart;
+        };
+        let Some(copy) = alo_launching::alos_copy(application, &home) else {
+            return Opened::NoCopyOfItsOwn;
+        };
+        let Some((first, rest)) = command.split_first() else {
+            return Opened::CouldNotStart;
+        };
+        let Some(program) = alo_launching::the_program(first, self.search.as_deref(), is_runnable)
+        else {
+            return Opened::CouldNotStart;
+        };
+        let Some(mut handed) = self.handed.clone() else {
+            return Opened::CouldNotStart;
+        };
+        let answer = crate::telling_applications_to_describe_themselves::the_persons_answer();
+        handed.extend(alo_launching::what_a_start_is_handed(answer.describe));
+        let started = Command::new(program)
+            .args(rest)
+            .args(copy.handing_over())
+            .env_clear()
+            .envs(handed.iter().filter_map(|pair| pair.split_once('=')))
+            .current_dir(&home)
+            .stdin(Stdio::null())
+            .spawn();
+        match started {
+            Ok(mut child) => {
+                std::thread::spawn(move || {
+                    let _ = child.wait();
+                });
+                eprintln!("alo-desktop: a file was handed to alo's own copy of {application}");
+                Opened::InAlosCopy
+            }
+            Err(why) => {
+                eprintln!(
+                    "alo-desktop: a file could not be handed to alo's own copy of \
+                     {application}: {why}"
+                );
+                Opened::CouldNotStart
+            }
+        }
+    }
+
     /// Hand the process to the person's own manager as a scope of its own.
     fn handed_to_the_manager(&self, application: &str, pid: u32) -> Option<String> {
         let unit = alo_launching::the_unit_for_alos_copy(application, self.starts)?;
@@ -337,7 +427,28 @@ impl StartsAlosCopy for AlosCopies {
         if self.still_running(application) {
             return Ok(());
         }
-        self.start(application)
+        let command = self.the_command(application)?;
+        self.start(application, &command)
+    }
+
+    fn started_with_a_file(&mut self, application: &str, file: &Path) -> Opened {
+        // A file whose name is not text cannot be put in a command line, and
+        // the door never hands one over: said rather than assumed.
+        let Some(file) = file.to_str() else {
+            return Opened::CouldNotStart;
+        };
+        let command = match self.the_command_with_a_file(application, file) {
+            Ok(command) => command,
+            Err(why) => return why,
+        };
+        if self.still_running(application) {
+            return self.handed_over(application, &command);
+        }
+        match self.start(application, &command) {
+            Ok(()) => Opened::InAlosCopy,
+            Err(NoCopy::OfItsOwn) => Opened::NoCopyOfItsOwn,
+            Err(NoCopy::CouldNotStart) => Opened::CouldNotStart,
+        }
     }
 
     fn groups_of(&mut self, application: &str) -> Vec<u64> {

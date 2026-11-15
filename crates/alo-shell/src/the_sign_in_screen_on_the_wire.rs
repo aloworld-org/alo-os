@@ -265,6 +265,7 @@ const fn an_answers_word(answered: TheScreenReaderAnswered) -> &'static str {
         TheScreenReaderAnswered::NotOnThisComputer => "not-on-this-computer",
         TheScreenReaderAnswered::DidNotStart => "did-not-start",
         TheScreenReaderAnswered::DidNotStop => "did-not-stop",
+        TheScreenReaderAnswered::NothingToPlayItOn => "nothing-to-play-it-on",
     }
 }
 
@@ -276,6 +277,7 @@ fn the_answer_named(word: &str) -> Option<TheScreenReaderAnswered> {
         TheScreenReaderAnswered::NotOnThisComputer,
         TheScreenReaderAnswered::DidNotStart,
         TheScreenReaderAnswered::DidNotStop,
+        TheScreenReaderAnswered::NothingToPlayItOn,
     ]
     .into_iter()
     .find(|answered| an_answers_word(*answered) == word)

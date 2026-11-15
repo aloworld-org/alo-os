@@ -107,7 +107,11 @@ pub async fn opened_at(connection: &zbus::Connection, application: &str, uri: &s
 }
 
 /// Ask `opener` to open the file at `path`, and whether it said it did.
-pub(crate) async fn opened_in(connection: &zbus::Connection, opener: &str, path: &Path) -> bool {
+///
+/// Public since 2026-11-14, for the desktop opening a file alo was approved to
+/// open in the person's own window of a bus-activated application
+/// (`open_file_in_application`): the same `Open` with the same `file://` address.
+pub async fn opened_in(connection: &zbus::Connection, opener: &str, path: &Path) -> bool {
     let (Ok(name), Ok(object)) = (
         WellKnownName::try_from(opener),
         ObjectPath::try_from(object_of(opener)),

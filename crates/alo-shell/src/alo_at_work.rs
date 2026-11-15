@@ -52,7 +52,7 @@ use std::io::{ErrorKind, Read as _, Write as _};
 use std::os::unix::net::UnixStream;
 use std::time::{Duration, Instant, SystemTime};
 
-use alo_acting::{ToWorkIn, Where, Worked, Working, counting::DONE};
+use alo_acting::{Opened, ToWorkIn, Where, Worked, Working, counting::DONE};
 use alo_capability::AloInApplications;
 use alo_egress::{AloAtWork, HowItIsShown, Indicator, WhileAloWorks};
 
@@ -108,6 +108,16 @@ pub trait StartsAlosCopy {
     /// the copies can say yes.
     fn runs_as_alos_copy(&mut self, _application: &str, _pid: u32) -> bool {
         false
+    }
+
+    /// Open `file` in alo's copy of this application — starting the copy with
+    /// it, or handing it to the copy already running — and say where it opened
+    /// or why it did not (`open_file_in_application`, 2026-11-14).
+    ///
+    /// **Could not start by default**, so copies that cannot hand a file over
+    /// open nothing and say so.
+    fn started_with_a_file(&mut self, _application: &str, _file: &std::path::Path) -> Opened {
+        Opened::CouldNotStart
     }
 }
 
@@ -209,6 +219,12 @@ impl WorkingInApplications {
     /// (ADR 0153), as the copies say.
     pub fn runs_as_alos_copy(&mut self, application: &str, pid: u32) -> bool {
         self.copies.runs_as_alos_copy(application, pid)
+    }
+
+    /// Open `file` in alo's own copy of `application`, as the copies say
+    /// (`open_file_in_application`, 2026-11-14).
+    pub fn opened_in_alos_copy(&mut self, application: &str, file: &std::path::Path) -> Opened {
+        self.copies.started_with_a_file(application, file)
     }
 
     /// How many applications alo is working in now.

@@ -705,10 +705,21 @@ mod tests {
             Some(true),
             "a schema a provider may ignore is not a schema: {for_the_next}"
         );
+        // The envelope **naming this machine's verbs** since 2026-11-14
+        // (`crate::the_shape_a_provider_is_held_to`), not the envelope alone.
         assert_eq!(
             held.pointer("/json_schema/schema"),
-            Some(&alo_models::in_the_envelope::the_envelope_a_provider_accepts()),
+            Some(
+                &crate::the_shape_a_provider_is_held_to::the_envelope_naming_the_verbs(
+                    &the_machines_verbs()
+                )
+            ),
             "the provider was held to a shape this machine did not write"
+        );
+        assert_ne!(
+            held.pointer("/json_schema/schema"),
+            Some(&alo_models::in_the_envelope::the_envelope_a_provider_accepts()),
+            "the provider was held to the envelope alone, naming no verb"
         );
 
         // **And that is the only difference.** Said by taking it away rather
