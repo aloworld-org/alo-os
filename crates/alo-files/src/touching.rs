@@ -58,11 +58,13 @@
 //! does.
 
 use std::collections::BTreeMap;
+use std::path::Path;
+use std::time::SystemTime;
 
 use alo_capability::{Ask, Authorised, Call, Grants, Refused, Value};
 use alo_strings::{Filling, Strings};
 
-use crate::real::Real;
+use crate::real::{Real, RealError};
 use crate::resolving::Resolving;
 use crate::words;
 
@@ -97,6 +99,24 @@ impl Touching {
         resolving: &dyn Resolving,
         strings: &Strings,
     ) -> Result<Self, Refused> {
+        Self::of_looking_in(authorised, grants, resolving, strings, None)
+    }
+
+    /// [`Touching::of`], and **where a path named is not there, the person's
+    /// `home` folder itself is looked in for one of that name** (the owner,
+    /// 2026-11-15, relayed: small by default) — under the same grants, and
+    /// never in any folder inside it. The refusal then names the one found, so
+    /// a model that named a file in the wrong folder can name it again.
+    ///
+    /// # Errors
+    /// As [`Touching::of`].
+    pub fn of_looking_in(
+        authorised: Authorised,
+        grants: &Grants,
+        resolving: &dyn Resolving,
+        strings: &Strings,
+        home: Option<&Path>,
+    ) -> Result<Self, Refused> {
         let at = authorised.at();
         let under = authorised.under().clone();
         let mut real = BTreeMap::new();
@@ -112,10 +132,20 @@ impl Touching {
             let resolved = match resolving.real(given) {
                 Ok(resolved) => resolved,
                 Err(why) => {
-                    return Err(Refused::worded_elsewhere(
-                        authorised.call().clone(),
-                        why.said(strings),
-                    ));
+                    let said = match (&why, home) {
+                        (RealError::Nothing { path }, Some(home)) => {
+                            match one_of_that_name(given, home, grants, &under, at, resolving) {
+                                Some(found) => strings.say(
+                                    &words::NOTHING_THERE_BUT_ONE_IS.key(),
+                                    &Filling::of("path", path.clone())
+                                        .and("found", found.describe()),
+                                ),
+                                None => why.said(strings),
+                            }
+                        }
+                        _ => why.said(strings),
+                    };
+                    return Err(Refused::worded_elsewhere(authorised.call().clone(), said));
                 }
             };
             // 3. And whether the grants cover that — against where each
@@ -186,6 +216,33 @@ impl Touching {
     pub fn into_authorised(self) -> Authorised {
         self.authorised
     }
+}
+
+/// **The one file named like `given` in the person's `home` folder itself**,
+/// where the grants let `under` reach it, as written and where it really
+/// leads. Never a folder inside the home: what is said is one path, from a
+/// place the person already let alo look.
+fn one_of_that_name(
+    given: &Path,
+    home: &Path,
+    grants: &Grants,
+    under: &alo_capability::Grantee,
+    at: SystemTime,
+    resolving: &dyn Resolving,
+) -> Option<Real> {
+    let named = given.file_name()?;
+    let there = home.join(named);
+    if there == given {
+        return None;
+    }
+    grants
+        .permitted(under, &Ask::Path(there.clone()), at)
+        .ok()?;
+    let real = resolving.real(&there).ok()?;
+    grants
+        .permitted_where_it_really_is(under, real.as_path(), at)
+        .ok()?;
+    Some(real)
 }
 
 #[cfg(test)]
@@ -670,4 +727,58 @@ mod tests {
         // An hour later there is no authorisation to resolve anything for.
         assert!(Authorised::read(&call, &files(), &grants, noon() + hour()).is_err());
     }
+
+    /// **A file the model named that is not there is answered with where one
+    /// of that name is** (the owner, 2026-11-15, relayed: small by default):
+    /// the person's home folder itself is looked in, and the refusal names the
+    /// one found. Every-try, ten tries a run: asked for *hello.txt in my home
+    /// folder*, the model named it under Documents in 2 of 20 tries.
+    #[test]
+    fn a_missing_file_is_answered_with_where_one_of_that_name_is() {
+        let call = reading("/home/anna/Documents/hello.txt");
+        let grants = granting(&["/home/anna"]);
+        let authorised = Authorised::read(&call, &files(), &grants, noon()).unwrap();
+        let refused = Touching::of_looking_in(
+            authorised,
+            &grants,
+            &Wherever::plain(&["/home/anna/hello.txt"]),
+            &in_english(),
+            Some(Path::new("/home/anna")),
+        )
+        .unwrap_err();
+        let said = refusal(&refused);
+        assert!(said.contains("/home/anna/Documents/hello.txt"), "{said}");
+        assert!(said.contains("/home/anna/hello.txt"), "{said}");
+    }
+
+    /// **The refusal cases**: a home alo holds no grant over is not looked in;
+    /// a subfolder of the home is never looked in; with no home known, nothing
+    /// more is said — and each is the plain refusal it always was.
+    #[test]
+    fn only_the_home_itself_and_only_under_a_grant_is_looked_in() {
+        let plain = |grants: &Grants, there: &[&str], home: Option<&str>| {
+            let call = reading("/home/anna/Documents/hello.txt");
+            let authorised = Authorised::read(&call, &files(), grants, noon()).unwrap();
+            refusal(
+                &Touching::of_looking_in(
+                    authorised,
+                    grants,
+                    &Wherever::plain(there),
+                    &in_english(),
+                    home.map(Path::new),
+                )
+                .unwrap_err(),
+            )
+        };
+        let only_documents = granting(&["/home/anna/Documents"]);
+        let said = plain(&only_documents, &["/home/anna/hello.txt"], Some("/home/anna"));
+        assert!(!said.contains("/home/anna/hello.txt"), "an ungranted home was looked in: {said}");
+        let home = granting(&["/home/anna"]);
+        let said = plain(&home, &["/home/anna/Pictures/hello.txt"], Some("/home/anna"));
+        assert!(!said.contains("Pictures"), "a subfolder was looked in: {said}");
+        let said = plain(&home, &["/home/anna/hello.txt"], None);
+        assert!(!said.contains("/home/anna/hello.txt"), "no home, and one was looked in: {said}");
+        assert!(said.contains("there is nothing at"), "{said}");
+    }
+
 }

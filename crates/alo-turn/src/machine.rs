@@ -103,6 +103,10 @@ pub struct Machine<'a> {
     strings: &'a Strings,
     /// Where a path really leads.
     resolving: &'a dyn Resolving,
+    /// The person's home folder, where a file named that is not there is
+    /// looked for by its name (`alo_files::Touching::of_looking_in`), or
+    /// nothing where nobody said ([`Machine::with_the_persons_home`]).
+    the_persons_home: Option<std::path::PathBuf>,
     /// The rented tool an installation reaches, on a machine that can install.
     ///
     /// Taken rather than assumed for `resolving`'s reason: what installs an
@@ -341,6 +345,7 @@ impl<'a> Machine<'a> {
             verbs: file_verbs()?,
             strings,
             resolving,
+            the_persons_home: None,
             installing_with: None,
             installed: TheApplicationsHere::default(),
             reaching_the_compositor: None,
@@ -402,6 +407,7 @@ impl<'a> Machine<'a> {
             verbs,
             strings,
             resolving,
+            the_persons_home: None,
             installing_with: Some(installing_with),
             installed: TheApplicationsHere::default(),
             reaching_the_compositor: None,
@@ -467,6 +473,7 @@ impl<'a> Machine<'a> {
             verbs,
             strings,
             resolving,
+            the_persons_home: None,
             installing_with: None,
             installed: TheApplicationsHere::default(),
             reaching_the_compositor: None,
@@ -528,6 +535,7 @@ impl<'a> Machine<'a> {
             verbs,
             strings,
             resolving,
+            the_persons_home: None,
             installing_with: Some(software.tool),
             installed: applications.installed,
             reaching_the_compositor: Some(applications.door),
@@ -630,6 +638,22 @@ impl<'a> Machine<'a> {
     /// those are two things it holds at once.
     pub(crate) fn resolving(&self) -> &'a dyn Resolving {
         self.resolving
+    }
+
+    /// **This machine, knowing the person's home folder**: where a file a
+    /// model named is not there, the home itself is looked in for one of that
+    /// name, under the grants, and the refusal says where it is (the owner,
+    /// 2026-11-15, relayed: small by default). Without it, nothing is looked
+    /// for and the refusal is the plain one.
+    #[must_use]
+    pub fn with_the_persons_home(mut self, home: std::path::PathBuf) -> Self {
+        self.the_persons_home = Some(home);
+        self
+    }
+
+    /// The person's home folder, where this machine was told it.
+    pub(crate) fn the_persons_home(&self) -> Option<&std::path::Path> {
+        self.the_persons_home.as_deref()
     }
 
     /// What a verb's work runs inside.

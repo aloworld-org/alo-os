@@ -176,7 +176,11 @@ pub(crate) fn carrying_out(
     let agent = authorised.under().clone();
     let strings = machine.strings();
 
-    let touching = match Touching::of(authorised, grants, machine.resolving(), strings) {
+    let touching = match Touching::of_looking_in(
+        authorised, grants, machine.resolving(),
+        strings,
+        machine.the_persons_home(),
+    ) {
         Ok(touching) => touching,
         Err(refused) => {
             let refused = worded_here(refused, origin, strings);

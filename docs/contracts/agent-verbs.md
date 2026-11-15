@@ -513,6 +513,16 @@ word **ask** is therefore in the approval sentence rather than only in
 documentation, and a translation that promised otherwise would be promising
 something alo OS does not do.
 
+### A path that is not there
+
+Every verb that takes a path refuses one with nothing at it, before it does
+anything. **Since 2026-11-15 the refusal also says where one of that name is**,
+when the person's home folder itself holds one and the grants already reach it:
+*there is nothing at /var/home/alo/Documents/hello.txt, but one of that name is
+at /var/home/alo/hello.txt — name that one if it is the one meant*. Only the
+home folder itself is looked in, never a folder inside it, and at most one path
+is said. Nothing else changes: the call is still refused, and nothing is done.
+
 ### `open_file_in_application` — added 2026-11-14, additively
 
 *The owner, 2026-11-14: "Yes, add it."* A fifth verb on this family, declared

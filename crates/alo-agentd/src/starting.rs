@@ -422,6 +422,13 @@ fn what_this_machine_can_carry_out<'a>(
         indicator,
         kept,
     )
+    // **And it knows the person's home**, from the environment the daemon
+    // runs in as the person (`User=` in its unit), so a file named that is not
+    // there is looked for by its name in the home itself, under the grants.
+    .map(|machine| match std::env::var_os("HOME").filter(|home| !home.is_empty()) {
+        Some(home) => machine.with_the_persons_home(std::path::PathBuf::from(home)),
+        None => machine,
+    })
 }
 
 /// What the three application acts reach: the compositor's door, and what

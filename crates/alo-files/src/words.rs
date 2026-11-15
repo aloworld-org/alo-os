@@ -222,6 +222,17 @@ pub const NOTHING_THERE: Word = Word::saying(
     "there is nothing at {path} — a verb reaches what is there, so name something that exists",
 );
 
+/// Nothing is at that path, and one of that name is in the person's home.
+pub const NOTHING_THERE_BUT_ONE_IS: Word = Word::saying(
+    "files.real.nothing-but-one-is",
+    "there is nothing at {path}, but one of that name is at {found} — name that one if it is the \
+     one meant",
+)
+.noting(
+    "Said to alo's model when it named a file that is not there and the person's home folder \
+     holds one of that name. {path} and {found} are paths and are not translated.",
+);
+
 /// Something is there, and this machine would not say where it leads.
 pub const UNREADABLE: Word = Word::saying(
     "files.real.unreadable",
@@ -437,7 +448,7 @@ pub const ARCHIVE_FOLDER_LEAVES: Word = Word::saying(
 /// Every plain string this crate can say, in the order a translator meets them:
 /// what the machine could not do, what could not be followed, what a refusal
 /// says, and then the six verbs.
-pub const EVERY_WORD: [Word; 48] = [
+pub const EVERY_WORD: [Word; 49] = [
     NOT_A_FILE_VERB,
     MISSING,
     NOT_A_FOLDER,
@@ -453,6 +464,7 @@ pub const EVERY_WORD: [Word; 48] = [
     TOO_MUCH,
     THE_MACHINE_SAID_NO,
     NOTHING_THERE,
+    NOTHING_THERE_BUT_ONE_IS,
     UNREADABLE,
     REALLY_LEADS_ELSEWHERE,
     WOULD_CREATE,
