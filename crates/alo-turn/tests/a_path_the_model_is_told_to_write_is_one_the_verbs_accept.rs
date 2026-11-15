@@ -68,10 +68,15 @@ fn the_model_is_not_told_a_path_shape_the_verbs_refuse() {
         !the_verbs_accept(with_a_tilde),
         "the verbs now take {with_a_tilde}: this test's premise changed"
     );
-    assert!(
-        !told.contains("~ means"),
-        "the model is told ~ means the home, and the verbs refuse {with_a_tilde}:\n{told}"
-    );
+    // **Every sentence that mentions ~ says it is refused**: none offers it as
+    // a way to write the home, in these words or any others.
+    for sentence in told.split(". ").filter(|sentence| sentence.contains('~')) {
+        assert!(
+            sentence.contains("refused"),
+            "the model is told something of ~ other than that it is refused, and the verbs \
+             refuse {with_a_tilde}: {sentence:?}"
+        );
+    }
     assert!(
         the_verbs_accept(&format!("{HOME}/notes.txt")),
         "the home written in full is accepted"
