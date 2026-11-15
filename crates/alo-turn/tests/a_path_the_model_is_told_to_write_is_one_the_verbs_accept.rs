@@ -12,6 +12,7 @@
 
 #![expect(
     clippy::expect_used,
+    clippy::panic,
     reason = "in a test, a panic on an unexpected Err is the failure being reported"
 )]
 
@@ -98,5 +99,22 @@ fn the_model_is_told_a_thing_inside_a_folder_is_its_path_and_its_name() {
     assert!(
         the_verbs_accept(example),
         "the example {example} is accepted"
+    );
+    // **And it is offered as the path to name**, not as the one to avoid: in
+    // its sentence it comes before "never", and the folder itself after it.
+    let sentence = told
+        .split(". ")
+        .find(|sentence| sentence.contains(example))
+        .unwrap_or_else(|| panic!("the example is in a sentence:\n{told}"));
+    let (to_name, to_avoid) = sentence
+        .split_once("never")
+        .unwrap_or_else(|| panic!("the sentence says what never to name: {sentence:?}"));
+    assert!(
+        to_name.contains(example) && !to_avoid.contains(example),
+        "the example {example} is told as the path to name: {sentence:?}"
+    );
+    assert!(
+        to_avoid.contains(inside.trim_end_matches('/')),
+        "the folder itself is what is never named: {sentence:?}"
     );
 }
