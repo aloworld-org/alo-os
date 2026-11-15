@@ -32,6 +32,13 @@ pub trait Machine {
     /// When the machine did not take it.
     fn point_at(&mut self, at: (usize, usize)) -> Result<(), MachineError>;
 
+    /// Press the left button down, or let it up, where the pointer is.
+    ///
+    /// # Errors
+    ///
+    /// When the machine did not take it.
+    fn button(&mut self, down: bool) -> Result<(), MachineError>;
+
     /// A picture of the screen now, to compare.
     ///
     /// # Errors

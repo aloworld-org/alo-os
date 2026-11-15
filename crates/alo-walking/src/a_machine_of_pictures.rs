@@ -23,6 +23,8 @@ pub struct PicturesAndLines {
     pub strokes: Vec<Stroke>,
     /// Every place the pointer was put, in order.
     pub pointed: Vec<(usize, usize)>,
+    /// Every edge of the left button, down or up, in order.
+    pub buttons: Vec<bool>,
     /// The names of the pictures kept, in order.
     pub kept: Vec<String>,
     /// The clock.
@@ -65,6 +67,11 @@ impl Machine for PicturesAndLines {
 
     fn point_at(&mut self, at: (usize, usize)) -> Result<(), MachineError> {
         self.pointed.push(at);
+        Ok(())
+    }
+
+    fn button(&mut self, down: bool) -> Result<(), MachineError> {
+        self.buttons.push(down);
         Ok(())
     }
 

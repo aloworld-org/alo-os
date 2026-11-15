@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use super::{ABS_MOST, absolute, command};
+use super::{ABS_MOST, absolute, button, command};
 
 /// **The first pixel is nought, the last is the most, and the middle is the
 /// middle**, on screens of different sizes.
@@ -42,4 +42,20 @@ fn a_place_is_one_absolute_command() {
             }
         })
     );
+}
+
+/// **A click is the left button down, then up**, each its own command.
+#[test]
+fn a_click_is_the_left_button_down_then_up() {
+    for down in [true, false] {
+        assert_eq!(
+            button(down),
+            json!({
+                "execute": "input-send-event",
+                "arguments": {
+                    "events": [ { "type": "btn", "data": { "down": down, "button": "left" } } ]
+                }
+            })
+        );
+    }
 }

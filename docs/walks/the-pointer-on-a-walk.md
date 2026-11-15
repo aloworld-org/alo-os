@@ -57,7 +57,7 @@ not do that.
 | 6 | Super+I, End, Tab; *Large*, Space; *White*, Space; the pointer onto Settings | **over Settings it is the large white kite**, 36 pixels | the same |
 | 7 | Up to *Classic*, Space | **the familiar arrow is the pointer** | the same |
 | 8 | Up to *Kite*, Space | **the kite is the pointer again** | the same |
-| 9 | Escape; Super+Space, *Firefox*, Enter; Ctrl+L, a page, Enter | **over Firefox's page, the large white kite**; **over a text field, alo's text cursor**; **over a link, alo's hand** | the same; and Firefox drawing alo's theme from files that happen to match a look the person did not choose |
+| 9 | Escape; Super+Space, *Firefox*, Enter; the pointer onto *Continue* on Firefox's first-start dialog, a click; Ctrl+L, a page, Enter | **over Firefox's page, the large white kite**; **over a text field, alo's text cursor**; **over a link, alo's hand** | the same; and Firefox drawing alo's theme from files that happen to match a look the person did not choose |
 
 **A wrong shape does not stop the walk.** Looking at the pointer changes nothing
 on the screen, so the next check is still a measurement; it is written down as
@@ -137,3 +137,10 @@ passed before the walk stopped at Firefox:
   eye, not measured**. The walk now presses Escape and Enter past that dialog.
   The address it typed also carried runs of spaces, from a string the walk
   built wrongly; that is fixed and a test now refuses it.
+
+**Run 43658977070, 2026-11-15, image from main, once.** The same twenty
+pointer checks passed again. Firefox's first-start dialog stayed up through
+Escape, Enter and the whole typed address — **nothing typed reached Firefox**,
+which fits Firefox not having the keyboard after opening from the Bar; that is
+not confirmed, and it is not a pointer fault. The walk now clicks *Continue*
+with the pointer, as a person would, and types the address after that.

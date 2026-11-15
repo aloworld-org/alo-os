@@ -62,6 +62,9 @@ const NUDGED_REACH: usize = 48;
 /// cent, with room for a hover.
 const MOST_A_POINTER_CHANGES: usize = 2 * 144 * 144 + 4096;
 
+/// How long a click holds the button down, as a hand does.
+const A_CLICK_HELD: Duration = Duration::from_millis(80);
+
 /// How long the compositor has to draw a pointer that just changed shape.
 const BEFORE_A_LOOK: Duration = Duration::from_millis(500);
 
@@ -116,6 +119,13 @@ impl Walking {
                 Ok(())
             }
             Pointing::PointAt { check, at } => self.point_at(machine, check, *at),
+            Pointing::Click => {
+                machine.button(true)?;
+                machine.wait(A_CLICK_HELD);
+                machine.button(false)?;
+                self.did(machine.elapsed(), "clicked".to_owned());
+                Ok(())
+            }
             Pointing::IsDrawnAs { check, icon } => self.is_drawn_as(machine, check, *icon),
         }
     }

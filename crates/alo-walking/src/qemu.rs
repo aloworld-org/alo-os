@@ -130,6 +130,13 @@ impl Machine for Qemu {
             .map_err(|why| MachineError(why.to_string()))
     }
 
+    fn button(&mut self, down: bool) -> Result<(), MachineError> {
+        self.qmp
+            .execute(&crate::pointer_moves::button(down))
+            .map(|_| ())
+            .map_err(|why| MachineError(why.to_string()))
+    }
+
     fn frame(&mut self) -> Result<Frame, MachineError> {
         let file = self.scratch.join("the-screen-now.ppm");
         self.screendump(&file, None)?;

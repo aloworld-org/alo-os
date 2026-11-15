@@ -1,5 +1,5 @@
-//! **Putting the pointer at a place on the screen**, as the QMP command that
-//! does it on the walk machine.
+//! **Putting the pointer at a place on the screen, and clicking there**, as the
+//! QMP commands that do it on the walk machine.
 //!
 //! The walk machine has the q35 defaults: a PS/2 mouse and qemu's VMware mouse
 //! port beside it, and no tablet (`crate::booting`). **Relative moves did not
@@ -44,6 +44,19 @@ pub fn command((x, y): (usize, usize), size: (usize, usize)) -> Value {
             "events": [
                 { "type": "abs", "data": { "axis": "x", "value": absolute(x, size.0) } },
                 { "type": "abs", "data": { "axis": "y", "value": absolute(y, size.1) } }
+            ]
+        }
+    })
+}
+
+/// The QMP command that presses the left button down, or lets it up.
+#[must_use]
+pub fn button(down: bool) -> Value {
+    json!({
+        "execute": "input-send-event",
+        "arguments": {
+            "events": [
+                { "type": "btn", "data": { "down": down, "button": "left" } }
             ]
         }
     })

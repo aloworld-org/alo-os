@@ -49,6 +49,8 @@ pub struct AScreenWithAPointer {
     pub lands_at: i64,
     /// Every place the pointer was put, in order.
     pub pointed: Vec<(usize, usize)>,
+    /// Every edge of the left button, down or up, in order.
+    pub buttons: Vec<bool>,
     /// Every stroke sent, in order.
     pub strokes: Vec<Stroke>,
     /// The names of the pictures kept.
@@ -72,6 +74,7 @@ impl AScreenWithAPointer {
             at: (100, 100),
             lands_at: 100,
             pointed: Vec::new(),
+            buttons: Vec::new(),
             strokes: Vec::new(),
             kept: Vec::new(),
             now: Duration::ZERO,
@@ -120,6 +123,11 @@ impl Machine for AScreenWithAPointer {
         self.pointed.push(at);
         let landed = |it: usize| i64::try_from(it).unwrap_or(i64::MAX) * self.lands_at / 100;
         self.at = (landed(at.0), landed(at.1));
+        Ok(())
+    }
+
+    fn button(&mut self, down: bool) -> Result<(), MachineError> {
+        self.buttons.push(down);
         Ok(())
     }
 

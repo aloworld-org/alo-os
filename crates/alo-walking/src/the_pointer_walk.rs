@@ -89,6 +89,12 @@ pub fn the_page() -> String {
     .concat()
 }
 
+/// The colour of *Continue* on Firefox's first-start dialog, read off the
+/// picture run 43658977070 kept (`38-the-pointer-page.png`) at four places on
+/// the button, each the same. Firefox's own, so a Firefox that changes it is a
+/// walk that says *not on the screen* rather than one that clicks elsewhere.
+pub const FIREFOXS_CONTINUE: [u8; 3] = [118, 78, 221];
+
 /// The look the person chooses in Settings in this walk.
 pub const LARGE_AND_WHITE: Look = Look {
     shape: PointerShape::Kite,
@@ -251,13 +257,16 @@ fn over_firefox(walk: Walk) -> Walk {
         .wait(AN_APPLICATION_OPENS)
         .look("firefox", look.at_most(Duration::from_secs(120)))
         // **Firefox's first start asks the person to continue**, in a dialog
-        // over everything with *Continue* chosen (run 43654461272, picture
-        // `38-the-pointer-page.png`); Escape, then Enter, gets past it the way a
-        // person's first start does, and Ctrl+L then reaches the address bar
-        // whatever the page behind it was.
-        .press(Chord::key("esc"))
-        .press(Chord::key("ret"))
-        .wait(Duration::from_secs(5))
+        // over everything (run 43654461272, `38-the-pointer-page.png`), and
+        // the keys sent to it on run 43658977070 — Escape, Enter and the whole
+        // address — changed nothing. So the walk does what a person does:
+        // points at *Continue* and clicks it.
+        .pointer(point_at(
+            "the pointer goes onto Firefox's Continue",
+            Target::Colour(FIREFOXS_CONTINUE),
+        ))
+        .pointer(Pointing::Click)
+        .look("firefox-continued", look.at_most(Duration::from_secs(60)))
         .press(Chord::with("ctrl", "l"))
         .type_text(&the_page())
         .press(Chord::key("ret"))

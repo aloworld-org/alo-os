@@ -269,3 +269,15 @@ fn the_pointer_goes_onto_what_changed_and_nowhere_without_a_change() {
         ]
     );
 }
+
+/// **A click is the left button down, then up**, where the pointer is, and
+/// moves nothing.
+#[test]
+fn a_click_is_the_button_down_then_up() {
+    let mut machine = AScreenWithAPointer::grey();
+    let the_walk = Walk::named("pointer").pointer(Pointing::Click);
+    let report = walk(&mut machine, &the_walk, &nothing_set, QUICK);
+    assert!(report.checks().is_empty());
+    assert_eq!(machine.buttons, vec![true, false]);
+    assert!(machine.pointed.is_empty());
+}

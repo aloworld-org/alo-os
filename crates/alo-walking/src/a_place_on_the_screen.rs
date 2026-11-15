@@ -25,7 +25,7 @@ use crate::frame::Frame;
 pub const CELL: usize = 16;
 
 /// The fewest cells a patch must have to be aimed at.
-pub const FEWEST_CELLS: usize = 4;
+pub const FEWEST_CELLS: usize = 2;
 
 /// How far a pixel may be from a colour and still be it, on each channel.
 const SAME_COLOUR: u8 = 10;

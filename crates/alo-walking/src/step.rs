@@ -108,6 +108,9 @@ pub enum Pointing {
         /// Where.
         at: Target,
     },
+    /// Click the left button where the pointer is, as a person does to reach
+    /// a control the keyboard cannot.
+    Click,
     /// The pointer on the screen is alo's `icon`, in the look the person chose
     /// — or, with `None`, any of alo's shapes in it — and it moves when the
     /// pointer does.
@@ -127,7 +130,7 @@ impl Pointing {
             Self::SeenAtAll { check }
             | Self::PointAt { check, .. }
             | Self::IsDrawnAs { check, .. } => Some(check.as_str()),
-            Self::ThePersonChose(_) | Self::Remember => None,
+            Self::ThePersonChose(_) | Self::Remember | Self::Click => None,
         }
     }
 }
