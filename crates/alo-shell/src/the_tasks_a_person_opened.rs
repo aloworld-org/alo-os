@@ -209,6 +209,25 @@ impl TheTasks {
         true
     }
 
+    /// **This task's window is put here on the plane**, on the Place it is
+    /// on — what the window panel's Left, Maximise, Right and Restore do to it
+    /// (`crate::alos_window_placed`). Answers whether it was on the screen to
+    /// move; a window aside, closed or not yet placed is left as it is.
+    pub(crate) fn the_window_is_now(
+        &mut self,
+        which: WhichTask,
+        window: Rectangle<i32, Physical>,
+    ) -> bool {
+        let Some(its) = self.placed.get_mut(which.at()) else {
+            return false;
+        };
+        let ItsWindow::At(_, place) = *its else {
+            return false;
+        };
+        *its = ItsWindow::At(window, place);
+        true
+    }
+
     /// Whether this task's window is in the right-hand panel.
     #[must_use]
     pub fn is_put_aside(&self, which: WhichTask) -> bool {

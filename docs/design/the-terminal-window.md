@@ -796,8 +796,10 @@ edge do (`crates/alo-shell/src/the_terminals_edge.rs`):
   follow the same two looks (`border/strong` and `Elevation/Floating` focused;
   `border/default` and `Elevation/Quiet` not).
 
-**Not built, and why:** Maximise. Nothing can maximise the terminal yet, and a
-control that reaches nothing looks live and is not. *Minimise was built on
+**Maximise, built 2026-11-14**: Window actions on the band opens the window
+panel, whose Left, Maximise / Restore and Right place the terminal as they
+place any window (`crates/alo-shell/src/alos_window_placed.rs`), on the
+owner's *"Yes add that"* and *"Terminal first"*. *Minimise was built on
 2026-11-11 with design `27:2`: it puts the terminal in the right-hand panel with
 its shell still running (`docs/design/the-windows-put-aside.md`).* **Readings, recorded so they can be disagreed with:** the terminal's edge is
 drawn on the display the loop holds, as task windows' are, not on a second one.

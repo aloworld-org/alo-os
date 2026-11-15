@@ -96,13 +96,14 @@ fn the_choices_read_restore_and_exit_while_the_window_is_so() {
     );
 }
 
-/// **No Window actions, no panel** — a task window's band, which carries Close
-/// alone, opens nothing.
+/// **No Window actions, no panel** — Settings' or the record's band, which
+/// carries Minimise and Close until their pages lay out at any size, opens
+/// nothing.
 #[test]
 fn a_band_without_window_actions_opens_no_panel() {
     let window = Rectangle::new(Point::from((112, 314)), Size::from((1056, 466)));
-    let task = edge_of(window, Decorations::ATaskWindow, true, roomy());
-    assert!(the_menu_of(&task, HowTheWindowIs::default(), roomy()).is_none());
+    let settings = edge_of(window, Decorations::AlosOwnWindow, true, roomy());
+    assert!(the_menu_of(&settings, HowTheWindowIs::default(), roomy()).is_none());
     let concealed = edge_of(window, Decorations::TheShellDraws, false, roomy());
     assert!(
         the_menu_of(&concealed, HowTheWindowIs::default(), roomy()).is_none(),
@@ -198,4 +199,33 @@ fn help_with_this_window_is_there_only_while_alo_may_be_asked() {
             .map(|it| it.does),
         Some(WhatARowDoes::HelpWithThisWindow)
     );
+}
+
+/// **A panel without Full screen draws no row for it**, and with no row under
+/// the pictures it ends under them — the panel alo's own windows open until
+/// Full screen reaches them (`crate::alos_windows_panel`). Every application's
+/// panel keeps the frame's figures, which the tests above hold.
+#[test]
+fn a_panel_without_full_screen_ends_under_its_pictures() {
+    let how = HowTheWindowIs {
+        full_screen_is_not_offered: true,
+        ..HowTheWindowIs::default()
+    };
+    let menu = the_menu_of(&notes(), how, roomy()).expect("a panel");
+    let rows: Vec<WhatARowDoes> = menu.rows.iter().map(|it| it.does).collect();
+    assert_eq!(
+        rows,
+        vec![
+            WhatARowDoes::Left,
+            WhatARowDoes::Maximise,
+            WhatARowDoes::Right
+        ]
+    );
+    assert_eq!(menu.panel.size.h, 50 + 94 + 20);
+    assert_eq!(
+        menu.divider.size,
+        Size::from((0, 0)),
+        "a divider over nothing"
+    );
+    assert_eq!(menu.before_alo, None);
 }

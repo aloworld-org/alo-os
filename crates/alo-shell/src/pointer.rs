@@ -311,6 +311,14 @@ impl Server {
             // drawn first; now an application or the terminal can be in front
             // of it, and a press on what a person sees must not reach a task
             // window behind it.
+            // **An open window panel first, whoever's it is**: it is drawn
+            // above every window — alo's included — and presses never pass
+            // through it (`crate::a_press_in_the_menu`). Until the terminal and
+            // the task windows had panels of their own, every panel hung from
+            // an application's band and this was asked only further down.
+            if self.a_press_in_the_menu(state) {
+                return Ok(false);
+            }
             let in_front_here = self.the_kind_under(location);
             // **A press on Settings is Settings'** since it joined the canvas
             // (ADR 0145, stage 3): its edge first, then what it is on — a

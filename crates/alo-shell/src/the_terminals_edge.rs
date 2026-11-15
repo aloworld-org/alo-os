@@ -16,9 +16,9 @@
 //! Minimise puts the terminal in the right-hand panel, still running
 //! (`crate::alos_own_window_goes_aside`, design `27:2`).
 //!
-//! **Not drawn, and why:** Maximise. Nothing can maximise alo's terminal yet,
-//! and a control that reaches nothing looks live and is not — the rule the
-//! task windows' edge already keeps (`window_edge::Decorations::AlosOwnWindow`).
+//! **And Window actions** since the owner's *"Yes add that"* of 2026-11-14:
+//! its panel places the terminal as it places any window
+//! (`crate::alos_windows_panel`, `crate::alos_window_placed`).
 //!
 //! # The application edge, reused
 //!
@@ -53,6 +53,7 @@ use crate::an_edge_in_its_displays_units::{
     a_point_in_the_edges_units, a_window_in_the_edges_units,
 };
 use crate::the_bands_over_alos_windows::AlosBand;
+use crate::which_band::ABand;
 use crate::window_edge::{OnTheEdge, WindowEdge};
 use crate::window_edge_picture::{EdgePicture, OverTheEdge};
 use crate::window_edge_pointing::{UnderThePointer, pointing_at, what_is_under};
@@ -103,20 +104,28 @@ impl Server {
             std::time::Instant::now(),
         );
         let pointer = self.where_the_pointer_is_in_logical_pixels();
+        let keyboard = self.where_the_keyboard_is_on_this_band(&ABand::Alos(THE_TERMINAL));
         let pointing = pointing_at(
             &edge,
             pointer.map(|at| a_point_in_the_edges_units(at, scale)),
-            None,
+            keyboard.what_the_painter_shows(),
         );
         let title = says.say(
             &alo_terminal::words::TERMINAL.key(),
             &alo_strings::Filling::nothing(),
         );
         let look = crate::window_edge_look::WhichLook::of(self.the_terminal_is_taking_the_keys());
+        // **Its window panel, while it is open** (`crate::alos_windows_panel`),
+        // drawn above every window as an application's is.
+        let (panel, pointing_at_it) = self
+            .the_panel_drawn_over(THE_TERMINAL, &edge, (room, scale))
+            .map_or((None, None), |(menu, pointing)| {
+                (Some(menu), Some(pointing))
+            });
         EdgePicture::of(
             &edge,
             OverTheEdge {
-                menu: None,
+                menu: panel.as_ref().zip(pointing_at_it),
                 field: None,
                 showing: None,
                 alo: None,
@@ -132,7 +141,7 @@ impl Server {
                 laid_over: false,
                 controls: crate::window_edge_paint::HowTheControlsLook {
                     pointing,
-                    open: false,
+                    open: keyboard.the_menu().is_some(),
                     how_shown,
                     look,
                 },
@@ -177,11 +186,16 @@ impl Server {
                 self.this_alo_window_is_asked_to_go_aside(AlosOwnWindow::TheTerminal);
                 true
             }
-            Some(
-                UnderThePointer::Control(_)
-                | UnderThePointer::Drag
-                | UnderThePointer::TheEdgeAndNothingOnIt,
-            ) => {
+            // **Window actions opens its panel, and pressed again closes it**
+            // (`crate::alos_windows_panel`).
+            Some(UnderThePointer::Control(OnTheEdge::WindowActions)) => {
+                self.the_menu_was_opened_on_the_band(
+                    &ABand::Alos(THE_TERMINAL),
+                    crate::the_edge_takes_the_keyboard::ByWhat::ThePointer,
+                );
+                true
+            }
+            Some(UnderThePointer::Drag | UnderThePointer::TheEdgeAndNothingOnIt) => {
                 self.the_composer.it_gave_the_keyboard_up();
                 self.the_keyboard_is_now_in(None);
                 self.the_person_went_to(

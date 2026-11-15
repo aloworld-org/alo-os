@@ -1,0 +1,143 @@
+//! **The window panel on alo's own windows**: Window actions on the
+//! terminal's band and on a task window's opens the same panel an
+//! application's does, kept in the same table, walked by the same keys and
+//! drawn by the same painter.
+//!
+//! What differs is only what is underneath: an application's window is found
+//! by its surface, alo's by [`AlosBand`]; an application is placed by its
+//! client's mode, alo's by `crate::alos_window_placed`. Everything a person
+//! sees and presses — the panel's layout (`crate::window_menu`), its keys
+//! (`crate::window_edge_keys`), the one-panel-at-a-time rule and the preview —
+//! is the one implementation, reached through [`ABand`].
+
+use smithay::utils::{Logical, Rectangle};
+
+use crate::the_bands_over_alos_windows::AlosBand;
+use crate::which_band::ABand;
+use crate::window_edge::{WindowEdge, edge_of};
+use crate::window_menu::{HowTheWindowIs, WhatARowDoes, WindowMenu, the_menu_of};
+use crate::window_menu_paint::PointingAtTheMenu;
+
+impl crate::Server {
+    /// Where this one of alo's windows is drawn, in the band's units at the
+    /// scale presses are measured at.
+    fn alos_window_in_the_edges_units(&self, which: AlosBand) -> Option<Rectangle<i32, Logical>> {
+        let scale = self.the_scale_an_edge_is_measured_at();
+        self.alos_windows_with_a_band()
+            .into_iter()
+            .find(|(it, _)| *it == which)
+            .map(|(_, window)| {
+                crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(window, scale)
+            })
+    }
+
+    /// How this window is now, which decides what its panel reads: Restore
+    /// once the panel has placed it, and **no Full screen and no Help yet** —
+    /// neither works on alo's windows, and a choice that does not work is not
+    /// drawn.
+    #[must_use]
+    pub(crate) fn how_alos_window_is(&self, which: AlosBand) -> HowTheWindowIs {
+        HowTheWindowIs {
+            maximised: self.is_alos_window_placed(which),
+            full_screen: false,
+            alo_may_help: false,
+            full_screen_is_not_offered: true,
+        }
+    }
+
+    /// This window's band laid out with its controls — the keyboard or the
+    /// panel holds them shown — and its panel, if it is open: what a key is
+    /// told against.
+    #[must_use]
+    pub(crate) fn alos_band_and_its_panel(
+        &self,
+        which: AlosBand,
+    ) -> Option<(WindowEdge, Option<WindowMenu>)> {
+        let room = self.the_room_an_edge_is_clamped_in();
+        let edge = edge_of(
+            self.alos_window_in_the_edges_units(which)?,
+            which.decorations(),
+            true,
+            room,
+        );
+        let open = self.whose_bands_panel_is_open() == Some(ABand::Alos(which));
+        let menu = if open {
+            the_menu_of(&edge, self.how_alos_window_is(which), room)
+        } else {
+            None
+        };
+        Some((edge, menu))
+    }
+
+    /// The panel over this band as the frame draws it, against the band the
+    /// frame laid out, with what the pointer and the keyboard are on and the
+    /// preview of the choice in hand — [`None`] while its panel is shut.
+    #[must_use]
+    pub(crate) fn the_panel_drawn_over(
+        &self,
+        which: AlosBand,
+        edge: &WindowEdge,
+        (room, scale): (smithay::utils::Size<i32, Logical>, u32),
+    ) -> Option<(WindowMenu, PointingAtTheMenu)> {
+        let in_the_menu = self
+            .where_the_keyboard_is_on_this_band(&ABand::Alos(which))
+            .the_menu()?;
+        let menu = the_menu_of(edge, self.how_alos_window_is(which), room)?;
+        let hovered = self
+            .where_the_pointer_is_in_logical_pixels()
+            .map(|at| crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale))
+            .and_then(|at| menu.what_is_under(at))
+            .map(|row| row.does);
+        let focused = in_the_menu.on();
+        let preview = self.the_preview_of_alos(which, focused.or(hovered), scale);
+        Some((
+            menu,
+            PointingAtTheMenu {
+                hovered,
+                focused,
+                preview,
+            },
+        ))
+    }
+
+    /// Minimise on this window: into the right-hand panel, still running.
+    pub(crate) fn alos_window_goes_aside(&mut self, which: AlosBand) {
+        match which {
+            AlosBand::Its(window) => self.this_alo_window_is_asked_to_go_aside(window),
+            AlosBand::ATask(task) => self.this_task_is_asked_to_go_aside(task),
+        }
+    }
+
+    /// Close on this window, by the road its Close button takes.
+    pub(crate) fn alos_window_closes(&mut self, which: AlosBand) {
+        match which {
+            AlosBand::Its(alo_put_aside::AlosOwnWindow::TheTerminal) => {
+                let _ = self.the_person_closes_the_terminal();
+            }
+            AlosBand::Its(alo_put_aside::AlosOwnWindow::Settings) => {
+                self.the_person_closes_settings();
+            }
+            AlosBand::Its(alo_put_aside::AlosOwnWindow::TheRecord) => {
+                self.the_person_closes_the_record();
+            }
+            AlosBand::ATask(task) => {
+                let _ = self.the_person_closes_a_task(task);
+            }
+        }
+    }
+
+    /// Do what a choice in the panel says, to whichever window's panel it is.
+    ///
+    /// **A refusal changes nothing and is counted, never swallowed**, on
+    /// alo's windows as on an application's.
+    pub(crate) fn carry_out_the_row_on(&mut self, band: &ABand, does: WhatARowDoes) {
+        match band {
+            ABand::App(surface) => self.carry_out_the_row(surface, does),
+            ABand::Alos(which) => {
+                if !self.place_alos_window(*which, does) {
+                    self.a_window_panel_choice_was_refused();
+                }
+            }
+        }
+    }
+}

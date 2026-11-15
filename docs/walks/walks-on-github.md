@@ -54,7 +54,8 @@ the files), not remembered.
 | 7 | Super+I, End, Tab | Settings opens, on Accessibility, with the ring on *Screen reader* |
 | 8 | Space | the journal says `Started alo-screen-reader.service` within a minute of the press |
 | 9 | watches two minutes | **no** line since the press says *strange signature*, *Traceback*, `alo-screen-reader.service: Failed` or `…: Main process exited` |
-| 10 | Escape, then Ctrl+Alt+T, without moving the pointer | the journal says `window band over the terminal: 0 controls drawn` within a minute of the chord — **the terminal's band draws no Minimise and no Close at rest** (`docs/design/the-window-controls.md`) |
+| 10 | Escape, then Ctrl+Alt+T, without moving the pointer | the journal says `window band over the terminal: 0 controls drawn` within a minute of the chord — **the terminal's band draws no controls at rest** (`docs/design/the-window-controls.md`) |
+| 11 | Alt+F3, Right, Enter — the terminal's Window actions panel, on Maximise | the journal says `window panel: the terminal maximised, filling the work area` within a minute of Alt+F3 — **the terminal fills the work area of its display, its band at the top** |
 
 A look **fails when the screen did not change** within its time, and the walk
 stops at its first failure: every check after it reads **NOT REACHED** rather
