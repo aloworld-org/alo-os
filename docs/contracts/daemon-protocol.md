@@ -1166,6 +1166,16 @@ differ. **The same value twice is one value** (since 2026-11-14): there is no
 *which* for a reader to choose, and a model held to a list repeated an
 argument in every call of a walk.
 
+**`given` may also be one object**, `{"file": "…", "into": "…"}`, since
+2026-11-14 — the shape a hosted model is held to, because under a strict
+schema an object cannot name an argument twice or leave one out, and held to
+the list `gpt-4o-mini` named an argument twice in every one of ten tries,
+sometimes with two different values. **The reason for the list still holds**,
+so the daemon reads the object key by key in the order written and **refuses a
+key written twice** rather than letting a JSON reader choose. Either form is
+the same call; `format` does not change, and a client that writes the list is
+read exactly as before.
+
 A name is carried exactly as it was written. Trimming or matching it loosely is
 the verb registry's decision to make or refuse (ADR 0001: identities are matched
 exactly).
