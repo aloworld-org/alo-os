@@ -323,7 +323,10 @@ fn writing_or_reading_the_file_first() -> ARequest {
 }
 
 fn reading_the_file() -> String {
-    reading(alo_files::verbs::READ_FILE, &[(alo_files::verbs::FILE, FILE)])
+    reading(
+        alo_files::verbs::READ_FILE,
+        &[(alo_files::verbs::FILE, FILE)],
+    )
 }
 
 fn tried_on_the_road(request: &ARequest, lines: &[String]) -> super::Tried {
@@ -374,7 +377,13 @@ fn looks_aside_are_capped_and_an_undeclared_read_is_off_the_road() {
     assert!(!capped.took_the_road(), "{capped:?}");
     let undeclared = tried_on_the_road(
         &writing_in_the_editor(),
-        &[reading_the_file(), opening(), looking(), typing(), answering("Done.")],
+        &[
+            reading_the_file(),
+            opening(),
+            looking(),
+            typing(),
+            answering("Done."),
+        ],
     );
     assert!(!undeclared.took_the_road(), "{undeclared:?}");
 }

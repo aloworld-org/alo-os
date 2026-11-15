@@ -332,8 +332,7 @@ impl Recording<'_> {
     /// declares aside of its road, while this try has looks left; [`None`]
     /// otherwise, and the road decides as it always did.
     fn aside_of_the_road(&mut self, request: &FromAnAgent, asked: &str) -> Option<ToAnAgent> {
-        if !matches!(request, FromAnAgent::Read { .. })
-            || self.looked_aside >= THE_MOST_LOOKS_ASIDE
+        if !matches!(request, FromAnAgent::Read { .. }) || self.looked_aside >= THE_MOST_LOOKS_ASIDE
         {
             return None;
         }
