@@ -308,12 +308,14 @@ pub const VERB_PURPOSE: Word = Word::saying(
 
 /// The argument naming the application.
 pub const VERB_APPLICATION: Word = Word::saying(
-    "software.verb.install-application.application",
-    "the application to install, by its identifier",
+    "software.verb.install-application.application-or-name",
+    "the application to install, by its identifier, or by its name, such as Krita, where you do \
+     not know the identifier",
 )
 .noting(
     "Describes one part of the proposal: which application. An identifier is the exact name this \
-     machine knows an application by, like org.gnome.TextEditor.",
+     machine knows an application by, like org.gnome.TextEditor. Krita is an application's name \
+     and is not translated.",
 );
 
 /// The argument naming the place.
