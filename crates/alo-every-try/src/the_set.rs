@@ -27,9 +27,19 @@
 
 use std::path::Path;
 
-use alo_instructing::WhatItMayReach;
+use alo_adapters::fallback_verbs::{self, NAME, READ_WINDOW, TEXT, TYPE_TEXT};
+use alo_applications::OPEN_FILE_IN_APPLICATION;
+use alo_applications::opening_a_file::PATH;
+use alo_applications::verbs::{APPLICATION, OPEN_APPLICATION};
+use alo_instructing::{TheApplicationsInstalled, ThePersonsFolders, WhatItMayReach};
+use alo_publishing::PUBLISH_TO_GITHUB_PAGES;
+use alo_publishing::words::{ACCOUNT, FOLDER};
+use alo_software::role::Role;
+use alo_software::shipped::Shipped;
+use alo_their_folders::Folder;
+use alo_walking::writing_in_vscodium::{THE_FILE, THE_TEXT, the_ask};
 
-use crate::a_road::ARequest;
+use crate::a_road::{ARequest, Answered, Step};
 
 /// The version of the set. Up by one for every change to a request, a road or
 /// the machine.
@@ -84,8 +94,79 @@ impl TheSet {
 /// # Errors
 /// [`NotTheSet`], when a source it reads would not build.
 pub fn the_set() -> Result<TheSet, NotTheSet> {
-    let _ = Path::new(THE_HOME);
-    Err(NotTheSet("not yet built".to_owned()))
+    let shipped = Shipped::decided().map_err(|why| NotTheSet(format!("{why:?}")))?;
+    let the_one = |role: Role| shipped.the(role).application().identifier().to_owned();
+    let editor = the_one(Role::CodeEditor);
+    let browser = the_one(Role::WebBrowser);
+    let home = Path::new(THE_HOME);
+
+    let writing = ARequest::asking(
+        "write in VSCodium",
+        the_ask(),
+        vec![
+            Step::of(OPEN_FILE_IN_APPLICATION, Answered::AFileOpened)
+                .expecting(APPLICATION, editor.as_str())
+                .expecting(PATH, format!("{THE_HOME}/{THE_FILE}")),
+            Step::of(
+                READ_WINDOW,
+                Answered::AWindowShowing {
+                    title: format!("{THE_FILE} - VSCodium"),
+                    field: THE_FILE.to_owned(),
+                },
+            )
+            .expecting(fallback_verbs::APPLICATION, editor.as_str()),
+            Step::of(TYPE_TEXT, Answered::TypedAndSaved)
+                .expecting(fallback_verbs::APPLICATION, editor.as_str())
+                .expecting(NAME, THE_FILE)
+                .expecting(TEXT, THE_TEXT),
+        ],
+    );
+    let documents = home.join(Folder::Documents.xdg_name());
+    let site = documents.join(THE_SITE);
+    let publishing = ARequest::asking(
+        "publish to GitHub Pages",
+        format!(
+            "Publish the folder {THE_SITE} in my {} to my GitHub Pages. My GitHub account is \
+             {THE_ACCOUNT}.",
+            Folder::Documents.xdg_name()
+        ),
+        vec![
+            Step::of(PUBLISH_TO_GITHUB_PAGES, Answered::Published)
+                .expecting(FOLDER, site.display().to_string())
+                .expecting(ACCOUNT, THE_ACCOUNT),
+        ],
+    );
+    let opening = ARequest::asking(
+        "open an application by name",
+        "Open Firefox.",
+        vec![
+            Step::of(OPEN_APPLICATION, Answered::AnApplicationOpened)
+                .expecting(APPLICATION, browser.as_str()),
+        ],
+    );
+
+    let folders: Vec<(&str, std::path::PathBuf)> = Folder::ALL
+        .iter()
+        .map(|folder| (folder.xdg_name(), home.join(folder.xdg_name())))
+        .collect();
+    let their_folders =
+        ThePersonsFolders::of(home, folders.iter().map(|(role, at)| (*role, at.as_path())))
+            .ok_or_else(|| NotTheSet(format!("{THE_HOME} is not a home a line may name")))?;
+    let installed = TheApplicationsInstalled::of(
+        shipped
+            .every()
+            .iter()
+            .map(|pinned| (pinned.application().identifier(), None)),
+    );
+    let may_reach = WhatItMayReach::nothing()
+        .in_this_home(Some(their_folders))
+        .at_full_access(true)
+        .with_these_applications(Some(installed));
+
+    Ok(TheSet {
+        requests: vec![writing, publishing, opening],
+        may_reach,
+    })
 }
 
 #[cfg(test)]

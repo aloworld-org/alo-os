@@ -92,7 +92,10 @@ fn one_try_off_the_road_fails_the_request() {
 fn a_try_that_could_not_be_asked_leaves_the_run_unmeasured_not_passed() {
     let tallied = [Tallied::of(
         a_request(),
-        vec![the_road(), Tried::of(Vec::new(), Went::NotAnswered("down".to_owned()), 1)],
+        vec![
+            the_road(),
+            Tried::of(Vec::new(), Went::NotAnswered("down".to_owned()), 1),
+        ],
     )];
     assert_eq!(verdict(&tallied), Verdict::NotMeasured);
 }
@@ -101,7 +104,10 @@ fn a_try_that_could_not_be_asked_leaves_the_run_unmeasured_not_passed() {
 fn a_try_off_the_road_outweighs_one_not_asked() {
     let tallied = [Tallied::of(
         a_request(),
-        vec![off_the_road(), Tried::of(Vec::new(), Went::NotAnswered("down".to_owned()), 1)],
+        vec![
+            off_the_road(),
+            Tried::of(Vec::new(), Went::NotAnswered("down".to_owned()), 1),
+        ],
     )];
     assert_eq!(verdict(&tallied), Verdict::SomeLeftTheRoad);
 }
@@ -128,7 +134,10 @@ fn the_summary_says_each_request_its_count_and_where_the_others_went() {
         said.contains("at step 1 it ran the command `firefox`"),
         "{said}"
     );
-    assert!(said.contains("gpt-4o-mini at https://api.openai.com"), "{said}");
+    assert!(
+        said.contains("gpt-4o-mini at https://api.openai.com"),
+        "{said}"
+    );
     assert!(said.contains("5 model calls"), "{said}");
     assert!(said.contains("did not pass"), "{said}");
 }
@@ -138,5 +147,8 @@ fn the_summary_of_a_pass_says_it_passed() {
     let tallied = [Tallied::of(a_request(), vec![the_road(), the_road()])];
     let said = summary(&tallied, "a model");
     assert!(said.contains("2 of 2"), "{said}");
-    assert!(said.contains("Every try of every request took the expected road"), "{said}");
+    assert!(
+        said.contains("Every try of every request took the expected road"),
+        "{said}"
+    );
 }

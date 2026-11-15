@@ -15,6 +15,8 @@ use alo_protocol::{FromAnAgent, ToAnAgent};
 use alo_strings::Strings;
 
 use crate::a_road::ARequest;
+use crate::taking_a_step::taking;
+use crate::the_machine_answers::answering;
 use crate::went_wrong::WentWrong;
 
 /// What a try is put to: the model, at a provider or in a test.
@@ -92,21 +94,154 @@ pub fn one_try(
     strings: &Strings,
     model: &mut dyn TheModel,
 ) -> Tried {
-    let _ = (request, may_reach, verbs, strings, model);
-    let _: Option<&dyn TheDoor> = None;
-    let _ = (
+    let mut door = Recording {
+        request,
+        verbs,
+        strings,
+        model,
+        taken: 0,
+        chose: Vec::new(),
+        wrong: None,
+        unanswered: None,
+        asked: 0,
+    };
+    let happened = driving_about(
+        &TheConversationSoFar::nothing(),
+        None,
+        request.words(),
+        verbs,
+        may_reach,
+        &mut door,
         HowFar::THE_ORDINARY,
         Instructions::SHOWN_TO_A_TURN,
-        TheConversationSoFar::nothing(),
     );
-    let _ = driving_about;
-    let _: Option<WhatHappened> = None;
-    let _: Option<NotAnswered> = None;
-    let _: Option<FromAnAgent> = None;
+    let of = request.road().len();
+    let done = door.taken;
+    let mut chose = door.chose;
+    let went = if let Some(why) = door.unanswered {
+        Went::NotAnswered(why)
+    } else if let Some(wrong) = door.wrong {
+        Went::WentWrong(wrong)
+    } else {
+        match happened {
+            WhatHappened::ItWasAnsweredInWords { said, .. } => {
+                chose.push(AN_ANSWER.to_owned());
+                if done == of {
+                    Went::TheRoad
+                } else {
+                    Went::WentWrong(WentWrong::StoppedShort {
+                        done,
+                        of,
+                        said: the_start_of(&said),
+                    })
+                }
+            }
+            WhatHappened::ItRanOutOfRounds { .. } => {
+                Went::WentWrong(WentWrong::RanOutOfRounds { done, of })
+            }
+            WhatHappened::AChangeIsWaiting { sentence, .. } => {
+                Went::WentWrong(WentWrong::EndedOtherwise {
+                    done,
+                    of,
+                    why: format!("a change waited for the person: {sentence}"),
+                })
+            }
+            WhatHappened::ItWasRefused { said, .. } => Went::WentWrong(WentWrong::EndedOtherwise {
+                done,
+                of,
+                why: format!("it was refused: {said}"),
+            }),
+            WhatHappened::ItWasStopped { .. } => Went::WentWrong(WentWrong::EndedOtherwise {
+                done,
+                of,
+                why: "it was stopped".to_owned(),
+            }),
+            WhatHappened::TheMachineCouldNotBeAsked { why, .. } => {
+                Went::WentWrong(WentWrong::EndedOtherwise { done, of, why })
+            }
+        }
+    };
     Tried {
-        chose: Vec::new(),
-        went: Went::TheRoad,
-        asked: 0,
+        chose,
+        went,
+        asked: door.asked,
+    }
+}
+
+/// What a try records where the model answered the person.
+const AN_ANSWER: &str = "an answer in words";
+
+/// The most of what a model said that a summary shows.
+const AS_MUCH_AS_A_SUMMARY_SHOWS: usize = 160;
+
+/// The start of `said`, on one line.
+fn the_start_of(said: &str) -> String {
+    let one_line = said.split_whitespace().collect::<Vec<_>>().join(" ");
+    let mut start: String = one_line.chars().take(AS_MUCH_AS_A_SUMMARY_SHOWS).collect();
+    if one_line.chars().count() > AS_MUCH_AS_A_SUMMARY_SHOWS {
+        start.push('…');
+    }
+    start
+}
+
+/// The door a try's loop asks: questions go to the model, and everything else
+/// is held against the road.
+struct Recording<'a> {
+    request: &'a ARequest,
+    verbs: &'a Verbs,
+    strings: &'a Strings,
+    model: &'a mut dyn TheModel,
+    /// How many steps have been taken.
+    taken: usize,
+    chose: Vec<String>,
+    wrong: Option<WentWrong>,
+    unanswered: Option<String>,
+    /// How many times the model was asked.
+    asked: usize,
+}
+
+/// Why the loop is stopped once the road is left: the try is over.
+const THE_TRY_IS_OVER: &str = "the try left the road, so nothing more is asked";
+
+impl TheDoor for Recording<'_> {
+    fn asking(&mut self, request: &FromAnAgent) -> Result<ToAnAgent, NotAnswered> {
+        if let FromAnAgent::Ask { question, .. } = request {
+            // **As the daemon shows it**: trimmed, and passed on unwrapped
+            // because it already begins with the product's own words
+            // (`alo_turn::next_request`'s `Held::shown`).
+            self.asked += 1;
+            return self
+                .model
+                .answering(question.trim(), self.strings)
+                .map_err(|why| {
+                    self.unanswered = Some(why.clone());
+                    NotAnswered::NotReached { why }
+                });
+        }
+        self.chose.push(match request {
+            FromAnAgent::Run { command } => format!("run: {command}"),
+            other => other.verb().unwrap_or_default().to_owned(),
+        });
+        let Some(step) = self.request.road().get(self.taken) else {
+            self.wrong = Some(WentWrong::WentOn {
+                asked: self.chose.last().cloned().unwrap_or_default(),
+            });
+            return Err(NotAnswered::NotReached {
+                why: THE_TRY_IS_OVER.to_owned(),
+            });
+        };
+        match taking(step, self.taken + 1, request, self.verbs, self.strings) {
+            Ok(call) => {
+                self.taken += 1;
+                Ok(answering(step.answered(), &call, self.strings))
+            }
+            Err(wrong) => {
+                self.wrong = Some(wrong);
+                Err(NotAnswered::NotReached {
+                    why: THE_TRY_IS_OVER.to_owned(),
+                })
+            }
+        }
     }
 }
 

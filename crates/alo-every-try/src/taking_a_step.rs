@@ -5,7 +5,7 @@
 //! `Verbs::call`, the daemon's own validator; it came through the door its
 //! effect takes; and each value the road decides is that value.
 
-use alo_capability::{Call, Verbs};
+use alo_capability::{Call, Value, Verbs};
 use alo_protocol::FromAnAgent;
 use alo_strings::Strings;
 
@@ -23,12 +23,62 @@ pub fn taking(
     verbs: &Verbs,
     strings: &Strings,
 ) -> Result<Call, WentWrong> {
-    let _ = (asked, verbs, strings);
-    Err(WentWrong::AnotherVerb {
-        step: at,
-        expected: step.verb().to_owned(),
-        asked: "nothing".to_owned(),
-    })
+    let named = match asked {
+        FromAnAgent::Run { command } => {
+            return Err(WentWrong::RanACommand {
+                step: at,
+                expected: step.verb().to_owned(),
+                command: command.clone(),
+            });
+        }
+        FromAnAgent::Ask { .. } => {
+            return Err(WentWrong::AnotherVerb {
+                step: at,
+                expected: step.verb().to_owned(),
+                asked: "a question to a model".to_owned(),
+            });
+        }
+        FromAnAgent::Read { verb, .. } | FromAnAgent::Propose { verb, .. } => verb.trim(),
+    };
+    if named != step.verb() {
+        return Err(WentWrong::AnotherVerb {
+            step: at,
+            expected: step.verb().to_owned(),
+            asked: named.to_owned(),
+        });
+    }
+    let call = verbs
+        .call(named, &asked.given())
+        .map_err(|why| WentWrong::ArgumentsRefused {
+            step: at,
+            verb: named.to_owned(),
+            why: why.said(strings).into_text(),
+        })?;
+    if call.waits_for_approval() != asked.waits_for_a_person() {
+        return Err(WentWrong::TheWrongDoor {
+            step: at,
+            verb: named.to_owned(),
+            door: if asked.waits_for_a_person() {
+                "change"
+            } else {
+                "read"
+            },
+        });
+    }
+    for (argument, expected) in step.expected() {
+        let given = call
+            .value(argument)
+            .map_or_else(|| "nothing".to_owned(), Value::describe);
+        if &given != expected {
+            return Err(WentWrong::AnotherValue {
+                step: at,
+                argument: (*argument).to_owned(),
+                expected: expected.clone(),
+                given,
+            });
+        }
+    }
+    Ok(call)
 }
 
 #[cfg(test)]

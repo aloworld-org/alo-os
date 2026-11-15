@@ -10,20 +10,94 @@
 //! measured VSCodium showing — a text entry named after the open file — and
 //! not one read off a machine during the try.
 
-use alo_capability::Call;
-use alo_protocol::ToAnAgent;
-use alo_strings::Strings;
+use alo_acting::{Acting, OPEN_FILE};
+use alo_adapters::{Role, Seen, Shown, ShownWindow};
+use alo_applications::Application;
+use alo_capability::words::DONE_AT_FULL_ACCESS;
+use alo_capability::{Call, Value};
+use alo_protocol::{Done, ToAnAgent};
+use alo_publishing::WhatWasPublished;
+use alo_strings::{Filling, Strings};
 
 use crate::a_road::Answered;
 
 /// The machine's answer to `call`, taken as a step answered `answered`.
 #[must_use]
 pub fn answering(answered: &Answered, call: &Call, strings: &Strings) -> ToAnAgent {
-    let _ = (answered, call);
-    ToAnAgent::Refused(alo_protocol::Wording::of(&strings.say(
-        &alo_capability::words::DONE_AT_FULL_ACCESS.key(),
-        &alo_strings::Filling::nothing(),
-    )))
+    let application = the_value_of(call, alo_applications::verbs::APPLICATION);
+    match answered {
+        Answered::AFileOpened => done_at_full_access(
+            Done::of_an_application_act(OPEN_FILE, &application),
+            call,
+            strings,
+        ),
+        Answered::AnApplicationOpened => {
+            let act = Application::identified(&application)
+                .map(|which| Acting::Open(which).on_the_wire())
+                .unwrap_or_default();
+            done_at_full_access(
+                Done::of_an_application_act(act, &application),
+                call,
+                strings,
+            )
+        }
+        Answered::AWindowShowing { title, field } => {
+            let shown = Shown::of(
+                application,
+                vec![ShownWindow::titled(
+                    title.clone(),
+                    vec![Seen::of(
+                        Role::TextField,
+                        field.clone(),
+                        Some(String::new()),
+                        1,
+                    )],
+                )],
+                false,
+            );
+            ToAnAgent::did(Done::of_a_window_read(&shown, &[]))
+        }
+        Answered::TypedAndSaved => {
+            let name = the_value_of(call, alo_adapters::fallback_verbs::NAME);
+            let typed = the_value_of(call, alo_adapters::fallback_verbs::TEXT);
+            done_at_full_access(
+                Done::of_a_typing(&application, &name, typed.chars().count(), true, true),
+                call,
+                strings,
+            )
+        }
+        Answered::Published => {
+            let folder = the_value_of(call, alo_publishing::words::FOLDER);
+            let account = the_value_of(call, alo_publishing::words::ACCOUNT);
+            let address = format!("https://{account}.github.io/");
+            let said = alo_publishing::published_without_asking(
+                WhatWasPublished {
+                    folder: &folder,
+                    address: &address,
+                    nothing_new: false,
+                },
+                strings,
+            );
+            ToAnAgent::done_without_asking(Done::of_a_publication(&folder, &address, false), &said)
+        }
+    }
+}
+
+/// What `argument` was given as, or nothing.
+fn the_value_of(call: &Call, argument: &str) -> String {
+    call.value(argument)
+        .map(Value::describe)
+        .unwrap_or_default()
+}
+
+/// Done at full access, said as `alo-agentd` says it: the call's own sentence
+/// inside the full-access words (`saying_it_was_done_without_asking.rs`).
+fn done_at_full_access(did: Done, call: &Call, strings: &Strings) -> ToAnAgent {
+    let said = strings.say(
+        &DONE_AT_FULL_ACCESS.key(),
+        &Filling::of("sentence", call.sentence(strings).into_text()),
+    );
+    ToAnAgent::done_without_asking(did, &said)
 }
 
 #[cfg(test)]

@@ -56,7 +56,9 @@ fn running() -> Result<Verdict, String> {
     let key = std::env::var(THE_KEY)
         .ok()
         .filter(|key| !key.trim().is_empty())
-        .ok_or(format!("{THE_KEY} is not set, so the model cannot be asked"))?;
+        .ok_or(format!(
+            "{THE_KEY} is not set, so the model cannot be asked"
+        ))?;
     let key = Secret::typed(key.trim())
         .map_err(|_| format!("{THE_KEY} is not a key that can be sent"))?;
 
@@ -68,7 +70,8 @@ fn running() -> Result<Verdict, String> {
             .ok_or(format!("the set has no request called `{only}`"))?;
     }
     let verbs = alo_turn::the_verbs_a_whole_machine_offers().map_err(|why| why.to_string())?;
-    let strings = alo_every_try::words_for_the_answers::the_words().map_err(|why| why.to_string())?;
+    let strings =
+        alo_every_try::words_for_the_answers::the_words().map_err(|why| why.to_string())?;
     let provider = Provider::checked(
         "the provider",
         &endpoint,

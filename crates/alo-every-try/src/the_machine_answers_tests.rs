@@ -23,7 +23,9 @@ fn call(verb: &str, given: &[(&str, &str)]) -> Call {
         .iter()
         .map(|(named, is)| (*named, Given::text(*is)))
         .collect();
-    the_verbs().call(verb, &given).expect("a call the machine accepts")
+    the_verbs()
+        .call(verb, &given)
+        .expect("a call the machine accepts")
 }
 
 fn written(answer: &ToAnAgent) -> String {
@@ -38,7 +40,10 @@ fn a_file_opened_at_full_access_is_done_without_asking_and_names_the_application
             OPEN_FILE_IN_APPLICATION,
             &[
                 (APPLICATION, EDITOR),
-                (alo_applications::opening_a_file::PATH, "/var/home/alo/hello.txt"),
+                (
+                    alo_applications::opening_a_file::PATH,
+                    "/var/home/alo/hello.txt",
+                ),
             ],
         ),
         &the_words(),
@@ -98,7 +103,10 @@ fn a_folder_published_names_the_address_it_went_to() {
         &call(
             PUBLISH_TO_GITHUB_PAGES,
             &[
-                (alo_publishing::words::FOLDER, "/var/home/alo/Documents/site"),
+                (
+                    alo_publishing::words::FOLDER,
+                    "/var/home/alo/Documents/site",
+                ),
                 (alo_publishing::words::ACCOUNT, "alo-demo"),
             ],
         ),

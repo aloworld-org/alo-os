@@ -21,17 +21,29 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
         .iter()
         .find(|request| request.named() == named)
         .unwrap_or_else(|| panic!("the set has {named}"));
-    request.road().iter().map(crate::a_road::Step::verb).collect()
+    request
+        .road()
+        .iter()
+        .map(crate::a_road::Step::verb)
+        .collect()
 }
 
 #[test]
 fn the_set_is_versioned_and_holds_the_three_demo_two_roads() {
     assert_eq!(THE_VERSION, 1);
     let set = the_set().expect("the set builds");
-    let named: Vec<&str> = set.requests().iter().map(|request| request.named()).collect();
+    let named: Vec<&str> = set
+        .requests()
+        .iter()
+        .map(|request| request.named())
+        .collect();
     assert_eq!(
         named,
-        ["write in VSCodium", "publish to GitHub Pages", "open an application by name"]
+        [
+            "write in VSCodium",
+            "publish to GitHub Pages",
+            "open an application by name"
+        ]
     );
 }
 
@@ -45,7 +57,10 @@ fn writing_in_vscodium_opens_reads_and_types_which_also_saves() {
 
 #[test]
 fn publishing_is_one_verb() {
-    assert_eq!(the_road_of("publish to GitHub Pages"), [PUBLISH_TO_GITHUB_PAGES]);
+    assert_eq!(
+        the_road_of("publish to GitHub Pages"),
+        [PUBLISH_TO_GITHUB_PAGES]
+    );
 }
 
 #[test]
@@ -120,7 +135,10 @@ fn the_machine_is_told_full_access_the_home_and_the_applications() {
 #[test]
 fn one_request_can_be_tried_alone_and_an_unknown_one_is_none() {
     let set = the_set().expect("the set builds");
-    let only = set.clone().only("publish to GitHub Pages").expect("it is in the set");
+    let only = set
+        .clone()
+        .only("publish to GitHub Pages")
+        .expect("it is in the set");
     assert_eq!(only.requests().len(), 1);
     assert!(set.only("nothing called this").is_none());
 }

@@ -6,7 +6,7 @@ use alo_capability::Verbs;
 use alo_strings::Strings;
 
 use crate::a_road::ARequest;
-use crate::a_try::{TheModel, Tried};
+use crate::a_try::{TheModel, Tried, Went, one_try};
 use crate::the_set::TheSet;
 
 /// One request and every try of it.
@@ -38,7 +38,10 @@ impl Tallied {
     /// How many took the road.
     #[must_use]
     pub fn on_the_road(&self) -> usize {
-        0
+        self.tries
+            .iter()
+            .filter(|tried| tried.took_the_road())
+            .count()
     }
 }
 
@@ -64,22 +67,112 @@ pub fn tallying(
     model: &mut dyn TheModel,
     told: &mut dyn FnMut(&ARequest, usize, &Tried),
 ) -> Vec<Tallied> {
-    let _ = (set, tries, verbs, strings, model, told);
-    Vec::new()
+    set.requests()
+        .iter()
+        .map(|request| {
+            let tried = (1..=tries)
+                .map(|number| {
+                    let tried = one_try(request, set.may_reach(), verbs, strings, model);
+                    told(request, number, &tried);
+                    tried
+                })
+                .collect();
+            Tallied::of(request.clone(), tried)
+        })
+        .collect()
 }
 
 /// What `tallied` says as a whole.
 #[must_use]
 pub fn verdict(tallied: &[Tallied]) -> Verdict {
-    let _ = tallied;
-    Verdict::EveryTryTookTheRoad
+    let every: Vec<&Tried> = tallied.iter().flat_map(|one| one.tries.iter()).collect();
+    let tried_each = tallied.iter().all(|one| !one.tries.is_empty());
+    if every
+        .iter()
+        .any(|tried| matches!(tried.went(), Went::WentWrong(_)))
+    {
+        Verdict::SomeLeftTheRoad
+    } else if every.is_empty() || !tried_each || !every.iter().all(|tried| tried.took_the_road()) {
+        Verdict::NotMeasured
+    } else {
+        Verdict::EveryTryTookTheRoad
+    }
 }
 
 /// The summary, in plain words, headed by what was asked of what.
 #[must_use]
 pub fn summary(tallied: &[Tallied], asked_of: &str) -> String {
-    let _ = (tallied, asked_of);
-    String::new()
+    let tries = tallied.first().map_or(0, |one| one.tries.len());
+    let calls: usize = tallied
+        .iter()
+        .flat_map(|one| one.tries.iter())
+        .map(Tried::asked)
+        .sum();
+    let mut said = format!(
+        "## What alo's model chose, tried {tries} times per request\n\n\
+         Set version {}, asked of {asked_of}, with the instructions and verbs a turn \
+         is given. Nothing was carried out on any machine. {calls} model calls in all.\n\n",
+        crate::the_set::THE_VERSION
+    );
+    said.push_str(match verdict(tallied) {
+        Verdict::EveryTryTookTheRoad => {
+            "**Every try of every request took the expected road.**\n\n"
+        }
+        Verdict::SomeLeftTheRoad => {
+            "**The check did not pass**: at least one try left the expected road.\n\n"
+        }
+        Verdict::NotMeasured => {
+            "**Nothing was measured**: the model could not be asked every time, so this \
+             says nothing about the road.\n\n"
+        }
+    });
+    said.push_str("| Request | Took the road | Where the other tries went |\n|---|---|---|\n");
+    for one in tallied {
+        let elsewhere: Vec<String> = one
+            .tries
+            .iter()
+            .enumerate()
+            .filter_map(|(at, tried)| match tried.went() {
+                Went::TheRoad => None,
+                Went::WentWrong(why) => Some(format!("try {}: {why}", at + 1)),
+                Went::NotAnswered(why) => Some(format!(
+                    "try {}: the model could not be asked ({why})",
+                    at + 1
+                )),
+            })
+            .collect();
+        said.push_str(&format!(
+            "| {} | {} of {} | {} |\n",
+            one.request.named(),
+            one.on_the_road(),
+            one.tries.len(),
+            if elsewhere.is_empty() {
+                "—".to_owned()
+            } else {
+                elsewhere.join("; ").replace('|', "\\|")
+            }
+        ));
+    }
+    for one in tallied {
+        said.push_str(&format!(
+            "\n### {}\n\nAsked: *{}*\n\nExpected: {}\n\n",
+            one.request.named(),
+            one.request.words(),
+            one.request.the_road_written()
+        ));
+        for (at, tried) in one.tries.iter().enumerate() {
+            said.push_str(&format!(
+                "- try {}: {}\n",
+                at + 1,
+                if tried.chose().is_empty() {
+                    "nothing".to_owned()
+                } else {
+                    tried.chose().join(" → ")
+                }
+            ));
+        }
+    }
+    said
 }
 
 #[cfg(test)]

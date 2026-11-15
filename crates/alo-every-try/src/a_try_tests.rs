@@ -101,7 +101,11 @@ fn a_step_off_the_road_fails_the_try_there_and_asks_nothing_more() {
     );
     assert!(!tried.took_the_road());
     assert_eq!(tried.chose(), [OPEN_FILE_IN_APPLICATION, TYPE_TEXT]);
-    assert_eq!(model.shown.len(), 2, "nothing is asked after the road is left");
+    assert_eq!(
+        model.shown.len(),
+        2,
+        "nothing is asked after the road is left"
+    );
 }
 
 #[test]
@@ -130,7 +134,9 @@ fn asking_for_more_after_the_whole_road_is_going_on() {
 
 #[test]
 fn a_line_that_is_never_a_request_runs_out_of_rounds() {
-    let broken: Vec<String> = (0..20).map(|_| r#"{"format":1,"asks":{}}"#.to_owned()).collect();
+    let broken: Vec<String> = (0..20)
+        .map(|_| r#"{"format":1,"asks":{}}"#.to_owned())
+        .collect();
     let (tried, _) = tried(&broken);
     assert!(
         matches!(
@@ -166,8 +172,9 @@ fn the_model_is_shown_the_text_a_turn_shows() {
         assert!(shown.contains("Open hello.txt in VSCodium and write Written by alo in it"));
     }
     assert!(
-        model.shown.get(1).is_some_and(|second| second.contains(EDITOR)
-            && second.contains(OPEN_FILE_IN_APPLICATION)),
+        model.shown.get(1).is_some_and(
+            |second| second.contains(EDITOR) && second.contains(OPEN_FILE_IN_APPLICATION)
+        ),
         "{:?}",
         model.shown.get(1)
     );
