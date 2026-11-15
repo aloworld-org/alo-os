@@ -26,7 +26,10 @@ const THE_CHECK: &str = concat!(
 );
 
 /// The gate's workflow, whose list of libraries this one must install too.
-const THE_GATE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../.github/workflows/gate.yml");
+const THE_GATE: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../.github/workflows/gate.yml"
+);
 
 /// The gates themselves, whose test filter says which tests a hosted runner
 /// runs.
@@ -96,8 +99,13 @@ const CANNOT_RUN: &str = ".github/the-tests-a-hosted-runner-cannot-run.txt";
 /// What fails the job when a break went unnoticed.
 const SURVIVORS_FAIL: &str = "[ \"$missed\" -eq 0 ] || exit 1";
 
-/// The words a survivor is reported in.
-const NOBODY_NOTICED: &str = "no test noticed";
+/// How each survivor is written into the summary: one row per line of
+/// cargo-mutants' own list of them, ending in the words a person reads.
+///
+/// The whole row and not the words alone: *no test noticed* is also a heading
+/// and a count, and a rule satisfied by the heading passed while the rows were
+/// gone — this file's own first run showed it.
+const NOBODY_NOTICED: &str = "| no test noticed |/' mutants.out/missed.txt";
 
 /// The output that says the pull request changed Rust this check can break.
 const CHANGED: &str = "steps.changed.outputs.rust == 'true'";
@@ -223,18 +231,22 @@ fn what_is_wrong_with(text: &str, gate: &str) -> Vec<String> {
 /// ways, and a check that changes its mind on its own is not one anybody can
 /// read twice.
 fn what_is_wrong_with_the_pin(live: &[String]) -> Vec<String> {
+    // Every line that could install it: an action's `tool:`, or any install.
     let pins: Vec<&String> = live
         .iter()
-        .filter(|it| it.contains("cargo-mutants"))
+        .filter(|it| {
+            it.contains("cargo-mutants") && (it.contains("tool:") || it.contains("install"))
+        })
         .collect();
     let exact = |line: &str| {
-        line.strip_prefix("tool: cargo-mutants@").is_some_and(|version| {
-            let parts: Vec<&str> = version.split('.').collect();
-            parts.len() == 3
-                && parts
-                    .iter()
-                    .all(|it| !it.is_empty() && it.bytes().all(|b| b.is_ascii_digit()))
-        })
+        line.strip_prefix("tool: cargo-mutants@")
+            .is_some_and(|version| {
+                let parts: Vec<&str> = version.split('.').collect();
+                parts.len() == 3
+                    && parts
+                        .iter()
+                        .all(|it| !it.is_empty() && it.bytes().all(|b| b.is_ascii_digit()))
+            })
     };
     if pins.len() == 1 && pins.iter().all(|it| exact(it)) {
         Vec::new()
@@ -263,11 +275,13 @@ fn what_is_wrong_with_the_diff(live: &[String]) -> Vec<String> {
         }
     }
     match the_gates_filter() {
-        None => wrong.push(format!("the gate's test filter could not be read from {THE_GATES}")),
+        None => wrong.push(format!(
+            "the gate's test filter could not be read from {THE_GATES}"
+        )),
         Some(filter) => {
             for package in left_out_of_the_gate(&filter) {
                 let spec = format!("':(exclude)crates/{package}'");
-                if !live.iter().any(|it| *it == spec) {
+                if !live.contains(&spec) {
                     wrong.push(format!(
                         "{package} is left out of the gate's tests and not out of the diff, so \
                          every break in it would read as unnoticed"
@@ -316,7 +330,7 @@ fn what_is_wrong_with_the_run(live: &[String]) -> Vec<String> {
     }
     if !live
         .iter()
-        .any(|it| it.starts_with("timeout-minutes:") && it != &"timeout-minutes: 0")
+        .any(|it| it.starts_with("timeout-minutes:") && it != "timeout-minutes: 0")
     {
         wrong.push("the job has no time limit".to_owned());
     }
@@ -358,9 +372,31 @@ fn what_leaves_the_runner(live: &[String]) -> Vec<String> {
 /// The shipped workflow with one thing changed, after checking the thing to
 /// change is there — so a change that silently did nothing cannot read as a
 /// refusal.
+///
+/// **In a line that is not a comment**, for a change within one line. The
+/// header explains most of what the rules hold, in the same words, so the
+/// first occurrence of a phrase is usually the comment; changing that would
+/// leave the workflow as it was, and the test asserting a refusal would fail
+/// for a reason that has nothing to do with the rule. That happened, twice,
+/// on this file's first run.
 fn with(from: &str, to: &str) -> Option<String> {
     let text = shipped();
-    text.contains(from).then(|| text.replacen(from, to, 1))
+    if from.contains('\n') {
+        return text.contains(from).then(|| text.replacen(from, to, 1));
+    }
+    let mut changed = false;
+    let lines: Vec<String> = text
+        .split_inclusive('\n')
+        .map(|line| {
+            if !changed && !line.trim_start().starts_with('#') && line.contains(from) {
+                changed = true;
+                line.replacen(from, to, 1)
+            } else {
+                line.to_owned()
+            }
+        })
+        .collect();
+    changed.then(|| lines.concat())
 }
 
 /// Whether a changed workflow is refused.
@@ -406,8 +442,11 @@ fn a_check_that_stays_green_on_a_survivor_is_refused() {
             "    runs-on: ubuntu-24.04\n",
             "    runs-on: ubuntu-24.04\n    continue-on-error: true\n",
         ),
-        with(NOBODY_NOTICED, "survived"),
-        with("cargo mutants --in-diff", "cargo mutants --baseline=skip --in-diff"),
+        with(NOBODY_NOTICED, "|/' mutants.out/caught.txt"),
+        with(
+            "cargo mutants --in-diff",
+            "cargo mutants --baseline=skip --in-diff",
+        ),
     ] {
         assert!(refused(changed.as_deref()), "{changed:?}");
     }
@@ -425,7 +464,10 @@ fn a_check_that_breaks_more_than_the_change_or_never_stops_is_refused() {
         .unwrap_or_default();
     assert!(!run.is_empty(), "no run of cargo mutants in {THE_CHECK}");
     for changed in [
-        with(&run, &run.replace("--in-diff \"$RUNNER_TEMP/changed.diff\"", "--workspace")),
+        with(
+            &run,
+            &run.replace("--in-diff \"$RUNNER_TEMP/changed.diff\"", "--workspace"),
+        ),
         with(&run, &run.replacen("timeout ", "", 1)),
         with("timeout-minutes:", "timeout-minutes: 0\n    x:"),
     ] {
@@ -479,7 +521,10 @@ fn a_cargo_mutants_that_is_not_pinned_is_refused() {
         with(&pin, "tool: cargo-mutants"),
         with(&pin, "tool: cargo-mutants@27"),
         with(&pin, "tool: cargo-mutants@latest"),
-        with(&pin, &format!("{pin}\n        run: cargo install cargo-mutants")),
+        with(
+            &pin,
+            &format!("{pin}\n        run: cargo install cargo-mutants"),
+        ),
     ] {
         assert!(refused(changed.as_deref()), "{changed:?}");
     }
@@ -493,7 +538,10 @@ fn a_check_on_other_events_or_with_a_writing_token_is_refused() {
         with("  pull_request:\n", "  pull_request:\n  merge_group:\n"),
         with("  pull_request:\n", "  pull_request:\n  push:\n"),
         with("  contents: read\n", "  contents: write\n"),
-        with("  contents: read\n", "  contents: read\n  pull-requests: write\n"),
+        with(
+            "  contents: read\n",
+            "  contents: read\n  pull-requests: write\n",
+        ),
     ] {
         assert!(refused(changed.as_deref()), "{changed:?}");
     }
@@ -509,8 +557,13 @@ fn a_run_with_nothing_to_break_or_an_upload_beyond_the_results_is_refused() {
         .cloned()
         .unwrap_or_default();
     assert!(!run_if.is_empty(), "the run has no condition");
+    // The run's own condition, by the step's name: the same condition guards
+    // the steps before it, and changing one of those would prove nothing.
     for changed in [
-        with(&run_if, "if: always()"),
+        with(
+            &format!("{THE_RUN}\n        {run_if}"),
+            &format!("{THE_RUN}\n        if: always()"),
+        ),
         with("rust=false", "rust=true"),
         with(THE_RESULTS, "path: target"),
         with("retention-days: 7", "retention-days: 90"),
