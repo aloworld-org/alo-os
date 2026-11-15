@@ -45,6 +45,7 @@
 //! | [`NotRead`], [`NotActed`] | Why a line is not a request, and why a request did nothing |
 //! | [`ToOpenALink`] | The portal asking for an application to be started with a link a person followed |
 //! | [`ToOpenAFile`], [`Opened`] | alo asking for a file to be opened in an application the person named, and where it opened |
+//! | [`said_on_the_log`] | The sentences the desktop writes on its log for those acts, which a walk reads |
 //!
 //! Not here: the socket, the compositor's windows, and the authority. The
 //! socket is `alo-shell`'s to listen on and `alo-agentd`'s to connect to —
@@ -68,6 +69,7 @@ pub mod front;
 pub mod opening_a_file;
 pub mod opening_a_link;
 pub mod request;
+pub mod said_on_the_log;
 pub mod typing_into;
 pub mod working_in;
 

@@ -41,6 +41,7 @@ pub mod strokes;
 pub mod the_first_walk;
 pub mod the_log;
 pub mod walking;
+pub mod writing_in_vscodium;
 
 #[cfg(test)]
 mod a_machine_of_pictures;

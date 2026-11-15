@@ -1,0 +1,91 @@
+//! **What the desktop says on its log when it carries out alo's acts** —
+//! opening a file, typing, saving — declared once, here, so the desktop that
+//! writes a sentence and the walk that reads it for (`crates/alo-walking`)
+//! cannot drift apart.
+//!
+//! The log is the journal, and on a walk machine the serial port carries it,
+//! so these are the sentences a walk can check that an act happened, and what
+//! the desktop answered. **They never carry the text alo typed**: only how many
+//! bytes it was, because a text may be anything the person asked for, and the
+//! journal is read by more than this machine's person.
+
+use crate::{Opened, ToType, Typed};
+
+/// The words every sentence about opening a file begins with.
+pub const A_FILE_WAS_OPENED: &str = "alo asked to open a file in";
+
+/// The words every sentence about typing, saving, or asking whether it may,
+/// begins with.
+pub const ALO_TYPED: &str = "alo asked to type into";
+
+/// The sentence for one file alo asked to open in `application`, and what the
+/// desktop answered.
+#[must_use]
+pub fn a_file_was_opened(application: &str, answered: Opened) -> String {
+    format!(
+        "{A_FILE_WAS_OPENED} {application}, and it was answered {}",
+        answered.written()
+    )
+}
+
+/// The sentence for one typing alo asked of the window in front: which kind
+/// (`text`, `save`, `check`), the application, how many bytes, and what the
+/// desktop answered.
+#[must_use]
+pub fn alo_typed(asked: &ToType, answered: Typed) -> String {
+    let (what, bytes) = match asked {
+        ToType::Text { bytes, .. } => ("text", *bytes),
+        ToType::Save { .. } => ("save", 0),
+        ToType::Check { .. } => ("check", 0),
+    };
+    format!(
+        "{ALO_TYPED} {}: {what}, {bytes} bytes, and it was answered {}",
+        asked.application().identifier(),
+        answered.written()
+    )
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected Err is the failure being reported"
+)]
+mod tests {
+    use alo_applications::Application;
+
+    use super::*;
+
+    /// **A sentence begins with the words a walk looks for, then the
+    /// application, and ends with the answer's own word** — so a walk that
+    /// reads `phrase` and `and_says` reads exactly what the desktop wrote.
+    ///
+    /// What would have to be true for this to pass while broken: the desktop
+    /// writing its log with its own `format!` rather than these functions. The
+    /// desktop and the shell call these by name, which `cargo` checks.
+    #[test]
+    fn each_sentence_names_the_application_and_the_answer() {
+        let codium = Application::identified("com.vscodium.codium").unwrap();
+        let opened = a_file_was_opened(codium.identifier(), Opened::InAlosCopy);
+        assert!(opened.starts_with("alo asked to open a file in com.vscodium.codium,"));
+        assert!(opened.ends_with("opened-in-alos-copy"));
+
+        let typed = alo_typed(
+            &ToType::Text {
+                application: codium.clone(),
+                bytes: 12,
+            },
+            Typed::Typed,
+        );
+        assert_eq!(
+            typed,
+            "alo asked to type into com.vscodium.codium: text, 12 bytes, and it was answered typed"
+        );
+        let saved = alo_typed(
+            &ToType::Save {
+                application: codium,
+            },
+            Typed::AskedToSave,
+        );
+        assert!(saved.ends_with(": save, 0 bytes, and it was answered asked-to-save"));
+    }
+}

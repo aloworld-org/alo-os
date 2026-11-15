@@ -167,7 +167,7 @@ fn then_the_terminal_at_rest(walk: Walk) -> Walk {
     walk.press(Chord::key("esc"))
         .look("settings-closed", look)
         .mark()
-        .press(Chord::with_two("ctrl", "alt", "t"))
+        .press(Chord::holding(&["ctrl", "alt"], "t"))
         .expect_line(
             "the terminal's band draws no controls at rest",
             THE_TERMINAL_AT_REST,
@@ -203,7 +203,8 @@ pub const THE_TERMINAL_MAXIMISED: &str =
 fn then_the_provider(walk: Walk) -> Walk {
     let look = Settling::UNDER_KVM;
     let tab = Chord::key("tab");
-    walk.only_with(THE_PROVIDER_KEY)
+    let walk = walk
+        .only_with(THE_PROVIDER_KEY)
         .press(Chord::key("esc"))
         .press(Chord::with("meta_l", "i"))
         .look("settings-again", look)
@@ -222,7 +223,9 @@ fn then_the_provider(walk: Walk) -> Walk {
         .type_text("gpt-4o-mini")
         .look("the-provider-form-filled", look)
         .press(Chord::key("ret"))
-        .look("the-provider-saved", look)
+        .look("the-provider-saved", look);
+    // With a provider, alo can be asked: Demo 2's second road, at full access.
+    crate::writing_in_vscodium::at_full_access(walk)
 }
 
 #[cfg(test)]
