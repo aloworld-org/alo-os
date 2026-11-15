@@ -3,6 +3,7 @@
 
 #![expect(
     clippy::expect_used,
+    clippy::indexing_slicing,
     reason = "in a test, a panic on an unexpected None is the failure being reported"
 )]
 

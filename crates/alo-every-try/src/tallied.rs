@@ -12,7 +12,9 @@ use crate::the_set::TheSet;
 /// One request and every try of it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Tallied {
+    /// The request.
     request: ARequest,
+    /// Every try of it, in order.
     tries: Vec<Tried>,
 }
 
