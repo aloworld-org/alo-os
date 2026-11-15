@@ -190,8 +190,8 @@ impl FromAnAgent {
     ///
     /// Duplicates and all: an argument named twice arrives twice, so that
     /// `alo_capability::CallError::SameArgumentTwice` (two different values) is
-    /// reachable rather than having been decided by a JSON reader. `argument.rs` is where that is
-    /// argued.
+    /// reachable rather than having been decided by a JSON reader.
+    /// `argument.rs` is where that is argued.
     #[must_use]
     pub fn given(&self) -> Vec<(&str, Given)> {
         match self {
