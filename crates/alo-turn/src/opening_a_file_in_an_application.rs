@@ -36,6 +36,14 @@
 //! person's installed application under their own session. What an
 //! application sends once it is open is the indicator's to show on the
 //! desktop's side (ADR 0143 Q6), not this executor's.
+//!
+//! **What the answer carries does leave, with an online model.** Since
+//! 2026-11-15 the answer says where typing into the file goes: the name and
+//! the window's title, read once from alo's own copy when it is in front
+//! (`where_it_types`). That answer is part of the next question the model is
+//! asked, so with an online provider it leaves the machine inside that
+//! question, under the indicator like the rest of it; with a local model it
+//! stays here. It is on the record (`words::IT_TYPES_INTO`).
 
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
@@ -60,9 +68,22 @@ pub struct AFileOpened {
     file: PathBuf,
     /// Where it opened: alo's own copy, or the person's own window.
     opened: Opened,
+    /// Where text typed into it goes — the name the typing verb takes and the
+    /// window's title — where the window could be read once it was in front.
+    types_into: Option<(String, String)>,
 }
 
 impl AFileOpened {
+    /// **Where text typed into it goes**: the name `accessible.type_text`
+    /// takes for it and its window's title, read once its window was in
+    /// front. [`None`] where it could not be read in time; nothing is guessed.
+    #[must_use]
+    pub fn types_into(&self) -> Option<(&str, &str)> {
+        self.types_into
+            .as_ref()
+            .map(|(name, window)| (name.as_str(), window.as_str()))
+    }
+
     /// The application it opened in, by its identifier.
     #[must_use]
     pub fn application(&self) -> &str {
@@ -170,23 +191,35 @@ pub(crate) fn opening_a_file_in_an_application(
             if let Some(door) = machine.at_the_compositors_door() {
                 in_front_or_not_yet_there(door, asked.application());
             }
+            // **Only in alo's own copy**: a person's own window is theirs,
+            // and typing into it is refused unless they chose otherwise.
+            let types_into = if matches!(opened, Opened::InAlosCopy) {
+                where_it_types(machine, &identifier, &file)
+            } else {
+                None
+            };
             let where_it_opened = if matches!(opened, Opened::InAlosCopy) {
                 words::OPENED_IN_ALOS_COPY
             } else {
                 words::OPENED_IN_THEIR_WINDOW
             };
-            let entry = Entry::ran(&authorised, strings).telling(&[said_about(
-                strings,
-                where_it_opened,
-                &identifier,
-                &shown,
-            )]);
+            let mut told = vec![said_about(strings, where_it_opened, &identifier, &shown)];
+            // **And what was read of the window is on the record**, as every
+            // read is: its title and the name typing goes into.
+            if let Some((name, window)) = &types_into {
+                told.push(strings.say(
+                    &words::IT_TYPES_INTO.key(),
+                    &Filling::of("name", name.clone()).and("window", window.clone()),
+                ));
+            }
+            let entry = Entry::ran(&authorised, strings).telling(&told);
             return (
                 entry,
                 Ok(AFileOpened {
                     application: identifier,
                     file,
                     opened,
+                    types_into,
                 }),
             );
         }
@@ -240,6 +273,27 @@ fn in_front_or_not_yet_there(
     {
         std::thread::sleep(BETWEEN_ASKS);
     }
+}
+
+/// **Where text typed into `file`, just opened in `application`, goes**
+/// (the owner, 2026-11-15, relayed: option A). The window is read once,
+/// through the same tree a read opens and for this question only, and the
+/// name offered is the file's, only where typing with it would reach exactly
+/// one place (`alo_adapters::places_for_text::where_a_file_is_typed_into`).
+/// Nothing where there is no tree, the window could not be read, or no one
+/// place is meant: the answer then says what it said before.
+fn where_it_types(
+    machine: &mut Machine<'_>,
+    application: &str,
+    file: &std::path::Path,
+) -> Option<(String, String)> {
+    let file_name = file.file_name()?.to_str()?.to_owned();
+    let tree = machine.the_windows_on_the_screen()?.opening().ok()?;
+    alo_adapters::places_for_text::where_a_file_is_typed_into(
+        tree.as_ref(),
+        application,
+        &file_name,
+    )
 }
 
 /// One of this verb's words, about this application and this file.

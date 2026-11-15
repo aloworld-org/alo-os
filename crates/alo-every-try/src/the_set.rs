@@ -131,9 +131,17 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
         "write in VSCodium",
         the_ask(),
         vec![
-            Step::of(OPEN_FILE_IN_APPLICATION, Answered::AFileOpened)
-                .expecting(APPLICATION, editor.as_str())
-                .expecting(PATH, format!("{THE_HOME}/{THE_FILE}")),
+            // **As a booted machine answers it**: the window read once it is in
+            // front, and where typing goes said (the owner's option A).
+            Step::of(
+                OPEN_FILE_IN_APPLICATION,
+                Answered::AFileOpenedTypingInto {
+                    name: THE_FILE.to_owned(),
+                    window: format!("{THE_FILE} - VSCodium"),
+                },
+            )
+            .expecting(APPLICATION, editor.as_str())
+            .expecting(PATH, format!("{THE_HOME}/{THE_FILE}")),
             Step::of(
                 READ_WINDOW,
                 Answered::AWindowShowing {

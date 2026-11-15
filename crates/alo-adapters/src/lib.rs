@@ -94,6 +94,7 @@ pub mod not_loaded;
 pub mod not_pressed;
 pub mod not_walked;
 pub mod nothing_to_read;
+pub mod places_for_text;
 pub mod pressable;
 pub mod reading_windows;
 pub mod role;
