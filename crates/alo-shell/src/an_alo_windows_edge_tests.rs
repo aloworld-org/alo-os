@@ -3,7 +3,7 @@
 
 use smithay::utils::{Logical, Physical, Point, Rectangle, Size};
 
-use super::{OnItsEdge, the_edge_over, what_a_press_is_on};
+use super::{OnItsEdge, the_edge_over, what_a_press_on_this_edge_is_on};
 use crate::window_edge::OnTheEdge;
 
 /// A room no edge is clamped by.
@@ -56,28 +56,20 @@ fn a_press_finds_close_where_it_is_drawn() {
         ))
     };
     assert_eq!(
-        what_a_press_is_on(a_window(), middle_of(OnTheEdge::Close), (anywhere(), 100)),
+        what_a_press_on_this_edge_is_on(&edge, middle_of(OnTheEdge::Close)),
         Some(OnItsEdge::Close)
     );
     assert_eq!(
-        what_a_press_is_on(
-            a_window(),
-            middle_of(OnTheEdge::Minimise),
-            (anywhere(), 100)
-        ),
+        what_a_press_on_this_edge_is_on(&edge, middle_of(OnTheEdge::Minimise)),
         Some(OnItsEdge::Minimise)
     );
     let title = edge.title.unwrap_or_default();
     assert_eq!(
-        what_a_press_is_on(
-            a_window(),
-            Point::from((title.x + 4, title.y + 4)),
-            (anywhere(), 100)
-        ),
+        what_a_press_on_this_edge_is_on(&edge, Point::from((title.x + 4, title.y + 4))),
         Some(OnItsEdge::TheRest)
     );
     assert_eq!(
-        what_a_press_is_on(a_window(), Point::from((600, 500)), (anywhere(), 100)),
+        what_a_press_on_this_edge_is_on(&edge, Point::from((600, 500))),
         None
     );
 }

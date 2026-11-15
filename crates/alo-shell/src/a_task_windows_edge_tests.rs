@@ -92,6 +92,7 @@ fn press_close_at(server: &mut Server, which: WhichTask, scale: u16) -> bool {
     server
         .pointer_motion(f64::from(x), f64::from(y), 1)
         .expect("the pointer moved");
+    server.the_edges_were_told_where_the_pointer_is();
     server
         .pointer_button(0x110, ButtonState::Pressed, 2)
         .expect("the press was handled")
@@ -217,6 +218,7 @@ fn at_two_hundred_a_press_where_close_is_drawn_closes_the_task() {
     server
         .pointer_motion(f64::from(x), f64::from(y), 1)
         .expect("the pointer moved");
+    server.the_edges_were_told_where_the_pointer_is();
     let delivered = server
         .pointer_button(0x110, ButtonState::Pressed, 2)
         .expect("the press was handled");

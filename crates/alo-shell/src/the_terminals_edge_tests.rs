@@ -48,11 +48,25 @@ fn a_terminal(named: &str) -> (tempfile::TempDir, Server, cosmic_text::FontSyste
     (runtime, server, fonts)
 }
 
-/// The terminal's edge as it is laid out now, at 100 per cent.
+/// The terminal's edge **with its controls** where it is drawn now, laid out
+/// at `scale` per cent: where they would be once the pointer reveals them.
+fn revealed_at(server: &Server, scale: u32) -> WindowEdge {
+    crate::window_edge::edge_of(
+        crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
+            server
+                .where_the_terminal_is_seen()
+                .expect("a terminal drawn has an edge"),
+            scale,
+        ),
+        crate::window_edge::Decorations::AlosOwnWindow,
+        true,
+        anywhere(),
+    )
+}
+
+/// The terminal's edge with its controls, at 100 per cent.
 fn its_edge(server: &Server) -> WindowEdge {
-    server
-        .the_terminals_edge(anywhere(), 100)
-        .expect("a terminal drawn has an edge")
+    revealed_at(server, 100)
 }
 
 /// Press the primary button at the middle of `on` on the terminal's edge.
@@ -75,6 +89,7 @@ fn press_at(server: &mut Server, x: i32, y: i32) {
     server
         .pointer_motion(f64::from(x), f64::from(y), 1)
         .expect("the pointer moved");
+    server.the_edges_were_told_where_the_pointer_is();
     let _ = server
         .pointer_button(0x110, ButtonState::Pressed, 2)
         .expect("the press was handled");
@@ -223,9 +238,7 @@ fn close_lands_at_every_zoom_and_scale() {
                 u32::from(scale) * zoom / 1_000,
                 "the edge is not drawn at the display's scale times the zoom"
             );
-            let edge = server
-                .the_terminals_edge(anywhere(), drawn_at)
-                .expect("a terminal drawn has an edge");
+            let edge = revealed_at(&server, drawn_at);
             let close = edge
                 .controls
                 .iter()

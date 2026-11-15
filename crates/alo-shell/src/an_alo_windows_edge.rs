@@ -2,39 +2,48 @@
 //! record — laid out, drawn and pressed through the application edge itself.
 //!
 //! Each of those windows is drawn by alo and placed on the canvas by ADR 0145,
-//! and each wears the edge every application's window wears: its icon, its
-//! title and Close, in the focused look while the keys go to it and the
-//! unfocused one otherwise (`crate::window_edge_look`), and Minimise, which puts
-//! the window in the right-hand panel (`crate::alos_own_window_goes_aside`).
-//! The edge is laid out by
-//! `crate::window_edge::edge_of` with `Decorations::AlosOwnWindow`, painted by
-//! `crate::window_edge_picture::EdgePicture` and pressed through
+//! and each wears the band every application's window wears: its title and
+//! Close, in the focused look while the keys go to it and the unfocused one
+//! otherwise (`crate::window_edge_look`), and Minimise, which puts the window
+//! in the right-hand panel (`crate::alos_own_window_goes_aside`). The edge is
+//! laid out by `crate::window_edge::edge_of` with `Decorations::AlosOwnWindow`,
+//! painted by `crate::window_edge_picture::EdgePicture` and pressed through
 //! `crate::window_edge_pointing` — one edge, one set of measures — **from where
 //! the camera draws the window**, so it pans and zooms with it as #1084 made
 //! every application's edge do.
 //!
-//! **Always revealed**, because it carries the only Close the window has.
+//! **Revealed as every band is** (`crate::the_bands_over_alos_windows`): no
+//! controls at rest, shown while the pointer is in the band, always shown for a
+//! person who asked for that. Until 2026-11-14 this band was laid out revealed
+//! and drawn shown whatever the pointer did.
 
+use std::time::Instant;
+
+use alo_put_aside::AlosOwnWindow;
 use smithay::utils::{Logical, Physical, Point, Rectangle, Size};
 
 use crate::an_edge_in_its_displays_units::{
     a_point_in_the_edges_units, a_window_in_the_edges_units,
 };
-use crate::window_edge::{Decorations, OnTheEdge, WindowEdge, edge_of};
+use crate::the_bands_over_alos_windows::AlosBand;
+use crate::window_edge::{OnTheEdge, WindowEdge};
 use crate::window_edge_picture::{EdgePicture, OverTheEdge};
 use crate::window_edge_pointing::{UnderThePointer, pointing_at, what_is_under};
 
 /// The edge over a window drawn at `window` on the display, laid out at
-/// `scale` per cent in `room`.
+/// `scale` per cent in `room`, **with its controls** — the geometry a test
+/// reads where they would be. The machine never lays one out like this: it
+/// asks the band's reveal (`Server::alos_band_as_pressed`).
+#[cfg(test)]
 #[must_use]
 pub(crate) fn the_edge_over(
     window: Rectangle<i32, Physical>,
     room: Size<i32, Logical>,
     scale: u32,
 ) -> WindowEdge {
-    edge_of(
+    crate::window_edge::edge_of(
         a_window_in_the_edges_units(window, scale),
-        Decorations::AlosOwnWindow,
+        crate::window_edge::Decorations::AlosOwnWindow,
         true,
         room,
     )
@@ -49,22 +58,31 @@ pub(crate) struct WhatItShows<'a> {
     pub(crate) focused: bool,
 }
 
-/// The edge over a window drawn at `window`, as a picture for a display
-/// `output` pixels big at `scale` per cent, with the pointer at `pointer`.
+/// The edge over `which`, drawn at `window`, as a picture for a display
+/// `output` pixels big at `scale` per cent — its controls as shown as its
+/// band's reveal says.
 pub(crate) fn its_picture(
-    window: Rectangle<i32, Physical>,
+    server: &crate::Server,
+    (which, window): (AlosOwnWindow, Rectangle<i32, Physical>),
     shows: WhatItShows<'_>,
-    pointer: Option<Point<i32, Logical>>,
     fonts: &mut cosmic_text::FontSystem,
     (output, scale): ((i32, i32), u32),
 ) -> Option<EdgePicture> {
     let room = crate::window_edge::the_usable_output(Size::from(output), scale);
-    let edge = the_edge_over(window, room, scale);
+    let (edge, how_shown) = server.alos_band_as_drawn(
+        AlosBand::Its(which),
+        a_window_in_the_edges_units(window, scale),
+        room,
+        Instant::now(),
+    );
     let pointing = pointing_at(
         &edge,
-        pointer.map(|at| a_point_in_the_edges_units(at, scale)),
+        server
+            .where_the_pointer_is_in_logical_pixels()
+            .map(|at| a_point_in_the_edges_units(at, scale)),
         None,
     );
+    let look = crate::window_edge_look::WhichLook::of(shows.focused);
     EdgePicture::of(
         &edge,
         OverTheEdge {
@@ -78,16 +96,14 @@ pub(crate) fn its_picture(
         crate::window_edge_picture::TheWindow {
             title: Some(shows.title),
             application: None,
-            look: crate::window_edge_look::WhichLook::of(shows.focused),
+            look,
             body: None,
             laid_over: false,
-            // **Always shown**: alo's own windows carry Close alone, and it
-            // stays on their bands as it always has.
             controls: crate::window_edge_paint::HowTheControlsLook {
                 pointing,
                 open: false,
-                how_shown: crate::the_controls_fade::ALL_THE_WAY,
-                look: crate::window_edge_look::WhichLook::of(shows.focused),
+                how_shown,
+                look,
             },
         },
         fonts,
@@ -96,15 +112,29 @@ pub(crate) fn its_picture(
     )
 }
 
-/// What a press at `at`, in the display's pixels, is on, on the edge over a
-/// window drawn at `window` — [`None`] off it.
+/// What a press at `at`, in the display's pixels, is on, on the band over
+/// `which` drawn at `window` — [`None`] off it. A control is found only while
+/// the band shows it.
 pub(crate) fn what_a_press_is_on(
-    window: Rectangle<i32, Physical>,
+    server: &crate::Server,
+    (which, window): (AlosOwnWindow, Rectangle<i32, Physical>),
     at: Point<i32, Logical>,
-    (room, scale): (Size<i32, Logical>, u32),
 ) -> Option<OnItsEdge> {
-    let edge = the_edge_over(window, room, scale);
-    match what_is_under(&edge, a_point_in_the_edges_units(at, scale))? {
+    let scale = server.the_scale_an_edge_is_measured_at();
+    let edge = server.alos_band_as_pressed(
+        AlosBand::Its(which),
+        a_window_in_the_edges_units(window, scale),
+        server.the_room_an_edge_is_clamped_in(),
+    );
+    what_a_press_on_this_edge_is_on(&edge, a_point_in_the_edges_units(at, scale))
+}
+
+/// What a press at `at`, in the band's units, is on, on `edge`.
+pub(crate) fn what_a_press_on_this_edge_is_on(
+    edge: &WindowEdge,
+    at: Point<i32, Logical>,
+) -> Option<OnItsEdge> {
+    match what_is_under(edge, at)? {
         UnderThePointer::Control(OnTheEdge::Close) => Some(OnItsEdge::Close),
         UnderThePointer::Control(OnTheEdge::Minimise) => Some(OnItsEdge::Minimise),
         UnderThePointer::Control(_)

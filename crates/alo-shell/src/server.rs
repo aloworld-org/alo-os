@@ -588,6 +588,15 @@ pub struct Server {
     /// (`crate::the_controls_fade`), pruned on the same walk as
     /// `edges_revealed`.
     pub(crate) controls_fading: Vec<(WlSurface, crate::the_controls_fade::TheFade)>,
+    /// The reveal and fade of each band over one of alo's own windows — the
+    /// terminal, Settings, the record and each task window — which have no
+    /// `WlSurface` to be kept by above. `crate::the_bands_over_alos_windows`
+    /// is the only thing that reads or writes it, and prunes it against what
+    /// is open on every walk.
+    pub(crate) alos_bands: Vec<crate::the_bands_over_alos_windows::ItsBand>,
+    /// What the journal was last told the bands over alo's own windows draw
+    /// (`crate::the_bands_drawn_are_said`).
+    pub(crate) what_the_bands_said: crate::the_bands_drawn_are_said::WhatTheBandsSaid,
     /// Where the keyboard is on each window's edge.
     ///
     /// §6 of `docs/design/the-external-window-edge.md`, and the sibling of
@@ -1003,6 +1012,8 @@ impl Server {
             edges_revealed: Vec::new(),
             bands_out_over_full_screen: Vec::new(),
             controls_fading: Vec::new(),
+            alos_bands: Vec::new(),
+            what_the_bands_said: crate::the_bands_drawn_are_said::WhatTheBandsSaid::default(),
             keyboard_on_edges: Vec::new(),
             asked_to_bring_back: Vec::new(),
             the_task_card_open: None,
