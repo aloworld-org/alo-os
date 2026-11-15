@@ -58,6 +58,7 @@ pub mod an_answer;
 pub mod an_answer_about_the_verbs;
 pub mod answering_in;
 pub mod at_full_access;
+pub mod installing_an_application;
 pub mod instructions;
 pub mod shown;
 pub mod the_applications_installed;
@@ -80,6 +81,7 @@ pub use an_answer::{THE_ANSWER_DOOR, the_answer_in};
 pub use an_answer_about_the_verbs::{NOT_FOR_THE_PERSON, speaks_of_the_verbs};
 pub use answering_in::{answering_in, shown_to_a_turn_answering_in_the_language_asked_in};
 pub use at_full_access::{AT_FULL_ACCESS, NotTheLevel, THE_LONGEST_FULL_ACCESS_LINE};
+pub use installing_an_application::installing_an_application;
 pub use instructions::{
     AND_A_COMMAND, AND_AN_ANSWER, AND_YOU_MAY_LOOK_FIRST, EVERY_DOOR_AN_ANSWER_AND_A_COMMAND,
     EVERY_DOOR_AND_AN_ANSWER, HOW_TO_ANSWER, Instructions, ONE_EXAMPLE_PER_DOOR, SEVERAL_STEPS,
