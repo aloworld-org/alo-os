@@ -69,8 +69,10 @@ struct Running {
     /// which moves itself into a scope of Flatpak's and then ends, while the
     /// application runs on there; the walk of 2026-11-15 (run 43726518930)
     /// saw VSCodium's window in that scope answered *not alo's copy*, because
-    /// the copy was forgotten when its first process ended. Seen by the
-    /// kernel's own account of that process, so never a group of the person's.
+    /// the copy was forgotten when its first process ended. Kept from the
+    /// kernel's own account of that process, and from the instance number
+    /// Flatpak writes on the copy's own pipe (`Running::instance`) — a number
+    /// only something holding that pipe's write end can write.
     seen: Vec<PathBuf>,
     /// **Where Flatpak says which instance the copy is**, until it has: the
     /// read end of the pipe `flatpak run` was told to write its instance on
@@ -737,6 +739,13 @@ impl AlosCopies {
 /// **A pipe Flatpak can say its instance on**: the read end this desktop's
 /// own, closed in every program it starts; the write end inherited by the next
 /// one, under the number `--instance-id-fd` names. Neither end blocks.
+///
+/// **The write end is inheritable from here until the copy has started**, and a
+/// program another thread of this desktop starts in that moment (the screen
+/// reader, `gh`) inherits it too: the read end then never sees its end, which
+/// only keeps it until the number arrives, and that program could write on it.
+/// Mapping one descriptor into one child alone needs `pre_exec`, which is
+/// `unsafe` and forbidden here, so the moment is kept short instead.
 /// [`None`] where the kernel will not make one, and the copy is then found as
 /// before, by looking at its process.
 fn an_instance_pipe() -> Option<(OwnedFd, OwnedFd)> {
@@ -766,7 +775,9 @@ fn the_instance_heard(read: &OwnedFd) -> Heard {
             .get(..length)
             .and_then(alo_launching::an_instance_number)
             .map_or(Heard::Never, Heard::It),
-        Err(why) if why == rustix::io::Errno::AGAIN => Heard::Nothing,
+        Err(why) if why == rustix::io::Errno::AGAIN || why == rustix::io::Errno::INTR => {
+            Heard::Nothing
+        }
         Err(_) => Heard::Never,
     }
 }

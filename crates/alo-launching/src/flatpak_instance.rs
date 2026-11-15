@@ -10,7 +10,8 @@
 //! and 43739331457).
 //!
 //! So the copy is started with `--instance-id-fd`, and Flatpak writes the
-//! instance number on that descriptor once the sandbox's process exists. Read
+//! instance number on that descriptor once it has made the scope and before it
+//! starts the sandbox, which never inherits the descriptor. Read
 //! in Flatpak's own source, `main` branch, on 2026-11-15 — **not on the
 //! version the image ships, and not measured on a booted machine**:
 //!
@@ -20,7 +21,10 @@
 //!   number is;
 //! - `flatpak-run.c:1013-1017` — the scope named
 //!   `app-flatpak-<escaped app id>-<escaped instance id>.scope`;
-//! - `flatpak-instance.c:812` — the instance id is a random number, in decimal.
+//! - `flatpak-instance.c:812` — the instance id is a random number, in decimal;
+//! - `flatpak-utils.c`, `flatpak_accept_fd_argument` — the descriptor is
+//!   refused only when it is not a number or is 0, 1 or 2, which a pipe the
+//!   desktop opens never is.
 //!
 //! Nothing here starts anything or reads a descriptor: this decides the
 //! command and reads the answer, so both are tested without Flatpak.
