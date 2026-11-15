@@ -957,6 +957,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-every-try"
+version = "0.0.1"
+dependencies = [
+ "alo-acting",
+ "alo-adapters",
+ "alo-agent",
+ "alo-answering",
+ "alo-applications",
+ "alo-asking",
+ "alo-capability",
+ "alo-egress",
+ "alo-instructing",
+ "alo-models",
+ "alo-protocol",
+ "alo-publishing",
+ "alo-software",
+ "alo-strings",
+ "alo-their-folders",
+ "alo-turn",
+ "alo-walking",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-files"
 version = "0.0.1"
 dependencies = [
