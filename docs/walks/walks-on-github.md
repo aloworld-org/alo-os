@@ -98,7 +98,7 @@ level the first-start sheet arrives with:
 
 | # | Does | Checks |
 |---|---|---|
-| 1 | Esc; Ctrl+Alt+T; types `touch ~/hello.txt`, Enter | the terminal opens and the line is typed — the person makes the file, because no verb makes one |
+| 1 | Esc; Ctrl+Alt+T; types ` touch ~/hello.txt && systemd-cat -t alo-walk-the-file-is-made ls ~/hello.txt`, Enter | the journal says the file is there within a minute — the person makes the file, because no verb makes one. **The leading space** is there because the first key into a freshly opened terminal was lost on two walks of 2026-11-14 (`ouch ~/hello.txt`), a fault of its own |
 | 2 | Super+A; types *Open the file hello.txt in my home folder in VSCodium, type exactly this text into it: Written by alo in VSCodium and then save it.*; Enter | the journal says `alo asked to open a file in com.vscodium.codium, … opened-in-alos-copy` within 5 minutes |
 | 3 | waits | `alo asked to type into com.vscodium.codium: text, … typed` within 5 minutes, then `…: save, … asked-to-save` within 2 — the turn saves only once the text read back exactly |
 | 4 | Ctrl+Alt+T; types `systemd-cat -t alo-walk-the-file cat ~/hello.txt`, Enter | the journal has a line tagged `alo-walk-the-file` that says *Written by alo in VSCodium* within a minute — **the file on disk**, the one check that is not the machine's own account of itself |

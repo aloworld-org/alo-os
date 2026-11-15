@@ -119,6 +119,7 @@ fn the_checks_come_in_the_roads_order() {
     assert_eq!(
         phrases,
         vec![
+            THE_FILE_IS_MADE.to_owned(),
             opened_in_vscodium(),
             typed_into_vscodium(),
             saved_in_vscodium(),
