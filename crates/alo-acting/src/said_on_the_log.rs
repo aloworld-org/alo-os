@@ -45,6 +45,23 @@ pub fn alo_typed(asked: &ToType, answered: Typed) -> String {
     )
 }
 
+/// The words every sentence about the field alo was asked to type into
+/// begins with.
+pub const THE_FIELD_ASKED_FOR: &str = "alo was asked to type into the field";
+
+/// **The field a typing names, and whether it was found** — the name exactly
+/// as the call gave it, quoted, so the first walk past the keyboard shows
+/// whether a model named the file (`hello.txt`) or something the editor does
+/// not show (`Document`). A field's name is the name an application shows for
+/// it, usually a file's; the text itself is never said.
+#[must_use]
+pub fn the_field_asked_for(application: &str, name: &str, found: bool) -> String {
+    format!(
+        "{THE_FIELD_ASKED_FOR} {name:?} in {application}, and it was {}",
+        if found { "found" } else { "not found" }
+    )
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -87,5 +104,15 @@ mod tests {
             Typed::AskedToSave,
         );
         assert!(saved.ends_with(": save, 0 bytes, and it was answered asked-to-save"));
+
+        // The field, quoted as the call gave it, and whether it was there.
+        assert_eq!(
+            the_field_asked_for("com.vscodium.codium", "Document", false),
+            "alo was asked to type into the field \"Document\" in com.vscodium.codium, and it \
+             was not found"
+        );
+        assert!(
+            the_field_asked_for("com.vscodium.codium", "hello.txt", true).ends_with("was found")
+        );
     }
 }
