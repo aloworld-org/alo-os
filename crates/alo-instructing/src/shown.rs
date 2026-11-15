@@ -11,12 +11,12 @@
 
 use alo_capability::Verbs;
 
+use crate::installing_an_application::installing_an_application;
 use crate::instructions::Instructions;
 use crate::the_conversation_so_far::TheConversationSoFar;
 use crate::the_window_offered::TheWindowOffered;
 use crate::verb_as_told::as_told;
 use crate::what_it_may_reach::WhatItMayReach;
-use crate::installing_an_application::installing_an_application;
 use crate::working_in_an_application::working_in_an_application;
 
 /// **The whole text a model is shown**, under the given [`Instructions`]: how

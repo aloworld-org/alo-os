@@ -13,7 +13,7 @@
 //!
 //! This paragraph says both halves, after the verbs and only when the registry
 //! has the two verbs it names. **No grade is about this text**, as none is about
-//! [`crate::working_in_an_application`]: a grade names the instructions above
+//! [`crate::working_in_an_application()`]: a grade names the instructions above
 //! the verbs by digest (ADR 0034), and this is after them.
 
 use alo_capability::Verbs;
