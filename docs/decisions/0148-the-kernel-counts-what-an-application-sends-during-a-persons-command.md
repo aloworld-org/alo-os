@@ -134,7 +134,7 @@ in **a copy of an application of its own**, counted apart from the person's
 windows. This record's map and program are unchanged, and nothing is counted
 that a person's command could not already have counted: the desktop holds
 `COUNTED` entries for **alo's copy's control groups only** — the scope it hands
-the copy's process to, `app-alocopy-<id>@<n>.scope`, and the Flatpak scope that
+the copy's process to, `app-alocopy-<id>-<n>.scope`, and the Flatpak scope that
 process is moved into, read off the process itself — for as long as alo holds
 the door's `work-in-alos-copy` connection, and at most fifteen minutes on one
 connection. **The person's own windows are not counted while alo works**, and

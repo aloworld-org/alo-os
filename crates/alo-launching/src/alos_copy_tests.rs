@@ -124,8 +124,8 @@ fn a_running_copy_is_handed_a_file_over_its_own_profile() {
 /// scope (the walk of 2026-11-14, run 43666698260).
 ///
 /// What would have to be true for this to pass while broken: systemd refusing
-/// some other character this name holds — the escaped identifier keeps only
-/// letters, digits, `_`, `:` and `.`, which unit names allow.
+/// some other character this name holds — the escaped identifier holds only
+/// letters, digits, `_`, `:`, `.` and `\xNN` escapes, which unit names allow.
 #[test]
 fn alos_copys_scope_has_no_template_sign() {
     let unit = the_unit_for_alos_copy("com.vscodium.codium", 1).unwrap_or_default();
