@@ -31,7 +31,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 5);
+    assert_eq!(THE_VERSION, 6);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -281,4 +281,24 @@ fn the_machine_installs_from_the_places_a_fresh_machine_has() {
         held.contains(&format!("\"enum\":{}", serde_json::json!(expected))),
         "{held}"
     );
+}
+
+/// **Every read aside of a road is a read**: a change is never aside.
+#[test]
+fn every_read_aside_is_a_read() {
+    let verbs = the_verbs();
+    for request in the_set().expect("the set builds").requests() {
+        for aside in request.aside() {
+            let declared = verbs
+                .of(aside.verb())
+                .unwrap_or_else(|| panic!("{} is offered", aside.verb()));
+            assert_eq!(
+                declared.effect(),
+                alo_capability::Effect::Read,
+                "{}: {} aside is a read",
+                request.named(),
+                aside.verb()
+            );
+        }
+    }
 }

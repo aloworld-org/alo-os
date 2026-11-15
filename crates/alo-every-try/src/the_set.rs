@@ -43,7 +43,7 @@ use crate::a_road::{ARequest, Answered, Step};
 
 /// The version of the set. Up by one for every change to a request, a road or
 /// the machine.
-pub const THE_VERSION: u32 = 5;
+pub const THE_VERSION: u32 = 6;
 
 /// The person's home on the machine the walk boots: Fedora's atomic layout
 /// puts homes under `/var/home`, measured on 2026-11-10

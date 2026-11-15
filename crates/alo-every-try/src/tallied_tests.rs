@@ -171,3 +171,18 @@ fn only_a_pass_exits_zero() {
     assert_eq!(Verdict::SomeLeftTheRoad.exit_code(), 1);
     assert_eq!(Verdict::NotMeasured.exit_code(), 2);
 }
+
+/// **A summary says how many passes took a look aside, and the cap**, so a
+/// pass that needed one is visible rather than counted as a clean one.
+#[test]
+fn the_summary_counts_the_passes_that_looked_aside_and_names_the_cap() {
+    let written = summary(&tallied_with(&opening_firefox(), 2), "a test model");
+    assert!(
+        written.contains(&format!(
+            "at most {} a try",
+            crate::a_try::THE_MOST_LOOKS_ASIDE
+        )),
+        "{written}"
+    );
+    assert!(written.contains("looked aside"), "{written}");
+}

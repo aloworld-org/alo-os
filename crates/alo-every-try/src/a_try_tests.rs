@@ -307,3 +307,74 @@ fn skipping_a_look_still_holds_the_next_step() {
         "{tried:?}"
     );
 }
+
+/// The editor road, and a read of the file it opens that the machine would
+/// answer at any point: the file is there, and empty, as the walk makes it.
+fn writing_or_reading_the_file_first() -> ARequest {
+    writing_in_the_editor().or_looking_at(
+        Step::of(
+            alo_files::verbs::READ_FILE,
+            Answered::With(alo_protocol::Done::Read {
+                text: String::new(),
+            }),
+        )
+        .expecting(alo_files::verbs::FILE, FILE),
+    )
+}
+
+fn reading_the_file() -> String {
+    reading(alo_files::verbs::READ_FILE, &[(alo_files::verbs::FILE, FILE)])
+}
+
+fn tried_on_the_road(request: &ARequest, lines: &[String]) -> super::Tried {
+    let mut model = Writing::these(lines);
+    one_try(
+        request,
+        &WhatItMayReach::nothing().at_full_access(true),
+        &the_verbs(),
+        &the_words(),
+        &mut model,
+    )
+}
+
+/// **A read the machine would answer is a look aside**, and the road goes on
+/// after it: the try still has to open the file, read the window, type and
+/// save — and it says it took a look, so a pass that needed one is seen.
+#[test]
+fn a_read_aside_is_answered_and_the_whole_road_must_still_be_taken() {
+    let tried = tried_on_the_road(
+        &writing_or_reading_the_file_first(),
+        &[
+            reading_the_file(),
+            opening(),
+            looking(),
+            typing(),
+            answering("It is written."),
+        ],
+    );
+    assert_eq!(tried.went(), &Went::TheRoad, "{tried:?}");
+    assert_eq!(tried.looked_aside(), 1);
+    // Looking aside and then stopping is not the road.
+    let stopped = tried_on_the_road(
+        &writing_or_reading_the_file_first(),
+        &[reading_the_file(), answering("It is empty.")],
+    );
+    assert!(!stopped.took_the_road(), "{stopped:?}");
+}
+
+/// **The refusal cases**: looks aside are capped, and a read the road does
+/// not declare is still off the road.
+#[test]
+fn looks_aside_are_capped_and_an_undeclared_read_is_off_the_road() {
+    let mut lines: Vec<String> = (0..=super::THE_MOST_LOOKS_ASIDE)
+        .map(|_| reading_the_file())
+        .collect();
+    lines.extend([opening(), looking(), typing(), answering("Done.")]);
+    let capped = tried_on_the_road(&writing_or_reading_the_file_first(), &lines);
+    assert!(!capped.took_the_road(), "{capped:?}");
+    let undeclared = tried_on_the_road(
+        &writing_in_the_editor(),
+        &[reading_the_file(), opening(), looking(), typing(), answering("Done.")],
+    );
+    assert!(!undeclared.took_the_road(), "{undeclared:?}");
+}
