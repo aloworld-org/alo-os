@@ -15,8 +15,9 @@
 # real image is built while any branch but main exists* — is about images a
 # person installs or that are called a candidate or a release. This one:
 #
-# - is built **from main**, whichever branch started the run, because a walk
-#   here is a walk of what main is;
+# - is built **from main**: from the commit that was merged when a merge
+#   starts it, and from main as it stands when a person does, whichever branch
+#   they start it on, because a walk here is a walk of what main is;
 # - is **never pushed, signed or published** — no registry is logged in to,
 #   and the image is removed from the runner once the disk is written;
 # - leaves the runner only as **pictures, a report and the serial log**, kept
@@ -25,22 +26,38 @@
 # `crates/alo-walking/tests/the_walk_workflow_publishes_nothing.rs` holds this
 # file to each of those.
 #
-# **A person starts it**, and nothing else does: whether it should also run on
-# every merge is the owner's call. Its first four runs, on 2026-11-14, ran from
-# a `push` trigger on the branch that added it, removed before it landed.
+# **It runs by itself after every merge to main**, and a person can also start
+# it by hand. The owner decided this on 2026-11-14. A walk takes 25 to 45
+# minutes, so walks of main do not pile up: one runs, and only the newest merge
+# waits behind it; a merge that lands while another is waiting replaces it.
+# Its result is a check on the merged commit, so a walk that fails shows as a
+# failed check on main.
+#
+# **The provider's key is used on every walk after a merge.** By hand it is
+# used only when the person ticks the box. Either way GitHub masks it in the
+# log, the report says only how many characters were typed, and the serial log
+# that is kept has it taken out (`crates/alo-walking/src/redacting.rs`).
 
 name: Walk
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       with_the_provider:
-        description: "Also add an AI provider, typing its key from the ALO_WALK_PROVIDER_KEY secret (unverified steps)"
+        description: "Also add an AI provider, typing its key from the ALO_WALK_PROVIDER_KEY secret (a walk after a merge always does)"
         type: boolean
         default: false
 
 permissions:
   contents: read
+
+# One walk of main at a time; only the newest waits, and nothing running is
+# cancelled, so every walk that starts also finishes and says how it ended.
+concurrency:
+  group: walk-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   walk:
@@ -49,10 +66,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The image is always main's, whichever branch started this run.
+      # The image is always main's: the merged commit itself after a merge, so
+      # the check on that commit is about that commit, and main as it stands
+      # when a person starts it, whichever branch they start it on.
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event_name == 'push' && github.sha || 'main' }}
           path: image-source
 
       - name: Say which commit the image is built from
@@ -115,12 +134,12 @@ jobs:
           sudo podman rmi localhost/alo-os:walk > /dev/null || true
           cp /usr/share/OVMF/OVMF_VARS_4M.fd walk/vars.fd
 
-      # The provider's key is typed only when a person ticks the box and the
-      # secret exists; otherwise the variable is empty and the walk skips that
-      # section and says so.
+      # The provider's key is typed on every walk after a merge, and by hand
+      # only when the person ticks the box. Without the secret the variable is
+      # empty and the walk skips that section and says so.
       - name: Walk it
         env:
-          ALO_WALK_PROVIDER_KEY: ${{ inputs.with_the_provider && secrets.ALO_WALK_PROVIDER_KEY || '' }}
+          ALO_WALK_PROVIDER_KEY: ${{ (github.event_name == 'push' || inputs.with_the_provider) && secrets.ALO_WALK_PROVIDER_KEY || '' }}
         run: |
           target/release/alo-walk \
             --disk walk/alo.raw \

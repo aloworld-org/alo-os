@@ -29,11 +29,15 @@
 //!   terminal (`alo_shortcuts`' defaults), and its band must draw no controls
 //!   while the pointer is elsewhere.
 //!
-//! **The provider section is unverified and switched off.** It types an AI
-//! provider's key from [`THE_PROVIDER_KEY`], and runs only when that is set.
-//! Its keys are the walk by hand's of 2026-11-14 (`w28-provider.sh`), which
-//! opened Settings fresh; whether they reach the same rows from where this
-//! walk leaves Settings is not yet seen.
+//! **The provider section** types an AI provider's key from
+//! [`THE_PROVIDER_KEY`], and runs only when that is set: on every walk after
+//! a merge to main, and by hand when the box is ticked. Its keys are the walk
+//! by hand's of 2026-11-14 (`w28-provider.sh`); from where this walk leaves
+//! Settings they were seen to reach *Add a provider* and save `openai` on
+//! run 43635265001 (2026-11-14), in its pictures.
+//! **Since the terminal steps it starts from the terminal instead**: Escape
+//! there goes to the shell, and Super+I opens Settings again. Not yet seen on a
+//! run; the provider's first picture shows where it began.
 
 use std::time::Duration;
 

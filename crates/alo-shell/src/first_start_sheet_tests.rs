@@ -273,6 +273,144 @@ fn a_fresh_machine_makes_its_first_account_and_signs_in() {
     );
 }
 
+/// A fresh machine's first account made through the real sheets — with a PIN,
+/// or after *Use password only* — and the sign-in screen the **next boot**
+/// draws from the store it left on the disk.
+///
+/// *Use password only* is reached by the keyboard, as a person without a
+/// pointer reaches it: Tab past the two fields and *Save PIN*, then Enter.
+fn the_next_boot_after_choosing(password_only: bool) -> (tempfile::TempDir, SignInScreen<ADoor>) {
+    let (kept, screen) = a_fresh_machine();
+    let mut screen = at_the_name_sheet(screen);
+    let mut keys: Vec<SignInKey> = "dis".chars().map(SignInKey::Letter).collect();
+    keys.push(SignInKey::Enter);
+    if password_only {
+        keys.extend([
+            SignInKey::OtherField,
+            SignInKey::OtherField,
+            SignInKey::OtherField,
+            SignInKey::Enter,
+        ]);
+    }
+    for _ in 0..2 {
+        keys.extend("4821-or-a-password".chars().map(SignInKey::Letter));
+        keys.push(SignInKey::Enter);
+    }
+    let mut opened = false;
+    for key in keys {
+        match screen.pressed(key) {
+            Signing::Still(still) => screen = *still,
+            Signing::HandedOver(_) => {
+                opened = true;
+                break;
+            }
+        }
+    }
+    assert!(opened, "the first account did not sign anybody in");
+
+    let store = kept.path().join("accounts.toml");
+    let greeting = Greeting::at(&store, 1000, ADoor).expect("the store reads at the next boot");
+    let words = crate::what_this_machine_can_say().unwrap();
+    (kept, SignInScreen::of(Ok(greeting), words))
+}
+
+/// What the sign-in screen's one field is called, to a screen reader.
+fn the_field_is_called(screen: &SignInScreen<ADoor>) -> String {
+    let tree = crate::ReadAloudTree::before_sign_in(screen.words(), screen.shows());
+    let in_front = tree.in_front().expect("the sign-in screen is in front");
+    tree.nodes()
+        .get(in_front.keyboard)
+        .expect("the keyboard is on a node")
+        .name
+        .clone()
+}
+
+/// One of the screen's own words, said.
+fn said(screen: &SignInScreen<ADoor>, word: alo_strings::Word) -> String {
+    screen
+        .words()
+        .say(&word.key(), &alo_strings::Filling::nothing())
+        .text()
+        .to_owned()
+}
+
+/// **A person who pressed *Use password only* is asked for their password on
+/// every boot after, and never for a PIN.**
+///
+/// Found on booted machines on three walks running (2026-11-12, -13, -14):
+/// the first start took a password, and every later sign-in screen said
+/// *Enter your PIN* — a PIN the person never set. The kind of secret was not
+/// kept, so the screen could not know. This walks the whole road: the sheets,
+/// the store on the disk, a fresh greeting read from it, and the screen.
+#[test]
+fn a_password_chosen_at_the_first_start_is_asked_for_at_every_sign_in() {
+    let (_kept, screen) = the_next_boot_after_choosing(true);
+    let crate::SignInShows::Fields { secret, .. } = screen.shows() else {
+        panic!("the next boot did not open on the sign-in screen");
+    };
+    assert_eq!(secret, crate::SecretKind::Password);
+    assert_eq!(
+        the_field_is_called(&screen),
+        said(&screen, crate::sign_in_words::ENTER_YOUR_PASSWORD)
+    );
+}
+
+/// **And a person who chose a PIN is still asked for their PIN.**
+#[test]
+fn a_pin_chosen_at_the_first_start_is_asked_for_at_every_sign_in() {
+    let (_kept, screen) = the_next_boot_after_choosing(false);
+    let crate::SignInShows::Fields { secret, .. } = screen.shows() else {
+        panic!("the next boot did not open on the sign-in screen");
+    };
+    assert_eq!(secret, crate::SecretKind::Pin);
+    assert_eq!(
+        the_field_is_called(&screen),
+        said(&screen, crate::sign_in_words::ENTER_YOUR_PIN)
+    );
+}
+
+/// **The screen is read from the store at every start, so a secret that
+/// changes kind is asked for as its new kind** — a PIN where there was a
+/// password, and a password where a recovery set one again over a PIN.
+///
+/// Nothing on alo OS sets a PIN after the first start yet; this holds the
+/// half that would have to be true when something does, which is that the
+/// screen does not remember what it asked for last time.
+#[test]
+fn a_secret_that_changes_kind_is_asked_for_as_its_new_kind() {
+    let kept = tempfile::tempdir().unwrap();
+    let store = kept.path().join("accounts.toml");
+    for kind in [crate::SecretKind::Password, crate::SecretKind::Pin] {
+        let mut accounts = Accounts::none().unwrap();
+        accounts.created_with("ada", 1000, "theirs", kind).unwrap();
+        alo_accounts::kept(&store, &accounts).unwrap();
+        let greeting = Greeting::at(&store, 1000, ADoor).expect("the store reads");
+        let words = crate::what_this_machine_can_say().unwrap();
+        let screen = SignInScreen::of(Ok(greeting), words);
+        let crate::SignInShows::Fields { secret, .. } = screen.shows() else {
+            panic!("a machine with an account did not open on the sign-in screen");
+        };
+        assert_eq!(
+            secret, kind,
+            "the screen asked for what the store used to hold"
+        );
+    }
+
+    // And a password set again with the recovery key replaces the PIN.
+    let mut accounts = alo_accounts::found(&store).unwrap();
+    accounts
+        .password_set_again("ada", "a new password")
+        .unwrap();
+    alo_accounts::kept(&store, &accounts).unwrap();
+    let greeting = Greeting::at(&store, 1000, ADoor).expect("the store reads");
+    let words = crate::what_this_machine_can_say().unwrap();
+    let screen = SignInScreen::of(Ok(greeting), words);
+    let crate::SignInShows::Fields { secret, .. } = screen.shows() else {
+        panic!("a machine with an account did not open on the sign-in screen");
+    };
+    assert_eq!(secret, crate::SecretKind::Password);
+}
+
 /// **A machine that already has an account never offers the sheet.**
 ///
 /// The refusal `makes_an_account` holds from its own side, held here from the

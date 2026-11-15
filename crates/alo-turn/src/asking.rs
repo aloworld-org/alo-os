@@ -245,10 +245,22 @@ impl Turning<'_, '_> {
                 // boundary permitting these addresses and no others, and asks
                 // no name server anything of its own.
                 let to = registering(hosted.where_it_would_connect());
-                self.put_off_this_machine(&to, None, &agent, now, |indicator| match held {
-                    Held::InWords => asking.to_a_provider(&question, hosted, indicator, now, &to),
-                    Held::ToTheEnvelope => {
-                        asking.to_a_provider_in_the_envelope(&question, hosted, indicator, now, &to)
+                // **Naming this machine's verbs and their arguments** since
+                // 2026-11-14, so a hosted model cannot send an argument a verb
+                // does not take — `crate::the_shape_a_provider_is_held_to`
+                // has the walk that showed it could.
+                let schema = match held {
+                    Held::InWords => None,
+                    Held::ToTheEnvelope => Some(
+                        crate::the_shape_a_provider_is_held_to::the_envelope_naming_the_verbs(
+                            self.machine().verbs(),
+                        ),
+                    ),
+                };
+                self.put_off_this_machine(&to, None, &agent, now, |indicator| match schema {
+                    None => asking.to_a_provider(&question, hosted, indicator, now, &to),
+                    Some(schema) => {
+                        asking.to_a_provider_held_to(&question, hosted, indicator, now, &to, schema)
                     }
                 })
             }

@@ -75,6 +75,10 @@ mod refusing;
 mod standing;
 pub mod words;
 
+/// Whether a person signs in with a PIN or a password — `alo-accounts`' own
+/// type, handed on so a sign-in surface can ask for the right one without
+/// reaching the accounts itself.
+pub use alo_accounts::SecretKind;
 #[cfg(unix)]
 pub use door::TheOpenersDoor;
 pub use greeted::Greeted;

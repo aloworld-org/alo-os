@@ -616,11 +616,103 @@ pub const CLOSE_APPLICATION_LEAVES: Word = Word::saying(
      first, or stays open is up to the application. Held to it by a test.",
 );
 
+// ---------------------------------------------------------------------------
+// Opening a file in an application the person named —
+// `crate::opening_a_file`, the owner's "Yes, add it" of 2026-11-14.
+// ---------------------------------------------------------------------------
+
+/// What `open_file_in_application` does.
+pub const OPEN_FILE_IN_APPLICATION: Word = Word::saying(
+    "applications.verb.open-file-in-application.purpose",
+    "open a file or folder in an application the person names",
+);
+/// **The sentence a person approves before a file is opened in an
+/// application.**
+pub const OPEN_FILE_IN_APPLICATION_SENTENCE: Word = Word::saying(
+    "applications.verb.open-file-in-application.sentence",
+    "open {path} in {application}",
+)
+.noting(
+    "{path} is a file or folder on this machine and {application} the identifier of an \
+     installed application; neither is translated. The person approves this before alo opens \
+     the file there.",
+);
+/// `open_file_in_application`'s application.
+pub const OPEN_FILE_IN_APPLICATION_APPLICATION: Word = Word::saying(
+    "applications.verb.open-file-in-application.argument.application",
+    "which application opens it",
+);
+/// `open_file_in_application`'s file.
+pub const OPEN_FILE_IN_APPLICATION_PATH: Word = Word::saying(
+    "applications.verb.open-file-in-application.argument.path",
+    "the file or folder to open",
+);
+/// What `open_file_in_application` changes.
+pub const OPEN_FILE_IN_APPLICATION_CHANGES: Word = Word::saying(
+    "applications.verb.open-file-in-application.changes",
+    "Opens it in alo's own copy of the application, or in your own window if you chose that in \
+     Settings.",
+)
+.noting(
+    "Shown on the card a person answers before alo opens a file in an application, beside a \
+     tick. 'It' is the file named in the sentence above. \"alo\" is the agent's name and is \
+     never translated. Held to it by a test.",
+);
+/// What `open_file_in_application` leaves alone.
+pub const OPEN_FILE_IN_APPLICATION_LEAVES: Word = Word::saying(
+    "applications.verb.open-file-in-application.leaves",
+    "The file is not changed, and no other window is moved or closed.",
+)
+.noting("Shown beside OPEN_FILE_IN_APPLICATION_CHANGES. Held to it by a test.");
+/// The record of a file opened in alo's own copy.
+pub const OPENED_IN_ALOS_COPY: Word = Word::saying(
+    "applications.opened-in-alos-copy",
+    "{path} was opened in alo's own copy of {application}",
+)
+.noting(
+    "Written in the record after alo opened a file. {path} is the file and {application} the \
+     application's identifier; neither is translated. \"alo\" is the agent's name and is never \
+     translated.",
+);
+/// The record of a file opened in the person's own window.
+pub const OPENED_IN_THEIR_WINDOW: Word = Word::saying(
+    "applications.opened-in-their-window",
+    "{path} was opened in your own window of {application}, as you chose in Settings",
+)
+.noting(
+    "Written in the record after alo opened a file where the person had chosen to let alo work \
+     in their own window. {path} is the file and {application} the application's identifier; \
+     neither is translated.",
+);
+/// An application whose entry cannot be handed a file.
+pub const TAKES_NO_FILE: Word = Word::saying(
+    "applications.takes-no-file",
+    "{application}'s entry gives this machine no way to hand it a file — nothing was opened",
+)
+.noting(AN_IDENTIFIER);
+/// An application that could not be started with the file.
+pub const COULD_NOT_START_WITH_IT: Word = Word::saying(
+    "applications.could-not-start-with-it",
+    "{application} could not be started with {path} — nothing was opened",
+)
+.noting(
+    "{application} is an application's identifier and {path} a file on this machine; neither is \
+     translated.",
+);
+/// A file this machine cannot name to an application at all.
+pub const NOT_A_FILE_TO_HAND_OVER: Word = Word::saying(
+    "applications.not-a-file-to-hand-over",
+    "{path} cannot be handed to an application from here, because its name is not text or is \
+     too long — nothing was opened",
+)
+.noting("{path} is a file on this machine and is never translated.");
+
 /// Every string this crate can say, in the order a translator meets them: what
 /// it could not reach, what could not join the list, how one is shown, the four
-/// verbs, the arrangements one of them offers, what opens what, and what is said
-/// about the person's own file of those choices.
-pub const EVERY_WORD: [Word; 52] = [
+/// verbs, the arrangements one of them offers, what opens what, what is said
+/// about the person's own file of those choices, and opening a file in an
+/// application.
+pub const EVERY_WORD: [Word; 63] = [
     NOT_INSTALLED,
     NO_WINDOW,
     IT_DID_NOT,
@@ -673,6 +765,17 @@ pub const EVERY_WORD: [Word; 52] = [
     FOCUS_APPLICATION_LEAVES,
     CLOSE_APPLICATION_CHANGES,
     CLOSE_APPLICATION_LEAVES,
+    OPEN_FILE_IN_APPLICATION,
+    OPEN_FILE_IN_APPLICATION_SENTENCE,
+    OPEN_FILE_IN_APPLICATION_APPLICATION,
+    OPEN_FILE_IN_APPLICATION_PATH,
+    OPEN_FILE_IN_APPLICATION_CHANGES,
+    OPEN_FILE_IN_APPLICATION_LEAVES,
+    OPENED_IN_ALOS_COPY,
+    OPENED_IN_THEIR_WINDOW,
+    TAKES_NO_FILE,
+    COULD_NOT_START_WITH_IT,
+    NOT_A_FILE_TO_HAND_OVER,
 ];
 
 /// Why this crate's own words could not be declared.

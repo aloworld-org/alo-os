@@ -15,6 +15,7 @@
 
 use crate::hashing::Hashed;
 use crate::refusing::NotCreated;
+use crate::secret_kind::SecretKind;
 
 /// The longest a name may be, which is the limit `useradd` already imposes.
 const LONGEST_NAME: usize = 32;
@@ -31,6 +32,9 @@ pub struct Account {
     uid: u32,
     /// The hash of its password — never the password.
     secret: Hashed,
+    /// Whether that secret is a PIN or a password, so the sign-in screen
+    /// asks for the one the person chose (`crate::secret_kind`).
+    kind: SecretKind,
 }
 
 impl Account {
@@ -45,15 +49,31 @@ impl Account {
     /// [`NotCreated::CouldNotHash`] when the machine's randomness is
     /// unreachable.
     pub fn created(name: &str, uid: u32, password: &str) -> Result<Self, NotCreated> {
+        Self::created_with(name, uid, password, SecretKind::Password)
+    }
+
+    /// An account created now whose secret is of this kind — a PIN, or a
+    /// password — checked and hashed exactly as [`Account::created`]'s.
+    ///
+    /// # Errors
+    ///
+    /// Every refusal [`Account::created`] gives, for the same reasons.
+    pub fn created_with(
+        name: &str,
+        uid: u32,
+        secret: &str,
+        kind: SecretKind,
+    ) -> Result<Self, NotCreated> {
         let name = a_name(name)?;
         a_number(uid)?;
-        if password.is_empty() {
+        if secret.is_empty() {
             return Err(NotCreated::NoPassword);
         }
         Ok(Self {
             name,
             uid,
-            secret: Hashed::of(password)?,
+            secret: Hashed::of(secret)?,
+            kind,
         })
     }
 
@@ -66,10 +86,20 @@ impl Account {
     ///
     /// [`NotCreated`], as [`Account::created`] — except the password's, which
     /// only a hash can fail here and `crate::hashing` has already refused.
-    pub(crate) fn read(name: &str, uid: u32, secret: Hashed) -> Result<Self, NotCreated> {
+    pub(crate) fn read(
+        name: &str,
+        uid: u32,
+        secret: Hashed,
+        kind: SecretKind,
+    ) -> Result<Self, NotCreated> {
         let name = a_name(name)?;
         a_number(uid)?;
-        Ok(Self { name, uid, secret })
+        Ok(Self {
+            name,
+            uid,
+            secret,
+            kind,
+        })
     }
 
     /// This account's password set again, with a fresh salt.
@@ -103,6 +133,11 @@ impl Account {
     /// [`NotCreated::CouldNotHash`] when the machine's randomness is
     /// unreachable. **The account is as it was in both**, which is what makes
     /// a failed attempt safe to retry.
+    ///
+    /// **Afterwards the account signs in with a password**, whatever it signed
+    /// in with before: what was set is a password, and a sign-in screen that
+    /// went on asking for the PIN it replaced would be asking for something
+    /// that no longer opens anything.
     pub fn password_set_again(&mut self, password: &str) -> Result<(), NotCreated> {
         if password.is_empty() {
             return Err(NotCreated::NoPassword);
@@ -113,6 +148,7 @@ impl Account {
         // exists to undo.
         let hashed = Hashed::of(password)?;
         self.secret = hashed;
+        self.kind = SecretKind::Password;
         Ok(())
     }
 
@@ -126,6 +162,12 @@ impl Account {
     #[must_use]
     pub const fn uid(&self) -> u32 {
         self.uid
+    }
+
+    /// Whether this account signs in with a PIN or a password.
+    #[must_use]
+    pub const fn kind(&self) -> SecretKind {
+        self.kind
     }
 
     /// The hash, for the store to verify against and write down.
@@ -210,6 +252,32 @@ mod tests {
                 "`{fine}` was refused as a name"
             );
         }
+    }
+
+    /// **An account made with a PIN says so, and one made plainly is a
+    /// password's** — the fact the sign-in screen chooses its words by.
+    #[test]
+    fn an_account_says_which_kind_of_secret_it_was_made_with() {
+        let pin = Account::created_with("ada", 1000, "4821", SecretKind::Pin).unwrap();
+        assert_eq!(pin.kind(), SecretKind::Pin);
+        assert!(pin.secret().verifies("4821"));
+        let plain = Account::created("ada", 1000, "a password").unwrap();
+        assert_eq!(plain.kind(), SecretKind::Password);
+        assert_eq!(
+            Account::created_with("ada", 1000, "", SecretKind::Pin),
+            Err(NotCreated::NoPassword),
+            "an empty PIN made an account"
+        );
+    }
+
+    /// **A password set again makes it a password's account**, so the screen
+    /// stops asking for the PIN it replaced.
+    #[test]
+    fn a_password_set_again_replaces_a_pin() {
+        let mut account = Account::created_with("ada", 1000, "4821", SecretKind::Pin).unwrap();
+        account.password_set_again("a new password").unwrap();
+        assert_eq!(account.kind(), SecretKind::Password);
+        assert!(account.secret().verifies("a new password"));
     }
 
     /// **Root is refused.** The person `alo-agentd` runs as is never root
