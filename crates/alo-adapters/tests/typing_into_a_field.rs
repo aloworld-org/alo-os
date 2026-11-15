@@ -557,3 +557,24 @@ fn where_no_one_place_is_meant_nothing_is_offered() {
         None
     );
 }
+
+/// **A terminal with the keyboard is never offered or listed**: VSCodium's
+/// built-in terminal is a web terminal by its class, and typing refuses it.
+#[test]
+fn a_terminal_with_the_keyboard_is_never_offered_or_listed() {
+    use alo_adapters::places_for_text::where_a_file_is_typed_into;
+    let web_terminal = Thing {
+        class: "xterm-helper-textarea",
+        ..a(ENTRY, "", FOCUSED)
+    };
+    let tree = ATree::of(
+        "hello.txt - VSCodium",
+        vec![web_terminal, a(TEXT, "", EDITABLE), a(PASSWORD, "Secret", EDITABLE)],
+    );
+    assert_eq!(where_a_file_is_typed_into(&tree, EDITOR, "hello.txt"), None);
+    let refused = typing("Document", "x")
+        .the_field(&tree, &in_english())
+        .unwrap_err();
+    let said = said(&refused);
+    assert!(!said.contains("Secret"), "a password field is listed: {said}");
+}

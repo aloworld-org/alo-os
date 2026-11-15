@@ -684,6 +684,17 @@ pub const OPENED_IN_THEIR_WINDOW: Word = Word::saying(
      in their own window. {path} is the file and {application} the application's identifier; \
      neither is translated.",
 );
+/// The record of where typing into a file alo opened goes, read from its
+/// window once it was in front, and told to alo's model.
+pub const IT_TYPES_INTO: Word = Word::saying(
+    "applications.opened-it-types-into",
+    "alo read the window “{window}” and was told that typing into the file goes into “{name}”",
+)
+.noting(
+    "Written in the record after alo opened a file in its own copy and read the window once. \
+     {window} is the window's title and {name} the place typing goes, both as the application \
+     shows them; neither is translated. \"alo\" is the agent's name and is never translated.",
+);
 /// An application whose entry cannot be handed a file.
 pub const TAKES_NO_FILE: Word = Word::saying(
     "applications.takes-no-file",
@@ -712,7 +723,7 @@ pub const NOT_A_FILE_TO_HAND_OVER: Word = Word::saying(
 /// verbs, the arrangements one of them offers, what opens what, what is said
 /// about the person's own file of those choices, and opening a file in an
 /// application.
-pub const EVERY_WORD: [Word; 63] = [
+pub const EVERY_WORD: [Word; 64] = [
     NOT_INSTALLED,
     NO_WINDOW,
     IT_DID_NOT,
@@ -773,6 +784,7 @@ pub const EVERY_WORD: [Word; 63] = [
     OPEN_FILE_IN_APPLICATION_LEAVES,
     OPENED_IN_ALOS_COPY,
     OPENED_IN_THEIR_WINDOW,
+    IT_TYPES_INTO,
     TAKES_NO_FILE,
     COULD_NOT_START_WITH_IT,
     NOT_A_FILE_TO_HAND_OVER,

@@ -25,6 +25,47 @@ pub(crate) const SHOWING: u32 = 25;
 /// `ATSPI_ROLE_TERMINAL`.
 pub(crate) const TERMINAL: u32 = 60;
 
+/// The class Chromium gives the field a web terminal (xterm.js) types
+/// through — VSCodium's built-in terminal, measured 2026-11-13.
+pub(crate) const A_WEB_TERMINAL: &str = "xterm-helper-textarea";
+
+/// **Why typing would refuse a place it found**, in the order
+/// `Typing::the_field` asks: a password field, a terminal by its role or its
+/// class, or one that takes no text. [`None`] where typing would go into it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TypingRefuses {
+    /// A password field: alo never types into one.
+    APasswordField,
+    /// A terminal, by its role or by the class a web terminal has.
+    ATerminal,
+    /// It cannot be edited.
+    NotEditable,
+}
+
+/// [`TypingRefuses`] for the place at `at`, with this role and these states.
+#[must_use]
+pub fn why_typing_refuses(
+    tree: &dyn AccessibilityTree,
+    at: &NodeAt,
+    role: u32,
+    states: &[u32],
+) -> Option<TypingRefuses> {
+    if Role::of_the_tree(role) == Role::PasswordField {
+        return Some(TypingRefuses::APasswordField);
+    }
+    let a_web_terminal = tree.attributes(at).is_ok_and(|said| {
+        said.iter()
+            .any(|(name, value)| name == "class" && value.contains(A_WEB_TERMINAL))
+    });
+    if role == TERMINAL || a_web_terminal {
+        return Some(TypingRefuses::ATerminal);
+    }
+    if !holds(states, EDITABLE) {
+        return Some(TypingRefuses::NotEditable);
+    }
+    None
+}
+
 /// The most names a refusal lists, so a window with hundreds of fields is
 /// said in a sentence.
 pub const THE_MOST_NAMES_SAID: usize = 8;
@@ -156,19 +197,36 @@ pub fn the_ones_meant<'p>(places: &'p [APlaceForText], name: &str) -> Vec<&'p AP
     meant
 }
 
-/// **What a refusal says is there**: the names of the places for text, and
-/// the titles of their windows for those with none, once each, at most
-/// [`THE_MOST_NAMES_SAID`], each in quotes.
+/// **What a refusal says is there**: the names typing would take, each
+/// meaning exactly one place it would go into — a place's own name, or its
+/// window's title where it has none — once each, at most
+/// [`THE_MOST_NAMES_SAID`].
+///
+/// **Only in the window that has the keyboard**, which is alo's copy once it
+/// is in front: the titles of an application's other windows are the names
+/// of the person's other files, and are not said. Nothing where no place
+/// has the keyboard.
 #[must_use]
-pub fn what_is_there(places: &[APlaceForText]) -> Vec<String> {
+pub fn what_is_there(tree: &dyn AccessibilityTree, places: &[APlaceForText]) -> Vec<String> {
+    let Some(in_front) = places.iter().find(|place| place.has_the_keyboard()) else {
+        return Vec::new();
+    };
     let mut said: Vec<String> = Vec::new();
-    for place in places {
+    for place in places.iter().filter(|place| place.window == in_front.window) {
         let named = if place.name.trim().is_empty() {
             place.window.trim()
         } else {
             place.name.trim()
         };
         if named.is_empty() || said.iter().any(|already| already == named) {
+            continue;
+        }
+        let meant = the_ones_meant(places, named);
+        let [one] = meant.as_slice() else {
+            continue;
+        };
+        if one.at != place.at || why_typing_refuses(tree, &one.at, one.role, &one.states).is_some()
+        {
             continue;
         }
         said.push(named.to_owned());
@@ -199,13 +257,9 @@ pub fn where_a_file_is_typed_into(
     let [place] = meant.as_slice() else {
         return None;
     };
-    // **And only one typing would go into**: never a password field or a
-    // terminal, and one that takes text — the checks `Typing::the_field`
-    // makes after it finds the place.
-    let refused_by_typing = Role::of_the_tree(place.role) == Role::PasswordField
-        || place.role == TERMINAL
-        || !holds(&place.states, EDITABLE);
-    if refused_by_typing {
+    // **And only one typing would go into**: the checks `Typing::the_field`
+    // makes after it finds the place, from the same function.
+    if why_typing_refuses(tree, &place.at, place.role, &place.states).is_some() {
         return None;
     }
     Some((file_name.to_owned(), place.window.clone()))

@@ -29,14 +29,12 @@ use crate::fallback_reach::reached;
 use crate::fallback_verbs::{NAME, TEXT, TYPE_TEXT};
 use crate::fallback_words as fallback;
 use crate::places_for_text::{
-    EDITABLE, FOCUSED, TERMINAL, holds, the_ones_meant, the_places_for_text, what_is_there,
+    FOCUSED, TypingRefuses, holds, the_ones_meant, the_places_for_text, what_is_there,
+    why_typing_refuses,
 };
 use crate::role::Role;
 use crate::typing_words as words;
 
-/// The class Chromium gives the field a web terminal (xterm.js) types
-/// through — VSCodium's built-in terminal, measured 2026-11-13.
-const A_WEB_TERMINAL: &str = "xterm-helper-textarea";
 
 /// The field the approved text goes into, found at the moment of typing.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -160,7 +158,7 @@ impl Typing {
             // name one that is (the owner, 2026-11-15, relayed): the places'
             // own names, and the window's title for those with none.
             [] => {
-                let there = what_is_there(&places);
+                let there = what_is_there(tree, &places);
                 if there.is_empty() {
                     return Err(self.refused(words::NO_SUCH_FIELD, None, strings));
                 }
@@ -174,18 +172,17 @@ impl Typing {
             [one] => (one.at.clone(), one.role, one.states.clone()),
             _ => return Err(self.refused(words::MORE_THAN_ONE_FIELD, None, strings)),
         };
-        if Role::of_the_tree(role) == Role::PasswordField {
-            return Err(self.refused(words::A_PASSWORD_FIELD, None, strings));
-        }
-        let a_web_terminal = tree.attributes(&at).is_ok_and(|said| {
-            said.iter()
-                .any(|(name, value)| name == "class" && value.contains(A_WEB_TERMINAL))
-        });
-        if role == TERMINAL || a_web_terminal {
-            return Err(self.refused(words::A_TERMINAL, None, strings));
-        }
-        if !holds(&states, EDITABLE) {
-            return Err(self.refused(words::NO_SUCH_FIELD, None, strings));
+        match why_typing_refuses(tree, &at, role, &states) {
+            Some(TypingRefuses::APasswordField) => {
+                return Err(self.refused(words::A_PASSWORD_FIELD, None, strings));
+            }
+            Some(TypingRefuses::ATerminal) => {
+                return Err(self.refused(words::A_TERMINAL, None, strings));
+            }
+            Some(TypingRefuses::NotEditable) => {
+                return Err(self.refused(words::NO_SUCH_FIELD, None, strings));
+            }
+            None => {}
         }
         Ok(TheField {
             has_the_keyboard: holds(&states, FOCUSED),

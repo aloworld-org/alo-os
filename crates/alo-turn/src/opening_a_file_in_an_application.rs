@@ -36,6 +36,14 @@
 //! person's installed application under their own session. What an
 //! application sends once it is open is the indicator's to show on the
 //! desktop's side (ADR 0143 Q6), not this executor's.
+//!
+//! **What the answer carries does leave, with an online model.** Since
+//! 2026-11-15 the answer says where typing into the file goes: the name and
+//! the window's title, read once from alo's own copy when it is in front
+//! (`where_it_types`). That answer is part of the next question the model is
+//! asked, so with an online provider it leaves the machine inside that
+//! question, under the indicator like the rest of it; with a local model it
+//! stays here. It is on the record (`words::IT_TYPES_INTO`).
 
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
@@ -182,18 +190,28 @@ pub(crate) fn opening_a_file_in_an_application(
             if let Some(door) = machine.at_the_compositors_door() {
                 in_front_or_not_yet_there(door, asked.application());
             }
-            let types_into = where_it_types(machine, &identifier, &file);
+            // **Only in alo's own copy**: a person's own window is theirs,
+            // and typing into it is refused unless they chose otherwise.
+            let types_into = if matches!(opened, Opened::InAlosCopy) {
+                where_it_types(machine, &identifier, &file)
+            } else {
+                None
+            };
             let where_it_opened = if matches!(opened, Opened::InAlosCopy) {
                 words::OPENED_IN_ALOS_COPY
             } else {
                 words::OPENED_IN_THEIR_WINDOW
             };
-            let entry = Entry::ran(&authorised, strings).telling(&[said_about(
-                strings,
-                where_it_opened,
-                &identifier,
-                &shown,
-            )]);
+            let mut told = vec![said_about(strings, where_it_opened, &identifier, &shown)];
+            // **And what was read of the window is on the record**, as every
+            // read is: its title and the name typing goes into.
+            if let Some((name, window)) = &types_into {
+                told.push(strings.say(
+                    &words::IT_TYPES_INTO.key(),
+                    &Filling::of("name", name.clone()).and("window", window.clone()),
+                ));
+            }
+            let entry = Entry::ran(&authorised, strings).telling(&told);
             return (
                 entry,
                 Ok(AFileOpened {

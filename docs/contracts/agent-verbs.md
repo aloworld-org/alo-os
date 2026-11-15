@@ -550,12 +550,18 @@ by `alo-applications` (`crate::opening_a_file`) and carried out by
   ([`daemon-protocol.md`](daemon-protocol.md)); the file and where it opened
   are in the record. **Since 2026-11-15 it also says where typing into the file
   goes** (`types_into`: the name `accessible.type_text` takes, and the window's
-  title), read once from the window when it is in front; nothing where it could
-  not be read.
+  title), read once from alo's own copy when it is in front and written in the
+  record; nothing where it could not be read, or where the file opened in the
+  person's own window. With an online model these leave the machine inside the
+  next question, under the egress indicator.
 - **`accessible.type_text` refused for a name that means no field says what is
-  there** (since 2026-11-15): the names of the fields and documents the
-  application shows, and a window's title for one with none, each one a name
-  the verb takes.
+  there** (since 2026-11-15): in the window that has the keyboard only, the
+  names typing would take there — a place's own name, or the window's title
+  for one with none — each meaning exactly one place it would type into; never
+  a password field or a terminal. **These leave the machine with an online
+  model**, inside the next question, under the egress indicator; with a local
+  model they stay here. The titles of the application's other windows are never
+  said.
 
 ### The identifier is approved; the name is only shown
 

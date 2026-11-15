@@ -520,12 +520,21 @@ fn a_file_is_opened_then_typed_into_then_saved_with_one_record_each() {
                 .opened()
                 .is_some_and(crate::AFileOpened::in_alos_copy)
         );
+        // **And it says where typing into it goes** (option A), read from the
+        // window once it was in front — the name the typing below is given.
+        let (types_into, in_the_window) = opened
+            .opened()
+            .and_then(crate::AFileOpened::types_into)
+            .expect("the window could be read, so where typing goes is said");
+        assert_eq!(types_into, "index.html");
+        assert_eq!(in_the_window, "index.html - VSCodium");
+        let types_into = types_into.to_owned();
         let typing = turning
             .proposing(
                 TYPE_TEXT,
                 &[
                     ("application", Given::text(EDITOR)),
-                    ("name", Given::text("index.html")),
+                    ("name", Given::text(types_into)),
                     ("text", Given::text(THE_TEXT)),
                 ],
                 &grants,
