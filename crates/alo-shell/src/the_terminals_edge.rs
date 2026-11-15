@@ -16,9 +16,9 @@
 //! Minimise puts the terminal in the right-hand panel, still running
 //! (`crate::alos_own_window_goes_aside`, design `27:2`).
 //!
-//! **Not drawn, and why:** Maximise. Nothing can maximise alo's terminal yet,
-//! and a control that reaches nothing looks live and is not — the rule the
-//! task windows' edge already keeps (`window_edge::Decorations::AlosOwnWindow`).
+//! **And Window actions** since the owner's *"Yes add that"* of 2026-11-14:
+//! its panel places the terminal as it places any window
+//! (`crate::alos_windows_panel`, `crate::alos_window_placed`).
 //!
 //! # The application edge, reused
 //!
@@ -31,45 +31,56 @@
 //! zooms with it, as #1084 made every application's do. Its title and
 //! controls keep their size round a window of whatever size the zoom makes it.
 //!
-//! # Always revealed
+//! # Revealed as every band is
 //!
-//! The owner's answer of 2026-11-01 shows every window's title all the time.
-//! The person's *show the title only when I point at it* hides an
-//! application's strip until it is pointed at; this edge is laid out revealed
-//! whatever that setting says, because it carries the only Close this window
-//! has, as a task window's does. *A reading, recorded so it can be disagreed
-//! with* in `docs/design/the-terminal-window.md`.
+//! No controls at rest: they appear as the pointer enters the band and go as
+//! it leaves, and *Always show window controls* keeps them shown
+//! (`crate::the_bands_over_alos_windows`). Until 2026-11-14 this edge was laid
+//! out revealed and drawn shown whatever the pointer did, *because it carries
+//! the only Close this window has* — a reading the owner overruled on seeing a
+//! booted machine, recorded so in `docs/design/the-terminal-window.md`.
 //!
 //! # A press on Close
 //!
 //! `Server::the_person_closes_the_terminal` (`crate::closing_the_terminal`):
 //! at once when the shell is idle, after a question when a command is running.
 
-use smithay::utils::{Logical, Point, Size};
+use alo_put_aside::AlosOwnWindow;
+use smithay::utils::{Logical, Physical, Point, Rectangle, Size};
 
 use crate::Server;
 use crate::an_edge_in_its_displays_units::{
     a_point_in_the_edges_units, a_window_in_the_edges_units,
 };
-use crate::window_edge::{Decorations, OnTheEdge, WindowEdge, edge_of};
+use crate::the_bands_over_alos_windows::AlosBand;
+use crate::which_band::ABand;
+use crate::window_edge::{OnTheEdge, WindowEdge};
 use crate::window_edge_picture::{EdgePicture, OverTheEdge};
 use crate::window_edge_pointing::{UnderThePointer, pointing_at, what_is_under};
 
+/// The terminal's band, as `crate::the_bands_over_alos_windows` knows it.
+const THE_TERMINAL: AlosBand = AlosBand::Its(AlosOwnWindow::TheTerminal);
+
 impl Server {
-    /// The terminal's edge, laid out at `scale` per cent in `room`, where the
-    /// terminal is drawn now. [`None`] with no terminal drawn.
-    fn the_terminals_edge(&self, room: Size<i32, Logical>, scale: u32) -> Option<WindowEdge> {
+    /// Where the terminal is drawn on the display now. [`None`] with no
+    /// terminal open, and **with it in the right-hand panel**, whatever the
+    /// last frame drew (`crate::alos_own_window_goes_aside`).
+    pub(crate) fn where_the_terminal_is_seen(&self) -> Option<Rectangle<i32, Physical>> {
         self.alos_own_terminal.as_ref()?;
-        // **No edge on a terminal in the right-hand panel**, whatever the last
-        // frame drew (`crate::alos_own_window_goes_aside`).
-        if self.this_alo_window_is_aside(alo_put_aside::AlosOwnWindow::TheTerminal) {
+        if self.this_alo_window_is_aside(AlosOwnWindow::TheTerminal) {
             return None;
         }
-        let window = self.where_the_terminal_is?;
-        Some(edge_of(
+        self.where_the_terminal_is
+    }
+
+    /// The terminal's edge as a press finds it, laid out at `scale` per cent
+    /// in `room` where the terminal is drawn now: its controls only while its
+    /// band shows them. [`None`] with no terminal drawn.
+    fn the_terminals_edge(&self, room: Size<i32, Logical>, scale: u32) -> Option<WindowEdge> {
+        let window = self.where_the_terminal_is_seen()?;
+        Some(self.alos_band_as_pressed(
+            THE_TERMINAL,
             a_window_in_the_edges_units(window, scale),
-            Decorations::AlosOwnWindow,
-            true,
             room,
         ))
     }
@@ -85,22 +96,36 @@ impl Server {
         scale: u32,
     ) -> Option<EdgePicture> {
         let room = crate::window_edge::the_usable_output(Size::from(output), scale);
-        let edge = self.the_terminals_edge(room, scale)?;
+        let window = self.where_the_terminal_is_seen()?;
+        let (edge, how_shown) = self.alos_band_as_drawn(
+            THE_TERMINAL,
+            a_window_in_the_edges_units(window, scale),
+            room,
+            std::time::Instant::now(),
+        );
         let pointer = self.where_the_pointer_is_in_logical_pixels();
+        let keyboard = self.where_the_keyboard_is_on_this_band(&ABand::Alos(THE_TERMINAL));
         let pointing = pointing_at(
             &edge,
             pointer.map(|at| a_point_in_the_edges_units(at, scale)),
-            None,
+            keyboard.what_the_painter_shows(),
         );
         let title = says.say(
             &alo_terminal::words::TERMINAL.key(),
             &alo_strings::Filling::nothing(),
         );
         let look = crate::window_edge_look::WhichLook::of(self.the_terminal_is_taking_the_keys());
+        // **Its window panel, while it is open** (`crate::alos_windows_panel`),
+        // drawn above every window as an application's is.
+        let (panel, pointing_at_it) = self
+            .the_panel_drawn_over(THE_TERMINAL, &edge, (room, scale))
+            .map_or((None, None), |(menu, pointing)| {
+                (Some(menu), Some(pointing))
+            });
         EdgePicture::of(
             &edge,
             OverTheEdge {
-                menu: None,
+                menu: panel.as_ref().zip(pointing_at_it),
                 field: None,
                 showing: None,
                 alo: None,
@@ -116,8 +141,8 @@ impl Server {
                 laid_over: false,
                 controls: crate::window_edge_paint::HowTheControlsLook {
                     pointing,
-                    open: false,
-                    how_shown: crate::the_controls_fade::ALL_THE_WAY,
+                    open: keyboard.the_menu().is_some(),
+                    how_shown,
                     look,
                 },
             },
@@ -158,16 +183,19 @@ impl Server {
             // **Minimise: into the right-hand panel, still running**
             // (`crate::alos_own_window_goes_aside`).
             Some(UnderThePointer::Control(OnTheEdge::Minimise)) => {
-                self.this_alo_window_is_asked_to_go_aside(
-                    alo_put_aside::AlosOwnWindow::TheTerminal,
+                self.this_alo_window_is_asked_to_go_aside(AlosOwnWindow::TheTerminal);
+                true
+            }
+            // **Window actions opens its panel, and pressed again closes it**
+            // (`crate::alos_windows_panel`).
+            Some(UnderThePointer::Control(OnTheEdge::WindowActions)) => {
+                self.the_menu_was_opened_on_the_band(
+                    &ABand::Alos(THE_TERMINAL),
+                    crate::the_edge_takes_the_keyboard::ByWhat::ThePointer,
                 );
                 true
             }
-            Some(
-                UnderThePointer::Control(_)
-                | UnderThePointer::Drag
-                | UnderThePointer::TheEdgeAndNothingOnIt,
-            ) => {
+            Some(UnderThePointer::Drag | UnderThePointer::TheEdgeAndNothingOnIt) => {
                 self.the_composer.it_gave_the_keyboard_up();
                 self.the_keyboard_is_now_in(None);
                 self.the_person_went_to(

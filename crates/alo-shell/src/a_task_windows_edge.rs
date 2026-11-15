@@ -10,13 +10,16 @@
 //! `crate::window_edge_picture` — one edge, one set of measures, scaled at the
 //! one boundary every other edge is.
 //!
-//! # Always revealed
+//! # Revealed as every band is
 //!
-//! A client window's edge rests concealed and appears under the pointer. This
-//! one is laid out revealed: the design's task frames draw it so, and a Close
-//! that appears only under a pointer is one a person must hunt for on the one
-//! window that cannot otherwise be closed with the pointer. There is nothing
-//! to drag on it, because a task window does not move.
+//! No controls at rest: they appear as the pointer enters the band and go as
+//! it leaves, and *Always show window controls* keeps them shown
+//! (`crate::the_bands_over_alos_windows`), as on every window since the
+//! owner's specification of 2026-11-09 (`docs/design/the-window-controls.md`).
+//! Until 2026-11-14 this edge was laid out revealed — *a Close that appears
+//! only under a pointer is one a person must hunt for* — a reading of
+//! 2026-10-28 the owner overruled on seeing a booted machine. There is
+//! nothing to drag on it, because a task window does not move.
 //!
 //! # A press on Close follows Alt+F4's rules
 //!
@@ -42,18 +45,30 @@ use crate::Server;
 use crate::an_edge_in_its_displays_units::{
     a_point_in_the_edges_units, a_window_in_the_edges_units,
 };
+use crate::the_bands_over_alos_windows::AlosBand;
 use crate::the_tasks_a_person_opened::WhichTask;
-use crate::window_edge::{Decorations, OnTheEdge, WindowEdge, edge_of};
+use crate::which_band::ABand;
+use crate::window_edge::OnTheEdge;
+#[cfg(test)]
+use crate::window_edge::WindowEdge;
 use crate::window_edge_picture::{EdgePicture, OverTheEdge};
 use crate::window_edge_pointing::{UnderThePointer, pointing_at, what_is_under};
 
-/// The edge above one task window, revealed, in `room`.
+/// The edge above one task window **with its controls**, in `room` — the
+/// geometry a test reads where they would be. The machine never lays one out
+/// like this: it asks the band's reveal (`Server::alos_band_as_pressed`).
+#[cfg(test)]
 #[must_use]
 pub(crate) fn the_edge_of_a_task_window(
     window: Rectangle<i32, Logical>,
     room: Size<i32, Logical>,
 ) -> WindowEdge {
-    edge_of(window, Decorations::ATaskWindow, true, room)
+    crate::window_edge::edge_of(
+        window,
+        crate::window_edge::Decorations::ATaskWindow,
+        true,
+        room,
+    )
 }
 
 /// Every open task window's edge, as pictures for this display.
@@ -68,16 +83,30 @@ pub(crate) fn every_task_windows_edge(
 ) -> Vec<EdgePicture> {
     let room = crate::window_edge::the_usable_output(Size::from(output), scale);
     let pointer = server.where_the_pointer_is_in_logical_pixels();
+    let now = std::time::Instant::now();
     server
         .the_task_windows_on_the_screen()
         .into_iter()
         .filter_map(|(which, window)| {
-            let edge = the_edge_of_a_task_window(a_window_in_the_edges_units(window, scale), room);
+            let (edge, how_shown) = server.alos_band_as_drawn(
+                AlosBand::ATask(which),
+                a_window_in_the_edges_units(window, scale),
+                room,
+                now,
+            );
+            let keyboard =
+                server.where_the_keyboard_is_on_this_band(&ABand::Alos(AlosBand::ATask(which)));
             let pointing = pointing_at(
                 &edge,
                 pointer.map(|at| a_point_in_the_edges_units(at, scale)),
-                None,
+                keyboard.what_the_painter_shows(),
             );
+            // **Its window panel, while it is open** (`crate::alos_windows_panel`).
+            let (panel, pointing_at_it) = server
+                .the_panel_drawn_over(AlosBand::ATask(which), &edge, (room, scale))
+                .map_or((None, None), |(menu, pointing)| {
+                    (Some(menu), Some(pointing))
+                });
             let look = crate::window_edge_look::WhichLook::of(
                 server.the_kind_in_front()
                     == crate::which_window_is_in_front::AKindOfWindow::TaskWindows
@@ -86,7 +115,7 @@ pub(crate) fn every_task_windows_edge(
             EdgePicture::of(
                 &edge,
                 OverTheEdge {
-                    menu: None,
+                    menu: panel.as_ref().zip(pointing_at_it),
                     field: None,
                     showing: None,
                     alo: None,
@@ -102,8 +131,8 @@ pub(crate) fn every_task_windows_edge(
                     laid_over: false,
                     controls: crate::window_edge_paint::HowTheControlsLook {
                         pointing,
-                        open: false,
-                        how_shown: crate::the_controls_fade::ALL_THE_WAY,
+                        open: keyboard.the_menu().is_some(),
+                        how_shown,
                         look,
                     },
                 },
@@ -124,9 +153,12 @@ impl Server {
         let at = a_point_in_the_edges_units(at, scale);
         self.the_task_windows_on_the_screen()
             .into_iter()
-            .any(|(_, window)| {
-                let edge =
-                    the_edge_of_a_task_window(a_window_in_the_edges_units(window, scale), room);
+            .any(|(which, window)| {
+                let edge = self.alos_band_as_pressed(
+                    AlosBand::ATask(which),
+                    a_window_in_the_edges_units(window, scale),
+                    room,
+                );
                 what_is_under(&edge, at).is_some()
             })
     }
@@ -144,7 +176,11 @@ impl Server {
         let open: Vec<(WhichTask, Rectangle<i32, Physical>)> =
             self.the_task_windows_on_the_screen();
         for (which, window) in open.into_iter().rev() {
-            let edge = the_edge_of_a_task_window(a_window_in_the_edges_units(window, scale), room);
+            let edge = self.alos_band_as_pressed(
+                AlosBand::ATask(which),
+                a_window_in_the_edges_units(window, scale),
+                room,
+            );
             match what_is_under(&edge, at) {
                 None => {}
                 Some(UnderThePointer::Control(OnTheEdge::Close)) => {
@@ -156,11 +192,18 @@ impl Server {
                     self.this_task_is_asked_to_go_aside(which);
                     return true;
                 }
-                Some(
-                    UnderThePointer::Control(_)
-                    | UnderThePointer::Drag
-                    | UnderThePointer::TheEdgeAndNothingOnIt,
-                ) => return true,
+                // **Window actions opens its panel, and pressed again closes
+                // it** (`crate::alos_windows_panel`).
+                Some(UnderThePointer::Control(OnTheEdge::WindowActions)) => {
+                    self.the_menu_was_opened_on_the_band(
+                        &ABand::Alos(AlosBand::ATask(which)),
+                        crate::the_edge_takes_the_keyboard::ByWhat::ThePointer,
+                    );
+                    return true;
+                }
+                Some(UnderThePointer::Drag | UnderThePointer::TheEdgeAndNothingOnIt) => {
+                    return true;
+                }
             }
         }
         false

@@ -31,8 +31,8 @@
 //! the application as it would have, which is the arrangement every surface
 //! that takes keys here makes (`crate::a_key_reaches_the_docks_surfaces`).
 
+use crate::which_band::ABand;
 use smithay::backend::input::KeyState;
-use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 
 use crate::window_edge::OnTheEdge;
 use crate::window_edge_keys::{AnEdgeKey, TheKeyboardOnTheEdge, WhatTheEdgeKeyDid};
@@ -78,7 +78,8 @@ pub(crate) const fn which_key(code: u32) -> Option<AnEdgeKey> {
 }
 
 impl Server {
-    /// Whether some window's band or panel has the keyboard.
+    /// Whether some window's band or panel has the keyboard — an
+    /// application's or alo's.
     #[must_use]
     pub fn a_windows_band_is_taking_the_keys(&self) -> bool {
         self.keyboard_on_edges
@@ -86,34 +87,47 @@ impl Server {
             .any(|(_, where_it_is)| *where_it_is != TheKeyboardOnTheEdge::Nowhere)
     }
 
-    /// The window whose band has the keyboard: its panel's first, if one is
-    /// open.
-    fn whose_band_has_the_keys(&self) -> Option<WlSurface> {
-        self.whose_panel_is_open().or_else(|| {
+    /// Whether the band or panel of one of alo's own windows has the keyboard
+    /// — asked before a task window takes keys, because a task window's panel
+    /// is walked by the keys while that task window holds them.
+    #[must_use]
+    pub(crate) fn an_alo_windows_band_is_taking_the_keys(&self) -> bool {
+        self.keyboard_on_edges.iter().any(|(band, where_it_is)| {
+            band.alos().is_some() && *where_it_is != TheKeyboardOnTheEdge::Nowhere
+        })
+    }
+
+    /// The band that has the keyboard: its panel's first, if one is open.
+    fn whose_band_has_the_keys(&self) -> Option<ABand> {
+        self.whose_bands_panel_is_open().or_else(|| {
             self.keyboard_on_edges
                 .iter()
                 .find(|(_, where_it_is)| *where_it_is != TheKeyboardOnTheEdge::Nowhere)
-                .map(|(surface, _)| surface.clone())
+                .map(|(band, _)| band.clone())
         })
     }
 
     /// A key, told to the band that has the keyboard: what it did.
     pub(crate) fn a_key_on_a_band(&mut self, key: AnEdgeKey) -> WhatTheEdgeKeyDid {
-        let Some(surface) = self.whose_band_has_the_keys() else {
+        let Some(band) = self.whose_band_has_the_keys() else {
             return WhatTheEdgeKeyDid::Nothing;
         };
-        let Some((edge, menu)) = self.the_band_and_its_panel(&surface) else {
+        let Some((edge, menu)) = self.the_band_and_its_panel(&band) else {
             return WhatTheEdgeKeyDid::Nothing;
         };
-        let did = self.this_windows_edge_was_told_a_key(&surface, key, &edge, menu.as_ref());
+        let did = self.this_band_was_told_a_key(&band, key, &edge, menu.as_ref());
         match did {
-            WhatTheEdgeKeyDid::ItRuns(OnTheEdge::Minimise) => {
-                self.the_person_asked_to_put_aside(&surface);
-            }
-            WhatTheEdgeKeyDid::ItRuns(OnTheEdge::Close) => {
-                let _ = self.request_window_close(&surface);
-            }
-            WhatTheEdgeKeyDid::ARowRuns(does) => self.carry_out_the_row(&surface, does),
+            WhatTheEdgeKeyDid::ItRuns(OnTheEdge::Minimise) => match &band {
+                ABand::App(surface) => self.the_person_asked_to_put_aside(surface),
+                ABand::Alos(which) => self.alos_window_goes_aside(*which),
+            },
+            WhatTheEdgeKeyDid::ItRuns(OnTheEdge::Close) => match &band {
+                ABand::App(surface) => {
+                    let _ = self.request_window_close(surface);
+                }
+                ABand::Alos(which) => self.alos_window_closes(*which),
+            },
+            WhatTheEdgeKeyDid::ARowRuns(does) => self.carry_out_the_row_on(&band, does),
             WhatTheEdgeKeyDid::ItRuns(OnTheEdge::WindowActions)
             | WhatTheEdgeKeyDid::TheKeyboardIsOn(_)
             | WhatTheEdgeKeyDid::TheMenuOpened
@@ -125,15 +139,19 @@ impl Server {
         did
     }
 
-    /// This window's band, laid out with its controls shown — the keyboard
-    /// holds them shown — and its panel, if it is open.
+    /// This band, laid out with its controls shown — the keyboard holds them
+    /// shown — and its panel, if it is open.
     fn the_band_and_its_panel(
         &self,
-        surface: &WlSurface,
+        band: &ABand,
     ) -> Option<(
         crate::window_edge::WindowEdge,
         Option<crate::window_menu::WindowMenu>,
     )> {
+        let surface = match band {
+            ABand::App(surface) => surface,
+            ABand::Alos(which) => return self.alos_band_and_its_panel(*which),
+        };
         if let Some((edge, menu)) = self.the_open_panel(surface)
             && self.whose_panel_is_open().as_ref() == Some(surface)
         {
@@ -148,6 +166,25 @@ impl Server {
         );
         Some((edge, None))
     }
+}
+
+/// Whether this event is the press of a key a band takes — an arrow, Home,
+/// End, Enter, Space or Escape.
+///
+/// What lets a task window's panel be walked by the keys while every other key
+/// still reaches the task window: the task's road would otherwise take them
+/// all, and the band's road hands any other key to the applications' road, not
+/// to the task (`crate::direct_desktop`).
+#[must_use]
+pub(crate) fn a_key_a_band_takes(update: &InputUpdate<'_>) -> bool {
+    let InputUpdate::Event(event) = update else {
+        return false;
+    };
+    matches!(
+        crate::libinput_routing::translate(event),
+        Ok(Some(crate::DirectSeatEvent::Key(key, _)))
+            if key.state == KeyState::Pressed && which_key(key.code).is_some()
+    )
 }
 
 /// One input event, while a window's band or panel has the keyboard.

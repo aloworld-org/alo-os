@@ -90,6 +90,8 @@ pub struct EdgePicture {
     inked: Vec<Inked>,
     /// The whole title, for whoever says it aloud.
     whole: String,
+    /// How many of the band's controls this picture draws: none at rest.
+    controls_drawn: usize,
 }
 
 /// The title's type: SemiBold 14 on 19. `11:32`.
@@ -147,11 +149,9 @@ impl EdgePicture {
                 output,
             ));
         }
-        over_the_window.extend(crate::window_edge_paint::the_controls_drawn(
-            edge,
-            &window.controls,
-            scale,
-        ));
+        let controls = crate::window_edge_paint::the_controls_drawn(edge, &window.controls, scale);
+        let controls_drawn = controls.len();
+        over_the_window.extend(controls);
 
         let mut inked = Vec::new();
         let mut solids = Vec::new();
@@ -285,7 +285,16 @@ impl EdgePicture {
             solids,
             inked,
             whole,
+            controls_drawn,
         })
+    }
+
+    /// How many of the band's controls this picture draws — none on a band at
+    /// rest, `docs/design/the-window-controls.md`'s *No controls are drawn at
+    /// rest*.
+    #[must_use]
+    pub(crate) const fn how_many_controls_are_drawn(&self) -> usize {
+        self.controls_drawn
     }
 
     /// The same picture, said to belong to this window.

@@ -256,9 +256,17 @@ decided on 2026-10-28**: the frames' `External window edge` is drawn on task
 windows with **Close** only — minimise and maximise come with the right-hand
 panel — and closing a running task will offer **Stop and close** and
 **Cancel**, with *Keep running* added when the panel holds tasks.
+*The edge half of that decision is overruled by the owner's "Yes, it too" of
+2026-11-14: a task window carries Window actions, Minimise and Close, and its
+panel places it like any window (`docs/features.md`, *Window actions on
+alo's own windows*). What closing does is unchanged.*
 
 **What is built:** the edge, laid out by the same code as a client window's,
-always revealed, Close 44 × 44 at its trailing end, scaled with the display. A
+Close 44 × 44 at its trailing end, scaled with the display. *Until 2026-11-14 it
+was always revealed; the owner overruled that on a booted machine, and it now
+reveals as every band does — no controls at rest, shown while the pointer is in
+the band or when the person keeps them always shown
+(`crates/alo-shell/src/the_bands_over_alos_windows.rs`).* A
 task window is placed with the edge's 44 above it inside the view, so Close is
 never off the screen. Close and Alt+F4 are one door: a finished or stopped
 task closes; a running task asks *Stop and close*, *Keep running* (since

@@ -230,6 +230,11 @@ pub struct Server {
     /// yet, oldest first. When it comes it is brought in front and given the
     /// keyboard: `crate::a_window_the_person_opened`.
     pub(crate) the_person_is_waiting_for: Vec<alo_dock::AppId>,
+    /// The applications alo was approved to open a file in, and until when
+    /// their window may still come: when a window alo may type into comes, it
+    /// is brought in front with the keyboard —
+    /// `crate::a_file_alo_opened_comes_in_front`.
+    pub(crate) alo_opened_a_file_in: Vec<(alo_dock::AppId, std::time::Instant)>,
     /// Which application this machine's terminal is, when something has told
     /// it.
     ///
@@ -588,6 +593,18 @@ pub struct Server {
     /// (`crate::the_controls_fade`), pruned on the same walk as
     /// `edges_revealed`.
     pub(crate) controls_fading: Vec<(WlSurface, crate::the_controls_fade::TheFade)>,
+    /// The reveal and fade of each band over one of alo's own windows — the
+    /// terminal, Settings, the record and each task window — which have no
+    /// `WlSurface` to be kept by above. `crate::the_bands_over_alos_windows`
+    /// is the only thing that reads or writes it, and prunes it against what
+    /// is open on every walk.
+    pub(crate) alos_bands: Vec<crate::the_bands_over_alos_windows::ItsBand>,
+    /// Where each of alo's windows the window panel placed was before it
+    /// (`crate::alos_window_placed`), for Restore.
+    pub(crate) alos_windows_placed: Vec<crate::alos_window_placed::WhereItWas>,
+    /// What the journal was last told the bands over alo's own windows draw
+    /// (`crate::the_bands_drawn_are_said`).
+    pub(crate) what_the_bands_said: crate::the_bands_drawn_are_said::WhatTheBandsSaid,
     /// Where the keyboard is on each window's edge.
     ///
     /// §6 of `docs/design/the-external-window-edge.md`, and the sibling of
@@ -599,7 +616,10 @@ pub struct Server {
     /// **Only windows the keyboard has reached are in it.** A missing entry
     /// already means `Nowhere`, so storing that would grow the list for every
     /// window a key was pressed near and change no answer.
-    pub(crate) keyboard_on_edges: Vec<(WlSurface, crate::window_edge_keys::TheKeyboardOnTheEdge)>,
+    pub(crate) keyboard_on_edges: Vec<(
+        crate::which_band::ABand,
+        crate::window_edge_keys::TheKeyboardOnTheEdge,
+    )>,
     /// Where the **person** clicked the panel, not yet acted on.
     ///
     /// The point of the press, rather than the pointer read again later. A peek asks where the
@@ -930,6 +950,7 @@ impl Server {
             its_agent_asked_to_start: Vec::new(),
             asked_to_open_a_link: Vec::new(),
             the_person_is_waiting_for: Vec::new(),
+            alo_opened_a_file_in: Vec::new(),
             the_terminal: None,
             alos_own_terminal: None,
             where_the_terminal_is: None,
@@ -1003,6 +1024,9 @@ impl Server {
             edges_revealed: Vec::new(),
             bands_out_over_full_screen: Vec::new(),
             controls_fading: Vec::new(),
+            alos_bands: Vec::new(),
+            alos_windows_placed: Vec::new(),
+            what_the_bands_said: crate::the_bands_drawn_are_said::WhatTheBandsSaid::default(),
             keyboard_on_edges: Vec::new(),
             asked_to_bring_back: Vec::new(),
             the_task_card_open: None,

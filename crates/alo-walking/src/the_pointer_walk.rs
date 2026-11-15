@@ -150,12 +150,14 @@ const AN_APPLICATION_OPENS: Duration = Duration::from_secs(45);
 
 /// Then the pointer: on the desktop, over Text Editor and VSCodium, through
 /// Settings, and over Firefox. It starts where the first walk leaves the
-/// machine — Settings open on Accessibility, the ring on *Screen reader*.
+/// machine — alo's terminal open and maximised (`the_first_walk`'s
+/// terminal section) — so it closes the terminal first, with Alt+F4, to reach
+/// the desktop.
 #[must_use]
 pub fn then_the_pointer(walk: Walk) -> Walk {
     let look = Settling::UNDER_KVM;
     let walk = walk
-        .press(Chord::key("esc"))
+        .press(Chord::with("alt", "f4"))
         .look("the-desktop-for-the-pointer", look)
         .pointer(Pointing::SeenAtAll {
             check: "the screen capture shows the pointer".to_owned(),

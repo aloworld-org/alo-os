@@ -213,15 +213,21 @@ pub trait TheDesktop {
     /// **The files alo was approved to open in an application**, once a frame
     /// (`open_file_in_application`, 2026-11-14): each opened in alo's own copy
     /// at the person's default, or in their own window where they chose that,
-    /// and answered with where (`crate::a_file_alo_opens`).
+    /// and answered with where (`crate::a_file_alo_opens`). Answers the
+    /// applications a file **was** opened in, by identifier, so their window can
+    /// come in front (`crate::a_file_alo_opened_comes_in_front`).
     ///
     /// **By default each is answered *could not start***, for
     /// [`Self::alo_at_work`]'s reason: a desktop that holds no copies and no
     /// way to start an application opens nothing, and says so.
-    fn alo_opens_files(&mut self, asked: Vec<crate::a_file_alo_opens::AskedToOpenAFile>) {
+    fn alo_opens_files(
+        &mut self,
+        asked: Vec<crate::a_file_alo_opens::AskedToOpenAFile>,
+    ) -> Vec<String> {
         for one in asked {
             one.answered(alo_acting::Opened::CouldNotStart);
         }
+        Vec::new()
     }
 
     /// The panel this desktop keeps, for the one act that has to change it.
@@ -1281,7 +1287,19 @@ impl LoopInput for TheDesktopLane<'_> {
                 // Super+A in a task window is typing into the Bar, and when the
                 // Bar lets go the keys come back here. Until 2026-10-26 nothing
                 // routed a key to a task window at all.
-                else if server.a_task_is_taking_the_keys() {
+                //
+                // **Except while a task window's own band or panel has the
+                // keyboard**: Alt+F3 in a task window opens its panel, and the
+                // arrows then walk the panel rather than the conversation
+                // (`crate::alos_windows_panel`).
+                else if server.an_alo_windows_band_is_taking_the_keys()
+                    && (!server.a_task_is_taking_the_keys()
+                        || crate::a_key_reaches_a_windows_band::a_key_a_band_takes(&update))
+                {
+                    crate::a_key_reaches_a_windows_band::a_key_reaches_a_windows_band(
+                        server, update, extent,
+                    )
+                } else if server.a_task_is_taking_the_keys() {
                     crate::a_key_reaches_the_task_in_front::a_key_reaches_the_task(
                         server, update, extent, strings,
                     )
@@ -1440,7 +1458,18 @@ impl LoopInput for TheDesktopLane<'_> {
         // the desktop that holds alo's copies and reads the person's setting.
         let opening = self.door.asked_to_open_files();
         if !opening.is_empty() {
-            self.desktop.alo_opens_files(opening);
+            let now = std::time::Instant::now();
+            for opened in self.desktop.alo_opens_files(opening) {
+                server.alo_opened_a_file_in(&opened, now);
+            }
+        }
+        // **And the window alo opened a file in comes in front once it is
+        // there**, the one alo may type into, with the keyboard — rule 8's
+        // *authorised interaction that calls for it*.
+        {
+            let mut asking =
+                crate::typing_into_the_window_in_front::TheDesktopAnswers(&mut *self.desktop);
+            server.what_alo_opened_comes_in_front(&mut asking, std::time::Instant::now());
         }
         // **And whatever alo was approved to type** (ADR 0153), into the window
         // in front only, answered in the same frame it was read whole.
@@ -1448,6 +1477,12 @@ impl LoopInput for TheDesktopLane<'_> {
             let mut asking =
                 crate::typing_into_the_window_in_front::TheDesktopAnswers(&mut *self.desktop);
             let typed = server.typed_into_the_window_in_front(one.asked(), one.text(), &mut asking);
+            // Said on the log with how many bytes and never what they were
+            // (`alo_acting::said_on_the_log`), so a walk can see the act.
+            eprintln!(
+                "alo-shell: {}",
+                alo_acting::said_on_the_log::alo_typed(one.asked(), typed)
+            );
             one.answered(typed);
         }
         // **And every link an application asked the person to choose for**,
@@ -2993,6 +3028,14 @@ impl LoopInput for TheDesktopLane<'_> {
                 server.the_scale_an_edge_is_drawn_at(u32::from(frame.display_scale)),
             ),
         );
+        // **What those bands draw, said in the journal where it changed**, so
+        // a booted machine can be asked (`crate::the_bands_drawn_are_said`).
+        server.say_what_alos_bands_draw(crate::the_bands_drawn_are_said::TheseBands {
+            terminal: terminal_edge.as_ref(),
+            settings: settings_edge.as_ref(),
+            record: records_edge.as_ref(),
+            tasks: &task_edges,
+        });
         // **The frame is drawn through the per-display road, with one display
         // on it.** `more-than-one-display-plan.md` task 4. This desk builds one
         // target today; `discover_every_atomic_output` is what will make it

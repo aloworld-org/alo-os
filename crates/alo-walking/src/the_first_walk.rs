@@ -26,12 +26,22 @@
 //!   the page on purpose; Space turns it over (`alo_shell::settings_window`,
 //!   `settings_page_accessibility`).
 //!
+//! - **The terminal at rest**: Escape closes Settings; Ctrl+Alt+T opens the
+//!   terminal (`alo_shortcuts`' defaults), and its band must draw no controls
+//!   while the pointer is elsewhere.
+//! - **The terminal maximised**: Alt+F3 opens its Window actions panel on
+//!   Left (`alo_shell`'s `a_chord_places_alos_own_window`), Right moves to
+//!   Maximise, Enter carries it out, and the shell says it fills the work area.
+//!
 //! **The provider section** types an AI provider's key from
 //! [`THE_PROVIDER_KEY`], and runs only when that is set: on every walk after
 //! a merge to main, and by hand when the box is ticked. Its keys are the walk
 //! by hand's of 2026-11-14 (`w28-provider.sh`); from where this walk leaves
 //! Settings they were seen to reach *Add a provider* and save `openai` on
 //! run 43635265001 (2026-11-14), in its pictures.
+//! **Since the terminal steps it starts from the terminal instead**: Escape
+//! there goes to the shell, and Super+I opens Settings again. Not yet seen on a
+//! run; the provider's first picture shows where it began.
 
 use std::time::Duration;
 
@@ -141,6 +151,7 @@ pub fn the_first_walk() -> Walk {
             minutes(2),
         )
         .look("two-minutes-later", look);
+    let walk = then_the_terminal_at_rest(walk);
     // **The pointer**, before anything that needs a provider: what a person
     // would notice about it, on the desktop and over applications alo did not
     // make (`crate::the_pointer_walk`).
@@ -148,12 +159,57 @@ pub fn the_first_walk() -> Walk {
     then_the_provider(walk)
 }
 
+/// Then close Settings and open the terminal with the pointer nowhere near
+/// it, and check its band draws **no controls at rest**
+/// (`docs/design/the-window-controls.md`). The walk never moves the pointer,
+/// so a band that shows its controls here is showing them to nobody pointing.
+///
+/// Read from the line the shell says when a band over one of alo's windows
+/// changes what it draws (`alo_shell`'s `the_bands_drawn_are_said`), since
+/// the mark before the chord, so a terminal opened earlier cannot answer.
+fn then_the_terminal_at_rest(walk: Walk) -> Walk {
+    let look = Settling::UNDER_KVM;
+    walk.press(Chord::key("esc"))
+        .look("settings-closed", look)
+        .mark()
+        .press(Chord::holding(&["ctrl", "alt"], "t"))
+        .expect_line(
+            "the terminal's band draws no controls at rest",
+            THE_TERMINAL_AT_REST,
+            Since::Mark,
+            Duration::from_secs(60),
+        )
+        .look("the-terminal-at-rest", look)
+        .mark()
+        .press(Chord::with("alt", "f3"))
+        .look("the-terminals-panel", look)
+        .press(Chord::key("right"))
+        .press(Chord::key("ret"))
+        .expect_line(
+            "Window actions maximises the terminal to fill the work area",
+            THE_TERMINAL_MAXIMISED,
+            Since::Mark,
+            Duration::from_secs(60),
+        )
+        .look("the-terminal-maximised", look)
+}
+
+/// What the shell says when the terminal's band draws no controls.
+pub const THE_TERMINAL_AT_REST: &str = "window band over the terminal: 0 controls drawn";
+
+/// What the shell says when the window panel has maximised the terminal and
+/// it fills the work area of its display — the start of the line, which goes
+/// on to say the size.
+pub const THE_TERMINAL_MAXIMISED: &str =
+    "window panel: the terminal maximised, filling the work area";
+
 /// Then add a provider, typing its key from [`THE_PROVIDER_KEY`] — and
 /// nothing at all without it.
 fn then_the_provider(walk: Walk) -> Walk {
     let look = Settling::UNDER_KVM;
     let tab = Chord::key("tab");
-    walk.only_with(THE_PROVIDER_KEY)
+    let walk = walk
+        .only_with(THE_PROVIDER_KEY)
         .press(Chord::key("esc"))
         .press(Chord::with("meta_l", "i"))
         .look("settings-again", look)
@@ -172,7 +228,9 @@ fn then_the_provider(walk: Walk) -> Walk {
         .type_text("gpt-4o-mini")
         .look("the-provider-form-filled", look)
         .press(Chord::key("ret"))
-        .look("the-provider-saved", look)
+        .look("the-provider-saved", look);
+    // With a provider, alo can be asked: Demo 2's second road, at full access.
+    crate::writing_in_vscodium::at_full_access(walk)
 }
 
 #[cfg(test)]

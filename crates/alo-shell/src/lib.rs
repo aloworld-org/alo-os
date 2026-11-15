@@ -81,6 +81,8 @@ mod a_chord_moves_the_keyboard_between_areas;
 mod a_chord_opens_a_terminal;
 mod a_chord_opens_the_bar;
 mod a_chord_opens_the_record;
+/// Alt+F3 and Super+Up on the terminal or a task window with the keys.
+mod a_chord_places_alos_own_window;
 /// The Minimise chord puts the one of alo's own windows with the keys aside.
 mod a_chord_puts_alos_own_window_aside;
 mod a_chord_reaches_its_action;
@@ -179,6 +181,9 @@ pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
 mod a_reader_presses_in_settings;
 pub use a_reader_presses::WhatAReaderPressCameTo;
+/// A file alo was approved to open comes in front, in the window alo may type
+/// into, with the keyboard (2026-11-14).
+mod a_file_alo_opened_comes_in_front;
 /// A file alo was approved to open in an application, handed to the desktop
 /// with the connection that asked (2026-11-14).
 pub mod a_file_alo_opens;
@@ -687,9 +692,13 @@ mod the_windows_on_this_place;
 /// Typing into the window in front, as key presses, to that one client (ADR 0153).
 pub mod typing_into_the_window_in_front;
 pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};
+mod alos_window_placed;
+mod alos_windows_panel;
 /// Closing alo's terminal: at once when idle, after a question when a command
 /// is running.
 mod closing_the_terminal;
+mod the_bands_drawn_are_said;
+mod the_bands_over_alos_windows;
 /// What a screen reader is told the Bar's matches are.
 mod the_bars_matches_as_read;
 mod the_closed_windows_notice;
@@ -713,8 +722,9 @@ mod the_panel_reveals;
 /// The person pressed Stop in a task (ADR 0139).
 pub mod the_person_stops_a_task;
 /// The person's session environment, read from their systemd manager when
-/// alo's own terminal opens, so its shell starts with what their apps start with.
-mod the_persons_session;
+/// alo's own terminal opens, so its shell starts with what their apps start
+/// with — and when alo's own copy of an application starts, for the same reason.
+pub mod the_persons_session;
 pub mod the_pickers_words;
 mod the_pointer_in_pixels;
 pub mod the_providers_words;
@@ -811,6 +821,7 @@ mod where_the_bars_matches_rise;
 mod where_the_dock_is;
 mod where_the_market_opens;
 pub mod which_area_has_the_keyboard;
+mod which_band;
 mod which_card_the_seat_holds;
 mod which_display_a_window_is_on;
 pub mod which_preview_the_pointer_is_on;

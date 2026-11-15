@@ -17,6 +17,9 @@
 //! 4. **Ask the door**, which answers where it opened — alo's own copy at the
 //!    default, the person's own window where they chose that — or why nothing
 //!    did, and turn that into the person's own words.
+//! 5. **Wait for its window to come in front** with the keyboard, for at most
+//!    [`IN_FRONT_WITHIN`], asking only `may-type-into` — so a typing that
+//!    follows finds the editor rather than a window not yet drawn.
 //!
 //! **Every refusal is written down, and every one means nothing was opened.**
 //! An opening that happened is a change that **ran**, and the record says
@@ -35,6 +38,7 @@
 //! desktop's side (ADR 0143 Q6), not this executor's.
 
 use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 
 use alo_acting::{Opened, ToOpenAFile};
 use alo_applications::{NotInstalled, Reaching, words};
@@ -162,6 +166,9 @@ pub(crate) fn opening_a_file_in_an_application(
     };
     let why = match answered {
         Ok(opened @ (Opened::InAlosCopy | Opened::InTheirWindow)) => {
+            if let Some(door) = machine.at_the_compositors_door() {
+                in_front_or_not_yet_there(door, asked.application());
+            }
             let where_it_opened = if matches!(opened, Opened::InAlosCopy) {
                 words::OPENED_IN_ALOS_COPY
             } else {
@@ -198,6 +205,40 @@ pub(crate) fn opening_a_file_in_an_application(
         Err(_) => words::COULD_NOT_ASK,
     };
     refused(said_about(strings, why, &identifier, &shown))
+}
+
+/// How long an opened file's window is waited for, in front with the keyboard,
+/// before the opening is answered: a cold start of an Electron editor from a
+/// Flatpak takes seconds.
+pub const IN_FRONT_WITHIN: Duration = Duration::from_secs(60);
+
+/// How long between two asks whether it is in front yet.
+const BETWEEN_ASKS: Duration = Duration::from_millis(250);
+
+/// **Wait until the window the file opened in is the one alo may type into**,
+/// in front with the keyboard, for at most [`IN_FRONT_WITHIN`].
+///
+/// The desktop answers `open-file` when it has started the copy, which is
+/// before its window exists, and brings that window in front only when it
+/// comes (`alo_shell`'s `a_file_alo_opened_comes_in_front`). A turn that went
+/// on at once would look for the editor in a window not yet drawn and be told
+/// *no field of that name*. So this asks the compositor `may-type-into` — which
+/// sends nothing — while it answers *not in front*, the one answer that means
+/// *not there yet*. Any other answer ends the wait at once: yes, or a reason
+/// the typing that follows will say in its own words.
+fn in_front_or_not_yet_there(
+    door: &mut dyn crate::TheDoorTheCompositorServes,
+    application: &alo_applications::Application,
+) {
+    let until = Instant::now() + IN_FRONT_WITHIN;
+    let asked = alo_acting::ToType::Check {
+        application: application.clone(),
+    };
+    while matches!(door.typing(&asked, ""), Ok(alo_acting::Typed::NotInFront))
+        && Instant::now() < until
+    {
+        std::thread::sleep(BETWEEN_ASKS);
+    }
 }
 
 /// One of this verb's words, about this application and this file.

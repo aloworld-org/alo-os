@@ -48,11 +48,25 @@ fn a_terminal(named: &str) -> (tempfile::TempDir, Server, cosmic_text::FontSyste
     (runtime, server, fonts)
 }
 
-/// The terminal's edge as it is laid out now, at 100 per cent.
+/// The terminal's edge **with its controls** where it is drawn now, laid out
+/// at `scale` per cent: where they would be once the pointer reveals them.
+fn revealed_at(server: &Server, scale: u32) -> WindowEdge {
+    crate::window_edge::edge_of(
+        crate::an_edge_in_its_displays_units::a_window_in_the_edges_units(
+            server
+                .where_the_terminal_is_seen()
+                .expect("a terminal drawn has an edge"),
+            scale,
+        ),
+        crate::window_edge::Decorations::AlosOwnWindowThatIsPlaced,
+        true,
+        anywhere(),
+    )
+}
+
+/// The terminal's edge with its controls, at 100 per cent.
 fn its_edge(server: &Server) -> WindowEdge {
-    server
-        .the_terminals_edge(anywhere(), 100)
-        .expect("a terminal drawn has an edge")
+    revealed_at(server, 100)
 }
 
 /// Press the primary button at the middle of `on` on the terminal's edge.
@@ -75,6 +89,7 @@ fn press_at(server: &mut Server, x: i32, y: i32) {
     server
         .pointer_motion(f64::from(x), f64::from(y), 1)
         .expect("the pointer moved");
+    server.the_edges_were_told_where_the_pointer_is();
     let _ = server
         .pointer_button(0x110, ButtonState::Pressed, 2)
         .expect("the press was handled");
@@ -83,16 +98,23 @@ fn press_at(server: &mut Server, x: i32, y: i32) {
         .expect("the release was handled");
 }
 
-/// **The design's band, with Minimise and Close**: the title in its place —
-/// no band carries an icon since 2026-11-09 — and Minimise, which puts the
-/// terminal in the right-hand panel (design `27:2`); maximise waits until
-/// something can do it to the terminal.
+/// **The design's band, with all three controls**: the title in its place —
+/// no band carries an icon since 2026-11-09 — Window actions, whose panel
+/// places the terminal (the owner, 2026-11-14), and Minimise, which puts it in
+/// the right-hand panel (design `27:2`).
 #[test]
-fn the_edge_carries_the_title_minimise_and_close() {
+fn the_edge_carries_the_title_and_its_three_controls() {
     let (_runtime, server, _fonts) = a_terminal("alo-terminal-edge-parts");
     let edge = its_edge(&server);
     let controls: Vec<OnTheEdge> = edge.controls.iter().map(|control| control.does).collect();
-    assert_eq!(controls, vec![OnTheEdge::Minimise, OnTheEdge::Close]);
+    assert_eq!(
+        controls,
+        vec![
+            OnTheEdge::WindowActions,
+            OnTheEdge::Minimise,
+            OnTheEdge::Close
+        ]
+    );
     assert!(edge.title.is_some(), "the title is not on the edge");
     let drawn = server.where_the_terminal_is.expect("the terminal is drawn");
     assert_eq!(
@@ -223,9 +245,7 @@ fn close_lands_at_every_zoom_and_scale() {
                 u32::from(scale) * zoom / 1_000,
                 "the edge is not drawn at the display's scale times the zoom"
             );
-            let edge = server
-                .the_terminals_edge(anywhere(), drawn_at)
-                .expect("a terminal drawn has an edge");
+            let edge = revealed_at(&server, drawn_at);
             let close = edge
                 .controls
                 .iter()

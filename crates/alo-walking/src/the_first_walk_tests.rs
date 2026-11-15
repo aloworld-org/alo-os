@@ -82,3 +82,66 @@ fn the_key_is_typed_only_from_its_secret_after_its_gate() {
         "gate {gate:?}, typed {typed:?}"
     );
 }
+
+/// **The terminal's check reads only what was said after Ctrl+Alt+T**, so a
+/// terminal opened before the mark cannot answer it, and it waits for the
+/// shell's own words (`alo-shell`'s `the_walk_waits_for_the_words_this_says`
+/// holds that those are the words the shell says).
+#[test]
+fn the_terminal_check_reads_from_the_chord() {
+    let steps = the_first_walk().steps().to_vec();
+    let Some(check) = steps.iter().position(|step| {
+        matches!(step, Step::ExpectLine { phrase, since: Since::Mark, .. }
+            if phrase == super::THE_TERMINAL_AT_REST)
+    }) else {
+        panic!("the walk does not check the terminal at rest");
+    };
+    let before: Vec<&Step> = steps.iter().take(check).collect();
+    let Some(mark) = before.iter().rposition(|step| matches!(step, Step::Mark)) else {
+        panic!("no mark before the terminal check");
+    };
+    assert!(
+        matches!(before.get(mark + 1), Some(Step::Press(chord))
+            if chord.the_key() == "t" && chord.held() == ["ctrl", "alt"]),
+        "the step after the mark is not Ctrl+Alt+T"
+    );
+    let gate = steps
+        .iter()
+        .position(|step| matches!(step, Step::OnlyWith(_)))
+        .unwrap_or(steps.len());
+    assert!(
+        check < gate,
+        "the terminal check is skipped without a provider key"
+    );
+}
+
+/// **The terminal's maximise check reads only what was said after the panel
+/// was opened with Alt+F3**, and waits for the shell's own words
+/// (`alo-shell`'s `the_walk_waits_for_the_words_the_panel_says` holds that).
+#[test]
+fn the_maximise_check_reads_from_alt_f3() {
+    let steps = the_first_walk().steps().to_vec();
+    let Some(check) = steps.iter().position(|step| {
+        matches!(step, Step::ExpectLine { phrase, since: Since::Mark, .. }
+            if phrase == super::THE_TERMINAL_MAXIMISED)
+    }) else {
+        panic!("the walk does not check the terminal maximised");
+    };
+    let before: Vec<&Step> = steps.iter().take(check).collect();
+    let Some(mark) = before.iter().rposition(|step| matches!(step, Step::Mark)) else {
+        panic!("no mark before the maximise check");
+    };
+    assert!(
+        matches!(before.get(mark + 1), Some(Step::Press(chord))
+            if chord.the_key() == "f3" && chord.held() == ["alt"]),
+        "the step after the mark is not Alt+F3"
+    );
+    let gate = steps
+        .iter()
+        .position(|step| matches!(step, Step::OnlyWith(_)))
+        .unwrap_or(steps.len());
+    assert!(
+        check < gate,
+        "the maximise check is skipped without a provider key"
+    );
+}

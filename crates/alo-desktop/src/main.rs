@@ -1688,7 +1688,11 @@ mod running {
         /// from their file for these asks as `alo_at_work` reads it; in their
         /// own window, as their press would, only where they chose that. Each
         /// is answered with where it opened, or why it did not.
-        fn alo_opens_files(&mut self, asked: Vec<alo_shell::a_file_alo_opens::AskedToOpenAFile>) {
+        fn alo_opens_files(
+            &mut self,
+            asked: Vec<alo_shell::a_file_alo_opens::AskedToOpenAFile>,
+        ) -> Vec<String> {
+            let mut opened_in = Vec::new();
             let chosen = alo_remembering::alo_in_applications_remembered(std::path::Path::new(
                 alo_remembering::THE_LEVEL,
             ))
@@ -1701,16 +1705,33 @@ mod running {
                             starting.started_with_a_file(one.application(), one.file())
                         })
                 } else {
-                    self.working
-                        .opened_in_alos_copy(one.application(), one.file())
+                    // What a person calls it, for the indicator's line, read
+                    // for this opening as `alo_at_work` reads it.
+                    let called = alo_installed::read(&self.entries)
+                        .knows(one.application())
+                        .map_or_else(
+                            || one.application().to_owned(),
+                            |application| application.shown(&self.strings),
+                        );
+                    self.working.opened_in_alos_copy(
+                        one.application(),
+                        one.file(),
+                        &called,
+                        &mut self.counting,
+                        &mut self.indicator,
+                        (std::time::Instant::now(), std::time::SystemTime::now()),
+                    )
                 };
                 eprintln!(
-                    "alo-desktop: alo was approved to open a file in {}, and it was answered {}",
-                    one.application(),
-                    opened.written()
+                    "alo-desktop: {}",
+                    alo_acting::said_on_the_log::a_file_was_opened(one.application(), opened)
                 );
+                if opened.was_opened() {
+                    opened_in.push(one.application().to_owned());
+                }
                 one.answered(opened);
             }
+            opened_in
         }
 
         /// The panel this desktop keeps, lent for the one act that changes it.

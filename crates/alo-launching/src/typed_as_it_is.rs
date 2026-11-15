@@ -25,7 +25,18 @@ pub const WITH_AN_EDITOR_THAT_REWRITES: [&str; 2] =
 
 /// Each setting, by VSCodium's own name, and the value it is given, written as
 /// JSON. ADR 0153's table says what each would otherwise do to typed text.
-pub const TYPED_AS_IT_IS: [(&str, &str); 19] = [
+///
+/// **The last one is not about what lands but about reading it back**: the
+/// owner's *"Yes, in alo's copy only"* of 2026-11-14. Unless VSCodium believes
+/// a screen reader is in use, its editor does not show its text to the
+/// accessibility tree (found by the trace of 2026-11-14, read from code and
+/// not measured on a booted machine), so the read-back alo makes before saving
+/// could not see what was typed, and nothing would ever be saved. `"on"` says
+/// so from the start, in alo's copy only. Even on, the editor shows the tree a
+/// page of lines around the caret rather than the whole file; whether a long
+/// text reads back whole is **not measured**, and a read-back that does not
+/// find it refuses to save rather than saving something unseen.
+pub const TYPED_AS_IT_IS: [(&str, &str); 20] = [
     ("editor.autoIndent", r#""none""#),
     ("editor.autoClosingBrackets", r#""never""#),
     ("editor.autoClosingQuotes", r#""never""#),
@@ -48,6 +59,7 @@ pub const TYPED_AS_IT_IS: [(&str, &str); 19] = [
     ("editor.linkedEditing", "false"),
     ("html.autoClosingTags", "false"),
     ("files.autoSave", r#""off""#),
+    ("editor.accessibilitySupport", r#""on""#),
 ];
 
 /// The settings file of alo's copy of this application, when it is one whose

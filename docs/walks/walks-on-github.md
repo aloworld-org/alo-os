@@ -54,6 +54,8 @@ the files), not remembered.
 | 7 | Super+I, End, Tab | Settings opens, on Accessibility, with the ring on *Screen reader* |
 | 8 | Space | the journal says `Started alo-screen-reader.service` within a minute of the press |
 | 9 | watches two minutes | **no** line since the press says *strange signature*, *Traceback*, `alo-screen-reader.service: Failed` or `…: Main process exited` |
+| 10 | Escape, then Ctrl+Alt+T, without moving the pointer | the journal says `window band over the terminal: 0 controls drawn` within a minute of the chord — **the terminal's band draws no controls at rest** (`docs/design/the-window-controls.md`) |
+| 11 | Alt+F3, Right, Enter — the terminal's Window actions panel, on Maximise | the journal says `window panel: the terminal maximised, filling the work area` within a minute of Alt+F3 — **the terminal fills the work area of its display, its band at the top** |
 
 A look **fails when the screen did not change** within its time, and the walk
 stops at its first failure: every check after it reads **NOT REACHED** rather
@@ -66,7 +68,7 @@ be true for it to pass while the pointer is broken.
 
 ## The provider section, and the one secret it needs
 
-After the screen reader, the walk can add an AI provider in Settings, typing
+After the terminal, the walk can add an AI provider in Settings, typing
 its key. It runs on **every walk after a merge**, and on a walk started by
 hand only when the person ticks *Also add an AI provider*; either way only when
 the repository has the secret. Without it the section is skipped and the
@@ -93,6 +95,116 @@ key kept in this computer's keyring*. The run's log shows the key as `***`,
 and no key-shaped string was in the log, the report or the serial log. The
 walk checks only that each screen changed; whether it changed to these screens
 is in the pictures, which a person reads. Every walk after a merge repeats it.
+
+## Writing in VSCodium, once there is a provider
+
+With a provider added, the walk goes on to Demo 2's second road
+(`crates/alo-walking/src/writing_in_vscodium.rs`), **at full access**, the
+level the first-start sheet arrives with:
+
+| # | Does | Checks |
+|---|---|---|
+| 1 | Esc; Ctrl+Alt+T; types `touch ~/hello.txt`, Enter | the terminal opens and the line is typed — the person makes the file, because no verb makes one |
+| 2 | Super+A; types *Open the file hello.txt in my home folder in VSCodium, type exactly this text into it: Written by alo in VSCodium and then save it.*; Enter | the journal says `alo asked to open a file in com.vscodium.codium, … opened-in-alos-copy` within 5 minutes |
+| 3 | waits | `alo asked to type into com.vscodium.codium: text, … typed` within 5 minutes, then `…: save, … asked-to-save` within 2 — the turn saves only once the text read back exactly |
+| 4 | Ctrl+Alt+T; types `systemd-cat -t alo-walk-the-file cat ~/hello.txt`, Enter | the journal has a line tagged `alo-walk-the-file` that says *Written by alo in VSCodium* within a minute — **the file on disk**, the one check that is not the machine's own account of itself |
+
+The sentences in 2 and 3 are declared once, in
+`crates/alo-acting/src/said_on_the_log.rs`, which both the desktop that writes
+them and the walk that reads for them use. **They carry how many bytes were
+typed and never the text.**
+
+**The default level is not walked**: there, alo must be let use VSCodium by
+name, and nothing on a booted machine makes that grant yet — its surface is
+not drawn.
+
+## Writing in VSCodium, once there is a provider
+
+With a provider added, the walk goes on to Demo 2's second road
+(`crates/alo-walking/src/writing_in_vscodium.rs`), **at full access**, the
+level the first-start sheet arrives with:
+
+| # | Does | Checks |
+|---|---|---|
+| 1 | Esc; Ctrl+Alt+T; types `touch ~/hello.txt`, Enter | the terminal opens and the line is typed — the person makes the file, because no verb makes one |
+| 2 | Super+A; types *Open the file hello.txt in my home folder in VSCodium, type exactly this text into it: Written by alo in VSCodium and then save it.*; Enter | the journal says `alo asked to open a file in com.vscodium.codium, … opened-in-alos-copy` within 5 minutes |
+| 3 | waits | `alo asked to type into com.vscodium.codium: text, … typed` within 5 minutes, then `…: save, … asked-to-save` within 2 — the turn saves only once the text read back exactly |
+| 4 | Ctrl+Alt+T; types `systemd-cat -t alo-walk-the-file cat ~/hello.txt`, Enter | the journal has a line tagged `alo-walk-the-file` that says *Written by alo in VSCodium* within a minute — **the file on disk**, the one check that is not the machine's own account of itself |
+
+The sentences in 2 and 3 are declared once, in
+`crates/alo-acting/src/said_on_the_log.rs`, which both the desktop that writes
+them and the walk that reads for them use. **They carry how many bytes were
+typed and never the text.**
+
+**The default level is not walked**: there, alo must be let use VSCodium by
+name, and nothing on a booted machine makes that grant yet — its surface is
+not drawn.
+
+## Writing in VSCodium, once there is a provider
+
+With a provider added, the walk goes on to Demo 2's second road
+(`crates/alo-walking/src/writing_in_vscodium.rs`), **at full access**, the
+level the first-start sheet arrives with:
+
+| # | Does | Checks |
+|---|---|---|
+| 1 | Esc; Ctrl+Alt+T; types `touch ~/hello.txt`, Enter | the terminal opens and the line is typed — the person makes the file, because no verb makes one |
+| 2 | Super+A; types *Open the file hello.txt in my home folder in VSCodium, type exactly this text into it: Written by alo in VSCodium and then save it.*; Enter | the journal says `alo asked to open a file in com.vscodium.codium, … opened-in-alos-copy` within 5 minutes |
+| 3 | waits | `alo asked to type into com.vscodium.codium: text, … typed` within 5 minutes, then `…: save, … asked-to-save` within 2 — the turn saves only once the text read back exactly |
+| 4 | Ctrl+Alt+T; types `systemd-cat -t alo-walk-the-file cat ~/hello.txt`, Enter | the journal has a line tagged `alo-walk-the-file` that says *Written by alo in VSCodium* within a minute — **the file on disk**, the one check that is not the machine's own account of itself |
+
+The sentences in 2 and 3 are declared once, in
+`crates/alo-acting/src/said_on_the_log.rs`, which both the desktop that writes
+them and the walk that reads for them use. **They carry how many bytes were
+typed and never the text.**
+
+**The default level is not walked**: there, alo must be let use VSCodium by
+name, and nothing on a booted machine makes that grant yet — its surface is
+not drawn.
+
+## Writing in VSCodium, once there is a provider
+
+With a provider added, the walk goes on to Demo 2's second road
+(`crates/alo-walking/src/writing_in_vscodium.rs`), **at full access**, the
+level the first-start sheet arrives with:
+
+| # | Does | Checks |
+|---|---|---|
+| 1 | Esc; Ctrl+Alt+T; types `touch ~/hello.txt`, Enter | the terminal opens and the line is typed — the person makes the file, because no verb makes one |
+| 2 | Super+A; types *Open the file hello.txt in my home folder in VSCodium, type exactly this text into it: Written by alo in VSCodium and then save it.*; Enter | the journal says `alo asked to open a file in com.vscodium.codium, … opened-in-alos-copy` within 5 minutes |
+| 3 | waits | `alo asked to type into com.vscodium.codium: text, … typed` within 5 minutes, then `…: save, … asked-to-save` within 2 — the turn saves only once the text read back exactly |
+| 4 | Ctrl+Alt+T; types `systemd-cat -t alo-walk-the-file cat ~/hello.txt`, Enter | the journal has a line tagged `alo-walk-the-file` that says *Written by alo in VSCodium* within a minute — **the file on disk**, the one check that is not the machine's own account of itself |
+
+The sentences in 2 and 3 are declared once, in
+`crates/alo-acting/src/said_on_the_log.rs`, which both the desktop that writes
+them and the walk that reads for them use. **They carry how many bytes were
+typed and never the text.**
+
+**The default level is not walked**: there, alo must be let use VSCodium by
+name, and nothing on a booted machine makes that grant yet — its surface is
+not drawn.
+
+## Writing in VSCodium, once there is a provider
+
+With a provider added, the walk goes on to Demo 2's second road
+(`crates/alo-walking/src/writing_in_vscodium.rs`), **at full access**, the
+level the first-start sheet arrives with:
+
+| # | Does | Checks |
+|---|---|---|
+| 1 | Esc; Ctrl+Alt+T; types `touch ~/hello.txt`, Enter | the terminal opens and the line is typed — the person makes the file, because no verb makes one |
+| 2 | Super+A; types *Open the file hello.txt in my home folder in VSCodium, type exactly this text into it: Written by alo in VSCodium and then save it.*; Enter | the journal says `alo asked to open a file in com.vscodium.codium, … opened-in-alos-copy` within 5 minutes |
+| 3 | waits | `alo asked to type into com.vscodium.codium: text, … typed` within 5 minutes, then `…: save, … asked-to-save` within 2 — the turn saves only once the text read back exactly |
+| 4 | Ctrl+Alt+T; types `systemd-cat -t alo-walk-the-file cat ~/hello.txt`, Enter | the journal has a line tagged `alo-walk-the-file` that says *Written by alo in VSCodium* within a minute — **the file on disk**, the one check that is not the machine's own account of itself |
+
+The sentences in 2 and 3 are declared once, in
+`crates/alo-acting/src/said_on_the_log.rs`, which both the desktop that writes
+them and the walk that reads for them use. **They carry how many bytes were
+typed and never the text.**
+
+**The default level is not walked**: there, alo must be let use VSCodium by
+name, and nothing on a booted machine makes that grant yet — its surface is
+not drawn.
 
 ## What a pass proves, and what it does not
 

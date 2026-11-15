@@ -100,12 +100,6 @@ pub const AFTER_THE_DIVIDER_TO_ALO: i32 = 17;
 /// How tall *Help with this window* is. `11:76`.
 pub const THE_ALO_ROW_IS_TALL: i32 = 52;
 
-/// Where the divider before alo is, down the panel: under Full screen.
-const THE_DIVIDER_TO_ALO_IS_AT: i32 = THE_ROWS_START_AT + A_ROW_IS_TALL + BEFORE_THE_DIVIDER_TO_ALO;
-
-/// Where *Help with this window* starts, down the panel.
-const THE_ALO_ROW_IS_AT: i32 = THE_DIVIDER_TO_ALO_IS_AT + AFTER_THE_DIVIDER_TO_ALO;
-
 /// The choice the keyboard lands on when a key opens the panel: the first, as
 /// the pictures and rows are laid out in [`the_menu_of`].
 pub const THE_FIRST_CHOICE: WhatARowDoes = WhatARowDoes::Left;
@@ -184,6 +178,11 @@ pub struct HowTheWindowIs {
     /// all*. Not about the window, but carried with it because it decides what
     /// the panel holds; `false`, the default, is the panel without it.
     pub alo_may_help: bool,
+    /// **Full screen does not work on this window yet**, so its row is not
+    /// drawn — the specification's *a choice that does not work yet is not
+    /// drawn*. alo's own windows, until they can fill the display; `false`,
+    /// the default, is every application's window.
+    pub full_screen_is_not_offered: bool,
 }
 
 /// One choice in the panel, and where it answers.
@@ -224,14 +223,38 @@ impl WindowMenu {
     }
 }
 
-/// How tall the panel is with these choices: to the last row drawn, and
-/// [`BELOW_THE_LAST`] under it.
-const fn how_tall(alo_may_help: bool) -> i32 {
-    if alo_may_help {
-        THE_ALO_ROW_IS_AT + THE_ALO_ROW_IS_TALL + BELOW_THE_LAST
+/// Where the rows under the pictures go, down the panel, for these choices:
+/// Full screen's, the divider before alo's and *Help with this window*'s, each
+/// [`None`] where it is not drawn — and how tall the panel is, to the last
+/// thing drawn and [`BELOW_THE_LAST`] under it.
+///
+/// With every row this is the frame's own `11:24`: Full screen at 172, the
+/// divider at 223, Help at 240 and the panel 312 tall. A row that is not drawn
+/// takes its room with it, so what follows moves up; with no row at all the
+/// panel ends under its pictures.
+const fn where_the_rows_go(how: HowTheWindowIs) -> (Option<i32>, Option<(i32, i32)>, i32) {
+    let mut down = THE_ROWS_START_AT;
+    let full_screen = if how.full_screen_is_not_offered {
+        None
     } else {
-        THE_ROWS_START_AT + A_ROW_IS_TALL + BELOW_THE_LAST
-    }
+        let at = down;
+        down += A_ROW_IS_TALL;
+        Some(at)
+    };
+    let alo = if how.alo_may_help {
+        let divider = down + BEFORE_THE_DIVIDER_TO_ALO;
+        let row = divider + AFTER_THE_DIVIDER_TO_ALO;
+        down = row + THE_ALO_ROW_IS_TALL;
+        Some((divider, row))
+    } else {
+        None
+    };
+    let tall = if full_screen.is_none() && alo.is_none() {
+        THE_PICTURES_START_AT + A_PICTURE_IS + BELOW_THE_LAST
+    } else {
+        down + BELOW_THE_LAST
+    };
+    (full_screen, alo, tall)
 }
 
 /// The panel of a band whose Window actions is shown, or [`None`] on a band
@@ -250,7 +273,7 @@ pub fn the_menu_of(
     output: Size<i32, Logical>,
 ) -> Option<WindowMenu> {
     let anchor = edge.the_control(OnTheEdge::WindowActions)?;
-    let tall = how_tall(how.alo_may_help);
+    let (full_screen_at, alo_at, tall) = where_the_rows_go(how);
     let at_x = (anchor.target.loc.x - BEFORE_WINDOW_ACTIONS)
         .clamp(0, (output.w - THE_PANEL_IS_WIDE).max(0));
     let at_y = (edge.region.loc.y + edge.region.size.h + BELOW_THE_BAND)
@@ -283,33 +306,42 @@ pub fn the_menu_of(
         a_picture(0, THE_FIRST_CHOICE),
         a_picture(1, maximise),
         a_picture(2, WhatARowDoes::Right),
-        MenuRow {
+    ];
+    if let Some(down) = full_screen_at {
+        rows.push(MenuRow {
             does: full_screen,
             row: Rectangle::new(
-                Point::from((at_x + THE_INSET, at_y + THE_ROWS_START_AT)),
+                Point::from((at_x + THE_INSET, at_y + down)),
                 Size::from((A_ROW_IS_WIDE, A_ROW_IS_TALL)),
             ),
-        },
-    ];
-    let before_alo = how.alo_may_help.then(|| {
+        });
+    }
+    let before_alo = alo_at.map(|(divider, down)| {
         rows.push(MenuRow {
             does: WhatARowDoes::HelpWithThisWindow,
             row: Rectangle::new(
-                Point::from((at_x + THE_INSET, at_y + THE_ALO_ROW_IS_AT)),
+                Point::from((at_x + THE_INSET, at_y + down)),
                 Size::from((A_ROW_IS_WIDE, THE_ALO_ROW_IS_TALL)),
             ),
         });
         Rectangle::new(
-            Point::from((at_x + THE_INSET, at_y + THE_DIVIDER_TO_ALO_IS_AT)),
+            Point::from((at_x + THE_INSET, at_y + divider)),
             Size::from((A_ROW_IS_WIDE, 1)),
         )
     });
+    // **The divider under the pictures only where a row is under it**: with
+    // none it would be a line with nothing after it.
+    let divider_is = if full_screen_at.is_some() || alo_at.is_some() {
+        Size::from((A_ROW_IS_WIDE, 1))
+    } else {
+        Size::from((0, 0))
+    };
     Some(WindowMenu {
         panel,
         heading: Point::from((at_x + THE_INSET, at_y + THE_HEADING_SITS_AT)),
         divider: Rectangle::new(
             Point::from((at_x + THE_INSET, at_y + THE_DIVIDER_IS_AT)),
-            Size::from((A_ROW_IS_WIDE, 1)),
+            divider_is,
         ),
         before_alo,
         rows,

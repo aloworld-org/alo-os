@@ -72,7 +72,7 @@ impl crate::Server {
         if state != ButtonState::Pressed {
             return false;
         }
-        let Some(surface) = self.whose_panel_is_open() else {
+        let Some(band) = self.whose_bands_panel_is_open() else {
             return false;
         };
         let Some(at) = self.where_the_pointer_is_in_logical_pixels() else {
@@ -80,7 +80,7 @@ impl crate::Server {
         };
         let scale = self.the_scale_an_edge_is_measured_at();
         let at = crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale);
-        let Some((edge, menu)) = self.the_open_panel(&surface) else {
+        let Some((edge, menu)) = self.the_open_panel_of(&band) else {
             // **A panel whose window has gone has nothing to answer**; the
             // keyboard's state is pruned with the window.
             return false;
@@ -91,17 +91,33 @@ impl crate::Server {
         match where_it_landed(&menu, window_actions, at) {
             ThePress::Chose(does) => {
                 if let Some(row) = menu.rows.iter().copied().find(|it| it.does == does) {
-                    let does = self.a_row_of_the_menu_was_pressed(&surface, row);
-                    self.carry_out_the_row(&surface, does);
+                    let does = self.a_row_of_the_menu_was_pressed(&band, row);
+                    self.carry_out_the_row_on(&band, does);
                 }
                 true
             }
             ThePress::InsideOnNothing => true,
             ThePress::Dismissed => {
-                self.the_menu_was_dismissed_on(&surface, ByWhat::ThePointer);
+                self.the_menu_was_dismissed_on_the_band(&band, ByWhat::ThePointer);
                 true
             }
             ThePress::OnWindowActions => false,
+        }
+    }
+
+    /// The open panel of this band, an application's or alo's, laid out
+    /// exactly as the frame draws it, with the band it hangs from.
+    #[must_use]
+    pub(crate) fn the_open_panel_of(
+        &self,
+        band: &crate::which_band::ABand,
+    ) -> Option<(crate::window_edge::WindowEdge, WindowMenu)> {
+        match band {
+            crate::which_band::ABand::App(surface) => self.the_open_panel(surface),
+            crate::which_band::ABand::Alos(which) => {
+                let (edge, menu) = self.alos_band_and_its_panel(*which)?;
+                Some((edge, menu?))
+            }
         }
     }
 
@@ -141,6 +157,7 @@ impl crate::Server {
             // **Help with this window is there only while alo may be asked**,
             // and never while AI is set to *Not at all*.
             alo_may_help: self.alo_in_a_window.may_be_asked(),
+            full_screen_is_not_offered: false,
         }
     }
 

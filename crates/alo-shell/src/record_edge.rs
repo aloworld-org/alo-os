@@ -26,7 +26,7 @@ use crate::which_window_is_in_front::AKindOfWindow;
 impl crate::Server {
     /// Where the record's body is seen on the display, while it is open here
     /// and has been drawn: what its edge sits on.
-    fn where_the_records_body_is_seen(&self) -> Option<Rectangle<i32, Physical>> {
+    pub(crate) fn where_the_records_body_is_seen(&self) -> Option<Rectangle<i32, Physical>> {
         if !self.the_record_is_open_here() {
             return None;
         }
@@ -46,12 +46,12 @@ impl crate::Server {
         // the window itself says nothing (`tests/record_source.rs`).
         let title = crate::the_records_words::TheRecordsSentences::of(says).title;
         its_picture(
-            body,
+            self,
+            (alo_put_aside::AlosOwnWindow::TheRecord, body),
             WhatItShows {
                 title: &title,
                 focused: self.the_record_is_taking_the_keys(),
             },
-            self.where_the_pointer_is_in_logical_pixels(),
             fonts,
             (output, scale),
         )
@@ -60,15 +60,7 @@ impl crate::Server {
     /// Whether the record's edge is under `at`, in the display's pixels.
     pub(crate) fn the_records_edge_is_under(&self, at: Point<i32, Logical>) -> bool {
         self.where_the_records_body_is_seen().is_some_and(|body| {
-            what_a_press_is_on(
-                body,
-                at,
-                (
-                    self.the_room_an_edge_is_clamped_in(),
-                    self.the_scale_an_edge_is_measured_at(),
-                ),
-            )
-            .is_some()
+            what_a_press_is_on(self, (alo_put_aside::AlosOwnWindow::TheRecord, body), at).is_some()
         })
     }
 
@@ -89,14 +81,7 @@ impl crate::Server {
         let Some(body) = self.where_the_records_body_is_seen() else {
             return false;
         };
-        match what_a_press_is_on(
-            body,
-            at,
-            (
-                self.the_room_an_edge_is_clamped_in(),
-                self.the_scale_an_edge_is_measured_at(),
-            ),
-        ) {
+        match what_a_press_is_on(self, (alo_put_aside::AlosOwnWindow::TheRecord, body), at) {
             None => false,
             Some(OnItsEdge::Close) => {
                 self.the_person_closes_the_record();

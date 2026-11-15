@@ -1,7 +1,7 @@
 # The pointer on a walk
 
 What the automated walk ([walks on GitHub](walks-on-github.md)) checks about
-alo's pointer, after step 9 of the first walk and before the provider section.
+alo's pointer, after the terminal section of the first walk and before the provider section.
 Asked for by the owner on 2026-11-14: *"Add them now."* The code is
 `crates/alo-walking/src/the_pointer_walk.rs`; how each check looks is
 `walking_the_pointer.rs`.
@@ -49,7 +49,7 @@ not do that.
 
 | # | Does | Checks | What would have to be true for it to pass while broken |
 |---|---|---|---|
-| 1 | Escape closes Settings; the pointer is moved a little | the screen capture changes, by no more than two pointers' worth | something else small changed at that moment and the pointer is not in the capture — so this is never the check that the pointer is alo's |
+| 1 | Alt+F4 closes the terminal the walk before left open; the pointer is moved a little | the screen capture changes, by no more than two pointers' worth | something else small changed at that moment and the pointer is not in the capture — so this is never the check that the pointer is alo's |
 | 2 | the pointer is steered to the middle of the desktop | it is found there | — |
 | 3 | | **on the desktop it is alo's navy kite**, 24 pixels at 100 per cent, and it moves when nudged | something drew alo's exact kite pixels and moved them with the hand without being the pointer |
 | 4 | Super+Space, *Text Editor*, Enter; the pointer onto what changed | **over Text Editor it is still alo's**, in any of alo's shapes | the same |

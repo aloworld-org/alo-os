@@ -92,23 +92,29 @@ fn press_close_at(server: &mut Server, which: WhichTask, scale: u16) -> bool {
     server
         .pointer_motion(f64::from(x), f64::from(y), 1)
         .expect("the pointer moved");
+    server.the_edges_were_told_where_the_pointer_is();
     server
         .pointer_button(0x110, ButtonState::Pressed, 2)
         .expect("the press was handled")
 }
 
-/// **Minimise and Close, and nothing else, at the design's 44 × 44 at the trailing end of a
-/// 54-tall band that sits on the window.**
+/// **Window actions, Minimise and Close, at the design's 44 × 44 at the trailing
+/// end of a 54-tall band that sits on the window** — Window actions since the
+/// owner's *"Yes, it too"* of 2026-11-14.
 #[test]
-fn the_edge_carries_minimise_and_close_at_the_designs_figures() {
+fn the_edge_carries_its_three_controls_at_the_designs_figures() {
     let window = Rectangle::new((200, 124).into(), (1040, 800).into());
     let edge = the_edge_of_a_task_window(window, anywhere());
 
     let does: Vec<OnTheEdge> = edge.controls.iter().map(|control| control.does).collect();
     assert_eq!(
         does,
-        [OnTheEdge::Minimise, OnTheEdge::Close],
-        "maximise or move was drawn, or Minimise was not"
+        [
+            OnTheEdge::WindowActions,
+            OnTheEdge::Minimise,
+            OnTheEdge::Close
+        ],
+        "the three were not drawn, or something else was"
     );
     assert_eq!(edge.region.size.h, 54);
     assert_eq!(
@@ -217,6 +223,7 @@ fn at_two_hundred_a_press_where_close_is_drawn_closes_the_task() {
     server
         .pointer_motion(f64::from(x), f64::from(y), 1)
         .expect("the pointer moved");
+    server.the_edges_were_told_where_the_pointer_is();
     let delivered = server
         .pointer_button(0x110, ButtonState::Pressed, 2)
         .expect("the press was handled");

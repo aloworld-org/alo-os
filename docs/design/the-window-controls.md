@@ -306,6 +306,17 @@ is the specimen's width, not a window's.
   Space and Escape walk it.
 - **No band carries an icon**, alo's own windows (the terminal, the record)
   included, so every band is the one band the frames draw.
+- **alo's own windows' bands reveal as every band does** — the terminal,
+  Settings, the record and each task window. Until 2026-11-14 each was laid out
+  revealed and drawn with its controls shown whatever the pointer did, under
+  readings of 2026-10-28 and 2026-11-01 that predate this specification
+  (*it carries the only Close this window has*). A booted machine at `3959dd65`
+  showed the terminal and the task windows with Minimise and Close drawn while
+  the pointer was in the far corner; the owner called that *the old window
+  controls*. They are now told where the pointer is by the one rule every band
+  is (`crate::the_window_edge_reveals::a_band_is_told`), and obey *Always show
+  window controls*. Close stays reachable without the pointer: Alt+F4, and a
+  screen reader reaches every control without hovering.
 - **The work area includes the top controls' 84-unit band.** The shell
   reserves it whether or not anything is drawn in it (`crate::top_controls_region`),
   so a maximised window starts under it, with its band; a window that took that
@@ -456,3 +467,5 @@ that part is **not built**.
 | 3c | The answer card under the panel, its working line and Stop, Continue in a task window | not built: no frame draws it |
 | 4 | Capture & export | not built |
 | 5 | Every application's window offers the three; alo adds only the ones an application that draws its own header does not show (the owner, 2026-11-12) | #1189 |
+| 5a | alo's own windows — the terminal, Settings, the record and the task windows — draw no controls at rest, through the same reveal as every band; the KVM walk checks the terminal at rest | this change |
+| 5b | Window actions on the terminal and the task windows (the owner, 2026-11-14: *"Yes add that"*, *"Yes, it too"*, *"Terminal first"*): the one panel, keyed to any band; Left, Maximise / Restore and Right, previewed, by pointer, by Alt+F3 and the arrows and by Super+Up; the KVM walk maximises the terminal. **Not yet:** Full screen and Help with this window on alo's windows (not drawn until they work), Settings and the record (their pages lay out at one size), a reader's press on a task window's Window actions | this change |
