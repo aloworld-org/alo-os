@@ -171,7 +171,7 @@ without them has not been finished, it has been abandoned.
 - **A feature is done when its walk passes, not when its pieces pass**
   ([ADR 0156](docs/decisions/0156-a-feature-is-done-when-its-walk-passes.md)).
   *The owner, 2026-11-14: "Yes please adopt all of them"*, accepting that each
-  change takes about 20–30% longer. Five rules:
+  change takes about 20–30% longer. Six rules (the sixth added 2026-11-15):
   1. **Walk first** — the person's steps are written as an automated walk
      (`docs/walks/`, `.github/workflows/walk.yml`) before the code.
   2. **Seam tests** — every hand-over (socket line, verb argument, app id,
@@ -182,6 +182,15 @@ without them has not been finished, it has been abandoned.
   4. **The image is built on every pull request** — as a check that never
      publishes (`image-check.yml`), and required before anything lands.
   5. **One lane owns one feature from start to finish.**
+  6. **Analyse before running.** Before a push or a walk: trace the request
+     through the real code, quoting `file:line` at every hand-over, down to
+     the exact line the walk waits for; try the model's turn alone, with its
+     real instructions and verbs, at least three times; have a second reader
+     review the diff, given the code rather than the writer's conclusion.
+     The trace and the tries go in the pull request's body. *The owner,
+     2026-11-15: "pay attention during the writing so as we analyse well the
+     code before we run it"*, after three hour-long walks failed on a break
+     that reading the code could have found.
   Rule 4 is a required check and a walk checks rule 1 when it runs; the
   rest is discipline nothing enforces, and the ADR says which.
 

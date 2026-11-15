@@ -77,6 +77,26 @@ remembers.
 5. **One lane owns one feature from start to finish.** A feature is not split
    across lanes — the lane that writes its walk writes both sides of its seams
    and lands it. A seam with an owner on each side is a seam nobody owns.
+6. **Analyse before running** (added 2026-11-15). A walk takes about an hour,
+   so it is the last place a fault should be found, not the first. Before a
+   push or a walk:
+   - **trace the request through the real code**, from the words a person
+     types, to what the model is given, to the verb it should choose, to the
+     service that carries it out, and to the exact line the walk waits for,
+     quoting `file:line` at every hand-over. A line the walk waits for that no
+     quoted code prints is a break found by reading;
+   - **try the model's turn alone**, with its real instructions and verbs, at
+     least three times, and record what it chose each time. That costs
+     minutes, and it shows whether the model ever takes the road the walk
+     expects;
+   - **have a second reader review the diff**, handed the code rather than
+     the writer's conclusion.
+
+   The trace and the tries go in the pull request's body. *The owner,
+   2026-11-15: "Can we pay attention during the writing so as we analyse well
+   the code before we run it to catch those errors"*, after the VSCodium walk
+   failed three times on `main`, at a different step each time, with nobody
+   having followed the road through the code first.
 
 ## Which of these anything checks
 
@@ -100,6 +120,9 @@ forever*, honestly:
   setting, and stays so.
 - **Rule 5 is a discipline nothing checks.** It runs when a lane chooses to
   follow it.
+- **Rule 6 is a discipline nothing checks.** No gate reads a pull request's
+  body, so the trace and the tries are there when a lane puts them there, and
+  a reviewer who finds them missing should say so.
 
 ## What this does not change
 
