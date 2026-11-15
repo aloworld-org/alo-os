@@ -3,7 +3,7 @@
 //! [ADR 0153](../../../docs/decisions/0153-alo-types-by-keys-in-its-own-copy-and-reads-the-text-back.md).
 //!
 //! `alo_launching::its_settings_file` names the file, in alo's copy's own
-//! profile, and `alo_launching::TYPED_AS_IT_IS` what goes in it. This writes
+//! profile, and `alo_launching::every_setting_in_alos_copy` what goes in it. This writes
 //! it, each time alo's copy starts, **changing only those keys**: the person can
 //! change other settings in alo's copy, and those are kept. A file that is not a
 //! JSON object — VSCodium allows comments in it, which JSON does not — is
@@ -35,7 +35,7 @@ pub(crate) fn with_typing_left_alone(existing: Option<&str>) -> Result<String, L
             _ => return Err(LeftAsItIs::NotAnObject),
         },
     };
-    for (name, value) in alo_launching::TYPED_AS_IT_IS {
+    for (name, value) in alo_launching::every_setting_in_alos_copy() {
         // Each value is a constant reviewed in `alo_launching`, and its test
         // reads every one as JSON; one that would not read is left out rather
         // than written as a string the editor would misread.
