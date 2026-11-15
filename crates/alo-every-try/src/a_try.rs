@@ -70,6 +70,13 @@ impl Tried {
         self.looked_aside
     }
 
+    /// The same try, having taken `looks` reads aside of its road.
+    #[must_use]
+    pub const fn looking_aside(mut self, looks: usize) -> Self {
+        self.looked_aside = looks;
+        self
+    }
+
     /// A try that chose `chose`, ended as `went`, and asked the model `asked`
     /// times.
     #[must_use]

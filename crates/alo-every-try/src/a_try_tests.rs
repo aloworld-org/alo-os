@@ -83,6 +83,7 @@ fn every_step_and_then_an_answer_is_the_road() {
         ]
     );
     assert_eq!(tried.asked(), 4);
+    assert_eq!(tried.looked_aside(), 0, "no read was taken aside");
 }
 
 /// **The refusal case**: a model that types before it reads the window has
