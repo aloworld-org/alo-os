@@ -183,6 +183,9 @@ mod looking_at_the_catalogue;
 pub mod machine;
 mod naming_an_application;
 pub mod next_request;
+mod opening_a_file_in_an_application;
+#[cfg(test)]
+mod opening_a_file_in_an_application_tests;
 pub mod places;
 mod pressing_a_control;
 mod publishing_a_folder;
@@ -195,6 +198,9 @@ pub mod the_applications_here;
 pub mod the_bracket_a_turn_takes;
 mod the_door_the_compositor_serves;
 mod the_sentence_is_about_something;
+pub mod the_shape_a_provider_is_held_to;
+#[cfg(test)]
+mod the_shape_a_provider_is_held_to_tests;
 pub mod the_verbs_would_not_declare;
 mod the_windows_on_the_screen;
 pub mod turning;
@@ -229,6 +235,7 @@ pub use machine::{
     Machine, WhatASoftwareVerbNeeds, WhatAnApplicationVerbNeeds, WhatPublishingNeeds,
     the_verbs_a_whole_machine_offers,
 };
+pub use opening_a_file_in_an_application::AFileOpened;
 pub use places::Places;
 pub use pressing_a_control::AControlPressed;
 pub use reading_an_applications_windows::TheWindowsShowed;

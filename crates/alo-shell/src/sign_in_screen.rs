@@ -41,7 +41,7 @@ use alo_strings::{Said, Strings};
 use crate::a_press_on_a_setup_sheet::OnASheet;
 use crate::sign_in_entry::{SignInEntry, SignInField};
 use crate::sign_in_keys::SignInKey;
-use crate::the_first_account::{TheAccountShown, TheFirstAccount, Went as AccountWent};
+use crate::the_first_account::{ASecret, TheAccountShown, TheFirstAccount, Went as AccountWent};
 use crate::the_first_start::{TheFirstStart, Went};
 
 /// The sign-in screen, before anybody is signed in.
@@ -134,6 +134,16 @@ pub enum SignInShows<'a> {
         /// string, drew a box with no glyphs in it, and a booted machine
         /// showed a blank bar where somebody's name belongs.
         whose: &'a str,
+        /// **Whether that person signs in with a PIN or a password**, as they
+        /// chose at the first start — so the entry says *Enter your PIN* or
+        /// *Enter your password* (`crate::sign_in_words::enter_your`).
+        ///
+        /// A password where the machine cannot say whose it is: whatever the
+        /// account's secret is, it is checked as its password, and calling a
+        /// password a PIN is the fault this field was added to end — three
+        /// walks of a booted machine (2026-11-12 to -14) chose *Use password
+        /// only* and were asked for a PIN on every boot after.
+        secret: alo_greeting::SecretKind,
         /// The name as typed.
         name: &'a str,
         /// Whether anything is typed in the password field. Not how much.
@@ -423,9 +433,16 @@ impl<K: Knocking> SignInScreen<K> {
             AccountWent::MakeIt => {
                 let name = account.name().to_owned();
                 let secret = account.secret().to_owned();
+                // **Which sheet it was typed on is kept with it**: *Add a
+                // PIN?* makes a PIN's account and *Use password only* a
+                // password's, so every later boot asks for the one chosen.
+                let kind = match account.the_secret_is() {
+                    Some(ASecret::Pin) => alo_greeting::SecretKind::Pin,
+                    Some(ASecret::Password) | None => alo_greeting::SecretKind::Password,
+                };
                 account.the_attempt_is_over();
                 let mut greeting = greeting;
-                let greeted = greeting.makes_an_account(&name, &secret);
+                let greeted = greeting.makes_an_account(&name, &secret, kind);
                 self.stands = WhatItStandsAt::MakeAnAccount(said, greeting, first_start, account);
                 self.answered(greeted)
             }
@@ -540,6 +557,7 @@ impl<K: Knocking> SignInScreen<K> {
         match &self.stands {
             WhatItStandsAt::SignIn(greeting) => SignInShows::Fields {
                 whose: greeting.whose_name().unwrap_or_default(),
+                secret: greeting.whose_secret().unwrap_or_default(),
                 name: self.entry.name(),
                 password_typed: self.entry.has_password(),
                 field: self.entry.field(),

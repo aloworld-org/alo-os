@@ -21,6 +21,7 @@ fn the_existing_authenticator_unlocks_only_the_original_session_and_releases_hel
             surface.shows(),
             SignInShows::Fields {
                 whose: _,
+                secret: _,
                 name: "",
                 password_typed: false,
                 field: SignInField::Name,
@@ -115,6 +116,7 @@ fn losing_focus_forgets_unfinished_credentials() {
         surface.shows(),
         SignInShows::Fields {
             whose: _,
+            secret: _,
             name: "",
             password_typed: false,
             said: None,

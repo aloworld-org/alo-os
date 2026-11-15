@@ -44,6 +44,7 @@
 //! | [`Request`], [`Answer`] | One line in, one line out |
 //! | [`NotRead`], [`NotActed`] | Why a line is not a request, and why a request did nothing |
 //! | [`ToOpenALink`] | The portal asking for an application to be started with a link a person followed |
+//! | [`ToOpenAFile`], [`Opened`] | alo asking for a file to be opened in an application the person named, and where it opened |
 //!
 //! Not here: the socket, the compositor's windows, and the authority. The
 //! socket is `alo-shell`'s to listen on and `alo-agentd`'s to connect to —
@@ -64,6 +65,7 @@ pub mod answer;
 pub mod choosing_a_link;
 pub mod counting;
 pub mod front;
+pub mod opening_a_file;
 pub mod opening_a_link;
 pub mod request;
 pub mod typing_into;
@@ -75,6 +77,7 @@ pub use answer::{Answer, NotActed};
 pub use choosing_a_link::{CHOOSE_LINK, Chose, NotALinkToChoose, ToChooseALink};
 pub use counting::{Begun, Counted, NotACount, ToCount};
 pub use front::{InFront, is_front};
+pub use opening_a_file::{NotAFileToOpen, OPEN_FILE, Opened, ToOpenAFile};
 pub use opening_a_link::{NotALinkToOpen, OPEN_LINK, ToOpenALink};
 pub use request::{NotRead, Request};
 pub use typing_into::{

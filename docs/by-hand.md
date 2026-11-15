@@ -127,6 +127,14 @@ v0.5 with the rest of it. Proposed to the owner in
 unsaved work exactly as it does for the verb —
 `Launcher and window management: open, focus, close, tile`.
 
+### open_file_in_application
+
+**By hand:** a person opens the file from the file manager in the application
+they want, with *Open with* — `File associations — what opens what, changeable by
+a person`. The verb opens it the same way an application's own entry says it
+opens a file, and needs the approval because it is the agent choosing to put the
+person's file in front of them in an application.
+
 ### arrange_application
 
 **By hand:** a person drags the window to an edge to take half the screen, or

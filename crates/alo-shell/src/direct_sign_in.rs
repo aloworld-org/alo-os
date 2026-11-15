@@ -372,6 +372,10 @@ pub(crate) struct Lane<'a, K: Knocking> {
     /// §3). Taken here, before any sheet sees the key, and handed to the door
     /// to the reader by whoever holds it (`crate::the_sign_in_screens_reader`).
     the_reader_turned_over: bool,
+    /// **What the screen reader last came to**, where that is something to
+    /// say — drawn above *Accessibility* and told to a reader
+    /// (`crate::the_readers_sentence_drawn`).
+    the_reader_says: Option<crate::TheScreenReaderAnswered>,
 }
 
 impl<'a, K: Knocking> Lane<'a, K> {
@@ -390,7 +394,23 @@ impl<'a, K: Knocking> Lane<'a, K> {
             controls: Vec::new(),
             wheel: crate::a_wheel_over_a_sheet::TheWheelOnASheet::default(),
             the_reader_turned_over: false,
+            the_reader_says: None,
         }
+    }
+
+    /// **The screen reader came to `answered`**: kept to be said on the
+    /// screen while it is a failure, and forgotten once it started or stopped.
+    pub(crate) fn the_reader_answered(&mut self, answered: crate::TheScreenReaderAnswered) {
+        self.the_reader_says = Some(answered);
+    }
+
+    /// What the screen says about the reader now, in its own language.
+    fn what_the_reader_said(&self) -> Option<String> {
+        let Some(Signing::Still(screen)) = self.signing.as_ref() else {
+            return None;
+        };
+        self.the_reader_says
+            .and_then(|answered| answered.said(screen.words()))
     }
 
     /// **Whether the person turned the screen reader over** since this was
@@ -424,10 +444,10 @@ impl<'a, K: Knocking> Lane<'a, K> {
     /// session has opened (`crate::the_screens_before_sign_in_as_read`).
     pub(crate) fn as_read(&self) -> Option<crate::ReadAloudTree> {
         match self.signing.as_ref() {
-            Some(Signing::Still(screen)) => Some(crate::ReadAloudTree::before_sign_in(
-                screen.words(),
-                screen.shows(),
-            )),
+            Some(Signing::Still(screen)) => Some(
+                crate::ReadAloudTree::before_sign_in(screen.words(), screen.shows())
+                    .with_what_the_reader_said(self.what_the_reader_said().as_deref()),
+            ),
             Some(Signing::HandedOver(_)) | None => None,
         }
     }
@@ -650,7 +670,7 @@ impl<'a, K: Knocking> Lane<'a, K> {
         let Some(Signing::Still(screen)) = self.signing.as_ref() else {
             return Ok(None);
         };
-        let drawn = picture(
+        let mut drawn = picture(
             screen.shows(),
             self.labels,
             screen.words(),
@@ -659,6 +679,16 @@ impl<'a, K: Knocking> Lane<'a, K> {
             crate::sign_in_raster::WhoseScreen::ItsOwn,
             display,
         )?;
+        // **What the reader came to, above Accessibility**, where it failed.
+        if let Some(said) = self.what_the_reader_said() {
+            crate::the_readers_sentence_drawn::above_accessibility(
+                &mut drawn,
+                &said,
+                &mut self.labels.fonts,
+                self.look,
+                display,
+            );
+        }
         self.drawn_at = Some((size, display));
         self.controls.clone_from(&drawn.controls);
         Ok(Some(drawn))
@@ -823,6 +853,7 @@ impl<K: Knocking> LoopInput for Greeter<'_, K> {
         }
         while let Some(answered) = self.reader.answered() {
             eprintln!("alo-compositor: the sign-in screen's reader answered: {answered:?}");
+            self.screen.the_reader_answered(answered);
         }
         self.screen.present(target)?;
         Ok(())

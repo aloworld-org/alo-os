@@ -1088,9 +1088,25 @@ not listed and then refused.
 | wallpaper | layer named **Authentication / abstract wallpaper — no personal content** |
 | monogram | **lowercase `d`**, 64×64, radius 18, on `#eef2f4` |
 | greeting | **alo, disan** — 36/44 |
-| entry | 304×56, radius 18, placeholder *Enter your PIN* |
+| entry | 304×56, radius 18, placeholder *Enter your PIN* — or *Enter your password* in the *Password* state, `367:25544` |
 | submit | a **44** target inside the entry, with an unlock arrow |
-| alternate | *Other ways to sign in*, 240×44 |
+| alternate | *Other ways to sign in*, 240×44 — **drawn only when the account has another way in** |
+
+**Which placeholder is the person's choice, kept since 2026-11-14.** The entry
+says *Enter your PIN* to somebody who chose a PIN on *Add a PIN?*, and *Enter
+your password* — the words of the design's own *Password* state, `367:25544`,
+read from its render that day — to somebody who pressed *Use password only*.
+The account store keeps which (`secret_kind` in `accounts.toml`,
+`alo_accounts::SecretKind`); a store written before then says nothing and is
+read as a password. Until then the screen said *Enter your PIN* to everybody,
+and three walks running (2026-11-12, -13, -14) met a PIN field after choosing a
+password. A screen reader is told the same name the screen draws.
+
+**And *Other ways to sign in* is not drawn, by the rule above.** No account on
+alo OS has a second way in yet — one secret, a PIN or a password, and no
+fingerprint — and a press on the line opened nothing. The row below the entry
+is left empty and the layout keeps its place, so the change that gives an
+account a second way draws it again where the design puts it.
 | bottom row | 1360 wide at y 884 — *Accessibility* left; *Switch person* and a **power control, 48×48** right |
 | back | a chevron at the top left |
 
@@ -1662,6 +1678,13 @@ built (Text size and More options have nothing behind them before sign-in), and
 a sheet with one working row would be a different design rather than this one.
 Until the sheet is built, the button turns the reader over. The *Screen reader ·
 On* row and its sentence (`384:26446`) are therefore not drawn either.
+
+**A second addition the design does not draw**: when the reader could not
+start, or the computer has nothing to play it on, that sentence is drawn **one
+line above *Accessibility***, left-aligned with it, in the ink, at most a
+column (480) wide (`crates/alo-shell/src/the_readers_sentence_drawn.rs`). The
+design has no frame for a reader that fails; a failure shown nowhere would
+leave a sighted helper with nothing to go on.
 
 **The file's keyboard reactions demonstrate the interaction; they do not prove
 native screen-reader support.** Implement through the OS accessibility and

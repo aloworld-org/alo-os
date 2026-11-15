@@ -602,6 +602,7 @@ mod tests {
                 "list_folder",
                 "move_file",
                 "open_application",
+                "open_file_in_application",
                 "publish_to_github_pages",
                 "read_file",
                 "rename_file",

@@ -195,6 +195,41 @@ impl TheDoorTheCompositorServes for AtTheCompositorsDoor {
             why: format!("the compositor answered {heard:?}, which this machine does not know"),
         })
     }
+
+    fn opening_a_file(
+        &mut self,
+        asked: &alo_acting::ToOpenAFile,
+    ) -> Result<alo_acting::Opened, NotAtTheDoor> {
+        // A file whose name is not text never becomes a line: `ToOpenAFile`
+        // refuses to be made of one, so this is unreachable and said anyway.
+        let Some(line) = asked.written() else {
+            return Err(NotAtTheDoor::NotAnswered {
+                why: "the file's name is not text, so no line could carry it".to_owned(),
+            });
+        };
+        let mut talking = self.knocking()?;
+        talking
+            .write_all(format!("{line}\n").as_bytes())
+            .and_then(|()| talking.flush())
+            .map_err(|why| NotAtTheDoor::NotAnswered {
+                why: why.to_string(),
+            })?;
+        let mut heard = String::new();
+        let read = BufReader::new(&talking)
+            .read_line(&mut heard)
+            .map_err(|why| NotAtTheDoor::NotAnswered {
+                why: why.to_string(),
+            })?;
+        if read == 0 {
+            return Err(NotAtTheDoor::NotAnswered {
+                why: "the compositor closed the connection without answering".to_owned(),
+            });
+        }
+        // As for an act: an unknown word is never read as opened.
+        alo_acting::Opened::read(&heard).ok_or_else(|| NotAtTheDoor::NotAnswered {
+            why: format!("the compositor answered {heard:?}, which this machine does not know"),
+        })
+    }
 }
 
 #[cfg(test)]

@@ -125,13 +125,14 @@ impl ReadAloudTree {
                 }
                 SignInShows::Fields {
                     whose,
+                    secret,
                     name,
                     password_typed: _,
                     field,
                     said,
                 } => (
                     ScreenBeforeSignIn::SignIn,
-                    reading.signing_in(whose, name, field, said),
+                    reading.signing_in(whose, secret, name, field, said),
                 ),
                 SignInShows::Sentence(said) => {
                     (ScreenBeforeSignIn::Sentence, reading.a_sentence(said))
@@ -155,6 +156,31 @@ impl ReadAloudTree {
             keyboard,
         });
         tree
+    }
+}
+
+impl ReadAloudTree {
+    /// **The same tree, with what the screen reader came to said on the screen
+    /// in front** — *did not start*, *nothing to play it on* — as the screen
+    /// draws it above *Accessibility* (`crate::the_readers_sentence_drawn`),
+    /// announced as it appears. `said` is [`None`] where there is nothing to
+    /// say, and the tree is left as it was.
+    #[must_use]
+    pub(crate) fn with_what_the_reader_said(mut self, said: Option<&str>) -> Self {
+        let (Some(said), Some(screen)) = (said, self.in_front().map(|sheet| sheet.at)) else {
+            return self;
+        };
+        self.push(
+            screen,
+            Node {
+                role: access_roles::number_of(Role::Label),
+                name: said.to_owned(),
+                states: access_roles::words_of(State::AnnouncedWhenItChanges, None),
+                announced: true,
+                ..Node::default()
+            },
+        );
+        self
     }
 }
 
@@ -629,6 +655,7 @@ impl Reading<'_, '_> {
     fn signing_in(
         &mut self,
         whose: &str,
+        secret: alo_greeting::SecretKind,
         name: &str,
         field: SignInField,
         said: Option<&Said>,
@@ -666,19 +693,20 @@ impl Reading<'_, '_> {
                 .text()
                 .to_owned();
             self.a_heading(screen, hello);
-            let pin = self.said(crate::sign_in_words::ENTER_YOUR_PIN);
-            self.a_field(screen, Role::PasswordEntry, pin, String::new(), true);
+            // **Named for the secret this person chose**, by the same choice
+            // the drawing makes (`crate::sign_in_words::enter_your`), so what
+            // is heard and what is seen cannot disagree.
+            let asked = self.said(crate::sign_in_words::enter_your(secret));
+            self.a_field(screen, Role::PasswordEntry, asked, String::new(), true);
         }
         if let Some(said) = said {
             self.a_line(screen, said.text().to_owned(), true);
         }
-        for word in [
-            crate::sign_in_words::OTHER_WAYS,
-            crate::sign_in_words::SWITCH_PERSON,
-        ] {
-            let words = self.said(word);
-            self.a_button(screen, words, false);
-        }
+        // **No *Other ways to sign in***: the screen no longer draws it,
+        // because no account has another way in, and a reader that offered a
+        // button the eye cannot find would be the two disagreeing.
+        let switch = self.said(crate::sign_in_words::SWITCH_PERSON);
+        self.a_button(screen, switch, false);
         screen
     }
 

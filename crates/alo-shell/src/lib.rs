@@ -179,6 +179,9 @@ pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
 mod a_reader_presses_in_settings;
 pub use a_reader_presses::WhatAReaderPressCameTo;
+/// A file alo was approved to open in an application, handed to the desktop
+/// with the connection that asked (2026-11-14).
+pub mod a_file_alo_opens;
 /// The keyboard layouts a text alo types is typed through (ADR 0153).
 mod a_layout_for_a_text;
 mod a_scale_held_to_what_draws;
@@ -716,6 +719,7 @@ pub mod the_pickers_words;
 mod the_pointer_in_pixels;
 pub mod the_providers_words;
 mod the_reader_at_the_sign_in_screen_kept;
+mod the_readers_sentence_drawn;
 /// The record window's ten icons, read from the design file's SVG and drawn
 /// at the display's scale.
 mod the_records_icons;
@@ -1182,6 +1186,11 @@ pub use window_control_reader_pointer::{
 pub use lock_background::LockBackground;
 pub use lock_raster::LockLook;
 pub use lock_surface::{LockPressed, LockSurface};
+
+/// Whether a person signs in with a PIN or a password, as
+/// [`SignInShows::Fields`] carries it — handed on so whoever builds one need
+/// not reach `alo-greeting` for it.
+pub use alo_greeting::SecretKind;
 
 #[cfg(test)]
 #[cfg(test)]

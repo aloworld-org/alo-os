@@ -78,14 +78,14 @@ alo-record = { path = "../alo-record" }
 # it carries is worded with.
 alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
+# The schema a hosted provider holds an agent turn's answer to, naming this
+# machine's verbs and their arguments (`src/the_shape_a_provider_is_held_to.rs`).
+serde_json = { workspace = true }
 
 [dev-dependencies]
 # A person's own undo directory, for the bracket's tests. The real snapshots
 # need a real filesystem and are measured in `tests/a_bracket_on_a_real_btrfs_machine.rs`.
 tempfile = "3"
-# Reading a request a test served back as JSON, so that what an agent's next
-# request was held to is compared as a value rather than as a spelling.
-serde_json = { workspace = true }
 # The SHA-256 of the instructions a model was shown, computed from the bytes
 # that crossed the socket rather than asked of the crate that wrote them.
 ring = { workspace = true }
