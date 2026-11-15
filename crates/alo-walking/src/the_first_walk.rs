@@ -1,6 +1,7 @@
 //! **The first walk**: a fresh disk from its first screen to the desktop, the
-//! applications it installs on first boot, and the screen reader switched on
-//! in Settings — each check with its evidence.
+//! applications it installs on first boot, the screen reader switched on in
+//! Settings, and then the pointer (`crate::the_pointer_walk`) — each check with
+//! its evidence.
 //!
 //! Every key below was read from the code it reaches, not remembered:
 //!
@@ -151,6 +152,10 @@ pub fn the_first_walk() -> Walk {
         )
         .look("two-minutes-later", look);
     let walk = then_the_terminal_at_rest(walk);
+    // **The pointer**, before anything that needs a provider: what a person
+    // would notice about it, on the desktop and over applications alo did not
+    // make (`crate::the_pointer_walk`).
+    let walk = crate::the_pointer_walk::then_the_pointer(walk);
     then_the_provider(walk)
 }
 

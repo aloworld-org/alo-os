@@ -64,14 +64,18 @@ pub(crate) enum Asked {
     Read {
         /// The name of the verb, as it was asked for.
         verb: String,
-        /// What was given for each of its arguments.
+        /// What was given for each of its arguments — as a list, or as one
+        /// object naming each once (`crate::argument::a_list_or_one_object`).
+        #[serde(deserialize_with = "crate::argument::a_list_or_one_object")]
         given: Vec<Argument>,
     },
     /// A change, to be put to the person in one sentence.
     Propose {
         /// The name of the verb, as it was asked for.
         verb: String,
-        /// What was given for each of its arguments.
+        /// What was given for each of its arguments — as a list, or as one
+        /// object naming each once (`crate::argument::a_list_or_one_object`).
+        #[serde(deserialize_with = "crate::argument::a_list_or_one_object")]
         given: Vec<Argument>,
     },
     /// One shell command, asked for where no verb fits (ADR 0149).

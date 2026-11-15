@@ -61,6 +61,11 @@ A look **fails when the screen did not change** within its time, and the walk
 stops at its first failure: every check after it reads **NOT REACHED** rather
 than being left out, so a short walk never reads as a walk that passed.
 
+After the terminal steps the walk checks **the pointer** — on the desktop, over Text
+Editor, VSCodium and Firefox, and as Settings changes it: [the pointer on a
+walk](the-pointer-on-a-walk.md) says what each check is and what would have to
+be true for it to pass while the pointer is broken.
+
 ## The provider section, and the one secret it needs
 
 After the terminal, the walk can add an AI provider in Settings, typing

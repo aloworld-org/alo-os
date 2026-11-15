@@ -1,0 +1,286 @@
+# Break the code a pull request changes, one small change at a time, and say
+# which breaks no test noticed.
+#
+# **Why it exists.** Law 8, which pull request #1270 adds to `CLAUDE.md` with
+# the owner's decision of 2026-11-15: *a test must be able to fail.* A test written by the same hand as the code tends to agree with the
+# code's mistakes, and it reads green whether or not it could ever go red. The
+# way to find out is to break the code on purpose and see whether any test
+# notices. `cargo-mutants` does exactly that: it makes one small change — a
+# function returns a default instead of its answer, `==` becomes `!=`, a `!` is
+# removed — rebuilds, runs the tests, and puts the code back. A change that
+# every test survives is code nothing is really checking.
+#
+# **What it breaks.** Only the lines the pull request changes, read from the
+# merge GitHub makes of it: `git diff HEAD^1 HEAD`, the merge against main as
+# the merge found it, so the diff's line numbers are the tree that is built.
+# Left out, by pathspec, before cargo-mutants sees the diff:
+#
+# - test code, which is what notices a break rather than what is broken:
+#   `tests/`, the `*_tests.rs` files beside the code, and `tests.rs` modules
+#   (code under `#[cfg(test)]` inside a source file cargo-mutants skips itself);
+# - build scripts, benches and examples;
+# - `alo-bounding-kernel`, which is compiled for the kernel's BPF machine;
+# - every package the gate's own test filter leaves out — today `alo-bounding`,
+#   `alo-agentd` and `alo-boundaryd`, whose tests attach BPF programmes and run
+#   on main after a merge. Their tests do not run here, so every break in them
+#   would read as unnoticed. **This is a hole, said out loud in every run's
+#   summary**, not a pass.
+#
+# Documentation is not a `.rs` file and never reaches the diff.
+#
+# **Which tests run.** For each break, the tests of the package the code is in,
+# chosen by the gate's own nextest filter (`tools/kernel-loop/src/gates.rs`) and
+# without the tests `.github/the-tests-a-hosted-runner-cannot-run.txt` names,
+# as root inside a D-Bus session — the way `gate.yml` runs them, because that is
+# the environment those tests are known to pass in. So *no test noticed* means
+# no test **in that package**: a test in another crate might have caught it,
+# and the summary says so. Testing the whole workspace for every break would
+# take hours.
+#
+# **The baseline is never skipped.** cargo-mutants first runs those tests on the
+# unbroken code. Without that, a test that already fails would "notice" every
+# break and a broken suite would read as a perfect one. When the baseline fails
+# this check fails and says it could not judge.
+#
+# **When it fails.** When at least one break went unnoticed, or when it could
+# not judge. A break that made the tests hang until the time limit is counted
+# as noticed, and listed. A break that does not compile teaches nothing and is
+# only counted. A pull request with no Rust code under test is skipped, green,
+# with the reason in the summary.
+#
+# **It is not required, and is not on the merge queue.** Whether a merge waits
+# for it is a branch-protection setting, and that is the owner's to make. It
+# runs only on pull requests, and when a person asks for one pull request by
+# number. The whole run is held to an hour of breaking (`budget` below); what
+# was not tried by then is counted in the summary rather than passed.
+#
+# `crates/alo-image/tests/a_test_must_be_able_to_fail.rs` holds this file to
+# each of those, and shows each rule refusing a workflow that breaks it.
+
+name: Mutants
+run-name: "Mutants on pull request #${{ github.event.pull_request.number || inputs.pull_request }}"
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: "The number of an open pull request to break the changed code of"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mutants-${{ github.event.pull_request.number || inputs.pull_request }}
+  cancel-in-progress: true
+
+jobs:
+  mutants:
+    name: a test can fail
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      # The merge GitHub made of the pull request, and its two parents: the
+      # first is main as the merge found it, which is what the diff is against.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/pull/{0}/merge', inputs.pull_request) || '' }}
+          fetch-depth: 2
+
+      - name: What this pull request changes in Rust code under test
+        id: changed
+        run: |
+          # The summary is also printed to the log, so it can be read without the page.
+          trap 'cat "$GITHUB_STEP_SUMMARY"' EXIT
+          echo "## A test must be able to fail" >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          echo "Pull request #${{ github.event.pull_request.number || inputs.pull_request }}, as merged into main at \`$(git rev-parse HEAD^1)\`." >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          rust=(
+            ':(glob)**/*.rs'
+            ':(exclude,glob)**/tests/**'
+            ':(exclude,glob)**/*_tests.rs'
+            ':(exclude,glob)**/tests.rs'
+            ':(exclude,glob)**/build.rs'
+            ':(exclude,glob)**/benches/**'
+            ':(exclude,glob)**/examples/**'
+            ':(exclude)crates/alo-bounding-kernel'
+            ':(exclude)crates/alo-bounding'
+            ':(exclude)crates/alo-agentd'
+            ':(exclude)crates/alo-boundaryd'
+            ':(exclude)tools/kernel-loop'
+          )
+          git diff HEAD^1 HEAD -- "${rust[@]}" > "$RUNNER_TEMP/changed.diff"
+          kept=$(git diff --name-only HEAD^1 HEAD -- "${rust[@]}")
+          left=$(git diff --name-only HEAD^1 HEAD -- ':(glob)**/*.rs' | grep -vxF -f <(printf '%s\n' "$kept") || true)
+          if [ -n "$left" ]; then
+            echo "Rust files changed and left out — test code, build scripts, the kernel half, or a package whose tests do not run here:" >> "$GITHUB_STEP_SUMMARY"
+            printf '%s\n' "$left" | sed 's/^/- `/; s/$/`/' >> "$GITHUB_STEP_SUMMARY"
+            echo >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ ! -s "$RUNNER_TEMP/changed.diff" ]; then
+            echo "No Rust code this check can break was changed, so nothing was broken and this check passes for that reason alone." >> "$GITHUB_STEP_SUMMARY"
+            echo "rust=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "The code broken is in:" >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' "$kept" | sed 's/^/- `/; s/$/`/' >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          echo "rust=true" >> "$GITHUB_OUTPUT"
+
+      - name: The tool that breaks the code
+        if: steps.changed.outputs.rust == 'true'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-mutants@27.1.0
+
+      # Listing reads the source and builds nothing, so this says what will be
+      # broken before a minute is spent building.
+      - name: What will be broken
+        id: listed
+        if: steps.changed.outputs.rust == 'true'
+        run: |
+          cargo mutants --in-diff "$RUNNER_TEMP/changed.diff" --list > "$RUNNER_TEMP/listed.txt"
+          count=$(grep -c . "$RUNNER_TEMP/listed.txt" || true)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          cat "$RUNNER_TEMP/listed.txt"
+          if [ "$count" -eq 0 ]; then
+            echo "The changed lines hold nothing cargo-mutants can break — declarations, imports, constants or comments — so nothing was broken." >> "$GITHUB_STEP_SUMMARY"
+            echo "any=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "$count changes to try." >> "$GITHUB_STEP_SUMMARY"
+            echo "any=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The same libraries, compositor and session pieces the gate installs, so
+      # the tests that pass there can pass here. `the_gates_libraries` in the
+      # test above holds the two lists to each other.
+      - name: The libraries this workspace links
+        if: steps.changed.outputs.rust == 'true' && steps.listed.outputs.any == 'true'
+        run: |
+          packages=(
+            libwayland-dev libinput-dev libseat-dev libxkbcommon-dev
+            libpixman-1-dev libegl1-mesa-dev libgbm-dev libudev-dev
+            weston
+            dbus-x11 dbus-daemon gnome-keyring at-spi2-core
+            libgtk-3-bin
+          )
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' \
+            | sudo tee /etc/apt/apt.conf.d/80-gate-network > /dev/null
+          sudo timeout 300 apt-get update
+          sudo timeout 300 apt-get install --no-install-recommends --yes "${packages[@]}"
+
+      # Many crates link `alo-bounding`, whose build script compiles the kernel
+      # half with the pinned nightly and `bpf-linker` against LLVM 22. The gate
+      # says why at length; this is its three steps, unchanged.
+      - name: The toolchains this repository pins
+        if: steps.changed.outputs.rust == 'true' && steps.listed.outputs.any == 'true'
+        run: |
+          rustup toolchain install nightly-2026-06-01
+          wget -qO /tmp/llvm.sh https://apt.llvm.org/llvm.sh
+          chmod +x /tmp/llvm.sh
+          sudo /tmp/llvm.sh 22
+          echo "/usr/lib/llvm-22/bin" >> "$GITHUB_PATH"
+          echo "LLVM_PREFIX=/usr/lib/llvm-22" >> "$GITHUB_ENV"
+
+      - name: The linker the BPF target needs
+        if: steps.changed.outputs.rust == 'true' && steps.listed.outputs.any == 'true'
+        run: cargo +nightly-2026-06-01 install bpf-linker --locked
+
+      - name: The test runner the gates name
+        if: steps.changed.outputs.rust == 'true' && steps.listed.outputs.any == 'true'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+
+      # `--in-place` because this checkout exists only for this run: it reuses
+      # the baseline's build for every break instead of building a copy cold.
+      # One break at a time, then. `timeout` stops the run at the budget and
+      # cargo-mutants puts the code back; what it had tried by then is in
+      # `mutants.out`, which it writes as it goes.
+      - name: Break the changed code, one change at a time
+        if: steps.changed.outputs.rust == 'true' && steps.listed.outputs.any == 'true'
+        run: |
+          filter="not (package(alo-bounding) + package(alo-agentd) + package(alo-boundaryd)) and not binary(the_kernel_refuses_what_a_run_was_not_given) and not test(=naming_the_root_of_the_machine_stops_at_each_mount_point_and_says_so)"
+          while read -r package test _; do
+            case "$package" in ''|'#'*) continue ;; esac
+            filter="$filter and not (package($package) and test(=$test))"
+          done < .github/the-tests-a-hosted-runner-cannot-run.txt
+          echo "tests chosen by: $filter"
+          budget=60m
+          sudo chmod o+x "$HOME"
+          began=$(date +%s)
+          code=0
+          sudo -E env "PATH=$HOME/.cargo/bin:$PATH" "HOME=$HOME" "ALO_NESTED_PARENT_REQUIRED=1" "budget=$budget" "filter=$filter" \
+            dbus-run-session -- bash -c '
+              printf "" | gnome-keyring-daemon --unlock --components=secrets >/dev/null 2>&1 || true
+              timeout --signal=INT --kill-after=120 "$budget" cargo mutants --in-diff "$RUNNER_TEMP/changed.diff" --in-place --no-shuffle --test-tool=nextest -- --profile gates --fail-fast -E "$filter"
+            ' || code=$?
+          echo "$code" > "$RUNNER_TEMP/mutants.code"
+          echo "$(( $(date +%s) - began ))" > "$RUNNER_TEMP/mutants.seconds"
+          sudo chown -R "$(id -u):$(id -g)" . "$HOME/.cargo" 2> /dev/null || true
+          echo "the run exited $code after $(cat "$RUNNER_TEMP/mutants.seconds") s"
+
+      # Plain words for every break no test noticed, and the job's verdict.
+      - name: What no test noticed
+        if: steps.changed.outputs.rust == 'true' && steps.listed.outputs.any == 'true'
+        run: |
+          trap 'cat "$GITHUB_STEP_SUMMARY"' EXIT
+          code=$(cat "$RUNNER_TEMP/mutants.code" 2> /dev/null || echo none)
+          seconds=$(cat "$RUNNER_TEMP/mutants.seconds" 2> /dev/null || echo "?")
+          count() { local n; n=$(grep -c . "mutants.out/$1.txt" 2> /dev/null) || true; echo "${n:-0}"; }
+          missed=$(count missed)
+          caught=$(count caught)
+          hung=$(count timeout)
+          unviable=$(count unviable)
+          listed=${{ steps.listed.outputs.count }}
+          tried=$(( missed + caught + hung + unviable ))
+          {
+            echo "Tried $tried of $listed changes in $seconds s: **$caught noticed** by a test, **$missed no test noticed**, $hung made the tests hang until the time limit (counted as noticed), and $unviable did not compile (nothing to learn)."
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$code" = 124 ] || [ "$code" = 130 ]; then
+            echo "**Stopped at the time limit** with $(( listed - tried )) changes not tried. They are not counted as passed." >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning title=Mutants::stopped at the time limit with $(( listed - tried )) changes not tried"
+          fi
+          if [ "$missed" -gt 0 ]; then
+            {
+              echo
+              echo "### What no test noticed"
+              echo
+              echo "Each line is one change made to this pull request's code. The tests of that package all still passed, so nothing there checks what that line does. Write a test that fails on the change, or say in the pull request why none is needed."
+              echo
+              echo "| Where | What was broken | |"
+              echo "|---|---|---|"
+              sed -E 's/^([^:]+):([0-9]+):[0-9]+: (.*)$/| `\1:\2` | \3 | no test noticed |/' mutants.out/missed.txt
+              echo
+              echo "*replace F with V* means the function was made to do nothing but return V; *replace == with !=* means a comparison was turned round; *delete !* means a \"not\" was removed; *delete match arm* means one case was taken out."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "$hung" -gt 0 ]; then
+            { echo; echo "Changes that made the tests hang:"; sed 's/^/- /' mutants.out/timeout.txt; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          {
+            echo
+            echo "Only the tests of the package each change is in were run, so a test elsewhere might have noticed. Not broken here at all: \`alo-bounding\`, \`alo-agentd\` and \`alo-boundaryd\`, whose tests run on main after a merge, not on this runner."
+          } >> "$GITHUB_STEP_SUMMARY"
+          case "$code" in
+            0|2|3|124|130) ;;
+            4)
+              { echo; echo "**This check could not judge**: the tests already fail on this runner before anything was broken. The end of that run:"; echo '```'; tail -40 mutants.out/log/baseline.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+              exit 1 ;;
+            *)
+              echo "**This check did not work**: the run exited $code. Its log is kept with this run." >> "$GITHUB_STEP_SUMMARY"
+              exit 1 ;;
+          esac
+          [ "$missed" -eq 0 ] || exit 1
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.changed.outputs.rust == 'true' && steps.listed.outputs.any == 'true'
+        with:
+          name: mutants
+          path: mutants.out
+          retention-days: 7
+          if-no-files-found: warn

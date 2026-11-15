@@ -46,28 +46,39 @@ fn the_call_of<'v>(schema: &'v Value, door: &str, verb: &str) -> &'v Value {
         .unwrap_or_else(|| panic!("{verb} is not behind the {door} door"))
 }
 
-/// **The argument names a call of this verb may carry**, read off the schema.
+/// **The argument names a call of this verb may carry**, read off the schema
+/// — the properties of its one `given` object, sorted, because an object's
+/// properties have no order a reader may rely on — and checked to be every one
+/// of them required.
 fn the_names_admitted(call: &Value) -> Vec<String> {
-    call.pointer("/properties/given/items/anyOf")
+    let given = call.pointer("/properties/given").unwrap();
+    assert_eq!(
+        given.pointer("/type").and_then(Value::as_str),
+        Some("object"),
+        "given is not one object: {given}"
+    );
+    let mut named: Vec<String> = given
+        .pointer("/properties")
+        .and_then(Value::as_object)
+        .unwrap()
+        .keys()
+        .cloned()
+        .collect();
+    let mut required: Vec<String> = given
+        .pointer("/required")
         .and_then(Value::as_array)
         .unwrap()
         .iter()
-        .map(|argument| {
-            argument
-                .pointer("/properties/named/enum")
-                .and_then(Value::as_array)
-                .unwrap()
-                .iter()
-                .map(|name| name.as_str().unwrap().to_owned())
-                .collect::<Vec<_>>()
-        })
-        .inspect(|names| assert_eq!(names.len(), 1, "an argument admits more than one name"))
-        .flatten()
-        .collect()
+        .map(|name| name.as_str().unwrap().to_owned())
+        .collect();
+    named.sort_unstable();
+    required.sort_unstable();
+    assert_eq!(named, required, "an argument is not required");
+    named
 }
 
 /// **Every verb a machine offers is behind its own door, by name, and admits
-/// exactly the arguments it declares** — by their exact names, in its order.
+/// exactly the arguments it declares** — by their exact names, each once.
 #[test]
 fn the_schema_sent_for_each_verb_lists_its_arguments() {
     let verbs = the_whole_machine();
@@ -81,11 +92,12 @@ fn the_schema_sent_for_each_verb_lists_its_arguments() {
         if verb.args().is_empty() {
             continue;
         }
-        let declared: Vec<String> = verb
+        let mut declared: Vec<String> = verb
             .args()
             .iter()
             .map(|arg| arg.name().to_owned())
             .collect();
+        declared.sort_unstable();
         assert_eq!(the_names_admitted(call), declared, "{}", verb.name());
     }
     let offered =

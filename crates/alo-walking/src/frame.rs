@@ -97,6 +97,18 @@ impl Frame {
         (self.width, self.height)
     }
 
+    /// One pixel's red, green and blue, or `None` outside the picture.
+    #[must_use]
+    pub fn rgb(&self, x: usize, y: usize) -> Option<[u8; 3]> {
+        if x >= self.width || y >= self.height {
+            return None;
+        }
+        let at = (y * self.width + x) * 3;
+        self.pixels
+            .get(at..at + 3)
+            .and_then(|it| it.try_into().ok())
+    }
+
     /// How many pixels differ from another picture — every pixel, when the
     /// two are not the same size, because a screen that changed size changed.
     #[must_use]

@@ -16,8 +16,12 @@
 
 use std::time::Duration;
 
+use alo_cursors::CursorIcon;
+
+use crate::a_place_on_the_screen::Target;
 use crate::keys::Chord;
 use crate::settling::Settling;
+use crate::the_pointer_seen::Look;
 
 /// Where in the log a check starts reading.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,6 +83,56 @@ pub enum Step {
     /// The rest of the walk needs the environment variable named; without
     /// it, every later step is skipped and the report says why.
     OnlyWith(&'static str),
+    /// Something about the pointer: move it, or check what is drawn.
+    Pointer(Pointing),
+}
+
+/// One thing a walk does or checks with the pointer (`crate::walking`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Pointing {
+    /// **The screen capture shows the pointer at all**: moving it changes some
+    /// pixels, and only a pointer's worth of them. The check every other
+    /// pointer check stands on.
+    SeenAtAll {
+        /// What the check is called in the report.
+        check: String,
+    },
+    /// The person chose this look in Settings, so the checks after it expect it.
+    ThePersonChose(Look),
+    /// Keep the screen now, for a later [`Target::WhatChanged`].
+    Remember,
+    /// Move the pointer onto a place, reading it back off the screen.
+    PointAt {
+        /// What the check is called in the report.
+        check: String,
+        /// Where.
+        at: Target,
+    },
+    /// Click the left button where the pointer is, as a person does to reach
+    /// a control the keyboard cannot.
+    Click,
+    /// The pointer on the screen is alo's `icon`, in the look the person chose
+    /// — or, with `None`, any of alo's shapes in it — and it moves when the
+    /// pointer does.
+    IsDrawnAs {
+        /// What the check is called in the report.
+        check: String,
+        /// The shape, or any.
+        icon: Option<CursorIcon>,
+    },
+}
+
+impl Pointing {
+    /// The check's name, for a step that is a check.
+    #[must_use]
+    pub fn check(&self) -> Option<&str> {
+        match self {
+            Self::SeenAtAll { check }
+            | Self::PointAt { check, .. }
+            | Self::IsDrawnAs { check, .. } => Some(check.as_str()),
+            Self::ThePersonChose(_) | Self::Remember | Self::Click => None,
+        }
+    }
 }
 
 /// A walk: a name and its steps, in order.
@@ -220,6 +274,12 @@ impl Walk {
             since,
             during,
         })
+    }
+
+    /// Then this about the pointer.
+    #[must_use]
+    pub fn pointer(self, pointing: Pointing) -> Self {
+        self.then(Step::Pointer(pointing))
     }
 
     /// The rest needs this environment variable.

@@ -38,6 +38,8 @@ pub struct Qemu {
     started: Instant,
     /// How many pictures have been kept, for their order in a listing.
     kept: usize,
+    /// The screen's size, from the last picture, for placing the pointer.
+    screen: Option<(usize, usize)>,
 }
 
 impl Qemu {
@@ -78,6 +80,7 @@ impl Qemu {
             scratch: scratch.to_path_buf(),
             started,
             kept: 0,
+            screen: None,
         })
     }
 
@@ -116,12 +119,32 @@ impl Machine for Qemu {
             .map_err(|why| MachineError(why.to_string()))
     }
 
+    fn point_at(&mut self, at: (usize, usize)) -> Result<(), MachineError> {
+        let size = match self.screen {
+            Some(size) => size,
+            None => self.frame()?.size(),
+        };
+        self.qmp
+            .execute(&crate::pointer_moves::command(at, size))
+            .map(|_| ())
+            .map_err(|why| MachineError(why.to_string()))
+    }
+
+    fn button(&mut self, down: bool) -> Result<(), MachineError> {
+        self.qmp
+            .execute(&crate::pointer_moves::button(down))
+            .map(|_| ())
+            .map_err(|why| MachineError(why.to_string()))
+    }
+
     fn frame(&mut self) -> Result<Frame, MachineError> {
         let file = self.scratch.join("the-screen-now.ppm");
         self.screendump(&file, None)?;
         let bytes = std::fs::read(&file)
             .map_err(|why| MachineError(format!("the picture qemu wrote: {why}")))?;
-        Frame::from_ppm(&bytes).map_err(|why| MachineError(why.to_string()))
+        let frame = Frame::from_ppm(&bytes).map_err(|why| MachineError(why.to_string()))?;
+        self.screen = Some(frame.size());
+        Ok(frame)
     }
 
     fn keep_picture(&mut self, name: &str) -> Result<String, MachineError> {
