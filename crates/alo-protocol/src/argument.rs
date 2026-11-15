@@ -19,9 +19,25 @@
 //! list of verbs is what refuses two different values for one argument. The
 //! same value twice is one value (since 2026-11-14): there is no *which*.
 //!
+//! # And one object, when it cannot hide a duplicate
+//!
+//! **Since 2026-11-14 `given` may also arrive as one object**, `{"file":
+//! "…", "into": "…"}`, because that is the shape a hosted model is held to
+//! (`alo_turn::the_shape_a_provider_is_held_to`): under a strict schema a
+//! model cannot write a property twice, and held to the list it named an
+//! argument twice in every one of ten tries on the walk's own request, twice
+//! with two different values (the every-try check, CI runs 43682925362 and
+//! 43683523750). **The reason above still holds**, so the object is read
+//! here key by key, in the order written, and **a key that comes twice is
+//! refused** rather than one of them chosen ([`a_list_or_one_object`]).
+//! Either form becomes the same list.
+//!
 //! [`SameArgumentTwice`]: alo_capability::CallError::SameArgumentTwice
 
+use std::fmt;
+
 use alo_capability::Given;
+use serde::de::{Deserializer, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Serialize};
 
 /// One argument of a call, as it was written on the wire.
@@ -63,6 +79,53 @@ impl Argument {
     #[must_use]
     pub fn given(&self) -> &Given {
         &self.is
+    }
+}
+
+/// **`given` read as a list of arguments, or as one object of them** — the
+/// object key by key, in the order it was written, **refusing a key written
+/// twice**, which a JSON reader would otherwise have settled by choosing one.
+///
+/// # Errors
+/// The reader's own error: not a list or an object, an element that is not an
+/// [`Argument`], a value that is not text or a whole number, or a key twice.
+pub(crate) fn a_list_or_one_object<'de, D>(reading: D) -> Result<Vec<Argument>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    reading.deserialize_any(ListOrObject)
+}
+
+/// What [`a_list_or_one_object`] reads with.
+struct ListOrObject;
+
+impl<'de> Visitor<'de> for ListOrObject {
+    type Value = Vec<Argument>;
+
+    fn expecting(&self, said: &mut fmt::Formatter<'_>) -> fmt::Result {
+        said.write_str("a list of {\"named\", \"is\"} or one object naming each argument once")
+    }
+
+    fn visit_seq<A: SeqAccess<'de>>(self, mut list: A) -> Result<Self::Value, A::Error> {
+        let mut read = Vec::new();
+        while let Some(argument) = list.next_element::<Argument>()? {
+            read.push(argument);
+        }
+        Ok(read)
+    }
+
+    fn visit_map<M: MapAccess<'de>>(self, mut object: M) -> Result<Self::Value, M::Error> {
+        let mut read: Vec<Argument> = Vec::new();
+        while let Some((named, is)) = object.next_entry::<String, Given>()? {
+            if read.iter().any(|earlier| earlier.named == named) {
+                return Err(serde::de::Error::custom(format!(
+                    "{named} is named twice in one object, and which was meant is not this \
+                     machine's to choose"
+                )));
+            }
+            read.push(Argument { named, is });
+        }
+        Ok(read)
     }
 }
 
@@ -127,5 +190,59 @@ mod tests {
             serde_json::from_str::<Argument>(&written).unwrap(),
             argument
         );
+    }
+
+    /// What `given` is read as, standing alone.
+    #[derive(Debug, Deserialize)]
+    struct Read {
+        /// The arguments.
+        #[serde(deserialize_with = "super::a_list_or_one_object")]
+        given: Vec<Argument>,
+    }
+
+    /// **One object is the same list, in the order it was written**, so the
+    /// shape a hosted model is held to and the list a client writes make the
+    /// same call.
+    ///
+    /// What would have to be true for this to pass while broken: a provider
+    /// writing the object in an order other than the schema's, which changes
+    /// nothing — the registry matches arguments by name, never by place.
+    #[test]
+    fn one_object_is_the_same_list_in_the_order_written() {
+        let object: Read =
+            serde_json::from_str(r#"{"given":{"file":"/home/anna/a.pdf","most":20}}"#).unwrap();
+        let list: Read = serde_json::from_str(
+            r#"{"given":[{"named":"file","is":"/home/anna/a.pdf"},{"named":"most","is":20}]}"#,
+        )
+        .unwrap();
+        assert_eq!(object.given, list.given);
+        let none: Read = serde_json::from_str(r#"{"given":{}}"#).unwrap();
+        assert!(none.given.is_empty());
+    }
+
+    /// **A key written twice in one object is refused**, never settled by the
+    /// reader choosing one — the reason `given` was a list in the first place.
+    #[test]
+    fn a_key_written_twice_in_one_object_is_refused() {
+        for twice in [
+            r#"{"given":{"file":"/a","file":"/b"}}"#,
+            r#"{"given":{"file":"/a","file":"/a"}}"#,
+        ] {
+            assert!(serde_json::from_str::<Read>(twice).is_err(), "{twice}");
+        }
+    }
+
+    /// **Nothing but text or a whole number is a value in the object form
+    /// either**, and nothing but a list or an object is `given`.
+    #[test]
+    fn the_object_form_takes_no_other_value() {
+        for wrong in [
+            r#"{"given":{"file":true}}"#,
+            r#"{"given":{"file":{"run":"sh"}}}"#,
+            r#"{"given":{"file":1.5}}"#,
+            r#"{"given":"file=/a"}"#,
+        ] {
+            assert!(serde_json::from_str::<Read>(wrong).is_err(), "{wrong}");
+        }
     }
 }

@@ -21,11 +21,11 @@
 //!
 //! # What it still leaves to the model, and to the capability model
 //!
-//! - **Leaving an argument out.** A strict schema cannot say *every one of
-//!   these, once each* about an array without keywords a provider's strict
-//!   mode is not known here to accept, so it says *only these*.
-//!   `alo_capability::Call::of` refuses a missing one, in words that say what
-//!   it is for, and the model is told every argument is required.
+//! - **Nothing about which arguments, since 2026-11-14.** `given` is one
+//!   object with a required property per argument, so under a strict schema an
+//!   argument cannot be left out or written twice — the two things the list it
+//!   replaced could not rule out, and the second of which failed every try of
+//!   the walk's own request (`a_call_of` has the runs).
 //! - **The value.** A path the grants do not cover, a name that is not on the
 //!   screen: refused by the machine, as ever. This shape lets nothing through
 //!   that was not let through before; it only removes ways to be misunderstood.
@@ -37,7 +37,7 @@
 //! (ADR 0032), because holding a local model to the whole call was measured to
 //! make its answers worse; nothing here changes that road.
 
-use alo_capability::{Arg, Effect, Offered, Takes, Verb, Verbs};
+use alo_capability::{Effect, Offered, Takes, Verb, Verbs};
 use alo_models::in_the_envelope::the_envelope_a_provider_accepts;
 use serde_json::{Value, json};
 
@@ -105,34 +105,32 @@ fn a_door_of(effect: Effect, verbs: &Verbs) -> Option<Value> {
     }))
 }
 
-/// One call of one verb: its name, and a `given` holding only its arguments.
+/// One call of one verb: its name, and a `given` naming **each of its
+/// arguments once**, as one object with a property per argument.
 ///
-/// A verb that takes nothing is given the envelope's own free argument, rather
-/// than an `anyOf` with no branches, which a provider refuses — and a model
-/// sends it an empty list, which is what it is told to send.
+/// **An object, since 2026-11-14, and no longer a list of `{named, is}`.**
+/// Held to the list, `gpt-4o-mini` named an argument twice in every one of
+/// ten tries of the walk's own request — *write in VSCodium* — twice with two
+/// different values (the every-try check, CI runs 43682925362 and
+/// 43683523750), and the walk's runs failed the same way. A strict schema
+/// cannot say *once each* about a list; about an object it says nothing else,
+/// because a property is written once and every one is required. The daemon
+/// reads this form key by key and refuses a key written twice
+/// (`alo_protocol::argument`), so nothing is settled by a JSON reader.
 fn a_call_of(verb: &Verb) -> Value {
-    let arguments: Vec<Value> = verb.args().iter().map(an_argument_of).collect();
-    let names: Vec<&str> = verb.args().iter().map(Arg::name).collect();
-    // What a provider's strict mode cannot say about an array — *every one of
-    // these, once each* — said in words beside it, as the model is told.
-    let every_one = if names.is_empty() {
-        "nothing: an empty list".to_owned()
-    } else {
-        format!("every one of these, once each: {}", names.join(", "))
-    };
-    let items = if arguments.is_empty() {
-        json!({
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["named", "is"],
-            "properties": {
-                "named": { "type": "string" },
-                "is": { "type": ["string", "integer"] },
-            },
-        })
-    } else {
-        json!({ "anyOf": arguments })
-    };
+    let mut properties = serde_json::Map::new();
+    let mut required = Vec::new();
+    for arg in verb.args() {
+        let mut value = a_value_of(arg.takes());
+        if let Some(said) = value.as_object_mut() {
+            said.insert(
+                "description".to_owned(),
+                Value::String(arg.purpose_as_written().to_owned()),
+            );
+        }
+        properties.insert(arg.name().to_owned(), value);
+        required.push(Value::String(arg.name().to_owned()));
+    }
     json!({
         "type": "object",
         "additionalProperties": false,
@@ -140,27 +138,11 @@ fn a_call_of(verb: &Verb) -> Value {
         "properties": {
             "verb": { "type": "string", "enum": [verb.name()] },
             "given": {
-                "type": "array",
-                "description": every_one,
-                "items": items,
+                "type": "object",
+                "additionalProperties": false,
+                "required": required,
+                "properties": properties,
             },
-        },
-    })
-}
-
-/// One argument, by its exact name, with a value of the type it declared.
-fn an_argument_of(arg: &Arg) -> Value {
-    json!({
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["named", "is"],
-        "properties": {
-            "named": {
-                "type": "string",
-                "enum": [arg.name()],
-                "description": arg.purpose_as_written(),
-            },
-            "is": a_value_of(arg.takes()),
         },
     })
 }
