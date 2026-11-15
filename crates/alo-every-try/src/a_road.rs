@@ -19,8 +19,12 @@ pub enum Answered {
     },
     /// The text was typed, read back exactly, and saved.
     TypedAndSaved,
-    /// The folder was published to the account's site.
-    Published,
+    /// The folder was published to the site of the account GitHub's own `gh`
+    /// is signed in as, which the machine fills in and the model never gives.
+    Published {
+        /// The account.
+        account: String,
+    },
 }
 
 /// One step of a road: the verb the model is expected to ask for, the values
@@ -146,7 +150,7 @@ mod tests {
 
     #[test]
     fn a_step_keeps_every_value_it_was_given_in_order() {
-        let step = Step::of("verb", Answered::Published)
+        let step = Step::of("verb", Answered::AFileOpened)
             .expecting("one", "1")
             .expecting("two", "2");
         assert_eq!(

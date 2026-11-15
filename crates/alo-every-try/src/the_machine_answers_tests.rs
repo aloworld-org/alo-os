@@ -99,16 +99,15 @@ fn a_text_typed_says_it_was_saved_and_how_many_characters() {
 #[test]
 fn a_folder_published_names_the_address_it_went_to() {
     let answer = answering(
-        &Answered::Published,
+        &Answered::Published {
+            account: "alo-demo".to_owned(),
+        },
         &call(
             PUBLISH_TO_GITHUB_PAGES,
-            &[
-                (
-                    alo_publishing::words::FOLDER,
-                    "/var/home/alo/Documents/site",
-                ),
-                (alo_publishing::words::ACCOUNT, "alo-demo"),
-            ],
+            &[(
+                alo_publishing::words::FOLDER,
+                "/var/home/alo/Documents/site",
+            )],
         ),
         &the_words(),
     );

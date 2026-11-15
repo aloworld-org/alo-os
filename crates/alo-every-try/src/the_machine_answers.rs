@@ -66,9 +66,8 @@ pub fn answering(answered: &Answered, call: &Call, strings: &Strings) -> ToAnAge
                 strings,
             )
         }
-        Answered::Published => {
+        Answered::Published { account } => {
             let folder = the_value_of(call, alo_publishing::words::FOLDER);
-            let account = the_value_of(call, alo_publishing::words::ACCOUNT);
             let address = format!("https://{account}.github.io/");
             let said = alo_publishing::published_without_asking(
                 WhatWasPublished {

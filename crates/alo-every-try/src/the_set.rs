@@ -33,7 +33,7 @@ use alo_applications::opening_a_file::PATH;
 use alo_applications::verbs::{APPLICATION, OPEN_APPLICATION};
 use alo_instructing::{TheApplicationsInstalled, ThePersonsFolders, WhatItMayReach};
 use alo_publishing::PUBLISH_TO_GITHUB_PAGES;
-use alo_publishing::words::{ACCOUNT, FOLDER};
+use alo_publishing::words::FOLDER;
 use alo_software::role::Role;
 use alo_software::shipped::Shipped;
 use alo_their_folders::Folder;
@@ -50,7 +50,10 @@ pub const THE_VERSION: u32 = 1;
 /// (`alo_instructing::the_persons_folders`).
 pub const THE_HOME: &str = "/var/home/alo";
 
-/// The GitHub account the publishing request names.
+/// The account GitHub's own `gh` is signed in as on the machine, which the
+/// machine fills into a publication (`alo_publishing::whose_site`). The model
+/// is never offered an account to give (`alo_publishing::verbs`), so the
+/// request names none.
 pub const THE_ACCOUNT: &str = "alo-demo";
 
 /// The folder the publishing request names, under the person's Documents.
@@ -126,14 +129,17 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
     let publishing = ARequest::asking(
         "publish to GitHub Pages",
         format!(
-            "Publish the folder {THE_SITE} in my {} to my GitHub Pages. My GitHub account is \
-             {THE_ACCOUNT}.",
+            "Publish the folder {THE_SITE} in my {} to my GitHub Pages.",
             Folder::Documents.xdg_name()
         ),
         vec![
-            Step::of(PUBLISH_TO_GITHUB_PAGES, Answered::Published)
-                .expecting(FOLDER, site.display().to_string())
-                .expecting(ACCOUNT, THE_ACCOUNT),
+            Step::of(
+                PUBLISH_TO_GITHUB_PAGES,
+                Answered::Published {
+                    account: THE_ACCOUNT.to_owned(),
+                },
+            )
+            .expecting(FOLDER, site.display().to_string()),
         ],
     );
     let opening = ARequest::asking(
