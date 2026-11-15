@@ -162,3 +162,15 @@ fn a_value_of(takes: &Takes) -> Value {
         }
     }
 }
+
+/// STUB — the places a model may name as an installation's source.
+#[must_use]
+pub fn the_places_a_model_may_name(_enabled: &alo_software::Enabled) -> Vec<String> {
+    Vec::new()
+}
+
+/// STUB — the envelope, with an installation's source held to `places`.
+#[must_use]
+pub fn the_envelope_naming_the_verbs_and_places(verbs: &Verbs, _places: &[String]) -> Value {
+    the_envelope_naming_the_verbs(verbs)
+}
