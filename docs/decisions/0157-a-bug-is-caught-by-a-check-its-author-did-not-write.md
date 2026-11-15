@@ -58,16 +58,30 @@ forever*, honestly, as this is written:
   the code's. Nothing reads that, and a test can be committed first and still
   have been shaped by code its author had already written.
 - **Law 7 is a discipline.** Nothing can tell who wrote a test.
-- **Law 8 will be a check.** A workflow running `cargo-mutants` on the files
-  a pull request changes is being built. Until it lands, this law runs when a
-  lane runs the tool by hand. Whether it blocks a merge is the owner's setting.
-- **Law 9 will be a check.** A workflow that runs a fixed set of requests
-  against the real model, several times each, is being built. It spends the
-  provider key, so it runs when instructions or verbs change, not on every
-  pull request. Whether it blocks a merge is the owner's setting.
+- **Law 8 is a check** (#1274, `.github/workflows/mutants.yml`). It runs on
+  every pull request and by hand. It breaks the code the pull request changes
+  and lists each break no test noticed. Test files are not broken. Neither are
+  the packages whose tests the gate leaves out: today `alo-bounding`,
+  `alo-agentd`, `alo-boundaryd` and `alo-bounding-kernel`. **It is not a
+  required check**; that is the owner's setting.
+  - *The run that showed it working:* 43686192150, on #1269, was red. It
+    found two breaks in `crates/alo-walking/src/writing_in_vscodium.rs` that
+    no test noticed. #1281 added the test, and its own run, 43700667911, was
+    green.
+- **Law 9 is a check** (#1273, `.github/workflows/every-try.yml`). It runs on
+  a pull request that changes what the model is told or offered, and by hand.
+  It tries every request in the set five times against the real model, and
+  carries nothing out on any machine. It spends the provider key, so it does
+  not run on every pull request. **It is not a required check**; that is the
+  owner's setting.
+  - *The runs that showed it working*, with gpt-4o-mini: 43682925362 and
+    43683523750 were red. In both, writing in VSCodium was 0 of 5 and
+    publishing was 0 of 5. #1275 and #1278 were measured with it before they
+    landed: publishing reached 5 of 5 twice and VSCodium 5 and then 4. It is
+    still red today, because installing an application is 0 of 5.
 
-This ADR is updated when either check lands, with the run that showed it
-working.
+The figures above are single runs on 2026-11-15. The two workflows are what
+measure them again.
 
 ## What this does not change
 
