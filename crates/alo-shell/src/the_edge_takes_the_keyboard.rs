@@ -36,6 +36,8 @@
 
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 
+use crate::the_bands_over_alos_windows::AlosBand;
+use crate::which_band::ABand;
 use crate::window_edge::{OnTheEdge, WindowEdge};
 use crate::window_edge_keys::{AnEdgeKey, TheKeyboardOnTheEdge, WhatTheEdgeKeyDid};
 use crate::window_menu::{MenuRow, WhatARowDoes, WindowMenu};
@@ -79,7 +81,7 @@ pub(crate) const fn once_opened(was: TheKeyboardOnTheEdge, by: ByWhat) -> TheKey
 }
 
 impl crate::Server {
-    /// Where the keyboard is on this window's edge.
+    /// Where the keyboard is on this application window's edge.
     ///
     /// [`TheKeyboardOnTheEdge::Nowhere`] for a window nothing has reached,
     /// which is the honest answer and the same shape
@@ -90,7 +92,13 @@ impl crate::Server {
         &self,
         surface: &WlSurface,
     ) -> TheKeyboardOnTheEdge {
-        looked_up(&self.keyboard_on_edges, surface)
+        self.where_the_keyboard_is_on_this_band(&ABand::App(surface.clone()))
+    }
+
+    /// Where the keyboard is on this band, an application's or alo's.
+    #[must_use]
+    pub(crate) fn where_the_keyboard_is_on_this_band(&self, band: &ABand) -> TheKeyboardOnTheEdge {
+        looked_up(&self.keyboard_on_edges, band)
     }
 
     /// The keyboard arrives on this window's edge.
@@ -132,27 +140,28 @@ impl crate::Server {
         } else {
             None
         };
-        let mut where_it_is = self.where_the_keyboard_is_on_this_windows_edge(surface);
+        let band = ABand::App(surface.clone());
+        let mut where_it_is = self.where_the_keyboard_is_on_this_band(&band);
         let did = where_it_is.reached(revealed.as_ref().unwrap_or(edge));
-        self.remember(surface, where_it_is);
+        self.remember(&band, where_it_is);
         did
     }
 
-    /// A key, for the window whose edge has the keyboard.
+    /// A key, for the band that has the keyboard, an application's or alo's.
     ///
     /// `menu` is the laid-out menu where the host has one, which it does
     /// whenever it is drawing a menu. [`None`] is honest and the machine
     /// refuses rather than guessing at rows.
-    pub fn this_windows_edge_was_told_a_key(
+    pub(crate) fn this_band_was_told_a_key(
         &mut self,
-        surface: &WlSurface,
+        band: &ABand,
         key: AnEdgeKey,
         edge: &WindowEdge,
         menu: Option<&WindowMenu>,
     ) -> WhatTheEdgeKeyDid {
-        let mut where_it_is = self.where_the_keyboard_is_on_this_windows_edge(surface);
+        let mut where_it_is = self.where_the_keyboard_is_on_this_band(band);
         let did = where_it_is.told(key, edge, menu);
-        self.remember(surface, where_it_is);
+        self.remember(band, where_it_is);
         did
     }
 
@@ -169,32 +178,44 @@ impl crate::Server {
     /// opener*, and nowhere for a pointer — a focus ring left behind by a
     /// click would hold the controls on the screen with nothing using them.
     pub(crate) fn the_menu_was_opened_on(&mut self, surface: &WlSurface, by: ByWhat) {
-        let now = once_opened(self.where_the_keyboard_is_on_this_windows_edge(surface), by);
+        self.the_menu_was_opened_on_the_band(&ABand::App(surface.clone()), by);
+    }
+
+    /// The same, on any band — an application's or one of alo's own.
+    pub(crate) fn the_menu_was_opened_on_the_band(&mut self, band: &ABand, by: ByWhat) {
+        let now = once_opened(self.where_the_keyboard_is_on_this_band(band), by);
         // **One panel at a time**: opening this window's closes any other,
-        // and takes the keyboard off every other band.
+        // and takes the keyboard off every other band — alo's and
+        // applications' alike.
         if matches!(now, TheKeyboardOnTheEdge::InTheMenu(_)) {
-            self.keyboard_on_edges.retain(|(it, _)| it == surface);
+            self.keyboard_on_edges.retain(|(it, _)| it == band);
         }
-        self.remember(surface, now);
+        self.remember(band, now);
     }
 
     /// The window panel closed without choosing anything — a click outside it
     /// or Escape — and focus goes back the way `by` says.
     pub(crate) fn the_menu_was_dismissed_on(&mut self, surface: &WlSurface, by: ByWhat) {
+        self.the_menu_was_dismissed_on_the_band(&ABand::App(surface.clone()), by);
+    }
+
+    /// The same, on any band.
+    pub(crate) fn the_menu_was_dismissed_on_the_band(&mut self, band: &ABand, by: ByWhat) {
         if matches!(
-            self.where_the_keyboard_is_on_this_windows_edge(surface),
+            self.where_the_keyboard_is_on_this_band(band),
             TheKeyboardOnTheEdge::InTheMenu(_)
         ) {
-            self.remember(surface, by.where_focus_goes_back());
+            self.remember(band, by.where_focus_goes_back());
         }
     }
 
     /// **The keyboard goes into this window's panel field**, opening the panel
     /// if it is shut — one panel at a time, so every other band lets go.
     pub(crate) fn the_keyboard_goes_to_the_window_field(&mut self, surface: &WlSurface) {
-        self.keyboard_on_edges.retain(|(it, _)| it == surface);
+        let band = ABand::App(surface.clone());
+        self.keyboard_on_edges.retain(|(it, _)| *it == band);
         self.remember(
-            surface,
+            &band,
             TheKeyboardOnTheEdge::InTheMenu(TheKeyboardInTheMenu::in_the_field(
                 OnTheEdge::WindowActions,
             )),
@@ -204,7 +225,7 @@ impl crate::Server {
     /// **Whose panel field has the keyboard**, if one does: a panel open with
     /// the keyboard on its alo row, while alo may be asked. The row is drawn
     /// only then (`crate::window_menu`), so with AI off there is no field and
-    /// this is [`None`].
+    /// this is [`None`]. Only an application's window has the row yet.
     #[must_use]
     pub fn whose_window_field_has_the_keyboard(&self) -> Option<WlSurface> {
         if !self.alo_in_a_window.may_be_asked() {
@@ -219,49 +240,71 @@ impl crate::Server {
                         if keyboard.on() == Some(WhatARowDoes::HelpWithThisWindow)
                 )
             })
-            .map(|(surface, _)| surface.clone())
+            .and_then(|(band, _)| band.the_application().cloned())
     }
 
     /// The panel closes and the keyboard leaves the band, with nothing left
     /// focused on it: a request about the window was sent, and the task
     /// window it opens is where the person reads on.
     pub(crate) fn the_panel_closes_and_the_band_lets_go(&mut self, surface: &WlSurface) {
-        self.remember(surface, TheKeyboardOnTheEdge::Nowhere);
+        self.remember(&ABand::App(surface.clone()), TheKeyboardOnTheEdge::Nowhere);
     }
 
-    /// Whether any window's panel is open, and whose.
+    /// Whether an application window's panel is open, and whose.
     #[must_use]
     pub(crate) fn whose_panel_is_open(&self) -> Option<WlSurface> {
+        self.whose_bands_panel_is_open()
+            .and_then(|band| band.the_application().cloned())
+    }
+
+    /// Whether any band's panel is open — an application's or alo's — and
+    /// whose.
+    #[must_use]
+    pub(crate) fn whose_bands_panel_is_open(&self) -> Option<ABand> {
         self.keyboard_on_edges
             .iter()
             .find(|(_, where_it_is)| matches!(where_it_is, TheKeyboardOnTheEdge::InTheMenu(_)))
-            .map(|(surface, _)| surface.clone())
+            .map(|(band, _)| band.clone())
     }
 
     /// A person pressed a choice in the open panel with the pointer: it acts,
     /// and the panel closes with no focus ring left behind.
     pub(crate) fn a_row_of_the_menu_was_pressed(
         &mut self,
-        surface: &WlSurface,
+        band: &ABand,
         row: MenuRow,
     ) -> WhatARowDoes {
-        self.remember(surface, TheKeyboardOnTheEdge::Nowhere);
+        self.remember(band, TheKeyboardOnTheEdge::Nowhere);
         row.does
     }
 
-    /// Keep only the windows still open.
+    /// Keep only the application windows still open, and every band of
+    /// alo's: those are kept by [`Self::only_alos_bands_still_open`].
     ///
     /// Called by `crate::the_window_edge_reveals`, which already has the list
     /// of mapped surfaces and prunes its own state from it. One walk of that
     /// list rather than two, and this file stays the only writer of its own
     /// field.
     pub(crate) fn only_the_edges_still_open(&mut self, mapped: &[WlSurface]) {
-        only_what_is_still_open(&mut self.keyboard_on_edges, mapped);
+        self.keyboard_on_edges.retain(|(it, _)| match it {
+            ABand::App(surface) => mapped.contains(surface),
+            ABand::Alos(_) => true,
+        });
     }
 
-    /// Write this window's state back.
-    fn remember(&mut self, surface: &WlSurface, where_it_is: TheKeyboardOnTheEdge) {
-        remember_in(&mut self.keyboard_on_edges, surface, where_it_is);
+    /// Keep only the bands of alo's windows still open: a window that closed
+    /// takes its panel and its focus ring with it, so a task numbered the
+    /// same later does not open with them.
+    pub(crate) fn only_alos_bands_still_open(&mut self, present: &[AlosBand]) {
+        self.keyboard_on_edges.retain(|(it, _)| match it {
+            ABand::App(_) => true,
+            ABand::Alos(which) => present.contains(which),
+        });
+    }
+
+    /// Write this band's state back.
+    fn remember(&mut self, band: &ABand, where_it_is: TheKeyboardOnTheEdge) {
+        remember_in(&mut self.keyboard_on_edges, band, where_it_is);
     }
 }
 
@@ -303,7 +346,9 @@ fn remember_in<K: PartialEq + Clone>(
     }
 }
 
-/// Keep only the keys still in this list.
+/// Keep only the keys still in this list: the rule both prunings above follow,
+/// each for its own kind of band, kept where a test can ask it.
+#[cfg(test)]
 fn only_what_is_still_open<K: PartialEq>(table: &mut Vec<(K, TheKeyboardOnTheEdge)>, open: &[K]) {
     table.retain(|(it, _)| open.contains(it));
 }

@@ -599,6 +599,9 @@ pub struct Server {
     /// is the only thing that reads or writes it, and prunes it against what
     /// is open on every walk.
     pub(crate) alos_bands: Vec<crate::the_bands_over_alos_windows::ItsBand>,
+    /// Where each of alo's windows the window panel placed was before it
+    /// (`crate::alos_window_placed`), for Restore.
+    pub(crate) alos_windows_placed: Vec<crate::alos_window_placed::WhereItWas>,
     /// What the journal was last told the bands over alo's own windows draw
     /// (`crate::the_bands_drawn_are_said`).
     pub(crate) what_the_bands_said: crate::the_bands_drawn_are_said::WhatTheBandsSaid,
@@ -613,7 +616,10 @@ pub struct Server {
     /// **Only windows the keyboard has reached are in it.** A missing entry
     /// already means `Nowhere`, so storing that would grow the list for every
     /// window a key was pressed near and change no answer.
-    pub(crate) keyboard_on_edges: Vec<(WlSurface, crate::window_edge_keys::TheKeyboardOnTheEdge)>,
+    pub(crate) keyboard_on_edges: Vec<(
+        crate::which_band::ABand,
+        crate::window_edge_keys::TheKeyboardOnTheEdge,
+    )>,
     /// Where the **person** clicked the panel, not yet acted on.
     ///
     /// The point of the press, rather than the pointer read again later. A peek asks where the
@@ -1019,6 +1025,7 @@ impl Server {
             bands_out_over_full_screen: Vec::new(),
             controls_fading: Vec::new(),
             alos_bands: Vec::new(),
+            alos_windows_placed: Vec::new(),
             what_the_bands_said: crate::the_bands_drawn_are_said::WhatTheBandsSaid::default(),
             keyboard_on_edges: Vec::new(),
             asked_to_bring_back: Vec::new(),

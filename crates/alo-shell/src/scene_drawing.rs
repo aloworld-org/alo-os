@@ -619,6 +619,17 @@ where
         crate::each_window_with_its_edge::wash_all(&mut frame, &textures.on_top)?;
         edge.paint_on_top(&mut frame)?;
     }
+    // **And the panel of alo's terminal or a task window**, which hangs from
+    // its band as an application's does (`crate::alos_windows_panel`).
+    for (edge, textures) in native
+        .terminal_edge
+        .iter()
+        .zip(&terminal_edge_textures)
+        .chain(native.task_edges.iter().zip(&task_edge_textures))
+    {
+        crate::each_window_with_its_edge::wash_all(&mut frame, &textures.on_top)?;
+        edge.paint_on_top(&mut frame)?;
+    }
     // Above every client and control: the dock is furniture no window covers,
     // a task window included; below the record, the question and the
     // indicator.
