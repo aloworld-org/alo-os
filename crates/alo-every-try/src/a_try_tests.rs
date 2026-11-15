@@ -223,3 +223,87 @@ fn a_road_that_expects_the_wrong_application_fails_a_model_that_did_right() {
         "{tried:?}"
     );
 }
+
+/// The editor road with its read made **a look**: a step the model may skip
+/// when it already knows, or take more than once.
+fn writing_with_a_look() -> ARequest {
+    let road = writing_in_the_editor()
+        .road()
+        .iter()
+        .map(|step| {
+            if step.verb() == READ_WINDOW {
+                step.clone().a_look()
+            } else {
+                step.clone()
+            }
+        })
+        .collect();
+    ARequest::asking("write with a look", "the same words", road)
+}
+
+fn tried_on(request: &ARequest, lines: &[String]) -> super::Tried {
+    let mut model = Writing::these(lines);
+    one_try(
+        request,
+        &WhatItMayReach::nothing().at_full_access(true),
+        &the_verbs(),
+        &the_words(),
+        &mut model,
+    )
+}
+
+/// **A look may be skipped**: a model that knew what it needed and went
+/// straight on took the road.
+#[test]
+fn a_look_may_be_skipped() {
+    let tried = tried_on(
+        &writing_with_a_look(),
+        &[opening(), typing(), answering("It is written.")],
+    );
+    assert_eq!(tried.went(), &Went::TheRoad, "{tried:?}");
+}
+
+/// **A look may be taken twice**, and the road goes on after it.
+#[test]
+fn a_look_may_be_taken_again() {
+    let tried = tried_on(
+        &writing_with_a_look(),
+        &[
+            opening(),
+            looking(),
+            looking(),
+            typing(),
+            answering("It is written."),
+        ],
+    );
+    assert_eq!(tried.went(), &Went::TheRoad, "{tried:?}");
+    assert_eq!(
+        tried.chose(),
+        [
+            OPEN_FILE_IN_APPLICATION,
+            READ_WINDOW,
+            READ_WINDOW,
+            TYPE_TEXT,
+            "an answer in words"
+        ]
+    );
+}
+
+/// **The refusal case**: skipping a look does not excuse the step after it —
+/// a wrong verb there still leaves the road, at that step.
+#[test]
+fn skipping_a_look_still_holds_the_next_step() {
+    let tried = tried_on(
+        &writing_with_a_look(),
+        &[opening(), opening(), answering("Opened.")],
+    );
+    assert_eq!(
+        tried.went(),
+        &Went::WentWrong(WentWrong::AnotherVerb {
+            step: 3,
+            expected: TYPE_TEXT.to_owned(),
+            asked: OPEN_FILE_IN_APPLICATION.to_owned(),
+        }),
+        "{tried:?}"
+    );
+}

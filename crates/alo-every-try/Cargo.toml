@@ -34,13 +34,17 @@ alo-asking = { path = "../alo-asking" }
 alo-answering = { path = "../alo-answering" }
 alo-models = { path = "../alo-models" }
 alo-egress = { path = "../alo-egress" }
-# The words the scripted answers are said in.
+# The words the scripted answers are said in: every word the machine says,
+# from the one place the daemon reads them.
 alo-strings = { path = "../alo-strings" }
+alo-saying = { path = "../alo-saying" }
 # The single sources of the names a road expects: the verbs' and arguments'
 # names, the applications a fresh machine has, the person's folders, and the
 # VSCodium walk's own request.
 alo-adapters = { path = "../alo-adapters" }
 alo-applications = { path = "../alo-applications" }
+alo-files = { path = "../alo-files" }
+alo-record = { path = "../alo-record" }
 alo-acting = { path = "../alo-acting" }
 alo-software = { path = "../alo-software" }
 alo-publishing = { path = "../alo-publishing" }
