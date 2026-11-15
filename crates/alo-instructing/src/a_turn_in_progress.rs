@@ -252,13 +252,24 @@ pub fn shown_in_progress(
 /// way out this told a model about was a proposal. On booted machines the same
 /// request ended in proposals to install Krita, GIMP and Inkscape (ADR 0133).
 ///
+/// **Until 2026-11-15 it said** *a propose line if the request asks for
+/// anything to be done, or an answer line if the request only asks to be told
+/// something*: a request that asked for something done had no way to end once
+/// it was, and the every-try check measured a model going on — reading a
+/// window it had just opened, installing what it had only been asked to list.
+/// It now says when to stop, and to look before it types or presses, at the
+/// moment the model decides.
+///
 /// **No grade is about this text.** It is shown only once a turn has taken a
 /// step, and every grade is earned on a first round, which
 /// [`shown_in_progress`] returns before reaching here.
 pub const WHAT_TO_SEND_NEXT: &str = "\
-Send the next line: a read line if you still need something, a propose line if \
-the request asks for anything to be done, or an answer line if the request only \
-asks to be told something and what came back tells it.";
+Send the next line. If you still need to see something, send a read line: before \
+you type into or press anything in a window, read the window first, because the \
+name of a field or a control is only known from that answer. If the request asks \
+for something that has not been done yet, send a propose line for it. Once \
+everything the request asked for is done, or what came back tells the person what \
+they asked, send an answer line, and ask for nothing the request did not ask for.";
 
 #[cfg(test)]
 #[expect(
