@@ -2079,7 +2079,7 @@ software.removed	{application} is removed. Everything it was allowed has ended, 
 software.the-applications	Applications
 software.update-offered	A newer version of {application} is ready. It is updated when you choose, and never while it is open
 software.updated	{application} is updated. Nothing else was closed or restarted
-software.verb.install-application.application	the application to install, by its identifier
+software.verb.install-application.application-or-name	the application to install, by its identifier, or by its name, such as Krita, where you do not know the identifier
 software.verb.install-application.changes	Downloads this application and installs it for everyone who uses this computer.
 software.verb.install-application.leaves	It is given no access to your files, and no other application is updated or removed.
 software.verb.install-application.purpose	install an application from a place this machine installs applications from
