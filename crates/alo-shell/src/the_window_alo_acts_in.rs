@@ -1,4 +1,4 @@
-//! **The window alo acts in wears alo's presence for the turn it acts in** —
+//! **The window alo acts in wears alo's presence for the turn  acts in** —
 //! for a request the person typed in the Bar, where alo chose the window
 //! itself.
 //!
@@ -129,8 +129,10 @@ impl crate::Server {
     /// and nothing was marked.
     ///
     /// Called by the code that carries an act out, once it holds that the
-    /// window is alo's to act in.
-    pub fn alo_acts_in(&mut self, surface: &WlSurface) -> Option<WhichTask> {
+    /// window is alo's to act in. `application` is the application alo asked
+    /// to act in, by the identifier it used — what the log says, because an
+    /// Electron program names its own Wayland window something shorter.
+    pub fn alo_acts_in(&mut self, surface: &WlSurface, application: &str) -> Option<WhichTask> {
         let which = the_one_at_work(&self.the_tasks)?;
         let held = &mut self.the_windows_alo_acts_in.acting;
         if held
@@ -142,21 +144,14 @@ impl crate::Server {
         if held.len() >= THE_MOST {
             held.remove(0);
         }
-        // **Asked only of a window on the screen**: one that is not has no
-        // application to name, and asking its state would read nothing.
-        let application = if self.mapped_surfaces().any(|it| it == surface) {
-            self.the_app_id_of(surface).unwrap_or_default()
-        } else {
-            String::new()
-        };
         eprintln!(
             "alo-shell: {}",
-            alo_acting::said_on_the_log::alo_wears_a_window_of(&application)
+            alo_acting::said_on_the_log::alo_wears_a_window_of(application)
         );
         self.the_windows_alo_acts_in.acting.push(ActedIn {
             which,
             surface: surface.clone(),
-            application,
+            application: application.to_owned(),
         });
         Some(which)
     }

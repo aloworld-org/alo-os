@@ -90,6 +90,9 @@ fn a_task_asked(server: &mut Server, request: &str) -> WhichTask {
         .and_now_this_one(ATask::asked_for(request, InferenceSource::ThisMachine))
 }
 
+/// VSCodium, as alo names the application it acts in.
+const CODIUM: &str = "com.vscodium.codium";
+
 const ASKED: &str = "Open hello.txt in VSCodium and type a line into it";
 
 /// **The window alo acts in wears the task at work, in the person's own words,
@@ -108,7 +111,7 @@ fn the_window_alo_acts_in_wears_the_task_at_work_and_no_other_does() {
         "a window wore alo before alo acted in it"
     );
 
-    assert_eq!(server.alo_acts_in(&codium), Some(which));
+    assert_eq!(server.alo_acts_in(&codium, CODIUM), Some(which));
 
     let here = server
         .alo_in_this_window(&codium)
@@ -135,7 +138,7 @@ fn the_window_alo_acts_in_wears_the_task_at_work_and_no_other_does() {
 fn nothing_is_marked_when_no_task_is_at_work() {
     let (_display, _peer, codium, _other) = two_windows();
     let (_runtime, mut server) = a_session("alo-acts-with-no-task");
-    assert_eq!(server.alo_acts_in(&codium), None);
+    assert_eq!(server.alo_acts_in(&codium, CODIUM), None);
     assert!(server.alo_in_this_window(&codium).is_none());
 
     let which = a_task_asked(&mut server, ASKED);
@@ -144,7 +147,7 @@ fn nothing_is_marked_when_no_task_is_at_work() {
         .the_mut(which)
         .expect("open")
         .alo_says(Turn::from_alo("Done."));
-    assert_eq!(server.alo_acts_in(&codium), None);
+    assert_eq!(server.alo_acts_in(&codium, CODIUM), None);
     assert!(
         server.alo_in_this_window(&codium).is_none(),
         "a finished task's presence was put on a window"
@@ -160,7 +163,7 @@ fn two_tasks_at_work_mark_no_window() {
     let (_runtime, mut server) = a_session("alo-acts-for-two");
     let _first = a_task_asked(&mut server, ASKED);
     let _second = a_task_asked(&mut server, "Summarise my notes");
-    assert_eq!(server.alo_acts_in(&codium), None);
+    assert_eq!(server.alo_acts_in(&codium, CODIUM), None);
     assert!(server.alo_in_this_window(&codium).is_none());
 }
 
@@ -173,7 +176,7 @@ fn a_closed_task_is_not_the_one_at_work() {
     let first = a_task_asked(&mut server, "Summarise my notes");
     assert!(server.tasks_mut().closed(first));
     let second = a_task_asked(&mut server, ASKED);
-    assert_eq!(server.alo_acts_in(&codium), Some(second));
+    assert_eq!(server.alo_acts_in(&codium, CODIUM), Some(second));
 }
 
 /// **Waiting on the person keeps the window, in navy**: a change waiting for
@@ -184,7 +187,7 @@ fn waiting_for_the_person_keeps_the_window_and_is_not_acting() {
     let (_display, _peer, codium, _other) = two_windows();
     let (_runtime, mut server) = a_session("alo-acts-then-asks");
     let which = a_task_asked(&mut server, ASKED);
-    assert_eq!(server.alo_acts_in(&codium), Some(which));
+    assert_eq!(server.alo_acts_in(&codium, CODIUM), Some(which));
     {
         let task = server.tasks_mut().the_mut(which).expect("open");
         task.is_asking("Save hello.txt");
@@ -209,7 +212,7 @@ fn the_presence_goes_when_the_turn_ends_and_a_follow_up_does_not_bring_it_back()
     let (_display, _peer, codium, _other) = two_windows();
     let (_runtime, mut server) = a_session("alo-acts-and-answers");
     let which = a_task_asked(&mut server, ASKED);
-    assert_eq!(server.alo_acts_in(&codium), Some(which));
+    assert_eq!(server.alo_acts_in(&codium, CODIUM), Some(which));
     server
         .tasks_mut()
         .the_mut(which)
@@ -234,7 +237,7 @@ fn the_presence_goes_when_the_turn_ends_and_a_follow_up_does_not_bring_it_back()
         "a follow-up put alo back on a window it has not acted in this turn"
     );
     // Acting again in the new turn wears it again.
-    assert_eq!(server.alo_acts_in(&codium), Some(which));
+    assert_eq!(server.alo_acts_in(&codium, CODIUM), Some(which));
     assert!(server.alo_in_this_window(&codium).is_some());
 }
 
@@ -245,7 +248,7 @@ fn a_window_that_has_gone_is_let_go_once_and_the_work_goes_on() {
     let (_display, _peer, codium, _other) = two_windows();
     let (_runtime, mut server) = a_session("alo-acts-in-a-window-that-goes");
     let which = a_task_asked(&mut server, ASKED);
-    assert_eq!(server.alo_acts_in(&codium), Some(which));
+    assert_eq!(server.alo_acts_in(&codium, CODIUM), Some(which));
     let over = server
         .the_windows_alo_acts_in
         .looked_at(&[], &server.the_tasks);
@@ -269,8 +272,8 @@ fn acting_twice_in_one_turn_is_one_presence() {
     let (_display, _peer, codium, _other) = two_windows();
     let (_runtime, mut server) = a_session("alo-acts-twice");
     let which = a_task_asked(&mut server, ASKED);
-    assert_eq!(server.alo_acts_in(&codium), Some(which));
-    assert_eq!(server.alo_acts_in(&codium), Some(which));
+    assert_eq!(server.alo_acts_in(&codium, CODIUM), Some(which));
+    assert_eq!(server.alo_acts_in(&codium, CODIUM), Some(which));
     assert_eq!(server.the_windows_alo_acts_in.how_many(), 1);
 }
 
@@ -282,14 +285,14 @@ fn stop_is_shown_and_an_act_after_stop_marks_nothing() {
     let (_display, _peer, codium, other) = two_windows();
     let (_runtime, mut server) = a_session("alo-acts-and-is-stopped");
     let which = a_task_asked(&mut server, ASKED);
-    assert_eq!(server.alo_acts_in(&codium), Some(which));
+    assert_eq!(server.alo_acts_in(&codium, CODIUM), Some(which));
     assert!(server.the_person_stops_a_task(which));
     assert_eq!(
         server.alo_in_this_window(&codium).map(|here| here.how),
         Some(HowAloIsHere::Stopping)
     );
     assert_eq!(
-        server.alo_acts_in(&other),
+        server.alo_acts_in(&other, CODIUM),
         None,
         "an act after Stop marked a window"
     );
@@ -305,7 +308,7 @@ fn closing_the_task_while_alo_acts_takes_the_presence_off() {
     let (_display, _peer, codium, _other) = two_windows();
     let (_runtime, mut server) = a_session("alo-acts-and-its-task-closes");
     let which = a_task_asked(&mut server, ASKED);
-    assert_eq!(server.alo_acts_in(&codium), Some(which));
+    assert_eq!(server.alo_acts_in(&codium, CODIUM), Some(which));
     assert!(server.tasks_mut().closed(which));
     assert!(server.alo_in_this_window(&codium).is_none());
     let over = server

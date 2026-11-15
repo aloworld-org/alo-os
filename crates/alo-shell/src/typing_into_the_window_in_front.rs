@@ -228,7 +228,7 @@ impl Server {
             // **alo's hands are on this window**: asking is the road typing
             // through the accessibility tree takes, so the window wears the
             // task at work from here (`crate::the_window_alo_acts_in`).
-            let _ = self.alo_acts_in(&root);
+            let _ = self.alo_acts_in(&root, identifier);
             return Typed::MayType;
         }
         let Some(ready) = ready(layouts) else {
@@ -244,7 +244,7 @@ impl Server {
         // **alo's hands are on this window**, every check having held and
         // before its first key: it wears the task at work for the turn
         // (`crate::the_window_alo_acts_in`).
-        let _ = self.alo_acts_in(&root);
+        let _ = self.alo_acts_in(&root, identifier);
         let mods = handle.modifier_state().serialized;
         let mut whole = true;
         for keyboard in &keyboards {

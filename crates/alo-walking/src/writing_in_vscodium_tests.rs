@@ -210,7 +210,7 @@ fn the_edge_is_checked_on_while_alo_works_and_off_after() {
     let at = |wanted: &dyn Fn(&Step) -> bool, what: &str| {
         steps
             .iter()
-            .position(|step| wanted(step))
+            .position(wanted)
             .unwrap_or_else(|| panic!("the walk has no step: {what}"))
     };
     let on = at(

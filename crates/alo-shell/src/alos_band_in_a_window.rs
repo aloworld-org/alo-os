@@ -32,7 +32,7 @@
 //! window is being operated by alo it should just have a border with one of
 //! our brand colors*. So it wears the same edge and, instead of the band,
 //! alo's mark on a small tab of the edge's own ink outside the card
-//! ([`where_the_tab_is`]): nothing over the application's own controls, and
+//! (`where_the_tab_is`): nothing over the application's own controls, and
 //! Stop in the task window.
 //!
 //! # Teal only while alo is acting
