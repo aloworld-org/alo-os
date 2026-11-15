@@ -1,5 +1,7 @@
 //! **The person's session environment**, as their systemd manager holds it,
-//! for the shell in alo's own terminal.
+//! for the shell in alo's own terminal — and, since 2026-11-14, for alo's own
+//! copy of an application, which `alo-desktop` starts itself
+//! (`alo_launching::alos_copy_starts_with`).
 //!
 //! Every application a person starts from the Dock or the bus is started by
 //! their systemd manager and given its environment: what `environment.d`
@@ -29,7 +31,7 @@ use alo_terminal::TheSession;
 /// # Errors
 /// A sentence for the log when there is no session bus, no manager on it, or an
 /// answer that is not a list of text.
-pub(crate) fn what_their_manager_holds() -> Result<Vec<String>, String> {
+pub fn what_their_manager_holds() -> Result<Vec<String>, String> {
     let bus = zbus::blocking::Connection::session().map_err(|why| why.to_string())?;
     let value: zbus::zvariant::OwnedValue = bus
         .call_method(
