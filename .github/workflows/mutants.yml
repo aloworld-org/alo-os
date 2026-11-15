@@ -58,6 +58,7 @@
 # each of those, and shows each rule refusing a workflow that breaks it.
 
 name: Mutants
+run-name: Mutants on pull request #${{ github.event.pull_request.number || inputs.pull_request }}
 
 on:
   pull_request:
@@ -91,6 +92,8 @@ jobs:
       - name: What this pull request changes in Rust code under test
         id: changed
         run: |
+          # The summary is also printed to the log, so it can be read without the page.
+          trap 'cat "$GITHUB_STEP_SUMMARY"' EXIT
           echo "## A test must be able to fail" >> "$GITHUB_STEP_SUMMARY"
           echo >> "$GITHUB_STEP_SUMMARY"
           echo "Pull request #${{ github.event.pull_request.number || inputs.pull_request }}, as merged into main at \`$(git rev-parse HEAD^1)\`." >> "$GITHUB_STEP_SUMMARY"
@@ -224,6 +227,7 @@ jobs:
       - name: What no test noticed
         if: steps.changed.outputs.rust == 'true' && steps.listed.outputs.any == 'true'
         run: |
+          trap 'cat "$GITHUB_STEP_SUMMARY"' EXIT
           code=$(cat "$RUNNER_TEMP/mutants.code" 2> /dev/null || echo none)
           seconds=$(cat "$RUNNER_TEMP/mutants.seconds" 2> /dev/null || echo "?")
           count() { local n; n=$(grep -c . "mutants.out/$1.txt" 2> /dev/null) || true; echo "${n:-0}"; }
