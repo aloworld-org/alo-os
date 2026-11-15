@@ -53,14 +53,14 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
         String::new()
     };
     format!(
-        "\n\nTo work in an application's window, send {READ_WINDOW} first, every time, even \
-         right after you opened the application or a file in it, because the name of a field \
-         or a control is never guessed: its answer names the window's fields, documents and \
-         controls. Then type into one with {TYPE_TEXT}, giving its name exactly as that answer \
-         showed it{pressing}. Never send a run line that types, clicks or presses keys \
-         (xdotool, ydotool, wtype or anything like them): \
-         {TYPE_TEXT} is how alo types into a window, and it shows the person the whole text \
-         before anything is typed."
+        "\n\nBefore you type into or press anything in an application's window, send \
+         {READ_WINDOW}, even right after you opened the application or a file in it, because \
+         the name of a field or a control is never guessed: its answer names the window's \
+         fields, documents and controls. Opening an application or a file needs no read. Then \
+         type into one with {TYPE_TEXT}, giving its name exactly as that answer showed \
+         it{pressing}. Never send a run line that types, clicks or presses keys (xdotool, \
+         ydotool, wtype or anything like them): {TYPE_TEXT} is how alo types into a window, and \
+         it shows the person the whole text before anything is typed."
     )
 }
 
