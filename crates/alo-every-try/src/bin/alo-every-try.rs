@@ -35,12 +35,10 @@ fn said(name: &str, otherwise: &str) -> String {
 
 fn main() -> ExitCode {
     match running() {
-        Ok(Verdict::EveryTryTookTheRoad) => ExitCode::SUCCESS,
-        Ok(Verdict::SomeLeftTheRoad) => ExitCode::from(1),
-        Ok(Verdict::NotMeasured) => ExitCode::from(2),
+        Ok(verdict) => ExitCode::from(verdict.exit_code()),
         Err(why) => {
             eprintln!("nothing was measured: {why}");
-            ExitCode::from(2)
+            ExitCode::from(Verdict::NotMeasured.exit_code())
         }
     }
 }
@@ -106,10 +104,11 @@ fn running() -> Result<Verdict, String> {
             );
         },
     );
-    if !asking.is_quiet() {
-        return Err("a question was left open, so the indicator would still be lit".to_owned());
-    }
-    let written = summary(&tallied, &asked_of);
+    let mut written = summary(&tallied, &asked_of);
+    written.push_str(&format!(
+        "\nThe provider was asked {} times, second attempts after no answer included.\n",
+        asking.calls()
+    ));
     println!("\n{written}");
     let to = said("ALO_EVERY_TRY_SUMMARY", "");
     if !to.is_empty() {
@@ -120,6 +119,11 @@ fn running() -> Result<Verdict, String> {
             .map_err(|why| format!("the summary could not be written to {to}: {why}"))?;
         file.write_all(written.as_bytes())
             .map_err(|why| format!("the summary could not be written to {to}: {why}"))?;
+    }
+    // After the summary is written, so a fault here never hides what was
+    // measured.
+    if !asking.is_quiet() {
+        return Err("a question was left open, so the indicator would still be lit".to_owned());
     }
     Ok(verdict(&tallied))
 }

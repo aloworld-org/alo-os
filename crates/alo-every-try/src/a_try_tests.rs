@@ -102,6 +102,11 @@ fn a_step_off_the_road_fails_the_try_there_and_asks_nothing_more() {
     assert!(!tried.took_the_road());
     assert_eq!(tried.chose(), [OPEN_FILE_IN_APPLICATION, TYPE_TEXT]);
     assert_eq!(
+        tried.said_last(),
+        Some(typing().as_str()),
+        "the line that left the road is kept"
+    );
+    assert_eq!(
         model.shown.len(),
         2,
         "nothing is asked after the road is left"
@@ -169,6 +174,7 @@ fn the_model_is_shown_the_text_a_turn_shows() {
     let products = the_products_words(Instructions::SHOWN_TO_A_TURN, &the_verbs());
     for shown in &model.shown {
         assert!(shown.starts_with(&products));
+        assert_eq!(shown, shown.trim(), "shown as the daemon shows it: trimmed");
         assert!(shown.contains("Open hello.txt in VSCodium and write Written by alo in it"));
     }
     assert!(

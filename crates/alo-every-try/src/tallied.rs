@@ -57,6 +57,23 @@ pub enum Verdict {
     NotMeasured,
 }
 
+impl Verdict {
+    /// The exit code a run ends with: 0 when every try took the road, 1 when
+    /// any left it, and 2 when nothing was measured — **never 0 for a run that
+    /// could not ask**, so a provider that is down cannot read as a pass.
+    #[must_use]
+    pub const fn exit_code(self) -> u8 {
+        match self {
+            Self::EveryTryTookTheRoad => 0,
+            Self::SomeLeftTheRoad => 1,
+            Self::NotMeasured => 2,
+        }
+    }
+}
+
+/// The most of a model's line a summary shows.
+const AS_MUCH_OF_A_LINE_AS_A_SUMMARY_SHOWS: usize = 400;
+
 /// Try every request in `set` `tries` times against `model`, saying each try
 /// as it ends through `told`.
 pub fn tallying(
@@ -162,14 +179,28 @@ pub fn summary(tallied: &[Tallied], asked_of: &str) -> String {
         ));
         for (at, tried) in one.tries.iter().enumerate() {
             said.push_str(&format!(
-                "- try {}: {}\n",
+                "- try {}: {} ({} model calls)\n",
                 at + 1,
                 if tried.chose().is_empty() {
                     "nothing".to_owned()
                 } else {
                     tried.chose().join(" → ")
-                }
+                },
+                tried.asked()
             ));
+            if let (Went::WentWrong(_), Some(line)) = (tried.went(), tried.said_last()) {
+                let line: String = line
+                    .split_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" ")
+                    .chars()
+                    .take(AS_MUCH_OF_A_LINE_AS_A_SUMMARY_SHOWS)
+                    .collect();
+                said.push_str(&format!(
+                    "  - its last line: `{}`\n",
+                    line.replace('`', "'")
+                ));
+            }
         }
     }
     said

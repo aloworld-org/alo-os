@@ -152,3 +152,21 @@ fn the_summary_of_a_pass_says_it_passed() {
         "{said}"
     );
 }
+
+#[test]
+fn a_request_never_tried_beside_one_that_passed_is_not_a_pass() {
+    let tallied = [
+        Tallied::of(a_request(), vec![the_road()]),
+        Tallied::of(a_request(), Vec::new()),
+    ];
+    assert_eq!(verdict(&tallied), Verdict::NotMeasured);
+}
+
+/// **A run that could not ask never exits 0**, so a provider that is down
+/// cannot read as a pass on the pull request.
+#[test]
+fn only_a_pass_exits_zero() {
+    assert_eq!(Verdict::EveryTryTookTheRoad.exit_code(), 0);
+    assert_eq!(Verdict::SomeLeftTheRoad.exit_code(), 1);
+    assert_eq!(Verdict::NotMeasured.exit_code(), 2);
+}

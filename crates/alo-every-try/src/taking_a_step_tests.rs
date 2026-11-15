@@ -145,3 +145,31 @@ fn a_command_where_a_verb_was_expected_is_its_own_way_off_the_road() {
         })
     );
 }
+
+#[test]
+fn a_read_sent_as_a_change_is_the_wrong_door() {
+    let looking = Step::of(
+        alo_adapters::fallback_verbs::READ_WINDOW,
+        Answered::AFileOpened,
+    )
+    .expecting(APPLICATION, EDITOR);
+    let went = taking(
+        &looking,
+        2,
+        &read(&proposing(
+            alo_adapters::fallback_verbs::READ_WINDOW,
+            &[(APPLICATION, EDITOR)],
+        )),
+        &the_verbs(),
+        &the_words(),
+    )
+    .map(|_| ());
+    assert_eq!(
+        went,
+        Err(WentWrong::TheWrongDoor {
+            step: 2,
+            verb: alo_adapters::fallback_verbs::READ_WINDOW.to_owned(),
+            door: "change",
+        })
+    );
+}

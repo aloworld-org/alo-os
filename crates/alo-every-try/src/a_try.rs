@@ -48,6 +48,7 @@ pub struct Tried {
     chose: Vec<String>,
     went: Went,
     asked: usize,
+    said_last: Option<String>,
 }
 
 impl Tried {
@@ -55,7 +56,19 @@ impl Tried {
     /// times.
     #[must_use]
     pub const fn of(chose: Vec<String>, went: Went, asked: usize) -> Self {
-        Self { chose, went, asked }
+        Self {
+            chose,
+            went,
+            asked,
+            said_last: None,
+        }
+    }
+
+    /// The last line the model wrote, as it wrote it — for a try that left the
+    /// road, the line that left it.
+    #[must_use]
+    pub fn said_last(&self) -> Option<&str> {
+        self.said_last.as_deref()
     }
 
     /// What it chose, step by step: a verb's name, `run: …` for a command,
@@ -104,6 +117,7 @@ pub fn one_try(
         wrong: None,
         unanswered: None,
         asked: 0,
+        said_last: None,
     };
     let happened = driving_about(
         &TheConversationSoFar::nothing(),
@@ -165,6 +179,7 @@ pub fn one_try(
         chose,
         went,
         asked: door.asked,
+        said_last: door.said_last,
     }
 }
 
@@ -198,6 +213,8 @@ struct Recording<'a> {
     unanswered: Option<String>,
     /// How many times the model was asked.
     asked: usize,
+    /// The last line the model wrote.
+    said_last: Option<String>,
 }
 
 /// Why the loop is stopped once the road is left: the try is over.
@@ -210,13 +227,14 @@ impl TheDoor for Recording<'_> {
             // because it already begins with the product's own words
             // (`alo_turn::next_request`'s `Held::shown`).
             self.asked += 1;
-            return self
-                .model
-                .answering(question.trim(), self.strings)
-                .map_err(|why| {
-                    self.unanswered = Some(why.clone());
-                    NotAnswered::NotReached { why }
-                });
+            let answered = self.model.answering(question.trim(), self.strings);
+            if let Ok(ToAnAgent::Answered { text, .. }) = &answered {
+                self.said_last = Some(text.clone());
+            }
+            return answered.map_err(|why| {
+                self.unanswered = Some(why.clone());
+                NotAnswered::NotReached { why }
+            });
         }
         self.chose.push(match request {
             FromAnAgent::Run { command } => format!("run: {command}"),

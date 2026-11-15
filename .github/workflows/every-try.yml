@@ -14,10 +14,13 @@
 # answer is held to, the loop that asks it, or the check itself — and by hand.
 # Not on every pull request, because it spends the provider's key.
 #
-# **What it costs**, per run of the whole set at five tries each: at most 40
-# model calls (writing in VSCodium takes four a try, publishing two, opening an
-# application two), and fewer when a try leaves the road, because a try ends at
-# its first wrong step. The summary says how many were made.
+# **What it costs**, per run of the whole set at five tries each: 40 model calls
+# when every try takes the road (writing in VSCodium takes four a try,
+# publishing two, opening an application two), fewer when a try leaves it early,
+# because a try ends at its first wrong step, and more only when a provider does
+# not answer and the question is put a second time, or the model's line is not a
+# request and the turn's own loop tells it so. The summary says how many were
+# made.
 #
 # **It is not a required check.** Whether it blocks a merge is the owner's
 # setting, and this file does not decide it.
@@ -48,6 +51,16 @@ on:
       - "crates/alo-turn/src/next_request.rs"
       - "crates/alo-models/src/in_the_envelope.rs"
       - "crates/alo-asking/src/openai.rs"
+      - "crates/alo-asking/src/asking.rs"
+      - "crates/alo-asking/src/hosted.rs"
+      - "crates/alo-asking/src/question.rs"
+      # How a call is validated, and the answers the model reads back.
+      - "crates/alo-capability/src/arg.rs"
+      - "crates/alo-capability/src/call.rs"
+      - "crates/alo-capability/src/verbs.rs"
+      - "crates/alo-protocol/src/to_an_agent.rs"
+      - "crates/alo-protocol/src/done.rs"
+      - "crates/alo-protocol/src/argument.rs"
       # Every verb on that list, and the words that describe it.
       - "crates/alo-files/src/verbs.rs"
       - "crates/alo-files/src/words.rs"
