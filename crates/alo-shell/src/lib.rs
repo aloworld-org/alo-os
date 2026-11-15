@@ -697,6 +697,8 @@ mod alos_windows_panel;
 /// Closing alo's terminal: at once when idle, after a question when a command
 /// is running.
 mod closing_the_terminal;
+/// The row that asks alo, fitted to its one line.
+mod the_ask_rows_line;
 mod the_bands_drawn_are_said;
 mod the_bands_over_alos_windows;
 /// What a screen reader is told the Bar's matches are.

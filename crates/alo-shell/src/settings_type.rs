@@ -98,7 +98,7 @@ impl TheType {
     }
 
     /// How it is asked for.
-    fn attrs<'a>(self) -> Attrs<'a> {
+    pub(crate) fn attrs<'a>(self) -> Attrs<'a> {
         match self {
             Self::Mono | Self::ACode => {
                 crate::painted_text::alos_own_mono_face().weight(self.weight())

@@ -128,7 +128,7 @@ pub(crate) fn the_rows(
         canvas.clipped_to(*at);
         let hint_room = if is_chosen { px(77) } else { px(14) };
         let room = at.size.w - px(56) - hint_room;
-        let name_wide = said(
+        let name_wide = said_on_one_line(
             canvas,
             fonts,
             measure,
@@ -138,7 +138,7 @@ pub(crate) fn the_rows(
             (ground, palette.ink),
         );
         let after = format!("\u{b7}  {}", result.kind);
-        said(
+        said_on_one_line(
             canvas,
             fonts,
             measure,
@@ -208,17 +208,32 @@ pub(crate) fn the_rows(
         ALaunchersIcon::Alo.drawn(canvas, tile, rgb(Role::AccentDefault));
         canvas.clipped_to(at);
         let room = at.size.w - px(56) - px(14);
+        // **One line, as `561:339` draws it**: a long request is cut inside
+        // its quotation marks, and *· a new task* keeps its room.
+        let after = format!("\u{b7}  {}", asks.what_it_is);
+        let after_wide = crate::painted_text::how_wide_as(
+            fonts,
+            &after,
+            TheType::Body.metrics(measure),
+            &TheType::Body.attrs(),
+        );
+        let request = crate::the_ask_rows_line::the_request_in_its_room(
+            fonts,
+            (asks.asking, bar.typed),
+            crate::the_ask_rows_line::the_requests_room(room, after_wide, px(6)),
+            TheType::Name.metrics(measure),
+            &TheType::Name.attrs(),
+        );
         let asked = said(
             canvas,
             fonts,
             measure,
-            asks.asking,
+            &request,
             TheType::Name,
             (at.loc.x + px(56), at.loc.y + px(12), room),
             (ground, palette.ink),
         );
-        let after = format!("\u{b7}  {}", asks.what_it_is);
-        said(
+        said_on_one_line(
             canvas,
             fonts,
             measure,
@@ -239,7 +254,7 @@ pub(crate) fn the_rows(
             ),
             palette.ink_quiet,
         );
-        said(
+        said_on_one_line(
             canvas,
             fonts,
             measure,
@@ -286,6 +301,28 @@ pub(crate) fn said(
     let shaped = written(fonts, words, style, wide, measure, (ground, ink)).cropped_to_its_ink();
     canvas.words(x, y, &shaped);
     shaped.width
+}
+
+/// [`said`] on one line: `words` ending in an ellipsis where they are wider
+/// than `wide`, so no line of a row wraps onto the line under it.
+pub(crate) fn said_on_one_line(
+    canvas: &mut Canvas,
+    fonts: &mut FontSystem,
+    measure: Measure,
+    words: &str,
+    style: TheType,
+    (x, y, wide): (i32, i32, i32),
+    colours: ([u8; 3], [u8; 3]),
+) -> i32 {
+    let shown = crate::window_edge_title::fitted_as(
+        fonts,
+        words,
+        wide,
+        style.metrics(measure),
+        &style.attrs(),
+    )
+    .shown;
+    said(canvas, fonts, measure, &shown, style, (x, y, wide), colours)
 }
 
 /// An application's icon on its row: its own artwork where this machine knows
