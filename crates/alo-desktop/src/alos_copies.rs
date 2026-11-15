@@ -85,6 +85,9 @@ pub struct AlosCopies {
     running: BTreeMap<String, Running>,
     /// Counts the starts, so two are two scopes.
     starts: u64,
+    /// What was last said about each process that is not alo's copy, by
+    /// application and process, so each is logged once each time it changes.
+    said_not_alos: BTreeMap<(String, u32), String>,
 }
 
 impl AlosCopies {
@@ -108,6 +111,7 @@ impl AlosCopies {
                 .map(|runtime| PathBuf::from(runtime).join("alo-copies")),
             running: BTreeMap::new(),
             starts: 0,
+            said_not_alos: BTreeMap::new(),
         }
     }
 
@@ -485,12 +489,38 @@ impl StartsAlosCopy for AlosCopies {
         // among the groups alo's copy runs in, which never holds one of the
         // person's own (`groups_of`).
         let Some(group) = where_it_runs(pid, &self.slice) else {
+            self.say_not_alos(
+                application,
+                pid,
+                "outside the person's applications, or not at all any more",
+                "",
+            );
             return false;
         };
         let Ok(about) = std::fs::symlink_metadata(&group) else {
+            self.say_not_alos(application, pid, "in a group that went", "");
             return false;
         };
-        self.groups_of(application).contains(&about.ino())
+        // Known before `groups_of`, which forgets a copy whose process ended.
+        let was_known = self.running.contains_key(application)
+            || self
+                .the_file_for(application)
+                .is_some_and(|file| file.exists());
+        let groups = self.groups_of(application);
+        let is = groups.contains(&about.ino());
+        if !is {
+            // **Which group, and which the copy's are**: the walk of 2026-11-15
+            // (run 43703842775) saw VSCodium's window answered *not alo's to
+            // type into* with a second Flatpak scope started after the copy's,
+            // and nothing said which group the window's process was in.
+            let theirs = group.strip_prefix(&self.slice).map_or_else(
+                |_| group.display().to_string(),
+                |it| it.display().to_string(),
+            );
+            let copys = self.the_copys_groups_said(application, &groups, was_known);
+            self.say_not_alos(application, pid, &format!("in {theirs}"), &copys);
+        }
+        is
     }
 
     fn every_copys_groups(&mut self) -> BTreeSet<u64> {
@@ -554,6 +584,68 @@ fn in_the_persons_session(application: &str, handed: &[String]) -> Vec<(String, 
         Vec::new()
     });
     alo_launching::alos_copy_starts_with(&session, handed)
+}
+
+impl AlosCopies {
+    /// **Why a process is not alo's copy**, logged once for each application
+    /// and process each time it changes: which group it runs in, and which the
+    /// copy's are. Group names and process numbers only.
+    fn say_not_alos(&mut self, application: &str, pid: u32, theirs: &str, copys: &str) {
+        let said = if copys.is_empty() {
+            format!(
+                "alo-desktop: process {pid} of {application} is not alo's own copy: it runs \
+                 {theirs}"
+            )
+        } else {
+            format!(
+                "alo-desktop: process {pid} of {application} is not alo's own copy: it runs \
+                 {theirs}; {copys}"
+            )
+        };
+        let key = (application.to_owned(), pid);
+        if self.said_not_alos.get(&key) != Some(&said) {
+            eprintln!("{said}");
+            // Bounded: a desktop up for days meets many processes.
+            if self.said_not_alos.len() >= 64 {
+                self.said_not_alos.clear();
+            }
+            self.said_not_alos.insert(key, said);
+        }
+    }
+
+    /// The copy's process, whether it still runs, and the groups it is
+    /// counted in, by name, for the log. `was_known` is whether a copy was
+    /// known before this look, which tells a copy whose process ended from one
+    /// never started.
+    fn the_copys_groups_said(&self, application: &str, groups: &[u64], was_known: bool) -> String {
+        let Some(copy) = self.running.get(application) else {
+            return if was_known {
+                "alo's copy of it was started and its process has ended".to_owned()
+            } else {
+                "alo's copy of it was never started".to_owned()
+            };
+        };
+        let mut named: Vec<String> = Vec::new();
+        if let Some(unit) = &copy.unit {
+            named.push(unit.clone());
+        }
+        if let Some(moved) = where_it_runs(copy.pid, &self.slice) {
+            named.push(moved.strip_prefix(&self.slice).map_or_else(
+                |_| moved.display().to_string(),
+                |it| it.display().to_string(),
+            ));
+        }
+        format!(
+            "alo's copy is process {}, counted in its group(s) {} ({} with those beneath them)",
+            copy.pid,
+            if named.is_empty() {
+                "none found".to_owned()
+            } else {
+                named.join(", ")
+            },
+            groups.len()
+        )
+    }
 }
 
 /// Say why alo's copy of `application` did not start, and answer so.
