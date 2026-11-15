@@ -26,11 +26,14 @@
 
 use alo_capability::{Arg, Effect, Requires, Takes, Verb, VerbError, Verbs, VerbsError};
 
-use crate::verbs::Declaring;
+use crate::verbs::{APPLICATION, Declaring};
 use crate::words;
 
 /// The verb's name, which a model sends and the record keeps.
 pub const OPEN_FILE_IN_APPLICATION: &str = "open_file_in_application";
+
+/// The argument naming the file to open, as a full path.
+pub const PATH: &str = "path";
 
 /// Put `open_file_in_application` on a list.
 ///
@@ -56,13 +59,13 @@ fn open_file_in_application() -> Result<Verb, VerbError> {
         Effect::Change,
         vec![
             Arg::taking(
-                "application",
+                APPLICATION,
                 words::OPEN_FILE_IN_APPLICATION_APPLICATION,
                 Takes::Application,
             ),
-            Arg::taking("path", words::OPEN_FILE_IN_APPLICATION_PATH, Takes::Path),
+            Arg::taking(PATH, words::OPEN_FILE_IN_APPLICATION_PATH, Takes::Path),
         ],
-        Requires::grants_over(["application", "path"]),
+        Requires::grants_over([APPLICATION, PATH]),
         words::OPEN_FILE_IN_APPLICATION_SENTENCE,
     )?
     .changing(

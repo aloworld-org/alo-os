@@ -226,18 +226,26 @@ pub fn declare_the_three_with_a_road_into(verbs: &mut Verbs) -> Result<(), Decla
     Ok(())
 }
 
+/// The name `open_application` is asked for by, declared once so that a
+/// check of what a model chose reads it from here rather than copying it.
+pub const OPEN_APPLICATION: &str = "open_application";
+
+/// The argument naming the application, in `open_application` and in
+/// `open_file_in_application`.
+pub const APPLICATION: &str = "application";
+
 /// Start an application.
 fn open_application() -> Result<Verb, VerbError> {
     Verb::checked(
-        "open_application",
+        OPEN_APPLICATION,
         words::OPEN_APPLICATION,
         Effect::Change,
         vec![Arg::taking(
-            "application",
+            APPLICATION,
             words::OPEN_APPLICATION_APPLICATION,
             Takes::Application,
         )],
-        Requires::grants_over(["application"]),
+        Requires::grants_over([APPLICATION]),
         words::OPEN_APPLICATION_SENTENCE,
     )?
     .changing(

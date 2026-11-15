@@ -15,6 +15,9 @@ members = [
   # A test instrument too: it walks a booted machine in qemu from a runner
   # (`.github/workflows/walk.yml`), and nothing in the image depends on it.
   "crates/alo-walking",
+  # A check too: it puts a fixed set of requests to the real model several times
+  # each and carries nothing out (`.github/workflows/every-try.yml`, law 9).
+  "crates/alo-every-try",
   "crates/alo-terminal",
   "crates/alo-desktop",
   "tools/graphics-check",
