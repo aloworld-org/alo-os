@@ -48,4 +48,9 @@ fn a_character_with_no_key_refuses_the_whole_text_and_says_only_where() {
 fn a_chord_says_its_keys() {
     assert_eq!(Chord::with("meta_l", "i").said(), "meta_l+i");
     assert_eq!(Chord::key("tab").said(), "tab");
+    assert_eq!(
+        Chord::holding(&["ctrl", "alt"], "t").said(),
+        "ctrl+alt+t",
+        "the modifiers go down in the order given, before the key"
+    );
 }

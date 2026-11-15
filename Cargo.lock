@@ -2149,6 +2149,8 @@ dependencies = [
 name = "alo-walking"
 version = "0.0.1"
 dependencies = [
+ "alo-acting",
+ "alo-applications",
  "serde_json",
  "thiserror 2.0.20",
 ]

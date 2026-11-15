@@ -1705,9 +1705,8 @@ mod running {
                         .opened_in_alos_copy(one.application(), one.file())
                 };
                 eprintln!(
-                    "alo-desktop: alo was approved to open a file in {}, and it was answered {}",
-                    one.application(),
-                    opened.written()
+                    "alo-desktop: {}",
+                    alo_acting::said_on_the_log::a_file_was_opened(one.application(), opened)
                 );
                 one.answered(opened);
             }

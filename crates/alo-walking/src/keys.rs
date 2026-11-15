@@ -38,12 +38,12 @@ impl Chord {
         }
     }
 
-    /// One key with two modifiers held, the first going down first —
-    /// `Chord::with_two("ctrl", "alt", "t")` is Ctrl+Alt+T.
+    /// One key with several modifiers held, in the order they go down —
+    /// `Chord::holding(&["ctrl", "alt"], "t")` is Ctrl+Alt+T.
     #[must_use]
-    pub fn with_two(first: &'static str, second: &'static str, key: &'static str) -> Self {
+    pub fn holding(modifiers: &[&'static str], key: &'static str) -> Self {
         Self {
-            held: vec![first, second],
+            held: modifiers.to_vec(),
             key,
         }
     }
