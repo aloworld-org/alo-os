@@ -15,7 +15,8 @@
 //! arrives with chosen, and which the walk's Tab, Enter keeps.
 //!
 //! 1. **The file is made by the person**, in alo's terminal (Ctrl+Alt+T):
-//!    `touch ~/hello.txt`. No verb makes a file, and none is added for this:
+//!    `touch ~/hello.txt`, and the walk checks the journal says it is there
+//!    before alo is asked anything. No verb makes a file, and none is added for this:
 //!    `docs/features.md` promises none.
 //! 2. **The ask**, in the alo bar (Super+A), in words, with Enter.
 //! 3. **The file opens in alo's own copy** — the desktop's own sentence
@@ -68,6 +69,22 @@ pub const THE_TEXT: &str = "Written by alo in VSCodium";
 /// The journal tag the person's check of the file is written under.
 pub const THE_TAG: &str = "alo-walk-the-file";
 
+/// The journal tag the person's check that the file was made is written
+/// under, before alo is asked anything.
+pub const THE_FILE_IS_MADE: &str = "alo-walk-the-file-is-made";
+
+/// The line the person types to make the file and say so on the journal.
+///
+/// **It begins with a space**, because the first key typed into a terminal
+/// just opened was lost on two walks of 2026-11-14 (runs 43669533514 and
+/// 43675780849: the terminal shows `ouch ~/hello.txt`), and a lost space is
+/// harmless where a lost `t` made no file at all. That loss is a fault of its
+/// own, reported apart from this road; here it must not be read as alo's.
+#[must_use]
+pub fn making_the_file() -> String {
+    format!(" touch ~/{THE_FILE} && systemd-cat -t {THE_FILE_IS_MADE} ls ~/{THE_FILE}")
+}
+
 /// The person's request, as they type it.
 #[must_use]
 pub fn the_ask() -> String {
@@ -107,9 +124,19 @@ pub fn at_full_access(walk: Walk) -> Walk {
     walk.press(Chord::key("esc"))
         .press(terminal.clone())
         .look("the-terminal", look.at_most(minutes(1)))
-        .type_text(&format!("touch ~/{THE_FILE}"))
+        .type_text(&making_the_file())
+        .mark()
         .press(ret.clone())
         .look("the-file-made", look)
+        // **The person's step is checked before alo is asked**, so a file
+        // that was never made is not read as alo failing to open it.
+        .expect_line_saying(
+            "the person made the file",
+            THE_FILE_IS_MADE,
+            THE_FILE,
+            Since::Mark,
+            minutes(1),
+        )
         // **No look between Super+A and the ask**: the alo bar takes the
         // keyboard with only a caret, which the first run on GitHub
         // (2026-11-14) measured as no change at all.
@@ -143,7 +170,7 @@ pub fn at_full_access(walk: Walk) -> Walk {
         .look("vscodium-after-saving", look.at_most(minutes(1)))
         .press(terminal)
         .look("the-terminal-again", look.at_most(minutes(1)))
-        .type_text(&format!("systemd-cat -t {THE_TAG} cat ~/{THE_FILE}"))
+        .type_text(&format!(" systemd-cat -t {THE_TAG} cat ~/{THE_FILE}"))
         .mark()
         .press(ret)
         .expect_line_saying(

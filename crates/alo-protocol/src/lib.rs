@@ -129,6 +129,7 @@
 //! `docs/contracts/daemon-protocol.md` is the public surface: what a message
 //! looks like, when [`FORMAT`] rises, and what may be added without raising it.
 
+mod a_text_to_approve;
 mod advertised;
 mod agent;
 mod answered;
@@ -155,6 +156,7 @@ mod wording;
 pub mod words;
 mod workspaces;
 
+pub use a_text_to_approve::ATextToApprove;
 pub use advertised::{Advertised, HostedWorkspace};
 pub use agent::FromAnAgent;
 /// What `github-sign-in` carries: `alo-record`'s own, so the desktop and the

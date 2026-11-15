@@ -21,7 +21,7 @@
 //!
 //! So the process is started here, from the installed entry's own `Exec` line
 //! with the copy's arguments after it, and handed at once to the person's own
-//! manager as a scope of its own, `app-alocopy-<id>@<n>.scope`. The process is
+//! manager as a scope of its own, `app-alocopy-<id>-<n>.scope`. The process is
 //! held unreaped while it runs, so its number cannot be given to another
 //! process while this desktop is still reading it.
 //!
