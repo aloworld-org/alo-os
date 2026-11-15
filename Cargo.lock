@@ -974,6 +974,7 @@ dependencies = [
  "alo-protocol",
  "alo-publishing",
  "alo-record",
+ "alo-saying",
  "alo-software",
  "alo-strings",
  "alo-their-folders",

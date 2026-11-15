@@ -1,71 +1,39 @@
-//! **The words the scripted answers are said in**: the vocabularies of every
-//! crate whose sentence a road's answer carries, in English.
+//! **The words the scripted answers are said in**: every word this machine
+//! can say, from the one place the daemon reads them
+//! (`alo_saying::everything_this_machine_can_say`, as
+//! `alo-agentd`'s `what_this_machine_says` loads it), in English.
 //!
 //! English because the set's requests are English, and the model is told the
 //! machine's answers in the language the machine speaks to it.
+//!
+//! **Until 2026-11-15 this joined six crates' words by hand**, and the file
+//! verbs', the catalogue's and the record's were not among them: a rename done
+//! at full access was told to the model as *"Done without asking you first …:
+//! «files.verb.rename-file.sentence»"*, a key where a sentence belongs. A list
+//! typed in a second place had drifted from the first, which is rule 3 of
+//! ADR 0156; it is read from the first now.
 
-use alo_strings::{Strings, Vocabulary};
+use alo_strings::Strings;
 
-/// A vocabulary that would not join, by the crate it came from.
+/// The machine's words would not collect.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-#[error("the words of {from} could not be joined: {why}")]
+#[error("this machine's words could not be collected: {why}")]
 pub struct NotTheWords {
-    /// The crate whose vocabulary it was.
-    from: &'static str,
-    /// What went wrong.
+    /// What `alo-saying` said went wrong.
     why: String,
 }
 
-/// Every word an answer in the set says: the capability's (the full-access
-/// sentence), the applications', the adapters' (reading, typing), the
-/// publishing's, the asking's and the models' (where an answer came from).
+/// Every word this machine can say, as the daemon has them before any
+/// translation is laid over them.
 ///
 /// # Errors
-/// [`NotTheWords`], naming the vocabulary that did not declare or join.
+/// [`NotTheWords`], naming what would not collect.
 pub fn the_words() -> Result<Strings, NotTheWords> {
-    let mut vocabulary = Vocabulary::empty();
-    let joined = |vocabulary: &mut Vocabulary,
-                  from: &'static str,
-                  declared: Result<Vocabulary, String>|
-     -> Result<(), NotTheWords> {
-        let other = declared.map_err(|why| NotTheWords { from, why })?;
-        vocabulary.join(other).map_err(|why| NotTheWords {
-            from,
+    alo_saying::everything_this_machine_can_say()
+        .map(Strings::of)
+        .map_err(|why| NotTheWords {
             why: format!("{why:?}"),
         })
-    };
-    let said = |why: &dyn std::fmt::Debug| format!("{why:?}");
-    joined(
-        &mut vocabulary,
-        "alo-capability",
-        alo_capability::words::capability_words().map_err(|why| said(&why)),
-    )?;
-    joined(
-        &mut vocabulary,
-        "alo-applications",
-        alo_applications::words::application_words().map_err(|why| said(&why)),
-    )?;
-    joined(
-        &mut vocabulary,
-        "alo-adapters",
-        alo_adapters::words::adapter_words().map_err(|why| said(&why)),
-    )?;
-    joined(
-        &mut vocabulary,
-        "alo-publishing",
-        alo_publishing::words::publishing_words().map_err(|why| said(&why)),
-    )?;
-    joined(
-        &mut vocabulary,
-        "alo-asking",
-        alo_asking::words::asking_words().map_err(|why| said(&why)),
-    )?;
-    joined(
-        &mut vocabulary,
-        "alo-models",
-        alo_models::words::model_words().map_err(|why| said(&why)),
-    )?;
-    Ok(Strings::of(vocabulary))
 }
 
 #[cfg(test)]
@@ -73,7 +41,7 @@ mod tests {
     use super::the_words;
 
     #[test]
-    fn every_vocabulary_an_answer_needs_joins() {
+    fn every_word_the_machine_says_collects() {
         assert!(the_words().is_ok(), "{:?}", the_words().err());
     }
 }

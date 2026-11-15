@@ -183,3 +183,34 @@ fn what_a_change_did_is_told_as_done_without_asking() {
     assert!(!said.is_a_bug(), "{}", said.text());
     assert!(said.text().contains("old-notes.txt"), "{}", said.text());
 }
+
+/// **The catalogue is shown under the kind of work the call chose**, as the
+/// machine shows it: one kind holds only its own, and `everything` holds all.
+#[test]
+fn the_catalogue_is_shown_under_the_kind_chosen() {
+    let catalogue = alo_software::Catalogue::decided().expect("the catalogue reads");
+    let under = |chosen: &str| {
+        let answer = answering(
+            &Answered::TheCatalogue,
+            &call(
+                alo_software::WHAT_CAN_BE_INSTALLED,
+                &[(alo_software::words::KIND_OF_WORK, chosen)],
+            ),
+            &the_words(),
+        );
+        let ToAnAgent::Did(Done::CanBeInstalled { applications, .. }) = answer else {
+            panic!("{answer:?}");
+        };
+        applications
+    };
+    let photographs = alo_software::Category::Photographs;
+    let shown = under(&photographs.as_an_option());
+    assert_eq!(shown.len(), catalogue.under(photographs).count());
+    assert!(!shown.is_empty());
+    assert!(
+        shown
+            .iter()
+            .all(|one| one.kind_of_work == photographs.as_an_option())
+    );
+    assert_eq!(under(alo_software::verbs::EVERYTHING).len(), catalogue.how_many());
+}

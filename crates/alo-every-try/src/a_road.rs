@@ -25,6 +25,10 @@ pub enum Answered {
         /// The account.
         account: String,
     },
+    /// What the catalogue holds under the kind of work the call chose, read
+    /// from the decided catalogue (`catalogue.toml`) as the machine reads it,
+    /// so a model that looked under another kind is shown what that kind holds.
+    TheCatalogue,
     /// What the verb did, as the protocol carries it: told as done without
     /// asking where the step changes something (the call's own sentence
     /// inside the full-access words), and as the answer to a read otherwise.

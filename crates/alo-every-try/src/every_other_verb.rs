@@ -30,7 +30,7 @@ use alo_files::verbs::{
 use alo_protocol::Done;
 use alo_software::role::Role;
 use alo_software::shipped::Shipped;
-use alo_software::{Catalogue, Category, INSTALL_APPLICATION, WHAT_CAN_BE_INSTALLED, WhatTheCatalogueHolds};
+use alo_software::{Catalogue, Category, INSTALL_APPLICATION, WHAT_CAN_BE_INSTALLED};
 use alo_their_folders::Folder;
 
 use crate::a_road::{ARequest, Answered, Step};
@@ -213,13 +213,7 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         "see what can be installed",
         "What could I install for editing photographs?",
         vec![
-            Step::of(
-                WHAT_CAN_BE_INSTALLED,
-                Answered::With(Done::of_a_catalogue_read(&WhatTheCatalogueHolds::under(
-                    &catalogue,
-                    Some(LOOKED_UNDER),
-                ))),
-            )
+            Step::of(WHAT_CAN_BE_INSTALLED, Answered::TheCatalogue)
             .expecting(
                 alo_software::words::KIND_OF_WORK,
                 LOOKED_UNDER.as_an_option(),
@@ -230,6 +224,9 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         "install an application",
         "Install GIMP.",
         vec![
+            // **Look first**: the model is not told an identifier it was not
+            // shown, and the catalogue is where this one is.
+            Step::of(WHAT_CAN_BE_INSTALLED, Answered::TheCatalogue),
             Step::of(
                 INSTALL_APPLICATION,
                 Answered::With(Done::Installed {

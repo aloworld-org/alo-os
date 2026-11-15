@@ -106,9 +106,14 @@ fn every_step_is_answered_in_a_line_the_protocol_writes() {
                 .call(step.verb(), &given)
                 .unwrap_or_else(|why| panic!("{}: {why:?}", request.named()));
             let answer = crate::the_machine_answers::answering(step.answered(), &call, &words);
+            let line = answer.written().unwrap_or_else(|why| {
+                panic!("{}: {} is not written: {why:?}", request.named(), step.verb())
+            });
+            // A word the vocabulary lacks is shown as its key in guillemets:
+            // the model would read a key where the machine says a sentence.
             assert!(
-                answer.written().is_ok(),
-                "{}: {} is answered in a line the protocol writes",
+                !line.contains('«'),
+                "{}: {} is answered with a key, not a sentence: {line}",
                 request.named(),
                 step.verb()
             );
