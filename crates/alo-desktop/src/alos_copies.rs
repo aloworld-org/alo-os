@@ -63,6 +63,14 @@ struct Running {
     child: Option<Child>,
     /// The scope it was handed to, if the manager took it.
     unit: Option<String>,
+    /// **Every group the process was seen in while it lived** — above all the
+    /// scope Flatpak moved it into. The process alo starts is `flatpak run`,
+    /// which moves itself into a scope of Flatpak's and then ends, while the
+    /// application runs on there; the walk of 2026-11-15 (run 43726518930)
+    /// saw VSCodium's window in that scope answered *not alo's copy*, because
+    /// the copy was forgotten when its first process ended. Seen by the
+    /// kernel's own account of that process, so never a group of the person's.
+    seen: Vec<PathBuf>,
 }
 
 /// alo's copies on this machine.
@@ -126,10 +134,27 @@ impl AlosCopies {
         let Some(copy) = self.running.get_mut(application) else {
             return false;
         };
-        let alive = match copy.child.as_mut() {
+        let launcher = match copy.child.as_mut() {
             Some(child) => matches!(child.try_wait(), Ok(None)),
             None => began_at(copy.pid) == Some(copy.began),
         };
+        // **Where it is now, kept**, while the process alo started still says.
+        // Where this desktop did not start it (a copy found again after a
+        // restart), the process is not held unreaped, so its number could be
+        // given to another process between the two reads: it is asked when it
+        // began again after its group is read, and a changed answer keeps
+        // nothing.
+        if launcher
+            && let Some(now) = where_it_runs(copy.pid, &self.slice)
+            && (copy.child.is_some() || began_at(copy.pid) == Some(copy.began))
+            && !copy.seen.contains(&now)
+            && copy.seen.len() < THE_MOST_SEEN
+        {
+            copy.seen.push(now);
+        }
+        // **Running while anything of it runs**: the process alo started, or
+        // any process still in a group it was seen in.
+        let alive = launcher || copy.seen.iter().any(|group| holds_a_process(group, 0));
         if !alive {
             self.running.remove(application);
             if let Some(file) = self.the_file_for(application) {
@@ -234,6 +259,7 @@ impl AlosCopies {
                 began,
                 child: Some(child),
                 unit,
+                seen: Vec::new(),
             },
         );
         Ok(())
@@ -423,6 +449,7 @@ impl AlosCopies {
             began,
             child: None,
             unit: None,
+            seen: Vec::new(),
         })
     }
 }
@@ -475,8 +502,16 @@ impl StartsAlosCopy for AlosCopies {
                 &mut found,
             );
         }
-        if let Some(moved) = where_it_runs(copy.pid, &self.slice) {
-            crate::where_an_application_runs::with_everything_beneath(&moved, 0, &mut found);
+        // Each group once: where the process is now, and where it was seen,
+        // which usually holds the same one — walked twice it would count twice
+        // towards how many groups can be held.
+        let mut walked: Vec<PathBuf> = Vec::new();
+        let now = where_it_runs(copy.pid, &self.slice);
+        for group in now.iter().chain(copy.seen.iter()) {
+            if !walked.contains(group) {
+                crate::where_an_application_runs::with_everything_beneath(group, 0, &mut found);
+                walked.push(group.clone());
+            }
         }
         found.sort_unstable();
         found.dedup();
@@ -629,7 +664,15 @@ impl AlosCopies {
         if let Some(unit) = &copy.unit {
             named.push(unit.clone());
         }
-        if let Some(moved) = where_it_runs(copy.pid, &self.slice) {
+        for seen in &copy.seen {
+            named.push(seen.strip_prefix(&self.slice).map_or_else(
+                |_| seen.display().to_string(),
+                |it| it.display().to_string(),
+            ));
+        }
+        if let Some(moved) = where_it_runs(copy.pid, &self.slice)
+            && !copy.seen.contains(&moved)
+        {
             named.push(moved.strip_prefix(&self.slice).map_or_else(
                 |_| moved.display().to_string(),
                 |it| it.display().to_string(),
@@ -646,6 +689,33 @@ impl AlosCopies {
             groups.len()
         )
     }
+}
+
+/// The most groups one copy is remembered in: the unit, Flatpak's scope, and
+/// room for a move nobody has measured.
+const THE_MOST_SEEN: usize = 8;
+
+/// How deep beneath a group a process is looked for.
+const DEEPEST_LOOKED_IN: usize = 4;
+
+/// Whether any process runs in `group` or in a group beneath it — read off
+/// each group's own `cgroup.procs`, the kernel's list. A group that has gone
+/// holds none.
+fn holds_a_process(group: &Path, depth: usize) -> bool {
+    if std::fs::read_to_string(group.join("cgroup.procs"))
+        .is_ok_and(|procs| procs.lines().any(|line| !line.trim().is_empty()))
+    {
+        return true;
+    }
+    if depth >= DEEPEST_LOOKED_IN {
+        return false;
+    }
+    std::fs::read_dir(group).is_ok_and(|beneath| {
+        beneath.flatten().any(|one| {
+            one.file_type().is_ok_and(|kind| kind.is_dir())
+                && holds_a_process(&one.path(), depth + 1)
+        })
+    })
 }
 
 /// Say why alo's copy of `application` did not start, and answer so.
