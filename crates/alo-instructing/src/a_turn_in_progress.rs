@@ -269,7 +269,9 @@ you type into or press anything in a window, read the window first, because the 
 name of a field or a control is only known from that answer. If the request asks \
 for something that has not been done yet, send a propose line for it. Once \
 everything the request asked for is done, or what came back tells the person what \
-they asked, send an answer line, and ask for nothing the request did not ask for.";
+they asked, send an answer line, and ask for nothing the request did not ask for. \
+An answer may say that something was done when what came back above says this \
+machine did it; that is telling the person, not claiming it yourself.";
 
 #[cfg(test)]
 #[expect(
