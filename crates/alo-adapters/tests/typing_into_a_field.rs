@@ -499,7 +499,11 @@ fn a_name_that_means_no_field_is_refused_with_what_is_there() {
             .the_field(&tree, &in_english())
             .is_ok()
     );
-    assert!(typing("Search", "x").the_field(&tree, &in_english()).is_ok());
+    assert!(
+        typing("Search", "x")
+            .the_field(&tree, &in_english())
+            .is_ok()
+    );
 }
 
 /// **The refusal case**: with nothing for text showing, nothing is listed and
@@ -533,14 +537,20 @@ fn where_a_file_is_typed_into_is_its_name_and_typing_takes_it() {
 fn where_no_one_place_is_meant_nothing_is_offered() {
     use alo_adapters::places_for_text::where_a_file_is_typed_into;
     let elsewhere = ATree::of("Welcome - VSCodium", vec![a(TEXT, "", FOCUSED)]);
-    assert_eq!(where_a_file_is_typed_into(&elsewhere, EDITOR, "hello.txt"), None);
+    assert_eq!(
+        where_a_file_is_typed_into(&elsewhere, EDITOR, "hello.txt"),
+        None
+    );
     let two = ATree::of(
         "hello.txt - VSCodium",
         vec![a(TEXT, "", EDITABLE), a(TEXT, "", EDITABLE)],
     );
     assert_eq!(where_a_file_is_typed_into(&two, EDITOR, "hello.txt"), None);
     let secret = ATree::of("hello.txt - VSCodium", vec![a(PASSWORD, "", FOCUSED)]);
-    assert_eq!(where_a_file_is_typed_into(&secret, EDITOR, "hello.txt"), None);
+    assert_eq!(
+        where_a_file_is_typed_into(&secret, EDITOR, "hello.txt"),
+        None
+    );
     let tree = ATree::of("hello.txt - VSCodium", vec![a(TEXT, "", FOCUSED)]);
     assert_eq!(
         where_a_file_is_typed_into(&tree, "org.example.Payroll", "hello.txt"),

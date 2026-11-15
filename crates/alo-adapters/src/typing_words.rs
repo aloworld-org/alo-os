@@ -85,10 +85,13 @@ pub const THERE: &str = "there";
 /// No field of that name, and what is there instead.
 pub const NO_SUCH_FIELD_BUT_THESE: Word = Word::saying(
     "adapters.fallback.type-text.no-such-field-but-these",
-    "{application} shows no field or document named “{name}” now, so nothing was typed. It      shows: {there}",
+    "{application} shows no field or document named “{name}” now, so nothing was typed. It \
+     shows: {there}",
 )
 .noting(
-    "Said when the place the person approved typing into is not on the screen, but others are.      {there} is the names of the fields and documents the application shows, each in quotes,      separated by commas, as the application names them.",
+    "Said when the place the person approved typing into is not on the screen, but others are. \
+     {there} is the names of the fields and documents the application shows, each in quotes, \
+     separated by commas, as the application names them.",
 );
 
 /// More than one field of that name.

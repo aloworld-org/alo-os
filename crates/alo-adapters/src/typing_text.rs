@@ -28,16 +28,15 @@ use crate::adapters::Adapters;
 use crate::fallback_reach::reached;
 use crate::fallback_verbs::{NAME, TEXT, TYPE_TEXT};
 use crate::fallback_words as fallback;
-use crate::role::Role;
-use crate::typing_words as words;
 use crate::places_for_text::{
     EDITABLE, FOCUSED, TERMINAL, holds, the_ones_meant, the_places_for_text, what_is_there,
 };
+use crate::role::Role;
+use crate::typing_words as words;
 
 /// The class Chromium gives the field a web terminal (xterm.js) types
 /// through — VSCodium's built-in terminal, measured 2026-11-13.
 const A_WEB_TERMINAL: &str = "xterm-helper-textarea";
-
 
 /// The field the approved text goes into, found at the moment of typing.
 #[derive(Debug, Clone, PartialEq, Eq)]

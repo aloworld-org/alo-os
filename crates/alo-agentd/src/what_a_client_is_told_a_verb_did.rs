@@ -82,14 +82,12 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
         // (2026-11-14). It crosses as an application act, `open-file`, which
         // is the compositor door's own word for it; the file and where it
         // opened are in the record.
-        WhatAVerbDid::AFileWasOpened(opened) => {
-            Done::of_a_file_opened(
-                alo_acting::OPEN_FILE,
-                opened.application(),
-                opened
-                    .types_into()
-                    .map(|(name, window)| (name.to_owned(), window.to_owned())),
-            )
-        }
+        WhatAVerbDid::AFileWasOpened(opened) => Done::of_a_file_opened(
+            alo_acting::OPEN_FILE,
+            opened.application(),
+            opened
+                .types_into()
+                .map(|(name, window)| (name.to_owned(), window.to_owned())),
+        ),
     }
 }

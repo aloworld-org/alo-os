@@ -129,8 +129,8 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
                     window: format!("{THE_FILE} - VSCodium"),
                 },
             )
-                .expecting(APPLICATION, editor.as_str())
-                .expecting(PATH, format!("{THE_HOME}/{THE_FILE}")),
+            .expecting(APPLICATION, editor.as_str())
+            .expecting(PATH, format!("{THE_HOME}/{THE_FILE}")),
             Step::of(
                 READ_WINDOW,
                 Answered::AWindowShowing {

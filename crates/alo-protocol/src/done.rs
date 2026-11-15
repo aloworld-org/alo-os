@@ -818,14 +818,22 @@ mod tests {
     /// absent, so a client from before 2026-11-15 reads every act it read.
     #[test]
     fn a_file_opened_says_where_typing_goes_and_without_it_nothing_changed() {
-        let before = serde_json::to_string(&Done::of_an_application_act("open-file", "com.vscodium.codium")).unwrap();
+        let before = serde_json::to_string(&Done::of_an_application_act(
+            "open-file",
+            "com.vscodium.codium",
+        ))
+        .unwrap();
         assert_eq!(
             before,
             r#"{"reached":{"act":"open-file","application":"com.vscodium.codium"}}"#
         );
         assert_eq!(
-            serde_json::to_string(&Done::of_a_file_opened("open-file", "com.vscodium.codium", None))
-                .unwrap(),
+            serde_json::to_string(&Done::of_a_file_opened(
+                "open-file",
+                "com.vscodium.codium",
+                None
+            ))
+            .unwrap(),
             before
         );
         let with = Done::of_a_file_opened(
@@ -835,7 +843,8 @@ mod tests {
         );
         let written = serde_json::to_string(&with).unwrap();
         assert!(
-            written.contains(r#""types_into":{"name":"hello.txt","window":"hello.txt - VSCodium"}"#),
+            written
+                .contains(r#""types_into":{"name":"hello.txt","window":"hello.txt - VSCodium"}"#),
             "{written}"
         );
         let back: Done = serde_json::from_str(&written).unwrap();
