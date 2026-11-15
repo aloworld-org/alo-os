@@ -150,6 +150,18 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
                 .expecting(NAME, THE_FILE)
                 .expecting(TEXT, THE_TEXT),
         ],
+    )
+    // **A read of the file is aside of the road**: the machine answers it —
+    // the walk makes the file, empty — and the try must still open, type and
+    // save.
+    .or_looking_at(
+        Step::of(
+            alo_files::verbs::READ_FILE,
+            Answered::With(alo_protocol::Done::Read {
+                text: String::new(),
+            }),
+        )
+        .expecting(alo_files::verbs::FILE, format!("{THE_HOME}/{THE_FILE}")),
     );
     let documents = home.join(Folder::Documents.xdg_name());
     let site = documents.join(THE_SITE);
