@@ -714,6 +714,8 @@ mod the_language_a_person_chose;
 pub mod the_language_set_up_in;
 pub mod the_languages_offered;
 mod the_launchers_icons;
+/// The row that asks alo, fitted to its one line.
+mod the_ask_rows_line;
 /// The alo Bar's rows, drawn the same wherever the Bar is shown.
 mod the_launchers_rows;
 pub mod the_machines_keyboard;

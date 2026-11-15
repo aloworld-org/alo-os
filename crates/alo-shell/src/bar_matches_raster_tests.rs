@@ -158,3 +158,67 @@ fn the_line_saying_where_they_came_from_is_inked() {
         assert!(inked, "{edge:?}: the line is not drawn");
     }
 }
+
+/// The list drawn with `typed` asked of alo, on a bottom Dock, with Dolphin's
+/// row chosen so the row that asks is on the panel's white.
+fn drawn_asking(typed: &str) -> MatchesPicture {
+    let asking = format!("Ask alo \u{201c}{typed}\u{201d}");
+    picture(
+        &TheBarOnTheDisplay {
+            typed,
+            origin: "On this computer  \u{b7}  1 application",
+            results: &dolphin(),
+            chosen: None,
+            display: Size::from((1440, 960)),
+            words: TheLaunchersWords { open_it: "Open" },
+            asks: Some(TheAskRow {
+                asking: &asking,
+                what_it_is: "a new task",
+                from: "by openai, which has not said where it runs",
+            }),
+            artwork: None,
+        },
+        a_palette(),
+        WhereItRisesFrom {
+            dock: a_dock(1440, 960, alo_dock::Edge::Bottom),
+            clear_of: None,
+        },
+        &mut fonts(),
+        DisplayScale::ONE,
+    )
+    .expect("drawn")
+}
+
+/// **A long request stays on its own line** and never draws over where the
+/// answer would come from — the walk of 2026-11-15 (run 43751841598), where
+/// *Open the file hello.txt in my home folder in VSCodium …* wrapped onto
+/// *by openai, which has not said where it runs*.
+///
+/// Everything in the row below the request's line is drawn the same however
+/// long the request is.
+#[test]
+fn a_long_request_never_draws_over_where_the_answer_comes_from() {
+    let short = drawn_asking("files");
+    let long = drawn_asking(
+        "Open the file hello.txt in my home folder in VSCodium, type the line: Written by \
+         alo in VSCodium and then save it.",
+    );
+    let ask = long.places.ask.expect("the row that asks");
+    assert_eq!(Some(ask), short.places.ask, "the row is laid out the same");
+    let area = long.panel.area;
+    let first_line_ends = ask.loc.y + 12 + i32::try_from(TheType::Name.line()).expect("small");
+    let differs: Vec<(i32, i32)> = (first_line_ends..ask.loc.y + ask.size.h)
+        .flat_map(|y| (ask.loc.x..ask.loc.x + ask.size.w).map(move |x| (x, y)))
+        .filter(|(x, y)| {
+            let at = usize::try_from(((y - area.loc.y) * area.size.w + (x - area.loc.x)) * 4)
+                .expect("inside the raster");
+            long.panel.pixels[at..at + 4] != short.panel.pixels[at..at + 4]
+        })
+        .collect();
+    assert!(
+        differs.is_empty(),
+        "{} pixels under the request's line change with its length, the first at {:?}",
+        differs.len(),
+        differs.first()
+    );
+}
