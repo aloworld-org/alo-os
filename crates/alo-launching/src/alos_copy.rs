@@ -149,9 +149,18 @@ pub fn alos_copy(identifier: &str, home: &Path) -> Option<AlosCopy> {
 ///
 /// `distinct` tells two starts apart, as [`crate::the_unit_for`]'s does.
 /// [`None`] when the name would be longer than systemd allows.
+///
+/// **`-` before `distinct`, never `@`**: a scope cannot be an instance of a
+/// template, and systemd refuses a transient scope named with `@` as an
+/// invalid argument. Seen on the walk of 2026-11-14 (run 43666698260: *the
+/// person's manager would not take alo's copy … as
+/// app-alocopy-com.vscodium.codium@1.scope … InvalidArgs*), and checked by hand
+/// the same day with `systemd-run --user --scope` on Ubuntu's systemd: `@`
+/// refused, `-` started. The desktop-entry convention spells a scope
+/// `app-<launcher>-<id>-<random>.scope` for the same reason.
 #[must_use]
 pub fn the_unit_for_alos_copy(identifier: &str, distinct: u64) -> Option<String> {
-    let name = format!("app-{LAUNCHER}-{}@{distinct:x}.scope", escaped(identifier));
+    let name = format!("app-{LAUNCHER}-{}-{distinct:x}.scope", escaped(identifier));
     (name.len() <= 255).then_some(name)
 }
 
