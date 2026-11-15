@@ -88,7 +88,7 @@ pub enum CallError {
         /// carrying the key rather than the words is for.
         purpose: Key,
     },
-    /// The same argument given twice.
+    /// The same argument given twice, with two different values.
     SameArgumentTwice {
         /// The argument that was given twice.
         argument: String,
