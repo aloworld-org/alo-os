@@ -30,8 +30,8 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 }
 
 #[test]
-fn the_set_is_versioned_and_holds_the_three_demo_two_roads() {
-    assert_eq!(THE_VERSION, 1);
+fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
+    assert_eq!(THE_VERSION, 2);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -43,9 +43,77 @@ fn the_set_is_versioned_and_holds_the_three_demo_two_roads() {
         [
             "write in VSCodium",
             "publish to GitHub Pages",
-            "open an application by name"
+            "open an application by name",
+            "list a folder",
+            "read a file",
+            "find files by name",
+            "rename a file",
+            "move a file",
+            "archive a folder",
+            "see what can be installed",
+            "install an application",
+            "bring an application to the front",
+            "close an application",
+            "ask the record about a file",
+            "press a button in an application",
         ]
     );
+}
+
+/// **Every verb a model is offered is asked for by at least one request**, so
+/// a change to any verb's words is tried against the model (law 9). A verb
+/// added to the machine's list with no request here turns this red.
+#[test]
+fn every_verb_the_machine_offers_is_on_some_road() {
+    let set = the_set().expect("the set builds");
+    let asked: Vec<&str> = set
+        .requests()
+        .iter()
+        .flat_map(|request| request.road().iter().map(crate::a_road::Step::verb))
+        .collect();
+    let missing: Vec<String> = the_verbs()
+        .all()
+        .map(|verb| verb.name().to_owned())
+        .filter(|name| !asked.contains(&name.as_str()))
+        .collect();
+    assert!(missing.is_empty(), "no request asks for {missing:?}");
+}
+
+/// **Every step's scripted answer is one the protocol writes**, so the model
+/// is never shown a line a machine could not send.
+#[test]
+fn every_step_is_answered_in_a_line_the_protocol_writes() {
+    let verbs = the_verbs();
+    let words = crate::testing::the_words();
+    for request in the_set().expect("the set builds").requests() {
+        for step in request.road() {
+            let declared = verbs
+                .of(step.verb())
+                .unwrap_or_else(|| panic!("{} is offered", step.verb()));
+            let given: Vec<(&str, alo_capability::Given)> = declared
+                .args()
+                .iter()
+                .map(|arg| {
+                    let decided = step
+                        .expected()
+                        .iter()
+                        .find(|(named, _)| *named == arg.name())
+                        .map(|(_, is)| is.clone());
+                    (arg.name(), crate::testing::a_value_for(arg, decided))
+                })
+                .collect();
+            let call = verbs
+                .call(step.verb(), &given)
+                .unwrap_or_else(|why| panic!("{}: {why:?}", request.named()));
+            let answer = crate::the_machine_answers::answering(step.answered(), &call, &words);
+            assert!(
+                answer.written().is_ok(),
+                "{}: {} is answered in a line the protocol writes",
+                request.named(),
+                step.verb()
+            );
+        }
+    }
 }
 
 #[test]

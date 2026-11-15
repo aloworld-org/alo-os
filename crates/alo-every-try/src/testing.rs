@@ -6,7 +6,7 @@
     reason = "in a test, a panic on an unexpected Err is the failure being reported"
 )]
 
-use alo_capability::Verbs;
+use alo_capability::{Arg, Given, Takes, Verbs};
 use alo_protocol::{FromAnAgent, ToAnAgent};
 use alo_strings::Strings;
 
@@ -20,6 +20,27 @@ pub fn the_verbs() -> Verbs {
 /// The words the answers are said in.
 pub fn the_words() -> Strings {
     crate::words_for_the_answers::the_words().expect("the answers' words join")
+}
+
+/// A value for `arg` the machine accepts: `decided`, where a road decides
+/// it, and otherwise the least the argument allows.
+pub fn a_value_for(arg: &Arg, decided: Option<String>) -> Given {
+    match (arg.takes(), decided) {
+        (Takes::Count { least, .. }, None) => Given::number(*least),
+        (Takes::Count { .. }, Some(is)) => {
+            Given::number(is.parse().expect("a count a road decides is a number"))
+        }
+        (Takes::Choice(offered), None) => Given::text(
+            offered
+                .first()
+                .expect("a choice offers something")
+                .name(),
+        ),
+        (_, Some(is)) => Given::text(is),
+        (Takes::Path, None) => Given::text("/var/home/alo/Documents"),
+        (Takes::Application, None) => Given::text("org.mozilla.firefox"),
+        (_, None) => Given::text("a"),
+    }
 }
 
 /// One argument as a model writes it.
