@@ -314,3 +314,126 @@ fn the_steering_names_the_verbs_the_machine_really_has() {
         alo_instructing::the_products_words(alo_instructing::Instructions::SHOWN_TO_A_TURN, &verbs);
     assert!(words.ends_with(&told), "{words}");
 }
+
+/// What `install_application`'s `source` is held to, read off the schema.
+fn the_source_held_to(schema: &Value) -> &Value {
+    the_call_of(schema, "propose", alo_software::INSTALL_APPLICATION)
+        .pointer(&format!(
+            "/properties/given/properties/{}",
+            alo_software::words::SOURCE
+        ))
+        .unwrap()
+}
+
+/// This machine's places, as `alo_software::Enabled` reads them from the
+/// rented tool's own configuration: one usable, one switched off, and one
+/// that checks no signatures and so may not be installed from.
+fn three_places_set_up() -> alo_software::Enabled {
+    let set_up =
+        |name: &str, checks_signatures: bool, switched_off: bool| alo_software::Configured {
+            name: name.to_owned(),
+            address: format!("https://{name}.example/repo/"),
+            checks_signatures,
+            switched_off,
+        };
+    alo_software::Enabled::of(
+        &[
+            set_up("flathub", true, false),
+            set_up("switched-off", true, true),
+            set_up("unsigned", false, false),
+        ],
+        alo_software::Bound::Nobodys,
+    )
+}
+
+/// **The source of an installation may only be a place this machine installs
+/// from**: the schema names exactly the places `alo_software::Enabled` would
+/// let an installation use, read from the same list Settings → Software
+/// reads — so a model is shown them, and cannot send another.
+///
+/// Every-try, set 4, 2026-11-15: asked to *install GIMP*, `gpt-4o-mini` gave
+/// the source as `app.devsuite.Ptyxis`, `unknown`, or `official repository`,
+/// and `gpt-4o` as `official repository`: nothing it was shown named one.
+#[test]
+fn the_source_of_an_installation_is_one_of_this_machines_places() {
+    let enabled = three_places_set_up();
+    let places = crate::the_shape_a_provider_is_held_to::the_places_a_model_may_name(&enabled);
+    assert_eq!(places, ["flathub"]);
+    for place in &places {
+        assert!(enabled.usable(place).is_ok(), "{place} may be used");
+    }
+    let schema = crate::the_shape_a_provider_is_held_to::the_envelope_naming_the_verbs_and_places(
+        &the_whole_machine(),
+        &places,
+    );
+    let source = the_source_held_to(&schema);
+    assert_eq!(
+        source.pointer("/enum"),
+        Some(&serde_json::json!(["flathub"])),
+        "{source}"
+    );
+    let told = source
+        .pointer("/description")
+        .and_then(Value::as_str)
+        .unwrap();
+    assert!(told.contains("flathub"), "the places are named: {told}");
+}
+
+/// **The refusal case**: a place switched off, or one whose signatures are not
+/// checked, is never offered — the machine would refuse it.
+#[test]
+fn a_place_this_machine_would_refuse_is_never_offered() {
+    let enabled = three_places_set_up();
+    let places = crate::the_shape_a_provider_is_held_to::the_places_a_model_may_name(&enabled);
+    assert!(!places.iter().any(|place| place == "switched-off"));
+    assert!(!places.iter().any(|place| place == "unsigned"));
+    assert!(enabled.usable("unsigned").is_err());
+}
+
+/// **With no place known, the source is left as text**, as before: a provider
+/// refuses an empty `enum`, and a machine that installs from nowhere refuses
+/// every installation itself (`alo_software::NotDone::NotEnabled`).
+#[test]
+fn with_no_place_known_the_source_is_left_as_text() {
+    let schema = crate::the_shape_a_provider_is_held_to::the_envelope_naming_the_verbs_and_places(
+        &the_whole_machine(),
+        &[],
+    );
+    let source = the_source_held_to(&schema);
+    assert_eq!(source.pointer("/enum"), None, "{source}");
+    assert_eq!(
+        source,
+        the_source_held_to(&the_envelope_naming_the_verbs(&the_whole_machine())),
+        "no places is the envelope as it was"
+    );
+}
+
+/// **Only the installation's source is narrowed**: every other argument of
+/// every verb is held exactly as before.
+#[test]
+fn only_the_source_of_an_installation_is_narrowed() {
+    let verbs = the_whole_machine();
+    let before = the_envelope_naming_the_verbs(&verbs);
+    let after = crate::the_shape_a_provider_is_held_to::the_envelope_naming_the_verbs_and_places(
+        &verbs,
+        &["flathub".to_owned()],
+    );
+    for door in ["read", "propose"] {
+        for verb in verbs.all() {
+            let named = verb.name();
+            let Some(was) = the_calls_through(&before, door).into_iter().find(|call| {
+                call.pointer("/properties/verb/enum/0")
+                    .and_then(Value::as_str)
+                    == Some(named)
+            }) else {
+                continue;
+            };
+            let is = the_call_of(&after, door, named);
+            if named == alo_software::INSTALL_APPLICATION {
+                assert_ne!(was, is, "the installation is narrowed");
+            } else {
+                assert_eq!(was, is, "{named} is held as before");
+            }
+        }
+    }
+}

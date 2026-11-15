@@ -31,7 +31,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 4);
+    assert_eq!(THE_VERSION, 5);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -250,4 +250,35 @@ fn every_look_is_a_read_and_not_last() {
             );
         }
     }
+}
+
+/// **The machine installs from the places a fresh machine is set up with**:
+/// every place the shipped applications come from (`shipped.toml`), once
+/// each, and the model's answers are held to exactly those, as a booted
+/// machine's are (`alo_turn::the_shape_a_provider_is_held_to`).
+#[test]
+fn the_machine_installs_from_the_places_a_fresh_machine_has() {
+    let set = the_set().expect("the set builds");
+    let shipped = alo_software::Shipped::decided().expect("the shipped list reads");
+    let mut expected: Vec<String> = shipped
+        .every()
+        .iter()
+        .map(|pinned| pinned.source().as_str().to_owned())
+        .collect();
+    expected.sort_unstable();
+    expected.dedup();
+    assert_eq!(set.places(), expected.as_slice());
+    assert!(
+        !set.places().is_empty(),
+        "a fresh machine installs from somewhere"
+    );
+    let held = alo_turn::the_shape_a_provider_is_held_to::the_envelope_naming_the_verbs_and_places(
+        &the_verbs(),
+        set.places(),
+    )
+    .to_string();
+    assert!(
+        held.contains(&format!("\"enum\":{}", serde_json::json!(expected))),
+        "{held}"
+    );
 }

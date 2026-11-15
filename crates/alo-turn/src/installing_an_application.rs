@@ -563,6 +563,85 @@ mod tests {
         );
     }
 
+    /// **The places a turn's question names are the machine's own, read at
+    /// that moment**: both places the tool is set up with, and under a rule
+    /// that permits one, only that one.
+    #[test]
+    fn a_turns_question_names_the_places_this_machine_may_install_from() {
+        let strings = in_english();
+        let tool = TwoPlaces::default();
+        let named = |bound: Bound| {
+            let mut indicator = Indicator::default();
+            let mut record = Record::default();
+            let mut bounding = crate::testing::NothingIsBounded;
+            Machine::carrying_out_file_and_software_verbs(
+                &strings,
+                &OnThisMachine,
+                &tool,
+                bound,
+                &mut bounding,
+                &mut indicator,
+                &mut record,
+            )
+            .unwrap()
+            .the_places_a_model_may_name()
+        };
+        assert_eq!(named(Bound::Nobodys), ["acme-apps", "flathub"]);
+        let only_flathub = Bound::Only {
+            permitted: [SourceName::checked("flathub").unwrap()]
+                .into_iter()
+                .collect(),
+            set_by: alo_software::SetBy::AnAdministrator,
+        };
+        assert_eq!(named(only_flathub), ["flathub"]);
+    }
+
+    /// **And the envelope a turn's question is sent with holds them**: the one
+    /// `asking.rs` takes, built from this machine.
+    #[test]
+    fn the_envelope_a_turns_question_is_sent_with_holds_the_places() {
+        let strings = in_english();
+        let tool = TwoPlaces::default();
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+        let mut bounding = crate::testing::NothingIsBounded;
+        let machine = Machine::carrying_out_file_and_software_verbs(
+            &strings,
+            &OnThisMachine,
+            &tool,
+            Bound::Nobodys,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
+        let envelope = crate::the_shape_a_provider_is_held_to::the_envelope_a_turn_on(&machine);
+        let written = envelope.to_string();
+        assert!(
+            written.contains(r#""enum":["acme-apps","flathub"]"#),
+            "the places are held to: {written}"
+        );
+    }
+
+    /// **The refusal case**: a machine with nothing to install with names no
+    /// place, so its question is held exactly as before.
+    #[test]
+    fn a_machine_with_nothing_to_install_with_names_no_place() {
+        let strings = in_english();
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+        let mut bounding = crate::testing::NothingIsBounded;
+        let machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
+        assert!(machine.the_places_a_model_may_name().is_empty());
+    }
+
     /// **A machine that can install offers seven verbs, and the seventh is the
     /// installation.** The count is asserted rather than the name alone,
     /// because a family declared twice is the one thing a second executor made

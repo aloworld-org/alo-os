@@ -249,11 +249,14 @@ impl Turning<'_, '_> {
                 // 2026-11-14, so a hosted model cannot send an argument a verb
                 // does not take — `crate::the_shape_a_provider_is_held_to`
                 // has the walk that showed it could.
+                // **And an installation's source held to this machine's
+                // places**, read now (`Machine::the_places_a_model_may_name`):
+                // the one argument whose right values only the machine knows.
                 let schema = match held {
                     Held::InWords => None,
                     Held::ToTheEnvelope => Some(
-                        crate::the_shape_a_provider_is_held_to::the_envelope_naming_the_verbs(
-                            self.machine().verbs(),
+                        crate::the_shape_a_provider_is_held_to::the_envelope_a_turn_on(
+                            self.machine(),
                         ),
                     ),
                 };
