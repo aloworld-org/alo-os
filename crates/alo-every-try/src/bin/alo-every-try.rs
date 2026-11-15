@@ -25,6 +25,8 @@ use alo_models::{Provider, Region, Secret};
 /// The key, read here and nowhere else, and never printed.
 const THE_KEY: &str = "ALO_PROVIDER_KEY";
 
+/// What the variable `name` says, trimmed, or `otherwise` when it is unset or
+/// empty. Never used for the key, which may not be printed.
 fn said(name: &str, otherwise: &str) -> String {
     std::env::var(name)
         .ok()
@@ -43,6 +45,8 @@ fn main() -> ExitCode {
     }
 }
 
+/// Try the set and write its summary, answering with the verdict, or why
+/// nothing could be measured.
 fn running() -> Result<Verdict, String> {
     let endpoint = said("ALO_EVERY_TRY_ENDPOINT", "https://api.openai.com");
     let model = said("ALO_EVERY_TRY_MODEL", "gpt-4o-mini");
