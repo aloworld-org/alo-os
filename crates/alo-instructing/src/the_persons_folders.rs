@@ -250,6 +250,15 @@ impl ThePersonsFolders {
             ". Write it out in full wherever the person says their home or ~: a path that \
              starts with ~ is refused.",
         );
+        // **A file in the home itself is the home's path and its name**, said
+        // with an example in the home: asked for *hello.txt in my home folder*,
+        // `gpt-4o-mini` named it under Documents in 2 of 20 tries (every-try,
+        // set 5, 2026-11-15), after the example below put a file in Documents.
+        text.push_str(" A file they name in their home folder itself is ");
+        text.push_str(&self.home);
+        text.push_str("/ and its name, such as ");
+        text.push_str(&self.home);
+        text.push_str("/letter.txt, never a path inside one of the folders below.");
         if !self.folders.is_empty() {
             text.push_str(" Their own folders, under the names they have on this computer:\n");
             for (role, at) in &self.folders {
