@@ -177,7 +177,9 @@ pub(crate) fn carrying_out(
     let strings = machine.strings();
 
     let touching = match Touching::of_looking_in(
-        authorised, grants, machine.resolving(),
+        authorised,
+        grants,
+        machine.resolving(),
         strings,
         machine.the_persons_home(),
     ) {

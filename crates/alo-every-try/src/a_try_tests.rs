@@ -315,12 +315,18 @@ fn skipping_a_look_still_holds_the_next_step() {
 fn a_file_named_in_the_wrong_folder_is_told_where_it_is_and_may_be_named_again() {
     let wrong = proposing(
         OPEN_FILE_IN_APPLICATION,
-        &[(APPLICATION, EDITOR), (PATH, "/var/home/alo/Documents/hello.txt")],
+        &[
+            (APPLICATION, EDITOR),
+            (PATH, "/var/home/alo/Documents/hello.txt"),
+        ],
     );
     let (tried, model) = tried(&[wrong, opening(), looking(), typing(), answering("Done.")]);
     assert_eq!(tried.went(), &Went::TheRoad, "{tried:?}");
     let told = model.shown.get(1).cloned().unwrap_or_default();
-    assert!(told.contains("but one of that name is at /var/home/alo/hello.txt"), "{told}");
+    assert!(
+        told.contains("but one of that name is at /var/home/alo/hello.txt"),
+        "{told}"
+    );
 }
 
 /// **The refusal cases**: a second wrong path at the same step leaves the
@@ -331,12 +337,18 @@ fn a_file_is_told_where_it_is_once_and_only_for_its_own_name() {
     let wrong = || {
         proposing(
             OPEN_FILE_IN_APPLICATION,
-            &[(APPLICATION, EDITOR), (PATH, "/var/home/alo/Documents/hello.txt")],
+            &[
+                (APPLICATION, EDITOR),
+                (PATH, "/var/home/alo/Documents/hello.txt"),
+            ],
         )
     };
     let (twice, _) = tried(&[wrong(), wrong(), answering("Done.")]);
     assert!(
-        matches!(twice.went(), Went::WentWrong(WentWrong::AnotherValue { step: 1, .. })),
+        matches!(
+            twice.went(),
+            Went::WentWrong(WentWrong::AnotherValue { step: 1, .. })
+        ),
         "{twice:?}"
     );
     let another = proposing(
@@ -345,7 +357,10 @@ fn a_file_is_told_where_it_is_once_and_only_for_its_own_name() {
     );
     let (other, _) = tried(&[another, answering("Done.")]);
     assert!(
-        matches!(other.went(), Went::WentWrong(WentWrong::AnotherValue { step: 1, .. })),
+        matches!(
+            other.went(),
+            Went::WentWrong(WentWrong::AnotherValue { step: 1, .. })
+        ),
         "{other:?}"
     );
 }

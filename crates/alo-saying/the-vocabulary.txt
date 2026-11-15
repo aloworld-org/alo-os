@@ -962,6 +962,7 @@ files.failed.too-big#other	{path} holds {bytes} bytes and a verb reads at most {
 files.failed.too-many	{folder} holds more than {most} things — archive one of the folders inside it instead, so that what is in the archive is something a person can still recognise
 files.failed.too-much	{folder} holds more than {most} bytes and one archive holds at most that — archive one of the folders inside it instead
 files.real.nothing	there is nothing at {path} — a verb reaches what is there, so name something that exists
+files.real.nothing-but-one-is	there is nothing at {path}, but one of that name is at {found} — name that one if it is the one meant
 files.real.unreadable	{path} could not be followed ({why}) — nothing is done to a path this machine cannot resolve
 files.refused.really-leads-elsewhere	{path} really leads to {really} — a grant covers where a file is, not where a link to it sits, and {who} has not been granted where this one leads
 files.refused.would-create	{verb} would put something at {path}, and {why} — a grant covers where a file goes, not only where it comes from

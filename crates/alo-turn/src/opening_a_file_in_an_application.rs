@@ -130,7 +130,8 @@ pub(crate) fn opening_a_file_in_an_application(
     // Step 2. The file: granted, there, and really where the grant is.
     let touching = match Touching::of_looking_in(
         reaching.into_authorised(),
-        grants, machine.resolving(),
+        grants,
+        machine.resolving(),
         strings,
         machine.the_persons_home(),
     ) {

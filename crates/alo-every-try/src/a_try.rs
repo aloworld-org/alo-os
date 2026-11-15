@@ -326,8 +326,8 @@ impl Recording<'_> {
             return None;
         };
         let (expected_at, given_at) = (std::path::Path::new(expected), std::path::Path::new(given));
-        let same_name = expected_at.file_name().is_some()
-            && expected_at.file_name() == given_at.file_name();
+        let same_name =
+            expected_at.file_name().is_some() && expected_at.file_name() == given_at.file_name();
         let in_the_home = expected_at.parent() == Some(std::path::Path::new(crate::THE_HOME));
         if !same_name || !in_the_home || self.told_where.contains(&self.taken) {
             return None;

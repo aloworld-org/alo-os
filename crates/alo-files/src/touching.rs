@@ -771,14 +771,30 @@ mod tests {
             )
         };
         let only_documents = granting(&["/home/anna/Documents"]);
-        let said = plain(&only_documents, &["/home/anna/hello.txt"], Some("/home/anna"));
-        assert!(!said.contains("/home/anna/hello.txt"), "an ungranted home was looked in: {said}");
+        let said = plain(
+            &only_documents,
+            &["/home/anna/hello.txt"],
+            Some("/home/anna"),
+        );
+        assert!(
+            !said.contains("/home/anna/hello.txt"),
+            "an ungranted home was looked in: {said}"
+        );
         let home = granting(&["/home/anna"]);
-        let said = plain(&home, &["/home/anna/Pictures/hello.txt"], Some("/home/anna"));
-        assert!(!said.contains("Pictures"), "a subfolder was looked in: {said}");
+        let said = plain(
+            &home,
+            &["/home/anna/Pictures/hello.txt"],
+            Some("/home/anna"),
+        );
+        assert!(
+            !said.contains("Pictures"),
+            "a subfolder was looked in: {said}"
+        );
         let said = plain(&home, &["/home/anna/hello.txt"], None);
-        assert!(!said.contains("/home/anna/hello.txt"), "no home, and one was looked in: {said}");
+        assert!(
+            !said.contains("/home/anna/hello.txt"),
+            "no home, and one was looked in: {said}"
+        );
         assert!(said.contains("there is nothing at"), "{said}");
     }
-
 }
