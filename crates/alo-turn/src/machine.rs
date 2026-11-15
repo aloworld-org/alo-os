@@ -434,6 +434,24 @@ impl<'a> Machine<'a> {
         Some((tool, self.bound.clone(), self.indicator))
     }
 
+    /// **The places a model may name as an installation's source, now**:
+    /// read from the rented tool's own configuration under the machine's
+    /// rule, at the moment a turn's question is put — the list Settings →
+    /// Software reads (`alo_shell::what_a_person_installs`), never one written
+    /// down. Nothing where this machine offers no installation, or where the
+    /// tool did not answer: the question is then held as it was, and an
+    /// installation is refused by the machine as it always was.
+    ///
+    /// `pub(crate)`, and the only caller is `asking.rs`.
+    pub(crate) fn the_places_a_model_may_name(&self) -> Vec<String> {
+        self.installing_with
+            .and_then(|tool| alo_software::Enabled::read(tool, self.bound.clone()).ok())
+            .map(|enabled| {
+                crate::the_shape_a_provider_is_held_to::the_places_a_model_may_name(&enabled)
+            })
+            .unwrap_or_default()
+    }
+
     /// What publishing runs on, what counts a command alo runs, and the
     /// indicator, at once — for [`Machine::installing_and_showing`]'s reason.
     /// `pub(crate)`, and the only caller is `publishing_a_folder.rs`, which

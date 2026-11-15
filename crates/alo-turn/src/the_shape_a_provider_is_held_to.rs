@@ -39,6 +39,7 @@
 
 use alo_capability::{Effect, Offered, Takes, Verb, Verbs};
 use alo_models::in_the_envelope::the_envelope_a_provider_accepts;
+use alo_software::Enabled;
 use serde_json::{Value, json};
 
 /// **The provider's envelope, with the read and propose doors naming this
@@ -163,14 +164,81 @@ fn a_value_of(takes: &Takes) -> Value {
     }
 }
 
-/// STUB — the places a model may name as an installation's source.
+/// **The places a model may name as an installation's source**: every place
+/// this machine is set up with that `alo_software::Enabled::usable` would let
+/// an installation use — the list Settings → Software reads, under the rule an
+/// organisation set — by name, in its order.
+///
+/// A place switched off, outside the rule, unsigned or with nowhere to reach is
+/// left out, because the machine would refuse an installation from it.
 #[must_use]
-pub fn the_places_a_model_may_name(_enabled: &alo_software::Enabled) -> Vec<String> {
-    Vec::new()
+pub fn the_places_a_model_may_name(enabled: &Enabled) -> Vec<String> {
+    enabled
+        .all()
+        .map(|source| source.name().as_str())
+        .filter(|name| enabled.usable(name).is_ok())
+        .map(str::to_owned)
+        .collect()
 }
 
-/// STUB — the envelope, with an installation's source held to `places`.
+/// **[`the_envelope_naming_the_verbs`], with an installation's source held to
+/// `places`**: the one argument whose right values only this machine knows.
+///
+/// `install_application`'s `source` becomes one of `places`, and its
+/// description names them, so a hosted model is shown where this machine
+/// installs from and cannot send anything else. Every other argument of every
+/// verb is held exactly as before.
+///
+/// **No places, no narrowing**: a provider refuses an empty `enum`, and a
+/// machine that installs from nowhere refuses every installation itself
+/// (`alo_software::NotDone::NotEnabled`), so the envelope is the one
+/// [`the_envelope_naming_the_verbs`] gives.
+///
+/// This narrows to what already worked: a source outside `places` was refused
+/// by the machine before (`Enabled::usable`), only later, and after the person
+/// had been asked.
 #[must_use]
-pub fn the_envelope_naming_the_verbs_and_places(verbs: &Verbs, _places: &[String]) -> Value {
-    the_envelope_naming_the_verbs(verbs)
+pub fn the_envelope_naming_the_verbs_and_places(verbs: &Verbs, places: &[String]) -> Value {
+    let mut envelope = the_envelope_naming_the_verbs(verbs);
+    if places.is_empty() {
+        return envelope;
+    }
+    let Some(doors) = envelope
+        .pointer_mut("/properties/asks/anyOf")
+        .and_then(Value::as_array_mut)
+    else {
+        return envelope;
+    };
+    for call in doors
+        .iter_mut()
+        .filter_map(|door| door.pointer_mut("/properties/propose/anyOf"))
+        .filter_map(Value::as_array_mut)
+        .flatten()
+    {
+        let names_it = call.pointer("/properties/verb/enum/0").and_then(Value::as_str)
+            == Some(alo_software::INSTALL_APPLICATION);
+        if !names_it {
+            continue;
+        }
+        let Some(source) = call.pointer_mut(&format!(
+            "/properties/given/properties/{}",
+            alo_software::words::SOURCE
+        )) else {
+            continue;
+        };
+        let was = source
+            .get("description")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_owned();
+        *source = json!({
+            "type": "string",
+            "enum": places,
+            "description": format!(
+                "{was}; the places this machine installs from: {}",
+                places.join(", ")
+            ),
+        });
+    }
+    envelope
 }
