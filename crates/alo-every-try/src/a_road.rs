@@ -1,0 +1,167 @@
+//! **A request and the road it is expected to take**: the verbs, in order,
+//! the arguments whose values matter, and what the machine answers at each.
+
+/// What the machine answers when a step is taken — as a booted machine at full
+/// access would, written by [`crate::the_machine_answers`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Answered {
+    /// The file was opened in the application.
+    AFileOpened,
+    /// The application was started.
+    AnApplicationOpened,
+    /// The application's window was read: its title, and one empty field or
+    /// document, by the name the application shows it under.
+    AWindowShowing {
+        /// The window's title.
+        title: String,
+        /// The field's name.
+        field: String,
+    },
+    /// The text was typed, read back exactly, and saved.
+    TypedAndSaved,
+    /// The folder was published to the site of the account GitHub's own `gh`
+    /// is signed in as, which the machine fills in and the model never gives.
+    Published {
+        /// The account.
+        account: String,
+    },
+}
+
+/// One step of a road: the verb the model is expected to ask for, the values
+/// some of its arguments must have, and what the machine answers.
+///
+/// **Every argument is checked**, not only the ones named here: a step is
+/// matched through `Verbs::call`, which refuses an argument the verb does not
+/// take, one left out and one given twice. The ones named here are those whose
+/// *value* the road decides — the application, the path, the text.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Step {
+    /// The verb the step expects.
+    verb: &'static str,
+    /// The arguments whose values the road decides, and those values.
+    expecting: Vec<(&'static str, String)>,
+    /// What the machine answers when the step is taken.
+    answered: Answered,
+}
+
+impl Step {
+    /// A step asking for `verb`, answered as `answered`.
+    #[must_use]
+    pub fn of(verb: &'static str, answered: Answered) -> Self {
+        Self {
+            verb,
+            expecting: Vec::new(),
+            answered,
+        }
+    }
+
+    /// And `argument` must be given as exactly `is`.
+    #[must_use]
+    pub fn expecting(mut self, argument: &'static str, is: impl Into<String>) -> Self {
+        self.expecting.push((argument, is.into()));
+        self
+    }
+
+    /// The verb this step expects.
+    #[must_use]
+    pub const fn verb(&self) -> &'static str {
+        self.verb
+    }
+
+    /// The arguments whose values this step decides, and those values.
+    #[must_use]
+    pub fn expected(&self) -> &[(&'static str, String)] {
+        &self.expecting
+    }
+
+    /// What the machine answers when this step is taken.
+    #[must_use]
+    pub const fn answered(&self) -> &Answered {
+        &self.answered
+    }
+}
+
+/// One request in a person's words, and the road it is expected to take.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ARequest {
+    /// What the request is called in a summary.
+    named: &'static str,
+    /// The request, as the person types it.
+    words: String,
+    /// The steps, in order.
+    road: Vec<Step>,
+}
+
+impl ARequest {
+    /// A request called `named`, typed as `words`, expected to take `road` and
+    /// then answer the person in words.
+    #[must_use]
+    pub fn asking(named: &'static str, words: impl Into<String>, road: Vec<Step>) -> Self {
+        Self {
+            named,
+            words: words.into(),
+            road,
+        }
+    }
+
+    /// What the request is called in a summary.
+    #[must_use]
+    pub const fn named(&self) -> &'static str {
+        self.named
+    }
+
+    /// The request, as the person types it.
+    #[must_use]
+    pub fn words(&self) -> &str {
+        &self.words
+    }
+
+    /// The road, in order.
+    #[must_use]
+    pub fn road(&self) -> &[Step] {
+        &self.road
+    }
+
+    /// The road as a person reads it: `open_file_in_application → …`.
+    #[must_use]
+    pub fn the_road_written(&self) -> String {
+        self.road
+            .iter()
+            .map(Step::verb)
+            .chain(std::iter::once("an answer in words"))
+            .collect::<Vec<_>>()
+            .join(" → ")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_road_is_written_in_order_and_ends_in_words() {
+        let request = ARequest::asking(
+            "two steps",
+            "do two things",
+            vec![
+                Step::of("first", Answered::AFileOpened),
+                Step::of("second", Answered::TypedAndSaved),
+            ],
+        );
+        assert_eq!(
+            request.the_road_written(),
+            "first → second → an answer in words"
+        );
+    }
+
+    #[test]
+    fn a_step_keeps_every_value_it_was_given_in_order() {
+        let step = Step::of("verb", Answered::AFileOpened)
+            .expecting("one", "1")
+            .expecting("two", "2");
+        assert_eq!(
+            step.expected(),
+            [("one", "1".to_owned()), ("two", "2".to_owned())]
+        );
+    }
+}

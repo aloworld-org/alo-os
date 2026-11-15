@@ -1,0 +1,137 @@
+# Try alo's model on a fixed set of requests, five times each, and pass only if
+# every try takes the expected road — law 9 of CLAUDE.md, *what the model
+# chooses is tested many times, not once* (ADR 0157).
+#
+# `crates/alo-every-try` is the check. Each try is the agent's own loop with the
+# real instructions and the real verbs, asked of the real model through the
+# same road and the same schema a turn's question takes. **Nothing is carried
+# out on any machine**: where the daemon would open a file or type, the check
+# compares what the model asked for with the road the request expects, and
+# answers from a script. The crate's header says what that cannot show.
+#
+# **When it runs.** On a pull request that changes what the model is told or
+# offered — its instructions, its verbs, their descriptions, the shape its
+# answer is held to, the loop that asks it, or the check itself — and by hand.
+# Not on every pull request, because it spends the provider's key.
+#
+# **What it costs**, per run of the whole set at five tries each: 40 model calls
+# when every try takes the road (writing in VSCodium takes four a try,
+# publishing two, opening an application two), fewer when a try leaves it early,
+# because a try ends at its first wrong step, and more only when a provider does
+# not answer and the question is put a second time, or the model's line is not a
+# request and the turn's own loop tells it so. The summary says how many were
+# made.
+#
+# **It is not a required check.** Whether it blocks a merge is the owner's
+# setting, and this file does not decide it.
+#
+# **The key.** `ALO_WALK_PROVIDER_KEY` is the walk's secret. It is handed to the
+# one step that asks the model, as `ALO_PROVIDER_KEY`, and is never echoed:
+# GitHub masks it in the log, the check never prints it, and nothing it writes
+# — the log, the summary — contains it. A run without the secret (a fork's pull
+# request) says so and measures nothing.
+
+name: Every try
+
+on:
+  pull_request:
+    paths:
+      - "crates/alo-every-try/**"
+      - ".github/workflows/every-try.yml"
+      # What the model is told.
+      - "crates/alo-instructing/src/**"
+      # The loop that asks it, and the shape its answer is read as.
+      - "crates/alo-agent/src/driving.rs"
+      - "crates/alo-protocol/src/agent.rs"
+      - "crates/alo-protocol/src/frame.rs"
+      # What it is offered, the shape a provider holds its answer to, and the
+      # road a turn's question takes.
+      - "crates/alo-turn/src/machine.rs"
+      - "crates/alo-turn/src/the_shape_a_provider_is_held_to.rs"
+      - "crates/alo-turn/src/next_request.rs"
+      - "crates/alo-models/src/in_the_envelope.rs"
+      - "crates/alo-asking/src/openai.rs"
+      - "crates/alo-asking/src/asking.rs"
+      - "crates/alo-asking/src/hosted.rs"
+      - "crates/alo-asking/src/question.rs"
+      # How a call is validated, and the answers the model reads back.
+      - "crates/alo-capability/src/arg.rs"
+      - "crates/alo-capability/src/call.rs"
+      - "crates/alo-capability/src/verbs.rs"
+      - "crates/alo-protocol/src/to_an_agent.rs"
+      - "crates/alo-protocol/src/done.rs"
+      - "crates/alo-protocol/src/argument.rs"
+      # Every verb on that list, and the words that describe it.
+      - "crates/alo-files/src/verbs.rs"
+      - "crates/alo-files/src/words.rs"
+      - "crates/alo-software/src/verbs.rs"
+      - "crates/alo-software/src/words.rs"
+      - "crates/alo-software/shipped.toml"
+      - "crates/alo-applications/src/verbs.rs"
+      - "crates/alo-applications/src/opening_a_file.rs"
+      - "crates/alo-applications/src/words.rs"
+      - "crates/alo-record/src/verbs.rs"
+      - "crates/alo-record/src/words.rs"
+      - "crates/alo-adapters/src/fallback_verbs.rs"
+      - "crates/alo-adapters/src/fallback_words.rs"
+      - "crates/alo-adapters/src/typing_words.rs"
+      - "crates/alo-publishing/src/verbs.rs"
+      - "crates/alo-publishing/src/words.rs"
+      - "crates/alo-capability/src/words.rs"
+      # The VSCodium walk's request, which the set asks too.
+      - "crates/alo-walking/src/writing_in_vscodium.rs"
+  workflow_dispatch:
+    inputs:
+      tries:
+        description: "How many times to try each request"
+        type: string
+        default: "5"
+      only:
+        description: "Try only this request (for example: write in VSCodium); empty tries the whole set"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: every-try-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  every-try:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      # The check's own tests first, the refusal cases among them: a check
+      # whose own logic is broken must not spend the key and report a verdict.
+      - name: Test the check itself
+        run: cargo test --release --locked -p alo-every-try
+
+      # Its lints and its documentation, as the gate holds every crate to them,
+      # so a fault in the check itself is named here in minutes.
+      - name: Lint and document the check itself
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: |
+          cargo clippy --release --locked -p alo-every-try --all-targets -- -D warnings
+          cargo doc --release --locked -p alo-every-try --no-deps
+
+      - name: Build the check
+        run: cargo build --release --locked -p alo-every-try
+
+      - name: Try the set against the real model
+        env:
+          ALO_PROVIDER_KEY: ${{ secrets.ALO_WALK_PROVIDER_KEY }}
+          ALO_EVERY_TRY_ENDPOINT: https://api.openai.com
+          ALO_EVERY_TRY_MODEL: gpt-4o-mini
+          ALO_EVERY_TRY_TRIES: ${{ inputs.tries || '5' }}
+          ALO_EVERY_TRY_ONLY: ${{ inputs.only || '' }}
+        run: |
+          if [ -z "$ALO_PROVIDER_KEY" ]; then
+            echo "There is no provider key for this run (ALO_WALK_PROVIDER_KEY is not available here), so nothing was tried." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          ALO_EVERY_TRY_SUMMARY="$GITHUB_STEP_SUMMARY" target/release/alo-every-try

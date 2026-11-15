@@ -1,0 +1,54 @@
+[package]
+name = "alo-every-try"
+version = "0.0.1"
+description = "Whether alo's model takes the expected road on every try, not once: a fixed set of requests, put to the real model several times each with the real instructions and verbs, and nothing carried out (law 9)."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+# A check, not part of the machine: `.github/workflows/every-try.yml` runs the
+# binary, and nothing in the image depends on this crate.
+[[bin]]
+name = "alo-every-try"
+path = "src/bin/alo-every-try.rs"
+
+[dependencies]
+# The agent's own loop. A try is `alo_agent::driving_about`, the function a
+# person's turn runs, given a door that records instead of carrying out.
+alo-agent = { path = "../alo-agent" }
+# The verbs a model is offered (`the_verbs_a_whole_machine_offers`) and the
+# shape a provider holds its answer to (`the_envelope_naming_the_verbs`).
+alo-turn = { path = "../alo-turn" }
+# The words a turn shows a model, and what it may reach.
+alo-instructing = { path = "../alo-instructing" }
+# The verb, the call and its validation: a step is matched through
+# `Verbs::call`, the daemon's own validator, not a second one.
+alo-capability = { path = "../alo-capability" }
+# What a model's line is read as, and what the machine answers back.
+alo-protocol = { path = "../alo-protocol" }
+# The one road to a provider (`Asking::to_a_provider_held_to`), the same one a
+# turn's question takes, with law 1's indicator around it.
+alo-asking = { path = "../alo-asking" }
+alo-answering = { path = "../alo-answering" }
+alo-models = { path = "../alo-models" }
+alo-egress = { path = "../alo-egress" }
+# The words the scripted answers are said in.
+alo-strings = { path = "../alo-strings" }
+# The single sources of the names a road expects: the verbs' and arguments'
+# names, the applications a fresh machine has, the person's folders, and the
+# VSCodium walk's own request.
+alo-adapters = { path = "../alo-adapters" }
+alo-applications = { path = "../alo-applications" }
+alo-acting = { path = "../alo-acting" }
+alo-software = { path = "../alo-software" }
+alo-publishing = { path = "../alo-publishing" }
+alo-their-folders = { path = "../alo-their-folders" }
+alo-walking = { path = "../alo-walking" }
+# The schema a provider holds an answer to, handed through as it is built.
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
