@@ -8,7 +8,7 @@
 //!
 //! # Where every name comes from
 //!
-//! As in [`crate::the_set`]: verbs and arguments from the crates that declare
+//! As in [`crate::the_set()`]: verbs and arguments from the crates that declare
 //! them, applications from the decided lists (`shipped.toml` and
 //! `catalogue.toml`) found by role or by kind of work, and folders from
 //! `alo-their-folders`. **The files named** (`notes.txt`, `report.pdf`, the
@@ -21,8 +21,8 @@ use std::time::SystemTime;
 use alo_acting::Acting;
 use alo_adapters::fallback_verbs::{self, ACTIVATE_CONTROL, KIND, NAME, READ_WINDOW};
 use alo_adapters::{Pressable, Role as OnScreen, Seen, Shown, ShownWindow};
-use alo_applications::{Application, AnsweringTo, Installed};
 use alo_applications::verbs::{APPLICATION, CLOSE_APPLICATION, FOCUS_APPLICATION};
+use alo_applications::{AnsweringTo, Application, Installed};
 use alo_files::verbs::{
     ARCHIVE_FOLDER, FILE, FIND_IN_FOLDER, FOLDER, INTO, LIST_FOLDER, MOVE_FILE, NAMED, READ_FILE,
     RENAME_FILE,
@@ -126,7 +126,11 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
     let pictures = in_their(home, Folder::Pictures);
     let notes = documents.join(NOTES);
     let report = downloads.join(REPORT);
-    let browser = shipped.the(Role::WebBrowser).application().identifier().to_owned();
+    let browser = shipped
+        .the(Role::WebBrowser)
+        .application()
+        .identifier()
+        .to_owned();
     let catalogue = Catalogue::decided().map_err(|why| NotTheSet::because(format!("{why:?}")))?;
     let to_install = the_one_called(&catalogue, TO_INSTALL)?;
     let documents_named = Folder::Documents.xdg_name();
@@ -233,7 +237,10 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         "see what can be installed",
         "What could I install for painting?",
         vec![
-            Step::of(WHAT_CAN_BE_INSTALLED, Answered::TheCatalogue)
+            Step::of(
+                WHAT_CAN_BE_INSTALLED,
+                Answered::TheCatalogue(catalogue.clone()),
+            )
             .expecting(
                 alo_software::words::KIND_OF_WORK,
                 LOOKED_UNDER.as_an_option(),
@@ -246,7 +253,11 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         vec![
             // **A look**: the catalogue is where the identifier is, and a
             // model that already knows it may go straight on.
-            Step::of(WHAT_CAN_BE_INSTALLED, Answered::TheCatalogue(catalogue.clone())).a_look(),
+            Step::of(
+                WHAT_CAN_BE_INSTALLED,
+                Answered::TheCatalogue(catalogue.clone()),
+            )
+            .a_look(),
             Step::of(
                 INSTALL_APPLICATION,
                 Answered::With(Done::Installed {
@@ -254,17 +265,20 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
                     sandboxed: true,
                 }),
             )
-            .expecting(alo_software::words::APPLICATION, to_install.application().identifier())
             .expecting(
-                alo_software::words::SOURCE,
-                to_install.source().as_str(),
-            ),
+                alo_software::words::APPLICATION,
+                to_install.application().identifier(),
+            )
+            .expecting(alo_software::words::SOURCE, to_install.source().as_str()),
         ],
     );
     let acted = |act: fn(Application) -> Acting| -> Result<Done, NotTheSet> {
         let which = Application::identified(&browser)
             .map_err(|why| NotTheSet::because(format!("{browser}: {why:?}")))?;
-        Ok(Done::of_an_application_act(act(which).on_the_wire(), &browser))
+        Ok(Done::of_an_application_act(
+            act(which).on_the_wire(),
+            &browser,
+        ))
     };
     let focusing = ARequest::asking(
         "bring an application to the front",

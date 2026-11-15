@@ -80,7 +80,8 @@ impl AtAProvider {
         let Some(to) = &self.shown_to else {
             return Ok(());
         };
-        let failed = |why: std::io::Error| format!("what the model is shown was not written: {why}");
+        let failed =
+            |why: std::io::Error| format!("what the model is shown was not written: {why}");
         let mut file = std::fs::OpenOptions::new()
             .create(true)
             .append(true)

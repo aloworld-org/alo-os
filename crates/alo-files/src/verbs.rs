@@ -195,11 +195,7 @@ fn list_folder() -> Result<Verb, VerbError> {
         LIST_FOLDER,
         words::LIST_FOLDER,
         Effect::Read,
-        vec![Arg::taking(
-            FOLDER,
-            words::LIST_FOLDER_FOLDER,
-            Takes::Path,
-        )],
+        vec![Arg::taking(FOLDER, words::LIST_FOLDER_FOLDER, Takes::Path)],
         Requires::grants_over([FOLDER]),
         words::LIST_FOLDER_SENTENCE,
     )
@@ -286,11 +282,7 @@ fn archive_folder() -> Result<Verb, VerbError> {
         vec![
             Arg::taking(FOLDER, words::ARCHIVE_FOLDER_FOLDER, Takes::Path),
             Arg::taking(INTO, words::ARCHIVE_FOLDER_INTO, Takes::Path),
-            Arg::taking(
-                NAME,
-                words::ARCHIVE_FOLDER_NAME,
-                Takes::name(LONGEST_NAME),
-            ),
+            Arg::taking(NAME, words::ARCHIVE_FOLDER_NAME, Takes::name(LONGEST_NAME)),
         ],
         Requires::grants_over([FOLDER, INTO]),
         words::ARCHIVE_FOLDER_SENTENCE,

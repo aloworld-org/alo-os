@@ -107,7 +107,11 @@ fn every_step_is_answered_in_a_line_the_protocol_writes() {
                 .unwrap_or_else(|why| panic!("{}: {why:?}", request.named()));
             let answer = crate::the_machine_answers::answering(step.answered(), &call, &words);
             let line = answer.written().unwrap_or_else(|why| {
-                panic!("{}: {} is not written: {why:?}", request.named(), step.verb())
+                panic!(
+                    "{}: {} is not written: {why:?}",
+                    request.named(),
+                    step.verb()
+                )
             });
             // A word the vocabulary lacks is shown as its key in guillemets:
             // the model would read a key where the machine says a sentence.
@@ -239,7 +243,11 @@ fn every_look_is_a_read_and_not_last() {
                 request.named(),
                 step.verb()
             );
-            assert!(at + 1 < road.len(), "{}: a look is not last", request.named());
+            assert!(
+                at + 1 < road.len(),
+                "{}: a look is not last",
+                request.named()
+            );
         }
     }
 }

@@ -30,12 +30,9 @@ pub fn a_value_for(arg: &Arg, decided: Option<String>) -> Given {
         (Takes::Count { .. }, Some(is)) => {
             Given::number(is.parse().expect("a count a road decides is a number"))
         }
-        (Takes::Choice(offered), None) => Given::text(
-            offered
-                .first()
-                .expect("a choice offers something")
-                .name(),
-        ),
+        (Takes::Choice(offered), None) => {
+            Given::text(offered.first().expect("a choice offers something").name())
+        }
         (_, Some(is)) => Given::text(is),
         (Takes::Path, None) => Given::text(
             std::path::Path::new(crate::THE_HOME)

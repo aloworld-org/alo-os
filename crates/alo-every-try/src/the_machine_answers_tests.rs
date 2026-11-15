@@ -212,5 +212,8 @@ fn the_catalogue_is_shown_under_the_kind_chosen() {
             .iter()
             .all(|one| one.kind_of_work == photographs.as_an_option())
     );
-    assert_eq!(under(alo_software::verbs::EVERYTHING).len(), catalogue.how_many());
+    assert_eq!(
+        under(alo_software::verbs::EVERYTHING).len(),
+        catalogue.how_many()
+    );
 }
