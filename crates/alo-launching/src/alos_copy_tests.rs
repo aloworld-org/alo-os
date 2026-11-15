@@ -74,7 +74,7 @@ fn every_application_on_the_list_has_a_copy() {
 fn alos_copy_runs_in_a_unit_of_its_own_kind() {
     assert_eq!(
         the_unit_for_alos_copy("org.mozilla.firefox", 0x2a).as_deref(),
-        Some("app-alocopy-org.mozilla.firefox@2a.scope")
+        Some("app-alocopy-org.mozilla.firefox-2a.scope")
     );
     assert_ne!(
         the_unit_for_alos_copy("org.mozilla.firefox", 1),
@@ -118,4 +118,17 @@ fn a_running_copy_is_handed_a_file_over_its_own_profile() {
         );
         assert!(!copy.handing_over().contains(&"--new-window".to_owned()));
     }
+}
+
+/// **A scope's name holds no `@`**, which systemd refuses for a transient
+/// scope (the walk of 2026-11-14, run 43666698260).
+///
+/// What would have to be true for this to pass while broken: systemd refusing
+/// some other character this name holds — the escaped identifier holds only
+/// letters, digits, `_`, `:`, `.` and `\xNN` escapes, which unit names allow.
+#[test]
+fn alos_copys_scope_has_no_template_sign() {
+    let unit = the_unit_for_alos_copy("com.vscodium.codium", 1).unwrap_or_default();
+    assert_eq!(unit, "app-alocopy-com.vscodium.codium-1.scope");
+    assert!(!unit.contains('@'), "{unit}");
 }
