@@ -128,6 +128,9 @@ fn alos_copy_hides_the_restricted_mode_banner_and_keeps_workspace_trust() {
         "security.workspace.trust.untrustedFiles",
         "security.workspace.trust.emptyWindow",
     ] {
-        assert!(written.get(kept).is_none(), "{kept} is left as VSCodium has it");
+        assert!(
+            written.get(kept).is_none(),
+            "{kept} is left as VSCodium has it"
+        );
     }
 }
