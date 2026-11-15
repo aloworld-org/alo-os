@@ -53,9 +53,30 @@ pub struct Tried {
     asked: usize,
     /// The last line the model wrote.
     said_last: Option<String>,
+    /// How many reads it took aside of the road.
+    looked_aside: usize,
 }
 
+/// **The most reads a try may take aside of its road** — a read the machine
+/// would answer, which the request declares (`ARequest::or_looking_at`). A
+/// try that looks more than this has not taken the road; the summary says how
+/// many passes looked at all, so a pass that needed one is seen.
+pub const THE_MOST_LOOKS_ASIDE: usize = 2;
+
 impl Tried {
+    /// How many reads this try took aside of its road.
+    #[must_use]
+    pub const fn looked_aside(&self) -> usize {
+        self.looked_aside
+    }
+
+    /// The same try, having taken `looks` reads aside of its road.
+    #[must_use]
+    pub const fn looking_aside(mut self, looks: usize) -> Self {
+        self.looked_aside = looks;
+        self
+    }
+
     /// A try that chose `chose`, ended as `went`, and asked the model `asked`
     /// times.
     #[must_use]
@@ -65,6 +86,7 @@ impl Tried {
             went,
             asked,
             said_last: None,
+            looked_aside: 0,
         }
     }
 
@@ -122,6 +144,7 @@ pub fn one_try(
         unanswered: None,
         asked: 0,
         said_last: None,
+        looked_aside: 0,
     };
     let happened = driving_about(
         &TheConversationSoFar::nothing(),
@@ -184,6 +207,7 @@ pub fn one_try(
         went,
         asked: door.asked,
         said_last: door.said_last,
+        looked_aside: door.looked_aside,
     }
 }
 
@@ -226,6 +250,8 @@ struct Recording<'a> {
     asked: usize,
     /// The last line the model wrote.
     said_last: Option<String>,
+    /// How many reads the try took aside of the road.
+    looked_aside: usize,
 }
 
 /// Why the loop is stopped once the road is left: the try is over.
@@ -278,6 +304,12 @@ impl TheDoor for Recording<'_> {
             .is_some_and(|next| next.is_a_look() && next.verb() != asked)
         {
             self.taken += 1;
+        }
+        // **A read aside of the road**, which the request declares and the
+        // machine would answer: answered, and the road stays where it was —
+        // at most `THE_MOST_LOOKS_ASIDE` a try.
+        if let Some(answer) = self.aside_of_the_road(request, asked) {
+            return Ok(answer);
         }
         let Some(step) = road.get(self.taken) else {
             self.wrong = Some(WentWrong::WentOn {
@@ -335,6 +367,24 @@ impl Recording<'_> {
             &alo_strings::Filling::of("path", given.clone()).and("found", expected.clone()),
         );
         Some(ToAnAgent::refused(&said))
+    }
+
+    /// The machine's answer to `request`, a read of `asked` the request
+    /// declares aside of its road, while this try has looks left; [`None`]
+    /// otherwise, and the road decides as it always did.
+    fn aside_of_the_road(&mut self, request: &FromAnAgent, asked: &str) -> Option<ToAnAgent> {
+        if !matches!(request, FromAnAgent::Read { .. }) || self.looked_aside >= THE_MOST_LOOKS_ASIDE
+        {
+            return None;
+        }
+        let (aside, call) = self.request.aside().iter().find_map(|aside| {
+            (aside.verb() == asked)
+                .then(|| taking(aside, self.taken + 1, request, self.verbs, self.strings).ok())
+                .flatten()
+                .map(|call| (aside, call))
+        })?;
+        self.looked_aside += 1;
+        Some(answering(aside.answered(), &call, self.strings))
     }
 }
 

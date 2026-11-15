@@ -132,6 +132,9 @@ pub struct ARequest {
     words: String,
     /// The steps, in order.
     road: Vec<Step>,
+    /// Reads the machine would answer at any point of the road, which a try
+    /// may take aside of it ([`ARequest::or_looking_at`]).
+    aside: Vec<Step>,
 }
 
 impl ARequest {
@@ -143,7 +146,25 @@ impl ARequest {
             named,
             words: words.into(),
             road,
+            aside: Vec::new(),
         }
+    }
+
+    /// **And a read the machine would answer at any point of the road**,
+    /// which a try may take aside of it — at most
+    /// `crate::a_try::THE_MOST_LOOKS_ASIDE` a try — without leaving the road.
+    /// The try must still take every step after it. Only a read: a change is
+    /// never aside of the road.
+    #[must_use]
+    pub fn or_looking_at(mut self, read: Step) -> Self {
+        self.aside.push(read);
+        self
+    }
+
+    /// The reads a try may take aside of the road.
+    #[must_use]
+    pub fn aside(&self) -> &[Step] {
+        &self.aside
     }
 
     /// What the request is called in a summary.

@@ -171,3 +171,48 @@ fn only_a_pass_exits_zero() {
     assert_eq!(Verdict::SomeLeftTheRoad.exit_code(), 1);
     assert_eq!(Verdict::NotMeasured.exit_code(), 2);
 }
+
+/// **A summary says how many passes took a look aside, and the cap**, so a
+/// pass that needed one is visible rather than counted as a clean one.
+#[test]
+fn the_summary_counts_the_passes_that_looked_aside_and_names_the_cap() {
+    let written = summary(&tallied_with(&opening_firefox(), 2), "a test model");
+    assert!(
+        written.contains(&format!(
+            "at most {} a try",
+            crate::a_try::THE_MOST_LOOKS_ASIDE
+        )),
+        "{written}"
+    );
+    assert!(written.contains("looked aside"), "{written}");
+}
+
+/// **Only a pass that looked aside is counted as one**: a pass with no look is
+/// not, and a try that looked and still left the road is not a pass.
+#[test]
+fn only_passes_that_looked_aside_are_counted_as_such() {
+    let request = the_set()
+        .expect("the set builds")
+        .only("open an application by name")
+        .expect("it is in the set")
+        .requests()
+        .first()
+        .cloned()
+        .expect("one request");
+    let with_looks = vec![Tallied::of(
+        request.clone(),
+        vec![
+            the_road().looking_aside(1),
+            the_road(),
+            off_the_road().looking_aside(2),
+        ],
+    )];
+    let written = summary(&with_looks, "a test model");
+    assert!(
+        written.contains("open an application by name: 1 of its passes looked aside"),
+        "{written}"
+    );
+    let without = vec![Tallied::of(request, vec![the_road(), off_the_road()])];
+    let written = summary(&without, "a test model");
+    assert!(written.contains("No pass looked aside."), "{written}");
+}

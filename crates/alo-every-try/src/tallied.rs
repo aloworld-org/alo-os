@@ -146,7 +146,19 @@ pub fn summary(tallied: &[Tallied], asked_of: &str) -> String {
         }
     });
     said.push_str("| Request | Took the road | Where the other tries went |\n|---|---|---|\n");
+    let mut looked: Vec<String> = Vec::new();
     for one in tallied {
+        let passes_that_looked = one
+            .tries
+            .iter()
+            .filter(|tried| tried.took_the_road() && tried.looked_aside() > 0)
+            .count();
+        if passes_that_looked > 0 {
+            looked.push(format!(
+                "- {}: {passes_that_looked} of its passes looked aside",
+                one.request.named()
+            ));
+        }
         let elsewhere: Vec<String> = one
             .tries
             .iter()
@@ -171,6 +183,20 @@ pub fn summary(tallied: &[Tallied], asked_of: &str) -> String {
                 elsewhere.join("; ").replace('|', "\\|")
             }
         ));
+    }
+    // **A pass that needed a look aside is said**, with the cap, so it is not
+    // counted silently as a clean one.
+    said.push_str(&format!(
+        "\nA try may take a read the machine would answer aside of its road, at most {} a \
+         try, and must still take every step after it. ",
+        crate::a_try::THE_MOST_LOOKS_ASIDE
+    ));
+    if looked.is_empty() {
+        said.push_str("No pass looked aside.\n");
+    } else {
+        said.push_str("Passes that looked aside:\n\n");
+        said.push_str(&looked.join("\n"));
+        said.push('\n');
     }
     for one in tallied {
         said.push_str(&format!(
