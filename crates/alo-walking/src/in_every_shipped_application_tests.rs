@@ -94,15 +94,32 @@ fn every_text_it_types_has_keys() {
     assert!(typed >= 8, "only {typed} texts were typed");
 }
 
-/// **Nothing runs without the variable**: the section's first step is the
-/// gate, so a walk after a merge skips it rather than failing.
+/// **Nothing of this section runs without the variable, and only this
+/// section**: its first step is a gate covering every step after it in the
+/// section and none beyond, so a walk after a merge skips the section and goes
+/// on to the ones placed after it.
 #[test]
-fn it_runs_only_when_asked_for() {
+fn it_runs_only_when_asked_for_and_gates_only_itself() {
     let walk = at_full_access(Walk::named("every-application"));
-    match walk.steps().first() {
-        Some(Step::OnlyWith(variable)) => assert_eq!(*variable, EVERY_APPLICATION),
+    let steps = walk.steps();
+    match steps.first() {
+        Some(Step::OnlyWithFor {
+            variable,
+            steps: covered,
+        }) => {
+            assert_eq!(*variable, EVERY_APPLICATION);
+            assert_eq!(
+                *covered,
+                steps.len() - 1,
+                "the gate does not cover the section exactly"
+            );
+        }
         other => panic!("the first step is {other:?}"),
     }
+    assert!(
+        !steps.iter().any(|step| matches!(step, Step::OnlyWith(_))),
+        "a gate for the rest of the walk is left in the section"
+    );
 }
 
 /// **The phrases are the turn's and the desktop's sentences exactly**, not

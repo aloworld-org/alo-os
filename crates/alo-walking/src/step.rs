@@ -83,6 +83,16 @@ pub enum Step {
     /// The rest of the walk needs the environment variable named; without
     /// it, every later step is skipped and the report says why.
     OnlyWith(&'static str),
+    /// **The next `steps` steps need the environment variable named**: without
+    /// it they are skipped and the report says why, and the walk goes on after
+    /// them. What a section gated on a hand-run choice is, so the sections
+    /// after it still run on every walk after a merge.
+    OnlyWithFor {
+        /// The variable.
+        variable: &'static str,
+        /// How many steps after this one it covers.
+        steps: usize,
+    },
     /// Something about the pointer: move it, or check what is drawn.
     Pointer(Pointing),
     /// **alo's deep teal edge round a window** is on the screen (`drawn`),
@@ -187,7 +197,9 @@ impl Walk {
             .steps
             .iter()
             .filter_map(|step| match step {
-                Step::TypeSecret(name) | Step::OnlyWith(name) => Some(*name),
+                Step::TypeSecret(name)
+                | Step::OnlyWith(name)
+                | Step::OnlyWithFor { variable: name, .. } => Some(*name),
                 _ => None,
             })
             .collect();
@@ -311,6 +323,24 @@ impl Walk {
     #[must_use]
     pub fn only_with(self, variable: &'static str) -> Self {
         self.then(Step::OnlyWith(variable))
+    }
+
+    /// **This section needs this environment variable**, and only this
+    /// section: the steps `section` adds are skipped without it, and the walk
+    /// goes on after them.
+    #[must_use]
+    pub fn section_only_with(
+        mut self,
+        variable: &'static str,
+        section: impl FnOnce(Self) -> Self,
+    ) -> Self {
+        let inside = section(Self::named(&self.name)).steps;
+        self.steps.push(Step::OnlyWithFor {
+            variable,
+            steps: inside.len(),
+        });
+        self.steps.extend(inside);
+        self
     }
 
     /// Then this step.

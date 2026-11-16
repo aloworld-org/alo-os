@@ -46,10 +46,22 @@ pub fn walk(
         before: None,
         mark: 0,
         stopped: None,
+        skipping: None,
         pointer: the_pointer::ThePointer::default(),
         edge: the_edge::TheEdge::default(),
     };
     for step in walk.steps() {
+        // **A section skipped without its variable**: its checks say so, and
+        // the walk goes on after it.
+        if let Some((left, why)) = walking.skipping.take() {
+            if let Some(check) = check_name(step) {
+                walking.checked(check, Verdict::Skipped, why.clone());
+            }
+            if left > 1 {
+                walking.skipping = Some((left - 1, why));
+            }
+            continue;
+        }
         if let Some((verdict, why)) = walking.stopped.clone() {
             if let Some(check) = check_name(step) {
                 walking.checked(check, verdict, why);
@@ -78,6 +90,8 @@ struct Walking {
     mark: usize,
     /// Why the walk stopped, and what that makes every later check.
     stopped: Option<(Verdict, String)>,
+    /// A section being skipped: how many of its steps are left, and why.
+    skipping: Option<(usize, String)>,
     /// What the walk knows about the pointer.
     pointer: the_pointer::ThePointer,
     /// What the walk knows about alo's edge round a window.
@@ -154,6 +168,18 @@ impl Walking {
                 drawn,
                 within,
             } => self.the_edge(machine, check, picture, *drawn, *within)?,
+            Step::OnlyWithFor { variable, steps } => {
+                if *steps > 0 && secret(variable).is_none_or(|it| it.is_empty()) {
+                    self.skipping = Some((
+                        *steps,
+                        format!("this section needs {variable}, which is not set"),
+                    ));
+                    self.did(
+                        machine.elapsed(),
+                        format!("{variable} is not set; this section is skipped"),
+                    );
+                }
+            }
             Step::OnlyWith(variable) => {
                 if secret(variable).is_none_or(|it| it.is_empty()) {
                     self.stopped = Some((
