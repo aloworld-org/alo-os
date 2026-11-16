@@ -999,6 +999,16 @@ pub const DONE_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK: Word = Word::saying(
      a copy of the person's files from before it, so Put back cannot undo it.",
 );
 
+/// What the model is shown about a change it proposed and **the person
+/// approved**: the short shape full access uses, without its claim about
+/// asking, which at *ask each time* would be untrue.
+pub const DONE_AFTER_AN_APPROVAL: Word =
+    Word::saying("capability.approved.done", "Done: {sentence}.").noting(
+        "Shown to the AI model, not to the person, after a change the person approved ran. \
+         {sentence} is what was done, as the person was asked about it. Never says it was done \
+         without asking: it was asked.",
+    );
+
 /// What a person reads about a command alo ran at once, because they chose
 /// full access, **that did not work** (ADR 0149). Never *Done*: a run that
 /// ended with a failure is not a change that was made.
@@ -1372,7 +1382,7 @@ pub const TEXT_HOLDS_ANOTHER_ALPHABET: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 120] = [
+pub const EVERY_WORD: [Word; 121] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -1454,6 +1464,7 @@ pub const EVERY_WORD: [Word; 120] = [
     DONE_WITHOUT_ASKING_AND_IT_CANNOT_BE_PUT_BACK,
     DONE_AT_FULL_ACCESS,
     DONE_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK,
+    DONE_AFTER_AN_APPROVAL,
     DID_NOT_WORK_AT_FULL_ACCESS,
     DID_NOT_WORK_AT_FULL_ACCESS_AND_IT_CANNOT_BE_PUT_BACK,
     DID_NOT_WORK_AFTER_YOUR_OK,

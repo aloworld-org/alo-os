@@ -320,13 +320,17 @@ after the daemon answered, never before**, so the answer has already been given
 on the person's door, to the daemon, and the change has already run or not.
 
 **What the agent does with it:** the answer is shown to the model as the step
-after its proposal, in the shape a change done at full access is shown in, so
-both levels speak alike: a change that ran as `done-without-asking` with what it
-did and *Done after the person approved it: {sentence}.*; a decline as a refusal,
-*The person said no, so this was not done: {sentence}.*; a refusal at the
-approval as that refusal (`alo_protocol::what_the_agent_says_back::the_step_after_an_answer`;
-measured with `alo-every-try` at both levels, 2026-11-16, after the bare `did`
-led a model to propose an approved move a second time). The agent never tells
+after its proposal. **A change that ran is shown in full access's short shape, and
+truly**: under the kind `done`, with what it did and the sentence *Done:
+{sentence}.* (`alo_agent::shown_after_an_answer`) — never as
+`done-without-asking` or with full access's *Done without asking you first*,
+which would be untrue at *ask each time* and which a model could repeat to the
+person. A decline is
+shown as a refusal, *The person said no, so this was not done: {sentence}.*, and
+a refusal at the approval as that refusal. Measured with `alo-every-try` at both
+levels on 2026-11-16: shown the bare `did`, a model proposed an approved move a
+second time; shown a sentence of its own about the approval, it kept going
+after one-change requests that full access ends in words. The agent never tells
 the person this line: their shell already told them what their answer did. The
 turn drives on — with the
 bound on rounds begun again, because each answer is the person's own act. The

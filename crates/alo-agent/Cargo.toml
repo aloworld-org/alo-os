@@ -34,6 +34,10 @@ alo-turn = { path = "../alo-turn" }
 # forbids `unsafe` workspace-wide, so a `getsockopt` by hand is not available
 # either. `alo-agentd`, `alo-broker` and `alo-sessiond` rent the same crate for
 # the same question; this is the fourth.
+# **The capability model's own words**, so a change the person approved is
+# shown to the model with the very sentence full access shows it with.
+alo-strings = { path = "../alo-strings" }
+serde_json = { workspace = true }
 rustix = { workspace = true, features = ["event", "net", "process"] }
 thiserror = { workspace = true }
 
@@ -41,7 +45,6 @@ thiserror = { workspace = true }
 # The real verbs and the real words a turn is about, so the tests script shapes
 # the daemon really sends rather than hand-made ones.
 alo-files = { path = "../alo-files" }
-alo-strings = { path = "../alo-strings" }
 # A folder of its own for the daemon's socket, when a test runs the agent
 # itself (`tests/the_agent_itself_pauses_and_asks_again.rs`).
 tempfile = "3"
