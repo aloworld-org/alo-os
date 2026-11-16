@@ -49,6 +49,10 @@ pub enum WhatHappened {
         /// for a person who never answers; a person who answers ends the hold
         /// at once.
         stands_for: Option<std::time::Duration>,
+        /// The line the model wrote to propose it, as it wrote it — what a turn
+        /// that goes on after the person's answer shows the model beside that
+        /// answer (`crate::driving::driving_on`).
+        proposed: String,
     },
     /// The request needed no change, and this is the answer to it.
     ///
@@ -142,5 +146,23 @@ impl WhatHappened {
     #[must_use]
     pub const fn is_waiting_for_the_person(&self) -> bool {
         matches!(self, Self::AChangeIsWaiting { .. })
+    }
+
+    /// **The steps a turn goes on from after the person answered the change it
+    /// left waiting**: every step so far, then the model's proposal beside what
+    /// the daemon told the person the answer did, as the daemon wrote it
+    /// (`docs/contracts/asking-socket.md`, *The turn goes on after an answer*).
+    /// [`None`] when nothing was waiting.
+    #[must_use]
+    pub fn going_on_after(&self, told: &alo_protocol::ToAPerson) -> Option<Vec<AStep>> {
+        let Self::AChangeIsWaiting {
+            proposed, after, ..
+        } = self
+        else {
+            return None;
+        };
+        let mut steps = after.clone();
+        steps.push(AStep::of(proposed, &told.written().ok()?));
+        Some(steps)
     }
 }

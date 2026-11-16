@@ -6,7 +6,8 @@ Status: public surface. The socket and its first line are
 conversation was added on 2026-10-28 by
 [ADR 0138](../decisions/0138-a-follow-up-is-sent-with-the-conversation-so-far.md);
 the window offered was added on 2026-11-10, and where the person's folders are
-the same day; whether the person chose full access was added on 2026-11-11.
+the same day; whether the person chose full access was added on 2026-11-11; the
+turn going on after an answer was added on 2026-11-15.
 This document was written on 2026-10-28: until then the lines were described only
 in code, in two places that held each other to nothing.
 
@@ -22,7 +23,7 @@ the agent is `crates/alo-agent`'s `what_the_person_sent.rs`.
 
 ## What the shell writes
 
-Up to seven lines, each ending in a newline, written at once:
+Up to eight lines, each ending in a newline, written at once:
 
 | Line | When | Shape |
 |---|---|---|
@@ -33,6 +34,7 @@ Up to seven lines, each ending in a newline, written at once:
 | 5 | always, from a shell that knows this line | `alo-their-folders:` and where the person's home and standard folders are, or nothing after the marker where the shell knows no home |
 | 6 | always, from a shell that knows this line | `alo-full-access:` and `yes` when the person chose full access, or nothing after the marker at every other level |
 | 7 | always, from a shell that knows this line | `alo-their-applications:` and the applications installed, each by identifier and name, or nothing after the marker where the shell knows none |
+| 8 | always, from a shell that knows this line | `alo-answer-follows:` and `yes` when this shell tells the agent the person's answer on this socket, so the turn goes on after it (*The turn goes on after an answer*, below), or nothing after the marker |
 
 The folders are **a hint for the model, never a capability**: every verb is
 still decided by `alo-agentd` against the grants it reads itself. So is the
@@ -273,6 +275,69 @@ and answers the change on the person's door before it closes.
   away, sends nothing.
 - Closing before the reply is read — a Ctrl-C while alo is still working — is a
   Stop, and the change lapses unanswered.
+
+### The turn goes on after an answer
+
+*Added 2026-11-15, additively, so that a request needing several changes —
+open a file in VSCodium, type in it, save it — is carried through at the
+default level, each change on its own card.* Until then the agent ended the
+turn at the first change waiting, and everything after it was never asked.
+
+**Line 8, from the shell:** `alo-answer-follows:yes` says this shell will tell
+the agent the person's answer on this socket. The marker alone, or no eighth
+line at all, is a shell that will not — `alo-ask` writes none — and is answered
+exactly as before: the agent shuts its sending side when a change waits and ends
+the turn when the socket closes. Line 8 is waited for as lines 3 to 7 are, only
+after line 7 arrived. Anything after the marker but `yes` is refused in words
+and nothing is driven.
+
+**From the agent, when a change waits:** the reply as above — the waiting line,
+the sentence, and any changes carried out without the OK — and then one line
+that is exactly
+
+```text
+alo-waiting-for-the-answer
+```
+
+**The agent's sending side stays open.** The shell reads the reply up to that
+line, draws the card, and holds the socket. No line the agent writes for any
+other reason is ever exactly that line: a model's words that would be are given
+a space in front (`alo_protocol::what_the_agent_says_back::never_read_as_the_end`),
+as the first line of a reply is kept from reading as a change waiting.
+
+**From the shell, once the daemon has answered the person:** one line, the
+marker and the daemon's own answer to the person's `approve` or `decline`,
+exactly as the daemon wrote it on the person's door
+(`docs/contracts/daemon-protocol.md`):
+
+```text
+alo-answered:{"format":1,"tells":{"declined":{}}}
+```
+
+Only the four answers an approve or a decline earns are carried: `did`, `did`
+that cannot be undone, `declined`, and `refused`. **The shell writes the line
+after the daemon answered, never before**, so the answer has already been given
+on the person's door, to the daemon, and the change has already run or not.
+
+**What the agent does with it:** the line is shown to the model as the step
+after its proposal, as the daemon wrote it, and the turn drives on — with the
+bound on rounds begun again, because each answer is the person's own act. The
+next change waits for its own approval on its own card; a decline is shown to
+the model like any other answer and the turn usually ends in words. Nothing
+after the marker is written to the daemon, and nothing in the line can approve
+anything: the agent's door has no approval on it.
+
+- **It allows nothing.** A shell that wrote a false answer would mislead the
+  model about a change, and could not make one happen.
+- **A daemon that did not answer is not told to the agent.** The shell closes
+  the socket instead, and the turn ends: nobody knows what became of the
+  change, so nothing is built on it.
+- **Stop is unchanged.** The shell shutting its sending side while the agent
+  works, or while a card is up, stops the turn; the change on the card lapses.
+  A line that is not the answer above ends the turn, in words on the agent's
+  error output.
+- **One turn at a time is unchanged.** The daemon serves one turn, so a request
+  sent while a turn goes on waits for it to end.
 
 ## Versioning
 

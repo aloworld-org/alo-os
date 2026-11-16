@@ -88,6 +88,24 @@ impl Answered {
     pub const fn cannot_be_undone(&self) -> bool {
         matches!(self, Self::ItCannotBeUndone(_))
     }
+
+    /// The line a shell writes on the request's socket so the agent's turn goes
+    /// on after this answer (`docs/contracts/asking-socket.md`, *The turn goes
+    /// on after an answer*): the daemon's answer to the person, as the daemon
+    /// wrote it. [`None`] only if it could not be written.
+    #[must_use]
+    pub fn told_to_the_agent(&self) -> Option<String> {
+        use alo_protocol::ToAPerson;
+        use alo_protocol::what_the_agent_says_back::{the_answer_line, the_refusal_line};
+        match self {
+            Self::It(done) => the_answer_line(&ToAPerson::Did(done.as_ref().clone())),
+            Self::ItCannotBeUndone(done) => {
+                the_answer_line(&ToAPerson::DidAndCannotBeUndone(done.as_ref().clone()))
+            }
+            Self::Declined => the_answer_line(&ToAPerson::Declined),
+            Self::Refused { told } => the_refusal_line(told),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -141,5 +159,31 @@ mod tests {
             told: said.to_owned(),
         };
         assert_eq!(answered.told(), Some(said));
+    }
+
+    /// **Each of the four answers reaches the agent as the daemon's own**, and
+    /// is read back by the agent as the same answer.
+    #[test]
+    fn every_answer_is_told_to_the_agent_as_the_daemon_gave_it() {
+        use alo_protocol::ToAPerson;
+        use alo_protocol::what_the_agent_says_back::the_answer_told;
+        let done = Done::Renamed { now_at: None };
+        let told = |answered: &Answered| {
+            answered
+                .told_to_the_agent()
+                .and_then(|line| the_answer_told(&line))
+        };
+        assert_eq!(
+            told(&Answered::It(Box::new(done.clone()))),
+            Some(ToAPerson::Did(done.clone()))
+        );
+        assert_eq!(
+            told(&Answered::ItCannotBeUndone(Box::new(done.clone()))),
+            Some(ToAPerson::DidAndCannotBeUndone(done))
+        );
+        assert_eq!(told(&Answered::Declined), Some(ToAPerson::Declined));
+        assert!(
+            matches!(told(&refused()), Some(ToAPerson::Refused(wording)) if wording.text() == "that number is not waiting for you")
+        );
     }
 }

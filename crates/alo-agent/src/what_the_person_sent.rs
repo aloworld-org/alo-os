@@ -94,6 +94,10 @@ pub struct WhatThePersonSent {
     /// had written — `alo-ask` does — has said *that was all*, and that is
     /// never read as a Stop (`crate::the_person_may_stop`; ADR 0139).
     pub may_stop: bool,
+    /// Whether the shell tells this agent the person's answer to a change on
+    /// this socket, so the turn goes on after it (the eighth line, 2026-11-15).
+    /// False for every caller that does not say so, which is answered as before.
+    pub answer_follows: bool,
 }
 
 /// **Read what the shell sent.**
@@ -127,17 +131,19 @@ pub fn read_what_the_person_sent(
             .to_owned(),
         );
     }
-    let (earlier, window, home, at_full_access, applications, may_stop) = match socket {
-        Some(socket) => the_lines_after_the_request(input, socket)?,
-        None => (
-            TheConversationSoFar::nothing(),
-            None,
-            None,
-            false,
-            None,
-            false,
-        ),
-    };
+    let (earlier, window, home, at_full_access, applications, may_stop, answer_follows) =
+        match socket {
+            Some(socket) => the_lines_after_the_request(input, socket)?,
+            None => (
+                TheConversationSoFar::nothing(),
+                None,
+                None,
+                false,
+                None,
+                false,
+                false,
+            ),
+        };
     Ok(WhatThePersonSent {
         request,
         may_reach: may_reach
@@ -147,6 +153,7 @@ pub fn read_what_the_person_sent(
         earlier,
         window,
         may_stop,
+        answer_follows,
     })
 }
 
@@ -197,6 +204,7 @@ type AfterTheRequest = (
     bool,
     Option<TheApplicationsInstalled>,
     bool,
+    bool,
 );
 
 /// The lines after the request, each waited for briefly, or nothing — and
@@ -221,6 +229,7 @@ fn the_lines_after_the_request(
             None,
             false,
             None,
+            false,
             false,
         ));
     }
@@ -251,6 +260,7 @@ fn the_third_and_fourth(input: &mut dyn BufRead) -> Result<AfterTheRequest, Stri
                 false,
                 None,
                 false,
+                false,
             ));
         }
         ALine::NotSent => {
@@ -261,6 +271,7 @@ fn the_third_and_fourth(input: &mut dyn BufRead) -> Result<AfterTheRequest, Stri
                 false,
                 None,
                 true,
+                false,
             ));
         }
         ALine::Read(line) => TheConversationSoFar::read(&line).map_err(|why| why.to_string())?,
@@ -275,7 +286,7 @@ fn the_third_and_fourth(input: &mut dyn BufRead) -> Result<AfterTheRequest, Stri
         }
         // A shell from before the fourth line: a request about no window, and
         // nothing after it to wait for.
-        ALine::Ended | ALine::NotSent => return Ok((earlier, None, None, false, None, true)),
+        ALine::Ended | ALine::NotSent => return Ok((earlier, None, None, false, None, true, false)),
     };
     let home = match a_line(
         input,
@@ -288,7 +299,7 @@ fn the_third_and_fourth(input: &mut dyn BufRead) -> Result<AfterTheRequest, Stri
         // A shell from before the fifth line: no home was said, and nothing
         // after it to wait for.
         ALine::Ended | ALine::NotSent => {
-            return Ok((earlier, window, None, false, None, true));
+            return Ok((earlier, window, None, false, None, true, false));
         }
     };
     let at_full_access = match a_line(
@@ -301,7 +312,7 @@ fn the_third_and_fourth(input: &mut dyn BufRead) -> Result<AfterTheRequest, Stri
         // access. The model is then told what it was told before this line
         // existed, which is what that shell's agent would have told it.
         ALine::Ended | ALine::NotSent => {
-            return Ok((earlier, window, home, false, None, true));
+            return Ok((earlier, window, home, false, None, true, false));
         }
     };
     let applications = match a_line(
@@ -314,9 +325,37 @@ fn the_third_and_fourth(input: &mut dyn BufRead) -> Result<AfterTheRequest, Stri
         }
         // **A shell from before the seventh line**: no applications were said,
         // and the model is told what it was told before this line existed.
-        ALine::Ended | ALine::NotSent => None,
+        ALine::Ended | ALine::NotSent => {
+            return Ok((earlier, window, home, at_full_access, None, true, false));
+        }
     };
-    Ok((earlier, window, home, at_full_access, applications, true))
+    // **The eighth line: whether the shell tells this agent the person's
+    // answer**, so the turn goes on after it (2026-11-15). A shell from before
+    // it is answered as before: the turn ends at the first change waiting.
+    let answer_follows = match a_line(
+        input,
+        alo_protocol::what_the_agent_says_back::THE_ANSWER_FOLLOWS.len() + 3,
+        "whether the person's answer follows",
+    )? {
+        ALine::Read(line) => alo_protocol::what_the_agent_says_back::the_answer_follows(&line)
+            .ok_or_else(|| {
+                format!(
+                    "the eighth line was not `{}` with `yes` or nothing after it, so nothing \
+                     was driven",
+                    alo_protocol::what_the_agent_says_back::THE_ANSWER_FOLLOWS
+                )
+            })?,
+        ALine::Ended | ALine::NotSent => false,
+    };
+    Ok((
+        earlier,
+        window,
+        home,
+        at_full_access,
+        applications,
+        true,
+        answer_follows,
+    ))
 }
 
 #[cfg(test)]

@@ -1528,6 +1528,53 @@ mod tests {
         assert!(entry.happened().was_stopped());
     }
 
+    /// **One turn carries two changes, each on its own answer** — the turn
+    /// that goes on after the person's answer (`docs/contracts/asking-socket.md`).
+    /// The first is approved and runs once; a second approval of it is refused.
+    /// The second is proposed in the same turn and declined: it does not run,
+    /// and the decline is written down beside the first change's execution.
+    #[test]
+    fn a_turn_that_goes_on_runs_each_approved_change_once_and_records_a_decline() {
+        let mut record = Record::default();
+        on_a_machine("two-changes", &mut record, |turning, grants, folder, invoice| {
+            let april = folder.join("april.pdf");
+            std::fs::write(&april, "April").unwrap();
+            let first = turning
+                .proposing("rename_file", &renaming(invoice), grants, hour(), noon())
+                .unwrap();
+            turning.approving(first, grants, noon()).unwrap();
+            assert!(folder.join("march-final.pdf").is_file(), "the first did not run");
+            let again = turning.approving(first, grants, noon()).unwrap_err();
+            assert!(matches!(again, NotDone::NotAnswered(_)), "{again:?}");
+
+            let second = turning
+                .proposing(
+                    "rename_file",
+                    &[
+                        ("file", as_given(&april)),
+                        ("name", Given::text("april-final.pdf")),
+                    ],
+                    grants,
+                    hour(),
+                    noon(),
+                )
+                .unwrap();
+            turning.declining(second, noon()).unwrap();
+            assert!(april.is_file(), "a declined change ran anyway");
+            assert!(!folder.join("april-final.pdf").exists());
+        });
+
+        let happened: Vec<bool> = record
+            .everything()
+            .map(|entry| entry.happened().was_stopped())
+            .collect();
+        assert_eq!(
+            happened,
+            [false, true],
+            "not one execution and one decline, in order"
+        );
+    }
+
     /// **A person who says no is answered, and it is written down.** Nothing is
     /// kept about why, because nothing was asked.
     #[test]

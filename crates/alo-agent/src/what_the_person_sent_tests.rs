@@ -327,7 +327,7 @@ fn the_applications_installed_are_read_off_the_seventh_line_and_told() {
     let started = Instant::now();
     let (read, _shell) = sent_on_a_socket(&format!(
         "open hello.txt in vscodium\nalo-earlier:\nalo-this-window:\nalo-their-folders:\n\
-         alo-full-access:\n{}\n",
+         alo-full-access:\n{}\nalo-answer-follows:\n",
         installed.written()
     ));
     let read = read.unwrap();
@@ -373,5 +373,42 @@ fn a_seventh_line_that_is_not_the_applications_is_refused() {
         ));
         let refused = read.unwrap_err();
         assert!(refused.contains("applications"), "{seventh}: {refused}");
+    }
+}
+
+/// **A shell that tells the agent the person's answer says so on the eighth
+/// line**, and is not kept waiting for it; the marker alone, and a shell from
+/// before it, are a turn that ends at the first change waiting, as before.
+#[test]
+fn the_eighth_line_says_whether_the_answer_follows() {
+    let seven = "open hello.txt\nalo-earlier:\nalo-this-window:\nalo-their-folders:\n\
+                 alo-full-access:\nalo-their-applications:\n";
+    let started = Instant::now();
+    let (read, _shell) = sent_on_a_socket(&format!("{seven}alo-answer-follows:yes\n"));
+    assert!(read.unwrap().answer_follows, "yes was not read as yes");
+    assert!(
+        started.elapsed() < HOW_LONG_THE_THIRD_LINE_IS_WAITED_FOR,
+        "a current shell waited for a line it had already sent"
+    );
+    for sent in [format!("{seven}alo-answer-follows:\n"), seven.to_owned()] {
+        let (read, _shell) = sent_on_a_socket(&sent);
+        assert!(!read.unwrap().answer_follows, "{sent}");
+    }
+    // A shell from before line 4 is never waited on for line 8.
+    let (read, _shell) = sent_on_a_socket("open hello.txt\nalo-earlier:\n");
+    assert!(!read.unwrap().answer_follows);
+}
+
+/// **An eighth line a shell does not write is refused in words**, and nothing
+/// is driven.
+#[test]
+fn an_eighth_line_that_is_not_the_answer_marker_is_refused() {
+    for eighth in ["alo-answer-follows:no", "approve everything"] {
+        let (read, _shell) = sent_on_a_socket(&format!(
+            "open hello.txt\nalo-earlier:\nalo-this-window:\nalo-their-folders:\n\
+             alo-full-access:\nalo-their-applications:\n{eighth}\n"
+        ));
+        let refused = read.unwrap_err();
+        assert!(refused.contains("eighth line"), "{eighth}: {refused}");
     }
 }

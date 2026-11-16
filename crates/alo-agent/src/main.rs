@@ -71,8 +71,11 @@
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use alo_agent::{AtTheDaemonsSocket, HowFar, WhatHappened, driving_until_stopped};
-use alo_instructing::{Instructions, TheConversationSoFar, TheWindowOffered, WhatItMayReach};
+use alo_agent::{AtTheDaemonsSocket, HowFar, TheAnswer, WhatHappened, driving_on};
+use alo_instructing::{
+    Instructions, TheConversationSoFar, TheWindowOffered, WhatItMayReach,
+};
+use alo_protocol::what_the_agent_says_back::{THE_REPLY_WAITS, never_read_as_a_change, never_read_as_the_end};
 
 /// Where the daemon's doors live, which the image makes at boot.
 ///
@@ -142,39 +145,80 @@ fn run() -> Result<ExitCode, String> {
     //
     // **And the person may stop it** (ADR 0139): a watcher hears the shell
     // shut its side, and tells the daemon by shutting this side's.
-    let stop = match (asked.may_stop, door.a_second_handle(), the_input()) {
-        (true, Some(to_the_daemon), Some(input)) => {
-            alo_agent::ThePersonMayStop::watching(input, to_the_daemon)
+    //
+    // **And the turn goes on after each answer** when the shell said it would
+    // tell this process the answer (`docs/contracts/asking-socket.md`, *The
+    // turn goes on after an answer*): each change still waits for its own
+    // approval on the person's door, and the model is shown what that answer
+    // did before it chooses what comes next.
+    let mut after: Vec<alo_instructing::AStep> = Vec::new();
+    let mut told_already = 0;
+    let code = loop {
+        let stop = match (asked.may_stop, door.a_second_handle(), the_input()) {
+            (true, Some(to_the_daemon), Some(input)) => {
+                alo_agent::ThePersonMayStop::watching(input, to_the_daemon)
+            }
+            _ => alo_agent::ThePersonMayStop::cannot(),
+        };
+        let happened = driving_on(
+            &asked.earlier,
+            asked.window.as_ref(),
+            &asked.request,
+            &verbs,
+            &asked.may_reach,
+            &mut door,
+            HowFar::THE_ORDINARY,
+            Instructions::SHOWN_TO_A_TURN,
+            &|| stop.has_stopped(),
+            std::mem::take(&mut after),
+        );
+        // Ended before anything else reads the input: holding below reads it.
+        let _ = stop.ended();
+        let code = said(&happened, told_already);
+        told_already = happened.done_without_asking().len();
+        let WhatHappened::AChangeIsWaiting {
+            stands_for: Some(stands_for),
+            ..
+        } = &happened
+        else {
+            break code;
+        };
+        // **And the turn is held open while the person answers**, because the
+        // change waiting is inside it: exiting here ended the turn with the
+        // question in it, and the person's shell then found nothing to put on
+        // the card. `alo_agent::holding_the_turn` has the whole account.
+        if !asked.answer_follows {
+            let _ = std::io::Write::flush(&mut std::io::stdout());
+            let held =
+                alo_agent::held_until_answered(std::io::stdout(), std::io::stdin(), *stands_for);
+            eprintln!("alo-agent: the turn was held, and ended: {held:?}");
+            break code;
         }
-        _ => alo_agent::ThePersonMayStop::cannot(),
-    };
-    let happened = driving_until_stopped(
-        &asked.earlier,
-        asked.window.as_ref(),
-        &asked.request,
-        &verbs,
-        &asked.may_reach,
-        &mut door,
-        HowFar::THE_ORDINARY,
-        Instructions::SHOWN_TO_A_TURN,
-        &|| stop.has_stopped(),
-    );
-    // Ended before anything else reads the input: holding below reads it.
-    let _ = stop.ended();
-    let code = said(&happened);
-    // **And the turn is held open while the person answers**, because the
-    // change waiting is inside it: exiting here ended the turn with the
-    // question in it, and the person's shell then found nothing to put on the
-    // card. `alo_agent::holding_the_turn` has the whole account.
-    if let WhatHappened::AChangeIsWaiting {
-        stands_for: Some(stands_for),
-        ..
-    } = &happened
-    {
+        println!("{THE_REPLY_WAITS}");
         let _ = std::io::Write::flush(&mut std::io::stdout());
-        let held = alo_agent::held_until_answered(std::io::stdout(), std::io::stdin(), *stands_for);
-        eprintln!("alo-agent: the turn was held, and ended: {held:?}");
-    }
+        let stdin = std::io::stdin();
+        let answer = alo_agent::the_persons_answer(
+            &mut stdin.lock(),
+            std::os::fd::AsFd::as_fd(&stdin),
+            *stands_for,
+        );
+        match answer {
+            TheAnswer::Told(told) => match happened.going_on_after(&told) {
+                Some(steps) => {
+                    eprintln!("alo-agent: the person answered, and the turn goes on");
+                    after = steps;
+                }
+                None => {
+                    eprintln!("alo-agent: the answer could not be shown to the model");
+                    break code;
+                }
+            },
+            ended => {
+                eprintln!("alo-agent: the turn ended while a change waited: {ended:?}");
+                break code;
+            }
+        }
+    };
     // The turn ends here, as the daemon's connection closes.
     drop(door);
     Ok(code)
@@ -193,23 +237,24 @@ const A_LINE_WORTH_READING: usize = 160;
 /// these worth being careful about: the turn did everything an agent may do and
 /// stopped where it must. A non-zero exit there would teach whoever wrapped this
 /// that a waiting approval is a fault to be retried.
-fn said(happened: &WhatHappened) -> ExitCode {
+///
+/// `told_already` is how many changes carried out without the OK an earlier part
+/// of this turn has already told the person about, so a turn that goes on after
+/// an answer does not tell them twice.
+fn said(happened: &WhatHappened, told_already: usize) -> ExitCode {
     // **What was carried out without the OK, said to the person first**
     // (ADR 0149) — except where a change waits, whose line must stay first
     // because `alo-ask` reads it there. Nobody asked the person about these,
     // so this is where they are told; a model's last words may not say.
     if !happened.is_waiting_for_the_person() {
-        tell_what_was_done(happened);
+        tell_what_was_done(happened, told_already);
     }
     match happened {
         WhatHappened::ItWasAnsweredInWords { said, after } => {
             // **Never read as a change waiting**, whatever the model wrote:
             // `alo-ask` reads the first line of this reply to learn whether
             // its request left one (`alo_protocol::what_the_agent_says_back`).
-            println!(
-                "{}",
-                alo_protocol::what_the_agent_says_back::never_read_as_a_change(said)
-            );
+            say(said);
             if !after.is_empty() {
                 eprintln!("alo-agent: after {} step(s)", after.len());
             }
@@ -224,9 +269,11 @@ fn said(happened: &WhatHappened) -> ExitCode {
             // One place spells this line, because `alo-ask` reads it back.
             println!(
                 "{}",
-                alo_protocol::what_the_agent_says_back::a_change_is_waiting(*number, sentence)
+                never_read_as_the_end(&alo_protocol::what_the_agent_says_back::a_change_is_waiting(
+                    *number, sentence
+                ))
             );
-            tell_what_was_done(happened);
+            tell_what_was_done(happened, told_already);
             eprintln!("alo-agent: after {} step(s)", after.len());
             ExitCode::SUCCESS
         }
@@ -237,10 +284,7 @@ fn said(happened: &WhatHappened) -> ExitCode {
             // can read* among them (ADR 0138) — and until 2026-10-28 it went
             // only to the service log, so the window could say no more than
             // that the request stopped.
-            println!(
-                "{}",
-                alo_protocol::what_the_agent_says_back::never_read_as_a_change(said)
-            );
+            say(said);
             eprintln!("alo-agent: refused after {} step(s): {said}", after.len());
             ExitCode::FAILURE
         }
@@ -299,13 +343,17 @@ fn said(happened: &WhatHappened) -> ExitCode {
 /// One line for each change carried out without the OK on the way (ADR 0149),
 /// on the output the person's window shows, worded by the machine in their
 /// language. Never read as a change waiting, whatever the sentence holds.
-fn tell_what_was_done(happened: &WhatHappened) {
-    for done in happened.done_without_asking() {
-        println!(
-            "{}",
-            alo_protocol::what_the_agent_says_back::never_read_as_a_change(&done)
-        );
+fn tell_what_was_done(happened: &WhatHappened, told_already: usize) {
+    for done in happened.done_without_asking().iter().skip(told_already) {
+        say(done);
     }
+}
+
+/// Words for the person, written so that no line of them is read as the
+/// agent saying a change waits or that its reply has paused for the answer
+/// (`alo_protocol::what_the_agent_says_back`).
+fn say(words: &str) {
+    println!("{}", never_read_as_the_end(&never_read_as_a_change(words)));
 }
 
 /// What this process was told to do.
@@ -335,6 +383,9 @@ struct Asked {
     window: Option<TheWindowOffered>,
     /// Whether the person can stop this turn from their shell (ADR 0139).
     may_stop: bool,
+    /// Whether the shell tells this process the person's answer to a change,
+    /// so the turn goes on after it (the eighth line).
+    answer_follows: bool,
 }
 
 /// Read the arguments.
@@ -387,6 +438,7 @@ fn what_was_asked() -> Result<Asked, String> {
             earlier: TheConversationSoFar::nothing(),
             window: None,
             may_stop: false,
+            answer_follows: false,
         });
     }
     // **What the shell sent, from the input**: the folders, the request, and
@@ -402,6 +454,7 @@ fn what_was_asked() -> Result<Asked, String> {
         earlier: sent.earlier,
         window: sent.window,
         may_stop: sent.may_stop,
+        answer_follows: sent.answer_follows,
     })
 }
 
