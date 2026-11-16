@@ -24,11 +24,7 @@
 //!
 //! # Whose turn
 //!
-//! The door alo acts through carries no         .find(|which| {
-            tasks
-                .the(*which)
-                .is_some_and(|task| task.what_is_happening() == alo_tasks::words::ALO_IS_WORKING)
-        }) (`alo_acting`), and `alo-agentd`
+//! The door alo acts through carries no task (`alo_acting`), and `alo-agentd`
 //! serves one turn at a time, so the act is the **task at work** — open,
 //! and *alo is working* — at that moment. With none, nothing is marked: an act
 //! from alo's terminal is not a task's. **With two at work the window is
