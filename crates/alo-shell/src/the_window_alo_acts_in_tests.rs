@@ -154,17 +154,22 @@ fn nothing_is_marked_when_no_task_is_at_work() {
     );
 }
 
-/// **Two tasks at work and the window wears neither**: which one acted cannot
-/// be told, and a band naming the wrong request, with a Stop that stops the
-/// wrong work, is worse than none. The task windows still say both are working.
+/// **Two tasks at work and the window still wears the border** — the owner,
+/// 2026-11-15: *a window alo types into is never left unmarked*. Which task
+/// acted cannot be told, so it is the one asked most recently; the border says
+/// alo, which is true whichever it was.
 #[test]
-fn two_tasks_at_work_mark_no_window() {
+fn two_tasks_at_work_still_mark_the_window() {
     let (_display, _peer, codium, _other) = two_windows();
     let (_runtime, mut server) = a_session("alo-acts-for-two");
     let _first = a_task_asked(&mut server, ASKED);
-    let _second = a_task_asked(&mut server, "Summarise my notes");
-    assert_eq!(server.alo_acts_in(&codium, CODIUM), None);
-    assert!(server.alo_in_this_window(&codium).is_none());
+    let second = a_task_asked(&mut server, "Summarise my notes");
+    assert_eq!(server.alo_acts_in(&codium, CODIUM), Some(second));
+    assert_eq!(
+        server.alo_in_this_window(&codium).map(|here| here.wears),
+        Some(crate::alo_in_a_window::Wears::TheBorder),
+        "a window alo acted in was left unmarked"
+    );
 }
 
 /// **A task whose window the person closed is not the one at work**, so a
@@ -315,4 +320,118 @@ fn closing_the_task_while_alo_acts_takes_the_presence_off() {
         .the_windows_alo_acts_in
         .looked_at(std::slice::from_ref(&codium), &server.the_tasks);
     assert_eq!(over.len(), 1);
+}
+
+/// **The border says what the indicator says about this window's
+/// application**: sending once alo's copy is seen sending, *may be sending*
+/// where it cannot be counted, and nothing when nothing is up — and only on
+/// the window alo acts in, never another window of another application.
+#[test]
+fn the_border_says_what_the_indicator_says_is_sending() {
+    use alo_egress::HowItIsShown;
+    let (_display, _peer, codium, other) = two_windows();
+    let (_runtime, mut server) = a_session("alo-acts-and-sends");
+    let _which = a_task_asked(&mut server, ASKED);
+    assert!(server.alo_acts_in(&codium, CODIUM).is_some());
+    let sending = |server: &Server, window: &WlSurface| {
+        server
+            .alo_in_this_window(window)
+            .and_then(|here| here.sending)
+    };
+    assert_eq!(
+        sending(&server, &codium),
+        None,
+        "sending before anything was"
+    );
+
+    server.what_alos_work_is_sending(vec![(CODIUM.to_owned(), HowItIsShown::Counted)]);
+    assert_eq!(sending(&server, &codium), Some(HowItIsShown::Counted));
+    assert!(server.alo_in_this_window(&other).is_none());
+
+    server.what_alos_work_is_sending(vec![(CODIUM.to_owned(), HowItIsShown::Uncounted)]);
+    assert_eq!(sending(&server, &codium), Some(HowItIsShown::Uncounted));
+
+    server.what_alos_work_is_sending(vec![(
+        "org.mozilla.firefox".to_owned(),
+        HowItIsShown::Counted,
+    )]);
+    assert_eq!(
+        sending(&server, &codium),
+        None,
+        "another application's sending was put on this window"
+    );
+
+    server.what_alos_work_is_sending(Vec::new());
+    assert_eq!(sending(&server, &codium), None);
+}
+
+/// **The corner leaves alo's copy only for a window whose border was really
+/// drawn** — the owner, 2026-11-15: *the border is enough*. Drawn round a
+/// window alo is acting in, its application wears the border; and the drawing
+/// is asked again every frame, so a border not drawn since is not counted.
+#[test]
+fn an_application_wears_the_border_only_where_it_was_drawn() {
+    let (_display, _peer, codium, _other) = two_windows();
+    let (_runtime, mut server) = a_session("alo-border-drawn");
+    let _which = a_task_asked(&mut server, ASKED);
+    assert!(server.alo_acts_in(&codium, CODIUM).is_some());
+
+    server.alos_border_was_drawn_round(&codium);
+    assert_eq!(
+        server.the_applications_wearing_alos_border(),
+        vec![CODIUM.to_owned()]
+    );
+    // Not drawn again since: not counted again.
+    assert!(
+        server.the_applications_wearing_alos_border().is_empty(),
+        "a border drawn once was counted for ever"
+    );
+}
+
+/// **A window that is not wearing a drawn border leaves its copy in the
+/// corner**, so nothing alo's copy sends is ever shown nowhere: never marked,
+/// marked and not drawn this frame (off the screen, behind the panel), or
+/// waiting for the person — navy, with no edge.
+#[test]
+fn without_a_drawn_border_the_copy_stays_in_the_corner() {
+    let (_display, _peer, codium, _other) = two_windows();
+    let (_runtime, mut server) = a_session("alo-border-not-drawn");
+    // Drawn round a window alo is not acting in: nothing.
+    server.alos_border_was_drawn_round(&codium);
+    assert!(server.the_applications_wearing_alos_border().is_empty());
+
+    let which = a_task_asked(&mut server, ASKED);
+    assert!(server.alo_acts_in(&codium, CODIUM).is_some());
+    // Marked, but no border drawn this frame.
+    assert!(server.the_applications_wearing_alos_border().is_empty());
+
+    // Waiting for the person: no edge, so the corner keeps it.
+    {
+        let task = server.tasks_mut().the_mut(which).expect("open");
+        task.is_asking("Save hello.txt");
+        task.alo_says(Turn::alo_proposing("Save hello.txt"));
+    }
+    server.alos_border_was_drawn_round(&codium);
+    assert!(
+        server.the_applications_wearing_alos_border().is_empty(),
+        "a navy window with no edge took the copy out of the corner"
+    );
+}
+
+/// **The turn ending gives the copy back to the corner at once**, before any
+/// frame lets the window go: a border drawn last frame is not counted once
+/// the work it marked is over.
+#[test]
+fn the_turn_ending_gives_the_copy_back_to_the_corner_at_once() {
+    let (_display, _peer, codium, _other) = two_windows();
+    let (_runtime, mut server) = a_session("alo-border-and-the-turn-ends");
+    let which = a_task_asked(&mut server, ASKED);
+    assert!(server.alo_acts_in(&codium, CODIUM).is_some());
+    server.alos_border_was_drawn_round(&codium);
+    server
+        .tasks_mut()
+        .the_mut(which)
+        .expect("open")
+        .alo_says(Turn::from_alo("Done."));
+    assert!(server.the_applications_wearing_alos_border().is_empty());
 }

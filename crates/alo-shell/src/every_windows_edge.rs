@@ -107,7 +107,7 @@ pub(crate) fn every_windows_edge(
                         crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale),
                     )
                 });
-            EdgePicture::of(
+            let picture = EdgePicture::of(
                 &edge,
                 crate::window_edge_picture::OverTheEdge {
                     menu: menu.as_ref().map(|(menu, on)| {
@@ -160,8 +160,18 @@ pub(crate) fn every_windows_edge(
                 &mut labels.fonts,
                 output,
                 scale,
-            )
-            .map(|picture| picture.on_the_window(surface.clone()))
+            )?;
+            // **alo's border was drawn round this window**, so the corner may
+            // leave its copy's sending to the border (the owner, 2026-11-15:
+            // *the border is enough*). Only a border drawn counts: a picture
+            // left off the screen above returned before this.
+            if alo_here.as_ref().is_some_and(|here| {
+                here.wears == crate::alo_in_a_window::Wears::TheBorder
+                    && here.how != crate::alo_in_a_window::HowAloIsHere::WaitingForThePerson
+            }) {
+                server.alos_border_was_drawn_round(surface);
+            }
+            Some(picture.on_the_window(surface.clone()))
         })
         .collect()
 }

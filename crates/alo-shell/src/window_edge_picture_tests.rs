@@ -332,6 +332,7 @@ fn alo_operating() -> crate::alo_in_a_window::AloHere {
         status: alo_tasks::words::ALO_IS_WORKING,
         what: "Open hello.txt in VSCodium and type a line into it".to_owned(),
         wears: crate::alo_in_a_window::Wears::TheBorder,
+        sending: None,
     }
 }
 

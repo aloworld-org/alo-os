@@ -110,6 +110,9 @@ pub struct AloHere {
     pub what: String,
     /// What the window wears: the band, or the border alone.
     pub wears: Wears,
+    /// What alo's work in this window's application is sending, as the
+    /// indicator says it, on a window alo operates; [`None`] while nothing is.
+    pub sending: Option<alo_egress::HowItIsShown>,
 }
 
 impl AloInAWindow {
@@ -325,12 +328,12 @@ impl crate::Server {
         let offered = self
             .alo_in_a_window
             .tasks_in(surface)
-            .map(|which| (which, Wears::TheBand));
+            .map(|which| (which, Wears::TheBand, None));
         let operated = self
             .the_windows_alo_acts_in
             .tasks_in(surface)
-            .map(|which| (which, Wears::TheBorder));
-        offered.chain(operated).find_map(|(which, wears)| {
+            .map(|(which, sending)| (which, Wears::TheBorder, sending));
+        offered.chain(operated).find_map(|(which, wears, sending)| {
             if !self.the_tasks.is_open(which) {
                 return None;
             }
@@ -348,6 +351,7 @@ impl crate::Server {
                 status,
                 what,
                 wears,
+                sending,
             })
         })
     }
