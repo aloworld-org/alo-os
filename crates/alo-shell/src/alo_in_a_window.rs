@@ -81,6 +81,21 @@ pub enum HowAloIsHere {
     Stopping,
 }
 
+/// **What a window wears of alo**, decided by how alo came to be in it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Wears {
+    /// The person offered it with *Help with this window*: the teal edge, and
+    /// across its foot the band with alo's mark, the person's words and Stop
+    /// (stage 3, `11:146`).
+    TheBand,
+    /// alo chose it and is operating it, for a request typed in the Bar: the
+    /// teal edge and alo's mark on a tab of it, and nothing over the window —
+    /// the owner, 2026-11-15: *if the window is being operated by alo it should
+    /// just have a border with one of our brand colors*
+    /// (`crate::the_window_alo_acts_in`).
+    TheBorder,
+}
+
 /// What a window's band shows while alo is in it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AloHere {
@@ -93,6 +108,8 @@ pub struct AloHere {
     /// What the person asked, which is the plain-language description of the
     /// work: their own words, never a model's summary of them.
     pub what: String,
+    /// What the window wears: the band, or the border alone.
+    pub wears: Wears,
 }
 
 impl AloInAWindow {
@@ -157,6 +174,12 @@ impl AloInAWindow {
         }
         self.works_in.retain(|(_, surface)| alive.contains(surface));
     }
+}
+
+/// Whether a task with this status word is still in the turn a window wears:
+/// working, waiting on the person, or stopping.
+pub(crate) fn wears_alo(status: alo_strings::Word) -> bool {
+    how_it_is(status).is_some()
 }
 
 /// How a task is, read from its own status word, or [`None`] once its work is
@@ -296,7 +319,18 @@ impl crate::Server {
     /// nothing once the work has ended, complete or stopped.
     #[must_use]
     pub fn alo_in_this_window(&self, surface: &WlSurface) -> Option<AloHere> {
-        self.alo_in_a_window.tasks_in(surface).find_map(|which| {
+        // **Offered first, then operated**: a window the person offered keeps
+        // its band, and one alo chose wears the border alone
+        // (`crate::the_window_alo_acts_in`).
+        let offered = self
+            .alo_in_a_window
+            .tasks_in(surface)
+            .map(|which| (which, Wears::TheBand));
+        let operated = self
+            .the_windows_alo_acts_in
+            .tasks_in(surface)
+            .map(|which| (which, Wears::TheBorder));
+        offered.chain(operated).find_map(|(which, wears)| {
             if !self.the_tasks.is_open(which) {
                 return None;
             }
@@ -313,6 +347,7 @@ impl crate::Server {
                 how,
                 status,
                 what,
+                wears,
             })
         })
     }

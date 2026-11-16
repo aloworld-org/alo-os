@@ -25,6 +25,16 @@
 //! in, where `11:174`'s words began, and the words move along by its 16 and a
 //! gap of 8. Recorded in the design note's *Readings taken while building*.
 //!
+//! # A window alo operates wears the border alone
+//!
+//! For a window alo chose and operates, for a request typed in the Bar
+//! (`crate::the_window_alo_acts_in`), the owner ruled on 2026-11-15: *if the
+//! window is being operated by alo it should just have a border with one of
+//! our brand colors*. So it wears the same edge and, instead of the band,
+//! alo's mark on a small tab of the edge's own ink outside the card
+//! (`where_the_tab_is`): nothing over the application's own controls, and
+//! Stop in the task window.
+//!
 //! # Teal only while alo is acting
 //!
 //! While alo waits for the person — a change waiting for their OK — it is not
@@ -77,6 +87,18 @@ const THE_EDGE_IS: f32 = 2.0;
 /// The window card's corner, which the edge follows. `11:30`.
 const THE_CARDS_CORNER: f32 = 16.0;
 
+/// The tab alo's mark stands on, on a window alo operates: how wide, how tall.
+const THE_TAB: (i32, i32) = (28, 20);
+
+/// The tab's corner.
+const THE_TABS_CORNER: f32 = 6.0;
+
+/// How far in from the card's right-hand corner the tab stands.
+const THE_TAB_IN: i32 = 16;
+
+/// How big alo's mark is on the tab.
+const THE_TABS_MARK: i32 = 14;
+
 /// The narrowest band worth drawing: the mark, a few words and Stop.
 const THE_NARROWEST_BAND: i32 = THE_WORDS_START + 96 + STOP.0 + STOP.2;
 
@@ -116,6 +138,64 @@ pub fn the_band_of(window: Rectangle<i32, Logical>) -> Option<TheBand> {
         (STOP.0, STOP.1).into(),
     );
     Some(TheBand { band, stop })
+}
+
+/// **Where the tab alo's mark stands on is**, on a window alo operates: 28 ×
+/// 20, 16 in from the card's right-hand corner, standing on the outside of its
+/// top edge — under its foot where the screen has no room above, and inside the
+/// foot's right-hand corner where it has none there either. In the card's
+/// logical units; `output` is the display in pixels at `scale`, so the room is
+/// the same at any density.
+#[must_use]
+pub fn where_the_tab_is(
+    card: Rectangle<i32, Logical>,
+    output: (i32, i32),
+    scale: u32,
+) -> Rectangle<i32, Logical> {
+    let tall =
+        i32::try_from(i64::from(output.1) * 100 / i64::from(scale.max(1))).unwrap_or(i32::MAX);
+    let x = card.loc.x + card.size.w - THE_TAB_IN - THE_TAB.0;
+    let above = card.loc.y - THE_TAB.1;
+    let below = card.loc.y + card.size.h;
+    let y = if above >= 0 {
+        above
+    } else if below + THE_TAB.1 <= tall {
+        below
+    } else {
+        below - THE_TAB_IN - THE_TAB.1
+    };
+    Rectangle::new((x, y).into(), THE_TAB.into())
+}
+
+/// The border alone, for a window alo operates: the tab and alo's mark on it,
+/// in `ink`. The edge is drawn by the caller, as for every window alo is in.
+fn the_tab_drawn(
+    card: Rectangle<i32, Logical>,
+    ink: [u8; 3],
+    scale: u32,
+    output: (i32, i32),
+) -> Vec<Washed> {
+    let fraction = f64::from(scale.max(1)) / 100.0;
+    let tab = where_the_tab_is(card, output, scale);
+    let mut rasters = Vec::new();
+    rasters.extend(a_rounded_fill(
+        in_pixels(tab, scale),
+        as_f32(f64::from(THE_TABS_CORNER) * fraction),
+        ink,
+    ));
+    let inset = (THE_TAB.1 - THE_TABS_MARK) / 2;
+    let mark = Rectangle::<i32, Logical>::new(
+        (
+            tab.loc.x + (THE_TAB.0 - THE_TABS_MARK) / 2,
+            tab.loc.y + inset,
+        )
+            .into(),
+        (THE_TABS_MARK, THE_TABS_MARK).into(),
+    );
+    if let Some(shape) = crate::the_approval_cards_icons::ACardsIcon::TheMark.shape() {
+        rasters.extend(a_mark(in_pixels(mark, scale), shape, rgb(Role::BgSurface)));
+    }
+    rasters
 }
 
 /// What the band says: the task's status, then what the person asked, in their
@@ -169,6 +249,12 @@ pub(crate) fn drawn(
             as_f32(f64::from(THE_EDGE_IS) * fraction).max(1.0),
             ink,
         ));
+    }
+    // **A window alo operates wears the border alone** (the owner,
+    // 2026-11-15): the edge above, and alo's mark on a tab of it.
+    if alo.here.wears == crate::alo_in_a_window::Wears::TheBorder {
+        rasters.extend(the_tab_drawn(alo.card, ink, scale, output));
+        return (rasters, words);
     }
     let Some(the_band) = the_band_of(alo.window) else {
         return (rasters, words);

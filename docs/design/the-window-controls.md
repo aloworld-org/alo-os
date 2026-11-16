@@ -412,8 +412,60 @@ is the specimen's width, not a window's.
   window in full screen has no band drawn and so wears neither. A screen reader
   is told *alo is working* and given Stop in the task window, not yet on the
   window itself. A window alo picks by itself, for a request typed in the
-  launcher, is not marked: the shell is told which window only when the person
-  offers it.
+  launcher, was not marked until 2026-11-15: see the next section.
+
+### A window alo operates wears a border, ruled by the owner on 2026-11-15
+
+Shown a walk's screenshot of alo typing into VSCodium, where the only sign of
+alo was the egress indicator's grey pill half over VSCodium's title, the owner
+said *"This is not a premium way to show that alo is working"*, and then ruled:
+*"I think if the window is being operated by alo it should just have a border
+with one of our brand colors."* So a window alo **operates** — opens a file
+in, types into, saves in, for a request typed in the Bar — wears:
+
+- **the teal edge**, deep teal `#0F6B72` (`accent/default`), 2 wide round the
+  whole card at its corner of 16, exactly as stage 3 draws it for an offered
+  window: one painter, `crate::alos_band_in_a_window`;
+- **alo's mark, small, on the border**, because teal never comes alone
+  (*who-is-acting.md*): a tab of the edge's own teal, 28 × 20 with corners of
+  6, standing on the outside of the top edge 16 in from its right-hand corner,
+  with the mark 14 across in `bg/surface` at its centre. **Outside the window**,
+  so it covers none of the application's own controls; where the screen has no
+  room above the window it stands under its foot, and where there is none
+  there either, inside the foot's right-hand corner.
+
+Readings taken building it, each for the owner to overrule:
+
+- **No band, no words and no Stop on the window.** *Just a border* is read as
+  the border being the whole sign: the band would sit across the
+  application's own foot — VSCodium's status bar — on a window the person did
+  not offer. Stop and the person's words stay in the task window, where they
+  always are. An offered window keeps stage 3's band.
+- **Waiting for the person is navy, with no edge**, as stage 3 draws it: the
+  tab turns navy, because alo is not acting while a change waits for their OK.
+- **Which act marks a window.** Opening a file in alo's copy, once its window
+  comes in front; typing a text, saving, and asking whether it may type (the
+  road typing through the accessibility tree takes) — each only once every
+  check that the window is alo's to type into has held. A refused act marks
+  nothing.
+- **Whose turn.** The door alo acts through names no task, and `alo-agentd`
+  serves one turn at a time, so the act is the one task whose window says
+  *alo is working*. **With two tasks working, no window is marked** — a
+  border cannot say which, and a wrong one is worse than none; the task
+  windows still say both are working. Put to the owner.
+- **For the turn, and no longer.** The border comes off when that turn ends —
+  answered, stopped, or its task window closed — or the window goes. A
+  follow-up is a new turn: the window wears alo again only if alo acts in it
+  again, unlike an offered window, which every turn of its task is about.
+- **The egress indicator is unchanged for now.** Law 1 needs what alo's copy
+  sends visible at the moment it leaves, and the design is silent on whether
+  that notice belongs to the border. Until the owner chooses among the options
+  brought to them, the indicator keeps the top-left corner (*the regions a
+  pointer can be in*).
+
+`crate::the_window_alo_acts_in`; the walk *writing in VSCodium* checks the
+edge in the screen's own pixels while alo works and gone after
+(`crates/alo-walking/src/the_edge_seen.rs`).
 
 ### How Help is asked next, ruled by the owner
 

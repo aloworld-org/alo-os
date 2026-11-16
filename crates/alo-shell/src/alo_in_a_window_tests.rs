@@ -99,6 +99,7 @@ fn the_window_asked_about_wears_alo_and_no_other_does() {
     assert_eq!(here.how, HowAloIsHere::Working);
     assert_eq!(here.status, alo_tasks::words::ALO_IS_WORKING);
     assert_eq!(here.what, "summarise this document");
+    assert_eq!(here.wears, super::Wears::TheBand);
     assert!(
         server.alo_in_this_window(&other).is_none(),
         "a second window was marked"

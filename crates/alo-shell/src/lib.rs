@@ -175,6 +175,9 @@ mod put_aside_windows_draw_again;
 mod the_desktops_pictures_pinned;
 /// The name of a window put aside, beside its square while pointed at.
 mod the_name_of_a_window_aside;
+/// The window alo acts in for a request typed in the Bar, which wears its
+/// presence for that turn.
+pub mod the_window_alo_acts_in;
 /// The words typed into a window panel's field, and the caret among them.
 pub mod the_window_panels_field;
 pub use a_provider_is_added_in_settings::WhyNotSaved;

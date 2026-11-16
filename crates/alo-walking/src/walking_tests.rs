@@ -225,3 +225,156 @@ fn an_untypable_secret_is_refused_by_position_only() {
     assert!(text.contains("character 2 of THE_KEY has no key"), "{text}");
     assert!(!text.contains("ab"), "{text}");
 }
+
+/// A screen with a window on it — its ground dark, with `marked` pixels of
+/// something written in it — and alo's teal edge round it, or not.
+fn a_window(edged: bool, marked: usize) -> Frame {
+    let mut frame = Frame::filled(320, 240, [250, 247, 242]);
+    for y in 12..228 {
+        for x in 16..304 {
+            frame = frame.with_pixel(x, y, [24, 24, 27]);
+        }
+    }
+    for x in 0..marked {
+        frame = frame.with_pixel(40 + x % 200, 40 + x / 200, [200, 200, 200]);
+    }
+    if edged {
+        let teal = crate::the_edge_seen::TEAL;
+        for x in 30..290 {
+            for y in [10, 11, 228, 229] {
+                frame = frame.with_pixel(x, y, teal);
+            }
+        }
+        for y in 26..214 {
+            for x in [14, 15, 304, 305] {
+                frame = frame.with_pixel(x, y, teal);
+            }
+        }
+    }
+    frame
+}
+
+/// The edge drawn, looked for for `seconds`.
+fn the_edge_drawn(walk: Walk, seconds: u64) -> Walk {
+    walk.the_edge(
+        "the window wears the edge",
+        "with-the-edge",
+        true,
+        Duration::from_secs(seconds),
+    )
+}
+
+/// The edge gone, looked for for `seconds`.
+fn the_edge_gone(walk: Walk, seconds: u64) -> Walk {
+    walk.the_edge(
+        "the edge is gone",
+        "bare",
+        false,
+        Duration::from_secs(seconds),
+    )
+}
+
+/// **The edge drawn is looked for until it comes, and kept**; one that never
+/// comes fails at its time, keeps what the screen showed instead, says what
+/// teal it did find, and stops the walk.
+#[test]
+fn the_edge_is_looked_for_until_it_comes_and_kept() {
+    let mut machine = PicturesAndLines::showing(vec![
+        a_window(false, 0),
+        a_window(false, 0),
+        a_window(true, 0),
+    ]);
+    let report = walk(
+        &mut machine,
+        &the_edge_drawn(Walk::named("w"), 10),
+        &nothing_set,
+        QUICK,
+    );
+    assert!(report.passed(), "{}", report.as_text());
+    assert_eq!(machine.kept, vec!["with-the-edge".to_owned()]);
+
+    let mut machine = PicturesAndLines::showing(vec![a_window(false, 0)]);
+    let walked = the_edge_drawn(Walk::named("w"), 5).expect_line(
+        "a line",
+        "x",
+        Since::Boot,
+        Duration::from_secs(1),
+    );
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![
+            ("the window wears the edge".to_owned(), Verdict::Failed),
+            ("a line".to_owned(), Verdict::NotReached),
+        ]
+    );
+    assert_eq!(machine.kept, vec!["with-the-edge".to_owned()]);
+    assert!(
+        report.as_text().contains("no edge"),
+        "the failure does not say what it found: {}",
+        report.as_text()
+    );
+}
+
+/// **The edge gone is looked for until it goes, with the window still there**;
+/// one that stays fails.
+#[test]
+fn the_edge_gone_is_looked_for_until_it_goes() {
+    let mut machine = PicturesAndLines::showing(vec![
+        a_window(true, 0),
+        a_window(true, 0),
+        a_window(false, 300),
+    ]);
+    let walked = the_edge_gone(the_edge_drawn(Walk::named("w"), 5), 10);
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert!(report.passed(), "{}", report.as_text());
+    assert_eq!(
+        machine.kept,
+        vec!["with-the-edge".to_owned(), "bare".to_owned()]
+    );
+
+    let mut machine = PicturesAndLines::showing(vec![a_window(true, 0)]);
+    let walked = the_edge_gone(the_edge_drawn(Walk::named("w"), 5), 5);
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![
+            ("the window wears the edge".to_owned(), Verdict::Passed),
+            ("the edge is gone".to_owned(), Verdict::Failed),
+        ]
+    );
+}
+
+/// **Gone is not the verdict of a screen with no window on it**: a check that
+/// passed because the window itself went — a crash, a lock screen, a black
+/// screen — would say nothing about the edge. So the place the edge was round
+/// must still hold the window it was round, and *gone* needs an edge seen
+/// before it.
+#[test]
+fn gone_needs_the_window_still_there_and_an_edge_seen_first() {
+    let mut machine =
+        PicturesAndLines::showing(vec![a_window(true, 0), Frame::filled(320, 240, [0, 0, 0])]);
+    let walked = the_edge_gone(the_edge_drawn(Walk::named("w"), 5), 5);
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![
+            ("the window wears the edge".to_owned(), Verdict::Passed),
+            ("the edge is gone".to_owned(), Verdict::Failed),
+        ],
+        "a black screen read as the edge gone"
+    );
+
+    let mut machine = PicturesAndLines::showing(vec![a_window(false, 0)]);
+    let report = walk(
+        &mut machine,
+        &the_edge_gone(Walk::named("w"), 5),
+        &nothing_set,
+        QUICK,
+    );
+    assert_eq!(
+        verdicts(&report),
+        vec![("the edge is gone".to_owned(), Verdict::Failed)],
+        "gone was said of an edge never seen"
+    );
+}

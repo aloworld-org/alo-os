@@ -85,6 +85,19 @@ pub enum Step {
     OnlyWith(&'static str),
     /// Something about the pointer: move it, or check what is drawn.
     Pointer(Pointing),
+    /// **alo's deep teal edge round a window** is on the screen (`drawn`),
+    /// or is not, within a time — looked for in a fresh picture each second
+    /// (`crate::the_edge_seen`), and the last picture kept under `picture`.
+    TheEdge {
+        /// What the check is called in the report.
+        check: String,
+        /// The name the picture is kept under.
+        picture: String,
+        /// Whether the edge must be there, or must not.
+        drawn: bool,
+        /// The longest it looks.
+        within: Duration,
+    },
 }
 
 /// One thing a walk does or checks with the pointer (`crate::walking`).
@@ -280,6 +293,18 @@ impl Walk {
     #[must_use]
     pub fn pointer(self, pointing: Pointing) -> Self {
         self.then(Step::Pointer(pointing))
+    }
+
+    /// Then alo's teal edge round a window is drawn (`drawn`) or is not, within
+    /// a time, keeping the picture as `picture`.
+    #[must_use]
+    pub fn the_edge(self, check: &str, picture: &str, drawn: bool, within: Duration) -> Self {
+        self.then(Step::TheEdge {
+            check: check.to_owned(),
+            picture: picture.to_owned(),
+            drawn,
+            within,
+        })
     }
 
     /// The rest needs this environment variable.

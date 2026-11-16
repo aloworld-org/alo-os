@@ -557,6 +557,9 @@ pub struct Server {
     /// The window a person offered with *Help with this window*, the requests
     /// sent about one, and the window each task works in.
     pub(crate) alo_in_a_window: crate::alo_in_a_window::AloInAWindow,
+    /// The windows alo acted in for the task at work, which wear its presence
+    /// for that turn (`crate::the_window_alo_acts_in`).
+    pub(crate) the_windows_alo_acts_in: crate::the_window_alo_acts_in::TheWindowsAloActsIn,
     /// Follow-ups a person sent from a task window, waiting to be handed to the
     /// agent with the conversation so far (ADR 0138).
     ///
@@ -1017,6 +1020,7 @@ impl Server {
             the_composer: crate::the_composer_a_person_types_in::TheComposer::empty(),
             asked_alo: Vec::new(),
             alo_in_a_window: crate::alo_in_a_window::AloInAWindow::default(),
+            the_windows_alo_acts_in: crate::the_window_alo_acts_in::TheWindowsAloActsIn::default(),
             follow_ups: Vec::new(),
             stops: Vec::new(),
             closing_asked: None,

@@ -1,0 +1,239 @@
+//! **Finding alo's teal edge round a window in a picture of the screen**, by the
+//! colour the shell draws it in.
+//!
+//! While alo works in a window, that window wears a thin deep teal edge round
+//! its whole card (`alo_shell::alos_band_in_a_window`; ADR 0143; the design
+//! note *the window controls*, *Readings taken building stage 3*). This is how
+//! a walk sees it on the screen rather than taking the machine's word for it.
+//!
+//! # The reference is the shell's own colour
+//!
+//! [`TEAL`] is `accent/default` read from `alo-appearance` — the token the shell
+//! paints the edge with — so a change to the colour moves the reference with
+//! it. Each pixel is compared within [`TOLERANCE`] on every channel. The band's
+//! ground is `accent/soft`, far from this, and is not the edge.
+//!
+//! # What counts as an edge
+//!
+//! Four thin straight teal sides that close round one rectangle: a left and a
+//! right side at least [`SHORTEST_SIDE`] long, beside each other down the
+//! screen, and a top and a foot each within [`CORNER_ROOM`] of where those sides
+//! end — the room a rounded corner takes, at a display scale of up to 3 —
+//! lying between them. **Thin** means at most [`THICKEST`] pixels: a teal block
+//! has teal sides too, and is not a window wearing alo.
+//!
+//! A side may be broken — the egress indicator keeps the top-left corner over
+//! everything (law 1), and was half over VSCodium's top in the screenshot this
+//! began from — so each side needs one unbroken stretch of [`SHORTEST_SIDE`],
+//! not the whole length.
+//!
+//! # What would have to be true for this to find an edge that is not there
+//!
+//! Something else drawing four thin deep-teal lines round a rectangle at least
+//! [`SHORTEST_SIDE`] each way: a picture of a window wearing alo, shown in
+//! another window. Nothing on a fresh machine does.
+//!
+//! # And for it to miss one that is there
+//!
+//! A renderer that blended the edge into what is under it, or a display scale
+//! above 3, whose corners take more than [`CORNER_ROOM`]. Then the check fails
+//! and says the longest teal it did find, which is the opposite of a silent
+//! pass.
+
+use crate::frame::Frame;
+
+/// Deep teal, `accent/default`: the colour the shell draws alo's edge in.
+pub const TEAL: [u8; 3] = {
+    let accent = alo_appearance::Role::AccentDefault.colour();
+    [accent.red(), accent.green(), accent.blue()]
+};
+
+/// How far a pixel on the screen may be from [`TEAL`], on each channel.
+pub const TOLERANCE: u8 = 16;
+
+/// The shortest unbroken stretch a side must have, in pixels: longer than any
+/// control's outline, shorter than the side of any window alo can work in.
+pub const SHORTEST_SIDE: usize = 120;
+
+/// How far a corner may take a side's end from the line across: the card's
+/// corner of 16, at a scale of up to 3.
+pub const CORNER_ROOM: usize = 48;
+
+/// The thickest a side may be, in pixels: the edge is 2 at a scale of 1, so 6
+/// at 3, and 8 leaves room.
+pub const THICKEST: usize = 8;
+
+/// Where an edge is on the screen: its outermost columns and rows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Ring {
+    /// The left side's first column.
+    pub left: usize,
+    /// The top's first row.
+    pub top: usize,
+    /// The right side's last column.
+    pub right: usize,
+    /// The foot's last row.
+    pub bottom: usize,
+}
+
+/// No edge, and the longest teal lines that were there instead, for a report.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Nearest {
+    /// The longest unbroken teal line across.
+    pub across: usize,
+    /// The longest unbroken teal line down.
+    pub down: usize,
+}
+
+/// One thin straight stretch of teal: where it is along its line, and which
+/// line.
+#[derive(Debug, Clone, Copy)]
+struct Stretch {
+    /// The row (across) or column (down) it is on — the stroke's first.
+    on: usize,
+    /// Where it starts along the line.
+    from: usize,
+    /// Where it ends along the line, not included.
+    to: usize,
+    /// How thick its stroke is.
+    thick: usize,
+}
+
+/// Whether the pixel at `(x, y)` is alo's teal.
+fn teal(frame: &Frame, x: usize, y: usize) -> bool {
+    frame.rgb(x, y).is_some_and(|rgb| {
+        rgb.iter()
+            .zip(TEAL)
+            .all(|(have, want)| have.abs_diff(want) <= TOLERANCE)
+    })
+}
+
+/// Every thin stretch of at least [`SHORTEST_SIDE`] along one direction, and
+/// the longest stretch of any thickness. `across` reads rows; otherwise
+/// columns.
+fn stretches(frame: &Frame, across: bool) -> (Vec<Stretch>, usize) {
+    let (width, height) = frame.size();
+    let (lines, length) = if across {
+        (height, width)
+    } else {
+        (width, height)
+    };
+    let at = |line: usize, along: usize| {
+        if across {
+            teal(frame, along, line)
+        } else {
+            teal(frame, line, along)
+        }
+    };
+    let mut found = Vec::new();
+    let mut longest = 0;
+    for line in 0..lines {
+        let mut along = 0;
+        while along < length {
+            if !at(line, along) {
+                along += 1;
+                continue;
+            }
+            let from = along;
+            while along < length && at(line, along) {
+                along += 1;
+            }
+            let run = along - from;
+            longest = longest.max(run);
+            if run < SHORTEST_SIDE {
+                continue;
+            }
+            // **Counted once, at its stroke's first line**, and only if thin.
+            let middle = from + run / 2;
+            if line > 0 && at(line - 1, middle) {
+                continue;
+            }
+            let thick = (line..lines).take_while(|next| at(*next, middle)).count();
+            if thick <= THICKEST {
+                found.push(Stretch {
+                    on: line,
+                    from,
+                    to: along,
+                    thick,
+                });
+            }
+        }
+    }
+    (found, longest)
+}
+
+/// **The first edge in the picture**, or the longest teal it held instead.
+///
+/// # Errors
+/// [`Nearest`] when no four thin teal sides close round one rectangle.
+pub fn a_ring_in(frame: &Frame) -> Result<Ring, Nearest> {
+    let (rows, across) = stretches(frame, true);
+    let (columns, down) = stretches(frame, false);
+    for left in &columns {
+        for right in &columns {
+            if right.on < left.on + SHORTEST_SIDE {
+                continue;
+            }
+            let together = left
+                .to
+                .min(right.to)
+                .saturating_sub(left.from.max(right.from));
+            if together < SHORTEST_SIDE {
+                continue;
+            }
+            let (top, foot) = (left.from.min(right.from), left.to.max(right.to));
+            let between =
+                |row: &&Stretch| row.from >= left.on && row.to <= right.on + right.thick + THICKEST;
+            let over = rows
+                .iter()
+                .filter(between)
+                .find(|row| row.on <= top && top - row.on <= CORNER_ROOM);
+            let under = rows.iter().filter(between).find(|row| {
+                row.on >= foot.saturating_sub(THICKEST) && row.on - foot.min(row.on) <= CORNER_ROOM
+            });
+            if let (Some(over), Some(under)) = (over, under) {
+                return Ok(Ring {
+                    left: left.on,
+                    top: over.on,
+                    right: right.on + right.thick - 1,
+                    bottom: under.on + under.thick - 1,
+                });
+            }
+        }
+    }
+    Err(Nearest { across, down })
+}
+
+/// **Whether the window an edge was round is still there**: inside where the
+/// edge was, clear of its corners, at least half the pixels are as they were
+/// when the edge was seen. A screen gone black, locked or covered is not a
+/// window that has only lost its edge.
+#[must_use]
+pub fn the_same_window_inside(ring: Ring, then: &Frame, now: &Frame) -> bool {
+    if then.size() != now.size() {
+        return false;
+    }
+    let (x0, y0) = (ring.left + CORNER_ROOM, ring.top + CORNER_ROOM);
+    let (x1, y1) = (
+        ring.right.saturating_sub(CORNER_ROOM),
+        ring.bottom.saturating_sub(CORNER_ROOM),
+    );
+    if x1 <= x0 || y1 <= y0 {
+        return false;
+    }
+    let mut same = 0_usize;
+    let mut all = 0_usize;
+    for y in y0..y1 {
+        for x in x0..x1 {
+            all += 1;
+            if then.rgb(x, y) == now.rgb(x, y) {
+                same += 1;
+            }
+        }
+    }
+    same * 2 >= all
+}
+
+#[cfg(test)]
+#[path = "the_edge_seen_tests.rs"]
+mod tests;

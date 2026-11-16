@@ -62,6 +62,28 @@ pub fn the_field_asked_for(application: &str, name: &str, found: bool) -> String
     )
 }
 
+/// The words the sentence begins with when a window starts to wear alo's
+/// presence, because alo acted in it for a task at work.
+pub const ALO_WEARS_A_WINDOW: &str = "alo is at work in a window of";
+
+/// The words the sentence begins with when that presence comes off: the turn
+/// ended, or the window went.
+pub const ALOS_WORK_IS_OVER: &str = "alo's work is over in a window of";
+
+/// The sentence for a window of `application` starting to wear alo's
+/// presence. Its application only, never its title, which may name the
+/// person's document.
+#[must_use]
+pub fn alo_wears_a_window_of(application: &str) -> String {
+    format!("{ALO_WEARS_A_WINDOW} {application}")
+}
+
+/// The sentence for alo's presence coming off a window of `application`.
+#[must_use]
+pub fn alos_work_is_over_in_a_window_of(application: &str) -> String {
+    format!("{ALOS_WORK_IS_OVER} {application}")
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -114,5 +136,25 @@ mod tests {
         assert!(
             the_field_asked_for("com.vscodium.codium", "hello.txt", true).ends_with("was found")
         );
+    }
+
+    /// **The window alo works in is said by its application, when its presence
+    /// goes on and when it comes off** — never by its title, which may name the
+    /// person's document — so a walk can check the edge is drawn after the
+    /// first line and gone after the second.
+    ///
+    /// What would have to be true for this to pass while broken: the shell
+    /// writing either line with its own `format!`, which a search finds.
+    #[test]
+    fn the_presence_is_said_by_its_application_on_and_off() {
+        let on = alo_wears_a_window_of("com.vscodium.codium");
+        let off = alos_work_is_over_in_a_window_of("com.vscodium.codium");
+        assert_eq!(on, "alo is at work in a window of com.vscodium.codium");
+        assert_eq!(off, "alo's work is over in a window of com.vscodium.codium");
+        assert!(on.starts_with(ALO_WEARS_A_WINDOW));
+        assert!(off.starts_with(ALOS_WORK_IS_OVER));
+        // Neither phrase is found inside the other's line.
+        assert!(!off.contains(ALO_WEARS_A_WINDOW));
+        assert!(!on.contains(ALOS_WORK_IS_OVER));
     }
 }
