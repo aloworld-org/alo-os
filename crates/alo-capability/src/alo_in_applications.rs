@@ -237,11 +237,23 @@ mod tests {
         const EDITOR: &str = "org.gnome.TextEditor";
         const BROWSER: &str = "org.mozilla.firefox";
         let default = AloInApplications::default();
-        assert!(default.may_type_into(EDITOR, false, false), "no copy: their window");
-        assert!(!default.may_type_into(BROWSER, true, false), "a copy: not theirs");
-        assert!(default.may_type_into(BROWSER, true, true), "a copy: alo's copy");
+        assert!(
+            default.may_type_into(EDITOR, false, false),
+            "no copy: their window"
+        );
+        assert!(
+            !default.may_type_into(BROWSER, true, false),
+            "a copy: not theirs"
+        );
+        assert!(
+            default.may_type_into(BROWSER, true, true),
+            "a copy: alo's copy"
+        );
         let off = AloInApplications::InItsOwnCopy;
-        assert!(!off.may_type_into(EDITOR, false, false), "switched off typed");
+        assert!(
+            !off.may_type_into(EDITOR, false, false),
+            "switched off typed"
+        );
         assert!(!off.may_type_into(BROWSER, true, false));
         assert!(off.may_type_into(BROWSER, true, true));
         let up = AloInApplications::InTheirWindow;
