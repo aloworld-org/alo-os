@@ -2,6 +2,11 @@
 //! door, and only that door** — the identifiers alone, for the sheet the
 //! person answers (the owner's decision of 2026-11-16).
 
+#![expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected Err is the failure being reported"
+)]
+
 use crate::{FromAPerson, FromAnAgent, ToAPerson, ToAnAgent};
 
 /// **The request and the answer read back, spelled as the contract spells

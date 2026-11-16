@@ -64,11 +64,11 @@ fn the_desktop_is_told_what_the_daemon_said() {
         "com.vscodium.codium".to_owned(),
         "org.mozilla.firefox".to_owned(),
     ];
+    assert_eq!(told("two", Some(ToAPerson::wanted(two.clone()))), Some(two));
     assert_eq!(
-        told("two", Some(ToAPerson::wanted(two.clone()))),
-        Some(two)
+        told("none", Some(ToAPerson::wanted(Vec::new()))),
+        Some(Vec::new())
     );
-    assert_eq!(told("none", Some(ToAPerson::wanted(Vec::new()))), Some(Vec::new()));
 }
 
 /// **Any other answer, or none, is not a list**: the desktop draws no sheet
@@ -83,5 +83,8 @@ fn another_answer_or_none_is_no_list() {
 #[test]
 fn no_daemon_is_no_list() {
     let folder = a_folder_of_our_own("nobody");
-    assert_eq!(TheDaemonsDoor::at(&folder.join("agentd.sock")).wanted(), None);
+    assert_eq!(
+        TheDaemonsDoor::at(&folder.join("agentd.sock")).wanted(),
+        None
+    );
 }
