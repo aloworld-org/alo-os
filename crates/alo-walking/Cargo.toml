@@ -31,6 +31,9 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 alo-applications = { path = "../alo-applications" }
+# Reads the pictures a walk kept, in `tests/fixtures`, so a check is held to
+# the screen it was wrong about. The version the workspace already locks.
+image = { version = "=0.25.10", default-features = false, features = ["png"] }
 
 [lints]
 workspace = true
