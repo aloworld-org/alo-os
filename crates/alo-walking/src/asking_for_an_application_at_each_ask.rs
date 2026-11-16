@@ -6,8 +6,8 @@
 //! It sets *ask each time* itself, so it stands on no other section, and asks
 //! for **Papers**, which nothing gives alo: the VSCodium section at *ask each
 //! time* gives VSCodium, so the two never share a grant. It walks last, after
-//! the every-application section, and so only where that section does
-//! (`crate::in_every_shipped_application::EVERY_APPLICATION`).
+//! that section, on every walk after a merge: the every-application section
+//! before them gates only itself (#1330).
 //!
 //! # What it does, and what each check is
 //!
@@ -36,19 +36,12 @@
 use std::time::Duration;
 
 use alo_acting::said_on_the_log::{A_CARD_IS_UP, A_SHEET_ASKS_FOR, A_TASKS_GRANT_WENT};
-use alo_capability::HowCodeRuns;
 
 use crate::in_every_shipped_application::{PAPERS, acted, done_in};
 use crate::keys::Chord;
 use crate::settling::Settling;
 use crate::step::{Since, Walk};
-
-/// The row of *Ask me each time* on Settings' *Running code* page, from
-/// nought, in the order the page lists the levels.
-pub const ASK_EACH_TIME: usize = match HowCodeRuns::ALL {
-    [_, HowCodeRuns::AskingEachTime, _] => 1,
-    _ => 0,
-};
+use crate::writing_in_vscodium_at_each_ask::ASK_EACH_TIME;
 
 /// *Running code*, counted down from the first page in Settings' side column
 /// (`alo_shell::SettingsCategory::ALL`: alo and AI, What alo can use,

@@ -291,7 +291,14 @@ fn the_edge_is_looked_for_until_it_comes_and_kept() {
         QUICK,
     );
     assert!(report.passed(), "{}", report.as_text());
-    assert_eq!(machine.kept, vec!["with-the-edge".to_owned()]);
+    assert_eq!(
+        machine.kept,
+        vec![
+            "with-the-edge-when-first-looked-for".to_owned(),
+            "with-the-edge".to_owned()
+        ],
+        "the screen when the edge was first looked for was not kept"
+    );
 
     let mut machine = PicturesAndLines::showing(vec![a_window(false, 0)]);
     let walked = the_edge_drawn(Walk::named("w"), 5).expect_line(
@@ -308,7 +315,14 @@ fn the_edge_is_looked_for_until_it_comes_and_kept() {
             ("a line".to_owned(), Verdict::NotReached),
         ]
     );
-    assert_eq!(machine.kept, vec!["with-the-edge".to_owned()]);
+    assert_eq!(
+        machine.kept,
+        vec![
+            "with-the-edge-when-first-looked-for".to_owned(),
+            "with-the-edge".to_owned()
+        ],
+        "the screen when the edge was first looked for was not kept"
+    );
     assert!(
         report.as_text().contains("no edge"),
         "the failure does not say what it found: {}",
@@ -330,7 +344,11 @@ fn the_edge_gone_is_looked_for_until_it_goes() {
     assert!(report.passed(), "{}", report.as_text());
     assert_eq!(
         machine.kept,
-        vec!["with-the-edge".to_owned(), "bare".to_owned()]
+        vec![
+            "with-the-edge-when-first-looked-for".to_owned(),
+            "with-the-edge".to_owned(),
+            "bare".to_owned()
+        ]
     );
 
     let mut machine = PicturesAndLines::showing(vec![a_window(true, 0)]);

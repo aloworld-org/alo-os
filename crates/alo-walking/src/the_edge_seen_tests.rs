@@ -253,3 +253,34 @@ fn no_window_where_the_edge_was_is_not_a_window_still_there() {
         &Frame::filled(wide, high, CANVAS)
     ));
 }
+
+/// **An edge with a side past the screen's edge is still alo's edge** — the
+/// walk of 2026-11-16 on `main` at 4f3a92d4 (run 43889781022) placed VSCodium
+/// at x −24, so its border's left side was off the display; the top and foot
+/// run to the screen's left edge and the right side closes it.
+#[test]
+fn an_edge_with_its_left_side_off_the_screen_is_found() {
+    // The border round (−24, 70)–(1112, 700): top and foot from the screen's
+    // left edge, no left side, the right side at 1109.
+    let frame = filled(a_screen(), (0, 70, 1096, 73), TEAL);
+    let frame = filled(frame, (0, 697, 1096, 700), TEAL);
+    let frame = filled(frame, (1109, 86, 1112, 684), TEAL);
+    let Ok(ring) = a_ring_in(&frame) else {
+        panic!("an edge cut by the screen's left was not found");
+    };
+    assert_eq!(ring.left, 0, "{ring:?}");
+    assert!(ring.right.abs_diff(1111) <= 2, "{ring:?}");
+}
+
+/// **But a side missing in the middle of the screen is still not an edge**:
+/// a side may be absent only where it would lie past the screen.
+#[test]
+fn an_edge_missing_a_side_on_the_screen_is_not_found() {
+    let frame = filled(a_screen(), (40, 70, 1096, 73), TEAL);
+    let frame = filled(frame, (40, 697, 1096, 700), TEAL);
+    let frame = filled(frame, (1109, 86, 1112, 684), TEAL);
+    assert!(
+        a_ring_in(&frame).is_err(),
+        "three sides in the middle read as an edge"
+    );
+}
