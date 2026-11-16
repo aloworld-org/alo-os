@@ -12,7 +12,7 @@
 //! (`crate::settings_side_column_scrolls`).
 //!
 //! `docs/features.md`, the owner's decision of 2026-10-31: *Settings is a
-//! window with a sidebar of categories — alo: alo and AI, Folders alo can use,
+//! window with a sidebar of categories — alo: alo and AI, What alo can use,
 //! Running code, Terminal; This computer: Appearance, Region and time, Keyboard
 //! and shortcuts, Accessibility — and a content pane.*
 //!
@@ -125,7 +125,7 @@ impl SettingsCategory {
         use crate::the_settings_words as w;
         match self {
             Self::AloAndAi => w::ALO_AND_AI,
-            Self::FoldersAloCanUse => w::FOLDERS_ALO_CAN_USE,
+            Self::FoldersAloCanUse => w::WHAT_ALO_CAN_USE,
             Self::RunningCode => w::RUNNING_CODE,
             Self::Terminal => w::TERMINAL,
             Self::Appearance => w::APPEARANCE,
@@ -142,7 +142,7 @@ impl SettingsCategory {
         use crate::the_settings_words as w;
         match self {
             Self::AloAndAi => w::ALO_AND_AI_IS,
-            Self::FoldersAloCanUse => w::FOLDERS_ALO_CAN_USE_IS,
+            Self::FoldersAloCanUse => w::WHAT_ALO_CAN_USE_IS,
             Self::RunningCode => w::RUNNING_CODE_IS,
             Self::Terminal => w::TERMINAL_IS,
             Self::Appearance => w::APPEARANCE_IS,

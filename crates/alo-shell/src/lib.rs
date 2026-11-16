@@ -163,6 +163,7 @@ pub mod alos_marked_words;
 /// come back.
 mod alos_own_window_goes_aside;
 mod alos_own_windows_open_above_the_dock;
+pub mod an_application_is_picked_in_settings;
 /// Closing a task window, and which ones may close.
 pub mod closing_a_task_window;
 mod each_window_with_its_edge;

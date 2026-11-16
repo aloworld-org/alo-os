@@ -72,6 +72,7 @@ use alo_strings::Strings;
 use crate::a_folder_is_picked_in_settings::{Folders, PickingRow};
 use crate::alo_in_applications_in_settings::AloInApplicationsHere;
 use crate::alo_in_the_terminal_in_settings::AloInTheTerminalHere;
+use crate::an_application_is_picked_in_settings::ApplicationRow;
 use crate::how_code_runs_in_settings::HowCodeRunsHere;
 use crate::settings_answering::{AnsweringSection, SettingsAnswered, SettingsChoice};
 use crate::settings_formats::FormatsSection;
@@ -192,6 +193,14 @@ pub enum SettingsRow {
     /// section's own words — *nothing is granted from here* — and so nothing
     /// on the machine could grant alo a folder at all.
     GrantAFolder,
+    /// Give alo an application: Enter opens the list of applications (ADR
+    /// 0143 Q10). One row carrying nothing, for [`Self::GrantAFolder`]'s
+    /// reason.
+    GrantAnApplication,
+    /// One row of the list of applications, while a person is in it: Enter
+    /// acts on it. `crate::an_application_is_picked_in_settings` says why the
+    /// moves are rows.
+    ChoosingAnApplication(ApplicationRow),
     /// See what alo did: Enter opens the record.
     ///
     /// **In the section of what alo may reach**, above giving it more, because
@@ -365,9 +374,12 @@ impl SettingsRow {
             Self::OpenThePicker(SettingsPicker::Region) => SettingsSection::Formats,
             Self::OpenThePicker(SettingsPicker::TimeZone) => SettingsSection::TimeZone,
             Self::Shortcut(_) => SettingsSection::Shortcuts,
-            Self::Granted(_) | Self::GrantAFolder | Self::SeeWhatAloDid | Self::Picking(_) => {
-                SettingsSection::Granted
-            }
+            Self::Granted(_)
+            | Self::GrantAFolder
+            | Self::GrantAnApplication
+            | Self::ChoosingAnApplication(_)
+            | Self::SeeWhatAloDid
+            | Self::Picking(_) => SettingsSection::Granted,
             Self::UsingAnother | Self::Way(_) | Self::AlosOwnService | Self::SayWhereItRuns(_) => {
                 SettingsSection::Answering
             }
@@ -681,6 +693,10 @@ impl SettingsWindow {
         here: crate::settings_default_apps::WhatCouldOpenLinks,
     ) {
         if let Some(open) = self.open.as_mut() {
+            // **The same reading tells the folders page what alo may be given**
+            // (ADR 0143 Q10), so the two pages cannot list different
+            // applications.
+            open.granted.the_applications_are(&here.installed);
             open.default_apps.the_machine_has(here);
         }
     }
@@ -968,7 +984,7 @@ impl SettingsWindow {
                 // folder chooser has not asked to throw away everything else
                 // they came here for.
                 if let Some(open) = &mut self.open
-                    && open.granted.picking().is_some()
+                    && open.granted.is_choosing_something()
                 {
                     open.granted.that_folder_is_not_being_given();
                     return Some(SettingsDid::Gave(
@@ -1170,6 +1186,14 @@ impl Open {
                 .map(SettingsRow::Picking)
                 .collect();
         }
+        // **And the list of applications, the same way**, for the same reason.
+        if let Some(choosing) = self.granted.choosing() {
+            return choosing
+                .rows()
+                .into_iter()
+                .map(SettingsRow::ChoosingAnApplication)
+                .collect();
+        }
         let (paired, given): (Vec<Row>, Vec<Row>) = self
             .granted
             .rows(now)
@@ -1181,6 +1205,9 @@ impl Open {
         // through it.
         if self.granted.a_folder_can_be_given() {
             rows.push(SettingsRow::GrantAFolder);
+        }
+        if self.granted.an_application_can_be_given() {
+            rows.push(SettingsRow::GrantAnApplication);
         }
         rows.push(SettingsRow::SeeWhatAloDid);
         rows.extend(paired.into_iter().map(SettingsRow::Granted));
@@ -1326,7 +1353,7 @@ impl Open {
                 }
             }
             SettingsKey::Close => {
-                if self.granted.picking().is_some() {
+                if self.granted.is_choosing_something() {
                     self.granted.that_folder_is_not_being_given();
                     return Some(SettingsDid::Gave(
                         crate::settings_granted::SettingsGave::ItChanged,
@@ -1688,6 +1715,16 @@ impl Open {
             SettingsRow::GrantAFolder => {
                 SettingsDid::Gave(self.granted.give_alo_a_folder(doors.folders, doors.strings))
             }
+            // **Nothing is granted by pressing this either**: it opens the
+            // list, and the grant is made once an application *and* a length
+            // are chosen.
+            SettingsRow::GrantAnApplication => {
+                SettingsDid::Gave(self.granted.give_alo_an_application())
+            }
+            SettingsRow::ChoosingAnApplication(row) => SettingsDid::Gave(
+                self.granted
+                    .act_on_an_application(row, doors.daemon, doors.now, doors.strings),
+            ),
             SettingsRow::Picking(picking) => SettingsDid::Gave(self.granted.act_on(
                 picking,
                 doors.folders,
@@ -1857,3 +1894,7 @@ fn next_section(starts: &[usize], from: usize, forward: bool) -> Option<usize> {
 #[cfg(test)]
 #[path = "settings_window_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "an_application_is_given_in_settings_tests.rs"]
+mod an_application_is_given;

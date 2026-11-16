@@ -128,12 +128,16 @@ pub const NOT_IN_FRONT: Word = Word::saying(
 
 /// The person's own window, at the default.
 pub const NOT_ALOS_COPY: Word = Word::saying(
-    "adapters.fallback.type-text.not-alos-copy",
+    "adapters.fallback.type-text.not-alos-copy.what-alo-can-use",
     "That {application} window is yours, not alo's own copy, so nothing was typed. To let alo \
-     type in your own windows, choose “alo may work in your own window” in Settings → Folders \
-     alo can use",
+     type in your own windows, choose “alo may work in your own window” in Settings → What alo \
+     can use",
 )
-.noting("Said when the window in front is the person's own and alo works only in its own copy.");
+.noting(
+    "Said when the window in front is the person's own and alo works only in its own copy. \
+     \"What alo can use\" is the name of the Settings page: use exactly its translation there. A \
+     new key on 2026-11-16, when the page was renamed from Folders alo can use.",
+);
 
 /// This machine cannot deliver keys, or the compositor is not there.
 pub const NO_KEYBOARD: Word = Word::saying(

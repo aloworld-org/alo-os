@@ -38,6 +38,8 @@ impl SettingsRow {
             | Self::Shortcut(_)
             | Self::Granted(_)
             | Self::GrantAFolder
+            | Self::GrantAnApplication
+            | Self::ChoosingAnApplication(_)
             | Self::SeeWhatAloDid
             | Self::Picking(_)
             | Self::ShellIntegration
