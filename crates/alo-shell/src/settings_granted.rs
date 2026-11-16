@@ -466,7 +466,10 @@ impl GrantedSection {
             .listed()
             .iter()
             .find(|listed| listed.identifier() == identifier)
-            .map_or_else(|| identifier.to_owned(), |listed| listed.called().to_owned())
+            .map_or_else(
+                || identifier.to_owned(),
+                |listed| listed.called().to_owned(),
+            )
     }
 
     /// What a pairing's row may do, as its pairing says.

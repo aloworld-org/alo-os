@@ -9,7 +9,6 @@
 
 #![expect(
     clippy::unwrap_used,
-    clippy::panic,
     reason = "in a test, a panic on an unexpected None, Err or variant is the failure being reported"
 )]
 
@@ -26,7 +25,8 @@ use crate::how_long_a_grant_lasts::HowLong;
 use crate::settings_granted::{SettingsGave, SettingsRevoked};
 use crate::settings_page::ABlock;
 use crate::settings_testing::{
-    CountingDoor, Machine, a_browser_and_a_mail_app, a_persons_machine, bytes, doors, noon, words,
+    CountingDoor, Machine, a_browser_and_a_mail_app, a_persons_machine, bytes, doors, noon,
+    settings_words,
 };
 
 /// The browser the fixture's machine has, as its entry names it.
@@ -63,7 +63,7 @@ fn the_folders_page(window: &SettingsWindow) -> crate::settings_page::APage {
     crate::settings_page::the_page(
         window.open().unwrap(),
         SettingsCategory::FoldersAloCanUse,
-        &words(),
+        &settings_words(),
         noon(),
     )
 }
@@ -73,7 +73,11 @@ fn the_folders_page(window: &SettingsWindow) -> crate::settings_page::APage {
 fn the_agent_reaches(machine: &Machine, application: &str, at: SystemTime) -> bool {
     alo_remembering::remembered(&machine.grants(), at)
         .unwrap()
-        .permits(&Grantee::named(THE_AGENT), &Ask::application(application), at)
+        .permits(
+            &Grantee::named(THE_AGENT),
+            &Ask::application(application),
+            at,
+        )
 }
 
 /// Open the list, choose `application`, and say `how_long`.
@@ -83,7 +87,7 @@ fn given(
     how_long: HowLong,
     door: &CountingDoor,
 ) -> Option<SettingsDid> {
-    let strings = words();
+    let strings = settings_words();
     assert_eq!(
         chosen(window, &SettingsRow::GrantAnApplication, &strings, door),
         Some(SettingsDid::Gave(SettingsGave::ItChanged))
@@ -114,7 +118,9 @@ fn application_rows(window: &SettingsWindow, at: SystemTime) -> Vec<Row> {
             SettingsRow::Granted(row @ Row::Grant(_)) => Some(row),
             _ => None,
         })
-        .filter(|row| matches!(row, Row::Grant(seen) if matches!(seen.over(), Reach::Application(_))))
+        .filter(
+            |row| matches!(row, Row::Grant(seen) if matches!(seen.over(), Reach::Application(_))),
+        )
         .collect()
 }
 
@@ -127,7 +133,7 @@ fn application_rows(window: &SettingsWindow, at: SystemTime) -> Vec<Row> {
 #[test]
 fn a_person_gives_alo_one_application_and_only_that_one_is_reached() {
     let (machine, mut window) = opened("an-application");
-    let strings = words();
+    let strings = settings_words();
     let door = CountingDoor::revoking();
     assert!(
         !the_agent_reaches(&machine, FIREFOX, noon()),
@@ -160,7 +166,11 @@ fn a_person_gives_alo_one_application_and_only_that_one_is_reached() {
     assert!(
         !alo_remembering::remembered(&machine.grants(), noon())
             .unwrap()
-            .permits(&Grantee::named("@someone-else"), &Ask::application(FIREFOX), noon()),
+            .permits(
+                &Grantee::named("@someone-else"),
+                &Ask::application(FIREFOX),
+                noon()
+            ),
         "another agent was given it"
     );
     assert!(
@@ -218,12 +228,18 @@ fn a_person_gives_alo_one_application_and_only_that_one_is_reached() {
             _ => Vec::new(),
         })
         .collect();
-    assert!(again_titles.contains(&"Firefox".to_owned()), "{again_titles:?}");
+    assert!(
+        again_titles.contains(&"Firefox".to_owned()),
+        "{again_titles:?}"
+    );
 
     // **An hour on, it is over**: refused by the daemon's question, and no
     // row is left to mislead anybody.
     let later = noon() + Duration::from_secs(60 * 60);
-    assert!(!the_agent_reaches(&machine, FIREFOX, later), "an expired grant still reaches");
+    assert!(
+        !the_agent_reaches(&machine, FIREFOX, later),
+        "an expired grant still reaches"
+    );
     assert!(application_rows(&window, later).is_empty());
 }
 
@@ -237,7 +253,11 @@ fn an_application_given_for_a_day_ends_after_a_day() {
         Some(SettingsDid::Gave(SettingsGave::ItWasGiven))
     );
     let a_day = Duration::from_secs(24 * 60 * 60);
-    assert!(the_agent_reaches(&machine, FIREFOX, noon() + a_day - Duration::from_secs(1)));
+    assert!(the_agent_reaches(
+        &machine,
+        FIREFOX,
+        noon() + a_day - Duration::from_secs(1)
+    ));
     assert!(!the_agent_reaches(&machine, FIREFOX, noon() + a_day));
 }
 
@@ -246,13 +266,20 @@ fn an_application_given_for_a_day_ends_after_a_day() {
 #[test]
 fn a_terminal_the_machine_has_is_not_offered() {
     let (_machine, mut window) = opened("no-terminal-offered");
-    let strings = words();
+    let strings = settings_words();
     let door = CountingDoor::revoking();
-    chosen(&mut window, &SettingsRow::GrantAnApplication, &strings, &door);
+    chosen(
+        &mut window,
+        &SettingsRow::GrantAnApplication,
+        &strings,
+        &door,
+    );
     let rows = window.rows(noon());
-    assert!(rows.contains(&SettingsRow::ChoosingAnApplication(ApplicationRow::This(
-        FIREFOX.to_owned()
-    ))));
+    assert!(
+        rows.contains(&SettingsRow::ChoosingAnApplication(ApplicationRow::This(
+            FIREFOX.to_owned()
+        )))
+    );
     assert!(
         !rows.contains(&SettingsRow::ChoosingAnApplication(ApplicationRow::This(
             KONSOLE.to_owned()
@@ -266,7 +293,7 @@ fn a_terminal_the_machine_has_is_not_offered() {
 #[test]
 fn an_application_taken_back_is_refused_at_once() {
     let (machine, mut window) = opened("an-application-taken-back");
-    let strings = words();
+    let strings = settings_words();
     let door = CountingDoor::revoking();
     given(&mut window, FIREFOX, HowLong::UntilIRemoveIt, &door);
     assert!(the_agent_reaches(&machine, FIREFOX, noon()));
@@ -276,11 +303,17 @@ fn an_application_taken_back_is_refused_at_once() {
     assert!(
         matches!(
             did,
-            Some(SettingsDid::Revoked(SettingsRevoked::Gone(Gone::Revoked { .. })))
+            Some(SettingsDid::Revoked(SettingsRevoked::Gone(
+                Gone::Revoked { .. }
+            )))
         ),
         "{did:?}"
     );
-    assert_eq!(door.knocks.get(), 2, "the daemon was not told of the revocation");
+    assert_eq!(
+        door.knocks.get(),
+        2,
+        "the daemon was not told of the revocation"
+    );
     assert!(
         !the_agent_reaches(&machine, FIREFOX, noon()),
         "a revoked grant still reaches"
@@ -293,12 +326,17 @@ fn an_application_taken_back_is_refused_at_once() {
 #[test]
 fn escape_leaves_without_giving_anything() {
     let (machine, mut window) = opened("an-application-escaped");
-    let strings = words();
+    let strings = settings_words();
     let door = CountingDoor::revoking();
     let before = bytes(&machine.grants());
     for steps in [0, 1] {
         assert_eq!(
-            chosen(&mut window, &SettingsRow::GrantAnApplication, &strings, &door),
+            chosen(
+                &mut window,
+                &SettingsRow::GrantAnApplication,
+                &strings,
+                &door
+            ),
             Some(SettingsDid::Gave(SettingsGave::ItChanged))
         );
         if steps == 1 {
@@ -344,9 +382,17 @@ fn escape_leaves_without_giving_anything() {
 fn the_row_is_there_only_when_there_is_an_application_to_give() {
     let machine = a_persons_machine("no-applications-yet");
     let mut window = machine.opened();
-    assert!(!window.rows(noon()).contains(&SettingsRow::GrantAnApplication));
+    assert!(
+        !window
+            .rows(noon())
+            .contains(&SettingsRow::GrantAnApplication)
+    );
     window.the_applications_are(a_browser_and_a_mail_app());
-    assert!(window.rows(noon()).contains(&SettingsRow::GrantAnApplication));
+    assert!(
+        window
+            .rows(noon())
+            .contains(&SettingsRow::GrantAnApplication)
+    );
 }
 
 /// **A screen reader hears the list as it is drawn**: the heading, the line
@@ -354,7 +400,7 @@ fn the_row_is_there_only_when_there_is_an_application_to_give() {
 #[test]
 fn a_reader_hears_the_list_of_applications() {
     let (_machine, mut window) = opened("an-application-read");
-    let strings = words();
+    let strings = settings_words();
     let door = CountingDoor::revoking();
     let read = |window: &SettingsWindow| {
         crate::access_nodes::ReadAloudTree::of(&strings, &[Surface::Desktop], &TurnedOn::nothing())
@@ -374,10 +420,18 @@ fn a_reader_hears_the_list_of_applications() {
     );
     let before = read(&window);
     assert!(
-        !before.nodes().iter().any(|node| node.name == "Select an application"),
+        !before
+            .nodes()
+            .iter()
+            .any(|node| node.name == "Select an application"),
         "the control: the list is heard before it is opened"
     );
-    chosen(&mut window, &SettingsRow::GrantAnApplication, &strings, &door);
+    chosen(
+        &mut window,
+        &SettingsRow::GrantAnApplication,
+        &strings,
+        &door,
+    );
     let tree = read(&window);
     let heard: Vec<&str> = tree.nodes().iter().map(|node| node.name.as_str()).collect();
     // **In order, after the heading**: the heading, then each application.
@@ -385,7 +439,10 @@ fn a_reader_hears_the_list_of_applications() {
     assert!(at("Select an application") < at("Firefox"));
     assert!(at("Firefox") < at("Thunderbird"));
     for name in ["Select an application", "Firefox", "Thunderbird"] {
-        assert!(heard.contains(&name), "a reader does not hear {name:?}: {heard:?}");
+        assert!(
+            heard.contains(&name),
+            "a reader does not hear {name:?}: {heard:?}"
+        );
     }
     let described: String = tree
         .nodes()
@@ -397,7 +454,10 @@ fn a_reader_hears_the_list_of_applications() {
         "Choose one application to grant access.",
         "Only the selected application is included. Press Escape to cancel without granting access.",
     ] {
-        assert!(described.contains(line), "a reader does not hear {line:?}: {heard:?}");
+        assert!(
+            described.contains(line),
+            "a reader does not hear {line:?}: {heard:?}"
+        );
     }
     // **And the second step**: the question of how long, and the lengths.
     chosen(
@@ -409,11 +469,15 @@ fn a_reader_hears_the_list_of_applications() {
     let tree = read(&window);
     let heard: Vec<String> = tree.nodes().iter().map(|node| node.name.clone()).collect();
     assert!(
-        heard.iter().any(|it| it.starts_with("How long may alo use Firefox?")),
+        heard
+            .iter()
+            .any(|it| it.starts_with("How long may alo use Firefox?")),
         "{heard:?}"
     );
     for length in HowLong::ALL {
-        let said = strings.say(&length.word().key(), &alo_strings::Filling::nothing()).into_text();
+        let said = strings
+            .say(&length.word().key(), &alo_strings::Filling::nothing())
+            .into_text();
         assert!(heard.contains(&said), "a reader does not hear {said:?}");
     }
 }

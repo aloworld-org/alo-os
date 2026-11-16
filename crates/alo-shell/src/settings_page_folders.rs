@@ -98,7 +98,9 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings, now: SystemTime) -> Vec
                     // **An application by the name it is listed under**, and
                     // by its identifier where it has none, which the line
                     // under it says either way.
-                    Reach::Application(identifier) => section.what_an_application_is_called(identifier),
+                    Reach::Application(identifier) => {
+                        section.what_an_application_is_called(identifier)
+                    }
                     Reach::Facility(_) => seen.to().to_owned(),
                 };
                 let mut drawn = ARow::named(None, TheKind::Plain, title);

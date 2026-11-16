@@ -175,8 +175,15 @@ fn the_two_rows(window: &SettingsWindow) -> (SettingsRow, SettingsRow) {
         // what the one list holds and how both are revoked — and the row that
         // gives alo a folder sits above them making neither claim.
         // So is the row that opens the record, since 2026-10-27, for the same
-        // reason.
-        .filter(|row| !matches!(row, SettingsRow::GrantAFolder | SettingsRow::SeeWhatAloDid))
+        // reason. And the row that gives alo an application, since 2026-11-15.
+        .filter(|row| {
+            !matches!(
+                row,
+                SettingsRow::GrantAFolder
+                    | SettingsRow::GrantAnApplication
+                    | SettingsRow::SeeWhatAloDid
+            )
+        })
         .collect();
     assert_eq!(granted.len(), 2, "{granted:?}");
     (granted[0].clone(), granted[1].clone())

@@ -125,7 +125,10 @@ fn a_terminal_is_not_offered_and_cannot_be_chosen() {
         .iter()
         .map(Listed::identifier)
         .collect();
-    assert!(!listed.contains(&PTYXIS), "a terminal is offered: {listed:?}");
+    assert!(
+        !listed.contains(&PTYXIS),
+        "a terminal is offered: {listed:?}"
+    );
     assert_eq!(
         this_machine().pick(PTYXIS),
         Err(NotPicked::NotAnApplicationShown)
@@ -186,7 +189,11 @@ fn an_expired_application_grant_is_refused_from_that_moment() {
     Granting::to(HERS, hour())
         .of(&chosen, &mut grants, noon())
         .unwrap();
-    assert!(reaches(&grants, CODIUM, noon() + hour() - Duration::from_secs(1)));
+    assert!(reaches(
+        &grants,
+        CODIUM,
+        noon() + hour() - Duration::from_secs(1)
+    ));
     assert!(
         !reaches(&grants, CODIUM, noon() + hour()),
         "an expired grant still reaches"
@@ -205,7 +212,10 @@ fn a_revoked_application_grant_is_refused_at_once() {
         .unwrap();
     assert!(reaches(&grants, CODIUM, noon()));
     assert!(grants.revoke(id));
-    assert!(!reaches(&grants, CODIUM, noon()), "a revoked grant still reaches");
+    assert!(
+        !reaches(&grants, CODIUM, noon()),
+        "a revoked grant still reaches"
+    );
 }
 
 /// **Until I remove it lasts until it is removed**, and removing it ends it.

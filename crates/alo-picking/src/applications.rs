@@ -115,8 +115,7 @@ impl Applications {
             if identifier.is_empty() || identifier.trim() != identifier {
                 continue;
             }
-            if is_a_persons_own(&identifier)
-                || listed.iter().any(|it| it.identifier == identifier)
+            if is_a_persons_own(&identifier) || listed.iter().any(|it| it.identifier == identifier)
             {
                 continue;
             }

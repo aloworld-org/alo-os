@@ -70,9 +70,9 @@ use alo_shortcuts::{Action, Chord, Key, Modifiers, Shortcuts};
 use alo_strings::Strings;
 
 use crate::a_folder_is_picked_in_settings::{Folders, PickingRow};
-use crate::an_application_is_picked_in_settings::ApplicationRow;
 use crate::alo_in_applications_in_settings::AloInApplicationsHere;
 use crate::alo_in_the_terminal_in_settings::AloInTheTerminalHere;
+use crate::an_application_is_picked_in_settings::ApplicationRow;
 use crate::how_code_runs_in_settings::HowCodeRunsHere;
 use crate::settings_answering::{AnsweringSection, SettingsAnswered, SettingsChoice};
 use crate::settings_formats::FormatsSection;

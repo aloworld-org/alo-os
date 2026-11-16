@@ -20,7 +20,10 @@ const FIREFOX: &str = "org.mozilla.firefox";
 fn this_machine() -> AnApplicationBeingPicked {
     AnApplicationBeingPicked::among(alo_picking::Applications::of([
         (FIREFOX.to_owned(), Some("Firefox".to_owned())),
-        ("app.devsuite.Ptyxis".to_owned(), Some("Terminal".to_owned())),
+        (
+            "app.devsuite.Ptyxis".to_owned(),
+            Some("Terminal".to_owned()),
+        ),
         (CODIUM.to_owned(), Some("VSCodium".to_owned())),
     ]))
 }
@@ -93,10 +96,18 @@ fn choosing_an_application_asks_how_long_and_grants_nothing() {
     // **The four lengths in the words a person reads**, the folder picker's.
     let lengths: Vec<String> = HowLong::ALL
         .iter()
-        .map(|it| strings.say(&it.word().key(), &alo_strings::Filling::nothing()).into_text())
+        .map(|it| {
+            strings
+                .say(&it.word().key(), &alo_strings::Filling::nothing())
+                .into_text()
+        })
         .collect();
     assert_eq!(read(&picking), lengths);
-    assert!(lengths.iter().all(|it| !it.is_empty() && !it.contains('\u{ab}')));
+    assert!(
+        lengths
+            .iter()
+            .all(|it| !it.is_empty() && !it.contains('\u{ab}'))
+    );
 }
 
 /// **Saying how long hands back the application that was chosen**, sealed by

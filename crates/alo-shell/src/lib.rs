@@ -90,7 +90,6 @@ mod a_chord_sends_the_keyboard_to_a_window;
 mod a_click_brings_a_window_back;
 mod a_display_has_gone;
 pub mod a_folder_is_picked_in_settings;
-pub mod an_application_is_picked_in_settings;
 mod a_frame_per_display;
 pub mod a_key_fills_in_a_provider;
 pub mod a_key_reaches_a_task_window;
@@ -164,6 +163,7 @@ pub mod alos_marked_words;
 /// come back.
 mod alos_own_window_goes_aside;
 mod alos_own_windows_open_above_the_dock;
+pub mod an_application_is_picked_in_settings;
 /// Closing a task window, and which ones may close.
 pub mod closing_a_task_window;
 mod each_window_with_its_edge;

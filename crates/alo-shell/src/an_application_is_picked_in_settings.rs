@@ -123,7 +123,11 @@ impl AnApplicationBeingPicked {
     #[must_use]
     pub fn rows(&self) -> Vec<ApplicationRow> {
         if self.is_saying_how_long() {
-            return HowLong::ALL.iter().copied().map(ApplicationRow::For).collect();
+            return HowLong::ALL
+                .iter()
+                .copied()
+                .map(ApplicationRow::For)
+                .collect();
         }
         self.applications
             .listed()

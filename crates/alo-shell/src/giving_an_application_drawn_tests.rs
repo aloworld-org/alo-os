@@ -14,6 +14,8 @@
 
 #![expect(
     clippy::unwrap_used,
+    clippy::panic,
+    clippy::indexing_slicing,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
@@ -47,7 +49,10 @@ fn focused_on(window: &mut SettingsWindow, row: &SettingsRow, door: &CountingDoo
     if window.focused(noon()).as_ref() == Some(row) {
         return;
     }
-    let _ = window.pointed_at(&PointedAt::ACategory(SettingsCategory::FoldersAloCanUse), noon());
+    let _ = window.pointed_at(
+        &PointedAt::ACategory(SettingsCategory::FoldersAloCanUse),
+        noon(),
+    );
     press(window, SettingsKey::NextSection, door);
     for _ in 0..256 {
         if window.focused(noon()).as_ref() == Some(row) {
@@ -72,7 +77,10 @@ fn enter_changes_the_frame(
     press(window, SettingsKey::Choose, door);
     let after = handed(window);
     written(&after, name);
-    assert_ne!(before.0, after.0, "Enter on {row:?} did not reach the frame");
+    assert_ne!(
+        before.0, after.0,
+        "Enter on {row:?} did not reach the frame"
+    );
     after
 }
 
@@ -141,7 +149,9 @@ fn written((pixels, (wide, tall)): &(Vec<u8>, (i32, i32)), name: &str) {
         let bgr = pixels.get(at..at + 3).unwrap_or(&[0, 0, 0]);
         *pixel = image::Rgb([bgr[2], bgr[1], bgr[0]]);
     }
-    image.save(std::path::Path::new(&folder).join(name)).unwrap();
+    image
+        .save(std::path::Path::new(&folder).join(name))
+        .unwrap();
 }
 
 /// **The folders page with *Give alo an application*, then the list it opens,
@@ -154,7 +164,10 @@ fn giving_alo_an_application_reaches_the_frame_a_display_is_handed() {
     let door = CountingDoor::revoking();
     let mut window = machine.opened();
     window.the_applications_are(a_browser_and_a_mail_app());
-    let _ = window.pointed_at(&PointedAt::ACategory(SettingsCategory::FoldersAloCanUse), noon());
+    let _ = window.pointed_at(
+        &PointedAt::ACategory(SettingsCategory::FoldersAloCanUse),
+        noon(),
+    );
     written(&handed(&window), "1-folders-alo-can-use.png");
     enter_changes_the_frame(
         &mut window,
@@ -176,5 +189,9 @@ fn giving_alo_an_application_reaches_the_frame_a_display_is_handed() {
         &door,
         "4-given.png",
     );
-    assert_eq!(door.knocks.get(), 1, "the grant the frames show was not made");
+    assert_eq!(
+        door.knocks.get(),
+        1,
+        "the grant the frames show was not made"
+    );
 }
