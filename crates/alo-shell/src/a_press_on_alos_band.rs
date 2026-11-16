@@ -20,7 +20,9 @@
 
 use smithay::backend::input::ButtonState;
 
-use crate::alo_in_a_window::HowAloIsHere;
+use smithay::utils::{Logical, Point, Rectangle};
+
+use crate::alo_in_a_window::{AloHere, HowAloIsHere, Wears};
 
 /// What a press on alo's band did.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -31,6 +33,38 @@ pub(crate) enum OnAlosBand {
     AlreadyStopping,
     /// It was on the band and not on Stop: the band's, and nothing.
     OnTheBand,
+}
+
+/// Where on alo's band a press lands.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Lands {
+    /// On Stop.
+    OnStop,
+    /// On the band, and not on Stop.
+    OnTheBand,
+}
+
+/// **Where a press at `at` lands on the band alo draws across `window`**, or
+/// [`None`] where it is not on one — including anywhere on a window alo
+/// operates, which wears the border alone and has no band to press: its Stop is
+/// the task window's (the owner, 2026-11-15).
+pub(crate) fn where_a_press_lands(
+    here: &AloHere,
+    window: Rectangle<i32, Logical>,
+    at: Point<i32, Logical>,
+) -> Option<Lands> {
+    if here.wears != Wears::TheBand {
+        return None;
+    }
+    let band = crate::alos_band_in_a_window::the_band_of(window)?;
+    if !band.band.contains(at) {
+        return None;
+    }
+    Some(if band.stop.contains(at) {
+        Lands::OnStop
+    } else {
+        Lands::OnTheBand
+    })
 }
 
 impl crate::Server {
@@ -48,21 +82,13 @@ impl crate::Server {
         let location = self.surfaces.pointer.as_ref().map(|it| it.location)?;
         let in_front = self.the_window_under(location)?;
         let here = self.alo_in_this_window(&in_front)?;
-        // **A window alo operates has no band to press**: the border is the
-        // whole sign, and its Stop is the task window's.
-        if here.wears != crate::alo_in_a_window::Wears::TheBand {
-            return None;
-        }
         let at = self.where_the_pointer_is_in_logical_pixels()?;
         let scale = self.the_scale_an_edge_is_measured_at();
         let at = crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale);
         let window = self.the_window_a_band_hangs_from(&in_front, scale);
-        let band = crate::alos_band_in_a_window::the_band_of(window)?;
-        if !band.band.contains(at) {
-            return None;
-        }
-        if !band.stop.contains(at) {
-            return Some(OnAlosBand::OnTheBand);
+        match where_a_press_lands(&here, window, at)? {
+            Lands::OnTheBand => return Some(OnAlosBand::OnTheBand),
+            Lands::OnStop => {}
         }
         if here.how == HowAloIsHere::Stopping {
             return Some(OnAlosBand::AlreadyStopping);
@@ -74,3 +100,7 @@ impl crate::Server {
         })
     }
 }
+
+#[cfg(test)]
+#[path = "a_press_on_alos_band_tests.rs"]
+mod tests;

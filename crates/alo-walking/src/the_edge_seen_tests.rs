@@ -178,5 +178,8 @@ fn the_edge_at_twice_the_density_is_found() {
 #[test]
 fn a_thick_frame_with_wide_corners_is_not_the_edge() {
     let thick = a_ring(a_screen(), (14, 28, 1154, 662), 12, 32, TEAL);
-    assert!(a_ring_in(&thick).is_err(), "a 12-pixel frame read as the thin edge");
+    assert!(
+        a_ring_in(&thick).is_err(),
+        "a 12-pixel frame read as the thin edge"
+    );
 }
