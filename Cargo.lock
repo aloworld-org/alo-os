@@ -2178,6 +2178,7 @@ name = "alo-walking"
 version = "0.0.1"
 dependencies = [
  "alo-acting",
+ "alo-adapters",
  "alo-appearance",
  "alo-applications",
  "alo-cursors",
