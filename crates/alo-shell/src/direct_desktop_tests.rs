@@ -502,3 +502,6 @@ fn a_desktop_that_takes_the_defaults_cannot_answer_and_says_so() {
         "and it must not make a task either — the two answers have to agree"
     );
 }
+
+#[path = "the_text_on_the_card_drawn_tests.rs"]
+mod the_text_on_the_card_drawn_tests;

@@ -16,7 +16,15 @@
 //!    is in Geist Mono 12/18 and `text/muted`. Added 2026-11-01 by the owner's
 //!    decision, which put what a change touches on the wire
 //!    (`alo_protocol::Touched`).
-//! 4. **The choices**, on a row of their own in `bg/canvas` under a hairline:
+//! 4. **The text the change would type**, when it carries one — the owner's
+//!    decision of 2026-11-15, the design being silent: 12 under what is above
+//!    it, *how long it is* in Body/Medium and `text/muted` (and, under it,
+//!    how many characters are marked, in `status/warning`), 8, then a
+//!    `bg/cool` box with a 12 corner, 12 inside, holding the text in
+//!    System/Mono 12/18 — **up to twelve lines, and then it scrolls**. Each
+//!    hidden character is a small tag naming its code, *U+200B*, in
+//!    `status/warning`, where the character is.
+//! 5. **The choices**, on a row of their own in `bg/canvas` under a hairline:
 //!    14 above and below, *Allow once* (Primary) and *Deny* (Quiet) **both 144
 //!    wide**, 8 apart, and *Allows this one action. alo asks again next time.*
 //!    in Body/Medium and `text/muted` at the far end.
@@ -67,6 +75,38 @@ pub(crate) struct TheCard {
     /// How tall the lines saying what the change does and leaves alone are
     /// (`549:209`), and nought where its verb says neither.
     pub(crate) what_it_does_is_tall: u32,
+    /// How tall every text the change would type is, each with what is said
+    /// above it ([`a_text_is_tall`]), and nought for a change that carries
+    /// none.
+    pub(crate) the_texts_are_tall: u32,
+}
+
+/// The most lines of a text the card shows at once; past this it scrolls.
+pub(crate) const THE_MOST_LINES_SHOWN: usize = 12;
+/// Above a text, and what is said about it: the column's 12.
+pub(crate) const ABOVE_A_TEXT: u32 = 12;
+/// One line said above a text — how long it is, and how much is marked:
+/// Body/Medium's 18.
+pub(crate) const A_LINE_ABOUT_THE_TEXT: u32 = 18;
+/// Between what is said about a text and its box.
+pub(crate) const UNDER_WHAT_IS_SAID: u32 = 8;
+/// Inside the box, round the text.
+pub(crate) const INSIDE_THE_TEXT: u32 = 12;
+/// The box's corner.
+pub(crate) const THE_TEXTS_CORNER: u32 = 12;
+
+/// How tall one text is on the card: what is said above it, in `said` lines,
+/// and its box, whose words come out `words_are_tall`.
+pub(crate) const fn a_text_is_tall(said: u32, words_are_tall: u32) -> u32 {
+    ABOVE_A_TEXT
+        + said * A_LINE_ABOUT_THE_TEXT
+        + UNDER_WHAT_IS_SAID
+        + a_texts_box_is_tall(words_are_tall)
+}
+
+/// How tall a text's box is, round words that come out `words_are_tall`.
+pub(crate) const fn a_texts_box_is_tall(words_are_tall: u32) -> u32 {
+    INSIDE_THE_TEXT * 2 + words_are_tall
 }
 
 /// Above the lines saying what the change does: the column's 12.
@@ -148,19 +188,18 @@ impl TheCard {
         } else {
             ABOVE_WHAT_IT_DOES + self.what_it_does_is_tall
         };
-        self.the_action()
-            + self.the_action_is_tall
-            + self.rows * (ABOVE_A_ROW + A_ROW_IS_TALL)
-            + what_it_does
-            + BELOW_THE_ACTION
+        self.the_texts() + self.the_texts_are_tall + what_it_does + BELOW_THE_ACTION
+    }
+
+    /// Where the texts start, down: under the last row naming what it
+    /// touches.
+    pub(crate) const fn the_texts(self) -> u32 {
+        self.the_action() + self.the_action_is_tall + self.rows * (ABOVE_A_ROW + A_ROW_IS_TALL)
     }
 
     /// Where the lines saying what it does start, down.
     pub(crate) const fn what_it_does(self) -> u32 {
-        self.the_action()
-            + self.the_action_is_tall
-            + self.rows * (ABOVE_A_ROW + A_ROW_IS_TALL)
-            + ABOVE_WHAT_IT_DOES
+        self.the_texts() + self.the_texts_are_tall + ABOVE_WHAT_IT_DOES
     }
 
     /// Where the two answers start, down.

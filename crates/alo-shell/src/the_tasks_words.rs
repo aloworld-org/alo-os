@@ -78,6 +78,8 @@ struct ATasksWords {
     touches: Vec<crate::task_text::ATouchedRow>,
     /// What the change waiting does and leaves alone (`549:209`).
     does: (Option<String>, Option<String>),
+    /// The text the change waiting would type, as the card shows it.
+    texts: Vec<crate::the_text_alo_will_type::ATextOnTheCard>,
     /// Which answer the keyboard is on, and [`None`] until the person moves.
     selected: Option<crate::a_change_waiting_reaches_the_person::WhichAnswer>,
     /// Which of `said` carries *Stop and close* and *Cancel*: the question
@@ -187,6 +189,7 @@ impl TheTasksWords {
                     once: say(crate::the_cards_words::ALLOWS_THIS_ONE_ACTION),
                     touches: Vec::new(),
                     does: (None, None),
+                    texts: Vec::new(),
                     selected,
                     closing_after: None,
                     stop_and_close: String::new(),
@@ -261,6 +264,29 @@ impl TheTasksWords {
         self
     }
 
+    /// **And the text the change waiting would type**, whole, on the asking
+    /// task's card: twelve lines from `first_line`, how long it is, and every
+    /// hidden character a tag (`crate::the_text_alo_will_type`). Nothing for a
+    /// task that is not asking.
+    pub(crate) fn with_the_text_alo_will_type(
+        mut self,
+        texts: &[alo_capability::TheWholeText],
+        first_line: usize,
+        strings: &Strings,
+    ) -> Self {
+        for one in &mut self.each {
+            if one.answers_after.is_some() {
+                one.texts = texts
+                    .iter()
+                    .map(|text| {
+                        crate::the_text_alo_will_type::ATextOnTheCard::of(text, first_line, strings)
+                    })
+                    .collect();
+            }
+        }
+        self
+    }
+
     /// **And what the change waiting does and leaves alone**, on the asking
     /// task's card. Nothing for a task that is not asking.
     pub(crate) fn with_what_the_change_does(
@@ -317,6 +343,7 @@ impl TheTasksWords {
                                 once: Some(&one.once),
                                 touches: &one.touches,
                                 does: (one.does.0.as_deref(), one.does.1.as_deref()),
+                                texts: &one.texts,
                                 between: None,
                             })
                         } else if one.closing_after == Some(at) {
@@ -334,6 +361,7 @@ impl TheTasksWords {
                                 once: None,
                                 touches: &[],
                                 does: (None, None),
+                                texts: &[],
                                 between: Some(crate::task_text::TheAnswerBetween {
                                     words: &one.keep_running,
                                     selected: one.keep_running_selected,
