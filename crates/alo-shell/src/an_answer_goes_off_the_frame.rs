@@ -44,6 +44,9 @@ pub(crate) struct WhatAnAnswerDid {
     pub(crate) which: WhichTask,
     /// What the daemon said, and [`None`] when it said nothing.
     pub(crate) answered: Option<Answered>,
+    /// The agent's turn, when it goes on after this answer and was told what
+    /// the answer did — for the next thing it says to be heard on it.
+    pub(crate) goes_on: Option<UnixStream>,
 }
 
 /// Answers on their way to the daemon.
@@ -76,6 +79,7 @@ impl TheAnswersOnTheirWay {
         which: WhichTask,
         given: TheAnswerGiven,
         the_turn: Option<UnixStream>,
+        goes_on: bool,
         daemon: TheirDaemon,
     ) {
         let posting = self.posting.clone();
@@ -88,10 +92,12 @@ impl TheAnswersOnTheirWay {
                 } else {
                     daemon.decline(given.number)
                 };
-                // **Only now does the agent go**: the change was carried out
-                // inside its turn, so the turn ends after the answer.
-                drop(the_turn);
-                drop(posting.send(WhatAnAnswerDid { which, answered }));
+                let goes_on = told_the_agent(the_turn, goes_on, answered.as_ref());
+                drop(posting.send(WhatAnAnswerDid {
+                    which,
+                    answered,
+                    goes_on,
+                }));
             });
         // A thread that could not start sent nothing: the person is told the
         // machine did not say, which is true, and the change lapses.
@@ -99,6 +105,7 @@ impl TheAnswersOnTheirWay {
             drop(self.posting.send(WhatAnAnswerDid {
                 which,
                 answered: None,
+                goes_on: None,
             }));
         }
     }
@@ -131,6 +138,31 @@ impl TheAnswersOnTheirWay {
     }
 }
 
+/// **Tell an agent that goes on what the answer did**, and hand its socket
+/// back to be heard on — or let it go.
+///
+/// The line is written only **after** the daemon answered, so the change has
+/// already run or not; it is the daemon's answer as the daemon wrote it, and
+/// it approves nothing. An agent that does not go on, or a daemon that said
+/// nothing, ends the turn by the socket closing here: **only now does the agent
+/// go**, after the answer and never under it.
+fn told_the_agent(
+    the_turn: Option<UnixStream>,
+    goes_on: bool,
+    answered: Option<&Answered>,
+) -> Option<UnixStream> {
+    use std::io::Write as _;
+    let the_turn = the_turn?;
+    if !goes_on {
+        return None;
+    }
+    let line = answered?.told_to_the_agent()?;
+    (&the_turn)
+        .write_all(format!("{line}\n").as_bytes())
+        .ok()
+        .map(|()| the_turn)
+}
+
 impl crate::Server {
     /// An answer the person gave has come back from the daemon: tell them what
     /// it did, and send a reply they held for it (ADR 0138).
@@ -138,9 +170,13 @@ impl crate::Server {
     /// **The held reply goes only now**, after the daemon answered and the
     /// agent's turn was let go: the daemon serves one turn at a time, so a reply
     /// sent while the answer was on its way would be turned away.
+    ///
+    /// **Unless the agent goes on** (`goes_on`): then the reply is held until
+    /// what it says next arrives, because its turn is still under way.
     pub(crate) fn an_answer_came_back_from_the_daemon(
         &mut self,
-        did: WhatAnAnswerDid,
+        did: &WhatAnAnswerDid,
+        goes_on: bool,
         strings: &alo_strings::Strings,
     ) {
         if let Some(task) = self.the_tasks.the_mut(did.which) {
@@ -151,7 +187,9 @@ impl crate::Server {
                 crate::what_an_answer_did::what_an_answer_did(did.answered.as_ref(), strings),
             ));
         }
-        self.send_what_was_held(did.which, strings);
+        if !goes_on {
+            self.send_what_was_held(did.which, strings);
+        }
     }
 
     /// Wait for every answer on its way and tell the person, as the frames in
@@ -159,7 +197,7 @@ impl crate::Server {
     #[cfg(test)]
     pub(crate) fn every_answer_came_back(&mut self, strings: &alo_strings::Strings) {
         for did in self.the_answers.every_one_of_them() {
-            self.an_answer_came_back_from_the_daemon(did, strings);
+            self.an_answer_came_back_from_the_daemon(&did, did.goes_on.is_some(), strings);
         }
     }
 }

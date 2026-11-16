@@ -501,3 +501,94 @@ fn a_request_about_a_window_carries_it_after_the_conversation() {
     let _ = one_answer(&door);
     let _ = std::fs::remove_dir_all(at.parent().unwrap());
 }
+
+/// **A shell tells its agent the answer follows**, on the eighth line, and
+/// **a reply that pauses for the person's answer is read to the pause** with
+/// the turn kept open — not to a close that never comes.
+#[test]
+fn a_reply_that_pauses_for_the_answer_is_read_to_the_pause() {
+    let at = a_socket("pauses");
+    let listening = UnixListener::bind(&at).unwrap();
+    let (telling, heard) = std::sync::mpsc::channel();
+    let agent = std::thread::spawn(move || {
+        let (talking, _) = listening.accept().unwrap();
+        let mut reading = BufReader::new(&talking);
+        let mut lines = Vec::new();
+        for _ in 0..8 {
+            let mut line = String::new();
+            reading.read_line(&mut line).unwrap();
+            lines.push(line);
+        }
+        drop(telling.send(lines));
+        let mut writing = &talking;
+        writing
+            .write_all(
+                b"a change is waiting for you to answer, as number 7:\n  Open hello.txt\n \
+                  alo-waiting-for-the-answer\nalo-waiting-for-the-answer\n",
+            )
+            .unwrap();
+        // Kept open, as an agent waiting for the answer keeps it.
+        talking
+    });
+    let door = TheAgentsDoor::at(&at);
+    door.ask(
+        WhoAsked::ATaskWindow(WhichTask::numbered(1)),
+        "open hello.txt in vscodium",
+        &WhatTheAgentMayReach::default(),
+        None,
+    );
+
+    let lines = heard.recv().unwrap();
+    assert_eq!(
+        lines.last().map(String::as_str),
+        Some("alo-answer-follows:yes\n"),
+        "{lines:?}"
+    );
+    let came = one_answer(&door);
+    assert!(came.the_turn_goes_on, "the pause was not read as one");
+    assert!(came.the_turn.is_some(), "the turn was not kept");
+    assert_eq!(
+        came.said,
+        "a change is waiting for you to answer, as number 7:\n  Open hello.txt\n \
+         alo-waiting-for-the-answer",
+        "a line with a space in front was read as the pause, or the sentence was lost"
+    );
+    drop(agent.join().unwrap());
+    let _ = std::fs::remove_dir_all(at.parent().unwrap());
+}
+
+/// **A reply that ends by closing is an agent that does not go on**, whatever
+/// it said, which is every agent from before the eighth line.
+#[test]
+fn a_reply_that_ends_by_closing_does_not_go_on() {
+    let at = a_socket("closes");
+    let _heard = an_agent_answering(&at, "It is in Invoices.\n");
+    let door = TheAgentsDoor::at(&at);
+    door.ask(
+        WhoAsked::ATaskWindow(WhichTask::numbered(2)),
+        "where is march.pdf?",
+        &WhatTheAgentMayReach::default(),
+        None,
+    );
+    let came = one_answer(&door);
+    assert_eq!(came.said, "It is in Invoices.");
+    assert!(!came.the_turn_goes_on);
+    let _ = std::fs::remove_dir_all(at.parent().unwrap());
+}
+
+/// **What the agent says after the answer arrives like any answer**, for the
+/// window that asked.
+#[test]
+fn what_the_agent_says_next_is_heard_on_its_turn() {
+    let (ours, agents_end) = std::os::unix::net::UnixStream::pair().unwrap();
+    let door = TheAgentsDoor::at(&a_socket("hears-the-rest"));
+    door.hear_the_rest(WhoAsked::ATaskWindow(WhichTask::numbered(4)), ours);
+    (&agents_end).write_all(b"Saved.\n").unwrap();
+    drop(agents_end);
+
+    let came = one_answer(&door);
+    assert_eq!(came.who, WhoAsked::ATaskWindow(WhichTask::numbered(4)));
+    assert_eq!(came.said, "Saved.");
+    assert!(!came.the_turn_goes_on);
+    assert!(!came.the_machines_fault);
+}
