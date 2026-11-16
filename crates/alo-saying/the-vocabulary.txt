@@ -473,12 +473,15 @@ capability.grant.not-a-full-path	grant a folder by its full path, so it means th
 capability.grant.not-for-an-agent	the camera, the microphone, the screen and the like are granted only to applications — an agent is offered what it needs at the moment you ask it
 capability.grant.nothing-named	choose the folder, file or application this grant is over
 capability.grant.the-whole-machine	there is no grant to the whole machine — pick the folder you actually mean
+capability.in-applications.in-its-copy-or-your-window	alo works in its own copy where an app has one, and in your window where it has none
+capability.in-applications.in-its-copy-or-your-window-is	Any application can be used. A window alo works in has a teal border, and each change still waits for your OK unless you chose otherwise
 capability.in-applications.in-its-own-copy	alo works in its own copy of an application
 capability.in-applications.in-its-own-copy-is	What alo's copy sends is counted and shown while it works. An application that cannot open a separate copy is refused
 capability.in-applications.in-your-window	alo may work in your own window
 capability.in-applications.in-your-window-is	Any application can be used. While alo works, the indicator says the application may be sending
 capability.in-applications.no-copy-of-its-own	alo cannot work in {application} safely at this setting, because it cannot open a separate copy of its own for alo. To let alo work in your own window instead, choose “alo may work in your own window” in Settings → Folders alo can use
 capability.in-applications.what-your-window-costs	alo will show that the application is sending, but cannot count what it sends, and works where your other tabs are
+capability.in-applications.what-your-window-costs-where-no-copy	Where an app has no copy of its own, alo works in your window: the indicator shows that it may send, but cannot count it
 capability.proposal.no-end	a question has to lapse — choose how long this one stands for
 capability.proposal.no-time	say how long the question stands — one that lapses at once cannot be answered
 capability.proposal.read-does-not-wait	{verb} answers a question rather than changing anything — run it in the turn instead of asking about it

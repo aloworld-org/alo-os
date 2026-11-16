@@ -34,8 +34,8 @@ use crate::settings_kept::SettingsKept;
 /// The choice, as Settings found it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct AloInApplicationsHere {
-    /// What the file says, alo's own copy where it says nothing or would not
-    /// read.
+    /// What the file says: the default where it says nothing, and alo's own
+    /// copy only where it would not read, as the desktop reads it.
     is: AloInApplications,
     /// Where it is kept.
     at: PathBuf,
@@ -45,7 +45,8 @@ impl AloInApplicationsHere {
     /// What the choice is at sign-in.
     pub(crate) fn at_sign_in(at: &Path) -> Self {
         Self {
-            is: alo_remembering::alo_in_applications_remembered(at).unwrap_or_default(),
+            is: alo_remembering::alo_in_applications_remembered(at)
+                .unwrap_or(AloInApplications::WHEN_UNREADABLE),
             at: at.to_owned(),
         }
     }
@@ -55,7 +56,7 @@ impl AloInApplicationsHere {
         self.is
     }
 
-    /// One press on one of the two: written first and drawn second.
+    /// One press on one of the three: written first and drawn second.
     pub(crate) fn picked(&mut self, answer: AloInApplications) -> SettingsKept {
         match alo_remembering::alo_in_applications_kept(&self.at, answer) {
             Ok(()) => {
@@ -85,17 +86,18 @@ mod tests {
         (at, file)
     }
 
-    /// **alo's own copy until the person chooses otherwise.**
+    /// **alo's own copy where there is one and the person's window where
+    /// there is none, until the person chooses otherwise** (2026-11-16).
     #[test]
-    fn a_machine_nobody_has_touched_has_alo_in_its_own_copy() {
+    fn a_machine_nobody_has_touched_has_alo_in_a_copy_or_their_window() {
         let (_at, file) = somewhere("untouched");
         assert_eq!(
             AloInApplicationsHere::at_sign_in(&file).is(),
-            AloInApplications::InItsOwnCopy
+            AloInApplications::InItsOwnCopyOrTheirWindow
         );
     }
 
-    /// **Either answer in one press**, each read back by a second reader so
+    /// **Each answer in one press**, each read back by a second reader so
     /// this cannot pass on the value in hand — and the level is kept.
     #[test]
     fn each_answer_is_written_and_the_level_kept() {
@@ -106,6 +108,7 @@ mod tests {
         for answer in [
             AloInApplications::InTheirWindow,
             AloInApplications::InItsOwnCopy,
+            AloInApplications::InItsOwnCopyOrTheirWindow,
         ] {
             assert_eq!(here.picked(answer), SettingsKept::Written);
             assert_eq!(AloInApplicationsHere::at_sign_in(&file).is(), answer);

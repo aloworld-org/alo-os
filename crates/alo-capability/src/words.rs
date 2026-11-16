@@ -877,6 +877,36 @@ pub const WORKS_IN_ITS_OWN_COPY_IS: Word = Word::saying(
     "Under the choice \"alo works in its own copy of an application\" in Settings. \"Refused\" means alo will say it cannot work in that application at this setting.",
 );
 
+/// Where alo works in an application, **as a machine arrives** since the
+/// owner's decision of 2026-11-16: the row's name in Settings
+/// (`crate::AloInApplications::InItsOwnCopyOrTheirWindow`).
+pub const WORKS_IN_ITS_COPY_OR_YOUR_WINDOW: Word = Word::saying(
+    "capability.in-applications.in-its-copy-or-your-window",
+    "alo works in its own copy where an app has one, and in your window where it has none",
+)
+.noting(
+    "The name of a choice in Settings, and the one a computer starts with. alo is the assistant built into alo OS. Some applications, such as a web browser, can open a separate copy for alo with its own profile; there alo uses that copy. Every other application alo works in is the person's own open window.",
+);
+
+/// The line under [`WORKS_IN_ITS_COPY_OR_YOUR_WINDOW`].
+pub const WORKS_IN_ITS_COPY_OR_YOUR_WINDOW_IS: Word = Word::saying(
+    "capability.in-applications.in-its-copy-or-your-window-is",
+    "Any application can be used. A window alo works in has a teal border, and each change still waits for your OK unless you chose otherwise",
+)
+.noting(
+    "Under the choice \"alo works in its own copy where an app has one, and in your window where it has none\" in Settings. Teal is the colour alo OS uses to show alo is acting. \"Your OK\" is the person approving a change before it happens.",
+);
+
+/// What the default costs, said beside it: the coordinator's line of
+/// 2026-11-16, approved with the owner's decision.
+pub const WHAT_YOUR_WINDOW_COSTS_WHERE_NO_COPY: Word = Word::saying(
+    "capability.in-applications.what-your-window-costs-where-no-copy",
+    "Where an app has no copy of its own, alo works in your window: the indicator shows that it may send, but cannot count it",
+)
+.noting(
+    "Shown beside the choice a computer starts with, so the person knows what it costs: in an application that cannot open a separate copy for alo, alo works in the person's own window, and the computer can say that something may be sent but not how much. A plain statement, not a refusal, a scare or a recommendation. Keep it one sentence.",
+);
+
 /// Where alo works in an application, turned up: the row's name in Settings
 /// (`crate::AloInApplications::InTheirWindow`). [`NO_COPY_OF_ITS_OWN`]
 /// quotes it exactly.
@@ -1342,7 +1372,7 @@ pub const TEXT_HOLDS_ANOTHER_ALPHABET: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 117] = [
+pub const EVERY_WORD: [Word; 120] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -1411,6 +1441,9 @@ pub const EVERY_WORD: [Word; 117] = [
     ALWAYS_THE_SNAPSHOT,
     ALWAYS_THE_INDICATOR,
     WHAT_ACTING_WITHOUT_ASKING_COSTS,
+    WORKS_IN_ITS_COPY_OR_YOUR_WINDOW,
+    WORKS_IN_ITS_COPY_OR_YOUR_WINDOW_IS,
+    WHAT_YOUR_WINDOW_COSTS_WHERE_NO_COPY,
     WORKS_IN_ITS_OWN_COPY,
     WORKS_IN_ITS_OWN_COPY_IS,
     MAY_WORK_IN_YOUR_WINDOW,

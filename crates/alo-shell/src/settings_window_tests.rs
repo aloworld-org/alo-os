@@ -347,9 +347,12 @@ fn every_setting_the_machine_has_is_in_one_window() {
                 provider: PROVIDER.to_owned(),
                 model: "harbour-small".to_owned(),
             }),
-            // alo works in its own copy of an application, as a machine
-            // arrives (ADR 0143 Q6).
-            SettingsRow::WhereAloWorks(alo_capability::AloInApplications::InItsOwnCopy),
+            // alo works in its own copy where an application has one and in
+            // the person's window where it has none, as a machine arrives
+            // (ADR 0143, the owner's decision of 2026-11-16).
+            SettingsRow::WhereAloWorks(
+                alo_capability::AloInApplications::InItsOwnCopyOrTheirWindow
+            ),
             SettingsRow::LightOrDark(LightOrDark::of(Appearance::shipped().following())),
             SettingsRow::Accent(Appearance::shipped().accent()),
             // A new window with no room glides to empty space, as it ships.
@@ -669,10 +672,13 @@ fn a_fresh_machine_can_answer_only_not_at_all_and_is_offered_the_way_in() {
         // happened*, and a machine with nothing granted now may have done
         // things under a grant since taken back.
         // And where alo works in an application since 2026-11-10, which
-        // needs nothing granted either.
+        // needs nothing granted either — three answers since 2026-11-16.
         [
             SettingsRow::GrantAFolder,
             SettingsRow::SeeWhatAloDid,
+            SettingsRow::WhereAloWorks(
+                alo_capability::AloInApplications::InItsOwnCopyOrTheirWindow
+            ),
             SettingsRow::WhereAloWorks(alo_capability::AloInApplications::InItsOwnCopy),
             SettingsRow::WhereAloWorks(alo_capability::AloInApplications::InTheirWindow),
         ],
@@ -2806,7 +2812,16 @@ fn where_alo_works_is_offered_with_its_cost_and_the_refusal_names_it() {
     assert_eq!(
         names,
         [
-            ("alo works in its own copy of an application", true, None),
+            (
+                "alo works in its own copy where an app has one, and in your window where it \
+                 has none",
+                true,
+                Some(
+                    "Where an app has no copy of its own, alo works in your window: the indicator \
+                     shows that it may send, but cannot count it"
+                )
+            ),
+            ("alo works in its own copy of an application", false, None),
             (
                 "alo may work in your own window",
                 false,
@@ -2824,7 +2839,7 @@ fn where_alo_works_is_offered_with_its_cost_and_the_refusal_names_it() {
     let refusal = alo_capability::words::NO_COPY_OF_ITS_OWN.says();
     let page_name = SettingsCategory::FoldersAloCanUse.word().says();
     let row_name = AloInApplications::InTheirWindow.the_word().says();
-    assert_eq!(rows[1].title, row_name);
+    assert_eq!(rows[2].title, row_name);
     assert!(
         refusal.contains(&format!("“{row_name}” in Settings → {page_name}")),
         "the refusal does not name the row and its page exactly: {refusal}"
@@ -2836,6 +2851,7 @@ fn where_alo_works_is_offered_with_its_cost_and_the_refusal_names_it() {
     for answer in [
         AloInApplications::InTheirWindow,
         AloInApplications::InItsOwnCopy,
+        AloInApplications::InItsOwnCopyOrTheirWindow,
     ] {
         assert_eq!(
             chosen(

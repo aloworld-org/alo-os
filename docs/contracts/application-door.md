@@ -347,8 +347,9 @@ Like a count, it holds its connection for as long as alo works:
   copy of {application}, and this machine cannot count what it sends* is up for
   the whole time. A `counting` copy whose groups are not found within two
   seconds, or a part of which cannot be counted, becomes the second line at once.
-- `no-copy-of-its-own` is **the owner's answer A**: the application cannot open
-  a separate copy for alo — it is not on alo's reviewed list, or it is started
+- `no-copy-of-its-own` is **the owner's answer A**, answered since 2026-11-16
+  only where the person switched the default off (`in-alos-copy`): the
+  application cannot open a separate copy for alo — it is not on alo's reviewed list, or it is started
   only over the session bus — so alo may not work in it at this setting, and the
   turn names the Settings choice that lets it use the person's own window, in
   `alo_capability::words::NO_COPY_OF_ITS_OWN`: *choose “alo may work in your
@@ -357,7 +358,11 @@ Like a count, it holds its connection for as long as alo works:
   `in-applications` in `/var/lib/alo/how-code-runs.toml`
   (`how-code-runs-file.md`), chosen on Settings → Folders alo can use and read
   by the desktop at each ask — never taken from the word alo sent. **At the
-  default** (`in-alos-copy`, or no answer, or a file that will not read),
+  default** (`in-alos-copy-or-their-window`, or no answer — since 2026-11-16),
+  an application with no copy of its own is worked in in the person's window
+  for either word, answered `showing`; for one that has a copy,
+  `work-in-alos-copy` uses it and `work-in-their-window` is answered
+  `not-chosen`. **Switched off** (`in-alos-copy`, or a file that will not read),
   `work-in-their-window` is answered `not-chosen` and nothing is started,
   shown or counted. **Turned up** (`in-their-window`), `work-in-their-window`
   is answered `showing`, and `work-in-alos-copy` still uses alo's copy where
@@ -547,9 +552,12 @@ Additive: nothing above changes meaning.
   the window that has the keyboard now is a window of `<application>`;
   otherwise `not-in-front`, and nothing is sent to anybody. The compositor
   never moves the keyboard to carry them out.
-- **alo's own copy at the default.** At the default `in-applications` setting
-  (`how-code-runs-file.md`) that window must also be **alo's own copy** of the
-  application — its process in the copy's scope or the scope Flatpak moved it
+- **alo's own copy where the application has one.** At the default
+  `in-applications` setting (`how-code-runs-file.md`) that window must also be
+  **alo's own copy** of an application that has one, while an application with
+  no copy of its own is typed into in the person's own window (the owner,
+  2026-11-16); switched off (`in-alos-copy`) the window must be alo's own copy
+  of any application — its process in the copy's scope or the scope Flatpak moved it
   into — or the answer is `not-alos-copy`. Turned up, the person's own window
   is accepted too. As for `work-in-…`, the setting is read by the desktop at
   each ask and never taken from the line.
@@ -597,9 +605,12 @@ list and the file's real place have all answered.
   request and is closed with nothing written.
 - **Where it opens is read by the desktop, never sent.** At the person's
   default (`in-applications` in `how-code-runs-file.md`) it opens in alo's
-  own copy: the copy is started with the file, or, already running, is handed
-  it by a start over the copy's own profile. An application with no copy of its
-  own is answered `no-copy-of-its-own`, and nothing is opened. Where the person
+  own copy where the application has one: the copy is started with the file, or,
+  already running, is handed it by a start over the copy's own profile. An
+  application with no copy of its own is opened in the person's own window, as
+  their press opens it (the owner, 2026-11-16) — and answered
+  `no-copy-of-its-own`, with nothing opened, only where the person switched
+  that off (`in-alos-copy`). Where the person
   chose their own window, it is started the way their press starts it.
 - **What runs is the installed entry's own `Exec` line**, with the file where
   its `%f`, `%F`, `%u` or `%U` stands — inside Flatpak's own

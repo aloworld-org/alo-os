@@ -128,7 +128,8 @@ pub use names::{MachineNames, NotNames, THE_NAMES_FORMAT};
 pub use pairings::{THE_PAIRINGS, pairings_kept, pairings_remembered};
 pub use refusing::NotRemembered;
 pub use the_level::{
-    ASKING_EACH_TIME, AT_FULL_TRUST, IN_A_SEALED_BOX, IN_ALOS_COPY, IN_THEIR_WINDOW, NotTheLevel,
+    ASKING_EACH_TIME, AT_FULL_TRUST, IN_A_SEALED_BOX, IN_ALOS_COPY, IN_ALOS_COPY_OR_THEIR_WINDOW,
+    IN_THEIR_WINDOW, NotTheLevel,
     THE_LEVEL_FORMAT, the_level_called, the_word_for,
 };
 #[cfg(unix)]

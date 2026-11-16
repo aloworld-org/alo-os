@@ -1118,10 +1118,17 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   indicator will then show *that* the application is sending and cannot count
   what. Counting everything an application does, the person's own use included,
   is not offered at any setting — that would be watching the person.
-  **An application that cannot open a separate window for alo is refused at the
-  default**, and alo says plainly that it cannot work there safely at this
-  setting and names the Settings choice that lets it use the person's own
-  window. **alo's copy is signed in to nothing at first**: the first time alo
+  **An application that cannot open a separate window for alo is worked in in
+  the person's own window, automatically** — since 2026-11-16, the owner: *"it
+  should be automatic for any application installed not for just those too,
+  because the users will not use only 3 apps"*, and, asked whether alo should
+  then work in the person's own window by default, *"Yes, automatically"*. That
+  window wears alo's teal border while alo works, the indicator says it may be
+  sending, and each change still waits for the OK at *ask each time*. **The
+  person can switch it off** in Settings — *alo works in its own copy of an
+  application* — and then an application with no copy of its own is refused, as
+  every one was until that day, with alo saying plainly that it cannot work there
+  safely at this setting and naming the choice that lets it use their window. **alo's copy is signed in to nothing at first**: the first time alo
   needs a service such as GitHub, its copy shows the sign-in page, the person
   signs in themselves, alo never sees the password, and the copy stays signed in
   until the person signs it out. *Owner, 2026-11-10 (ADR 0143).*
