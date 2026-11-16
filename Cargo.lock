@@ -2183,6 +2183,7 @@ dependencies = [
  "alo-adapters",
  "alo-appearance",
  "alo-applications",
+ "alo-capability",
  "alo-cursors",
  "image",
  "serde_json",
