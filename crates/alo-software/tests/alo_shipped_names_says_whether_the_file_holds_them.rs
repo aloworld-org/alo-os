@@ -111,4 +111,13 @@ fn nothing_to_read_or_an_unknown_flag_is_refused() {
         let ran = Command::new(THE_BINARY).args(given).output().unwrap();
         assert_eq!(ran.status.code(), Some(2), "{given:?}: {ran:?}");
     }
+    // **A flag it does not know is refused beside a folder that would agree**,
+    // so it is the flag that is refused and not an empty reading.
+    let agreeing = entries(None);
+    let ran = Command::new(THE_BINARY)
+        .arg("--write")
+        .arg(agreeing.path().join("applications"))
+        .output()
+        .unwrap();
+    assert_eq!(ran.status.code(), Some(2), "{ran:?}");
 }
