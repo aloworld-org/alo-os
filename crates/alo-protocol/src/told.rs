@@ -129,6 +129,16 @@ pub(crate) enum Told {
     ///
     /// Added 2026-11-13, additively. Carries nothing.
     WatchingWhatNeedsAGithubSignIn {},
+    /// The installed applications the turn under way asked for and nothing
+    /// grants, by identifier — the answer to `wanted`. Empty when there are
+    /// none, or no turn is under way.
+    ///
+    /// Added 2026-11-16, additively, and told only on the person's door.
+    Wanted {
+        /// Each by the identifier the machine knows it by, in the order the
+        /// turn asked for them, once each.
+        applications: Vec<String>,
+    },
     /// A command alo ran on this machine failed because nobody is signed in to
     /// GitHub — told once per such failure, to a desktop watching for it.
     ///

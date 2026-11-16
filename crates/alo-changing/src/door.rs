@@ -175,6 +175,7 @@ impl TheDaemonsDoor {
             | ToAPerson::Leaving { .. }
             | ToAPerson::GitHubSignInKept
             | ToAPerson::WatchingWhatNeedsAGitHubSignIn
+            | ToAPerson::Wanted { .. }
             | ToAPerson::AGitHubSignInIsNeeded => None,
         }
     }

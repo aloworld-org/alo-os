@@ -284,6 +284,7 @@ fn answered_to(
     let Some((turning, bracket, commands)) = underway else {
         return match answered.number() {
             Some(number) => nothing_is_waiting(number, strings),
+            None if matches!(answered, FromAPerson::Wanted) => ToAPerson::wanted(Vec::new()),
             None => ToAPerson::waiting(std::iter::empty(), strings, now),
         };
     };
@@ -297,6 +298,9 @@ fn answered_to(
             strings,
             now,
         ),
+        // **What the turn wanted and was not given**, for the sheet that asks
+        // the person (the owner's decision of 2026-11-16).
+        FromAPerson::Wanted => ToAPerson::wanted(turning.applications_wanted().to_vec()),
         // The knock is not about the turn, and the one caller answers it before
         // it reaches here. Unreachable while that is so, and answered rather
         // than assumed away — with the sentence that is true of a machine that

@@ -142,6 +142,11 @@ pub struct Turning<'a, 'm> {
     /// (`alo_record::Entry::kept_as`), which is the link *Put back* is asked
     /// from.
     kept_as: Option<String>,
+    /// The installed applications this turn asked for and nothing granted, by
+    /// identifier, once each — what the person's desktop offers on the sheet
+    /// that asks (the owner's decision of 2026-11-16). Told to the person's
+    /// door only (`alo_protocol::FromAPerson::Wanted`), never to the agent.
+    wanted: Vec<String>,
 }
 
 impl<'a, 'm> Turning<'a, 'm> {
@@ -177,6 +182,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             origin: None,
             became: Vec::new(),
             kept_as: None,
+            wanted: Vec::new(),
         })
     }
 
@@ -210,6 +216,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             origin: Some(origin.clone()),
             became: Vec::new(),
             kept_as: None,
+            wanted: Vec::new(),
         })
     }
 
@@ -618,6 +625,23 @@ impl<'a, 'm> Turning<'a, 'm> {
 
     /// The changes and commands waiting, for the doors in
     /// `crate::a_command_where_no_verb_exists`.
+    /// The installed applications this turn asked for and nothing granted, in
+    /// the order it asked, once each.
+    #[must_use]
+    pub fn applications_wanted(&self) -> &[String] {
+        &self.wanted
+    }
+
+    /// Note that this turn asked for these applications and nothing granted
+    /// them.
+    pub(crate) fn wanting(&mut self, applications: Vec<String>) {
+        for application in applications {
+            if !self.wanted.contains(&application) {
+                self.wanted.push(application);
+            }
+        }
+    }
+
     pub(crate) fn approvals(&self) -> &Approvals {
         &self.approvals
     }

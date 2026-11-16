@@ -222,6 +222,15 @@ pub enum ToAPerson {
     /// told, so a desktop written before it — and the one watching what
     /// leaves — never meets an answer it has no arm for.
     AGitHubSignInIsNeeded,
+    /// **The installed applications the turn under way asked for and nothing
+    /// grants**, by identifier — the answer to
+    /// [`FromAPerson::Wanted`](crate::FromAPerson), for the sheet that asks the
+    /// person whether to give alo one (the owner's decision of 2026-11-16).
+    /// Empty when there are none. Added 2026-11-16, additively.
+    Wanted {
+        /// Each by its identifier, once, in the order the turn asked.
+        applications: Vec<String>,
+    },
 }
 
 impl ToAPerson {
@@ -251,6 +260,22 @@ impl ToAPerson {
     pub const fn opened_workspace(&self) -> Option<&FoundWorkspace> {
         match self {
             Self::WorkspaceOpened(workspace) => Some(workspace),
+            _ => None,
+        }
+    }
+
+    /// The installed applications the turn under way asked for and nothing
+    /// grants.
+    #[must_use]
+    pub const fn wanted(applications: Vec<String>) -> Self {
+        Self::Wanted { applications }
+    }
+
+    /// The applications wanted, when that is what they asked.
+    #[must_use]
+    pub fn applications_wanted(&self) -> Option<&[String]> {
+        match self {
+            Self::Wanted { applications } => Some(applications),
             _ => None,
         }
     }
@@ -598,6 +623,7 @@ impl ToAPerson {
             Told::GithubSignInKept {} => Ok(Self::GitHubSignInKept),
             Told::WatchingWhatNeedsAGithubSignIn {} => Ok(Self::WatchingWhatNeedsAGitHubSignIn),
             Told::AGithubSignInIsNeeded {} => Ok(Self::AGitHubSignInIsNeeded),
+            Told::Wanted { applications } => Ok(Self::Wanted { applications }),
             // A change carried out without the OK is told to the agent that
             // asked for it, which tells the person in its reply (ADR 0149).
             Told::Proposed(_) | Told::DoneWithoutAsking { .. } => {
@@ -705,6 +731,7 @@ impl From<ToAPerson> for Told {
             ToAPerson::GitHubSignInKept => Self::GithubSignInKept {},
             ToAPerson::WatchingWhatNeedsAGitHubSignIn => Self::WatchingWhatNeedsAGithubSignIn {},
             ToAPerson::AGitHubSignInIsNeeded => Self::AGithubSignInIsNeeded {},
+            ToAPerson::Wanted { applications } => Self::Wanted { applications },
         }
     }
 }
@@ -1100,6 +1127,10 @@ mod a_change_that_cannot_be_undone;
     clippy::unwrap_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
+#[path = "an_application_is_wanted_tests.rs"]
+mod an_application_is_wanted;
+
+#[cfg(test)]
 #[path = "a_github_sign_in_is_needed_tests.rs"]
 mod a_github_sign_in_is_needed;
 

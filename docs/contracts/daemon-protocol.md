@@ -870,6 +870,35 @@ is written, once:
 - **A service started with nobody to tell** answers `refused`; the desktop
   then opens the sheet from Settings → Accounts only.
 
+### `wanted` — which applications the turn asked for and was not given
+
+```json
+{"wanted":{}}
+```
+
+Added 2026-11-16, additively, for the sheet the person's desktop draws when
+alo needs an application it was not given (the owner's decision of
+2026-11-16, `docs/design/when-alo-asks-for-an-application.md`). A read of the
+turn under way, like `waiting`, on the person's door only.
+
+The answer is `wanted`, each application **by its identifier**, once, in the
+order the turn asked for it:
+
+```json
+{"wanted":{"applications":["com.vscodium.codium"]}}
+```
+
+- **Only an installed application that one name picks out and nothing
+  grants**: a name that means several applications or none is not listed, and
+  at full access nothing is.
+- **Empty when nothing is wanted**, or no turn is under way. A turn arriving
+  from a paired machine wants nothing of this person's sheet.
+- **Never on the agent's door.** The agent is told the refusal it was always
+  told, so it learns nothing from it about what is installed here; asking this
+  from an agent is refused as `not-for-an-agent`.
+- **Nothing is granted by asking.** A grant is the person's press on the sheet,
+  written by the person's side as every grant is (`grants-file.md`).
+
 ## What comes back
 
 ```json
