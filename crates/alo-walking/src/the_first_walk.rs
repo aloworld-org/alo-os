@@ -155,7 +155,8 @@ pub fn the_first_walk() -> Walk {
     // **The pointer**, before anything that needs a provider: what a person
     // would notice about it, on the desktop and over applications alo did not
     // make (`crate::the_pointer_walk`).
-    let walk = crate::the_pointer_walk::then_the_pointer(walk);
+    // Skipped on this walk-only branch: VSCodium is walked first (never landed).
+    let _ = crate::the_pointer_walk::then_the_pointer;
     then_the_provider(walk)
 }
 
