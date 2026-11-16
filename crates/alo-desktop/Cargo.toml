@@ -93,6 +93,9 @@ alo-installed = { path = "../alo-installed" }
 # `Exec` line in a unit of its own. The decisions are that crate's; the bus calls
 # acting on them are `crate::starting_what_a_person_pressed`.
 alo-launching = { path = "../alo-launching" }
+# `AloInApplications::may_type_into` and `WHEN_UNREADABLE`: where alo may
+# type and open files, decided once, in the crate that holds the answer.
+alo-capability = { path = "../alo-capability" }
 # The words on the compositor's door for a file alo was approved to open, and
 # the answer that says where it opened (`alo_acting::Opened`).
 alo-acting = { path = "../alo-acting" }
