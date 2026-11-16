@@ -74,7 +74,7 @@ coordinator:
    its tasks. The owner: ***"Yes, and say so plainly."*** The line under *This
    task* says *alo may use it in any task until this task's window closes or
    you stop it*.
-3. **The words**: approved as written (`crates/alo-shell/src/the_application_sheets_words.rs`).
+3. **The words**: approved as written (the sheet's words, in #1321).
 4. **When the agent pauses**: after any refused application verb, because the
    agent cannot tell why a call was refused and must not learn what is
    installed. The shell asks the daemon what the turn wanted. With nothing
