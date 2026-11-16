@@ -202,3 +202,30 @@ fn nothing_is_told_before_the_daemon_answers_and_the_frame_never_waits() {
     BufReader::new(&agents_end).read_line(&mut line).unwrap();
     assert!(line.starts_with("alo-answered:"), "{line}");
 }
+
+/// **What the frame drains is what the daemon said**: once the answer is back,
+/// the frame's own look hands it over, once.
+#[test]
+fn the_frame_drains_the_answer_once_it_is_back() {
+    let daemon = ADaemon::answering(Some(Answered::Declined));
+    let mut answers = TheAnswersOnTheirWay::default();
+    answers.carry(
+        WhichTask::numbered(3),
+        TheAnswerGiven {
+            number: 4,
+            allowed: false,
+        },
+        None,
+        false,
+        daemon as super::TheirDaemon,
+    );
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    let mut came = Vec::new();
+    while came.is_empty() && std::time::Instant::now() < deadline {
+        came = answers.whatever_they_did();
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    assert_eq!(came.len(), 1, "the frame never saw the answer");
+    assert_eq!(came.first().and_then(|did| did.answered.clone()), Some(Answered::Declined));
+    assert!(answers.whatever_they_did().is_empty(), "it was handed over twice");
+}
