@@ -184,8 +184,14 @@ fn after_an_approval_the_turn_goes_on_to_the_next_change() {
     assert_eq!(proposals(&door).len(), 2, "{:?}", proposals(&door));
     let shown = the_last_question(&door);
     assert!(
-        shown.contains("Done after the person approved it: Rename march.pdf to march-final.pdf.")
-            && shown.contains("done-without-asking"),
+        shown.contains(
+            &alo_agent::shown_after_an_answer::the_step_after_an_answer(
+                &march_renamed(),
+                "Rename march.pdf to march-final.pdf",
+            )
+            .unwrap(),
+        ) && !shown.contains("without asking")
+            && !shown.contains("done-without-asking"),
         "the model was not shown what the approved change did: {shown}"
     );
 }
@@ -297,7 +303,7 @@ fn every_answer_the_daemon_gives_is_shown_and_the_turn_goes_on() {
             matches!(ended, WhatHappened::ItWasAnsweredInWords { .. }),
             "{ended:?}"
         );
-        let told = alo_protocol::what_the_agent_says_back::the_step_after_an_answer(
+        let told = alo_agent::shown_after_an_answer::the_step_after_an_answer(
             &the_answer_told(&line).unwrap(),
             "Rename march.pdf to march-final.pdf",
         )

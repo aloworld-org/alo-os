@@ -428,6 +428,7 @@ capability.agent.off	this machine has no agent — turn one on whenever you like
 capability.agent.on	this machine has an agent — turn it off whenever you like, and everything it has been granted ends at once
 capability.answer.lapsed	"{sentence}" was proposed too long ago to answer — ask again if it is still wanted
 capability.answer.nothing-waiting	nothing is waiting to be approved under number {number} — it has been answered already, or it was never asked
+capability.approved.done	Done: {sentence}.
 capability.argument.could-lead-elsewhere	a path with .. in it can lead somewhere else — give {argument} as the path you mean
 capability.argument.empty	say what {argument} is — it cannot be blank
 capability.argument.not-a-full-path	give {argument} as a full path, so it means the same thing wherever it is read

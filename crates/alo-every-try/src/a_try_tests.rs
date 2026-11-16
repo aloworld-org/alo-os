@@ -457,16 +457,16 @@ fn asking_each_time_takes_the_same_road_one_approval_per_change() {
     );
     assert_eq!(tried.went(), &Went::TheRoad, "{tried:?}");
     assert_eq!(tried.asked(), 4, "the model was not asked once per step");
-    // **What the model was shown after a change is that the person approved
-    // it**, in the shape full access shows a change in — never that it was
-    // done without asking.
+    // **What the model was shown after an approved change is full access's
+    // short shape, and true**: *Done: …*, under `done`, and nothing at *ask each
+    // time* says it was done without asking (`alo_agent::shown_after_an_answer`).
     let last = model.shown.last().cloned().unwrap_or_default();
     assert!(
-        last.contains("Done after the person approved it:"),
+        last.contains("Done: "),
         "no approved change was shown: {last}"
     );
     assert!(
-        !last.contains("because you chose full access"),
-        "the model was shown a change done without asking: {last}"
+        !last.contains("without asking") && !last.contains("done-without-asking"),
+        "the model was told something untrue at ask each time: {last}"
     );
 }
