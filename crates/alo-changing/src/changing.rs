@@ -2,7 +2,8 @@
 //!
 //! # One value, and the order it makes impossible to get wrong
 //!
-//! Both doors — [`Changing::granted`] and [`Changing::revoked`] — end in
+//! All three doors — [`Changing::granted`], [`Changing::revoked`] and
+//! [`Changing::the_session_is_over`] — end in
 //! `Changing::kept_then_knocked`, and that private function is the only
 //! caller of [`crate::Knocking::knock`] in this crate. The knock is on the far side
 //! of `alo_remembering::kept`'s `?`, so a change that did not land on the
@@ -149,6 +150,27 @@ impl<'a> Changing<'a> {
             Row::Grant(seen) => self.grant_revoked(seen, now),
             Row::Pairing(seen) => self.pairing_revoked(seen),
         }
+    }
+
+    /// **The session is over**: every grant that lasts until sign-out goes, on
+    /// a copy, to the disk, and then the knock — and nothing else is touched.
+    /// Answers how many went. **None to take away writes nothing and knocks
+    /// nobody**, so a sign-in with nothing to clear changes nothing.
+    ///
+    /// Asked at sign-out, and again at the next sign-in, because a machine
+    /// that lost power never signed out (the owner, 2026-11-16).
+    ///
+    /// # Errors
+    ///
+    /// [`NotChanged::NotKept`] when the file refuses the write, and the
+    /// grants then **still stand**, on the disk and in the list.
+    pub fn the_session_is_over(&mut self, now: SystemTime) -> Result<usize, NotChanged> {
+        let mut fresh = self.grants.clone();
+        let gone = fresh.the_session_is_over();
+        if gone > 0 {
+            self.kept_then_knocked(fresh, now)?;
+        }
+        Ok(gone)
     }
 
     /// A grant's revocation: a copy, the disk, then the knock.

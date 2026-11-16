@@ -78,6 +78,14 @@ pub enum Pressed {
         /// Which button.
         on: crate::the_github_sheet::OnTheGitHubSheet,
     },
+    /// This on the sheet alo asks for an application on, numbered `sheet`,
+    /// which only that sheet answers (`crate::the_application_sheet`).
+    OnTheApplicationSheet {
+        /// The sheet it was heard on.
+        sheet: u64,
+        /// What on it.
+        on: crate::the_application_sheet::OnTheApplicationSheet,
+    },
     /// This on Settings, named by what it is rather than where it is drawn,
     /// and carried out as a click on it is (`crate::a_reader_presses_in_settings`).
     InSettings(InSettings),

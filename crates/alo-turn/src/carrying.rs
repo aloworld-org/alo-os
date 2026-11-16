@@ -71,6 +71,7 @@ use crate::pressing_a_control::pressing_a_control;
 use crate::publishing_a_folder::publishing_a_folder;
 use crate::reading_an_applications_windows::reading_an_applications_windows;
 use crate::refusing::NotDone;
+use crate::said_in_an_application;
 use crate::typing_into_an_application::typing_into_an_application;
 use crate::what_a_verb_did::WhatAVerbDid;
 
@@ -97,7 +98,29 @@ const THE_APPLICATION_ACTS: [&str; 3] =
 /// they are at every other door. The boundary, the reach and the work are
 /// exactly what they are for a local call — ADR 0013 applies on the receiving
 /// machine exactly as it does here.
+///
+/// **An act in an application is also said on the journal**, done or not
+/// (`crate::said_in_an_application`), so a walk can check it ran.
 pub(crate) fn carrying_out(
+    machine: &mut Machine<'_>,
+    authorised: Authorised,
+    grants: &Grants,
+    origin: Option<&Origin>,
+    now: std::time::SystemTime,
+) -> (Entry, Result<WhatAVerbDid, NotDone>) {
+    let in_an_application = said_in_an_application::about(&authorised);
+    let (entry, did) = carrying_it_out(machine, authorised, grants, origin, now);
+    if let Some((verb, application)) = in_an_application {
+        eprintln!(
+            "alo-agentd: {}",
+            said_in_an_application::said(&verb, &application, &did)
+        );
+    }
+    (entry, did)
+}
+
+/// [`carrying_out`], without the journal's line.
+fn carrying_it_out(
     machine: &mut Machine<'_>,
     authorised: Authorised,
     grants: &Grants,

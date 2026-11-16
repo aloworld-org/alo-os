@@ -172,6 +172,14 @@ pub(crate) enum Asked {
     /// and never an agent's: an agent that could watch would learn when another
     /// agent's command failed, and the sheet is the person's.
     WatchWhatNeedsAGithubSignIn {},
+    /// Which installed applications the turn under way asked for and nothing
+    /// grants — so the person's desktop can offer them on the sheet that asks
+    /// (the owner's decision of 2026-11-16).
+    ///
+    /// Added 2026-11-16, additively. **Carries nothing**, and is a person's
+    /// and never an agent's: an agent told it would learn from a refusal what
+    /// is installed on this machine.
+    Wanted {},
     /// The person's desktop says what happened when they signed in to GitHub
     /// or out of it, so that this service — the record's one writer — keeps
     /// it (the owner's decision of 2026-11-13).

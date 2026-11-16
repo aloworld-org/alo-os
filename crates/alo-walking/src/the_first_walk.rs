@@ -230,7 +230,9 @@ fn then_the_provider(walk: Walk) -> Walk {
         .press(Chord::key("ret"))
         .look("the-provider-saved", look);
     // With a provider, alo can be asked: Demo 2's second road, at full access.
-    crate::writing_in_vscodium::at_full_access(walk)
+    let walk = crate::writing_in_vscodium::at_full_access(walk);
+    // And then every other application a fresh machine ships, where asked for.
+    crate::in_every_shipped_application::at_full_access(walk)
 }
 
 #[cfg(test)]

@@ -114,6 +114,14 @@ impl Server {
     /// somewhere new has not changed where their settings live, but a session
     /// that learns a folder later has.
     pub fn the_settings_places_are(&mut self, places: crate::SettingsPlaces) {
+        // **A session beginning: the grants that last until sign-out go**,
+        // in case the machine lost power before the last sign-out (the owner,
+        // 2026-11-16). Before anything can be asked of this session, and once:
+        // being told again later is not a new session.
+        if self.settings_places.is_none() {
+            let _gone = crate::the_grants_for_the_session_go(&places);
+            self.grants_for_a_task.clear();
+        }
         self.settings_places = Some(places);
     }
 

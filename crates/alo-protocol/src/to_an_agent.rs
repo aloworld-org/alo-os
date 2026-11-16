@@ -182,6 +182,9 @@ impl ToAnAgent {
             // never to an agent, which would learn when another agent's failed.
             | Told::WatchingWhatNeedsAGithubSignIn {}
             | Told::AGithubSignInIsNeeded {}
+            // What the person has not given alo is theirs to see: an agent
+            // told it would learn from a refusal what is installed here.
+            | Told::Wanted { .. }
             | Told::Granted { .. }
             | Told::Pairing(_)
             | Told::Confirmed { .. }

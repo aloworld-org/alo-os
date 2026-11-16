@@ -49,6 +49,10 @@ on:
         description: "Also add an AI provider, typing its key from the ALO_WALK_PROVIDER_KEY secret (a walk after a merge always does)"
         type: boolean
         default: false
+      every_application:
+        description: "Then ask alo to do one thing in every application a fresh machine ships (needs the provider)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -140,6 +144,9 @@ jobs:
       - name: Walk it
         env:
           ALO_WALK_PROVIDER_KEY: ${{ (github.event_name == 'push' || inputs.with_the_provider) && secrets.ALO_WALK_PROVIDER_KEY || '' }}
+          # A word of its own, because the walk redacts every variable it reads
+          # from what it keeps: `yes` would be cut out of every log line.
+          ALO_WALK_EVERY_APPLICATION: ${{ inputs.every_application && 'alo-walk-every-application' || '' }}
         run: |
           target/release/alo-walk \
             --disk walk/alo.raw \

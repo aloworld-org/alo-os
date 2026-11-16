@@ -355,9 +355,17 @@ recorded here for the next person to take to the design.**
 
 *The owner's answer A of 2026-11-10 (ADR 0143 Q6), decided after the frames
 were drawn.* **Folders alo can use** ends with a section **In applications**:
-two choices, *alo works in its own copy of an application* (tagged *Default*,
-chosen as a machine arrives) and *alo may work in your own window*, with the
-*What it risks* box under the second in ADR 0143's words. The design is silent,
+three choices since 2026-11-16 (two until then): *alo works in its own copy
+where an app has one, and in your window where it has none* (tagged *Default*,
+chosen as a machine arrives), *alo works in its own copy of an application*
+(the default switched off — the old default's words, kept), and *alo may work
+in your own window*, with the *What it risks* box under the first and the third.
+The first row is the owner's, 2026-11-16: *"it should be automatic for any
+application installed not for just those too, because the users will not use
+only 3 apps even some may not need any of those applications to be installed at
+their pc"*, and *"Yes, automatically"*. Its risk line is the coordinator's,
+approved with it: *Where an app has no copy of its own, alo works in your
+window: the indicator shows that it may send, but cannot count it*. The design is silent,
 so it is built from the Running code page's pieces (`550:874`) — a choice per
 answer and the risk box drawn whichever is chosen. It is on this page because
 ADR 0143 Q10 puts letting alo use an application beside *Give alo a folder*,

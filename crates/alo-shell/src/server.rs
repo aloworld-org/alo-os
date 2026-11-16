@@ -277,6 +277,18 @@ pub struct Server {
     /// A sign-in a command alo ran needed, waiting to go up while another
     /// sheet is (`crate::the_github_sheet_rises_by_itself`).
     pub(crate) github_sign_in_wanted: crate::the_github_sheet_rises_by_itself::ASignInWanted,
+    /// The sheet alo asks for an application on, up while a task's turn wants
+    /// one nobody has given (`crate::the_application_sheet`).
+    pub(crate) application_sheet: crate::the_application_sheet::TheApplicationSheet,
+    /// What the person answered on it, waiting for the frame loop to carry out
+    /// (`crate::the_application_sheet_on_the_server`).
+    pub(crate) application_sheet_answers: Vec<crate::the_application_sheet::TheSheetAnswered>,
+    /// The grants made on that sheet for *This task*, by the task that asked,
+    /// each taken back the moment its task ends.
+    pub(crate) grants_for_a_task: Vec<(
+        crate::the_tasks_a_person_opened::WhichTask,
+        alo_capability::GrantId,
+    )>,
     /// Where a new window goes when there is no room for it in view, as the
     /// person last said (`crate::the_choice_when_there_is_no_room`).
     pub(crate) when_there_is_no_room: alo_appearance::WhenThereIsNoRoom,
@@ -999,6 +1011,9 @@ impl Server {
             github_sheet: crate::the_github_sheet::TheGitHubSheet::default(),
             github_sign_in_wanted: crate::the_github_sheet_rises_by_itself::ASignInWanted::default(
             ),
+            application_sheet: crate::the_application_sheet::TheApplicationSheet::default(),
+            application_sheet_answers: Vec::new(),
+            grants_for_a_task: Vec::new(),
             // Gliding to empty space, until the desktop says what this person
             // chose; and full motion, until it says they asked for less.
             when_there_is_no_room: alo_appearance::WhenThereIsNoRoom::default(),

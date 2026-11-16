@@ -330,6 +330,15 @@ mod running {
                 if stood.display.ended_on_a_fault() {
                     ExitCode::FAILURE
                 } else {
+                    // **A sign-out: the grants that last until it go now**
+                    // (the owner, 2026-11-16), and again at the next sign-in
+                    // in case this line never ran.
+                    if let Some(places) = desktop.the_settings_places() {
+                        let gone = alo_shell::the_grants_for_the_session_go(&places);
+                        eprintln!(
+                            "alo-desktop: signing out took away {gone} grant(s) for this session"
+                        );
+                    }
                     ExitCode::SUCCESS
                 }
             }
@@ -1664,7 +1673,7 @@ mod running {
                 let chosen = alo_remembering::alo_in_applications_remembered(std::path::Path::new(
                     alo_remembering::THE_LEVEL,
                 ))
-                .unwrap_or_default();
+                .unwrap_or(alo_capability::AloInApplications::WHEN_UNREADABLE);
                 for one in asked {
                     let called = installed
                         .knows(one.application())
@@ -1684,24 +1693,32 @@ mod running {
         }
 
         /// Whether alo may type into the window of `application` whose
-        /// process is `pid` (ADR 0153): **alo's own copy** at the person's
-        /// default, read from their file for this ask as `alo_at_work` reads
-        /// it; their own window too only where they chose that.
+        /// process is `pid` (ADR 0153): **alo's own copy**, or the person's
+        /// own window where their setting lets alo in — at the default, an
+        /// application with no copy of its own (the owner, 2026-11-16). Read
+        /// from their file for this ask as `alo_at_work` reads it.
         fn may_type_into(&mut self, application: &str, pid: u32) -> bool {
             let chosen = alo_remembering::alo_in_applications_remembered(std::path::Path::new(
                 alo_remembering::THE_LEVEL,
             ))
-            .unwrap_or_default();
-            // Two answers, and the default is alo's own copy: anything else is
-            // the person's choice to let alo work in their own window.
-            chosen != Default::default() || self.working.runs_as_alos_copy(application, pid)
+            .unwrap_or(alo_capability::AloInApplications::WHEN_UNREADABLE);
+            // **Never a terminal**, whatever the answer: `may_type_into` holds
+            // that, and is where every case of this is tested.
+            let is_alos_copy = self.working.runs_as_alos_copy(application, pid);
+            chosen.may_type_into(
+                application,
+                alo_launching::has_a_copy_of_its_own(application),
+                is_alos_copy,
+            )
         }
 
         /// **Each file alo was approved to open** (`open_file_in_application`,
-        /// 2026-11-14): in **alo's own copy** at the person's default, read
-        /// from their file for these asks as `alo_at_work` reads it; in their
-        /// own window, as their press would, only where they chose that. Each
-        /// is answered with where it opened, or why it did not.
+        /// 2026-11-14): in **alo's own copy** where the application has one,
+        /// and in the person's own window, as their press would, where their
+        /// setting lets alo in — at the default, an application with no copy
+        /// of its own (the owner, 2026-11-16). Read from their file for these
+        /// asks as `alo_at_work` reads it. Each is answered with where it
+        /// opened, or why it did not.
         fn alo_opens_files(
             &mut self,
             asked: Vec<alo_shell::a_file_alo_opens::AskedToOpenAFile>,
@@ -1710,9 +1727,11 @@ mod running {
             let chosen = alo_remembering::alo_in_applications_remembered(std::path::Path::new(
                 alo_remembering::THE_LEVEL,
             ))
-            .unwrap_or_default();
+            .unwrap_or(alo_capability::AloInApplications::WHEN_UNREADABLE);
             for one in asked {
-                let opened = if chosen.may_work_in_their_window() {
+                let opened = if chosen.may_work_in_their_window_of(
+                    alo_launching::has_a_copy_of_its_own(one.application()),
+                ) {
                     self.opening_in_their_window
                         .as_ref()
                         .map_or(alo_acting::Opened::CouldNotStart, |starting| {

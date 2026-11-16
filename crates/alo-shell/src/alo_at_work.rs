@@ -352,9 +352,14 @@ impl WorkingInApplications {
             line: None,
         };
         let answer = match asked.place() {
-            // **The person's window only where the person chose it**: the word
-            // alo sent is a request, and the setting is the answer.
-            Where::InTheirWindow if !chosen.may_work_in_their_window() => {
+            // **The person's window only where their setting lets alo in**: the
+            // word alo sent is a request, and the setting is the answer. At the
+            // default that is an application with no copy of its own.
+            Where::InTheirWindow
+                if !chosen.may_work_in_their_window_of(alo_launching::has_a_copy_of_its_own(
+                    &work.application,
+                )) =>
+            {
                 work.say(Working::NotChosen.written());
                 return;
             }
@@ -363,9 +368,10 @@ impl WorkingInApplications {
                 Working::Showing
             }
             Where::InAlosCopy => match self.copies.started(&work.application) {
-                // **Turned up, an application with no copy of its own is worked
-                // in where the person is**, shown and never counted.
-                Err(NoCopy::OfItsOwn) if chosen.may_work_in_their_window() => {
+                // **At the default or turned up, an application with no copy of
+                // its own is worked in where the person is** (the owner,
+                // 2026-11-16), shown and never counted.
+                Err(NoCopy::OfItsOwn) if chosen.may_work_in_their_window_of(false) => {
                     put_up(&mut work, HowItIsShown::TheirWindow, indicator, now);
                     Working::Showing
                 }

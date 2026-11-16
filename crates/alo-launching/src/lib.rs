@@ -59,7 +59,9 @@ pub mod the_unit;
 pub mod typed_as_it_is;
 pub mod where_it_is;
 
-pub use alos_copy::{AlosCopy, WITH_A_COPY_OF_THEIR_OWN, alos_copy, the_unit_for_alos_copy};
+pub use alos_copy::{
+    AlosCopy, WITH_A_COPY_OF_THEIR_OWN, alos_copy, has_a_copy_of_its_own, the_unit_for_alos_copy,
+};
 pub use asks_for_nothing_it_need_not::ASKS_FOR_NOTHING_IT_NEED_NOT;
 pub use describing_themselves::{
     DRAWN_BY_CHROMIUM, THE_PAGE_FULLY, THE_PAGE_TOO, Told, is_drawn_by_chromium,

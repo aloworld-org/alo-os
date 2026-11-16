@@ -75,6 +75,10 @@ pub enum ForHowLong {
     /// ADR 0001, amended 2026-10-25 by the owner: a person may give a folder
     /// without coming back every hour or month to give it again.
     UntilRemoved,
+    /// Until the person signs out — *This session* and *This task* on the
+    /// sheet alo asks for an application on (the owner, 2026-11-16). Cleared
+    /// at sign-out and again at the next sign-in, in case the power was cut.
+    UntilSignOut,
 }
 
 impl Granting {
@@ -93,6 +97,15 @@ impl Granting {
         Self {
             grantee: grantee.to_owned(),
             lasting: ForHowLong::UntilRemoved,
+        }
+    }
+
+    /// Grants to this agent until the person signs out.
+    #[must_use]
+    pub fn to_until_sign_out(grantee: &str) -> Self {
+        Self {
+            grantee: grantee.to_owned(),
+            lasting: ForHowLong::UntilSignOut,
         }
     }
 
@@ -138,6 +151,13 @@ impl Granting {
             // **The same checks, and no length to get wrong.** Everything
             // else about the grant is held to exactly what a timed one is.
             ForHowLong::UntilRemoved => Grant::checked_until_removed(
+                &alo_capability::Grantee::named(&self.grantee),
+                reach,
+                now,
+                alo_capability::ATerminalForTheAgent::NotAtAll,
+            )?,
+            // **The same checks again**, ending at sign-out.
+            ForHowLong::UntilSignOut => Grant::checked_until_sign_out(
                 &alo_capability::Grantee::named(&self.grantee),
                 reach,
                 now,
@@ -366,6 +386,45 @@ mod tests {
         let mut grants = Grants::default();
         let refused =
             Granting::to_until_removed("   ").of(&a_folder_picked(&machine), &mut grants, noon());
+        assert_eq!(refused, Err(GrantError::Anonymous));
+        assert!(grants.is_empty());
+    }
+
+    /// **A grant made until sign-out lasts until the session is over, and not
+    /// a moment after**: still there a year on if nobody signs out, gone once
+    /// the session is, and a grant until removed beside it untouched.
+    #[test]
+    fn a_grant_until_sign_out_lasts_until_the_session_is_over() {
+        let machine = WrittenDown::a_home_folder();
+        let mut grants = Grants::default();
+        Granting::to_until_sign_out(HERS)
+            .of(&a_folder_picked(&machine), &mut grants, noon())
+            .unwrap()
+            .unwrap();
+        let ask = Ask::path("/home/anna/Invoices/march.pdf");
+        let hers = Grantee::named(HERS);
+        let a_year = Duration::from_secs(365 * 24 * 60 * 60);
+        assert!(grants.permits(&hers, &ask, noon() + a_year));
+        assert_eq!(grants.the_session_is_over(), 1);
+        assert!(!grants.permits(&hers, &ask, noon()));
+        assert_eq!(
+            Granting::to_until_sign_out(HERS).lasting(),
+            ForHowLong::UntilSignOut
+        );
+    }
+
+    /// **Picking nothing grants nothing until sign-out either**, and a grant
+    /// to nobody is refused on this road too.
+    #[test]
+    fn until_sign_out_grants_nothing_for_nothing_or_for_nobody() {
+        let machine = WrittenDown::a_home_folder();
+        let mut grants = Grants::default();
+        let nothing = Granting::to_until_sign_out(HERS)
+            .of(&Chosen::Nothing, &mut grants, noon())
+            .unwrap();
+        assert_eq!(nothing, None);
+        let refused =
+            Granting::to_until_sign_out("   ").of(&a_folder_picked(&machine), &mut grants, noon());
         assert_eq!(refused, Err(GrantError::Anonymous));
         assert!(grants.is_empty());
     }

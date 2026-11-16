@@ -204,34 +204,82 @@ pub fn a_ring_in(frame: &Frame) -> Result<Ring, Nearest> {
     Err(Nearest { across, down })
 }
 
-/// **Whether the window an edge was round is still there**: inside where the
-/// edge was, clear of its corners, at least half the pixels are as they were
-/// when the edge was seen. A screen gone black, locked or covered is not a
-/// window that has only lost its edge.
+/// How far outside the edge's line the canvas behind a window is looked at.
+const OUTSIDE: usize = 4;
+
+/// How far inside it the window's own pixels are looked at: past the edge's
+/// widest stroke, so what is read is the window, not the edge.
+const INSIDE: usize = 10;
+
+/// How different, summed over the three channels, a pixel just inside must be
+/// from the one just outside for a window's own edge to lie between them.
+const A_WINDOWS_EDGE: u32 = 96;
+
+/// **Whether a window is still where alo's edge was** — read off the screen
+/// as it is now, by the window's own edge: all the way round where the edge
+/// ran, clear of its corners, the pixel just inside differs from the one just
+/// outside on at least half of the points looked at.
+///
+/// **Not by its pixels being as they were.** A window's content changes while
+/// alo works in it — the walk of 2026-11-16 (run 43872632801) found alo's edge
+/// round VSCodium before VSCodium had drawn anything, and asking the pixels
+/// inside to stay the same then said VSCodium had gone when it was there,
+/// editor drawn. So this asks where the window is, not what it shows.
+///
+/// What would have to be true for this to pass with the window gone: another
+/// window, or a picture of one, with its edge at the same place. What it
+/// refuses: a screen gone black, the canvas alone, and a window covering more
+/// than half of where the edge ran.
 #[must_use]
-pub fn the_same_window_inside(ring: Ring, then: &Frame, now: &Frame) -> bool {
-    if then.size() != now.size() {
-        return false;
-    }
-    let (x0, y0) = (ring.left + CORNER_ROOM, ring.top + CORNER_ROOM);
-    let (x1, y1) = (
-        ring.right.saturating_sub(CORNER_ROOM),
-        ring.bottom.saturating_sub(CORNER_ROOM),
-    );
-    if x1 <= x0 || y1 <= y0 {
-        return false;
-    }
-    let mut same = 0_usize;
-    let mut all = 0_usize;
-    for y in y0..y1 {
-        for x in x0..x1 {
-            all += 1;
-            if then.rgb(x, y) == now.rgb(x, y) {
-                same += 1;
-            }
+pub fn a_window_is_where_the_edge_was(ring: Ring, now: &Frame) -> bool {
+    let differs = |outside: Option<(usize, usize)>, inside: Option<(usize, usize)>| {
+        let (Some((ox, oy)), Some((ix, iy))) = (outside, inside) else {
+            return false;
+        };
+        let (Some(out), Some(within)) = (now.rgb(ox, oy), now.rgb(ix, iy)) else {
+            return false;
+        };
+        out.iter()
+            .zip(within)
+            .map(|(a, b)| u32::from(a.abs_diff(b)))
+            .sum::<u32>()
+            >= A_WINDOWS_EDGE
+    };
+    let mut looked = 0_usize;
+    let mut found = 0_usize;
+    let down = (ring.top + CORNER_ROOM)..ring.bottom.saturating_sub(CORNER_ROOM);
+    for y in down.step_by(4) {
+        for (outside, inside) in [
+            (
+                ring.left.checked_sub(OUTSIDE).map(|x| (x, y)),
+                Some((ring.left + INSIDE, y)),
+            ),
+            (
+                Some((ring.right + OUTSIDE, y)),
+                ring.right.checked_sub(INSIDE).map(|x| (x, y)),
+            ),
+        ] {
+            looked += 1;
+            found += usize::from(differs(outside, inside));
         }
     }
-    same * 2 >= all
+    let across = (ring.left + CORNER_ROOM)..ring.right.saturating_sub(CORNER_ROOM);
+    for x in across.step_by(4) {
+        for (outside, inside) in [
+            (
+                ring.top.checked_sub(OUTSIDE).map(|y| (x, y)),
+                Some((x, ring.top + INSIDE)),
+            ),
+            (
+                Some((x, ring.bottom + OUTSIDE)),
+                ring.bottom.checked_sub(INSIDE).map(|y| (x, y)),
+            ),
+        ] {
+            looked += 1;
+            found += usize::from(differs(outside, inside));
+        }
+    }
+    looked > 0 && found * 2 >= looked
 }
 
 #[cfg(test)]

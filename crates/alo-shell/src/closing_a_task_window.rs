@@ -94,6 +94,13 @@ impl Server {
             return WhatClosingCameTo::NothingToClose;
         }
         self.the_keyboard_leaves_a_window_that_went(which);
+        // **And a sheet it asked for an application on comes down**, granting
+        // nothing: the task has ended (`crate::the_application_sheet`).
+        self.application_sheet
+            .the_task_ended(which, std::time::Instant::now());
+        // **And a grant it was given for *This task* goes**, the instant it
+        // closes (the owner, 2026-11-16).
+        self.a_tasks_grants_end(which);
         WhatClosingCameTo::Closed
     }
 }

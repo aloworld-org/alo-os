@@ -69,7 +69,16 @@ fn the_screen_reader_checks_read_from_the_press() {
 #[test]
 fn the_key_is_typed_only_from_its_secret_after_its_gate() {
     let walk = the_first_walk();
-    assert_eq!(walk.secrets(), vec![THE_PROVIDER_KEY]);
+    // The every-application gate is named too, because every variable a walk
+    // reads is redacted from what it keeps; its value is a word of its own
+    // (walk.yml), so redacting it hides nothing else.
+    assert_eq!(
+        walk.secrets(),
+        vec![
+            crate::in_every_shipped_application::EVERY_APPLICATION,
+            THE_PROVIDER_KEY
+        ]
+    );
     let steps = walk.steps();
     let gate = steps
         .iter()
