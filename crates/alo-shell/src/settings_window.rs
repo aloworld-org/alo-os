@@ -568,6 +568,9 @@ pub struct SettingsWindow {
     /// What the desktop last answered about the screen reader, where it did
     /// not do what it was asked — kept while the window is closed.
     the_screen_reader: Option<String>,
+    /// The grants that are a task's (`crate::the_application_sheet`), kept
+    /// while the window is closed so it opens knowing them.
+    grants_for_a_task: Vec<alo_capability::GrantId>,
 }
 
 impl SettingsWindow {
@@ -641,7 +644,27 @@ impl SettingsWindow {
             // frame (`crate::settings_accounts`).
             github: crate::settings_accounts::TheGitHubSignIn::default(),
         });
+        if let Some(open) = self.open.as_mut() {
+            open.granted
+                .these_are_a_tasks(self.grants_for_a_task.clone());
+        }
         SettingsOpened { not_remembered }
+    }
+
+    /// **The grants were changed outside this window**, by the sheet alo asks
+    /// for an application on, and `for_a_task` are the ones that end with a
+    /// task. An open window reads them again; a closed one opens knowing.
+    pub(crate) fn the_grants_changed_elsewhere(
+        &mut self,
+        for_a_task: Vec<alo_capability::GrantId>,
+        now: SystemTime,
+    ) {
+        self.grants_for_a_task = for_a_task;
+        if let Some(open) = self.open.as_mut() {
+            open.granted.the_grants_are_read_again(now);
+            open.granted
+                .these_are_a_tasks(self.grants_for_a_task.clone());
+        }
     }
 
     /// **What answers questions is read again**, because something outside

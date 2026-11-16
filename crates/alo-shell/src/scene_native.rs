@@ -79,6 +79,10 @@ pub(crate) struct NativeLayers<'a> {
     /// just worked — in the question's place, below the *Open with* sheet
     /// (`crate::the_github_sheet_drawn`).
     pub(crate) github_sheet: Option<&'a crate::painted::Washed>,
+    /// The sheet alo asks for an application on, while a task's turn waits on
+    /// the person — in the question's place, above the GitHub sheet and below
+    /// *Open with* (`crate::the_application_sheet_drawn`).
+    pub(crate) application_sheet: Option<&'a crate::painted::Washed>,
     /// The egress indicator, when the frame carries a status area.
     pub(crate) status: Option<&'a crate::egress_status_raster::EgressStatusPicture>,
     /// What on this machine is watching or listening, beside the egress
@@ -154,6 +158,7 @@ impl NativeLayers<'_> {
             approval: None,
             open_with: None,
             github_sheet: None,
+            application_sheet: None,
             status: None,
             in_use: None,
             notifications: None,

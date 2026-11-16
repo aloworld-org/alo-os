@@ -114,16 +114,21 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings, now: SystemTime) -> Vec
                 if !matches!(over, Reach::Application(_)) {
                     drawn.lines.push(over.said(strings).into_text());
                 }
-                if seen.lasts().is_until_removed() {
+                // **A grant with no moment to end at says what ends it**: the
+                // person, signing out, or the task that asked
+                // (`crate::the_application_sheet`).
+                let ends = if seen.lasts().is_until_removed() {
+                    Some(crate::the_pickers_words::IT_LASTS_UNTIL_REMOVED)
+                } else if section.is_for_a_task(seen.id()) {
+                    Some(crate::the_pickers_words::IT_LASTS_UNTIL_THIS_TASK_ENDS)
+                } else if seen.lasts().is_until_sign_out() {
+                    Some(crate::the_pickers_words::IT_LASTS_UNTIL_SIGN_OUT)
+                } else {
+                    None
+                };
+                if let Some(ends) = ends {
                     let mut note = ANote::said(
-                        as_a_name(
-                            &strings
-                                .say(
-                                    &crate::the_pickers_words::IT_LASTS_UNTIL_REMOVED.key(),
-                                    &Filling::nothing(),
-                                )
-                                .into_text(),
-                        ),
+                        as_a_name(&strings.say(&ends.key(), &Filling::nothing()).into_text()),
                         false,
                     );
                     note.icon = ASettingsIcon::History14;

@@ -111,6 +111,10 @@ pub(crate) struct GrantedSection {
     /// as [`Self::picking`]'s is. **Never both at once**: opening one closes
     /// the other.
     choosing: Option<AnApplicationBeingPicked>,
+    /// The grants made on the sheet alo asks for an application on for *This
+    /// task*, whose rows say *until this task ends* rather than *until you
+    /// sign out* (`crate::the_application_sheet`).
+    for_a_task: Vec<alo_capability::GrantId>,
 }
 
 /// What giving alo a folder did.
@@ -185,6 +189,7 @@ impl GrantedSection {
                 picking: None,
                 applications: Applications::default(),
                 choosing: None,
+                for_a_task: Vec::new(),
             },
             refused,
         )
@@ -210,6 +215,28 @@ impl GrantedSection {
     /// The picker, while one is open.
     pub(crate) const fn picking(&self) -> Option<&AFolderBeingPicked> {
         self.picking.as_ref()
+    }
+
+    /// **The grants were changed outside this window**, by the sheet alo asks
+    /// for an application on: read them again, so the list shows what the
+    /// file holds and a grant made here next is added to it rather than
+    /// written over it. A file that will not read is no list, as at opening.
+    pub(crate) fn the_grants_are_read_again(&mut self, now: SystemTime) {
+        self.grants = match alo_remembering::remembered(&self.grants_at, now) {
+            Ok(grants) => Some(grants),
+            Err(NotRemembered::NotThere { .. }) => Some(Grants::default()),
+            Err(_) => None,
+        };
+    }
+
+    /// These grants are a task's, and end with it.
+    pub(crate) fn these_are_a_tasks(&mut self, for_a_task: Vec<alo_capability::GrantId>) {
+        self.for_a_task = for_a_task;
+    }
+
+    /// Whether this grant is a task's.
+    pub(crate) fn is_for_a_task(&self, id: alo_capability::GrantId) -> bool {
+        self.for_a_task.contains(&id)
     }
 
     /// The list of applications, while one is open.

@@ -330,6 +330,15 @@ mod running {
                 if stood.display.ended_on_a_fault() {
                     ExitCode::FAILURE
                 } else {
+                    // **A sign-out: the grants that last until it go now**
+                    // (the owner, 2026-11-16), and again at the next sign-in
+                    // in case this line never ran.
+                    if let Some(places) = desktop.the_settings_places() {
+                        let gone = alo_shell::the_grants_for_the_session_go(&places);
+                        eprintln!(
+                            "alo-desktop: signing out took away {gone} grant(s) for this session"
+                        );
+                    }
                     ExitCode::SUCCESS
                 }
             }

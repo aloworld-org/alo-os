@@ -101,6 +101,26 @@ pub const IT_LASTS_UNTIL_REMOVED: Word = Word::saying(
      Lower case, because it follows the name of what was granted in the same line.",
 );
 
+/// What the list says beside a grant that lasts until the person signs out —
+/// *This session* on the sheet alo asks for an application on.
+pub const IT_LASTS_UNTIL_SIGN_OUT: Word = Word::saying(
+    "picker.it-lasts-until-sign-out",
+    "until you sign out",
+)
+.noting(
+    "Shown in the list of what has been granted, beside a permission that ends when the person \n     signs out of the computer. Lower case, because it follows the name of what was granted in \n     the same line.",
+);
+
+/// What the list says beside a grant that ends with the task that asked —
+/// *This task* on the sheet alo asks for an application on.
+pub const IT_LASTS_UNTIL_THIS_TASK_ENDS: Word = Word::saying(
+    "picker.it-lasts-until-this-task-ends",
+    "until this task ends",
+)
+.noting(
+    "Shown in the list of what has been granted, beside a permission that ends when the task alo \n     asked for it in ends: its window closes or the person stops it. Lower case, because it \n     follows the name of what was granted in the same line.",
+);
+
 /// Said when a folder was given, naming it.
 pub const IT_WAS_GIVEN: Word = Word::saying(
     "picker.it-was-given",
@@ -226,7 +246,7 @@ pub const IT_WAS_GIVEN_AN_APPLICATION: Word = Word::saying(
 pub const THE_APPLICATION: &str = "application";
 
 /// Every string this file declares, in the order a translator meets them.
-pub const THE_PICKERS_WORDS: [Word; 20] = [
+pub const THE_PICKERS_WORDS: [Word; 22] = [
     GRANT_A_FOLDER,
     YOU_ARE_IN,
     PICK_THIS_FOLDER,
@@ -239,6 +259,8 @@ pub const THE_PICKERS_WORDS: [Word; 20] = [
     FOR_A_MONTH,
     UNTIL_I_REMOVE_IT,
     IT_LASTS_UNTIL_REMOVED,
+    IT_LASTS_UNTIL_SIGN_OUT,
+    IT_LASTS_UNTIL_THIS_TASK_ENDS,
     IT_WAS_GIVEN,
     GRANT_AN_APPLICATION,
     CHOOSE_AN_APPLICATION_AND_HOW_LONG,
