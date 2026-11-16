@@ -283,6 +283,17 @@ pub struct Server {
     /// What the person answered on it, waiting for the frame loop to carry out
     /// (`crate::the_application_sheet_on_the_server`).
     pub(crate) application_sheet_answers: Vec<crate::the_application_sheet::TheSheetAnswered>,
+    /// The turns paused because a call for an application was refused, by
+    /// task, held while the sheet asks (`crate::a_paused_turn_is_told`).
+    pub(crate) turns_paused_for_an_application: Vec<(
+        crate::the_tasks_a_person_opened::WhichTask,
+        std::os::unix::net::UnixStream,
+    )>,
+    /// Turns told the person's answer, waiting to be heard on again.
+    pub(crate) turns_to_hear_again: Vec<(
+        crate::the_tasks_a_person_opened::WhichTask,
+        std::os::unix::net::UnixStream,
+    )>,
     /// The grants made on that sheet for *This task*, by the task that asked,
     /// each taken back the moment its task ends.
     pub(crate) grants_for_a_task: Vec<(
@@ -1014,6 +1025,8 @@ impl Server {
             application_sheet: crate::the_application_sheet::TheApplicationSheet::default(),
             application_sheet_answers: Vec::new(),
             grants_for_a_task: Vec::new(),
+            turns_paused_for_an_application: Vec::new(),
+            turns_to_hear_again: Vec::new(),
             // Gliding to empty space, until the desktop says what this person
             // chose; and full motion, until it says they asked for less.
             when_there_is_no_room: alo_appearance::WhenThereIsNoRoom::default(),

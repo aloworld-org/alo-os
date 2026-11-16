@@ -50,6 +50,9 @@ impl crate::Server {
         } else {
             None
         };
+        // **A turn paused for an application is held by the sheet**, so the
+        // Stop travels on that one (`crate::a_paused_turn_is_told`).
+        let held_turn = held_turn.or_else(|| self.the_paused_turn_of(which));
         self.stops.push(AStop { which, held_turn });
         // **And a sheet it asked for an application on comes down**, granting
         // nothing: a stopped task has ended (`crate::the_application_sheet`).

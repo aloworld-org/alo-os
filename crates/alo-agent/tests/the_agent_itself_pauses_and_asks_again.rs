@@ -30,7 +30,7 @@ use std::time::Duration;
 use alo_capability::words::NOTHING_RAN_WOULD_NOT_START;
 use alo_instructing::{TheConversationSoFar, ThePersonsFolders, TheWindowOffered};
 use alo_protocol::what_the_agent_says_back::{
-    AN_APPLICATION_WAS_REFUSED, THE_APPLICATION_WAS_GIVEN, THE_REPLY_WAITS,
+    AN_APPLICATION_WAS_REFUSED, IT_WAS_NOT_GIVEN, THE_APPLICATION_WAS_GIVEN, THE_REPLY_WAITS,
     the_answer_follows_line, the_answer_line,
 };
 use alo_protocol::{FromAnAgent, ToAPerson, ToAnAgent, Wording};
@@ -96,16 +96,29 @@ fn what_the_agent_says(output: &mut BufReader<std::process::ChildStdout>) -> (St
     }
 }
 
-/// **A call for an application refused pauses the turn; given, the identical
-/// call is sent again and waits for its own approval; answered, the turn goes
-/// on to its end** — run through the agent itself.
-#[test]
-fn the_agent_pauses_for_an_application_and_asks_again() {
+/// One turn of the agent itself: its folder, the shell's end of its input, the
+/// daemon's end of its door, its output, and the process.
+struct ATurn {
+    /// Where the daemon's socket is, kept for the turn.
+    _folder: tempfile::TempDir,
+    /// The shell's end of the agent's input.
+    shell: UnixStream,
+    /// The daemon's end of the agent's door.
+    daemon: BufReader<UnixStream>,
+    /// What the agent writes the shell.
+    output: BufReader<std::process::ChildStdout>,
+    /// The agent.
+    agent: std::process::Child,
+}
+
+/// **The agent, started as the machine starts it**, asked to open VSCodium by
+/// a shell that says it tells the answer (`answer_follows`) or one that does
+/// not.
+fn a_turn(answer_follows: bool) -> ATurn {
     let folder = tempfile::tempdir().unwrap();
     let socket = folder.path().join("agentd.sock");
     let listening = UnixListener::bind(&socket).unwrap();
     let (shell, agents_input) = UnixStream::pair().unwrap();
-
     let mut agent = Command::new(env!("CARGO_BIN_EXE_alo-agent"))
         .arg("--at")
         .arg(&socket)
@@ -115,7 +128,12 @@ fn the_agent_pauses_for_an_application_and_asks_again() {
         .spawn()
         .unwrap();
     // **What a shell writes**: the request, then each line after it, the
-    // last saying it tells the agent the person's answer.
+    // last saying whether it tells the agent the person's answer.
+    let the_eighth = if answer_follows {
+        the_answer_follows_line()
+    } else {
+        alo_protocol::what_the_agent_says_back::THE_ANSWER_FOLLOWS.to_owned()
+    };
     let request = format!(
         "open my project in VSCodium\n{}\n{}\n{}\n{}\n{}\n{}\n",
         TheConversationSoFar::nothing().written(),
@@ -123,16 +141,46 @@ fn the_agent_pauses_for_an_application_and_asks_again() {
         ThePersonsFolders::the_line_for(None),
         alo_instructing::at_full_access::the_line_for(false),
         alo_instructing::TheApplicationsInstalled::the_line_for(None),
-        the_answer_follows_line()
+        the_eighth
     );
     (&shell).write_all(request.as_bytes()).unwrap();
-
     let (daemon, _) = listening.accept().unwrap();
     daemon
         .set_read_timeout(Some(Duration::from_secs(30)))
         .unwrap();
-    let mut daemon = BufReader::new(daemon);
-    let mut output = BufReader::new(agent.stdout.take().unwrap());
+    let output = BufReader::new(agent.stdout.take().unwrap());
+    ATurn {
+        _folder: folder,
+        shell,
+        daemon: BufReader::new(daemon),
+        output,
+        agent,
+    }
+}
+
+/// The model proposes opening VSCodium, and the daemon refuses it.
+fn the_call_is_refused(daemon: &mut BufReader<UnixStream>) {
+    assert!(matches!(the_next_request(daemon), FromAnAgent::Ask { .. }));
+    the_daemon_answers(daemon, &the_model_said(OPEN_CODIUM));
+    assert_eq!(
+        the_next_request(daemon),
+        FromAnAgent::read(OPEN_CODIUM).unwrap()
+    );
+    the_daemon_answers(daemon, &ToAnAgent::Refused(a_wording()).written().unwrap());
+}
+
+/// **A call for an application refused pauses the turn; given, the identical
+/// call is sent again and waits for its own approval; answered, the turn goes
+/// on to its end** — run through the agent itself.
+#[test]
+fn the_agent_pauses_for_an_application_and_asks_again() {
+    let ATurn {
+        _folder,
+        shell,
+        mut daemon,
+        mut output,
+        mut agent,
+    } = a_turn(true);
 
     // 1. The model is asked, and proposes opening VSCodium; the daemon
     //    refuses it.
@@ -193,4 +241,83 @@ fn the_agent_pauses_for_an_application_and_asks_again() {
         agent.wait().unwrap().success(),
         "the agent did not end well"
     );
+}
+
+/// **Not given, the refusal is a step and the turn goes on** to the model's
+/// last words, and ends well.
+#[test]
+fn not_given_the_turn_goes_on_to_its_end() {
+    let ATurn {
+        _folder,
+        shell,
+        mut daemon,
+        mut output,
+        mut agent,
+    } = a_turn(true);
+    the_call_is_refused(&mut daemon);
+    let (said, paused) = what_the_agent_says(&mut output);
+    assert!(paused, "{said:?}");
+    (&shell)
+        .write_all(format!("{IT_WAS_NOT_GIVEN}\n").as_bytes())
+        .unwrap();
+    assert!(matches!(
+        the_next_request(&mut daemon),
+        FromAnAgent::Ask { .. }
+    ));
+    the_daemon_answers(&mut daemon, &the_model_said(AN_ANSWER));
+    let (said, paused) = what_the_agent_says(&mut output);
+    assert!(!paused);
+    assert_eq!(said.trim_end(), "It is open.");
+    assert!(agent.wait().unwrap().success());
+}
+
+/// **A line that is neither ends the turn**: nothing more is asked of the
+/// daemon, and the call is not sent again.
+#[test]
+fn any_other_line_ends_the_turn_and_sends_nothing_again() {
+    let ATurn {
+        _folder,
+        shell,
+        mut daemon,
+        mut output,
+        mut agent,
+    } = a_turn(true);
+    the_call_is_refused(&mut daemon);
+    let (_, paused) = what_the_agent_says(&mut output);
+    assert!(paused);
+    (&shell).write_all(b"yes please\n").unwrap();
+    let mut more = String::new();
+    assert_eq!(
+        daemon.read_line(&mut more).unwrap(),
+        0,
+        "the agent asked the daemon more: {more:?}"
+    );
+    let _ = agent.wait().unwrap();
+}
+
+/// **A shell that does not tell the answer is answered as before**: no pause,
+/// the refusal is a step, and the turn goes on to its end.
+#[test]
+fn without_the_answer_following_there_is_no_pause() {
+    let ATurn {
+        _folder,
+        shell: _shell,
+        mut daemon,
+        mut output,
+        mut agent,
+    } = a_turn(false);
+    the_call_is_refused(&mut daemon);
+    assert!(matches!(
+        the_next_request(&mut daemon),
+        FromAnAgent::Ask { .. }
+    ));
+    the_daemon_answers(&mut daemon, &the_model_said(AN_ANSWER));
+    let (said, paused) = what_the_agent_says(&mut output);
+    assert!(
+        !paused,
+        "it paused for a shell that cannot answer: {said:?}"
+    );
+    assert!(!said.contains(AN_APPLICATION_WAS_REFUSED), "{said:?}");
+    assert_eq!(said.trim_end(), "It is open.");
+    assert!(agent.wait().unwrap().success());
 }
