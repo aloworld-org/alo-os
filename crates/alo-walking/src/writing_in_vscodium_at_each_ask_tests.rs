@@ -116,8 +116,15 @@ fn the_text_is_on_the_card_and_then_in_the_file() {
 /// the walk with it.
 #[test]
 fn the_rows_are_counted_from_the_lists_settings_draws() {
-    assert_eq!(ASK_EACH_TIME, 1);
-    assert_eq!(UP_TO_GIVE_AN_APPLICATION, 3);
+    let ask_each_time = alo_capability::HowCodeRuns::ALL
+        .iter()
+        .position(|it| *it == alo_capability::HowCodeRuns::AskingEachTime);
+    assert_eq!(Some(ASK_EACH_TIME), ask_each_time);
+    // *See what alo did*, then one row for each place alo can work.
+    assert_eq!(
+        UP_TO_GIVE_AN_APPLICATION,
+        alo_capability::AloInApplications::ALL.len() + 1
+    );
 }
 
 /// **On a fresh machine VSCodium is the last application Settings lists**,
