@@ -12,7 +12,7 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
-use std::io::{BufRead as _, BufReader, Write as _};
+use std::io::{BufRead as _, BufReader, Read as _, Write as _};
 use std::os::unix::net::UnixListener;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -514,7 +514,7 @@ fn a_reply_that_pauses_for_the_answer_is_read_to_the_pause() {
         let (talking, _) = listening.accept().unwrap();
         let mut reading = BufReader::new(&talking);
         let mut lines = Vec::new();
-        for _ in 0..8 {
+        for _ in 0..7 {
             let mut line = String::new();
             reading.read_line(&mut line).unwrap();
             lines.push(line);
@@ -591,4 +591,34 @@ fn what_the_agent_says_next_is_heard_on_its_turn() {
     assert_eq!(came.said, "Saved.");
     assert!(!came.the_turn_goes_on);
     assert!(!came.the_machines_fault);
+}
+
+/// **The next change after an answer is a pause too**: heard on the rest, it
+/// keeps the turn for its own card.
+#[test]
+fn a_second_change_heard_on_the_rest_keeps_the_turn() {
+    let (ours, agents_end) = std::os::unix::net::UnixStream::pair().unwrap();
+    let door = TheAgentsDoor::at(&a_socket("second-pause"));
+    door.hear_the_rest(WhoAsked::ATaskWindow(WhichTask::numbered(5)), ours);
+    (&agents_end)
+        .write_all(
+            b"a change is waiting for you to answer, as number 8:\n  Save hello.txt\n\
+              alo-waiting-for-the-answer\n",
+        )
+        .unwrap();
+
+    let came = one_answer(&door);
+    assert!(came.the_turn_goes_on, "the second pause was not read as one");
+    assert!(came.the_turn.is_some(), "the turn was not kept for the card");
+    assert_eq!(
+        came.said,
+        "a change is waiting for you to answer, as number 8:\n  Save hello.txt"
+    );
+    // **The shell has not shut its side**, which the agent would read as Stop.
+    agents_end.set_nonblocking(true).unwrap();
+    let read = (&agents_end).read(&mut [0_u8; 1]);
+    assert!(
+        matches!(&read, Err(why) if why.kind() == std::io::ErrorKind::WouldBlock),
+        "the shell closed or wrote on the turn: {read:?}"
+    );
 }

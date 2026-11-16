@@ -54,7 +54,7 @@ fn a_first_request_carries_no_earlier_conversation_and_does_not_wait() {
     let started = Instant::now();
     let (read, _shell) = sent_on_a_socket(
         "list my invoices\nalo-earlier:\nalo-this-window:\nalo-their-folders:\nalo-full-access:\n\
-         alo-their-applications:\n",
+         alo-their-applications:\nalo-answer-follows:\n",
     );
     let read = read.unwrap();
     assert_eq!(read.request, "list my invoices");
@@ -222,7 +222,8 @@ fn a_request_carries_where_the_persons_folders_are() {
     let started = Instant::now();
     let (read, _shell) = sent_on_a_socket(&format!(
         "alo-may-reach:/var/home/alo/Documents\nmake a folder called demo in my Documents\n\
-         alo-earlier:\nalo-this-window:\n{}\nalo-full-access:\nalo-their-applications:\n",
+         alo-earlier:\nalo-this-window:\n{}\nalo-full-access:\nalo-their-applications:\n\
+         alo-answer-follows:\n",
         home.written()
     ));
     let read = read.unwrap();
@@ -272,7 +273,7 @@ fn full_access_is_read_off_the_sixth_line_and_told() {
     let started = Instant::now();
     let (read, _shell) = sent_on_a_socket(
         "what folders are in this window\nalo-earlier:\nalo-this-window:\n\
-         alo-their-folders:\nalo-full-access:yes\nalo-their-applications:\n",
+         alo-their-folders:\nalo-full-access:yes\nalo-their-applications:\nalo-answer-follows:\n",
     );
     let read = read.unwrap();
     assert!(

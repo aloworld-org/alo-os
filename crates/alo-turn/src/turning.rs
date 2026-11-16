@@ -1536,33 +1536,40 @@ mod tests {
     #[test]
     fn a_turn_that_goes_on_runs_each_approved_change_once_and_records_a_decline() {
         let mut record = Record::default();
-        on_a_machine("two-changes", &mut record, |turning, grants, folder, invoice| {
-            let april = folder.join("april.pdf");
-            std::fs::write(&april, "April").unwrap();
-            let first = turning
-                .proposing("rename_file", &renaming(invoice), grants, hour(), noon())
-                .unwrap();
-            turning.approving(first, grants, noon()).unwrap();
-            assert!(folder.join("march-final.pdf").is_file(), "the first did not run");
-            let again = turning.approving(first, grants, noon()).unwrap_err();
-            assert!(matches!(again, NotDone::NotAnswered(_)), "{again:?}");
+        on_a_machine(
+            "two-changes",
+            &mut record,
+            |turning, grants, folder, invoice| {
+                let april = folder.join("april.pdf");
+                std::fs::write(&april, "April").unwrap();
+                let first = turning
+                    .proposing("rename_file", &renaming(invoice), grants, hour(), noon())
+                    .unwrap();
+                turning.approving(first, grants, noon()).unwrap();
+                assert!(
+                    folder.join("march-final.pdf").is_file(),
+                    "the first did not run"
+                );
+                let again = turning.approving(first, grants, noon()).unwrap_err();
+                assert!(matches!(again, NotDone::NotAnswered(_)), "{again:?}");
 
-            let second = turning
-                .proposing(
-                    "rename_file",
-                    &[
-                        ("file", as_given(&april)),
-                        ("name", Given::text("april-final.pdf")),
-                    ],
-                    grants,
-                    hour(),
-                    noon(),
-                )
-                .unwrap();
-            turning.declining(second, noon()).unwrap();
-            assert!(april.is_file(), "a declined change ran anyway");
-            assert!(!folder.join("april-final.pdf").exists());
-        });
+                let second = turning
+                    .proposing(
+                        "rename_file",
+                        &[
+                            ("file", as_given(&april)),
+                            ("name", Given::text("april-final.pdf")),
+                        ],
+                        grants,
+                        hour(),
+                        noon(),
+                    )
+                    .unwrap();
+                turning.declining(second, noon()).unwrap();
+                assert!(april.is_file(), "a declined change ran anyway");
+                assert!(!folder.join("april-final.pdf").exists());
+            },
+        );
 
         let happened: Vec<bool> = record
             .everything()

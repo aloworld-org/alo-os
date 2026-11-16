@@ -286,7 +286,9 @@ fn the_third_and_fourth(input: &mut dyn BufRead) -> Result<AfterTheRequest, Stri
         }
         // A shell from before the fourth line: a request about no window, and
         // nothing after it to wait for.
-        ALine::Ended | ALine::NotSent => return Ok((earlier, None, None, false, None, true, false)),
+        ALine::Ended | ALine::NotSent => {
+            return Ok((earlier, None, None, false, None, true, false));
+        }
     };
     let home = match a_line(
         input,

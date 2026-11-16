@@ -72,10 +72,10 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use alo_agent::{AtTheDaemonsSocket, HowFar, TheAnswer, WhatHappened, driving_on};
-use alo_instructing::{
-    Instructions, TheConversationSoFar, TheWindowOffered, WhatItMayReach,
+use alo_instructing::{Instructions, TheConversationSoFar, TheWindowOffered, WhatItMayReach};
+use alo_protocol::what_the_agent_says_back::{
+    THE_REPLY_WAITS, never_read_as_a_change, never_read_as_the_end,
 };
-use alo_protocol::what_the_agent_says_back::{THE_REPLY_WAITS, never_read_as_a_change, never_read_as_the_end};
 
 /// Where the daemon's doors live, which the image makes at boot.
 ///
@@ -269,9 +269,9 @@ fn said(happened: &WhatHappened, told_already: usize) -> ExitCode {
             // One place spells this line, because `alo-ask` reads it back.
             println!(
                 "{}",
-                never_read_as_the_end(&alo_protocol::what_the_agent_says_back::a_change_is_waiting(
-                    *number, sentence
-                ))
+                never_read_as_the_end(
+                    &alo_protocol::what_the_agent_says_back::a_change_is_waiting(*number, sentence)
+                )
             );
             tell_what_was_done(happened, told_already);
             eprintln!("alo-agent: after {} step(s)", after.len());

@@ -284,7 +284,6 @@ fn driving_from(
     instructions: Instructions,
     mut steps: Vec<AStep>,
 ) -> WhatHappened {
-
     for _ in 0..how_far.rounds() {
         let shown = shown_in_progress(
             instructions,

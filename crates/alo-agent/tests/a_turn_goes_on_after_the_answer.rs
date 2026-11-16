@@ -228,7 +228,11 @@ fn a_refused_second_change_ends_the_turn_with_nothing_done_for_it() {
         "something was asked of the machine after the person said no: {after_the_refusal:?}"
     );
     let proposed = proposals(&door);
-    assert_eq!(proposed.len(), 2, "a change was proposed again: {proposed:?}");
+    assert_eq!(
+        proposed.len(),
+        2,
+        "a change was proposed again: {proposed:?}"
+    );
     assert!(
         the_last_question(&door).contains(&ToAPerson::Declined.written().unwrap()),
         "the model was not shown that the person said no"

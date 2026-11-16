@@ -131,3 +131,74 @@ fn a_daemon_that_said_nothing_ends_the_turn() {
     (&agents_end).read_to_end(&mut rest).unwrap();
     assert!(rest.is_empty(), "the agent was told {rest:?}");
 }
+
+/// A daemon whose answer waits until the test lets it.
+#[derive(Debug)]
+struct ADaemonThatWaits {
+    released: Mutex<std::sync::mpsc::Receiver<()>>,
+}
+
+impl Answering for ADaemonThatWaits {
+    fn waiting(&self) -> Option<Vec<Standing>> {
+        Some(Vec::new())
+    }
+
+    fn approve(&self, _number: u64) -> Option<Answered> {
+        let released = self
+            .released
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .recv_timeout(std::time::Duration::from_secs(10));
+        released
+            .is_ok()
+            .then(|| Answered::It(Box::new(Done::Renamed { now_at: None })))
+    }
+
+    fn decline(&self, _number: u64) -> Option<Answered> {
+        Some(Answered::Declined)
+    }
+}
+
+/// **Nothing reaches the agent, and nothing comes back to the frame, before the
+/// daemon has answered** — and the frame's own look at what came back never
+/// waits for it.
+#[test]
+fn nothing_is_told_before_the_daemon_answers_and_the_frame_never_waits() {
+    let (release, released) = std::sync::mpsc::channel();
+    let daemon = Arc::new(ADaemonThatWaits {
+        released: Mutex::new(released),
+    });
+    let (ours, agents_end) = UnixStream::pair().unwrap();
+    let mut answers = TheAnswersOnTheirWay::default();
+    answers.carry(
+        WhichTask::numbered(0),
+        TheAnswerGiven {
+            number: 9,
+            allowed: true,
+        },
+        Some(ours),
+        true,
+        daemon as super::TheirDaemon,
+    );
+
+    let looked = std::time::Instant::now();
+    assert!(answers.whatever_they_did().is_empty(), "an answer came back early");
+    assert!(
+        looked.elapsed() < std::time::Duration::from_millis(500),
+        "the frame waited for the daemon"
+    );
+    agents_end.set_nonblocking(true).unwrap();
+    let early = (&agents_end).read(&mut [0_u8; 1]);
+    assert!(
+        matches!(&early, Err(why) if why.kind() == std::io::ErrorKind::WouldBlock),
+        "the agent heard something, or its turn ended, before the daemon answered: {early:?}"
+    );
+    agents_end.set_nonblocking(false).unwrap();
+
+    drop(release.send(()));
+    let came = answers.every_one_of_them();
+    assert_eq!(came.len(), 1);
+    let mut line = String::new();
+    BufReader::new(&agents_end).read_line(&mut line).unwrap();
+    assert!(line.starts_with("alo-answered:"), "{line}");
+}

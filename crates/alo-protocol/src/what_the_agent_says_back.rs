@@ -92,7 +92,10 @@ pub fn the_answer_follows_line() -> String {
 /// refuses rather than guesses at.
 #[must_use]
 pub fn the_answer_follows(line: &str) -> Option<bool> {
-    match line.trim_end_matches(['\r', '\n']).strip_prefix(THE_ANSWER_FOLLOWS)? {
+    match line
+        .trim_end_matches(['\r', '\n'])
+        .strip_prefix(THE_ANSWER_FOLLOWS)?
+    {
         "yes" => Some(true),
         "" => Some(false),
         _ => None,
@@ -111,7 +114,10 @@ pub const THE_REPLY_WAITS: &str = "alo-waiting-for-the-answer";
 /// trims it, so such a line is protected too.
 #[must_use]
 pub fn never_read_as_the_end(words: &str) -> Cow<'_, str> {
-    if !words.lines().any(|line| line.trim_end_matches(is_a_return) == THE_REPLY_WAITS) {
+    if !words
+        .lines()
+        .any(|line| line.trim_end_matches(is_a_return) == THE_REPLY_WAITS)
+    {
         return Cow::Borrowed(words);
     }
     let kept: Vec<Cow<'_, str>> = words
@@ -235,7 +241,12 @@ mod tests {
     fn the_answer_follows_is_yes_no_or_nothing_understood() {
         assert_eq!(the_answer_follows(&the_answer_follows_line()), Some(true));
         assert_eq!(the_answer_follows("alo-answer-follows:\n"), Some(false));
-        for line in ["alo-answer-follows:no", "alo-answer-follows: yes", "yes", ""] {
+        for line in [
+            "alo-answer-follows:no",
+            "alo-answer-follows: yes",
+            "yes",
+            "",
+        ] {
             assert_eq!(the_answer_follows(line), None, "{line:?}");
         }
     }
@@ -268,7 +279,10 @@ mod tests {
         let declined = declined.unwrap_or_default();
         assert!(declined.starts_with(THE_ANSWER), "{declined}");
         assert_eq!(the_answer_told(&declined), Some(ToAPerson::Declined));
-        assert_eq!(the_answer_told(&format!("{declined}\n")), Some(ToAPerson::Declined));
+        assert_eq!(
+            the_answer_told(&format!("{declined}\n")),
+            Some(ToAPerson::Declined)
+        );
 
         let not_an_answer = ToAPerson::Granted { holding: 2 };
         assert_eq!(the_answer_line(&not_an_answer), None);
