@@ -439,3 +439,34 @@ fn looks_aside_are_capped_and_an_undeclared_read_is_off_the_road() {
     );
     assert!(!undeclared.took_the_road(), "{undeclared:?}");
 }
+
+/// **At *ask each time* the road is the same, one approval per change**: each
+/// change waits, is approved, and the model is shown what the daemon tells the
+/// person it did — the step the agent's turn goes on from
+/// (`docs/contracts/asking-socket.md`, *The turn goes on after an answer*).
+#[test]
+fn asking_each_time_takes_the_same_road_one_approval_per_change() {
+    let mut model = Writing::these(&[opening(), looking(), typing(), answering("It is written.")]);
+    let tried = super::one_try_at(
+        super::TheLevel::AskEachTime,
+        &writing_in_the_editor(),
+        &WhatItMayReach::nothing().at_full_access(true),
+        &the_verbs(),
+        &the_words(),
+        &mut model,
+    );
+    assert_eq!(tried.went(), &Went::TheRoad, "{tried:?}");
+    assert_eq!(tried.asked(), 4, "the model was not asked once per step");
+    // **What the model was shown after a change is that the person approved
+    // it**, in the shape full access shows a change in — never that it was
+    // done without asking.
+    let last = model.shown.last().cloned().unwrap_or_default();
+    assert!(
+        last.contains("Done after the person approved it:"),
+        "no approved change was shown: {last}"
+    );
+    assert!(
+        !last.contains("because you chose full access"),
+        "the model was shown a change done without asking: {last}"
+    );
+}

@@ -1950,8 +1950,17 @@ impl LoopInput for TheDesktopLane<'_> {
         // by asking this shell's door can be served
         // (`crate::an_answer_goes_off_the_frame`). Drained before what the
         // agent said, so the person reads what their answer did first.
-        for did in server.the_answers.whatever_they_did() {
-            server.an_answer_came_back_from_the_daemon(did, self.strings);
+        for mut did in server.the_answers.whatever_they_did() {
+            let goes_on = did.goes_on.take();
+            server.an_answer_came_back_from_the_daemon(&did, goes_on.is_some(), self.strings);
+            // **And what the agent says next is heard on its turn**, arriving
+            // below like any answer — another change on its own card, or words.
+            if let Some(the_turn) = goes_on {
+                self.asking.hear_the_rest(
+                    crate::what_a_person_asked_goes_to_the_agent::WhoAsked::ATaskWindow(did.which),
+                    the_turn,
+                );
+            }
         }
         // **And whatever has come back since the last frame**, which is why
         // asking could return at once. Drained rather than read, so one answer
@@ -1970,6 +1979,7 @@ impl LoopInput for TheDesktopLane<'_> {
                         .settings_places
                         .as_ref()
                         .map(|places| alo_changing::TheDaemonsDoor::at(places.daemon()));
+                    let goes_on = came.the_turn_goes_on;
                     server.an_answer_came_back(
                         which,
                         came.said,
@@ -1980,6 +1990,11 @@ impl LoopInput for TheDesktopLane<'_> {
                             .map(|door| door as &dyn alo_changing::Answering),
                         self.strings,
                     );
+                    if goes_on {
+                        server
+                            .the_change_waiting
+                            .and_its_turn_goes_on_after_the_answer();
+                    }
                     // A Stop pressed as this answer was already on its way:
                     // the agent has gone, so the work has stopped.
                     if server

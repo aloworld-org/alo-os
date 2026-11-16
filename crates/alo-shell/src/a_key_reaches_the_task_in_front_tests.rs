@@ -1123,3 +1123,35 @@ fn an_approved_change_that_needs_the_screen_is_answered_with_what_it_did() {
     );
     assert_eq!(the_last_thing_said(&server, which), "Done.");
 }
+
+/// **While alo's turn goes on after an answer, the window says alo is
+/// working**, not that the task is complete; an answer that ends the turn
+/// leaves it complete.
+#[test]
+fn an_answer_alo_goes_on_from_leaves_the_task_working() {
+    for (goes_on, status) in [
+        (true, alo_tasks::words::ALO_IS_WORKING),
+        (false, alo_tasks::words::COMPLETE),
+    ] {
+        let (_runtime, mut server) = a_session();
+        let which = a_task_holding_the_keyboard(&mut server);
+        let daemon = holding(7, "Open hello.txt in VSCodium");
+        server.an_answer_came_back(
+            which,
+            "Shall I?".to_owned(),
+            false,
+            None,
+            Some(&daemon),
+            &in_english(),
+        );
+        press(&mut server, TAB, &daemon);
+        press(&mut server, ENTER, &daemon);
+        let did = crate::an_answer_goes_off_the_frame::WhatAnAnswerDid {
+            which,
+            answered: Some(Answered::Declined),
+            goes_on: None,
+        };
+        server.an_answer_came_back_from_the_daemon(&did, goes_on, &in_english());
+        assert_eq!(the_status(&server, which), status, "goes on: {goes_on}");
+    }
+}

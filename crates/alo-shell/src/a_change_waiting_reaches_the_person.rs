@@ -77,6 +77,9 @@ pub struct AChangeWaiting {
     /// before: the change is carried out inside the turn, so closing this
     /// first would end the turn under the very answer it was waiting for.
     the_turn: Option<std::os::unix::net::UnixStream>,
+    /// Whether the agent holding that turn goes on after the person's answer,
+    /// and so is to be told what it did (`docs/contracts/asking-socket.md`).
+    goes_on: bool,
     /// What the change in front of the person touches, as the daemon said —
     /// the approval card's rows naming each file (frame `549:135`). Empty
     /// when nothing is asked, and for a change that touches no file.
@@ -153,6 +156,7 @@ impl AChangeWaiting {
             // **Nothing preselected**, here as well as after every answer.
             selected: None,
             the_turn: None,
+            goes_on: false,
             touches: Vec::new(),
             does: (None, None),
             texts: Vec::new(),
@@ -166,6 +170,19 @@ impl AChangeWaiting {
     /// keeps its turn, and with it the change, for as long as it is on screen.
     pub(crate) fn and_its_turn_is_held_by(&mut self, the_turn: std::os::unix::net::UnixStream) {
         self.the_turn = Some(the_turn);
+        self.goes_on = false;
+    }
+
+    /// The agent holding the turn paused its reply for the answer, and goes on
+    /// after it. Nothing when no turn is held.
+    pub(crate) fn and_its_turn_goes_on_after_the_answer(&mut self) {
+        self.goes_on = self.the_turn.is_some();
+    }
+
+    /// Whether the agent is to be told what the answer did, asked once with
+    /// [`Self::the_turn_it_held`].
+    pub(crate) fn the_turn_goes_on(&mut self) -> bool {
+        std::mem::take(&mut self.goes_on)
     }
 
     /// Whether a change is in front of the person now.

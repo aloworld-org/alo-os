@@ -57,8 +57,8 @@ pub mod words_for_the_answers;
 mod testing;
 
 pub use a_road::{ARequest, Answered, Step};
-pub use a_try::{TheModel, Tried, Went, one_try};
+pub use a_try::{TheLevel, TheModel, Tried, Went, one_try, one_try_at};
 pub use at_the_provider::AtAProvider;
-pub use tallied::{Tallied, Verdict, summary, tallying, verdict};
+pub use tallied::{Tallied, Verdict, summary, tallying, tallying_at, verdict};
 pub use the_set::{NotTheSet, THE_HOME, THE_VERSION, TheSet, the_set};
 pub use went_wrong::WentWrong;
