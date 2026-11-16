@@ -18,6 +18,8 @@
 //!    application*: VSCodium, which a fresh machine lists last (a test holds
 //!    that, from the shipped names ordered as `alo-picking` orders them), for
 //!    a day — the second length the list offers.
+//!    Then the home folder, where the file is, for a day: opening a file at
+//!    *ask each time* needs the file granted as well as the application.
 //! 3. **The file is made by the person**, as at full access, and checked on
 //!    the journal before alo is asked anything.
 //! 4. **The ask**, in the alo bar.
@@ -75,6 +77,10 @@ pub const ASK_EACH_TIME: usize = match HowCodeRuns::ALL {
 /// did* and then the choices of where alo works
 /// (`alo_capability::AloInApplications::ALL`).
 pub const UP_TO_GIVE_AN_APPLICATION: usize = AloInApplications::ALL.len() + 1;
+
+/// How many rows up from the last row *Give alo a folder* is: one above *Give
+/// alo an application*.
+pub const UP_TO_GIVE_A_FOLDER: usize = UP_TO_GIVE_AN_APPLICATION + 1;
 
 /// *Running code*, counted down from the first page in Settings' side column
 /// (`alo_shell::SettingsCategory::ALL`: alo and AI, What alo can use,
@@ -157,15 +163,34 @@ pub fn at_each_ask(walk: Walk) -> Walk {
         .look("on-give-alo-an-application", look)
         .press(ret.clone())
         .look("the-applications", look)
-        .press(end)
+        .press(end.clone())
         .look("on-vscodium", look)
         .press(ret.clone())
         .look("how-long", look)
-        .press(home)
+        .press(home.clone())
         .press_times(&down, DOWN_TO_A_DAY)
         .look("on-a-day", look)
         .press(ret.clone())
         .look("vscodium-given", look)
+        // **And the home folder, where the file is**: at *ask each time*
+        // opening a file needs the file granted as well as the application
+        // (`alo_turn::opening_a_file_in_an_application`, step 2). The first
+        // merge walk of this section (run 43955643824) gave VSCodium alone, and
+        // the turn ended in words after one step, with no card. The picker
+        // opens in the home folder, and its first row picks the folder it is in.
+        .press(end.clone())
+        .press_times(&up, UP_TO_GIVE_A_FOLDER)
+        .look("on-give-alo-a-folder", look)
+        .press(ret.clone())
+        .look("the-folder-picker-at-home", look)
+        .press(home.clone())
+        .press(ret.clone())
+        .look("how-long-for-the-home-folder", look)
+        .press(home)
+        .press_times(&down, DOWN_TO_A_DAY)
+        .look("on-a-day-for-the-home-folder", look)
+        .press(ret.clone())
+        .look("the-home-folder-given", look)
         .press(esc)
         .look("settings-closed-with-vscodium-given", look)
         // **The file, made by the person and checked before alo is asked.**
