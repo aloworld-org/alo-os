@@ -1,0 +1,12 @@
+# The name each application a fresh machine ships gives itself: the
+# untranslated Name= of the desktop entry its package exports, one line each,
+# its identifier, a tab, and that name.
+#
+# GENERATED. Do not edit by hand. These names are not ours and cannot be read
+# off this repository: alo-shipping installs each application at first boot,
+# so they exist only in the package. `.github/workflows/shipped-names.yml`
+# installs every application in shipped.toml and runs
+#   alo-shipped-names <the folders their entries are exported to>
+# which prints what this file should hold and fails when it holds anything
+# else. It never writes this file: a person copies what it printed.
+#

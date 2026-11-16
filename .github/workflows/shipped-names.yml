@@ -1,0 +1,69 @@
+# Whether `crates/alo-software/the-shipped-names.txt` still holds the name each
+# shipped application's own package gives it.
+#
+# **Why it exists.** A booted machine tells its model each installed
+# application as *VSCodium (com.vscodium.codium)*, and accepts *VSCodium* as
+# that application, because it reads every installed desktop entry. The
+# every-try check (`crates/alo-every-try`) has no machine to read, so it reads
+# those names from the pinned file, and the file has to come from the packages:
+# rule 3 of ADR 0156, one source for names.
+#
+# **Why not from the image.** The image installs none of these applications.
+# `alo-shipping` installs them from Flathub at first boot (`image/Containerfile`,
+# the step that copies it in), so a built image holds no entry to read. This
+# installs each one the way that step does, from the place `shipped.toml` names,
+# but **without its runtime** (`--no-deps`): the entry is in the application's
+# own package, and a runtime is gigabytes the name does not need. Nothing is
+# run; only the exported entries are read.
+#
+# **It is not a required check, and never writes back.** It fails, and prints
+# what the file should hold, when the committed file disagrees; a person copies
+# that in. Whether the merge queue requires it is a branch-protection setting,
+# and that is the owner's to make.
+#
+# **What leaves the runner** is the eight installations' downloads from Flathub,
+# and nothing else: no secret is read, and the token may only read.
+
+name: Shipped names
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shipped-names-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  names:
+    name: the shipped applications' names are their packages' own
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install flatpak
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q flatpak
+
+      - name: Build the reader
+        run: cargo build --release --locked -p alo-software --bin alo-shipped-names
+
+      - name: Install each shipped application, without its runtime
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          target/release/alo-shipped-names --identifiers | while read -r source identifier; do
+            flatpak install --user --noninteractive --no-deps --no-related "$source" "$identifier"
+          done
+
+      - name: Read their names, and compare them with the pinned file
+        run: |
+          installation="$HOME/.local/share/flatpak"
+          target/release/alo-shipped-names \
+            "$installation/exports/share/applications" \
+            "$installation"/app/*/current/active/export/share/applications \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+          exit "${PIPESTATUS[0]}"

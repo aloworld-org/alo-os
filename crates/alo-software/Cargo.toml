@@ -47,6 +47,11 @@ serde_json = { workspace = true }
 
 thiserror = { workspace = true }
 
+# The machine's own reader of desktop entries, for `alo-shipped-names`: the
+# names pinned in `the-shipped-names.txt` are read exactly as a booted machine
+# reads them. The walks in `tests/` read entries with it too.
+alo-installed = { path = "../alo-installed" }
+
 [dev-dependencies]
 # A root of its own for the mark that says this machine's applications were
 # walked, so that test reads a temporary directory and not /var. The fault it
@@ -79,7 +84,6 @@ alo-saying = { path = "../alo-saying" }
 # answer from `alo-portals`. The walks in `tests/` write entries declaring
 # `x-scheme-handler/http` into a temporary directory and read them back, so
 # what they say about the browser is what the portal would say.
-alo-installed = { path = "../alo-installed" }
 alo-portals = { path = "../alo-portals" }
 
 [lints]

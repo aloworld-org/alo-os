@@ -10,9 +10,11 @@ use alo_protocol::FromAnAgent;
 use alo_strings::Strings;
 
 use crate::a_road::Step;
+use crate::as_the_machine_names::AsTheMachineNames;
 use crate::went_wrong::WentWrong;
 
-/// Take `step`, the `at`-th of its road (from 1), with what the model `asked`.
+/// Take `step`, the `at`-th of its road (from 1), with what the model `asked`,
+/// on `machine`.
 ///
 /// # Errors
 /// [`WentWrong`], saying how it left the road.
@@ -21,6 +23,7 @@ pub fn taking(
     at: usize,
     asked: &FromAnAgent,
     verbs: &Verbs,
+    machine: &AsTheMachineNames,
     strings: &Strings,
 ) -> Result<Call, WentWrong> {
     let named = match asked {
@@ -47,10 +50,13 @@ pub fn taking(
             asked: named.to_owned(),
         });
     }
-    // **As the machine reads it**: an application to install named by its
-    // name is the catalogue's identifier, by the turn's own function, so the
-    // check holds the model to what the machine accepts and no more.
-    let given = alo_turn::as_the_catalogue_names_it(named, asked.given()).map_err(|why| {
+    // **As the machine reads it**: an application named by its name is the
+    // installed one that answers to it, and an application to install named by
+    // its name is the catalogue's identifier — in that order, by the turn's own
+    // functions (`Turning::calling_by_name`), so the check holds the model to
+    // what the machine accepts and no more.
+    let given = machine.naming(verbs, named, &asked.given());
+    let given = alo_turn::as_the_catalogue_names_it(named, given).map_err(|why| {
         WentWrong::ArgumentsRefused {
             step: at,
             verb: named.to_owned(),

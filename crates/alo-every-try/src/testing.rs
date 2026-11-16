@@ -17,6 +17,19 @@ pub fn the_verbs() -> Verbs {
     alo_turn::the_verbs_a_whole_machine_offers().expect("the machine's verbs declare")
 }
 
+/// The machine a step is matched on: full access, and the editor told by its
+/// package's name, VSCodium.
+pub fn the_machine() -> crate::as_the_machine_names::AsTheMachineNames {
+    crate::as_the_machine_names::AsTheMachineNames::of(
+        &alo_instructing::WhatItMayReach::nothing()
+            .at_full_access(true)
+            .with_these_applications(Some(alo_instructing::TheApplicationsInstalled::of([(
+                "com.vscodium.codium",
+                Some("VSCodium"),
+            )]))),
+    )
+}
+
 /// The words the answers are said in.
 pub fn the_words() -> Strings {
     crate::words_for_the_answers::the_words().expect("the answers' words join")

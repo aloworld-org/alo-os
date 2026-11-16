@@ -20,10 +20,12 @@
 //!
 //! The one the walk boots: the person `alo`, at full access (the level the
 //! first-start sheet arrives with), told where their home and folders are and
-//! which applications are installed. **The applications are told by identifier
-//! only**: a booted machine also tells each one's name from its desktop file,
-//! and this crate has no single source for those, so the model here is told
-//! less than on a machine, never more.
+//! which applications are installed — **each by the name its package gives it
+//! and its identifier**, as a booted machine tells them from their desktop
+//! entries. The names are the ones pinned from the packages
+//! (`alo_software::ShippedNames`, `crates/alo-software/the-shipped-names.txt`),
+//! and an application with none pinned is told by its identifier alone. A step
+//! is matched as that machine matches a name (`crate::as_the_machine_names`).
 
 use std::path::Path;
 
@@ -36,6 +38,7 @@ use alo_publishing::PUBLISH_TO_GITHUB_PAGES;
 use alo_publishing::words::FOLDER;
 use alo_software::role::Role;
 use alo_software::shipped::Shipped;
+use alo_software::shipped_names::ShippedNames;
 use alo_their_folders::Folder;
 use alo_walking::writing_in_vscodium::{THE_FILE, THE_TEXT, the_ask};
 
@@ -43,7 +46,7 @@ use crate::a_road::{ARequest, Answered, Step};
 
 /// The version of the set. Up by one for every change to a request, a road or
 /// the machine.
-pub const THE_VERSION: u32 = 6;
+pub const THE_VERSION: u32 = 7;
 
 /// The person's home on the machine the walk boots: Fedora's atomic layout
 /// puts homes under `/var/home`, measured on 2026-11-10
@@ -122,6 +125,7 @@ impl TheSet {
 /// [`NotTheSet`], when a source it reads would not build.
 pub fn the_set() -> Result<TheSet, NotTheSet> {
     let shipped = Shipped::decided().map_err(|why| NotTheSet(format!("{why:?}")))?;
+    let names = ShippedNames::pinned().map_err(|why| NotTheSet(why.to_string()))?;
     let the_one = |role: Role| shipped.the(role).application().identifier().to_owned();
     let editor = the_one(Role::CodeEditor);
     let browser = the_one(Role::WebBrowser);
@@ -205,12 +209,10 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
     let their_folders =
         ThePersonsFolders::of(home, folders.iter().map(|(role, at)| (*role, at.as_path())))
             .ok_or_else(|| NotTheSet(format!("{THE_HOME} is not a home a line may name")))?;
-    let installed = TheApplicationsInstalled::of(
-        shipped
-            .every()
-            .iter()
-            .map(|pinned| (pinned.application().identifier(), None)),
-    );
+    let installed = TheApplicationsInstalled::of(shipped.every().iter().map(|pinned| {
+        let identifier = pinned.application().identifier();
+        (identifier, names.name_of(identifier))
+    }));
     let may_reach = WhatItMayReach::nothing()
         .in_this_home(Some(their_folders))
         .at_full_access(true)

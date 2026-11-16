@@ -31,7 +31,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 6);
+    assert_eq!(THE_VERSION, 7);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -300,5 +300,18 @@ fn every_read_aside_is_a_read() {
                 aside.verb()
             );
         }
+    }
+}
+
+/// **Each shipped application is told as a booted machine tells it**: by the
+/// name its package gives it and, in brackets, its identifier — the names
+/// pinned from the packages (`alo_software::ShippedNames`), not typed here.
+#[test]
+fn every_shipped_application_is_told_by_its_packages_name() {
+    let names = alo_software::ShippedNames::pinned().expect("the pinned names read");
+    assert!(!names.every().is_empty(), "no name is pinned");
+    let told = the_set().expect("the set builds").may_reach().told();
+    for (identifier, name) in names.every() {
+        assert!(told.contains(&format!("{name} ({identifier})")), "{told}");
     }
 }

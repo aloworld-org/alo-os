@@ -43,6 +43,7 @@
 
 pub mod a_road;
 pub mod a_try;
+pub mod as_the_machine_names;
 pub mod at_the_provider;
 pub mod every_other_verb;
 pub mod taking_a_step;
