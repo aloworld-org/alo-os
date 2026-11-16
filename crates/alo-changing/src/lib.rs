@@ -93,6 +93,7 @@
 pub mod answered;
 #[cfg(unix)]
 pub mod answering;
+#[cfg(unix)]
 mod asking_what_is_wanted;
 #[cfg(unix)]
 pub mod changing;
@@ -127,6 +128,7 @@ pub use alo_protocol::{Done, Standing, Touched};
 pub use answered::Answered;
 #[cfg(unix)]
 pub use answering::Answering;
+#[cfg(unix)]
 pub use asking_what_is_wanted::AskingWhatIsWanted;
 #[cfg(unix)]
 pub use changing::Changing;
