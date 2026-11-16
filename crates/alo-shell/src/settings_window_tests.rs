@@ -1850,9 +1850,9 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
     // which a session with no folder cannot keep.
     assert_eq!(
         rows.len(),
-        10,
-        "one grant, one pairing, the record's row, the two answers for applications, the three \
-         levels, their page's row, the switch"
+        11,
+        "one grant, one pairing, the record's row, the three answers for applications, the \
+         three levels, their page's row, the switch"
     );
     assert_eq!(window.appearance(), Some(&Appearance::shipped()));
     assert_eq!(window.dock(), Some(&Dock::shipped()));
