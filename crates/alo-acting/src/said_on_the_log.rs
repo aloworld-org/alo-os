@@ -84,6 +84,57 @@ pub fn alos_work_is_over_in_a_window_of(application: &str) -> String {
     format!("{ALOS_WORK_IS_OVER} {application}")
 }
 
+/// The words every sentence about one of alo's acts in an application begins
+/// with, said by the turn that carried it out.
+pub const ALO_IN_AN_APPLICATION: &str = "alo in an application:";
+
+/// What became of one act of alo's in an application, as the turn that
+/// carried it out says it: done, or not done.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InAnApplication {
+    /// It was carried out.
+    Done,
+    /// A read was carried out and the windows showed some text.
+    ReadWithText,
+    /// A read was carried out and the windows showed no text.
+    ReadWithNoText,
+    /// A press was asked for and the application did not answer.
+    Unanswered,
+    /// A text was typed and read back exactly, and saved.
+    TypedAndSaved,
+    /// A text was typed and not saved.
+    TypedAndNotSaved,
+    /// It was refused, or the machine could not carry it out.
+    NotDone,
+}
+
+impl InAnApplication {
+    /// The words a walk reads for.
+    #[must_use]
+    pub const fn written(self) -> &'static str {
+        match self {
+            Self::Done => "done",
+            Self::ReadWithText => "done, and it showed text",
+            Self::ReadWithNoText => "done, and it showed no text",
+            Self::Unanswered => "done, and the application did not answer",
+            Self::TypedAndSaved => "done, and saved",
+            Self::TypedAndNotSaved => "done, and not saved",
+            Self::NotDone => "not done",
+        }
+    }
+}
+
+/// The sentence for one act of alo's in `application`, by its verb's name.
+/// **Never the text typed, the control's name or a window's title**, which may
+/// name the person's document: only the verb, the application and the outcome.
+#[must_use]
+pub fn alo_in_an_application(verb: &str, application: &str, became: InAnApplication) -> String {
+    format!(
+        "{ALO_IN_AN_APPLICATION} {verb} in {application}, {}",
+        became.written()
+    )
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -156,5 +207,24 @@ mod tests {
         // Neither phrase is found inside the other's line.
         assert!(!off.contains(ALO_WEARS_A_WINDOW));
         assert!(!on.contains(ALOS_WORK_IS_OVER));
+    }
+
+    /// **An act in an application is said by its verb, its application and
+    /// what became of it**, and an act not done never reads as one done.
+    #[test]
+    fn an_act_in_an_application_says_its_verb_its_application_and_its_outcome() {
+        assert_eq!(
+            alo_in_an_application(
+                "accessible.read_window",
+                "org.kde.dolphin",
+                InAnApplication::ReadWithText
+            ),
+            "alo in an application: accessible.read_window in org.kde.dolphin, done, and it \
+             showed text"
+        );
+        let not =
+            alo_in_an_application("open_application", "org.kde.ark", InAnApplication::NotDone);
+        assert!(not.ends_with(", not done"), "{not}");
+        assert!(!not.contains(", done"), "{not}");
     }
 }

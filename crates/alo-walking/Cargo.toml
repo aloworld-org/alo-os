@@ -30,6 +30,7 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+alo-adapters = { path = "../alo-adapters" }
 alo-applications = { path = "../alo-applications" }
 # Reads the pictures a walk kept, in `tests/fixtures`, so a check is held to
 # the screen it was wrong about. The version the workspace already locks.

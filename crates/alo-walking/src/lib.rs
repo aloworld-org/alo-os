@@ -33,6 +33,7 @@
 pub mod a_place_on_the_screen;
 pub mod booting;
 pub mod frame;
+pub mod in_every_shipped_application;
 pub mod keys;
 pub mod machine;
 pub mod pointer_moves;

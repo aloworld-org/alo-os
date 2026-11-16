@@ -118,6 +118,41 @@ typed and never the text.**
 name, and nothing on a booted machine makes that grant yet — its surface is
 not drawn.
 
+## alo in every application a fresh machine ships, when asked for
+
+The owner, 2026-11-16: *"alo should be able to act on any applications that is
+installed"*. After VSCodium, and only when the person starting the walk ticks
+*Then ask alo to do one thing in every application a fresh machine ships*
+(with the provider), the walk asks alo, **at full access**, for one ordinary
+thing in each shipped application
+(`crates/alo-walking/src/in_every_shipped_application.rs`):
+
+| # | Does | Checks |
+|---|---|---|
+| 1 | Ctrl+Alt+T; types ` cd ~ && touch note.txt && echo <a one-pixel PNG> \| base64 -d > picture.png && tar czf box.tar.gz note.txt && systemd-cat -t alo-walk-the-files-are-made ls …`, Enter | the journal lists the three files within a minute |
+| 2 | Super+A; *Open the file note.txt … in Text Editor, type exactly this text into it: Written by alo in Text Editor and then save it.* | `alo asked to open a file in org.gnome.TextEditor, … opened-in-their-window`; `alo in an application: accessible.type_text in org.gnome.TextEditor, done, and saved`; then, from the terminal, **the file on disk holds the text** |
+| 3 | *Open Dolphin and tell me what its window shows.* | `open_application in org.kde.dolphin, done`; `accessible.read_window in org.kde.dolphin, done` |
+| 4 | *Open the file picture.png … in Loupe, then tell me what its window shows.* | the file opened in the person's window; `accessible.read_window in org.gnome.Loupe, done` |
+| 5 | *Open the file box.tar.gz … in Ark, then tell me what is inside it.* | the file opened in the person's window; `accessible.read_window in org.kde.ark, done` |
+| 6 | *Open Papers and tell me what its window shows.* | opened, and its window read |
+| 7 | *Open Firefox and tell me what its window shows.* | opened, and its window read |
+| 8 | *Close Dolphin.* | `close_application in org.kde.dolphin, done` |
+
+**Ptyxis is not asked**: it is a terminal, which alo reaches only where the
+person has allowed their agent one (ADR 0111). VSCodium is the section above.
+
+The `alo in an application:` sentences are the turn's own, one per act alo
+makes in an application, done or not
+(`alo_acting::said_on_the_log::alo_in_an_application`). They name the verb,
+the application and the outcome, **never the text, a control's name or a
+window's title**. A read that is *done* says alo was given the window, not
+that what alo then said about it was right: the pictures show that.
+
+**It is off on the walk after each merge** until every check passes, so a red
+mark on `main` is never this section's. The box's value is a word of its own
+(`alo-walk-every-application`), because the walk takes every variable it reads
+out of what it keeps.
+
 ## What a pass proves, and what it does not
 
 **A pass proves** that on that run, on that commit of `main`, the screens
