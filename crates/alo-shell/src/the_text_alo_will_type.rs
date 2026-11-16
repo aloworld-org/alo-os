@@ -62,6 +62,15 @@ impl ATextOnTheCard {
                         if unseen.why() == WhyMarked::OtherAlphabet {
                             shown.push(&unseen.character().to_string(), HowItIsMarked::Plain);
                         }
+                        // **Two tags in a row are two tags**: a thin space
+                        // keeps them apart on the screen, and only there.
+                        if shown
+                            .marks()
+                            .last()
+                            .is_some_and(|it| it.how == HowItIsMarked::Unseen)
+                        {
+                            shown.push("\u{2009}", HowItIsMarked::Plain);
+                        }
                         shown.push(&unseen.code(), HowItIsMarked::Unseen);
                     }
                 }

@@ -13,6 +13,7 @@
 
 #![expect(
     clippy::unwrap_used,
+    clippy::indexing_slicing,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
@@ -24,10 +25,18 @@ use crate::the_text_alo_will_type::ATextOnTheCard;
 
 /// Everything said on the card, leaked for the frame's `'static` borrow.
 fn a_card_carrying(text: Option<&str>) -> crate::task_raster::ATaskOnTheDisplay<'static> {
+    a_card_scrolled(text, 0)
+}
+
+/// The same, scrolled to start at `first_line`.
+fn a_card_scrolled(
+    text: Option<&str>,
+    first_line: usize,
+) -> crate::task_raster::ATaskOnTheDisplay<'static> {
     let strings: &'static alo_strings::Strings = Box::leak(Box::new(super::words()));
     let texts: &'static [ATextOnTheCard] = Box::leak(
         text.map(|text| {
-            ATextOnTheCard::of(&alo_capability::TheWholeText::of(text), 0, strings)
+            ATextOnTheCard::of(&alo_capability::TheWholeText::of(text), first_line, strings)
         })
         .into_iter()
         .collect::<Vec<_>>()
@@ -136,8 +145,25 @@ fn written(frame: &(Vec<u8>, (i32, i32)), name: &str) {
     image.save(std::path::Path::new(&folder).join(name)).unwrap();
 }
 
-/// How many pixels are the warning colour, `status/warning`, or close to it —
-/// the antialiased edge of a tag's letters.
+/// Each row of the frame that has pixels in the warning colour,
+/// `status/warning`, or close to it — the antialiased edge of a tag's letters.
+fn rows_in_the_warning_colour(frame: &(Vec<u8>, (i32, i32))) -> Vec<usize> {
+    let warning = alo_appearance::Role::StatusWarning.colour();
+    let near = |a: u8, b: u8| a.abs_diff(b) <= 24;
+    let wide = usize::try_from(frame.1.0).unwrap();
+    let mut rows: Vec<usize> = every_pixel(frame)
+        .into_iter()
+        .enumerate()
+        .filter(|(_, [r, g, b])| {
+            near(*r, warning.red()) && near(*g, warning.green()) && near(*b, warning.blue())
+        })
+        .map(|(at, _)| at / wide)
+        .collect();
+    rows.dedup();
+    rows
+}
+
+/// How many pixels are the warning colour.
 fn in_the_warning_colour(frame: &(Vec<u8>, (i32, i32))) -> usize {
     let warning = alo_appearance::Role::StatusWarning.colour();
     let near = |a: u8, b: u8| a.abs_diff(b) <= 24;
@@ -173,7 +199,38 @@ fn the_text_and_its_tags_reach_the_frame_a_display_is_handed() {
         in_the_warning_colour(&hidden) > 20,
         "the U+200B's tag is not drawn in the warning colour"
     );
+    // **The text itself is drawn**, not only what is said about it: two
+    // texts of the same length with different letters differ.
+    let other = handed(a_card_carrying(Some(
+        "fn mian() {\n    println!(\"hello\");\n}",
+    )));
+    assert_ne!(text.0, other.0, "the letters of the text are not drawn");
+    // **The tag is where the character is**: moving it two lines down moves
+    // the warning colour down with it, while the line saying one is marked
+    // stays where it was.
+    let lower = handed(a_card_carrying(Some(
+        "fn main() {\n    println!(\"hello\");\n}\u{200B}",
+    )));
+    let (up, down) = (rows_in_the_warning_colour(&hidden), rows_in_the_warning_colour(&lower));
+    assert!(
+        down.last() > up.last(),
+        "the tag did not move with its character: {up:?} {down:?}"
+    );
+    // **Scrolling reaches the frame**, and stops at the last twelve lines.
     let long: String = (1..=40).map(|it| format!("line {it} of the text\n")).collect();
     let scrolls = handed(a_card_carrying(Some(&long)));
     written(&scrolls, "4-forty-lines-twelve-shown.png");
+    let further = handed(a_card_scrolled(Some(&long), 28));
+    written(&further, "5-scrolled-to-the-end.png");
+    assert_ne!(scrolls.0, further.0, "scrolling did not reach the frame");
+    assert_eq!(
+        further.0,
+        handed(a_card_scrolled(Some(&long), 99)).0,
+        "scrolling went past the last twelve lines"
+    );
+    // **A long line wraps rather than being cut**: the card is taller.
+    let wraps = handed(a_card_carrying(Some(&"x".repeat(600))));
+    written(&wraps, "6-a-long-line-wraps.png");
+    let short = handed(a_card_carrying(Some("x")));
+    assert_ne!(wraps.0, short.0);
 }

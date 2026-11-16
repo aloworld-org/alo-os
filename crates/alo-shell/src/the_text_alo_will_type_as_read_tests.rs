@@ -113,6 +113,18 @@ fn no_text_or_no_window_leaves_the_tree_alone() {
     assert_eq!(still, nowhere);
 }
 
+/// **A long line is wrapped and still whole for a reader**, and every kind of
+/// hidden character is named.
+#[test]
+fn every_kind_of_hidden_character_is_named() {
+    let strings = words();
+    let heard = as_heard(&TheWholeText::of("a\u{202E}b\u{0007}c\u{00A0}d"), &strings);
+    for code in ["U+202E", "U+0007", "U+00A0"] {
+        assert!(heard.contains(code), "{code} is not named: {heard}");
+    }
+    assert!(!heard.contains('\u{202E}'), "a direction mark reached the reader");
+}
+
 /// **A long text is heard whole**: nothing a reader is given is cut.
 #[test]
 fn a_long_text_is_heard_whole() {

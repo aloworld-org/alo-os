@@ -49,7 +49,26 @@ fn a_hidden_character_is_a_tag_in_its_place() {
     assert_eq!(card.shown.text(), "héU+200Bllo\tworld");
     assert_eq!(tags(&card.shown), ["U+200B"]);
     assert_eq!(card.said_lines(), 2, "how long it is, and that one is marked");
-    assert!(card.marked.is_some());
+    assert_eq!(
+        card.marked,
+        Some(text.what_is_marked(&words()).unwrap().into_text())
+    );
+    // **How long counts the text, not its tags**: one line, 12 characters.
+    assert_eq!(card.how_long, "1 line, 12 characters");
+}
+
+/// **Every kind of hidden character is a tag**, and two in a row are two
+/// tags: a direction mark, a control character and an unusual space.
+#[test]
+fn every_kind_of_hidden_character_is_a_tag() {
+    let text = TheWholeText::of("a\u{202E}b\u{0007}\u{0007}c\u{00A0}d");
+    let card = ATextOnTheCard::of(&text, 0, &words());
+    assert_eq!(tags(&card.shown), ["U+202E", "U+0007", "U+0007", "U+00A0"]);
+    assert_eq!(
+        card.shown.text(),
+        "aU+202EbU+0007\u{2009}U+0007cU+00A0d",
+        "two tags in a row are kept apart by a thin space"
+    );
 }
 
 /// **A letter from another alphabet is drawn, and its tag follows it**, so the

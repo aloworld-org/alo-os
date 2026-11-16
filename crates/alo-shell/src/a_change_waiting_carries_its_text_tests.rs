@@ -75,7 +75,12 @@ fn a_change_with_no_text_shows_none_and_does_not_scroll() {
     let mut waiting = AChangeWaiting::nothing_yet();
     waiting.arrived(&mut task, &daemon);
     assert!(waiting.texts().is_empty());
-    for key in [ApprovalKey::LaterLines, ApprovalKey::ALaterPage] {
+    for key in [
+        ApprovalKey::LaterLines,
+        ApprovalKey::ALaterPage,
+        ApprovalKey::EarlierLines,
+        ApprovalKey::AnEarlierPage,
+    ] {
         assert_eq!(
             waiting.pressed(key, &mut task, &daemon),
             WhatThePressDid::Nothing
@@ -160,4 +165,69 @@ fn scrolling_answers_nothing_and_moves_no_answer() {
     assert_eq!(waiting.selected(), Some(WhichAnswer::AllowOnce));
     assert!(daemon.approved.borrow().is_empty());
     assert!(daemon.declined.borrow().is_empty());
+    // **The presses did something**: a later page is still in view.
+    waiting.pressed(ApprovalKey::ALaterPage, &mut task, &daemon);
+    assert_eq!(waiting.first_line_shown(), 12);
+    // **And the answer is still the person's to give, once.**
+    waiting.pressed(ApprovalKey::Choose, &mut task, &daemon);
+    assert_eq!(*daemon.approved.borrow(), [7]);
+    assert!(daemon.declined.borrow().is_empty());
+}
+
+/// **A new question starts at its top**, however far the last one was
+/// scrolled.
+#[test]
+fn a_new_question_starts_at_its_top() {
+    let mut task = a_task();
+    let mut waiting = AChangeWaiting::nothing_yet();
+    waiting.arrived(&mut task, &ADaemon::holding(vec![typing(7, &lines(40))]));
+    waiting.pressed(
+        ApprovalKey::ALaterPage,
+        &mut task,
+        &ADaemon::holding(vec![typing(7, &lines(40))]),
+    );
+    assert_eq!(waiting.first_line_shown(), 12, "the premise");
+    let daemon = ADaemon::holding(vec![typing(8, &lines(40))]);
+    waiting.deny(&mut task, &daemon);
+    waiting.arrived(&mut task, &daemon);
+    assert!(waiting.is_asking());
+    assert_eq!(waiting.first_line_shown(), 0);
+}
+
+/// **What the card draws is what is waiting**, joined end to end: the text
+/// that arrived, scrolled where the person scrolled it, reaches the asking
+/// task window's card — and is gone from it once the question is answered.
+#[test]
+fn the_text_waiting_is_the_text_the_task_window_draws() {
+    use smithay::utils::Rectangle;
+
+    let strings = crate::settings_testing::settings_words();
+    let daemon = ADaemon::holding(vec![typing(7, &lines(40))]);
+    let mut task = a_task();
+    let mut waiting = AChangeWaiting::nothing_yet();
+    waiting.arrived(&mut task, &daemon);
+    waiting.pressed(ApprovalKey::LaterLines, &mut task, &daemon);
+    let drawn = |task: &ATask, waiting: &AChangeWaiting| -> Vec<String> {
+        let words = crate::the_tasks_words::TheTasksWords::said(
+            std::slice::from_ref(task),
+            &[Some(Rectangle::new((0, 0).into(), (900, 700).into()))],
+            &strings,
+            waiting.selected(),
+        )
+        .with_the_text_alo_will_type(waiting.texts(), waiting.first_line_shown(), &strings);
+        words
+            .as_displayed()
+            .iter()
+            .flat_map(|window| window.said.iter())
+            .filter_map(|said| said.answers)
+            .flat_map(|answers| answers.texts.iter())
+            .map(|text| text.shown.text().to_owned())
+            .collect()
+    };
+    let shown = drawn(&task, &waiting);
+    assert_eq!(shown.len(), 1, "{shown:?}");
+    assert_eq!(shown[0].lines().next(), Some("line 2"), "scrolled by one");
+    assert_eq!(shown[0].lines().count(), 12);
+    waiting.deny(&mut task, &daemon);
+    assert!(drawn(&task, &waiting).is_empty(), "the text outlived the question");
 }
