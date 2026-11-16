@@ -1131,6 +1131,10 @@ mod a_change_that_cannot_be_undone;
 mod an_application_is_wanted;
 
 #[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
 #[path = "a_github_sign_in_is_needed_tests.rs"]
 mod a_github_sign_in_is_needed;
 
