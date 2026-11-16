@@ -457,6 +457,14 @@ Readings taken building it, each for the owner to overrule:
   answered, stopped, or its task window closed — or the window goes. A
   follow-up is a new turn: the window wears alo again only if alo acts in it
   again, unlike an offered window, which every turn of its task is about.
+- **Near the top of the screen the border is still drawn, round the window
+  alone.** A band that would fall off the display is not drawn (a band half
+  off the screen is not drawn half), and until 2026-11-16 that refusal took
+  alo's presence with it: the walk found VSCodium 30 below the top with its
+  band off the screen and no border (run 43805568910;
+  `docs/misreadings/a-painter-tested-alone-passed-while-its-caller-drew-nothing.md`).
+  Now the band alone is left out, and the border goes round the window, kept to
+  the display.
 - **The egress indicator is unchanged for now.** Law 1 needs what alo's copy
   sends visible at the moment it leaves, and the design is silent on whether
   that notice belongs to the border. Until the owner chooses among the options
