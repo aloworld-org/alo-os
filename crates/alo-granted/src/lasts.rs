@@ -92,4 +92,16 @@ mod tests {
         assert_eq!(Lasts::UntilRemoved.left(), None);
         assert!(Lasts::For(Duration::from_secs(1)).left().is_some());
     }
+
+    /// **A session's grant is told apart from both**: it is neither a length
+    /// nor until removed, and only it lasts until sign-out.
+    #[test]
+    fn until_sign_out_is_its_own_answer() {
+        let hour = Lasts::For(Duration::from_secs(60 * 60));
+        assert!(Lasts::UntilSignOut.is_until_sign_out());
+        assert!(!hour.is_until_sign_out());
+        assert!(!Lasts::UntilRemoved.is_until_sign_out());
+        assert!(!Lasts::UntilSignOut.is_until_removed());
+        assert_eq!(Lasts::UntilSignOut.left(), None);
+    }
 }
