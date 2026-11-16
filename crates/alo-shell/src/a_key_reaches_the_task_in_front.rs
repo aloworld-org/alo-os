@@ -123,6 +123,12 @@ impl Server {
             && match answering {
                 ApprovalKey::NextAnswer | ApprovalKey::PreviousAnswer => true,
                 ApprovalKey::Choose | ApprovalKey::Decline => something_is_selected,
+                // **The text the change would type is the card's to scroll**:
+                // the reply box has no use for Up and Down.
+                ApprovalKey::EarlierLines
+                | ApprovalKey::LaterLines
+                | ApprovalKey::AnEarlierPage
+                | ApprovalKey::ALaterPage => !self.the_change_waiting.texts().is_empty(),
                 ApprovalKey::Nothing => false,
             };
         if for_the_card && let Some(daemon) = daemon {

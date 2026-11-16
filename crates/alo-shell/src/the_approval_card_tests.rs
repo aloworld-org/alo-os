@@ -13,6 +13,7 @@ fn the_frames_card_adds_up_to_its_own_height() {
         the_action_is_tall: 30,
         rows: 0,
         what_it_does_is_tall: 0,
+        the_texts_are_tall: 0,
     };
     assert_eq!(card.who_is_asking(), 16);
     assert_eq!(card.the_action(), 38);
@@ -30,6 +31,7 @@ fn the_answers_are_equal_and_the_line_beside_them_keeps_to_the_card() {
         the_action_is_tall: 30,
         rows: 0,
         what_it_does_is_tall: 0,
+        the_texts_are_tall: 0,
     };
     assert_eq!(
         card.deny() - super::BESIDE,
@@ -50,6 +52,7 @@ fn a_longer_action_moves_the_answers_down() {
         the_action_is_tall: 30,
         rows: 0,
         what_it_does_is_tall: 0,
+        the_texts_are_tall: 0,
     };
     let two = TheCard {
         the_action_is_tall: 60,
@@ -69,6 +72,7 @@ fn a_row_naming_a_file_is_where_the_frame_draws_it() {
         the_action_is_tall: 30,
         rows: 1,
         what_it_does_is_tall: 0,
+        the_texts_are_tall: 0,
     };
     assert_eq!(card.a_row(0), 38 + 30 + 12);
     assert_eq!(card.the_choices(), 38 + 30 + 12 + 64 + 16);
@@ -92,6 +96,7 @@ fn the_frames_whole_card_adds_up() {
         the_action_is_tall: 30,
         rows: 1,
         what_it_does_is_tall: 22,
+        the_texts_are_tall: 0,
     };
     assert_eq!(card.what_it_does(), 38 + 30 + 12 + 64 + 12);
     assert_eq!(card.tall(), 271);
@@ -104,4 +109,36 @@ fn the_frames_whole_card_adds_up() {
         12 + 22,
         "a verb that says nothing still kept room for it"
     );
+}
+
+/// **A text adds what is said about it and its box, and nothing else**: 12
+/// above, a line saying how long it is (two when something is marked), 8,
+/// then 12 round its words — and the box sits under the rows naming what the
+/// change touches, with what it does and the answers moved down by exactly
+/// as much.
+#[test]
+fn a_text_sits_under_the_rows_and_moves_the_rest_down_by_its_height() {
+    let card = TheCard {
+        wide: 920,
+        the_action_is_tall: 30,
+        rows: 1,
+        what_it_does_is_tall: 22,
+        the_texts_are_tall: 0,
+    };
+    // Three lines of System/Mono 12/18, how long it is said on one line.
+    let three = super::a_text_is_tall(1, 3 * 18);
+    assert_eq!(three, 12 + 18 + 8 + 12 + 54 + 12);
+    // A hidden character adds the line saying so.
+    assert_eq!(super::a_text_is_tall(2, 54) - three, 18);
+    let with = TheCard {
+        the_texts_are_tall: three,
+        ..card
+    };
+    assert_eq!(with.the_texts(), 38 + 30 + 12 + 64, "under the one row");
+    assert_eq!(with.what_it_does() - card.what_it_does(), three);
+    assert_eq!(with.the_answers() - card.the_answers(), three);
+    assert_eq!(with.tall() - card.tall(), three);
+    // Twelve lines is the most a box holds before it scrolls.
+    assert_eq!(super::THE_MOST_LINES_SHOWN, 12);
+    assert_eq!(super::a_texts_box_is_tall(12 * 18), 12 + 216 + 12);
 }

@@ -684,6 +684,8 @@ mod the_room_a_window_fills;
 /// Task windows opened into a full view find room as other windows do.
 mod the_task_windows_find_room;
 mod the_terminals_face;
+pub mod the_text_alo_will_type;
+mod the_text_alo_will_type_as_read;
 /// The view gliding, or jumping where less motion was asked for.
 mod the_view_glides;
 /// The view travelling to a window of alo's rather than the window moving.

@@ -34,6 +34,7 @@ fn with_the_question(
             once: None,
             touches: &[],
             does: (None, None),
+            texts: &[],
             between,
         }),
     });
