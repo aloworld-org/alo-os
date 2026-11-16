@@ -257,10 +257,15 @@ fn a_key_nobody_declared_is_refused() {
 }
 
 /// **A word applications do not take is refused whole**, and the two they
-/// take are read and written as the contract spells them.
+/// take are read and written as the contract spells them — the third since
+/// 2026-11-16.
 #[test]
-fn where_alo_works_in_applications_reads_two_words_and_refuses_others() {
+fn where_alo_works_in_applications_reads_three_words_and_refuses_others() {
     for (said, answer) in [
+        (
+            IN_ALOS_COPY_OR_THEIR_WINDOW,
+            alo_capability::AloInApplications::InItsOwnCopyOrTheirWindow,
+        ),
         (
             IN_ALOS_COPY,
             alo_capability::AloInApplications::InItsOwnCopy,

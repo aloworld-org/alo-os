@@ -150,7 +150,7 @@ pub enum NotTheLevel {
     ///
     /// Refused whole, for [`Self::NoSuchLevel`]'s reason.
     #[error(
-        "`{said}` is not an answer for applications: the two are `{IN_ALOS_COPY}` and `{IN_THEIR_WINDOW}`"
+        "`{said}` is not an answer for applications: the three are `{IN_ALOS_COPY_OR_THEIR_WINDOW}`, `{IN_ALOS_COPY}` and `{IN_THEIR_WINDOW}`"
     )]
     NotAnApplicationsAnswer {
         /// What it said.
@@ -255,19 +255,27 @@ pub fn read(text: &str) -> Result<WhatTheFileSays, NotTheLevel> {
     })
 }
 
-/// The word `in-applications` writes for alo's own copy, the default.
+/// The word `in-applications` writes for alo's own copy only — the setting
+/// switched off. It was the default until 2026-11-16, and keeps its word so a
+/// person who chose it keeps it.
 pub const IN_ALOS_COPY: &str = "in-alos-copy";
 
 /// The word `in-applications` writes for the person's own window.
 pub const IN_THEIR_WINDOW: &str = "in-their-window";
 
+/// The word `in-applications` writes for alo's own copy where an application
+/// has one and the person's window where it has none — the default, which a
+/// file with no `in-applications` also answers (the owner, 2026-11-16).
+pub const IN_ALOS_COPY_OR_THEIR_WINDOW: &str = "in-alos-copy-or-their-window";
+
 /// Where alo works in an application, as this word names it.
 ///
 /// # Errors
 ///
-/// [`NotTheLevel::NotAnApplicationsAnswer`] for anything but the two.
+/// [`NotTheLevel::NotAnApplicationsAnswer`] for anything but the three.
 fn the_applications_answer_called(said: &str) -> Result<AloInApplications, NotTheLevel> {
     match said {
+        IN_ALOS_COPY_OR_THEIR_WINDOW => Ok(AloInApplications::InItsOwnCopyOrTheirWindow),
         IN_ALOS_COPY => Ok(AloInApplications::InItsOwnCopy),
         IN_THEIR_WINDOW => Ok(AloInApplications::InTheirWindow),
         _ => Err(NotTheLevel::NotAnApplicationsAnswer {
@@ -279,6 +287,7 @@ fn the_applications_answer_called(said: &str) -> Result<AloInApplications, NotTh
 /// The word this file writes for where alo works in an application.
 const fn the_applications_word_for(answer: AloInApplications) -> &'static str {
     match answer {
+        AloInApplications::InItsOwnCopyOrTheirWindow => IN_ALOS_COPY_OR_THEIR_WINDOW,
         AloInApplications::InItsOwnCopy => IN_ALOS_COPY,
         AloInApplications::InTheirWindow => IN_THEIR_WINDOW,
     }

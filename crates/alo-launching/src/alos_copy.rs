@@ -95,6 +95,14 @@ pub const WITH_A_COPY_OF_THEIR_OWN: [&str; 3] = [
     "com.visualstudio.code",
 ];
 
+/// Whether alo can start a copy of its own of the application with this
+/// identifier — the one question where alo works asks of an application
+/// (`alo_capability::AloInApplications::may_work_in_their_window_of`).
+#[must_use]
+pub fn has_a_copy_of_its_own(identifier: &str) -> bool {
+    WITH_A_COPY_OF_THEIR_OWN.contains(&identifier)
+}
+
 /// How to start alo's own copy of the application with this identifier, for a
 /// person whose home is `home` — or [`None`] when nobody has written down a way
 /// to start a separate copy of it.

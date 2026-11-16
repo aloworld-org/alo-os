@@ -533,6 +533,83 @@ fn a_copy_alo_opened_on_a_machine_with_no_counter_says_it_cannot_count() {
     assert_eq!(machine.lines(), [HowItIsShown::Uncounted]);
 }
 
+// ---------------------------------------------------------------------------
+// The owner's decision of 2026-11-16: an application with no copy of its own
+// is worked in in the person's window, automatically.
+// ---------------------------------------------------------------------------
+
+/// **At the default, an application with no copy of its own is worked in in
+/// the person's window** (the owner, 2026-11-16: *"Yes, automatically"*): the
+/// *may be sending* line is up while alo works, nothing of theirs is counted,
+/// and nothing was started.
+#[test]
+fn at_the_default_an_application_with_no_copy_is_worked_in_in_the_persons_window() {
+    let mut machine = Machine::new(true);
+    machine.chosen = AloInApplications::default();
+    let mut alo = machine.asked(TEXT_EDITOR, Where::InAlosCopy, 0);
+    assert_eq!(next(&alo), "showing");
+    assert_eq!(machine.lines(), [HowItIsShown::TheirWindow]);
+    assert_eq!(machine.copies.borrow().starts, 0);
+    done(&mut alo);
+    machine.looked(3);
+    assert_eq!(next(&alo), "uncounted");
+    assert!(
+        machine.ever_begun().is_empty(),
+        "the person's window was counted"
+    );
+}
+
+/// **And asked for by name, too**: at the default, `work-in-their-window` for
+/// an application with no copy of its own is shown rather than refused.
+#[test]
+fn at_the_default_the_persons_window_of_an_application_with_no_copy_is_shown() {
+    let mut machine = Machine::new(true);
+    machine.chosen = AloInApplications::default();
+    let alo = machine.asked(TEXT_EDITOR, Where::InTheirWindow, 0);
+    assert_eq!(next(&alo), "showing");
+    assert_eq!(machine.lines(), [HowItIsShown::TheirWindow]);
+}
+
+/// **At the default, an application that has a copy still uses it**, and the
+/// person's own window of it is still refused: the copy is the one whose
+/// sending can be counted, so it is never passed over for theirs.
+#[test]
+fn at_the_default_an_application_with_a_copy_never_uses_the_persons_window() {
+    let mut machine = Machine::new(true);
+    machine.chosen = AloInApplications::default();
+    let alo = machine.asked(FIREFOX, Where::InAlosCopy, 0);
+    assert_eq!(next(&alo), "counting");
+    assert_eq!(machine.copies.borrow().starts, 1);
+    let theirs = machine.asked(FIREFOX, Where::InTheirWindow, 1);
+    assert_eq!(next(&theirs), "not-chosen");
+    assert_eq!(
+        machine.working.how_many(),
+        1,
+        "the person's window was taken in"
+    );
+    assert!(
+        !machine.lines().contains(&HowItIsShown::TheirWindow),
+        "the person's Firefox window was shown as alo's"
+    );
+}
+
+/// **Switched off, it still refuses**: a person who chose *alo works in its
+/// own copy of an application* has an application with no copy refused, in
+/// both words, and nothing is shown, started or counted.
+#[test]
+fn switched_off_an_application_with_no_copy_is_still_refused() {
+    let mut machine = Machine::new(true);
+    machine.chosen = AloInApplications::InItsOwnCopy;
+    let copy = machine.asked(TEXT_EDITOR, Where::InAlosCopy, 0);
+    assert_eq!(next(&copy), "no-copy-of-its-own");
+    let theirs = machine.asked(TEXT_EDITOR, Where::InTheirWindow, 1);
+    assert_eq!(next(&theirs), "not-chosen");
+    assert!(machine.lines().is_empty());
+    assert_eq!(machine.working.how_many(), 0);
+    assert_eq!(machine.copies.borrow().starts, 0, "a copy was started");
+    assert!(machine.ever_begun().is_empty());
+}
+
 /// **What alo's work is sending, by application, is exactly what the
 /// indicator says** — nothing before the first byte, the copy once it is seen
 /// sending, and nothing once the work is over — so the border of the window
