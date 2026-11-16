@@ -139,7 +139,10 @@ fn it_runs_after_every_merge_to_main_and_by_hand() {
             "push:",
             "workflow_dispatch:",
             "inputs:",
-            "with_the_provider:"
+            "with_the_provider:",
+            // The person's second box (2026-11-16): ask alo in every shipped
+            // application. An input, not a trigger.
+            "every_application:"
         ],
         "a trigger beside a merge to main and a person"
     );
