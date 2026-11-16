@@ -74,7 +74,8 @@ fn it_hangs_under_the_asking_tasks_window_and_no_other() {
     let (tree, typing, other) = two_windows(&strings);
     let text = TheWholeText::of("fn main() {\n\u{200B}}");
     let before = tree.nodes().len();
-    let tree = tree.with_the_text_alo_will_type(&strings, typing, SENTENCE, std::slice::from_ref(&text));
+    let tree =
+        tree.with_the_text_alo_will_type(&strings, typing, SENTENCE, std::slice::from_ref(&text));
     assert_eq!(
         tree.nodes().len(),
         before + 4,
