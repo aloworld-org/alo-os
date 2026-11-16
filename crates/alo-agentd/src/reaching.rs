@@ -65,6 +65,9 @@ pub fn answered_to(
     now: SystemTime,
 ) -> ToAPerson {
     match answered {
+        // **A turn arriving from a paired machine wants nothing of this
+        // person's sheet**: it acts only under grants made here by identifier.
+        FromAPerson::Wanted => ToAPerson::wanted(Vec::new()),
         FromAPerson::Waiting => {
             let called = arriving.origin().called().to_owned();
             ToAPerson::waiting_from_a_machine(arriving.waiting_at(now), &called, strings, now)

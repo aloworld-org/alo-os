@@ -89,7 +89,7 @@ impl Turning<'_, '_> {
             return given.to_vec();
         }
         let installed = machine.the_applications_installed_now();
-        as_this_machine_names_them(
+        let named = as_this_machine_names_them(
             machine.verbs(),
             &installed,
             grants,
@@ -97,7 +97,21 @@ impl Turning<'_, '_> {
             verb,
             given,
             now,
-        )
+        );
+        // **What the call wanted and was not given is noted for the person**,
+        // and only for them: the agent is told exactly the refusal it is told
+        // without this, so it learns nothing about what is installed.
+        let wanted = the_applications_wanted(
+            self.machine().verbs(),
+            &installed,
+            grants,
+            &grantee,
+            verb,
+            given,
+            now,
+        );
+        self.wanting(wanted);
+        named
     }
 }
 
@@ -146,6 +160,49 @@ pub fn as_this_machine_names_them<'g>(
             }
         })
         .collect()
+}
+
+/// **The installed applications `given` names that nothing grants `grantee` at
+/// `now`**, by identifier, once each: each argument `verb` declares as taking
+/// an application whose text names exactly one installed application
+/// (`Installed::answering_to`) that the grants do not permit. The turn keeps
+/// each once (`Turning::applications_wanted`).
+///
+/// What the person's desktop offers on the sheet that asks whether to give alo
+/// one (the owner's decision of 2026-11-16). Nothing for a name that means
+/// several applications or none, which the sheet could not name, and nothing
+/// at full access, where every application is permitted already.
+#[must_use]
+pub fn the_applications_wanted(
+    verbs: &Verbs,
+    installed: &Installed,
+    grants: &Grants,
+    grantee: &Grantee,
+    verb: &str,
+    given: &[(&str, Given)],
+    now: SystemTime,
+) -> Vec<String> {
+    let applications = the_applications_named_in(verbs, verb);
+    let mut wanted: Vec<String> = Vec::new();
+    for (argument, value) in given {
+        let Given::Text(said) = value else {
+            continue;
+        };
+        if !applications.iter().any(|name| name == argument) {
+            continue;
+        }
+        let AnsweringTo::One(application) = installed.answering_to(said) else {
+            continue;
+        };
+        let identifier = application.identifier();
+        let permitted = grants
+            .permitted(grantee, &Ask::Application(identifier.to_owned()), now)
+            .is_ok();
+        if !permitted {
+            wanted.push(identifier.to_owned());
+        }
+    }
+    wanted
 }
 
 /// The arguments `verb` declares as taking an application, by name; none for

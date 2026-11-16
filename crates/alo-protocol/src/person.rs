@@ -265,6 +265,11 @@ pub enum FromAPerson {
     /// sheet up (the owner's approval of 2026-11-13). The connection it is
     /// asked on is given over to that and answers nothing else.
     WatchWhatNeedsAGitHubSignIn,
+    /// Which installed applications the turn under way asked for and nothing
+    /// grants, for the sheet that asks the person (the owner's decision of
+    /// 2026-11-16). A read of the turn, like [`Self::Waiting`]; it carries
+    /// nothing.
+    Wanted,
     /// What happened when the person signed in to GitHub or out of it from
     /// their own desktop, for this service to keep in the record (the owner's
     /// decision of 2026-11-13).
@@ -312,6 +317,7 @@ impl FromAPerson {
             Asked::PutBack { place, folders } => Ok(Self::PutBack { place, folders }),
             Asked::WatchWhatLeaves {} => Ok(Self::WatchWhatLeaves),
             Asked::WatchWhatNeedsAGithubSignIn {} => Ok(Self::WatchWhatNeedsAGitHubSignIn),
+            Asked::Wanted {} => Ok(Self::Wanted),
             Asked::GithubSignIn(on_the_wire) => on_the_wire
                 .kept()
                 .map(Self::GitHubSignIn)
@@ -360,6 +366,7 @@ impl FromAPerson {
             | Self::PutBack { .. }
             | Self::WatchWhatLeaves
             | Self::WatchWhatNeedsAGitHubSignIn
+            | Self::Wanted
             | Self::GitHubSignIn(_) => None,
         }
     }
@@ -445,6 +452,7 @@ impl From<FromAPerson> for Asked {
             FromAPerson::PutBack { place, folders } => Self::PutBack { place, folders },
             FromAPerson::WatchWhatLeaves => Self::WatchWhatLeaves {},
             FromAPerson::WatchWhatNeedsAGitHubSignIn => Self::WatchWhatNeedsAGithubSignIn {},
+            FromAPerson::Wanted => Self::Wanted {},
             FromAPerson::GitHubSignIn(what) => Self::GithubSignIn(OnTheWire::of(&what)),
         }
     }
@@ -741,6 +749,7 @@ mod tests {
             FromAPerson::Approve { number: 1 },
             FromAPerson::Decline { number: 2 },
             FromAPerson::Waiting,
+            FromAPerson::Wanted,
             FromAPerson::Granted,
             FromAPerson::Pair {
                 machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
