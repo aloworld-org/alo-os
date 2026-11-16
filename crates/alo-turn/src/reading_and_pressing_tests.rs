@@ -49,6 +49,10 @@ const MAIL: &str = "org.example.Mail";
 /// A terminal, which alo reaches only where the person allowed it (ADR 0111).
 const TERMINAL: &str = "app.devsuite.Ptyxis";
 
+/// GNOME Text Editor, which has an adapter alo OS ships — whose verbs no
+/// agent is offered.
+const TEXT_EDITOR: &str = alo_adapters::text_editor::APPLICATION;
+
 /// What is typed into the mail application's password field.
 const SECRET: &str = "correct-horse-battery-staple";
 
@@ -279,6 +283,7 @@ fn on_a_machine<T>(
                 installed: Installed::holding([
                     Application::identified(MAIL).unwrap(),
                     Application::identified(TERMINAL).unwrap(),
+                    Application::identified(TEXT_EDITOR).unwrap(),
                 ])
                 .into(),
                 door: &mut door,
@@ -549,4 +554,36 @@ fn a_press_that_cannot_be_given_names_the_switch_only_where_it_would_help() {
         assert_eq!(counted.presses.get(), 0);
         assert_eq!(entries(&record), 1);
     }
+}
+
+/// **An application whose adapter no agent is offered is still read and
+/// pressed through the fallback**, at full access. GNOME Text Editor's adapter
+/// is loaded on every machine and its verbs are offered to nobody; until
+/// 2026-11-16 the fallback stepped aside for it anyway, so alo could neither
+/// read nor press anything in Text Editor at any setting.
+#[test]
+fn an_application_whose_adapter_nobody_is_offered_is_read_and_pressed() {
+    let mut windows = TheWindows::of(TEXT_EDITOR);
+    let counted = windows.counted.clone();
+    let ((read, pressed), record) = on_a_machine(
+        &mut windows,
+        |_| {},
+        |turning, grants| {
+            let at_full_access = grants.at_full_access_for(&Grantee::named(AGENT));
+            let read = reading(turning, &at_full_access, TEXT_EDITOR);
+            let pressed = proposing(turning, &at_full_access, TEXT_EDITOR)
+                .and_then(|id| turning.approving(id, &at_full_access, noon()));
+            (read, pressed)
+        },
+    );
+    let read = read.unwrap();
+    assert!(read.the_windows_showed().is_some(), "{read:?}");
+    let pressed = pressed.unwrap();
+    assert_eq!(
+        pressed.pressed().map(crate::AControlPressed::application),
+        Some(TEXT_EDITOR)
+    );
+    assert_eq!(counted.opened.get(), 2, "one read and one press");
+    assert_eq!(counted.presses.get(), 1);
+    assert_eq!(entries(&record), 2);
 }
