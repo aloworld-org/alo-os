@@ -327,3 +327,65 @@ fn a_name_the_machine_does_not_give_is_another_value() {
         })
     );
 }
+
+/// The typing step as the set writes it: the editor's entry named after the
+/// file, in a window titled after it, with the keyboard.
+fn typing_in_the_editor() -> Step {
+    Step::of(
+        alo_adapters::fallback_verbs::TYPE_TEXT,
+        Answered::TypedAndSaved,
+    )
+    .expecting(alo_adapters::fallback_verbs::APPLICATION, EDITOR)
+    .expecting_the_field(
+        alo_adapters::fallback_verbs::NAME,
+        alo_adapters::places_for_text::APlaceForText::as_shown(
+            "hello.txt",
+            "hello.txt - VSCodium",
+            true,
+        ),
+    )
+}
+
+fn typed_into(name: &str) -> Result<(), WentWrong> {
+    let line = proposing(
+        alo_adapters::fallback_verbs::TYPE_TEXT,
+        &[
+            (alo_adapters::fallback_verbs::APPLICATION, EDITOR),
+            (alo_adapters::fallback_verbs::NAME, name),
+            (alo_adapters::fallback_verbs::TEXT, "hello"),
+        ],
+    );
+    taking(
+        &typing_in_the_editor(),
+        3,
+        &read(&line),
+        &the_verbs(),
+        &the_machine(),
+        &the_words(),
+    )
+    .map(|_| ())
+}
+
+/// **The field named as the machine's typing takes it**: by its own name, or
+/// by the title of the window it has the keyboard in — the name the model
+/// read, which a booted machine types into (walk 43748155951, relayed).
+#[test]
+fn the_field_named_by_its_name_or_its_windows_title_takes_the_step() {
+    assert_eq!(typed_into("hello.txt"), Ok(()));
+    assert_eq!(typed_into("hello.txt - VSCodium"), Ok(()));
+}
+
+/// **A name the machine would not find is another value**, as the machine
+/// refuses it.
+#[test]
+fn a_field_the_machine_would_not_find_is_another_value() {
+    assert_eq!(
+        typed_into("Document"),
+        Err(WentWrong::AnotherValue {
+            step: 3,
+            argument: alo_adapters::fallback_verbs::NAME.to_owned(),
+            expected: "hello.txt".to_owned(),
+            given: "Document".to_owned(),
+        })
+    );
+}

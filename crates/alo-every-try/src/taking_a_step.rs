@@ -94,6 +94,21 @@ pub fn taking(
             });
         }
     }
+    for (argument, place) in step.fields() {
+        let given = call
+            .value(argument)
+            .map_or_else(|| "nothing".to_owned(), Value::describe);
+        // **As the machine finds a field**: by the rule typing uses, so the
+        // check takes every name the machine would type into, and no other.
+        if !alo_adapters::places_for_text::is_meant_by(place, &given) {
+            return Err(WentWrong::AnotherValue {
+                step: at,
+                argument: (*argument).to_owned(),
+                expected: place.name.clone(),
+                given,
+            });
+        }
+    }
     Ok(call)
 }
 
