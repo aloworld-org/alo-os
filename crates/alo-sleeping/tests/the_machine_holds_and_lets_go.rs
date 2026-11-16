@@ -88,9 +88,27 @@ fn a_hold_is_listed_while_held_and_gone_when_let_go() {
     };
     assert!(ours(&while_held), "{while_held:?}");
 
+    // **`logind` lets go when it notices the hold's descriptor closed, in its
+    // own time**, so the list is read again until the hold is gone or
+    // `LETTING_GO_TAKES_AT_MOST` has passed. Read once, straight after the
+    // drop, the hold was still listed on a gate runner (run 43774174724,
+    // attempt 1, 2026-11-15: this process's own `idle` hold, pid 67198). A
+    // hold that never goes still fails here, once the bound has passed.
     drop(held);
-    let Ok(after) = listed() else {
-        panic!("logind would not list its holds a second time");
+    let deadline = std::time::Instant::now() + LETTING_GO_TAKES_AT_MOST;
+    let after = loop {
+        let Ok(after) = listed() else {
+            panic!("logind would not list its holds a second time");
+        };
+        if !ours(&after) || std::time::Instant::now() >= deadline {
+            break after;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(20));
     };
     assert!(!ours(&after), "{after:?}");
 }
+
+/// How long `logind` is given to take a let-go hold off its list: far longer
+/// than it takes on a loaded runner, and short enough that a hold which is
+/// never let go fails the test in seconds rather than hanging it.
+const LETTING_GO_TAKES_AT_MOST: std::time::Duration = std::time::Duration::from_secs(5);
