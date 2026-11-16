@@ -49,10 +49,7 @@ fn handed(sheet: &TheApplicationSheet, dark: bool) -> AFrame {
 }
 
 /// The same, and where the sheet's raster was, shadow and all.
-fn handed_with_its_raster(
-    sheet: &TheApplicationSheet,
-    dark: bool,
-) -> (AFrame, Option<WhereItWas>) {
+fn handed_with_its_raster(sheet: &TheApplicationSheet, dark: bool) -> (AFrame, Option<WhereItWas>) {
     use crate::FrameTarget;
 
     let desktop = ADesktop::with(None);
