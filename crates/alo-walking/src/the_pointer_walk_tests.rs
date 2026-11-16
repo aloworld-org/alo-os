@@ -112,3 +112,25 @@ fn the_rows_are_counted_from_the_appearance_lists() {
     assert_eq!(rows::colour(PointerColour::Navy), 7);
     assert_eq!(rows::colour(PointerColour::White), 8);
 }
+
+/// **The address is typed only once Firefox has drawn its address bar holding
+/// the keyboard.** Run 43801984900 pressed Ctrl+L and typed at once; the first
+/// key went elsewhere, the bar read `ata:text/html,…`, and Firefox asked to
+/// open *the ata link with System Handler*. So the step after Ctrl+L is a look
+/// — which fails if the screen does not change — and the address is the step
+/// after that look.
+#[test]
+fn the_address_is_typed_after_the_address_bar_is_seen_to_take_the_keyboard() {
+    let steps = the_first_walk().steps().to_vec();
+    let address = steps.iter().position(|it| *it == Step::Type(the_page()));
+    assert!(address.is_some(), "the walk never types the page");
+    let address = address.unwrap_or_default();
+    let before: Vec<&Step> = steps.iter().take(address).rev().take(2).collect();
+    assert!(
+        matches!(
+            before.as_slice(),
+            [Step::Look { .. }, Step::Press(chord)] if *chord == keys::Chord::with("ctrl", "l")
+        ),
+        "the two steps before the address are {before:?}"
+    );
+}
