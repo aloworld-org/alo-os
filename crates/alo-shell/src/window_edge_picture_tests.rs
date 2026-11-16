@@ -323,3 +323,112 @@ fn a_band_out_over_full_screen_has_its_own_ground_over_the_window() {
     );
     assert!(!at_rest.behind().is_empty());
 }
+
+/// alo, operating a window it chose: the border alone, working.
+fn alo_operating() -> crate::alo_in_a_window::AloHere {
+    crate::alo_in_a_window::AloHere {
+        which: crate::the_tasks_a_person_opened::WhichTask::numbered(0),
+        how: crate::alo_in_a_window::HowAloIsHere::Working,
+        status: alo_tasks::words::ALO_IS_WORKING,
+        what: "Open hello.txt in VSCodium and type a line into it".to_owned(),
+        wears: crate::alo_in_a_window::Wears::TheBorder,
+    }
+}
+
+/// How many fully deep-teal pixels a picture's layers over the window hold.
+fn teal_over(picture: &EdgePicture) -> usize {
+    let teal = crate::window_menu_paint::rgb(alo_appearance::Role::AccentDefault);
+    picture
+        .over()
+        .iter()
+        .flat_map(|it| it.pixels.as_chunks::<4>().0)
+        .filter(|pixel| pixel[3] == 255 && pixel[..3] == teal)
+        .count()
+}
+
+/// **A window alo operates near the top of the screen still wears alo's
+/// border.** VSCodium on the walk of 2026-11-16 (run 43805568910) sat 30 below
+/// the top of a 1280 × 800 display, so its band — 54 tall, above it — would
+/// fall off the screen, and the whole picture was refused: the shell said alo
+/// was at work in the window, and nothing reached the screen. Asked here
+/// through the road the compositor takes for an application's window
+/// (`crate::every_windows_edge`: `edge_of`, then this), not of the border's
+/// painter alone, which is what let the earlier tests pass.
+#[test]
+fn a_window_alo_operates_near_the_top_still_wears_the_border() {
+    let output = (1280, 800);
+    let window = Rectangle::new(Point::from((16, 30)), Size::from((1136, 630)));
+    let edge = edge_of(
+        window,
+        Decorations::TheApplicationDraws(crate::window_edge::ItsOwnButtons::NOT_KNOWN),
+        false,
+        Size::from(output),
+    );
+    let here = alo_operating();
+    let picture = EdgePicture::of(
+        &edge,
+        OverTheEdge {
+            menu: None,
+            field: None,
+            showing: None,
+            alo: Some(crate::alos_band_in_a_window::AlosBand {
+                here: &here,
+                card: edge.region.merge(window),
+                window,
+                stop_pointed_at: false,
+            }),
+        },
+        TheWindow {
+            title: Some("hello.txt - VSCodium"),
+            application: Some("VSCodium"),
+            look: WhichLook::of(true),
+            body: Some(window),
+            laid_over: false,
+            controls: controls(0),
+        },
+        &mut fonts(),
+        output,
+        100,
+    )
+    .expect("the window alo operates was given no picture at all");
+    // The border round the window: its sides alone are thousands of pixels.
+    assert!(
+        teal_over(&picture) > 2 * (1136 + 630),
+        "no border was drawn: {} teal pixels",
+        teal_over(&picture)
+    );
+    // And every raster stays on the display.
+    let screen = Rectangle::<i32, smithay::utils::Physical>::from_size(output.into());
+    for raster in picture.over() {
+        let area = crate::painted::on_the_frame(raster.area);
+        assert_eq!(
+            screen.intersection(area),
+            Some(area),
+            "{area:?} is drawn off the display"
+        );
+    }
+}
+
+/// **A window alo is not in, whose band would fall off the display, is still
+/// not drawn** — the refusal stage 3 relies on is unchanged.
+#[test]
+fn a_band_off_the_display_with_no_alo_is_still_refused() {
+    let window = Rectangle::new(Point::from((16, 30)), Size::from((1136, 630)));
+    let edge = edge_of(
+        window,
+        Decorations::TheApplicationDraws(crate::window_edge::ItsOwnButtons::NOT_KNOWN),
+        false,
+        Size::from((1280, 800)),
+    );
+    assert!(
+        EdgePicture::of(
+            &edge,
+            OverTheEdge::default(),
+            notes(0),
+            &mut fonts(),
+            (1280, 800),
+            100
+        )
+        .is_none()
+    );
+}
