@@ -235,7 +235,7 @@ impl AChangeWaiting {
     /// They allowed the one action being asked about: the answer to send, and
     /// [`None`] when nothing was being asked.
     ///
-    /// **The agent's turn is kept** — [`Self::the_turn_it_held`] hands it to
+    /// **The agent's turn is kept** — `Self::the_turn_it_held` hands it to
     /// whatever carries the answer, which lets it go only after the daemon has
     /// carried the change out inside it.
     pub fn allow_once(&mut self, task: &mut ATask) -> Option<TheAnswerGiven> {
