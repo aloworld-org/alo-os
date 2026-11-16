@@ -2782,7 +2782,7 @@ fn every_pointer_choice_is_reached_and_chosen_from_the_keyboard() {
     );
 }
 
-/// **Where alo works in an application is a choice on Folders alo can use**
+/// **Where alo works in an application is a choice on What alo can use**
 /// (ADR 0143 Q6, the owner's answer A of 2026-11-10): alo's own copy, chosen
 /// as a machine arrives and tagged *Default*; the person's own window, with
 /// what it costs said in ADR 0143's words — and the refusal for an

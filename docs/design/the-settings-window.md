@@ -430,6 +430,26 @@ take to the design or the owner:**
    Enter on a row is the choice and Escape is the cancel, as the folder
    picker already does.
 
+**The page's words, changed by the owner — a departure from the design's
+words.** Shown pictures of this page drawn through the compositor's renderer,
+the owner answered on 2026-11-16, relayed by the coordinator: ***"Fix wording,
+then merge"***:
+
+- the page and its entry in the side column are **What alo can use**, not
+  *Folders alo can use* (`550:741` draws the latter);
+- the line under the heading is *alo can use only the folders and
+  applications you give it. Each one stays on this list until it ends or you
+  take it back.*;
+- an application's row in *Given to alo* is **its name only**, with no
+  identifier under it; a folder's row still says where the folder is;
+- the note under the list is *Taking a folder or an application back stops it
+  at once: …*.
+
+Each changed sentence has a new key (ADR 0068), and so do the two refusals
+that name the page (*… in Settings → What alo can use*). The internal name
+`SettingsCategory::FoldersAloCanUse` was kept, because it is not words a
+person reads.
+
 ## What is drawn and not built
 
 The design draws choices this computer does not have yet. **They are drawn as

@@ -201,6 +201,40 @@ fn a_person_gives_alo_one_application_and_only_that_one_is_reached() {
         .map(|row| row.title.as_str())
         .collect();
     assert!(titles.contains(&"Firefox"), "{titles:?}");
+    // **The name only, with no identifier** — the owner, 2026-11-16.
+    let firefox_lines: Vec<&String> = page
+        .blocks
+        .iter()
+        .flat_map(|block| match block {
+            ABlock::Section(section) => section.rows.iter().collect(),
+            _ => Vec::new(),
+        })
+        .filter(|row| row.title == "Firefox")
+        .flat_map(|row| row.lines.iter())
+        .collect();
+    assert!(firefox_lines.is_empty(), "{firefox_lines:?}");
+    // **The page's words cover folders and applications**: its name, the line
+    // under it, and the note under the list.
+    assert_eq!(page.heading, "What alo can use");
+    assert_eq!(
+        page.introduction,
+        "alo can use only the folders and applications you give it. Each one stays on this \
+         list until it ends or you take it back."
+    );
+    let footnotes: Vec<&str> = page
+        .blocks
+        .iter()
+        .filter_map(|block| match block {
+            ABlock::Section(section) => section.footnote.as_deref(),
+            _ => None,
+        })
+        .collect();
+    assert!(
+        footnotes
+            .iter()
+            .any(|it| it.starts_with("Taking a folder or an application back stops it at once")),
+        "{footnotes:?}"
+    );
     let take_back: Vec<&str> = page
         .blocks
         .iter()

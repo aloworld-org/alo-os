@@ -1,4 +1,4 @@
-//! The Folders alo can use page — frame `550:741`: the folders given to alo,
+//! The What alo can use page — frame `550:741`: the folders given to alo,
 //! each with *Take back*; the button that gives it another; the record of what
 //! it did; and the computers paired with this one.
 //!
@@ -107,7 +107,13 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings, now: SystemTime) -> Vec
                 // **A folder's icon on a folder**: the set has none for an
                 // application, so an application's row has no lead.
                 drawn.lead = over.as_path().map(|_| ASettingsIcon::Folder);
-                drawn.lines.push(over.said(strings).into_text());
+                // **A folder's line says where it is; an application is its
+                // name alone** — the owner's "Fix wording, then merge" of
+                // 2026-11-16: *the application row shows the name only, with
+                // no identifier*.
+                if !matches!(over, Reach::Application(_)) {
+                    drawn.lines.push(over.said(strings).into_text());
+                }
                 if seen.lasts().is_until_removed() {
                     let mut note = ANote::said(
                         as_a_name(

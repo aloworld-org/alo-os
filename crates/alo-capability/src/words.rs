@@ -912,11 +912,11 @@ pub const WHAT_WORKING_IN_YOUR_WINDOW_COSTS: Word = Word::saying(
 /// that lets alo work in the person's own window instead, by its exact name and
 /// page.
 pub const NO_COPY_OF_ITS_OWN: Word = Word::saying(
-    "capability.in-applications.no-copy-of-its-own",
-    "alo cannot work in {application} safely at this setting, because it cannot open a separate copy of its own for alo. To let alo work in your own window instead, choose “alo may work in your own window” in Settings → Folders alo can use",
+    "capability.in-applications.no-copy-of-its-own.what-alo-can-use",
+    "alo cannot work in {application} safely at this setting, because it cannot open a separate copy of its own for alo. To let alo work in your own window instead, choose “alo may work in your own window” in Settings → What alo can use",
 )
 .noting(
-    "Told to the person when they asked alo to do something inside an application. {application} is the application's name, such as Text Editor. alo works in a separate copy of an application so that what it sends can be counted; this one cannot start such a copy, so alo did nothing in it. The words in quotation marks are the name of a choice in Settings, and \"Folders alo can use\" is the name of the Settings page it is on: use exactly the translations those have there.",
+    "Told to the person when they asked alo to do something inside an application. {application} is the application's name, such as Text Editor. alo works in a separate copy of an application so that what it sends can be counted; this one cannot start such a copy, so alo did nothing in it. The words in quotation marks are the name of a choice in Settings, and \"What alo can use\" is the name of the Settings page it is on: use exactly the translations those have there. A new key on 2026-11-16, when the page was renamed from Folders alo can use.",
 );
 
 /// Printed in the terminal after alo did what was asked without waiting for

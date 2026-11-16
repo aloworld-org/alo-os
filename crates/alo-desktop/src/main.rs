@@ -1644,7 +1644,7 @@ mod running {
             if !asked.is_empty() {
                 let installed = alo_installed::read(&self.entries);
                 // **Where the person lets alo work, read from their own file
-                // for these asks** (Settings → Folders alo can use). A file
+                // for these asks** (Settings → What alo can use). A file
                 // that will not read is alo's own copy, the answer that
                 // watches nothing of theirs.
                 let chosen = alo_remembering::alo_in_applications_remembered(std::path::Path::new(
