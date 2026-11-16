@@ -168,11 +168,7 @@ fn granting(identifier: &str) -> Grants {
     grants
 }
 
-fn named_at(
-    grants: &Grants,
-    now: SystemTime,
-    said: &str,
-) -> Vec<(&'static str, Given)> {
+fn named_at(grants: &Grants, now: SystemTime, said: &str) -> Vec<(&'static str, Given)> {
     let installed = Installed::holding([
         Application::called(EDITOR, "VSCodium").unwrap(),
         Application::called(FIREFOX, "Firefox").unwrap(),
@@ -180,7 +176,15 @@ fn named_at(
         Application::called("org.kde.kwrite", "Text Editor").unwrap(),
     ]);
     let given = [(APPLICATION, Given::text(said))];
-    as_this_machine_names_them(&verbs(), &installed, grants, &agent(), OPEN_APPLICATION, &given, now)
+    as_this_machine_names_them(
+        &verbs(),
+        &installed,
+        grants,
+        &agent(),
+        OPEN_APPLICATION,
+        &given,
+        now,
+    )
 }
 
 /// **A grant names the one it grants**: VSCodium granted, its name is its
@@ -215,7 +219,11 @@ fn a_name_whose_grant_has_expired_is_left_as_it_was_sent() {
 fn a_shared_name_names_neither_even_where_only_one_is_granted() {
     let a_minute_in = noon() + Duration::from_secs(60);
     assert_eq!(
-        named_at(&granting("org.gnome.TextEditor"), a_minute_in, "Text Editor"),
+        named_at(
+            &granting("org.gnome.TextEditor"),
+            a_minute_in,
+            "Text Editor"
+        ),
         [(APPLICATION, Given::text("Text Editor"))]
     );
 }

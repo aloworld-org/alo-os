@@ -10,3 +10,11 @@
 # which prints what this file should hold and fails when it holds anything
 # else. It never writes this file: a person copies what it printed.
 #
+org.mozilla.firefox	Firefox
+org.kde.dolphin	Dolphin
+org.kde.ark	Ark
+org.gnome.TextEditor	Text Editor
+org.gnome.Loupe	Image Viewer
+org.gnome.Papers	Document Viewer
+app.devsuite.Ptyxis	Ptyxis
+com.vscodium.codium	VSCodium
