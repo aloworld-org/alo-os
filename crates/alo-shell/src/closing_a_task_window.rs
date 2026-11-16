@@ -94,6 +94,10 @@ impl Server {
             return WhatClosingCameTo::NothingToClose;
         }
         self.the_keyboard_leaves_a_window_that_went(which);
+        // **And a sheet it asked for an application on comes down**, granting
+        // nothing: the task has ended (`crate::the_application_sheet`).
+        self.application_sheet
+            .the_task_ended(which, std::time::Instant::now());
         WhatClosingCameTo::Closed
     }
 }

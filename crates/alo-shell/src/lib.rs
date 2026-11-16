@@ -95,6 +95,7 @@ pub mod a_key_fills_in_a_provider;
 pub mod a_key_reaches_a_task_window;
 mod a_key_reaches_a_windows_band;
 mod a_key_reaches_settings;
+mod a_key_reaches_the_application_sheet;
 mod a_key_reaches_the_bar;
 mod a_key_reaches_the_docks_surfaces;
 mod a_key_reaches_the_github_sheet;
@@ -304,6 +305,13 @@ mod dock_tooltip;
 /// How a rounded panel is lifted off what is behind it — its corner and its
 /// shadow — at the display scale its geometry is laid out in.
 mod how_a_panel_is_raised;
+/// The sheet alo OS draws when alo asks for an application nobody has given
+/// it (`docs/design/when-alo-asks-for-an-application.md`).
+mod the_application_sheet;
+mod the_application_sheet_as_read;
+mod the_application_sheet_drawn;
+mod the_application_sheet_on_the_server;
+mod the_application_sheets_words;
 /// A full-screen window's band, out of sight until the top edge is reached.
 mod the_band_over_full_screen;
 mod the_buttons_an_application_draws;
@@ -1026,6 +1034,7 @@ pub use booting::{
     AMachineToStandOn, Stood, WouldNotStand, stand_the_sign_in_screen_up, what_this_machine_can_say,
 };
 pub use capture_flatten::{NotFlattened, burnt_in};
+pub use the_application_sheet::{HowLongForAnApplication, OnTheApplicationSheet};
 pub use the_github_sheet::OnTheGitHubSheet;
 // `DesktopFrame::capturing` is a public field of this type, so without these a
 // caller outside this crate could only ever pass `None` — the capture tools were

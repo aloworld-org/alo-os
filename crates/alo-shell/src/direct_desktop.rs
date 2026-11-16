@@ -978,6 +978,8 @@ impl crate::DirectSession {
                                 crate::a_key_reaches_the_open_with_sheet::WhereTheSheetIs::default(),
                             github_sheet_drawn:
                                 crate::a_key_reaches_the_github_sheet::WhereTheGitHubSheetIs::default(),
+                            application_sheet_drawn:
+                                crate::a_key_reaches_the_application_sheet::WhereTheApplicationSheetIs::default(),
                         }
                     },
                 ),
@@ -1121,6 +1123,11 @@ struct TheDesktopLane<'a> {
     /// The sheet itself is the server's (`crate::the_github_sheet`), because
     /// what GitHub answered reaches the server.
     github_sheet_drawn: crate::a_key_reaches_the_github_sheet::WhereTheGitHubSheetIs,
+    /// Where the sheet alo asks for an application on was last drawn, for a
+    /// press to land on. The sheet itself is the server's
+    /// (`crate::the_application_sheet`), because what a turn wanted reaches the
+    /// server.
+    application_sheet_drawn: crate::a_key_reaches_the_application_sheet::WhereTheApplicationSheetIs,
 }
 
 /// **Where this person's home and standard folders are, read now**, as the
@@ -1201,6 +1208,7 @@ impl LoopInput for TheDesktopLane<'_> {
         let open_with = &mut self.open_with;
         let open_with_drawn = &self.open_with_drawn;
         let github_sheet_drawn = &self.github_sheet_drawn;
+        let application_sheet_drawn = &self.application_sheet_drawn;
         self.input.owner.dispatch(
             || poll().map_err(std::io::Error::other),
             |update| {
@@ -1234,6 +1242,17 @@ impl LoopInput for TheDesktopLane<'_> {
                         server,
                         open_with,
                         open_with_drawn,
+                        update,
+                        extent,
+                    )
+                }
+                // **Then the sheet alo asks for an application on**, which a
+                // task's turn is waiting on: every key and press is its while
+                // it is up, so nothing typed reaches the window behind it.
+                else if server.application_sheet.is_up() {
+                    crate::a_key_reaches_the_application_sheet::a_key_reaches_the_application_sheet(
+                        server,
+                        application_sheet_drawn,
                         update,
                         extent,
                     )
@@ -1492,6 +1511,9 @@ impl LoopInput for TheDesktopLane<'_> {
         self.open_with
             .asked(choosing, true, std::time::Instant::now());
         self.open_with.waited(std::time::Instant::now());
+        // **And a sheet asking for an application that nobody answered in five
+        // minutes** is *not now*, so a turn is never held for ever.
+        server.the_application_sheet_waited(std::time::Instant::now());
         for not_started in server.start_what_was_asked_for_now() {
             // **Said rather than dropped**, the same rule the edge's menu
             // follows two blocks up: a press that reached here and vanished is
@@ -1619,7 +1641,9 @@ impl LoopInput for TheDesktopLane<'_> {
         if self.desktop.a_command_needed_a_github_sign_in() {
             server.a_command_needed_a_github_sign_in(heard_at);
         }
-        let another_sheet_is_up = self.password_sheet.is_up() || self.open_with.is_up();
+        let another_sheet_is_up = self.password_sheet.is_up()
+            || self.open_with.is_up()
+            || server.application_sheet.is_up();
         server.a_wanted_github_sign_in_goes_up(another_sheet_is_up, heard_at);
         for asked in server.the_github_asks_to_tell() {
             self.desktop.github_is_asked(asked);
@@ -2477,6 +2501,43 @@ impl LoopInput for TheDesktopLane<'_> {
                 buttons: drawn.buttons.clone(),
             },
         );
+        // **The sheet alo asks for an application on, while a task's turn
+        // wants one** (`docs/design/when-alo-asks-for-an-application.md`). One
+        // this display cannot hold is *not now*, never a grant, rather than
+        // hold every key with nothing on the screen.
+        let application_sheet_drawn = server.application_sheet.shows().map(|shows| {
+            crate::the_application_sheet_drawn::drawn(
+                shows,
+                self.strings,
+                self.labels,
+                (size.w, size.h),
+                crate::SettingsLook {
+                    scheme: frame.look.scheme(),
+                    scale: frame.look.scale(),
+                    reading: frame.look.reading(),
+                    contrast: frame.look.contrast(),
+                    accent: frame.look.accent(),
+                },
+                crate::display_scale::DisplayScale::of_per_cent(frame.display_scale),
+            )
+        });
+        let the_application_sheet = match application_sheet_drawn {
+            Some(Ok(drawn)) => Some(drawn),
+            Some(Err(why)) => {
+                eprintln!(
+                    "alo-shell: the sheet asking for an application could not be drawn on                      {named:?}, so it is answered not now: {why}"
+                );
+                server.the_application_sheet_could_not_be_drawn();
+                None
+            }
+            None => None,
+        };
+        self.application_sheet_drawn = the_application_sheet.as_ref().map_or_else(
+            crate::a_key_reaches_the_application_sheet::WhereTheApplicationSheetIs::default,
+            |drawn| crate::a_key_reaches_the_application_sheet::WhereTheApplicationSheetIs {
+                targets: drawn.targets.clone(),
+            },
+        );
         // **A question that could not be drawn is left out of this frame, not
         // the desktop** — see `crate::a_surface_that_cannot_draw`.
         if let Some(why) = &pictures.approval_refused {
@@ -3138,6 +3199,8 @@ impl LoopInput for TheDesktopLane<'_> {
                 open_with: the_open_with_sheet.as_ref(),
                 // **And the GitHub sign-in sheet**, below it, while one is up.
                 github_sheet: the_github_sheet.as_ref().map(|drawn| &drawn.washed),
+                // **And the sheet alo asks for an application on**, above it.
+                application_sheet: the_application_sheet.as_ref().map(|drawn| &drawn.washed),
                 // **Only on the display being worked on**, whose camera the
                 // window was drawn through when it was put aside.
                 travelling_aside: &travelling_aside,
@@ -3238,6 +3301,7 @@ impl LoopInput for TheDesktopLane<'_> {
                     &alo_access::TurnedOn::nothing(),
                 )
                 .with_the_github_sheet(self.strings, server.github_sheet.shows())
+                .with_the_application_sheet(self.strings, server.application_sheet.shows())
                 .with_the_open_with_sheet(self.strings, self.open_with.shows(), &called)
                 .with_the_password_sheet(self.strings, self.password_sheet.shows());
             let _ = reader.following(&tree);

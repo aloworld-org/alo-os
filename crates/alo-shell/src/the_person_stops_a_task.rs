@@ -51,6 +51,10 @@ impl crate::Server {
             None
         };
         self.stops.push(AStop { which, held_turn });
+        // **And a sheet it asked for an application on comes down**, granting
+        // nothing: a stopped task has ended (`crate::the_application_sheet`).
+        self.application_sheet
+            .the_task_ended(which, std::time::Instant::now());
         true
     }
 

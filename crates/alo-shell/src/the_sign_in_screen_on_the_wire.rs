@@ -333,6 +333,7 @@ fn the_tree_written(tree: &ReadAloudTree) -> String {
         TheSheet::Password(_)
         | TheSheet::OpenWith(_)
         | TheSheet::GitHub(_)
+        | TheSheet::Application(_)
         | TheSheet::Settings => None,
     });
     let mut line = format!(

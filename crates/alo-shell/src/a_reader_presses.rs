@@ -38,6 +38,10 @@ pub enum WhatAReaderPressCameTo {
     TheGitHubSheetDidIt,
     /// Nothing: that sheet is no longer up, or does not draw that button now.
     NothingOnTheGitHubSheet,
+    /// The sheet alo asks for an application on did what a click there does.
+    TheApplicationSheetDidIt,
+    /// Nothing: that sheet is no longer up.
+    NothingOnTheApplicationSheet,
     /// Settings did what a click on that does: the page was shown, or the
     /// keyboard went to the row and it is carried out as Enter is.
     SettingsDidIt,
@@ -66,6 +70,16 @@ impl Server {
                     WhatAReaderPressCameTo::TheGitHubSheetDidIt
                 } else {
                     WhatAReaderPressCameTo::NothingOnTheGitHubSheet
+                }
+            }
+            // **The sheet alo asks for an application on is the server's**,
+            // so a press on it is answered here, held to the sheet it was
+            // heard on.
+            Pressed::OnTheApplicationSheet { sheet, on } => {
+                if self.a_reader_pressed_on_the_application_sheet(sheet, on) {
+                    WhatAReaderPressCameTo::TheApplicationSheetDidIt
+                } else {
+                    WhatAReaderPressCameTo::NothingOnTheApplicationSheet
                 }
             }
             Pressed::InSettings(what) => self.a_reader_pressed_in_settings(&what),

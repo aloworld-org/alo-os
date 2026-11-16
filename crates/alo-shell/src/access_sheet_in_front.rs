@@ -22,6 +22,9 @@ pub(crate) enum TheSheet {
     /// The GitHub sign-in sheet, the one with this number
     /// (`crate::the_github_sheet`).
     GitHub(u64),
+    /// The sheet alo asks for an application on, the one with this number
+    /// (`crate::the_application_sheet`).
+    Application(u64),
     /// Settings, while it is the window in front and takes the keys
     /// (`crate::settings_as_read`). It needs no number: it is one window, and
     /// closing it takes it off the tree, so opening it again is heard as new.
