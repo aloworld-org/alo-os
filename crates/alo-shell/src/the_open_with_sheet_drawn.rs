@@ -306,7 +306,10 @@ pub(crate) fn drawn(
     texts.extend([cancel_words, open_words]);
     Ok(OpenWithPicture {
         size,
-        washed: canvas.washed(),
+        // **Premultiplied for the renderer** (`crate::painted::Washed`), as
+        // Settings' raster is: straight alpha blended as premultiplied drew the
+        // shadow's whole area as a pale box (`the_sheets_shadow_drawn_tests`).
+        washed: canvas.washed().premultiplied(),
         rows: row_areas.into_iter().map(at).collect(),
         cancel,
         open,
