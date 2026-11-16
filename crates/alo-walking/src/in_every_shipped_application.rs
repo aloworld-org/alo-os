@@ -171,6 +171,14 @@ fn asking(walk: Walk, picture: &str, ask: &str) -> Walk {
 /// Then walk every shipped application, at full access.
 #[must_use]
 pub fn at_full_access(walk: Walk) -> Walk {
+    // **Only this section needs the hand-run choice**: without it, the walk
+    // goes on to the sections after it, which every walk after a merge runs.
+    walk.section_only_with(EVERY_APPLICATION, every_application)
+}
+
+/// The section itself: every application a fresh machine ships, at full
+/// access.
+fn every_application(walk: Walk) -> Walk {
     let look = Settling::UNDER_KVM;
     let minutes = |it: u64| Duration::from_secs(it * 60);
     let terminal = Chord::holding(&["ctrl", "alt"], "t");
@@ -178,7 +186,6 @@ pub fn at_full_access(walk: Walk) -> Walk {
     let [editor, dolphin, loupe, ark, papers, firefox] = the_asks();
 
     let walk = walk
-        .only_with(EVERY_APPLICATION)
         .press(Chord::key("esc"))
         .press(terminal.clone())
         .look("every-app-the-terminal", look.at_most(minutes(1)))
