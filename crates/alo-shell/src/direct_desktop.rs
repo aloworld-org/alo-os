@@ -183,6 +183,21 @@ pub trait TheDesktop {
         }
     }
 
+    /// **What alo's work is sending now**, by application, as the egress
+    /// indicator says it — read once a frame for the border of the window alo
+    /// works in (`crate::alos_band_in_a_window`). **Nothing by default**: a
+    /// desktop that holds no work has nothing sending.
+    fn what_alos_work_is_sending(&self) -> Vec<(String, alo_egress::HowItIsShown)> {
+        Vec::new()
+    }
+
+    /// **The applications whose window wears alo's border this frame**, told
+    /// before [`Self::refreshed`] shows the indicator: the corner leaves each
+    /// one's copy to its border, which thickens while it sends (the owner,
+    /// 2026-11-15: *the border is enough*). **Ignored by default**, so a
+    /// desktop that is not told keeps every copy in the corner.
+    fn these_applications_wear_alos_border(&mut self, _applications: Vec<String>) {}
+
     /// **What an application sends while alo works in it**, once a frame: the
     /// work asked for at the door since the last frame, and a look at all of
     /// it (ADR 0143 Q6). `crate::alo_at_work` is what it answers with.
@@ -1463,6 +1478,10 @@ impl LoopInput for TheDesktopLane<'_> {
                 server.alo_opened_a_file_in(&opened, now);
             }
         }
+        // **And what alo's work is sending, for the border of the window it
+        // works in**, read after both roads that start the counting
+        // (`crate::alos_band_in_a_window`).
+        server.what_alos_work_is_sending(self.desktop.what_alos_work_is_sending());
         // **And the window alo opened a file in comes in front once it is
         // there**, the one alo may type into, with the keyboard — rule 8's
         // *authorised interaction that calls for it*.
@@ -1641,6 +1660,11 @@ impl LoopInput for TheDesktopLane<'_> {
         for told in self.desktop.passwords_asked() {
             self.password_sheet.told(told);
         }
+        // **Which copies' sending the border says, so the corner does not** —
+        // the borders the last frame drew round windows alo is still acting in
+        // (`crate::the_window_alo_acts_in`). Told before the indicator is shown.
+        self.desktop
+            .these_applications_wear_alos_border(server.the_applications_wearing_alos_border());
         // Asked before the frame is made, never after: a frame drawn from
         // readings taken after it would show a person the moment before.
         self.desktop.refreshed();
@@ -1921,6 +1945,23 @@ impl LoopInput for TheDesktopLane<'_> {
                 Err(why) => server.market.it_was_refused(&what.identifier, why),
             }
         }
+        // **And whatever the daemon said to the person's answers** since the
+        // last frame, carried off this loop so a change the daemon carries out
+        // by asking this shell's door can be served
+        // (`crate::an_answer_goes_off_the_frame`). Drained before what the
+        // agent said, so the person reads what their answer did first.
+        for mut did in server.the_answers.whatever_they_did() {
+            let goes_on = did.goes_on.take();
+            server.an_answer_came_back_from_the_daemon(&did, goes_on.is_some(), self.strings);
+            // **And what the agent says next is heard on its turn**, arriving
+            // below like any answer — another change on its own card, or words.
+            if let Some(the_turn) = goes_on {
+                self.asking.hear_the_rest(
+                    crate::what_a_person_asked_goes_to_the_agent::WhoAsked::ATaskWindow(did.which),
+                    the_turn,
+                );
+            }
+        }
         // **And whatever has come back since the last frame**, which is why
         // asking could return at once. Drained rather than read, so one answer
         // reaches one window once.
@@ -1938,6 +1979,7 @@ impl LoopInput for TheDesktopLane<'_> {
                         .settings_places
                         .as_ref()
                         .map(|places| alo_changing::TheDaemonsDoor::at(places.daemon()));
+                    let goes_on = came.the_turn_goes_on;
                     server.an_answer_came_back(
                         which,
                         came.said,
@@ -1948,6 +1990,11 @@ impl LoopInput for TheDesktopLane<'_> {
                             .map(|door| door as &dyn alo_changing::Answering),
                         self.strings,
                     );
+                    if goes_on {
+                        server
+                            .the_change_waiting
+                            .and_its_turn_goes_on_after_the_answer();
+                    }
                     // A Stop pressed as this answer was already on its way:
                     // the agent has gone, so the work has stopped.
                     if server
@@ -2034,6 +2081,11 @@ impl LoopInput for TheDesktopLane<'_> {
         )
         .with_the_closing_question(server.closing_asked, self.strings)
         .with_what_the_change_does(server.the_change_waiting.does())
+        .with_the_text_alo_will_type(
+            server.the_change_waiting.texts(),
+            server.the_change_waiting.first_line_shown(),
+            self.strings,
+        )
         .with_what_the_change_touches(
             server.the_change_waiting.touches(),
             server

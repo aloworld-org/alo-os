@@ -352,10 +352,10 @@ Like a count, it holds its connection for as long as alo works:
   only over the session bus — so alo may not work in it at this setting, and the
   turn names the Settings choice that lets it use the person's own window, in
   `alo_capability::words::NO_COPY_OF_ITS_OWN`: *choose “alo may work in your
-  own window” in Settings → Folders alo can use*.
+  own window” in Settings → What alo can use*.
 - **Which setting it is, is the person's** (added 2026-11-10, additively):
   `in-applications` in `/var/lib/alo/how-code-runs.toml`
-  (`how-code-runs-file.md`), chosen on Settings → Folders alo can use and read
+  (`how-code-runs-file.md`), chosen on Settings → What alo can use and read
   by the desktop at each ask — never taken from the word alo sent. **At the
   default** (`in-alos-copy`, or no answer, or a file that will not read),
   `work-in-their-window` is answered `not-chosen` and nothing is started,

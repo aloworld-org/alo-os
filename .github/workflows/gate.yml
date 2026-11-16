@@ -163,10 +163,20 @@ jobs:
   gate:
     runs-on: ubuntu-24.04
     # A cold build of this workspace is tens of minutes; a warm one is minutes.
-    # This is above the cold figure and well under the queue's own sixty-minute
-    # timeout, so a genuinely stuck run is killed before the queue gives up on
-    # it rather than after.
-    timeout-minutes: 45
+    # This is above the cold figure and under the queue's own eighty-minute
+    # timeout (ruleset 24109151), so a genuinely stuck run is killed before the
+    # queue gives up on it rather than after.
+    #
+    # **Sixty since 2026-11-16, by the owner's decision** ("Yes, raise it to
+    # 60"). Measured that day on job 133114093011 (#1307's queue build, run
+    # 43858718399 attempt 1): the two downloads took 0.6 minutes each and *the
+    # nine gates* step 42.5, cut off at 45 with every gate it reached passed;
+    # #1320's gate the same day spent 30 minutes in the workspace's tests
+    # alone. The suite had grown to 14,415 tests, so the limit was binding on
+    # the work and not on the network the note below was written about. The
+    # downloads keep their own eight-minute clocks, so a slow fetch still fails
+    # there, by name, and cannot hide inside this hour.
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
@@ -255,8 +265,10 @@ jobs:
       # `#947` are each a control — the same commit measured twice, 45 minutes
       # and cancelled, then 23.6 and 16.1 minutes and green, with no change.
       #
-      # **Raising `timeout-minutes: 45` was tried in draft and rejected.** A
-      # normal gate finishes in 17–24 minutes; the limit is not what binds. A
+      # **Raising `timeout-minutes: 45` was tried in draft and rejected** on
+      # 2026-10-23, and raised to 60 on 2026-11-16 once the suite itself
+      # outgrew it (see the job's own note above). Then, a normal gate
+      # finished in 17–24 minutes and the limit was not what bound. A
       # larger one would let the gate pass having spent half its time fetching,
       # and the next reader would take that figure for the cost of the suite.
       #

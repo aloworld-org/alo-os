@@ -6,7 +6,7 @@ use alo_capability::Verbs;
 use alo_strings::Strings;
 
 use crate::a_road::ARequest;
-use crate::a_try::{TheModel, Tried, Went, one_try};
+use crate::a_try::{TheLevel, TheModel, Tried, Went, one_try_at};
 use crate::the_set::TheSet;
 
 /// One request and every try of it.
@@ -86,12 +86,33 @@ pub fn tallying(
     model: &mut dyn TheModel,
     told: &mut dyn FnMut(&ARequest, usize, &Tried),
 ) -> Vec<Tallied> {
+    tallying_at(
+        TheLevel::FullAccess,
+        set,
+        tries,
+        verbs,
+        strings,
+        model,
+        told,
+    )
+}
+
+/// [`tallying`] at a level (`crate::a_try::TheLevel`).
+pub fn tallying_at(
+    level: TheLevel,
+    set: &TheSet,
+    tries: usize,
+    verbs: &Verbs,
+    strings: &Strings,
+    model: &mut dyn TheModel,
+    told: &mut dyn FnMut(&ARequest, usize, &Tried),
+) -> Vec<Tallied> {
     set.requests()
         .iter()
         .map(|request| {
             let tried = (1..=tries)
                 .map(|number| {
-                    let tried = one_try(request, set.may_reach(), verbs, strings, model);
+                    let tried = one_try_at(level, request, set.may_reach(), verbs, strings, model);
                     told(request, number, &tried);
                     tried
                 })

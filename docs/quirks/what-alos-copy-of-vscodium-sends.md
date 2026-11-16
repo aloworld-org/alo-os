@@ -9,6 +9,11 @@
   with a fresh profile set as alo's copy is, every connection it made sent
   through a logging proxy (`ss` showed no other peer), for 60 seconds, then
   started again on the same profile. Nothing runs this again.
+- **Where that line is shown now.** Since the owner's ruling of 2026-11-15 —
+  *"We remove this and the sending, the border is enough"*, *"Border only, it
+  thickens"* — the corner no longer shows this line while VSCodium's window
+  wears alo's border; the border thickens instead. Where no border is drawn,
+  the corner still shows it (`docs/design/the-window-controls.md`).
 
 ## What it sends
 
@@ -29,9 +34,19 @@ and these keep it so if a later build adds an address. Measured with them on,
 the two rows above were unchanged.
 
 **The two rows above are left on**, because turning either off costs the
-person something, which is the owner's to decide:
+person something:
 
 - the extension list: VSCodium would stop warning about a known-malicious
   extension installed in alo's copy;
 - the dictionary: there is no setting for it; it would need a dictionary
   shipped with alo OS or the spell checker's address changed.
+
+## Decided
+
+**The Open VSX safety list stays on** — the owner, 2026-11-15. alo's copy
+leaves `extensions.excludeUnsafes` unset, so VSCodium keeps fetching the list
+of malicious and deprecated extensions from GitHub on every start, and keeps
+warning about a known-bad extension installed in alo's copy. The indicator
+therefore shows alo's copy sending on every start, which is correct: it is.
+
+The dictionary row has no decision yet.

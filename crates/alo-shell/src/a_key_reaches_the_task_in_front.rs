@@ -54,18 +54,11 @@ pub(crate) fn a_key_reaches_the_task(
     else {
         return server.libinput_update(InputUpdate::Event(event), extent);
     };
-    let daemon = server
-        .settings_places
-        .as_ref()
-        .map(|places| alo_changing::TheDaemonsDoor::at(places.daemon()));
-    the_key_the_task_took(
-        server,
-        key,
-        daemon
-            .as_ref()
-            .map(|door| door as &dyn alo_changing::Answering),
-        strings,
-    )
+    let daemon = server.settings_places.as_ref().map(|places| {
+        std::sync::Arc::new(alo_changing::TheDaemonsDoor::at(places.daemon()))
+            as crate::an_answer_goes_off_the_frame::TheirDaemon
+    });
+    the_key_the_task_took(server, key, daemon, strings)
 }
 
 /// One key, from the evdev code inward.
@@ -79,7 +72,7 @@ pub(crate) fn a_key_reaches_the_task(
 pub(crate) fn the_key_the_task_took(
     server: &mut Server,
     key: crate::DirectKeyEvent,
-    daemon: Option<&dyn alo_changing::Answering>,
+    daemon: Option<crate::an_answer_goes_off_the_frame::TheirDaemon>,
     strings: &alo_strings::Strings,
 ) -> Result<(), InputError> {
     let Some(which) = server.the_task_with_the_keyboard else {
@@ -104,7 +97,7 @@ impl Server {
         which: WhichTask,
         typed: ComposerKey,
         answering: ApprovalKey,
-        daemon: Option<&dyn alo_changing::Answering>,
+        daemon: Option<crate::an_answer_goes_off_the_frame::TheirDaemon>,
         strings: &alo_strings::Strings,
     ) {
         // **The question about closing comes first** while it is asked: it is
@@ -123,6 +116,12 @@ impl Server {
             && match answering {
                 ApprovalKey::NextAnswer | ApprovalKey::PreviousAnswer => true,
                 ApprovalKey::Choose | ApprovalKey::Decline => something_is_selected,
+                // **The text the change would type is the card's to scroll**:
+                // the reply box has no use for Up and Down.
+                ApprovalKey::EarlierLines
+                | ApprovalKey::LaterLines
+                | ApprovalKey::AnEarlierPage
+                | ApprovalKey::ALaterPage => !self.the_change_waiting.texts().is_empty(),
                 ApprovalKey::Nothing => false,
             };
         if for_the_card && let Some(daemon) = daemon {
@@ -130,19 +129,17 @@ impl Server {
             // question and the task are different parts of the server.
             if let Some(task) = self.the_tasks.the_mut(which)
                 && let crate::a_change_waiting_reaches_the_person::WhatThePressDid::ItWasAnswered(
-                    answered,
-                ) = self.the_change_waiting.pressed(answering, task, daemon)
+                    given,
+                ) = self.the_change_waiting.pressed(answering, task)
             {
-                // **The person is told what their answer did**, which nothing
-                // did until 2026-10-26 — `crate::what_an_answer_did` says why.
-                // It is also what moves the task off *waiting for your
-                // permission*: the conversation no longer ends on a question.
-                task.alo_says(alo_tasks::Turn::from_alo(
-                    crate::what_an_answer_did::what_an_answer_did(answered.as_ref(), strings),
-                ));
+                // **Carried off this loop**, with the agent's turn, and told to
+                // the person when the daemon answers — and a reply held for it
+                // goes then (`crate::an_answer_goes_off_the_frame`).
+                let goes_on = self.the_change_waiting.the_turn_goes_on();
+                let the_turn = self.the_change_waiting.the_turn_it_held();
+                self.the_answers
+                    .carry(which, given, the_turn, goes_on, daemon);
             }
-            // **A reply held for this answer goes now** (ADR 0138).
-            self.send_what_was_held(which, strings);
             return;
         }
         // **Escape on an empty box does nothing**: the window in front keeps

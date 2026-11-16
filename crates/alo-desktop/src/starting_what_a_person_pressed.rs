@@ -265,7 +265,7 @@ impl HowThisMachineStartsThings {
         let mut command = command.to_vec();
         command.extend(
             alo_launching::what_its_command_gains(
-                identifier,
+                alo_installed::is_drawn_by_chromium(identifier),
                 answer.describe,
                 answer.alo_works_fully,
             )

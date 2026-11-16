@@ -9,7 +9,8 @@
 //! same one `alo_files::Real` and `alo_overlay::SurfaceRequest` use, for the
 //! same reason.
 //!
-//! [`Chosen`] is the picker's ending, and it has two: a folder, or nothing.
+//! [`Chosen`] is the picker's ending, and it has three: a folder, an
+//! application ([`crate::Applications`], ADR 0143 Q10), or nothing.
 //! *Nothing* is a value rather than an absence because the plan's second
 //! acceptance is about it — **picking nothing grants nothing** — and a
 //! [`Option::None`] would have left that as a convention in whatever wired the
@@ -93,6 +94,9 @@ impl Picked {
 pub enum Chosen {
     /// The person picked this folder.
     Folder(Picked),
+    /// The person chose this application, from the ones they were shown
+    /// (ADR 0143 Q10; [`crate::Applications`]).
+    Application(crate::applications::PickedApplication),
     /// The person closed the picker without picking. Nothing is granted, and
     /// [`crate::Granting`] has no path that could grant anything from it.
     Nothing,
@@ -104,7 +108,16 @@ impl Chosen {
     pub fn folder(&self) -> Option<&Path> {
         match self {
             Self::Folder(picked) => Some(picked.folder()),
-            Self::Nothing => None,
+            Self::Application(_) | Self::Nothing => None,
+        }
+    }
+
+    /// The application, where one was chosen.
+    #[must_use]
+    pub const fn application(&self) -> Option<&crate::applications::PickedApplication> {
+        match self {
+            Self::Application(picked) => Some(picked),
+            Self::Folder(_) | Self::Nothing => None,
         }
     }
 

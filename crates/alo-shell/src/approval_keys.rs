@@ -7,6 +7,9 @@
 //! - **move** between the two answers, forwards or back;
 //! - **choose** the answer that is selected — which does nothing while none
 //!   is, because nothing on this surface is preselected;
+//! - **scroll** the text a change would type, a line with Up and Down or a
+//!   page with Shift held — which answers nothing (the owner's decision of
+//!   2026-11-15: the card shows twelve lines of it and then scrolls);
 //! - **nothing** at all, for every other key.
 //!
 //! There is no letter here, so there is nowhere to type a reason for saying
@@ -36,6 +39,14 @@ pub enum ApprovalKey {
     PreviousAnswer,
     /// Give the selected answer, or acknowledge a sentence. Enter or Space.
     Choose,
+    /// Show the text a line earlier. Up.
+    EarlierLines,
+    /// Show the text a line later. Down.
+    LaterLines,
+    /// Show the text a page earlier. Shift+Up.
+    AnEarlierPage,
+    /// Show the text a page later. Shift+Down.
+    ALaterPage,
     /// **Answer no**, whatever is selected and whether or not anything is.
     /// Escape, which `alo_access::leaving` says declines on this surface.
     Decline,
@@ -61,6 +72,10 @@ impl ApprovalKey {
             Keysym::Tab => Self::NextAnswer,
             Keysym::Return | Keysym::KP_Enter | Keysym::space => Self::Choose,
             Keysym::Escape => Self::Decline,
+            Keysym::Up if held.shift => Self::AnEarlierPage,
+            Keysym::Down if held.shift => Self::ALaterPage,
+            Keysym::Up => Self::EarlierLines,
+            Keysym::Down => Self::LaterLines,
             _ => Self::Nothing,
         }
     }
@@ -73,6 +88,45 @@ mod tests {
     /// No modifiers held.
     fn nothing_held() -> ModifiersState {
         ModifiersState::default()
+    }
+
+    /// **Up and Down scroll the text a line, and with Shift a page** — and
+    /// none of the four is an answer.
+    #[test]
+    fn the_arrows_scroll_the_text_and_answer_nothing() {
+        let held = nothing_held();
+        let shifted = ModifiersState {
+            shift: true,
+            ..nothing_held()
+        };
+        assert_eq!(
+            ApprovalKey::of(Keysym::Up, &held),
+            ApprovalKey::EarlierLines
+        );
+        assert_eq!(
+            ApprovalKey::of(Keysym::Down, &held),
+            ApprovalKey::LaterLines
+        );
+        assert_eq!(
+            ApprovalKey::of(Keysym::Up, &shifted),
+            ApprovalKey::AnEarlierPage
+        );
+        assert_eq!(
+            ApprovalKey::of(Keysym::Down, &shifted),
+            ApprovalKey::ALaterPage
+        );
+        for chord in [
+            ModifiersState {
+                ctrl: true,
+                ..nothing_held()
+            },
+            ModifiersState {
+                alt: true,
+                ..nothing_held()
+            },
+        ] {
+            assert_eq!(ApprovalKey::of(Keysym::Down, &chord), ApprovalKey::Nothing);
+        }
     }
 
     /// **The keys that do something do it.**
@@ -114,8 +168,6 @@ mod tests {
             Keysym::o,
             Keysym::Left,
             Keysym::Right,
-            Keysym::Up,
-            Keysym::Down,
             Keysym::Delete,
             Keysym::BackSpace,
             Keysym::F1,

@@ -119,7 +119,32 @@ impl EdgePicture {
         let whole_output = Rectangle::from_size((output.0, output.1).into());
         let region = into_pixels(edge.region, scale);
         if whole_output.intersection(region) != Some(region) {
-            return None;
+            // **The band is not drawn, but alo's presence still is.** A band
+            // half off the screen is not drawn half; a window alo is working
+            // in still wears alo, round the window alone, because whose hands
+            // are on it is never a band's to lose — and since 2026-11-15 the
+            // border is the only sign of what alo's copy sends. The walk of
+            // 2026-11-16 (run 43805568910) found VSCodium 30 below the top of
+            // the screen, its band off it, and no border at all.
+            return over.alo.map(|alo| {
+                let alone = crate::alos_band_in_a_window::AlosBand {
+                    card: alo.window,
+                    ..alo
+                };
+                let (rasters, words) =
+                    crate::alos_band_in_a_window::drawn(alone, fonts, scale, output);
+                Self {
+                    behind: Vec::new(),
+                    over: crate::window_rasters_kept::placed(&rasters, (0, 0), output),
+                    on_top: Vec::new(),
+                    on_top_inked: Vec::new(),
+                    window: None,
+                    solids: Vec::new(),
+                    inked: words,
+                    whole: String::new(),
+                    controls_drawn: 0,
+                }
+            });
         }
         let as_a_fraction = f64::from(scale.max(1)) / 100.0;
         let colours = window.look.colours();
@@ -263,7 +288,8 @@ impl EdgePicture {
         // the controls, so a panel opened on this window still covers it.
         if let Some(alo) = over.alo {
             let (rasters, words) = crate::alos_band_in_a_window::drawn(alo, fonts, scale, output);
-            over_the_window.extend(rasters);
+            // Kept to the display: a window can reach past its edge.
+            over_the_window.extend(crate::window_rasters_kept::placed(&rasters, (0, 0), output));
             inked.extend(words);
         }
 

@@ -188,6 +188,41 @@ pub enum Until {
     /// a reader meeting a number gets a moment and a reader meeting the word
     /// gets no end, and neither needs a version field.
     Removed(TheWordRemoved),
+    /// It runs until the person signs out — *This session* on the sheet alo's
+    /// desktop draws when alo asks for an application.
+    ///
+    /// **The owner's decision of 2026-11-16**: *"This session" lasts until
+    /// sign-out: a new additive grant kind, removed at sign-out and again at
+    /// the next sign-in.* A sign-out is not a moment anybody can name in
+    /// advance, so it is a word, `sign-out`, and the grants carrying it are
+    /// taken away by [`crate::Grants::the_session_is_over`] — at sign-out, and
+    /// at the next sign-in in case the machine lost power before it.
+    SignOut(TheWordSignOut),
+}
+
+/// The one word a session's grant is written as, and nothing else accepted.
+///
+/// [`TheWordRemoved`]'s reason: nothing else in that place may read back as a
+/// grant that does not run out on its own.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TheWordSignOut;
+
+impl Serialize for TheWordSignOut {
+    fn serialize<S: serde::Serializer>(&self, serialiser: S) -> Result<S::Ok, S::Error> {
+        serialiser.serialize_str("sign-out")
+    }
+}
+
+impl<'de> Deserialize<'de> for TheWordSignOut {
+    fn deserialize<D: serde::Deserializer<'de>>(reader: D) -> Result<Self, D::Error> {
+        let said = String::deserialize(reader)?;
+        if said == "sign-out" {
+            return Ok(Self);
+        }
+        Err(serde::de::Error::custom(format!(
+            "a grant stops at a moment, at \"removed\" or at \"sign-out\", and this says {said:?}"
+        )))
+    }
 }
 
 /// The one word an endless grant is written as, and nothing else accepted.
@@ -227,7 +262,9 @@ impl Until {
     pub fn reaches(self, now: SystemTime) -> bool {
         match self {
             Self::AMoment(moment) => moment > now,
-            Self::Removed(_) => true,
+            // **Until the session is cleared**, which takes the grant out of
+            // the list rather than letting it run out.
+            Self::Removed(_) | Self::SignOut(_) => true,
         }
     }
 
@@ -245,7 +282,7 @@ impl Until {
                 .duration_since(now)
                 .ok()
                 .filter(|left| !left.is_zero()),
-            Self::Removed(_) => None,
+            Self::Removed(_) | Self::SignOut(_) => None,
         }
     }
 
@@ -253,6 +290,18 @@ impl Until {
     #[must_use]
     pub const fn is_until_removed(self) -> bool {
         matches!(self, Self::Removed(_))
+    }
+
+    /// A grant that runs until the person signs out.
+    #[must_use]
+    pub const fn sign_out() -> Self {
+        Self::SignOut(TheWordSignOut)
+    }
+
+    /// Whether this runs until the person signs out.
+    #[must_use]
+    pub const fn is_until_sign_out(self) -> bool {
+        matches!(self, Self::SignOut(_))
     }
 }
 
@@ -466,6 +515,32 @@ impl Grant {
         self.expires.is_until_removed()
     }
 
+    /// Whether this grant runs until the person signs out.
+    #[must_use]
+    pub const fn lasts_until_sign_out(&self) -> bool {
+        self.expires.is_until_sign_out()
+    }
+
+    /// A grant that runs until the person signs out — *This session*.
+    ///
+    /// [`Self::checked_until_removed`]'s road, for its reason: every other
+    /// check is the same, and only when it stops differs.
+    ///
+    /// # Errors
+    /// As [`Self::checked_until_removed`].
+    pub fn checked_until_sign_out(
+        grantee: &Grantee,
+        reach: Reach,
+        from: SystemTime,
+        terminal: ATerminalForTheAgent,
+    ) -> Result<Self, GrantError> {
+        let endless = Self::checked_until_removed(grantee, reach, from, terminal)?;
+        Ok(Self {
+            expires: Until::sign_out(),
+            ..endless
+        })
+    }
+
     /// Whether this grant is for that grantee.
     #[must_use]
     pub fn is_for(&self, grantee: &Grantee) -> bool {
@@ -515,6 +590,10 @@ fn checked_reach(reach: Reach) -> Result<Reach, GrantError> {
     }
     Ok(reach)
 }
+
+#[cfg(test)]
+#[path = "a_grant_for_the_session_tests.rs"]
+mod a_grant_for_the_session;
 
 #[cfg(test)]
 #[expect(

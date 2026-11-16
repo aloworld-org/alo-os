@@ -84,6 +84,17 @@ const STOPS_CORNER: f32 = 7.0;
 /// How wide the teal edge round the window is: thin, the focus ring's weight.
 const THE_EDGE_IS: f32 = 2.0;
 
+/// **How wide the border round a window alo operates is at rest**: 3, heavier
+/// than the band's 2, because over a dark window like VSCodium's 2 was too
+/// faint to read (the coordinator's call, 2026-11-15). Logical, so it goes
+/// through the display's scale like every other measure here.
+const THE_BORDER_AT_REST: f32 = 3.0;
+
+/// **How wide it is while that window's application sends**: twice its rest,
+/// the whole sending sign — no words, no colour change (the owner,
+/// 2026-11-15: *we remove this and the sending, the border is enough*).
+const THE_BORDER_WHILE_SENDING: f32 = 6.0;
+
 /// The window card's corner, which the edge follows. `11:30`.
 const THE_CARDS_CORNER: f32 = 16.0;
 
@@ -242,11 +253,19 @@ pub(crate) fn drawn(
     let mut rasters = Vec::new();
     let mut words = Vec::new();
     // **The edge, only while alo is acting**: deep teal round the whole card.
+    // On a window alo operates it is the border, 3 at rest and 6 while that
+    // window's application sends — the whole sending sign (the owner,
+    // 2026-11-15: *the border is enough*).
+    let weight = match (alo.here.wears, alo.here.sending) {
+        (crate::alo_in_a_window::Wears::TheBand, _) => THE_EDGE_IS,
+        (crate::alo_in_a_window::Wears::TheBorder, None) => THE_BORDER_AT_REST,
+        (crate::alo_in_a_window::Wears::TheBorder, Some(_)) => THE_BORDER_WHILE_SENDING,
+    };
     if acting {
         rasters.extend(a_ring_of(
             in_pixels(alo.card, scale),
             as_f32(f64::from(THE_CARDS_CORNER) * fraction),
-            as_f32(f64::from(THE_EDGE_IS) * fraction).max(1.0),
+            as_f32(f64::from(weight) * fraction).max(1.0),
             ink,
         ));
     }

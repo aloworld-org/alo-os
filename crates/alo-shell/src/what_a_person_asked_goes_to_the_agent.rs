@@ -117,6 +117,12 @@ pub struct WhatCameBack {
     /// **Whether the person stopped this request**, and the agent has now
     /// gone: the one moment the window may say *stopped* (ADR 0139).
     pub stopped: bool,
+    /// **Whether the agent paused its reply for the person's answer** and will
+    /// go on after it (`docs/contracts/asking-socket.md`, *The turn goes on
+    /// after an answer*): it ended what it said with
+    /// `alo_protocol::what_the_agent_says_back::THE_REPLY_WAITS` and kept its
+    /// side open. False for an agent that ended its reply by closing its side.
+    pub the_turn_goes_on: bool,
 }
 
 impl WhatCameBack {
@@ -128,6 +134,7 @@ impl WhatCameBack {
             the_machines_fault: false,
             the_turn: None,
             stopped: true,
+            the_turn_goes_on: false,
         }
     }
 }
@@ -249,15 +256,18 @@ impl TheAgentsDoor {
         // person's folders', full access's and the applications installed,
         // each alone when there is nothing after it, so a current agent never
         // waits for a line that is not coming (`docs/contracts/asking-socket.md`).
+        // **And that this shell tells the agent the person's answer**, so a
+        // request with several changes goes on after each one (the eighth line).
         let earlier = format!(
-            "{}\n{}\n{}\n{}\n{}",
+            "{}\n{}\n{}\n{}\n{}\n{}",
             earlier.written(),
             TheWindowOffered::the_line_for(window),
             ThePersonsFolders::the_line_for(their_folders),
             alo_instructing::at_full_access::the_line_for(may_reach.at_full_access),
             alo_instructing::TheApplicationsInstalled::the_line_for(
                 may_reach.applications.as_ref()
-            )
+            ),
+            alo_protocol::what_the_agent_says_back::the_answer_follows_line()
         );
         let may_reach: Vec<std::path::PathBuf> = may_reach.folders.clone();
         let posting = self.posting.clone();
@@ -280,6 +290,35 @@ impl TheAgentsDoor {
                 the_machines_fault: true,
                 the_turn: None,
                 stopped: false,
+                the_turn_goes_on: false,
+            }));
+        }
+    }
+
+    /// **Hear what the agent says next, after the person answered a change**
+    /// and the shell told it what the answer did: the same reading as a
+    /// request's, on the same socket, on a thread of its own, arriving at
+    /// [`Self::whatever_came_back`] like any answer. A Stop reaches it as it
+    /// reaches a request being answered.
+    pub(crate) fn hear_the_rest(&self, who: WhoAsked, talking: UnixStream) {
+        let posting = self.posting.clone();
+        let running = self.running.clone();
+        let started = std::thread::Builder::new()
+            .name("alo-asking-on".to_owned())
+            .spawn(move || {
+                running.began(who, &talking);
+                let came_back = what_the_agent_said(talking);
+                let stopped = running.ended(who);
+                drop(posting.send(came_back.into_what_came_back(who, stopped)));
+            });
+        if let Err(why) = started {
+            drop(self.posting.send(WhatCameBack {
+                who,
+                said: format!("this machine could not hear the rest: {why}"),
+                the_machines_fault: true,
+                the_turn: None,
+                stopped: false,
+                the_turn_goes_on: false,
             }));
         }
     }
@@ -318,8 +357,9 @@ impl TheAgentsDoor {
 
 /// What one request's thread found.
 enum Said {
-    /// The agent answered, in words, on this socket.
-    TheAgent(String, UnixStream),
+    /// The agent answered, in words, on this socket — and whether it paused
+    /// for the person's answer rather than closing its side.
+    TheAgent(String, UnixStream, bool),
     /// The machine could not be asked.
     TheMachine(String),
 }
@@ -328,12 +368,13 @@ impl Said {
     /// The same thing, addressed to whoever asked.
     fn into_what_came_back(self, who: WhoAsked, stopped: bool) -> WhatCameBack {
         match self {
-            Self::TheAgent(said, socket) => WhatCameBack {
+            Self::TheAgent(said, socket, goes_on) => WhatCameBack {
                 who,
                 said,
                 the_machines_fault: false,
                 the_turn: Some(socket),
                 stopped,
+                the_turn_goes_on: goes_on,
             },
             Self::TheMachine(said) => WhatCameBack {
                 who,
@@ -341,6 +382,7 @@ impl Said {
                 the_machines_fault: true,
                 the_turn: None,
                 stopped,
+                the_turn_goes_on: false,
             },
         }
     }
@@ -417,14 +459,33 @@ fn ask_and_wait(
     // `alo-agent` reads the folders, the request and the earlier conversation,
     // each a line, so it never needed the shut to know the request had ended.
 
+    what_the_agent_said(talking)
+}
+
+/// Read what the agent says until it closes its side, or until it pauses for
+/// the person's answer with
+/// `alo_protocol::what_the_agent_says_back::THE_REPLY_WAITS` alone on a line.
+///
+/// **The pause is read only as a whole line**, and the agent puts a space in
+/// front of any line of its own words that would be one, so a model cannot end
+/// a reply early by writing it.
+fn what_the_agent_said(talking: UnixStream) -> Said {
     let mut heard = String::new();
+    let mut goes_on = false;
     let mut reading = BufReader::new(&talking);
     loop {
         let mut line = String::new();
         match reading.read_line(&mut line) {
             Ok(0) => break,
+            Ok(_)
+                if line.trim_end_matches(['\r', '\n'])
+                    == alo_protocol::what_the_agent_says_back::THE_REPLY_WAITS =>
+            {
+                goes_on = true;
+                break;
+            }
             Ok(_) => heard.push_str(&line),
-            Err(why) => return machine(&why),
+            Err(why) => return Said::TheMachine(format!("{why}")),
         }
     }
     let heard = heard.trim();
@@ -434,7 +495,7 @@ fn ask_and_wait(
         return Said::TheMachine("your agent closed without answering".to_owned());
     }
     // **Handed back still open**, for `WhatCameBack::the_turn`'s reason.
-    Said::TheAgent(heard.to_owned(), talking)
+    Said::TheAgent(heard.to_owned(), talking, goes_on)
 }
 
 #[cfg(test)]
