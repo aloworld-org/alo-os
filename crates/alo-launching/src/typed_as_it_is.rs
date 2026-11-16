@@ -64,12 +64,14 @@ pub const TYPED_AS_IT_IS: [(&str, &str); 20] = [
 
 /// **Every setting alo puts in its copy's settings file**: these, so that what
 /// alo types is what lands, and [`crate::ASKS_FOR_NOTHING_IT_NEED_NOT`], so that
-/// the copy does not look for updates or send telemetry. The one list a writer
+/// the copy does not look for updates or send telemetry, and
+/// [`crate::NO_TRUST_BANNER`], so that it shows no Restricted Mode banner. The one list a writer
 /// reads, so a list added here cannot be left out of the file.
 pub fn every_setting_in_alos_copy() -> impl Iterator<Item = (&'static str, &'static str)> {
     TYPED_AS_IT_IS
         .iter()
         .chain(crate::ASKS_FOR_NOTHING_IT_NEED_NOT.iter())
+        .chain(crate::NO_TRUST_BANNER.iter())
         .copied()
 }
 
