@@ -41,6 +41,8 @@ pub enum Lasts {
     /// a person by running out; this one does not, so the whole of its
     /// protection is that it is on the list they revoke from.
     UntilRemoved,
+    /// Until the person signs out — *This session* (the owner, 2026-11-16).
+    UntilSignOut,
 }
 
 impl Lasts {
@@ -53,7 +55,7 @@ impl Lasts {
     pub const fn left(self) -> Option<Duration> {
         match self {
             Self::For(left) => Some(left),
-            Self::UntilRemoved => None,
+            Self::UntilRemoved | Self::UntilSignOut => None,
         }
     }
 
@@ -61,6 +63,12 @@ impl Lasts {
     #[must_use]
     pub const fn is_until_removed(self) -> bool {
         matches!(self, Self::UntilRemoved)
+    }
+
+    /// Whether this grant runs until the person signs out.
+    #[must_use]
+    pub const fn is_until_sign_out(self) -> bool {
+        matches!(self, Self::UntilSignOut)
     }
 }
 
