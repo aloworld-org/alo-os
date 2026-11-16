@@ -51,8 +51,16 @@ fn a_package_on_electrons_base_is_built_on_electron() {
     let persons = a_place("persons");
     a_package(&machines, "org.example.Chat", ON_ELECTRON);
     a_package(&persons, "org.example.Notes", ON_ELECTRON);
-    assert!(is_built_on_electron(&machines, Some(&persons), "org.example.Chat"));
-    assert!(is_built_on_electron(&machines, Some(&persons), "org.example.Notes"));
+    assert!(is_built_on_electron(
+        &machines,
+        Some(&persons),
+        "org.example.Chat"
+    ));
+    assert!(is_built_on_electron(
+        &machines,
+        Some(&persons),
+        "org.example.Notes"
+    ));
 }
 
 /// **Nothing that is not Electron's is read as Electron**: another base, no
@@ -141,10 +149,21 @@ fn the_list_is_the_fallback_and_nothing_else_is_drawn_by_chromium() {
     a_package(&machines, "org.example.Chat", ON_ELECTRON);
     a_package(&machines, "org.gnome.TextEditor", ON_NO_BASE);
     for identifier in alo_launching::DRAWN_BY_CHROMIUM {
-        assert!(is_drawn_by_chromium_under(&machines, None, identifier), "{identifier}");
+        assert!(
+            is_drawn_by_chromium_under(&machines, None, identifier),
+            "{identifier}"
+        );
     }
-    assert!(is_drawn_by_chromium_under(&machines, None, "org.example.Chat"));
-    for identifier in ["org.gnome.TextEditor", "org.mozilla.firefox", "org.kde.dolphin"] {
+    assert!(is_drawn_by_chromium_under(
+        &machines,
+        None,
+        "org.example.Chat"
+    ));
+    for identifier in [
+        "org.gnome.TextEditor",
+        "org.mozilla.firefox",
+        "org.kde.dolphin",
+    ] {
         assert!(
             !is_drawn_by_chromium_under(&machines, None, identifier),
             "{identifier} would be handed the switch"
