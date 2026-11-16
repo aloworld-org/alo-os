@@ -27,7 +27,7 @@
 
 use std::os::unix::net::UnixStream;
 use std::sync::Arc;
-use std::sync::mpsc::{Receiver, Sender, TryRecvError, channel};
+use std::sync::mpsc::{Receiver, Sender, channel};
 
 use alo_changing::{Answered, Answering};
 
@@ -107,11 +107,8 @@ impl TheAnswersOnTheirWay {
     /// blocks.**
     pub(crate) fn whatever_they_did(&mut self) -> Vec<WhatAnAnswerDid> {
         let mut came = Vec::new();
-        loop {
-            match self.arriving.try_recv() {
-                Ok(did) => came.push(did),
-                Err(TryRecvError::Empty | TryRecvError::Disconnected) => break,
-            }
+        while let Ok(did) = self.arriving.try_recv() {
+            came.push(did);
         }
         self.under_way = self.under_way.saturating_sub(came.len());
         came
@@ -122,14 +119,12 @@ impl TheAnswersOnTheirWay {
     #[cfg(test)]
     pub(crate) fn every_one_of_them(&mut self) -> Vec<WhatAnAnswerDid> {
         let mut came = Vec::new();
-        while self.under_way > came.len() {
-            match self
+        while self.under_way > came.len()
+            && let Ok(did) = self
                 .arriving
                 .recv_timeout(std::time::Duration::from_secs(30))
-            {
-                Ok(did) => came.push(did),
-                Err(_) => break,
-            }
+        {
+            came.push(did);
         }
         self.under_way = self.under_way.saturating_sub(came.len());
         came

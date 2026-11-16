@@ -1114,7 +1114,7 @@ fn an_approved_change_that_needs_the_screen_is_answered_with_what_it_did() {
     }
     let the_press_took = pressed_at.elapsed();
     // The screen is free again, so the daemon can finish.
-    drop(release.send(()));
+    let _ = release.send(());
     server.every_answer_came_back(&in_english());
 
     assert!(

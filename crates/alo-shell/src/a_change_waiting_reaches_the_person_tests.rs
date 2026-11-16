@@ -375,7 +375,6 @@ fn escape_declines_whatever_is_selected() {
 /// window somebody left open and came back to.
 #[test]
 fn a_press_with_nothing_waiting_does_nothing() {
-    let daemon = ADaemon::holding(Vec::new());
     let mut task = a_task();
     let mut waiting = AChangeWaiting::nothing_yet();
 
