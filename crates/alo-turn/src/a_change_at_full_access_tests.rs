@@ -300,3 +300,61 @@ fn at_full_access_nothing_there_and_a_read_are_refused_and_written_down() {
     assert_eq!(entries.len(), 2, "{entries:?}");
     assert!(entries.iter().all(|entry| !entry.happened().ran()));
 }
+
+/// **A machine told the person's home answers a file named in the wrong
+/// folder with where it is**, on a real disk, through the file verbs' own
+/// executor — and a machine told no home does not (the owner, 2026-11-15,
+/// relayed: small by default).
+#[test]
+fn a_machine_told_the_home_says_where_a_misplaced_file_is() {
+    let refusal_for = |told_the_home: bool| {
+        let strings = in_english();
+        let (home, invoice) = a_folder_with_an_invoice(if told_the_home {
+            "where-it-is"
+        } else {
+            "where-it-is-not-said"
+        });
+        let elsewhere = home.join("Documents");
+        std::fs::create_dir_all(&elsewhere).unwrap();
+        let named = invoice.file_name().unwrap().to_owned();
+        let mut indicator = Indicator::default();
+        let mut bounding = NothingIsBounded;
+        let mut record = Record::default();
+        let machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
+        let mut machine = if told_the_home {
+            machine.with_the_persons_home(home.clone())
+        } else {
+            machine
+        };
+        let mut grants = Grants::default();
+        let mut turning = Turning::beginning(
+            offering(&invoice),
+            "@files",
+            hour(),
+            &mut grants,
+            &mut machine,
+        )
+        .unwrap();
+        let at = Grants::default().at_full_access_for(&files());
+        let refused = turning
+            .reading(
+                "read_file",
+                &[("file", as_given(&elsewhere.join(&named)))],
+                &at,
+                noon(),
+            )
+            .unwrap_err();
+        (refused.said(&strings).into_text(), invoice)
+    };
+    let (said, invoice) = refusal_for(true);
+    assert!(said.contains(&invoice.display().to_string()), "{said}");
+    let (said, invoice) = refusal_for(false);
+    assert!(!said.contains(&invoice.display().to_string()), "{said}");
+}

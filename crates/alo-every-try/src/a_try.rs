@@ -325,6 +325,14 @@ impl TheDoor for Recording<'_> {
                 Ok(answering(step.answered(), &call, self.strings))
             }
             Err(wrong) => {
+                // **As the machine answers a file named where there is none**:
+                // refused, with where one of that name is in the home itself
+                // (`alo_files::Touching::of_looking_in`), as often as it is
+                // named wrongly — the machine sets no limit, and the turn's own
+                // bound on rounds is what ends a model that never listens.
+                if let Some(refused) = self.where_it_is(&wrong) {
+                    return Ok(refused);
+                }
                 self.wrong = Some(wrong);
                 Err(NotAnswered::NotReached {
                     why: THE_TRY_IS_OVER.to_owned(),
@@ -335,6 +343,32 @@ impl TheDoor for Recording<'_> {
 }
 
 impl Recording<'_> {
+    /// The machine's refusal for a path named where there is nothing, saying
+    /// where one of that name is — where the road expected a file of the same
+    /// name directly in the person's home. The set's machine is at full
+    /// access, so every path is one the grants permit, as on that machine.
+    /// [`None`] for any other way of leaving the road.
+    fn where_it_is(&self, wrong: &WentWrong) -> Option<ToAnAgent> {
+        let WentWrong::AnotherValue {
+            expected, given, ..
+        } = wrong
+        else {
+            return None;
+        };
+        let (expected_at, given_at) = (std::path::Path::new(expected), std::path::Path::new(given));
+        let same_name =
+            expected_at.file_name().is_some() && expected_at.file_name() == given_at.file_name();
+        let in_the_home = expected_at.parent() == Some(std::path::Path::new(crate::THE_HOME));
+        if !same_name || !in_the_home {
+            return None;
+        }
+        let said = self.strings.say(
+            &alo_files::words::NOTHING_THERE_BUT_ONE_IS.key(),
+            &alo_strings::Filling::of("path", given.clone()).and("found", expected.clone()),
+        );
+        Some(ToAnAgent::refused(&said))
+    }
+
     /// The machine's answer to `request`, a read of `asked` the request
     /// declares aside of its road, while this try has looks left; [`None`]
     /// otherwise, and the road decides as it always did.

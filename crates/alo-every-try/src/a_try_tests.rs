@@ -309,6 +309,57 @@ fn skipping_a_look_still_holds_the_next_step() {
     );
 }
 
+/// **A file named in the wrong folder is answered as the machine answers it**:
+/// refused, with where one of that name is in the home, and a model that then
+/// names it there takes the road (the owner's small-by-default answer).
+#[test]
+fn a_file_named_in_the_wrong_folder_is_told_where_it_is_and_may_be_named_again() {
+    let wrong = proposing(
+        OPEN_FILE_IN_APPLICATION,
+        &[
+            (APPLICATION, EDITOR),
+            (PATH, "/var/home/alo/Documents/hello.txt"),
+        ],
+    );
+    let (tried, model) = tried(&[wrong, opening(), looking(), typing(), answering("Done.")]);
+    assert_eq!(tried.went(), &Went::TheRoad, "{tried:?}");
+    let told = model.shown.get(1).cloned().unwrap_or_default();
+    assert!(
+        told.contains("but one of that name is at /var/home/alo/hello.txt"),
+        "{told}"
+    );
+}
+
+/// **The refusal cases**: a model told where the file is that never names it
+/// there does not take the road, and a file of another name is never answered
+/// this way.
+#[test]
+fn a_file_is_told_where_it_is_only_for_its_own_name_and_must_be_named_there() {
+    let wrong = || {
+        proposing(
+            OPEN_FILE_IN_APPLICATION,
+            &[
+                (APPLICATION, EDITOR),
+                (PATH, "/var/home/alo/Documents/hello.txt"),
+            ],
+        )
+    };
+    let (twice, _) = tried(&[wrong(), wrong(), answering("Done.")]);
+    assert!(!twice.took_the_road(), "{twice:?}");
+    let another = proposing(
+        OPEN_FILE_IN_APPLICATION,
+        &[(APPLICATION, EDITOR), (PATH, "/var/home/alo/notes.txt")],
+    );
+    let (other, _) = tried(&[another, answering("Done.")]);
+    assert!(
+        matches!(
+            other.went(),
+            Went::WentWrong(WentWrong::AnotherValue { step: 1, .. })
+        ),
+        "{other:?}"
+    );
+}
+
 /// The editor road, and a read of the file it opens that the machine would
 /// answer at any point: the file is there, and empty, as the walk makes it.
 fn writing_or_reading_the_file_first() -> ARequest {
