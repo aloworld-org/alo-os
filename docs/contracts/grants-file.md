@@ -78,7 +78,7 @@ expires = 1760086400
 
 | Key | Meaning |
 |---|---|
-| `format` | Which shape the file is in. Required. `1`, `2`, `3` or `4`. |
+| `format` | Which shape the file is in. Required. `1`, `2`, `3`, `4` or `5`. |
 | `next` | The handle the next grant made on this machine is given. A handle is never reused. |
 | `handle` | What a person revokes this grant by. Unique in the file, and below `next`. |
 | `agent` | The agent the grant is for, by its name. |
@@ -89,7 +89,7 @@ expires = 1760086400
 | `application` | One installed application, by its identifier. |
 | `facility` | Something this machine has that is not a path (below). **Format 2 and above.** |
 | `granted` | When it was made, in whole seconds since 1970. |
-| `expires` | When it stops: whole seconds since 1970, or the word `"removed"`. Never absent. The word is **format 3 and above**. |
+| `expires` | When it stops: whole seconds since 1970, the word `"removed"`, or the word `"sign-out"`. Never absent. `"removed"` is **format 3 and above**; `"sign-out"` is **format 5 and above**. |
 
 ### `expires = "removed"`
 
@@ -121,6 +121,38 @@ software already reads:
 - **The lowest format that holds the file is what is written.** A machine with
   no endless grant still writes `format = 1`, exactly as it did before — so
   format 3 does not arrive on a machine that is not using it.
+
+### `expires = "sign-out"`
+
+A grant for **this session**: it runs until the person signs out. The owner's
+decision of 2026-11-16 (`docs/design/when-alo-asks-for-an-application.md`):
+*"This session" lasts until sign-out: a new additive grant kind, removed at
+sign-out and again at the next sign-in.*
+
+```toml
+format = 5
+
+[[grant]]
+handle = 0
+agent = "alo"
+application = "com.vscodium.codium"
+granted = 1760000000
+expires = "sign-out"
+```
+
+- **The word is the only word**, as `"removed"` is: anything else in that
+  position is refused, and the file with it.
+- **It is taken away by the person's side, not by a clock.** A sign-out is not
+  a moment anybody can name in advance, so nothing in the file says when; the
+  person's side removes every such grant at sign-out
+  (`alo_capability::Grants::the_session_is_over`), and **again at the next
+  sign-in**, because a machine that lost power never signed out. Between the
+  two it is a grant like any other, and the daemon honours it.
+- **A file holding it declares format 5**; an older reader refuses the whole
+  file. A machine with no such grant writes format 4 or lower, exactly as
+  before.
+- *Nothing on a machine makes one yet*: the sheet that offers *This session*
+  is still to be built.
 
 ### `really`
 

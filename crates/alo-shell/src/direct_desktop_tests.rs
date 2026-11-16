@@ -505,3 +505,6 @@ fn a_desktop_that_takes_the_defaults_cannot_answer_and_says_so() {
 
 #[path = "the_text_on_the_card_drawn_tests.rs"]
 mod the_text_on_the_card_drawn_tests;
+
+#[path = "giving_an_application_drawn_tests.rs"]
+mod giving_an_application_drawn_tests;

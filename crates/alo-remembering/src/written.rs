@@ -95,7 +95,15 @@ use crate::refusing::NotRemembered;
 /// (`alo_capability::Grant::really`). A machine whose grants record none writes
 /// format 3 or lower, exactly as before; an older reader meeting `really`
 /// refuses the file rather than dropping the key and refusing every file verb.
-pub const THE_FORMAT: u32 = 4;
+///
+/// **Format 5 adds `expires = "sign-out"`** — a grant for this session, which
+/// the person's side takes away at sign-out and again at the next sign-in (the
+/// owner, 2026-11-16). A machine with no such grant writes format 4 or lower,
+/// exactly as before; an older reader meeting the word refuses the file.
+pub const THE_FORMAT: u32 = 5;
+
+/// The shape before a grant could last until sign-out.
+pub const THE_FORMAT_BEFORE_SESSION_GRANTS: u32 = 4;
 
 /// The shape before a grant recorded where its folder really is.
 ///
@@ -179,6 +187,33 @@ enum Stops {
     AtASecond(u64),
     /// Not until the person removes it.
     WhenRemoved(TheWord),
+    /// When the person signs out.
+    WhenSignedOut(TheWordSignOut),
+}
+
+/// The one word `expires` may be for a session's grant.
+///
+/// [`TheWord`]'s reason: nothing else in that position may read as a grant
+/// that does not run out on its own.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct TheWordSignOut;
+
+impl Serialize for TheWordSignOut {
+    fn serialize<S: serde::Serializer>(&self, serialiser: S) -> Result<S::Ok, S::Error> {
+        serialiser.serialize_str("sign-out")
+    }
+}
+
+impl<'de> Deserialize<'de> for TheWordSignOut {
+    fn deserialize<D: serde::Deserializer<'de>>(reader: D) -> Result<Self, D::Error> {
+        let said = String::deserialize(reader)?;
+        if said == "sign-out" {
+            return Ok(Self);
+        }
+        Err(serde::de::Error::custom(format!(
+            "expires is a whole number of seconds, \"removed\" or \"sign-out\", and this says {said:?}"
+        )))
+    }
 }
 
 /// The one word `expires` may be instead of a number.
@@ -265,7 +300,10 @@ impl KeptGrant {
     fn newer_than(&self, format: u32) -> Option<&'static str> {
         // **Newest first**, so a file is refused for the newest key it should
         // not hold rather than for an older one it may legitimately hold.
-        if format < THE_FORMAT && self.really.is_some() {
+        if format < THE_FORMAT && matches!(self.expires, Stops::WhenSignedOut(_)) {
+            return Some("expires = \"sign-out\"");
+        }
+        if format < THE_FORMAT_BEFORE_SESSION_GRANTS && self.really.is_some() {
             return Some("really");
         }
         if format < THE_FORMAT_BEFORE_REAL_PLACES && matches!(self.expires, Stops::WhenRemoved(_)) {
@@ -312,6 +350,15 @@ impl KeptGrant {
             // it, and everything else about it is held to exactly what a timed
             // one is held to.
             Stops::WhenRemoved(_) => Grant::checked_until_removed(
+                &grantee,
+                reach,
+                granted,
+                alo_capability::ATerminalForTheAgent::NotAtAll,
+            )
+            .map_err(made)?,
+            // **And a session's**, the same checks again; it is the person's
+            // side that takes it away when the session ends.
+            Stops::WhenSignedOut(_) => Grant::checked_until_sign_out(
                 &grantee,
                 reach,
                 granted,
@@ -419,6 +466,7 @@ pub fn written(grants: &Grants, now: SystemTime) -> Result<String, NotRemembered
             // until the person removes it is never over by the time somebody
             // reads the file.
             alo_capability::Until::Removed(_) => Stops::WhenRemoved(TheWord),
+            alo_capability::Until::SignOut(_) => Stops::WhenSignedOut(TheWordSignOut),
         };
         let (mut folder, mut file, mut application, mut facility) = (None, None, None, None);
         match &held.grant.reach {
@@ -450,8 +498,13 @@ pub fn written(grants: &Grants, now: SystemTime) -> Result<String, NotRemembered
     // application's grant writes exactly what it wrote before format 2, a
     // machine with no endless grant exactly what it wrote before 3, and one
     // whose grants record no real place exactly what it wrote before 4.
-    let format = if lines.iter().any(|line| line.really.is_some()) {
+    let format = if lines
+        .iter()
+        .any(|line| matches!(line.expires, Stops::WhenSignedOut(_)))
+    {
         THE_FORMAT
+    } else if lines.iter().any(|line| line.really.is_some()) {
+        THE_FORMAT_BEFORE_SESSION_GRANTS
     } else if lines
         .iter()
         .any(|line| matches!(line.expires, Stops::WhenRemoved(_)))
@@ -474,6 +527,10 @@ pub fn written(grants: &Grants, now: SystemTime) -> Result<String, NotRemembered
         why: why.to_string(),
     })
 }
+
+#[cfg(test)]
+#[path = "a_session_grant_kept_tests.rs"]
+mod a_session_grant_kept;
 
 #[cfg(test)]
 #[expect(

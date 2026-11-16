@@ -9,6 +9,11 @@
   with a fresh profile set as alo's copy is, every connection it made sent
   through a logging proxy (`ss` showed no other peer), for 60 seconds, then
   started again on the same profile. Nothing runs this again.
+- **Where that line is shown now.** Since the owner's ruling of 2026-11-15 —
+  *"We remove this and the sending, the border is enough"*, *"Border only, it
+  thickens"* — the corner no longer shows this line while VSCodium's window
+  wears alo's border; the border thickens instead. Where no border is drawn,
+  the corner still shows it (`docs/design/the-window-controls.md`).
 
 ## What it sends
 

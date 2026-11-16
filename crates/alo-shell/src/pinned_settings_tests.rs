@@ -52,35 +52,40 @@ fn settings_draws_the_pixels_it_drew_before() {
 /// **And on 2026-11-13**: *Accounts* after Default apps, approved by the
 /// owner with the GitHub sign-in. Measured once by running this test on the
 /// documents lane's machine; it runs again on every gate.
+///
+/// **And on 2026-11-16**: the side column's *Folders alo can use* became
+/// *What alo can use* — the owner's "Fix wording, then merge". Taken from the
+/// gate's own run of this test on the pull request that renamed it; it runs
+/// again on every gate.
 const BEFORE: [Drawn; 6] = [
     Drawn {
         scale: 100,
         text: 100,
-        hash: 0x32d4_1cf0_537b_7e33,
+        hash: 0xcfeb_7743_6d34_b577,
     },
     Drawn {
         scale: 100,
         text: 125,
-        hash: 0xb445_33b4_62c9_fda9,
+        hash: 0x776b_bbdc_888b_9b18,
     },
     Drawn {
         scale: 150,
         text: 100,
-        hash: 0x4a8f_ea7f_f4e1_810c,
+        hash: 0x1212_1175_6151_179e,
     },
     Drawn {
         scale: 150,
         text: 125,
-        hash: 0x7e3c_90e3_7e1a_c2bb,
+        hash: 0x8ff8_335b_11cf_2902,
     },
     Drawn {
         scale: 200,
         text: 100,
-        hash: 0xe3ed_88a6_8cf6_fb27,
+        hash: 0xd81b_9f8c_4c39_ef54,
     },
     Drawn {
         scale: 200,
         text: 125,
-        hash: 0xd9e0_7754_5f6c_1646,
+        hash: 0x37ae_5159_1817_48d0,
     },
 ];

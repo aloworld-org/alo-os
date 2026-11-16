@@ -84,12 +84,12 @@ fn only_chromium_gains_the_switch_and_only_on() {
     for identifier in DRAWN_BY_CHROMIUM {
         assert!(is_drawn_by_chromium(identifier), "{identifier}");
         assert_eq!(
-            what_its_command_gains(identifier, true, false),
+            what_its_command_gains(is_drawn_by_chromium(identifier), true, false),
             [THE_PAGE_TOO]
         );
         for fully in [false, true] {
             assert!(
-                what_its_command_gains(identifier, false, fully).is_empty(),
+                what_its_command_gains(is_drawn_by_chromium(identifier), false, fully).is_empty(),
                 "describing turned off, and working fully = {fully}"
             );
         }
@@ -104,7 +104,7 @@ fn only_chromium_gains_the_switch_and_only_on() {
         assert!(!is_drawn_by_chromium(not_chromium), "{not_chromium}");
         for fully in [false, true] {
             assert!(
-                what_its_command_gains(not_chromium, true, fully).is_empty(),
+                what_its_command_gains(is_drawn_by_chromium(not_chromium), true, fully).is_empty(),
                 "{not_chromium}, working fully = {fully}"
             );
         }
@@ -118,7 +118,7 @@ fn only_chromium_gains_the_switch_and_only_on() {
 fn working_fully_hands_the_complete_mode_instead() {
     for identifier in DRAWN_BY_CHROMIUM {
         assert_eq!(
-            what_its_command_gains(identifier, true, true),
+            what_its_command_gains(is_drawn_by_chromium(identifier), true, true),
             [THE_PAGE_FULLY],
             "{identifier}"
         );

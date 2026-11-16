@@ -173,13 +173,26 @@ fn the_edge_at_twice_the_density_is_found() {
 }
 
 /// **A frame thicker than the edge is not the edge, whatever its corners**: a
-/// 12-pixel teal frame with corners of 32 closes round a rectangle just as the
+/// 24-pixel teal frame with corners of 48 closes round a rectangle just as the
 /// edge does, and only its thickness tells it apart.
 #[test]
 fn a_thick_frame_with_wide_corners_is_not_the_edge() {
-    let thick = a_ring(a_screen(), (14, 28, 1154, 662), 12, 32, TEAL);
+    let thick = a_ring(a_screen(), (14, 28, 1154, 662), 24, 48, TEAL);
     assert!(
         a_ring_in(&thick).is_err(),
-        "a 12-pixel frame read as the thin edge"
+        "a 24-pixel frame read as the thin edge"
     );
+}
+
+/// **The border at rest and while sending are both found**: 3 and 6 at a
+/// scale of 1, and 6 while sending at a scale of 3 is 18.
+#[test]
+fn the_border_at_rest_and_while_sending_is_found() {
+    for (wide, corner) in [(3, 16), (6, 16), (18, 48)] {
+        let frame = a_ring(a_screen(), (14, 28, 1154, 662), wide, corner, TEAL);
+        assert!(
+            a_ring_in(&frame).is_ok(),
+            "a border {wide} wide was not found"
+        );
+    }
 }

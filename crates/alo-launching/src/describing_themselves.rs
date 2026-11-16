@@ -171,16 +171,21 @@ pub fn what_a_start_is_handed(describe: bool) -> Vec<String> {
         .collect()
 }
 
-/// **Whether an application is one alo starts with its page described**: one
-/// drawn by Chromium, in [`DRAWN_BY_CHROMIUM`] — and so one where *Let alo work
-/// fully inside apps like VSCodium* changes what alo can do inside it.
+/// **Whether an application is on the closed list of those drawn by
+/// Chromium**, [`DRAWN_BY_CHROMIUM`] — known by name, however it was
+/// installed.
+///
+/// **Not the whole answer since 2026-11-16**: an application built on Electron
+/// is drawn by Chromium too, and its own package says so
+/// (`alo_installed::is_drawn_by_chromium`, which asks this first). This list
+/// is the fallback for an application installed some other way.
 #[must_use]
 pub fn is_drawn_by_chromium(identifier: &str) -> bool {
     DRAWN_BY_CHROMIUM.contains(&identifier)
 }
 
 /// **What follows an application's own command** when the desktop starts it,
-/// for an application drawn by Chromium where applications describe
+/// for an application `drawn_by_chromium` where applications describe
 /// themselves: [`THE_PAGE_FULLY`] where alo works fully inside it
 /// (`alo_works_fully`), and [`THE_PAGE_TOO`] otherwise.
 ///
@@ -188,16 +193,17 @@ pub fn is_drawn_by_chromium(identifier: &str) -> bool {
 /// describe themselves at all — whichever way `alo_works_fully` is — because
 /// the person turned describing off, and working fully inside an application
 /// is a further way of describing it.
+///
+/// **Whether it is drawn by Chromium is the caller's to say**, because it is
+/// read from the application's installed package, which this crate does not
+/// open: `alo_installed::is_drawn_by_chromium` answers it.
 #[must_use]
-pub fn what_its_command_gains(
-    identifier: &str,
+pub const fn what_its_command_gains(
+    drawn_by_chromium: bool,
     describe: bool,
     alo_works_fully: bool,
 ) -> &'static [&'static str] {
-    match (
-        describe && is_drawn_by_chromium(identifier),
-        alo_works_fully,
-    ) {
+    match (describe && drawn_by_chromium, alo_works_fully) {
         (false, _) => &[],
         (true, false) => &[THE_PAGE_TOO],
         (true, true) => &[THE_PAGE_FULLY],

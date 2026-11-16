@@ -24,6 +24,7 @@ fn alo(wears: Wears) -> AloHere {
         status: alo_tasks::words::ALO_IS_WORKING,
         what: "summarise this document".to_owned(),
         wears,
+        sending: None,
     }
 }
 

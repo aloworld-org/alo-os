@@ -74,11 +74,16 @@ pub const ALO_AND_AI: Word = Word::saying("settings.category.alo-and-ai", "alo a
      alo is the assistant's name, in lower case. AI is artificial intelligence.",
 );
 
-/// The category about the folders alo may read.
-pub const FOLDERS_ALO_CAN_USE: Word =
-    Word::saying("settings.category.folders", "Folders alo can use").noting(
-        "A category in Settings: the folders the person has allowed alo, the assistant, to read, \
-         and what alo did with them.",
+/// The category about the folders and applications alo may use.
+///
+/// **A new key, the owner's "Fix wording, then merge" of 2026-11-16**: the page
+/// lists applications as well as folders since alo can be given one, and a
+/// translation of *Folders alo can use* would name only half of it (ADR 0068).
+/// It was `settings.category.folders`, *Folders alo can use*.
+pub const WHAT_ALO_CAN_USE: Word =
+    Word::saying("settings.category.what-alo-can-use", "What alo can use").noting(
+        "A category in Settings: the folders and applications the person has allowed alo, the \
+         assistant, to use, and what alo did with them. alo stays in lower case.",
     );
 
 /// The category about running code.
@@ -121,14 +126,16 @@ pub const ALO_AND_AI_IS: Word = Word::saying(
 )
 .noting("Under the heading of the alo and AI page in Settings.");
 
-/// What the folders page is about.
-pub const FOLDERS_ALO_CAN_USE_IS: Word = Word::saying(
-    "settings.page.folders",
-    "alo can read only the folders you give it. Each one stays on this list until it ends or you take it back.",
+/// What the page of what alo can use is about.
+///
+/// A new key for [`WHAT_ALO_CAN_USE`]'s reason; it was `settings.page.folders`.
+pub const WHAT_ALO_CAN_USE_IS: Word = Word::saying(
+    "settings.page.what-alo-can-use",
+    "alo can use only the folders and applications you give it. Each one stays on this list until it ends or you take it back.",
 )
 .noting(
-    "Under the heading of the page listing the folders alo, the assistant, may read. alo is its \
-     name and stays in lower case at the start of the sentence.",
+    "Under the heading of the page listing the folders and applications alo, the assistant, may \
+     use. alo is its name and stays in lower case at the start of the sentence.",
 );
 
 /// What the running code page is about.
@@ -339,8 +346,9 @@ pub const NO_PROVIDER_YET: Word = Word::saying(
 );
 
 /// The heading over the folders alo may read.
-pub const GIVEN_TO_ALO: Word = Word::saying("settings.section.given", "Given to alo")
-    .noting("A heading over the list of folders the person gave alo to read. Sentence case.");
+pub const GIVEN_TO_ALO: Word = Word::saying("settings.section.given", "Given to alo").noting(
+    "A heading over the list of folders and applications the person gave alo. Sentence case.",
+);
 
 /// The heading over the record.
 pub const WHAT_ALO_DID: Word = Word::saying("settings.section.what-alo-did", "What alo did")
@@ -404,8 +412,11 @@ pub const TAKE_BACK: Word = Word::saying("settings.take-back", "Take back")
     .noting("A button beside a folder alo may read, or a computer paired with this one, that takes the permission back at once.");
 
 /// Taking a folder back stops it at once: the next thing asked under it is refused.
-pub const TAKING_BACK_STOPS_IT: Word = Word::saying("settings.folders.taking-back", "Taking a folder back stops it at once: the next thing asked under it is refused. It does not undo what was already done — the record and undo are for that.")
-    .noting("Under the list of folders alo may read. The record is the list of what alo did; undo puts files back.");
+///
+/// A new key for [`WHAT_ALO_CAN_USE`]'s reason; it was
+/// `settings.folders.taking-back`, *Taking a folder back …*.
+pub const TAKING_BACK_STOPS_IT: Word = Word::saying("settings.what-alo-can-use.taking-back", "Taking a folder or an application back stops it at once: the next thing asked under it is refused. It does not undo what was already done — the record and undo are for that.")
+    .noting("Under the list of folders and applications alo may use. The record is the list of what alo did; undo puts files back.");
 
 /// You choose the folder and how long, in the same step.
 pub const YOU_CHOOSE_FOLDER_AND_HOW_LONG: Word = Word::saying(
@@ -1206,7 +1217,7 @@ pub const THE_WINDOWS_WORDS: [Word; 155] = [
     THE_GROUP_THIS_COMPUTER,
     YOURS_TO_CHANGE,
     ALO_AND_AI,
-    FOLDERS_ALO_CAN_USE,
+    WHAT_ALO_CAN_USE,
     RUNNING_CODE,
     TERMINAL,
     APPEARANCE,
@@ -1214,7 +1225,7 @@ pub const THE_WINDOWS_WORDS: [Word; 155] = [
     KEYBOARD_AND_SHORTCUTS,
     ACCESSIBILITY,
     ALO_AND_AI_IS,
-    FOLDERS_ALO_CAN_USE_IS,
+    WHAT_ALO_CAN_USE_IS,
     RUNNING_CODE_IS,
     TERMINAL_IS,
     APPEARANCE_IS,

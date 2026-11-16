@@ -198,7 +198,7 @@ impl AlosCopies {
         handed.extend(alo_launching::what_a_start_is_handed(answer.describe));
         let environment = in_the_persons_session(application, &handed);
         let gains = alo_launching::what_its_command_gains(
-            application,
+            alo_installed::is_drawn_by_chromium(application),
             answer.describe,
             answer.alo_works_fully,
         );

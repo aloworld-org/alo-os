@@ -164,6 +164,7 @@ pub mod alos_marked_words;
 /// come back.
 mod alos_own_window_goes_aside;
 mod alos_own_windows_open_above_the_dock;
+pub mod an_application_is_picked_in_settings;
 /// Closing a task window, and which ones may close.
 pub mod closing_a_task_window;
 mod each_window_with_its_edge;
@@ -707,6 +708,7 @@ pub mod typing_into_the_window_in_front;
 pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};
 mod alos_window_placed;
 mod alos_windows_panel;
+mod an_answer_goes_off_the_frame;
 /// Closing alo's terminal: at once when idle, after a question when a command
 /// is running.
 mod closing_the_terminal;

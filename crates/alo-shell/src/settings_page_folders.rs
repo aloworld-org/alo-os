@@ -1,4 +1,4 @@
-//! The Folders alo can use page — frame `550:741`: the folders given to alo,
+//! The What alo can use page — frame `550:741`: the folders given to alo,
 //! each with *Take back*; the button that gives it another; the record of what
 //! it did; and the computers paired with this one.
 //!
@@ -7,6 +7,10 @@
 //! with the grants underneath would be moving one ring through two lists, and
 //! the key that opens a folder would be the key that takes one back a row
 //! away.
+//!
+//! **So is the list of applications**, while a person is giving alo one
+//! (ADR 0143 Q10): heading, the line under it, one row per application by
+//! name, and the line under the list — frame `501:35565`'s order.
 //!
 //! **Paired computers are here**, under a heading of their own, because they
 //! were in the old window's one list of things granted and the redesign draws
@@ -49,6 +53,28 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings, now: SystemTime) -> Vec
         }));
         return blocks;
     }
+    if let Some(choosing) = section.choosing() {
+        let mut blocks = vec![ABlock::Said(choosing.asking(strings).into_text())];
+        blocks.extend(choosing.beneath(strings).map(ABlock::Said));
+        let rows = choosing
+            .rows()
+            .into_iter()
+            .map(|row| {
+                let words = choosing.said(&row, strings);
+                ARow::named(
+                    Some(SettingsRow::ChoosingAnApplication(row)),
+                    TheKind::Plain,
+                    words,
+                )
+            })
+            .collect();
+        blocks.push(ABlock::Section(ASection {
+            heading: None,
+            rows,
+            footnote: Some(choosing.at_the_end(strings)),
+        }));
+        return blocks;
+    }
 
     let mut blocks: Vec<ABlock> = section
         .told()
@@ -69,11 +95,25 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings, now: SystemTime) -> Vec
                         || seen.to().to_owned(),
                         |it| it.to_string_lossy().into_owned(),
                     ),
-                    Reach::Application(_) | Reach::Facility(_) => seen.to().to_owned(),
+                    // **An application by the name it is listed under**, and
+                    // by its identifier where it has none, which the line
+                    // under it says either way.
+                    Reach::Application(identifier) => {
+                        section.what_an_application_is_called(identifier)
+                    }
+                    Reach::Facility(_) => seen.to().to_owned(),
                 };
                 let mut drawn = ARow::named(None, TheKind::Plain, title);
-                drawn.lead = Some(ASettingsIcon::Folder);
-                drawn.lines.push(over.said(strings).into_text());
+                // **A folder's icon on a folder**: the set has none for an
+                // application, so an application's row has no lead.
+                drawn.lead = over.as_path().map(|_| ASettingsIcon::Folder);
+                // **A folder's line says where it is; an application is its
+                // name alone** — the owner's "Fix wording, then merge" of
+                // 2026-11-16: *the application row shows the name only, with
+                // no identifier*.
+                if !matches!(over, Reach::Application(_)) {
+                    drawn.lines.push(over.said(strings).into_text());
+                }
                 if seen.lasts().is_until_removed() {
                     let mut note = ANote::said(
                         as_a_name(
@@ -128,6 +168,25 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings, now: SystemTime) -> Vec
                 .into_text(),
             row: SettingsRow::GrantAFolder,
             beside: said(strings, w::YOU_CHOOSE_FOLDER_AND_HOW_LONG),
+        }));
+    }
+    // **Beside it, giving alo an application** (ADR 0143 Q10), offered the
+    // same way and only where there is one to give.
+    if section.an_application_can_be_given() {
+        blocks.push(ABlock::AnAction(AnAction {
+            label: strings
+                .say(
+                    &crate::the_pickers_words::GRANT_AN_APPLICATION.key(),
+                    &Filling::nothing(),
+                )
+                .into_text(),
+            row: SettingsRow::GrantAnApplication,
+            beside: strings
+                .say(
+                    &crate::the_pickers_words::CHOOSE_AN_APPLICATION_AND_HOW_LONG.key(),
+                    &Filling::nothing(),
+                )
+                .into_text(),
         }));
     }
     let mut record = ARow::named(
