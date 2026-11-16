@@ -140,4 +140,13 @@ jobs:
             echo "There is no provider key for this run (ALO_WALK_PROVIDER_KEY is not available here), so nothing was tried." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
-          ALO_EVERY_TRY_SUMMARY="$GITHUB_STEP_SUMMARY" target/release/alo-every-try
+          # **Both levels**: at full access a change is done without asking; at
+          # ask each time it is approved once and the turn goes on from what
+          # the daemon told the person it did (docs/contracts/asking-socket.md).
+          # Either leaving the road fails the check.
+          failed=0
+          for level in full-access ask-each-time; do
+            echo "## At $level" >> "$GITHUB_STEP_SUMMARY"
+            ALO_EVERY_TRY_LEVEL="$level" ALO_EVERY_TRY_SUMMARY="$GITHUB_STEP_SUMMARY" target/release/alo-every-try || failed=$?
+          done
+          exit "$failed"

@@ -401,3 +401,26 @@ fn a_running_task_may_not_close_without_asking() {
     a_question.alo_says(Turn::alo_asking("Which folder?"));
     assert!(!a_question.may_close_without_asking(), "a question waiting");
 }
+
+/// **alo is still working after it says what an answer did, when its turn
+/// goes on** — the next change or its last words are on their way — and the
+/// window may not close as though the work were over. Its next words end that.
+#[test]
+fn a_turn_that_goes_on_after_an_answer_is_still_working() {
+    let mut task = a_task();
+    task.is_asking("Open hello.txt in VSCodium");
+    let _ = task.allow_once();
+    task.alo_says(Turn::from_alo("Done."));
+    assert_eq!(
+        task.what_is_happening(),
+        crate::words::COMPLETE,
+        "the control: a turn that ends here is complete"
+    );
+
+    task.and_alo_goes_on();
+    assert_eq!(task.what_is_happening(), crate::words::ALO_IS_WORKING);
+    assert!(!task.may_close_without_asking());
+
+    task.alo_says(Turn::from_alo("It is saved."));
+    assert_eq!(task.what_is_happening(), crate::words::COMPLETE);
+}

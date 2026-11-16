@@ -163,7 +163,7 @@ fn a_request_about_a_window_carries_it() {
     let started = Instant::now();
     let (read, _shell) = sent_on_a_socket(&format!(
         "summarise this\nalo-earlier:\n{}\nalo-their-folders:\nalo-full-access:\n\
-         alo-their-applications:\n",
+         alo-their-applications:\nalo-answer-follows:\n",
         window.written()
     ));
     let read = read.unwrap();

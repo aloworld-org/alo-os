@@ -608,8 +608,14 @@ fn a_second_change_heard_on_the_rest_keeps_the_turn() {
         .unwrap();
 
     let came = one_answer(&door);
-    assert!(came.the_turn_goes_on, "the second pause was not read as one");
-    assert!(came.the_turn.is_some(), "the turn was not kept for the card");
+    assert!(
+        came.the_turn_goes_on,
+        "the second pause was not read as one"
+    );
+    assert!(
+        came.the_turn.is_some(),
+        "the turn was not kept for the card"
+    );
     assert_eq!(
         came.said,
         "a change is waiting for you to answer, as number 8:\n  Save hello.txt"

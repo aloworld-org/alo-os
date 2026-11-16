@@ -182,7 +182,10 @@ fn nothing_is_told_before_the_daemon_answers_and_the_frame_never_waits() {
     );
 
     let looked = std::time::Instant::now();
-    assert!(answers.whatever_they_did().is_empty(), "an answer came back early");
+    assert!(
+        answers.whatever_they_did().is_empty(),
+        "an answer came back early"
+    );
     assert!(
         looked.elapsed() < std::time::Duration::from_millis(500),
         "the frame waited for the daemon"
@@ -195,7 +198,7 @@ fn nothing_is_told_before_the_daemon_answers_and_the_frame_never_waits() {
     );
     agents_end.set_nonblocking(false).unwrap();
 
-    drop(release.send(()));
+    let _ = release.send(());
     let came = answers.every_one_of_them();
     assert_eq!(came.len(), 1);
     let mut line = String::new();
@@ -226,6 +229,12 @@ fn the_frame_drains_the_answer_once_it_is_back() {
         std::thread::sleep(std::time::Duration::from_millis(10));
     }
     assert_eq!(came.len(), 1, "the frame never saw the answer");
-    assert_eq!(came.first().and_then(|did| did.answered.clone()), Some(Answered::Declined));
-    assert!(answers.whatever_they_did().is_empty(), "it was handed over twice");
+    assert_eq!(
+        came.first().and_then(|did| did.answered.clone()),
+        Some(Answered::Declined)
+    );
+    assert!(
+        answers.whatever_they_did().is_empty(),
+        "it was handed over twice"
+    );
 }

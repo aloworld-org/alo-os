@@ -186,6 +186,11 @@ impl crate::Server {
             task.alo_says(alo_tasks::Turn::from_alo(
                 crate::what_an_answer_did::what_an_answer_did(did.answered.as_ref(), strings),
             ));
+            // **And alo is still working** while its turn goes on: the next
+            // change or its last words are on their way.
+            if goes_on {
+                task.and_alo_goes_on();
+            }
         }
         if !goes_on {
             self.send_what_was_held(did.which, strings);
