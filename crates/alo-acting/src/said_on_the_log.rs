@@ -222,7 +222,8 @@ mod tests {
             "alo in an application: accessible.read_window in org.kde.dolphin, done, and it \
              showed text"
         );
-        let not = alo_in_an_application("open_application", "org.kde.ark", InAnApplication::NotDone);
+        let not =
+            alo_in_an_application("open_application", "org.kde.ark", InAnApplication::NotDone);
         assert!(not.ends_with(", not done"), "{not}");
         assert!(!not.contains(", done"), "{not}");
     }

@@ -57,7 +57,10 @@ fn it_asks_in_every_shipped_application_but_the_terminal_and_vscodium() {
         .filter_map(|rest| rest.strip_suffix('"'))
         .collect();
     assert!(identifiers.len() >= 8, "{identifiers:?}");
-    let asked: Vec<&str> = the_asks().iter().map(|(application, _)| *application).collect();
+    let asked: Vec<&str> = the_asks()
+        .iter()
+        .map(|(application, _)| *application)
+        .collect();
     for identifier in &identifiers {
         let left_out = *identifier == "app.devsuite.Ptyxis" || *identifier == "com.vscodium.codium";
         assert_eq!(
@@ -67,7 +70,10 @@ fn it_asks_in_every_shipped_application_but_the_terminal_and_vscodium() {
         );
     }
     for application in &asked {
-        assert!(identifiers.contains(application), "{application} is not shipped");
+        assert!(
+            identifiers.contains(application),
+            "{application} is not shipped"
+        );
     }
 }
 
@@ -97,4 +103,63 @@ fn it_runs_only_when_asked_for() {
         Some(Step::OnlyWith(variable)) => assert_eq!(*variable, EVERY_APPLICATION),
         other => panic!("the first step is {other:?}"),
     }
+}
+
+/// **The phrases are the turn's and the desktop's sentences exactly**, not
+/// merely a start an empty phrase would also be.
+#[test]
+fn the_phrases_are_the_sentences_own_words() {
+    assert_eq!(
+        acted(READ_WINDOW, DOLPHIN),
+        "alo in an application: accessible.read_window in org.kde.dolphin,"
+    );
+    assert_eq!(
+        opened_a_file_in(LOUPE),
+        "alo asked to open a file in org.gnome.Loupe,"
+    );
+    assert_eq!(done_in(ARK), "org.kde.ark, done");
+}
+
+/// **The person's line makes the three files and says so**, and it is the
+/// line the walk types.
+#[test]
+fn the_person_makes_the_three_files_and_says_so() {
+    let line = making_the_files();
+    for made in [
+        "touch note.txt",
+        "base64 -d > picture.png",
+        "tar czf box.tar.gz note.txt",
+    ] {
+        assert!(line.contains(made), "{line}");
+    }
+    assert!(
+        line.contains(&format!("systemd-cat -t {THE_FILES_ARE_MADE} ls")),
+        "{line}"
+    );
+    let walk = at_full_access(Walk::named("every-application"));
+    assert!(
+        walk.steps()
+            .iter()
+            .any(|step| matches!(step, Step::Type(text) if *text == line)),
+        "the line is not typed"
+    );
+}
+
+/// **Each wait is a minute or five**: a minute for what the person's own
+/// terminal says, five for what alo does, since a turn asks a model first.
+#[test]
+fn each_wait_is_one_minute_or_five() {
+    let walk = at_full_access(Walk::named("every-application"));
+    let waits: Vec<u64> = walk
+        .steps()
+        .iter()
+        .filter_map(|step| match step {
+            Step::ExpectLine { within, .. } => Some(within.as_secs()),
+            _ => None,
+        })
+        .collect();
+    assert!(waits.len() >= 10, "{waits:?}");
+    assert!(waits.iter().all(|it| *it == 60 || *it == 300), "{waits:?}");
+    assert_eq!(waits.first(), Some(&60), "the files are the person's");
+    assert!(waits.contains(&300));
 }

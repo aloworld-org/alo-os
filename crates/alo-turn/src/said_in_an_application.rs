@@ -79,8 +79,60 @@ pub(crate) fn said(verb: &str, application: &str, did: &Result<WhatAVerbDid, Not
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
 mod tests {
+    use alo_capability::{Call, Given, Grantee, Grants};
+
     use super::*;
+    use crate::testing::noon;
+
+    /// An authorised read of `verb` from this list, with these arguments, by
+    /// an agent at full access.
+    fn authorised(
+        verbs: &alo_capability::Verbs,
+        verb: &str,
+        given: &[(&str, Given)],
+    ) -> Authorised {
+        let call = Call::of(verbs.of(verb).unwrap(), given).unwrap();
+        let agent = Grantee::named("@alo");
+        let grants = Grants::default().at_full_access_for(&agent);
+        Authorised::read(&call, &agent, &grants, noon()).unwrap()
+    }
+
+    /// **An act in an application is named by its verb and its application**,
+    /// read off the authorised call.
+    #[test]
+    fn an_act_in_an_application_is_named_by_its_verb_and_application() {
+        let verbs = alo_adapters::fallback_verbs().unwrap();
+        let reading = authorised(
+            &verbs,
+            alo_adapters::READ_WINDOW,
+            &[("application", Given::text("org.kde.dolphin"))],
+        );
+        assert_eq!(
+            about(&reading),
+            Some((
+                alo_adapters::READ_WINDOW.to_owned(),
+                "org.kde.dolphin".to_owned()
+            ))
+        );
+    }
+
+    /// **A verb that does not act in an application says nothing**, so the
+    /// journal is not filled with every file read.
+    #[test]
+    fn a_verb_outside_applications_says_nothing() {
+        let verbs = alo_files::file_verbs().unwrap();
+        let listing = authorised(
+            &verbs,
+            "list_folder",
+            &[("folder", Given::text("/home/anna"))],
+        );
+        assert_eq!(about(&listing), None);
+    }
 
     /// **A refusal is said as not done**, whatever the verb.
     #[test]
@@ -88,9 +140,11 @@ mod tests {
         let said = said(
             alo_adapters::READ_WINDOW,
             "org.kde.dolphin",
-            &Err(NotDone::NeverAsked(alo_capability::ProposalError::ReadDoesNotWait {
-                verb: alo_adapters::READ_WINDOW.to_owned(),
-            })),
+            &Err(NotDone::NeverAsked(
+                alo_capability::ProposalError::ReadDoesNotWait {
+                    verb: alo_adapters::READ_WINDOW.to_owned(),
+                },
+            )),
         );
         assert_eq!(
             said,
