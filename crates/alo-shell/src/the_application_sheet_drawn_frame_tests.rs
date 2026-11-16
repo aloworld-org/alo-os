@@ -35,9 +35,16 @@ fn words() -> alo_strings::Strings {
     alo_strings::Strings::of(vocabulary)
 }
 
+/// A frame as the card is handed it: XRGB bytes with the fixture's padded
+/// rows, and the display's size.
+type AFrame = (Vec<u8>, (i32, i32));
+
+/// Where the sheet's raster was on the display: left, top, width and height.
+type WhereItWas = (i32, i32, i32, i32);
+
 /// The frame a card is handed for the desktop, with `sheet` over it when one
-/// is up, as XRGB bytes with the fixture's padded rows, and the display's size.
-fn handed(sheet: &TheApplicationSheet, dark: bool) -> (Vec<u8>, (i32, i32)) {
+/// is up.
+fn handed(sheet: &TheApplicationSheet, dark: bool) -> AFrame {
     handed_with_its_raster(sheet, dark).0
 }
 
@@ -45,7 +52,7 @@ fn handed(sheet: &TheApplicationSheet, dark: bool) -> (Vec<u8>, (i32, i32)) {
 fn handed_with_its_raster(
     sheet: &TheApplicationSheet,
     dark: bool,
-) -> ((Vec<u8>, (i32, i32)), Option<(i32, i32, i32, i32)>) {
+) -> (AFrame, Option<WhereItWas>) {
     use crate::FrameTarget;
 
     let desktop = ADesktop::with(None);
