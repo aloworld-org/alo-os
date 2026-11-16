@@ -234,7 +234,10 @@ fn then_the_provider(walk: Walk) -> Walk {
     // And then every other application a fresh machine ships, where asked for.
     let walk = crate::in_every_shipped_application::at_full_access(walk);
     // And then at *ask each time*, approving each change on its card.
-    crate::writing_in_vscodium_at_each_ask::at_each_ask(walk)
+    let walk = crate::writing_in_vscodium_at_each_ask::at_each_ask(walk);
+    // And then alo asks for an application nobody gave it, on the sheet,
+    // and the grant goes with its task.
+    crate::asking_for_an_application_at_each_ask::for_this_task(walk)
 }
 
 #[cfg(test)]
