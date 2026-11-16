@@ -59,18 +59,63 @@ this project* from the terminal settings frames (`500:29477`).
 - **Not now** leaves the action refused. The refusal is in the record, as
   every refusal is.
 
+## The owner's answers on the sheet, 2026-11-16
+
+Four readings were put to the owner before the sheet was built. Relayed by the
+coordinator:
+
+1. ***This task* on the disk**: approved as proposed. It is written as an
+   *until sign-out* grant, and the shell takes it back the moment the task's
+   window closes or it is stopped. So a machine that lost power mid-task still
+   clears it at the next sign-in. Its row in Settings reads *until this task
+   ends*, and a *This session* row reads *until you sign out*.
+2. **A grant is alo's, not one task's.** The grants know an agent, not a task.
+   So while a *This task* grant lasts, alo may use that application in any of
+   its tasks. The owner: ***"Yes, and say so plainly."*** The line under *This
+   task* says *alo may use it in any task until this task's window closes or
+   you stop it*.
+3. **The words**: approved as written (`crates/alo-shell/src/the_application_sheets_words.rs`).
+4. **When the agent pauses**: after any refused application verb, because the
+   agent cannot tell why a call was refused and must not learn what is
+   installed. The shell asks the daemon what the turn wanted. With nothing
+   wanted, the turn goes on at once and no sheet appears.
+
+### What was read off frame `501:35539`
+
+| Drawn | Taken from | What was read off it |
+|---|---|---|
+| *Let alo use {application}?* | `501:35565` *Select an application window* | heading, at 25 |
+| *alo asked to use {application}. Choose how long.* | `501:35566` | line, 16 under the heading |
+| *This task*, *This session*, *Remember*, each in its own card with a line under it | `501:35567`, `501:35570` *Terminal / Settings choice*, and the lengths from `500:29477` | one choice per card, 16 apart |
+| *Only {application} is included. Press Escape to say not now.* | `501:35573` | the note, 16 under the last card |
+| *Not now*, then the navy *Let alo use {application}* | `501:35575` (160), `501:35577` (280), from the left, 12 apart | the actions, 16 under the note |
+
+The sheet is 680 wide, the frame's width. It is never wider than the display
+allows, and it is centred on the display as *Open with* and the GitHub sheet
+are, with nothing behind it dimmed.
+
+**A departure, for the next person to take to the design.** The note above
+says the sheet is drawn *over the asking task's window*. It is centred on the
+display instead. A task window can be on another display, or put aside, and
+the two sheets the owner has already approved are both centred. The keyboard
+starts on *This task*, the shortest length, and Enter grants the length it is
+on through the navy button, which is ringed.
+
 ## State
 
-**Decided and not built.** Nothing in this note reaches a person yet. The
-pieces it needs, none started:
+*Updated 2026-11-16.* The first two pieces are on `main`; the last two are
+in review. **Nothing reaches a person until all four have landed**, because
+the sheet is raised only from a turn the agent has paused.
 
-1. `alo-capability`: an *until sign-out* grant kind (`Until`), and the grants
-   file's additive field for it (`docs/contracts/grants-file.md`).
-2. `alo-agentd` / `alo-protocol`: the *an application is wanted* message to
-   the person's shell, carrying the identifier and the task, and never to
-   the agent.
-3. `alo-shell`: the sheet (drawing, keys, screen reader), the grant through
-   `Changing::granted`, taking a task's grants back when the task ends, and
-   clearing session grants at sign-out and at sign-in.
-4. The retry of the one action inside the agent's turn. This touches the
-   multi-step turn another lane owns, and is coordinated with it.
+1. `alo-capability`: the *until sign-out* grant kind and the grants file's
+   field for it — **on `main`** (#1314).
+2. `alo-agentd` / `alo-protocol`: the person's shell asks which
+   applications the turn wanted (`FromAPerson::Wanted`), never the agent —
+   in review (#1320).
+3. `alo-shell`: the sheet, the grant through `Changing::granted`, a task's
+   grants taken back when it ends, and session grants cleared at sign-out and
+   at sign-in — in review (#1321).
+4. The pause and the retry: `alo-agent` pauses after a refused call for an
+   application and sends the identical call again once given (#1325, the
+   agent's half); the shell's half, which raises the sheet and tells the
+   agent, follows once #1320 and #1321 are on `main`.
