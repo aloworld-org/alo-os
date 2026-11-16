@@ -656,6 +656,36 @@ owner's; the wording around them is the lane's.
   shows the sign-in page and the person signs in themselves; alo never sees the
   password; and the copy stays signed in until the person signs it out.
 
+## The owner's decision, 2026-11-16 — every installed application, automatically
+
+The owner, relayed by the coordinator: *"alo should be able to act on any
+applications that is installed"*, and, shown that answer A above left alo able
+to type into only Firefox and VSCodium: *"it should be automatic for any
+application installed not for just those too, because the users will not use
+only 3 apps even some may not need any of those applications to be installed at
+their pc"*. Asked whether alo should then work in the person's own window by
+default where an application has no copy of its own, the owner chose *"Yes,
+automatically"*.
+
+**This supersedes answer A for applications with no copy of their own.** The
+setting now has three answers (`docs/contracts/how-code-runs-file.md`,
+`in-applications`):
+
+- **the default** (`in-alos-copy-or-their-window`, or nothing written): alo's
+  own copy where the application has one, so what it sends is still counted, and
+  the person's own window where it has none — shown on the indicator as *may be
+  sending*, never counted, and wearing alo's teal border while alo works;
+- **switched off** (`in-alos-copy`): only alo's own copy, and an application
+  with none is refused as answer A refused it. The word is the one the old
+  default was written with, so a person who chose it keeps it;
+- **turned up** (`in-their-window`): the person's own window of any
+  application, as before.
+
+What did not change: each change still waits for the person's OK at *ask each
+time*; a terminal is still reached only where the person allowed their agent one
+(ADR 0111); a file that will not read still answers alo's own copy only; and the
+indicator and the record stay on at every answer.
+
 ## What this record does not do
 
 It writes no code and declares no verb. It amends no contract: the argument kind

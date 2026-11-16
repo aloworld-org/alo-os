@@ -202,10 +202,10 @@ in-applications = "in-their-window"
 
 | Key | Meaning |
 |---|---|
-| `in-applications` | Optional. `in-alos-copy` is alo's own copy, `in-their-window` lets alo work in the person's own window. Any other word is refused, and the whole file with it. |
+| `in-applications` | Optional. `in-alos-copy-or-their-window` is alo's own copy where an application has one and the person's own window where it has none; `in-alos-copy` is alo's own copy only; `in-their-window` lets alo work in the person's own window of any application. Any other word is refused, and the whole file with it. *`in-alos-copy-or-their-window` was added 2026-11-16, additively, by the owner's decision recorded in ADR 0143; until then `in-alos-copy` was the default.* |
 
-- **Absent is alo's own copy**, which is how a machine arrives.
-- **A reader that cannot read the file answers alo's own copy**: the desktop's
+- **Absent is `in-alos-copy-or-their-window`**, which is how a machine arrives (since 2026-11-16; it was alo's own copy only until then).
+- **A reader that cannot read the file answers alo's own copy only** (`in-alos-copy`), never the default: the desktop's
   door is the one reader (`application-door.md`, *work-in-*), and it reads the
   file at each ask.
 - **Each writer keeps the others' keys.** A file holding only this key is a

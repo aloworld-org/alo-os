@@ -443,20 +443,22 @@ mod tests {
         );
     }
 
-    /// **alo works in its own copy until the person chooses otherwise**: no
-    /// file, and a file that says only a level, both answer it.
+    /// **alo works in its own copy where there is one, and in the person's
+    /// window where there is none, until the person chooses otherwise** (the
+    /// owner, 2026-11-16): no file, and a file that says only a level, both
+    /// answer it.
     #[test]
-    fn alo_in_applications_is_its_own_copy_until_chosen() {
+    fn alo_in_applications_is_a_copy_or_their_window_until_chosen() {
         let folder = a_folder_of_our_own("applications-default");
         let at = folder.join("how-code-runs.toml");
         assert_eq!(
             alo_in_applications_remembered(&at).unwrap(),
-            AloInApplications::InItsOwnCopy
+            AloInApplications::InItsOwnCopyOrTheirWindow
         );
         the_level_kept(&at, HowCodeRuns::AtFullTrust).unwrap();
         assert_eq!(
             alo_in_applications_remembered(&at).unwrap(),
-            AloInApplications::InItsOwnCopy
+            AloInApplications::InItsOwnCopyOrTheirWindow
         );
     }
 
