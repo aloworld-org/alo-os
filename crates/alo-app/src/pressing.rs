@@ -120,7 +120,7 @@ pub fn pressed(
             // offer no press that works. Asked only for a refusal.
             let access = machine.access();
             let fully = WorkingFully::for_one(
-                alo_launching::is_drawn_by_chromium(subject.identifier())
+                alo_installed::is_drawn_by_chromium(subject.identifier())
                     && access.apps_describe_themselves(),
                 access.alo_works_fully_inside_apps(),
             );
