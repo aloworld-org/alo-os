@@ -196,3 +196,60 @@ fn the_border_at_rest_and_while_sending_is_found() {
         );
     }
 }
+
+/// A picture the walk kept, read from `tests/fixtures`.
+fn a_kept_picture(name: &str) -> Frame {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("fixtures")
+        .join(name);
+    let Ok(picture) = image::open(&path) else {
+        panic!("{} could not be read", path.display());
+    };
+    let rgb = picture.to_rgb8();
+    let mut ppm = format!("P6\n{} {}\n255\n", rgb.width(), rgb.height()).into_bytes();
+    ppm.extend_from_slice(rgb.as_raw());
+    let Ok(frame) = Frame::from_ppm(&ppm) else {
+        panic!("{} is not a picture", path.display());
+    };
+    frame
+}
+
+/// **VSCodium still there after its edge has gone is seen to be there** —
+/// the walk of 2026-11-16 on `main` at ab4021d6 (run 43872632801): its edge was
+/// found round VSCodium in picture 57, taken before VSCodium had drawn
+/// anything in its window, and picture 59, with the edge gone and the editor
+/// drawn, is VSCodium exactly where it was. Every pixel inside had changed, so
+/// a check that asked them to be as they were said the window was gone.
+#[test]
+fn vscodium_after_its_edge_has_gone_is_still_there() {
+    let wearing = a_kept_picture("walk-ab4021d6-57-vscodium-wearing-alo.png");
+    let after = a_kept_picture("walk-ab4021d6-59-vscodium-after-alo.png");
+    let Ok(ring) = a_ring_in(&wearing) else {
+        panic!("the edge in picture 57 was not found");
+    };
+    assert!(a_ring_in(&after).is_err(), "picture 59 still has an edge");
+    assert!(
+        a_window_is_where_the_edge_was(ring, &after),
+        "VSCodium in picture 59 was not seen where its edge was, {ring:?}"
+    );
+}
+
+/// **A screen with no window where the edge was is not a window still
+/// there**: a black screen, or the canvas alone.
+#[test]
+fn no_window_where_the_edge_was_is_not_a_window_still_there() {
+    let wearing = a_kept_picture("walk-ab4021d6-57-vscodium-wearing-alo.png");
+    let Ok(ring) = a_ring_in(&wearing) else {
+        panic!("the edge in picture 57 was not found");
+    };
+    let (wide, high) = wearing.size();
+    assert!(!a_window_is_where_the_edge_was(
+        ring,
+        &Frame::filled(wide, high, [0, 0, 0])
+    ));
+    assert!(!a_window_is_where_the_edge_was(
+        ring,
+        &Frame::filled(wide, high, CANVAS)
+    ));
+}

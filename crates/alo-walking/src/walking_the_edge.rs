@@ -12,7 +12,9 @@
 //!   works in — which the shell's own tests rule out (one window wears alo, the
 //!   one alo acted in) and this cannot.
 //! - **Gone** passes once no edge is on the screen **and** the window the edge
-//!   was round is still there, inside where the edge was. It needs an edge
+//!   was round is still there, by its own edge where alo's was
+//!   (`crate::the_edge_seen::a_window_is_where_the_edge_was`) — not by its
+//!   pixels being as they were, which a window alo works in changes. It needs an edge
 //!   seen first by *drawn*, so it is never the verdict of a check that could
 //!   not see one; and it does not pass on a screen gone black, locked or
 //!   covered, which would be a window lost rather than an edge.
@@ -23,7 +25,7 @@ use super::Walking;
 use crate::frame::Frame;
 use crate::machine::{Machine, MachineError};
 use crate::report::Verdict;
-use crate::the_edge_seen::{Nearest, Ring, a_ring_in, the_same_window_inside};
+use crate::the_edge_seen::{Nearest, Ring, a_ring_in, a_window_is_where_the_edge_was};
 
 /// How often a fresh picture is looked at.
 const LOOK_EVERY: Duration = Duration::from_secs(1);
@@ -32,8 +34,8 @@ const LOOK_EVERY: Duration = Duration::from_secs(1);
 /// picture it was seen in.
 #[derive(Debug, Default)]
 pub(super) struct TheEdge {
-    /// The edge last seen drawn, and its picture.
-    seen: Option<(Ring, Frame)>,
+    /// Where the edge was last seen drawn.
+    seen: Option<Ring>,
 }
 
 /// What one picture answered.
@@ -58,7 +60,7 @@ impl Walking {
         loop {
             let frame = machine.frame()?;
             let answered = if drawn {
-                self.drawn_in(frame)
+                self.drawn_in(&frame)
             } else {
                 self.gone_from(&frame)
             };
@@ -89,11 +91,11 @@ impl Walking {
     }
 
     /// Whether the edge is drawn in this picture, remembering where.
-    fn drawn_in(&mut self, frame: Frame) -> Answered {
-        match a_ring_in(&frame) {
+    fn drawn_in(&mut self, frame: &Frame) -> Answered {
+        match a_ring_in(frame) {
             Ok(ring) => {
                 let said = format!("the edge {}", where_it_is(ring));
-                self.edge.seen = Some((ring, frame));
+                self.edge.seen = Some(ring);
                 Answered::Holds(said)
             }
             Err(nearest) => Answered::Not(no_edge(nearest)),
@@ -103,7 +105,7 @@ impl Walking {
     /// Whether the edge seen before is gone from this picture, with its window
     /// still there.
     fn gone_from(&self, frame: &Frame) -> Answered {
-        let Some((ring, then)) = self.edge.seen.as_ref() else {
+        let Some(ring) = self.edge.seen else {
             return Answered::Not(
                 "no edge was seen before, so its going cannot be told from never being there"
                     .to_owned(),
@@ -112,15 +114,15 @@ impl Walking {
         if let Ok(still) = a_ring_in(frame) {
             return Answered::Not(format!("the edge is still drawn {}", where_it_is(still)));
         }
-        if !the_same_window_inside(*ring, then, frame) {
+        if !a_window_is_where_the_edge_was(ring, frame) {
             return Answered::Not(format!(
                 "no edge, and the window it was round {} is not there either",
-                where_it_is(*ring)
+                where_it_is(ring)
             ));
         }
         Answered::Holds(format!(
             "no edge, and the window it was round {} is still there",
-            where_it_is(*ring)
+            where_it_is(ring)
         ))
     }
 }

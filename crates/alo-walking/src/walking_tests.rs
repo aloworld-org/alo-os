@@ -378,3 +378,29 @@ fn gone_needs_the_window_still_there_and_an_edge_seen_first() {
         "gone was said of an edge never seen"
     );
 }
+
+/// A window whose application has drawn its content: many colours inside.
+fn a_painted_window() -> Frame {
+    let mut frame = a_window(false, 0);
+    for y in 70..170 {
+        for x in 70..250 {
+            let shade = u8::try_from((x * 7 + y * 13) % 200).unwrap_or(0);
+            frame = frame.with_pixel(x, y, [shade, 255 - shade, 90]);
+        }
+    }
+    frame
+}
+
+/// **The edge seen round a window not yet painted, then gone once it is,
+/// passes.** The walk of 2026-11-16 (run 43864271712) saw alo's edge round
+/// VSCodium's window before VSCodium had drawn anything in it, and later saw
+/// the edge gone with the editor drawn: the window had changed in every pixel
+/// and was still there. A check that asked for the window's pixels to be as
+/// they were failed it.
+#[test]
+fn the_edge_seen_round_an_unpainted_window_and_gone_once_it_is_painted_passes() {
+    let mut machine = PicturesAndLines::showing(vec![a_window(true, 0), a_painted_window()]);
+    let walked = the_edge_gone(the_edge_drawn(Walk::named("w"), 5), 5);
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert!(report.passed(), "{}", report.as_text());
+}
