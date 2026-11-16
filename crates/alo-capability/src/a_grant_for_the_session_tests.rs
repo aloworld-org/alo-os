@@ -81,7 +81,10 @@ fn clearing_the_session_takes_only_the_session_grants() {
         .unwrap(),
     );
     assert_eq!(grants.the_session_is_over(), 1);
-    assert!(!reaches(&grants, noon()), "a session grant outlived its session");
+    assert!(
+        !reaches(&grants, noon()),
+        "a session grant outlived its session"
+    );
     assert!(grants.permits(&alo(), &Ask::application("org.mozilla.firefox"), noon()));
     assert!(grants.permits(&alo(), &Ask::path("/home/anna/Invoices/a.pdf"), noon()));
     assert_eq!(grants.the_session_is_over(), 0, "nothing left to clear");
@@ -126,6 +129,9 @@ fn it_is_written_as_sign_out_and_no_other_word_reads_as_it() {
     let removed: Until = serde_json::from_str("\"removed\"").unwrap();
     assert!(removed.is_until_removed() && !removed.is_until_sign_out());
     for word in ["\"Sign-out\"", "\"signout\"", "\"session\"", "\"\""] {
-        assert!(serde_json::from_str::<Until>(word).is_err(), "{word} was read");
+        assert!(
+            serde_json::from_str::<Until>(word).is_err(),
+            "{word} was read"
+        );
     }
 }

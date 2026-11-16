@@ -45,7 +45,11 @@ fn a_session_and_an_hour() -> Grants {
 
 /// Whether alo may use this application, as the daemon asks.
 fn reaches(grants: &Grants, application: &str) -> bool {
-    grants.permits(&Grantee::named("alo"), &Ask::application(application), noon())
+    grants.permits(
+        &Grantee::named("alo"),
+        &Ask::application(application),
+        noon(),
+    )
 }
 
 /// **Written as the word, in format 5, and read back as a session's grant.**
@@ -57,7 +61,8 @@ fn a_session_grant_is_written_as_sign_out_and_read_back_as_itself() {
     let back = read(&text, noon()).unwrap();
     assert!(reaches(&back, "com.vscodium.codium"));
     assert!(
-        back.active_at(noon()).any(|held| held.grant.lasts_until_sign_out()),
+        back.active_at(noon())
+            .any(|held| held.grant.lasts_until_sign_out()),
         "the session's grant came back as something else"
     );
 }
