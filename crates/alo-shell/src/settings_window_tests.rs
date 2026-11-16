@@ -2778,9 +2778,11 @@ fn every_pointer_choice_is_reached_and_chosen_from_the_keyboard() {
 }
 
 /// **Where alo works in an application is a choice on Folders alo can use**
-/// (ADR 0143 Q6, the owner's answer A of 2026-11-10): alo's own copy, chosen
-/// as a machine arrives and tagged *Default*; the person's own window, with
-/// what it costs said in ADR 0143's words — and the refusal for an
+/// (ADR 0143 Q6 and the owner's decision of 2026-11-16): alo's own copy where
+/// an app has one and the person's window where it has none, chosen as a
+/// machine arrives, tagged *Default* and with what it costs; alo's own copy
+/// only, the default switched off; and the person's own window, with what it
+/// costs said in ADR 0143's words — and the refusal for an
 /// application with no copy of its own names that row and its page exactly.
 #[test]
 fn where_alo_works_is_offered_with_its_cost_and_the_refusal_names_it() {
@@ -2840,6 +2842,10 @@ fn where_alo_works_is_offered_with_its_cost_and_the_refusal_names_it() {
     let page_name = SettingsCategory::FoldersAloCanUse.word().says();
     let row_name = AloInApplications::InTheirWindow.the_word().says();
     assert_eq!(rows[2].title, row_name);
+    // **Only the first row is tagged *Default***, the answer a machine arrives
+    // with since 2026-11-16.
+    let tagged: Vec<bool> = rows.iter().map(|row| row.tag.is_some()).collect();
+    assert_eq!(tagged, [true, false, false]);
     assert!(
         refusal.contains(&format!("“{row_name}” in Settings → {page_name}")),
         "the refusal does not name the row and its page exactly: {refusal}"

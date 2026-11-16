@@ -114,6 +114,36 @@ impl AloInApplications {
         }
     }
 
+    /// The answer a reader of the person's file goes by: what it says, or,
+    /// for a file that is there and will not read,
+    /// [`AloInApplications::WHEN_UNREADABLE`] — never the default.
+    #[must_use]
+    pub fn as_read<E>(read: Result<Self, E>) -> Self {
+        read.unwrap_or(Self::WHEN_UNREADABLE)
+    }
+
+    /// Whether the desktop may type into the window in front, a window of
+    /// `application`, for alo (ADR 0153's door, `may-type-into` and
+    /// `type-into`).
+    ///
+    /// alo's own copy is always typed into; the person's own window only where
+    /// this answer lets alo in ([`Self::may_work_in_their_window_of`]). **A
+    /// terminal never** — not alo's copy of one, not the person's window of
+    /// one, at any answer: what is typed into a terminal runs, and
+    /// `accessible.type_text` refuses every terminal at every setting. Held
+    /// here as well as in the turn, because at the default a terminal has no
+    /// copy of its own and the answer alone would let alo into it.
+    #[must_use]
+    pub fn may_type_into(
+        self,
+        application: &str,
+        has_a_copy_of_its_own: bool,
+        is_alos_copy: bool,
+    ) -> bool {
+        !crate::is_a_persons_own(application)
+            && (is_alos_copy || self.may_work_in_their_window_of(has_a_copy_of_its_own))
+    }
+
     /// What choosing this costs, where it costs anything.
     ///
     /// [`Some`] for every answer that lets alo into the person's window.
@@ -190,6 +220,65 @@ mod tests {
                  and works where your other tabs are"
             )
         );
+    }
+
+    /// **Three answers, and the words in the file are the contract's**, so a
+    /// fourth cannot arrive without Settings being considered.
+    #[test]
+    fn there_are_three_answers() {
+        assert_eq!(AloInApplications::ALL.len(), 3);
+    }
+
+    /// **Typing, at each answer**: alo's own copy always; the person's window
+    /// only where the answer lets alo in; and at the default, the person's
+    /// window of an application that has a copy is refused.
+    #[test]
+    fn typing_goes_where_the_answer_lets_alo_in_and_nowhere_else() {
+        const EDITOR: &str = "org.gnome.TextEditor";
+        const BROWSER: &str = "org.mozilla.firefox";
+        let default = AloInApplications::default();
+        assert!(default.may_type_into(EDITOR, false, false), "no copy: their window");
+        assert!(!default.may_type_into(BROWSER, true, false), "a copy: not theirs");
+        assert!(default.may_type_into(BROWSER, true, true), "a copy: alo's copy");
+        let off = AloInApplications::InItsOwnCopy;
+        assert!(!off.may_type_into(EDITOR, false, false), "switched off typed");
+        assert!(!off.may_type_into(BROWSER, true, false));
+        assert!(off.may_type_into(BROWSER, true, true));
+        let up = AloInApplications::InTheirWindow;
+        assert!(up.may_type_into(EDITOR, false, false));
+        assert!(up.may_type_into(BROWSER, true, false));
+    }
+
+    /// **A terminal is never typed into**, at any answer, in the person's
+    /// window or alo's copy — though at the default it has no copy of its own.
+    #[test]
+    fn a_terminal_is_never_typed_into_at_any_answer() {
+        for terminal in crate::A_PERSONS_OWN {
+            for answer in AloInApplications::ALL {
+                for (has_a_copy, is_alos_copy) in
+                    [(false, false), (false, true), (true, false), (true, true)]
+                {
+                    assert!(
+                        !answer.may_type_into(terminal, has_a_copy, is_alos_copy),
+                        "{terminal} at {answer:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    /// **A reader goes by the file, and a file that will not read is alo's
+    /// own copy only** — so it can never let alo into the person's window.
+    #[test]
+    fn a_reader_goes_by_the_file_and_an_unreadable_one_is_strict() {
+        assert_eq!(
+            AloInApplications::as_read::<()>(Ok(AloInApplications::InTheirWindow)),
+            AloInApplications::InTheirWindow
+        );
+        let unreadable = AloInApplications::as_read(Err(()));
+        assert_eq!(unreadable, AloInApplications::InItsOwnCopy);
+        assert!(!unreadable.may_work_in_their_window_of(false));
+        assert!(!unreadable.may_type_into("org.gnome.TextEditor", false, false));
     }
 
     /// **The refusal names the answer that lets alo work in the person's

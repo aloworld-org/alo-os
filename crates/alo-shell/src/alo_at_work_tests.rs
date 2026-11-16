@@ -582,6 +582,11 @@ fn at_the_default_an_application_with_a_copy_never_uses_the_persons_window() {
     assert_eq!(machine.copies.borrow().starts, 1);
     let theirs = machine.asked(FIREFOX, Where::InTheirWindow, 1);
     assert_eq!(next(&theirs), "not-chosen");
+    assert_eq!(machine.working.how_many(), 1, "the person's window was taken in");
+    assert!(
+        !machine.lines().contains(&HowItIsShown::TheirWindow),
+        "the person's Firefox window was shown as alo's"
+    );
 }
 
 /// **Switched off, it still refuses**: a person who chose *alo works in its
@@ -597,5 +602,6 @@ fn switched_off_an_application_with_no_copy_is_still_refused() {
     assert_eq!(next(&theirs), "not-chosen");
     assert!(machine.lines().is_empty());
     assert_eq!(machine.working.how_many(), 0);
+    assert_eq!(machine.copies.borrow().starts, 0, "a copy was started");
     assert!(machine.ever_begun().is_empty());
 }

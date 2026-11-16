@@ -1679,8 +1679,14 @@ mod running {
                 alo_remembering::THE_LEVEL,
             ))
             .unwrap_or(alo_capability::AloInApplications::WHEN_UNREADABLE);
-            chosen.may_work_in_their_window_of(alo_launching::has_a_copy_of_its_own(application))
-                || self.working.runs_as_alos_copy(application, pid)
+            // **Never a terminal**, whatever the answer: `may_type_into` holds
+            // that, and is where every case of this is tested.
+            let is_alos_copy = self.working.runs_as_alos_copy(application, pid);
+            chosen.may_type_into(
+                application,
+                alo_launching::has_a_copy_of_its_own(application),
+                is_alos_copy,
+            )
         }
 
         /// **Each file alo was approved to open** (`open_file_in_application`,

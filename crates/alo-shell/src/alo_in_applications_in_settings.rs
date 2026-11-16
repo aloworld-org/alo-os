@@ -45,8 +45,7 @@ impl AloInApplicationsHere {
     /// What the choice is at sign-in.
     pub(crate) fn at_sign_in(at: &Path) -> Self {
         Self {
-            is: alo_remembering::alo_in_applications_remembered(at)
-                .unwrap_or(AloInApplications::WHEN_UNREADABLE),
+            is: AloInApplications::as_read(alo_remembering::alo_in_applications_remembered(at)),
             at: at.to_owned(),
         }
     }
