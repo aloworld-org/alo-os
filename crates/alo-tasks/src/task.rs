@@ -66,6 +66,11 @@ pub struct ATask {
     /// conversation until it is sent, so what alo is told came before it really
     /// did come before it.
     held: Option<String>,
+    /// **alo goes on after the person answered a change**: what the answer did
+    /// has been said, and alo's next words are on their way on the same turn
+    /// (`docs/contracts/asking-socket.md`, *The turn goes on after an answer*).
+    /// Ended by the next thing alo says.
+    goes_on: bool,
     /// **The name of the model the person chose**, as they wrote it in their
     /// settings when this task was asked — `gpt-4o`, `SmolLM2 1.7B` — or
     /// [`None`] where they named none, as for a machine down the corridor,
@@ -112,6 +117,7 @@ impl ATask {
             scroll: TheScroll::at_the_newest(),
             answers: TheAnswersGiven::nothing_yet(),
             held: None,
+            goes_on: false,
             the_models_name: None,
         }
     }
@@ -269,6 +275,13 @@ impl ATask {
     /// Alo said something.
     pub fn alo_says(&mut self, turn: Turn) {
         self.conversation.and_then(turn);
+        self.goes_on = false;
+    }
+
+    /// alo goes on after the answer it just reported: the task reads *alo is
+    /// working* until alo next says something.
+    pub fn and_alo_goes_on(&mut self) {
+        self.goes_on = true;
     }
 
     /// Something happened.
@@ -372,7 +385,10 @@ impl ATask {
             Stopping::NobodyAsked => {
                 if self.is_waiting_for_the_person() {
                     crate::words::WAITING_FOR_YOUR_PERMISSION
-                } else if self.activity.doing_now().is_some() || self.conversation.is_alos_turn() {
+                } else if self.goes_on
+                    || self.activity.doing_now().is_some()
+                    || self.conversation.is_alos_turn()
+                {
                     crate::words::ALO_IS_WORKING
                 } else {
                     crate::words::COMPLETE

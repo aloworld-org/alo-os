@@ -554,7 +554,12 @@ impl<'a> Machine<'a> {
         // **The same list an agent is told about**, read from one place so the
         // two cannot drift in which families they include.
         let verbs = the_verbs_a_whole_machine_offers()?;
-        let adapters = alo_adapters::shipped_adapters()?;
+        // **Only the adapters this list can reach an application through.**
+        // The fallback steps aside for an application with an adapter, and an
+        // adapter none of whose verbs is on `verbs` is no road at all: holding
+        // it here would leave that application with none (Text Editor, until
+        // 2026-11-16).
+        let adapters = alo_adapters::shipped_adapters()?.whose_verbs_are_on(&verbs);
         Ok(Self {
             verbs,
             strings,

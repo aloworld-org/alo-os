@@ -25,12 +25,12 @@
 //! # Whose turn
 //!
 //! The door alo acts through carries no task (`alo_acting`), and `alo-agentd`
-//! serves one turn at a time, so the act is the **one task at work** — open,
+//! serves one turn at a time, so the act is the **task at work** — open,
 //! and *alo is working* — at that moment. With none, nothing is marked: an act
-//! from alo's terminal is not a task's. **With two at work, nothing is marked
-//! either**, because a border cannot say which task, and the wrong one is worse
-//! than none; the task windows still say both are
-//! working. That is a reading put to the owner.
+//! from alo's terminal is not a task's. **With two at work the window is
+//! marked anyway**, for the one asked most recently — the owner, 2026-11-15:
+//! *a window alo types into is never left unmarked*. The border says alo, which
+//! is true whichever task it was.
 //!
 //! # For the turn, and no longer
 //!
@@ -67,6 +67,10 @@ struct ActedIn {
 pub struct TheWindowsAloActsIn {
     /// Each window, and whose turn.
     acting: Vec<ActedIn>,
+    /// What alo's work is sending, by application, as the indicator says it.
+    sending: Vec<(String, alo_egress::HowItIsShown)>,
+    /// The windows whose teal border was drawn since the corner last asked.
+    drawn_round: Vec<WlSurface>,
 }
 
 impl TheWindowsAloActsIn {
@@ -76,14 +80,25 @@ impl TheWindowsAloActsIn {
         self.acting.len()
     }
 
-    /// The tasks acting in this window, newest first.
-    pub(crate) fn tasks_in(&self, surface: &WlSurface) -> impl Iterator<Item = WhichTask> + '_ {
+    /// The tasks acting in this window, newest first, each with what its
+    /// application is sending, if anything.
+    pub(crate) fn tasks_in(
+        &self,
+        surface: &WlSurface,
+    ) -> impl Iterator<Item = (WhichTask, Option<alo_egress::HowItIsShown>)> + '_ {
         let surface = surface.clone();
         self.acting
             .iter()
             .rev()
             .filter(move |acted| acted.surface == surface)
-            .map(|acted| acted.which)
+            .map(|acted| {
+                let sending = self
+                    .sending
+                    .iter()
+                    .find(|(application, _)| *application == acted.application)
+                    .map(|(_, how)| *how);
+                (acted.which, sending)
+            })
     }
 
     /// Let go of each window whose turn is over, or which has gone, and answer
@@ -108,24 +123,24 @@ fn the_turn_goes_on(tasks: &TheTasks, which: WhichTask) -> bool {
             .is_some_and(|task| crate::alo_in_a_window::wears_alo(task.what_is_happening()))
 }
 
-/// **The one task at work**: open, and *alo is working*. [`None`] for none,
-/// and for two or more, which cannot be told apart.
-fn the_one_at_work(tasks: &TheTasks) -> Option<WhichTask> {
-    let mut at_work = (0..tasks.each().len())
+/// **The task at work**: open, and *alo is working* — the one asked most
+/// recently where two are, because a window alo acts in is never left unmarked
+/// (the owner, 2026-11-15), and [`None`] where none is.
+fn the_task_at_work(tasks: &TheTasks) -> Option<WhichTask> {
+    (0..tasks.each().len())
+        .rev()
         .filter_map(|at| tasks.the_task_numbered(at))
         .filter(|which| tasks.is_open(*which))
-        .filter(|which| {
+        .find(|which| {
             tasks
                 .the(*which)
                 .is_some_and(|task| task.what_is_happening() == alo_tasks::words::ALO_IS_WORKING)
-        });
-    let one = at_work.next()?;
-    at_work.next().is_none().then_some(one)
+        })
 }
 
 impl crate::Server {
     /// **alo is acting in this window**: it wears the task at work, for that
-    /// task's turn. Answers which task, or [`None`] when no one task is at work
+    /// task's turn. Answers which task, or [`None`] when no task is at work
     /// and nothing was marked.
     ///
     /// Called by the code that carries an act out, once it holds that the
@@ -133,7 +148,7 @@ impl crate::Server {
     /// to act in, by the identifier it used — what the log says, because an
     /// Electron program names its own Wayland window something shorter.
     pub fn alo_acts_in(&mut self, surface: &WlSurface, application: &str) -> Option<WhichTask> {
-        let which = the_one_at_work(&self.the_tasks)?;
+        let which = the_task_at_work(&self.the_tasks)?;
         let held = &mut self.the_windows_alo_acts_in.acting;
         if held
             .iter()
@@ -154,6 +169,53 @@ impl crate::Server {
             application: application.to_owned(),
         });
         Some(which)
+    }
+
+    /// **What alo's work is sending this frame**, by application, as the
+    /// indicator says it — told by the desktop that holds alo's copies, once a
+    /// frame, and read by the border of the window alo works in.
+    pub fn what_alos_work_is_sending(&mut self, sending: Vec<(String, alo_egress::HowItIsShown)>) {
+        self.the_windows_alo_acts_in.sending = sending;
+    }
+
+    /// **alo's teal border was drawn round this window**, on some display,
+    /// this frame — told by the painter (`crate::every_windows_edge`), which
+    /// is the only one that knows a border was not left off a screen.
+    pub fn alos_border_was_drawn_round(&mut self, surface: &WlSurface) {
+        let drawn = &mut self.the_windows_alo_acts_in.drawn_round;
+        if !drawn.contains(surface) && drawn.len() < THE_MOST {
+            drawn.push(surface.clone());
+        }
+    }
+
+    /// **The applications whose copy's sending the border says, so the corner
+    /// does not** — the owner, 2026-11-15: *the border is enough*. Each is the
+    /// application of a window alo acts in whose teal edge was drawn since
+    /// this was last asked **and** is still drawn now: alo acting, not waiting
+    /// on the person (navy, no edge), and the turn not over. Anything else is
+    /// left in the corner, so nothing alo's copy sends is ever shown nowhere.
+    ///
+    /// Asked once a frame, before the corner is told what to show; the
+    /// drawing it read is let go, so a border not drawn again is not counted
+    /// again.
+    pub fn the_applications_wearing_alos_border(&mut self) -> Vec<String> {
+        let drawn = std::mem::take(&mut self.the_windows_alo_acts_in.drawn_round);
+        let mut wearing: Vec<String> = Vec::new();
+        for surface in &drawn {
+            let edged = self.alo_in_this_window(surface).is_some_and(|here| {
+                here.wears == crate::alo_in_a_window::Wears::TheBorder
+                    && here.how != crate::alo_in_a_window::HowAloIsHere::WaitingForThePerson
+            });
+            if !edged {
+                continue;
+            }
+            for acted in &self.the_windows_alo_acts_in.acting {
+                if acted.surface == *surface && !wearing.contains(&acted.application) {
+                    wearing.push(acted.application.clone());
+                }
+            }
+        }
+        wearing
     }
 
     /// **Once a frame**: let go of each window whose turn is over or which has

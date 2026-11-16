@@ -92,6 +92,11 @@ pub use where_flatpak_exports::{
     THE_MACHINES_INSTALLATION, the_persons_installation, with_what_flatpak_exports,
 };
 
+mod built_on_electron;
+pub use built_on_electron::{
+    ELECTRON_BASE_APP, is_built_on_electron, is_drawn_by_chromium, is_drawn_by_chromium_under,
+};
+
 mod what_they_may_reach;
 pub use what_they_may_reach::{TheirHome, WhatItMayReach, WhatTheyMayReach, what_they_may_reach};
 

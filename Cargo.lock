@@ -1161,6 +1161,7 @@ name = "alo-installed"
 version = "0.0.1"
 dependencies = [
  "alo-applications",
+ "alo-launching",
  "alo-opening",
 ]
 
@@ -1925,6 +1926,7 @@ dependencies = [
  "alo-picking",
  "alo-portals",
  "alo-power",
+ "alo-protocol",
  "alo-publishing",
  "alo-put-aside",
  "alo-record",

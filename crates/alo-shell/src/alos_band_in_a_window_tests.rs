@@ -25,6 +25,7 @@ fn alo(how: HowAloIsHere) -> AloHere {
         },
         what: "summarise this document".to_owned(),
         wears: crate::alo_in_a_window::Wears::TheBand,
+        sending: None,
     }
 }
 
@@ -288,5 +289,97 @@ fn a_window_filling_a_dense_display_keeps_its_tab_on_it() {
             Point::from((1280 - 16 - 28, 800 - 16 - 20)),
             Size::from((28, 20))
         )
+    );
+}
+
+/// How many fully teal pixels a set of rasters has.
+fn teal_pixels(rasters: &[Washed]) -> usize {
+    let teal = rgb(Role::AccentDefault);
+    solid_colours(rasters)
+        .iter()
+        .filter(|it| **it == teal)
+        .count()
+}
+
+/// **While alo's copy sends, the border doubles in weight, and that is the
+/// whole sign** — the owner, 2026-11-15: *we remove this and the sending, the
+/// border is enough*. Never by colour alone (*who-is-acting.md*): 3 at rest, 6
+/// while sending, and no words.
+#[test]
+fn while_sending_the_border_doubles_and_says_nothing() {
+    let card = Rectangle::new(Point::from((14, 28)), Size::from((1140, 634)));
+    let quiet = operating(HowAloIsHere::Working);
+    let sending = AloHere {
+        sending: Some(alo_egress::HowItIsShown::Counted),
+        ..operating(HowAloIsHere::Working)
+    };
+    let draw = |here: &AloHere, scale: u32| {
+        drawn(
+            AlosBand {
+                here,
+                card,
+                window: card,
+                stop_pointed_at: false,
+            },
+            &mut fonts(),
+            scale,
+            (
+                1280 * i32::try_from(scale).unwrap_or(100) / 100,
+                800 * i32::try_from(scale).unwrap_or(100) / 100,
+            ),
+        )
+    };
+    let edge =
+        |rasters: &[Washed]| teal_pixels(std::slice::from_ref(rasters.first().expect("the edge")));
+    for scale in [100, 200] {
+        let (quiet_rasters, quiet_words) = draw(&quiet, scale);
+        let (sending_rasters, sending_words) = draw(&sending, scale);
+        assert!(quiet_words.is_empty());
+        assert!(sending_words.is_empty(), "words were written on the border");
+        assert_eq!(
+            sending_rasters.len(),
+            quiet_rasters.len(),
+            "something besides the edge changed while sending"
+        );
+        assert!(
+            edge(&sending_rasters) * 10 >= edge(&quiet_rasters) * 18,
+            "at scale {scale} the edge did not double: {} against {}",
+            edge(&sending_rasters),
+            edge(&quiet_rasters)
+        );
+    }
+}
+
+/// **At rest the border is 3, heavier than the band's edge of 2**: over a
+/// dark window like VSCodium's, 2 was too faint to read (the coordinator,
+/// 2026-11-15).
+#[test]
+fn at_rest_the_border_is_heavier_than_the_bands_edge() {
+    let card = Rectangle::new(Point::from((56, 70)), Size::from((1056, 520)));
+    let draw = |here: &AloHere| {
+        drawn(
+            AlosBand {
+                here,
+                card,
+                window: notes(),
+                stop_pointed_at: false,
+            },
+            &mut fonts(),
+            100,
+            (4000, 3000),
+        )
+        .0
+    };
+    let border = teal_pixels(std::slice::from_ref(
+        draw(&operating(HowAloIsHere::Working))
+            .first()
+            .expect("the edge"),
+    ));
+    let band = teal_pixels(std::slice::from_ref(
+        draw(&alo(HowAloIsHere::Working)).first().expect("the edge"),
+    ));
+    assert!(
+        border * 10 >= band * 14,
+        "the border at rest ({border}) is not half again the band's edge ({band})"
     );
 }

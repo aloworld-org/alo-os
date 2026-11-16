@@ -147,6 +147,17 @@ impl Lamp {
         }
     }
 
+    /// [`Lamp::of_both`] for `shown` of this machine's lines rather than all
+    /// of them — the lines a picture keeps after a border took some
+    /// (`crate::Drawn::of_both_except_on_borders`).
+    #[must_use]
+    pub(crate) fn of_both_counting(shown: usize, daemon: &crate::FromTheDaemon) -> Self {
+        Self {
+            lit: NonZeroUsize::new(shown.saturating_add(daemon.lines().len())),
+            cannot_tell: daemon.cannot_tell(),
+        }
+    }
+
     /// Whether the lamp cannot say whether alo OS's service is sending
     /// anything.
     #[must_use]

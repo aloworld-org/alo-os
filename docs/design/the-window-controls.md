@@ -423,9 +423,10 @@ said *"This is not a premium way to show that alo is working"*, and then ruled:
 with one of our brand colors."* So a window alo **operates** — opens a file
 in, types into, saves in, for a request typed in the Bar — wears:
 
-- **the teal edge**, deep teal `#0F6B72` (`accent/default`), 2 wide round the
-  whole card at its corner of 16, exactly as stage 3 draws it for an offered
-  window: one painter, `crate::alos_band_in_a_window`;
+- **the teal edge**, deep teal `#0F6B72` (`accent/default`), round the whole
+  card at its corner of 16, as stage 3 draws it for an offered window — one
+  painter, `crate::alos_band_in_a_window` — but 3 wide at rest and 6 while
+  sending (below);
 - **alo's mark, small, on the border**, because teal never comes alone
   (*who-is-acting.md*): a tab of the edge's own teal, 28 × 20 with corners of
   6, standing on the outside of the top edge 16 in from its right-hand corner,
@@ -447,16 +448,19 @@ Readings taken building it, each for the owner to overrule:
   comes in front; typing a text, saving, and asking whether it may type (the
   road typing through the accessibility tree takes) — each only once every
   check that the window is alo's to type into has held. A refused act marks
-  nothing.
+  nothing. *Asking whether it may type counts as acting*: decided by the
+  coordinator on 2026-11-15, as built.
 - **Whose turn.** The door alo acts through names no task, and `alo-agentd`
-  serves one turn at a time, so the act is the one task whose window says
-  *alo is working*. **With two tasks working, no window is marked** — a
-  border cannot say which, and a wrong one is worse than none; the task
-  windows still say both are working. Put to the owner.
+  serves one turn at a time, so the act is the task whose window says *alo is
+  working*. **With two tasks working the window is marked anyway**, for the
+  one asked most recently — the owner, 2026-11-15, overruling this reading's
+  first form (*no window marked*): a window alo types into is never left
+  unmarked. The border says alo, which is true whichever task it was.
 - **For the turn, and no longer.** The border comes off when that turn ends —
   answered, stopped, or its task window closed — or the window goes. A
   follow-up is a new turn: the window wears alo again only if alo acts in it
   again, unlike an offered window, which every turn of its task is about.
+  Decided by the coordinator on 2026-11-15, as built.
 - **Near the top of the screen the border is still drawn, round the window
   alone.** A band that would fall off the display is not drawn (a band half
   off the screen is not drawn half), and until 2026-11-16 that refusal took
@@ -465,11 +469,35 @@ Readings taken building it, each for the owner to overrule:
   `docs/misreadings/a-painter-tested-alone-passed-while-its-caller-drew-nothing.md`).
   Now the band alone is left out, and the border goes round the window, kept to
   the display.
-- **The egress indicator is unchanged for now.** Law 1 needs what alo's copy
-  sends visible at the moment it leaves, and the design is silent on whether
-  that notice belongs to the border. Until the owner chooses among the options
-  brought to them, the indicator keeps the top-left corner (*the regions a
-  pointer can be in*).
+- **While alo's copy sends, the border thickens, and that is the whole
+  sign** — ruled by the owner on 2026-11-15. Asked where the notice should
+  live, they first answered *"It's should be at the edges of the window"*;
+  shown that built as the word *sending* on a tab of the border, they ruled
+  *"We remove this and the sending, the border is enough"*, and asked about
+  law 1, chose *"Border only, it thickens"*. So:
+  - the border is **3 wide at rest and 6 while that window's application is
+    sending** — logical, through the display's scale — read from the same
+    line the egress indicator holds, so the two can never disagree. No words
+    and no colour change: the weight is the sign (*who-is-acting.md*). **3
+    rather than stage 3's 2** was the coordinator's call, because over a
+    dark window like VSCodium's 2 was too faint; an offered window's band
+    keeps 2;
+  - **the corner no longer shows alo's copy of an application while that
+    application's window wears the border** — drawn this frame, alo acting
+    (not waiting on the person, which draws no edge) and the turn not over.
+    Every other line stays in the corner exactly as it was: alo's own
+    questions to a provider, alo OS's own errands, a person's command, a copy
+    whose window wears no border (never marked, off the screen, put aside,
+    waiting on the person). `alo_indicator::Drawn::of_both_except_on_borders`
+    is the one place the line is left out;
+  - **law 1 still holds**: what alo's copy sends is visible at the moment it
+    leaves — by the border thickening, or, wherever the border is not drawn,
+    by the corner — and the record keeps it, untouched.
+
+  A frame where a window's border was drawn and then goes off the screen is
+  the one gap: the corner is told from the borders the frame before drew, so
+  for that one frame the copy's line is in neither place. Named rather than
+  hidden.
 
 `crate::the_window_alo_acts_in`; the walk *writing in VSCodium* checks the
 edge in the screen's own pixels while alo works and gone after

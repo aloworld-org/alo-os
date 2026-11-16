@@ -534,6 +534,9 @@ pub struct Server {
     /// is how somebody approves the fourth one without reading it.* Nothing is
     /// lost: the daemon holds the rest, and answering one brings up the next.
     pub(crate) the_change_waiting: crate::a_change_waiting_reaches_the_person::AChangeWaiting,
+    /// Answers the person gave a change, on their way to the daemon off the
+    /// frame loop (`crate::an_answer_goes_off_the_frame`).
+    pub(crate) the_answers: crate::an_answer_goes_off_the_frame::TheAnswersOnTheirWay,
     /// Which task window holds the keyboard, if one does.
     ///
     /// **The one a person just asked for, never one a question arrived in** —
@@ -1017,6 +1020,7 @@ impl Server {
             the_task_with_the_keyboard: None,
             the_change_waiting:
                 crate::a_change_waiting_reaches_the_person::AChangeWaiting::nothing_yet(),
+            the_answers: crate::an_answer_goes_off_the_frame::TheAnswersOnTheirWay::default(),
             the_composer: crate::the_composer_a_person_types_in::TheComposer::empty(),
             asked_alo: Vec::new(),
             alo_in_a_window: crate::alo_in_a_window::AloInAWindow::default(),

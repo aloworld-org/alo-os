@@ -124,8 +124,48 @@ pub fn driving_until_stopped(
     instructions: Instructions,
     stopped: &dyn Fn() -> bool,
 ) -> WhatHappened {
+    driving_on(
+        earlier,
+        window,
+        request,
+        verbs,
+        may_reach,
+        door,
+        how_far,
+        instructions,
+        stopped,
+        Vec::new(),
+    )
+}
+
+/// **Drive a turn on after the person answered a change in it**:
+/// [`driving_until_stopped`], beginning from the steps already taken — the
+/// last of them the change and what the person's answer did
+/// (`docs/contracts/asking-socket.md`, *The turn goes on after an answer*).
+///
+/// **The bound begins again**, because each answer is the person's own act:
+/// a turn that goes round again after one has been told something only they
+/// could tell it. **Nothing here can approve**: the answer arrives as a step
+/// the model is shown, and the door is still the agent's half.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "driving_until_stopped's nine, and the steps it begins from; a struct would be a \
+              second name for the same call"
+)]
+pub fn driving_on(
+    earlier: &TheConversationSoFar,
+    window: Option<&TheWindowOffered>,
+    request: &str,
+    verbs: &Verbs,
+    may_reach: &WhatItMayReach,
+    door: &mut dyn TheDoor,
+    how_far: HowFar,
+    instructions: Instructions,
+    stopped: &dyn Fn() -> bool,
+    after: Vec<AStep>,
+) -> WhatHappened {
     let mut watched = Watched { door, stopped };
-    let happened = driving_about(
+    let happened = driving_from(
         earlier,
         window,
         request,
@@ -134,6 +174,7 @@ pub fn driving_until_stopped(
         &mut watched,
         how_far,
         instructions,
+        after,
     );
     if stopped() {
         return WhatHappened::ItWasStopped {
@@ -214,8 +255,35 @@ pub fn driving_about(
     how_far: HowFar,
     instructions: Instructions,
 ) -> WhatHappened {
-    let mut steps: Vec<AStep> = Vec::new();
+    driving_from(
+        earlier,
+        window,
+        request,
+        verbs,
+        may_reach,
+        door,
+        how_far,
+        instructions,
+        Vec::new(),
+    )
+}
 
+/// [`driving_about`], beginning from steps already taken.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "driving_about's eight and the steps it begins from"
+)]
+fn driving_from(
+    earlier: &TheConversationSoFar,
+    window: Option<&TheWindowOffered>,
+    request: &str,
+    verbs: &Verbs,
+    may_reach: &WhatItMayReach,
+    door: &mut dyn TheDoor,
+    how_far: HowFar,
+    instructions: Instructions,
+    mut steps: Vec<AStep>,
+) -> WhatHappened {
     for _ in 0..how_far.rounds() {
         let shown = shown_in_progress(
             instructions,
@@ -317,6 +385,7 @@ pub fn driving_about(
                     return WhatHappened::AChangeIsWaiting {
                         number: standing.number(),
                         sentence: standing.sentence().text().to_owned(),
+                        proposed: said.clone(),
                         after: steps,
                         stands_for: standing.lapses_in().map(std::time::Duration::from_secs),
                     };
@@ -371,6 +440,7 @@ pub fn driving_about(
                     return WhatHappened::AChangeIsWaiting {
                         number: standing.number(),
                         sentence: standing.sentence().text().to_owned(),
+                        proposed: said.clone(),
                         after: steps,
                         stands_for: standing.lapses_in().map(std::time::Duration::from_secs),
                     };

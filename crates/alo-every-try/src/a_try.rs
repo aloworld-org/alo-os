@@ -8,10 +8,10 @@
 //! step not taken ends the try, so a try that has left the road spends no more
 //! of the model's calls.
 
-use alo_agent::{HowFar, NotAnswered, TheDoor, WhatHappened, driving_about};
+use alo_agent::{HowFar, NotAnswered, TheDoor, WhatHappened, driving_on};
 use alo_capability::Verbs;
 use alo_instructing::{Instructions, TheConversationSoFar, WhatItMayReach};
-use alo_protocol::{FromAnAgent, ToAnAgent};
+use alo_protocol::{FromAnAgent, ToAPerson, ToAnAgent};
 use alo_strings::Strings;
 
 use crate::a_road::ARequest;
@@ -134,7 +134,43 @@ pub fn one_try(
     strings: &Strings,
     model: &mut dyn TheModel,
 ) -> Tried {
+    one_try_at(
+        TheLevel::FullAccess,
+        request,
+        may_reach,
+        verbs,
+        strings,
+        model,
+    )
+}
+
+/// How the scripted machine answers a change on the road.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TheLevel {
+    /// Carried out at once and answered as done without asking (ADR 0149).
+    FullAccess,
+    /// Proposed, approved once by the person, and the turn goes on from what
+    /// the daemon tells them it did (`docs/contracts/asking-socket.md`, *The
+    /// turn goes on after an answer*) — the step a model is shown at the
+    /// default level.
+    AskEachTime,
+}
+
+/// [`one_try`] at a level: at [`TheLevel::AskEachTime`] every change on the
+/// road waits, is approved once, and the agent's turn goes on through
+/// `alo_agent::WhatHappened::going_on_after`, as `alo-agent`'s own loop does.
+#[must_use]
+pub fn one_try_at(
+    level: TheLevel,
+    request: &ARequest,
+    may_reach: &WhatItMayReach,
+    verbs: &Verbs,
+    strings: &Strings,
+    model: &mut dyn TheModel,
+) -> Tried {
     let mut door = Recording {
+        level,
+        approved: None,
         request,
         verbs,
         machine: AsTheMachineNames::of(may_reach),
@@ -148,16 +184,31 @@ pub fn one_try(
         said_last: None,
         looked_aside: 0,
     };
-    let happened = driving_about(
-        &TheConversationSoFar::nothing(),
-        None,
-        request.words(),
-        verbs,
-        may_reach,
-        &mut door,
-        HowFar::THE_ORDINARY,
-        Instructions::SHOWN_TO_A_TURN,
-    );
+    let mut after = Vec::new();
+    let happened = loop {
+        let happened = driving_on(
+            &TheConversationSoFar::nothing(),
+            None,
+            request.words(),
+            verbs,
+            may_reach,
+            &mut door,
+            HowFar::THE_ORDINARY,
+            Instructions::SHOWN_TO_A_TURN,
+            &|| false,
+            std::mem::take(&mut after),
+        );
+        // **The person approves the change, once**, and the turn goes on
+        // from what the daemon told them it did.
+        match door
+            .approved
+            .take()
+            .and_then(|did| happened.going_on_after(&did))
+        {
+            Some(steps) => after = steps,
+            None => break happened,
+        }
+    };
     let of = request.road().len();
     let done = door.taken;
     let mut chose = door.chose;
@@ -232,6 +283,11 @@ fn the_start_of(said: &str) -> String {
 /// The door a try's loop asks: questions go to the model, and everything else
 /// is held against the road.
 struct Recording<'a> {
+    /// How a change on the road is answered.
+    level: TheLevel,
+    /// What the daemon would tell the person the change waiting did, once
+    /// they approve it, at [`TheLevel::AskEachTime`].
+    approved: Option<ToAPerson>,
     /// The request being tried.
     request: &'a ARequest,
     /// The machine's verbs, which a step is validated against.
@@ -340,7 +396,8 @@ impl TheDoor for Recording<'_> {
         ) {
             Ok(call) => {
                 self.taken += 1;
-                Ok(answering(step.answered(), &call, self.strings))
+                let answered = answering(step.answered(), &call, self.strings);
+                Ok(self.as_the_level_answers(answered, &call))
             }
             Err(wrong) => {
                 // **As the machine answers a file named where there is none**:
@@ -361,6 +418,35 @@ impl TheDoor for Recording<'_> {
 }
 
 impl Recording<'_> {
+    /// At [`TheLevel::AskEachTime`], a change done without asking is instead
+    /// left waiting under the road's step number, on its own sentence, and what
+    /// it did is kept for the approval. Everything else is answered as it was.
+    fn as_the_level_answers(
+        &mut self,
+        answered: ToAnAgent,
+        call: &alo_capability::Call,
+    ) -> ToAnAgent {
+        let (TheLevel::AskEachTime, ToAnAgent::DoneWithoutAsking { did, .. }) =
+            (self.level, &answered)
+        else {
+            return answered;
+        };
+        let waiting = serde_json::json!({
+            "format": 1,
+            "tells": {"proposed": {
+                "number": self.taken,
+                "sentence": {"text": call.sentence(self.strings).into_text(), "came_from": "the-source"},
+            }},
+        });
+        match ToAnAgent::read(&waiting.to_string()) {
+            Ok(proposed) => {
+                self.approved = Some(ToAPerson::Did(did.clone()));
+                proposed
+            }
+            Err(_) => answered,
+        }
+    }
+
     /// The machine's refusal for a path named where there is nothing, saying
     /// where one of that name is — where the road expected a file of the same
     /// name directly in the person's home. The set's machine is at full

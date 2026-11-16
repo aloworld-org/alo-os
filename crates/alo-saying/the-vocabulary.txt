@@ -120,7 +120,7 @@ adapters.fallback.type-text.name	the name of the field or document, as the appli
 adapters.fallback.type-text.no-keyboard	This machine could not type into {application} just now, so nothing was typed
 adapters.fallback.type-text.no-such-field	{application} shows no field or document named “{name}” now, so nothing was typed
 adapters.fallback.type-text.no-such-field-but-these	{application} shows no field or document named “{name}” now, so nothing was typed. It shows: {there}
-adapters.fallback.type-text.not-alos-copy	That {application} window is yours, not alo's own copy, so nothing was typed. To let alo type in your own windows, choose “alo may work in your own window” in Settings → Folders alo can use
+adapters.fallback.type-text.not-alos-copy.what-alo-can-use	That {application} window is yours, not alo's own copy, so nothing was typed. To let alo type in your own windows, choose “alo may work in your own window” in Settings → What alo can use
 adapters.fallback.type-text.not-in-front	“{name}” in {application} does not have the keyboard, so nothing was typed. alo types only where the keyboard is: bring the window forward and click in it first
 adapters.fallback.type-text.password-field	“{name}” in {application} is a password field, and alo never types into one, so nothing was typed
 adapters.fallback.type-text.purpose	type a text into a field or a document in an application's window, and save it
@@ -477,7 +477,7 @@ capability.in-applications.in-its-own-copy	alo works in its own copy of an appli
 capability.in-applications.in-its-own-copy-is	What alo's copy sends is counted and shown while it works. An application that cannot open a separate copy is refused
 capability.in-applications.in-your-window	alo may work in your own window
 capability.in-applications.in-your-window-is	Any application can be used. While alo works, the indicator says the application may be sending
-capability.in-applications.no-copy-of-its-own	alo cannot work in {application} safely at this setting, because it cannot open a separate copy of its own for alo. To let alo work in your own window instead, choose “alo may work in your own window” in Settings → Folders alo can use
+capability.in-applications.no-copy-of-its-own.what-alo-can-use	alo cannot work in {application} safely at this setting, because it cannot open a separate copy of its own for alo. To let alo work in your own window instead, choose “alo may work in your own window” in Settings → What alo can use
 capability.in-applications.what-your-window-costs	alo will show that the application is sending, but cannot count what it sends, and works where your other tabs are
 capability.proposal.no-end	a question has to lapse — choose how long this one stands for
 capability.proposal.no-time	say how long the question stands — one that lapses at once cannot be answered
@@ -1701,6 +1701,7 @@ picking.covers	The agent will be able to reach {folder} and everything inside it
 picking.more-than-shown	There are more folders here than can be shown. Open one of these to narrow it down, or start somewhere further in
 picking.not-a-folder	That is not a folder, so there is nothing in it to pick. Pick a folder instead
 picking.not-a-full-path	That is not a place on this machine. Start the picker at a folder named in full, such as your home folder
+picking.not-an-application-shown	That application is not in the list. Choose one of the applications shown
 picking.not-shown-here	There is no folder of that name here. Pick one of the folders shown
 picking.nothing-above	This is as far up as the picker goes. Open one of the folders shown, and pick from there
 picking.nothing-there	That folder is not there any more. Go back, and pick another one

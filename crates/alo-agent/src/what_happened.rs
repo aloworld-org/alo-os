@@ -49,6 +49,10 @@ pub enum WhatHappened {
         /// for a person who never answers; a person who answers ends the hold
         /// at once.
         stands_for: Option<std::time::Duration>,
+        /// The line the model wrote to propose it, as it wrote it — what a turn
+        /// that goes on after the person's answer shows the model beside that
+        /// answer (`crate::driving::driving_on`).
+        proposed: String,
     },
     /// The request needed no change, and this is the answer to it.
     ///
@@ -129,13 +133,7 @@ impl WhatHappened {
     /// a refusal still did what it did before it.
     #[must_use]
     pub fn done_without_asking(&self) -> Vec<String> {
-        self.after()
-            .iter()
-            .filter_map(|step| match ToAnAgent::read(step.what_came_back()) {
-                Ok(ToAnAgent::DoneWithoutAsking { said, .. }) => Some(said.text().to_owned()),
-                _ => None,
-            })
-            .collect()
+        done_without_asking_in(self.after())
     }
 
     /// Whether this is the end a request that changes something reaches.
@@ -143,4 +141,44 @@ impl WhatHappened {
     pub const fn is_waiting_for_the_person(&self) -> bool {
         matches!(self, Self::AChangeIsWaiting { .. })
     }
+
+    /// **The steps a turn goes on from after the person answered the change it
+    /// left waiting**: every step so far, then the model's proposal beside what
+    /// the answer did, in the shape full access shows a change in
+    /// (`alo_protocol::what_the_agent_says_back::the_step_after_an_answer`;
+    /// `docs/contracts/asking-socket.md`, *The turn goes on after an answer*).
+    /// [`None`] when nothing was waiting.
+    #[must_use]
+    pub fn going_on_after(&self, told: &alo_protocol::ToAPerson) -> Option<Vec<AStep>> {
+        let Self::AChangeIsWaiting {
+            proposed,
+            after,
+            sentence,
+            ..
+        } = self
+        else {
+            return None;
+        };
+        let mut steps = after.clone();
+        steps.push(AStep::of(
+            proposed,
+            &alo_protocol::what_the_agent_says_back::the_step_after_an_answer(told, sentence)?,
+        ));
+        Some(steps)
+    }
+}
+
+/// The sentence for each change done without asking among `steps`, oldest
+/// first — and for each change the person approved, which the model is shown
+/// in the same shape and which the agent never tells the person: their own
+/// shell told them, in their language.
+#[must_use]
+pub fn done_without_asking_in(steps: &[AStep]) -> Vec<String> {
+    steps
+        .iter()
+        .filter_map(|step| match ToAnAgent::read(step.what_came_back()) {
+            Ok(ToAnAgent::DoneWithoutAsking { said, .. }) => Some(said.text().to_owned()),
+            _ => None,
+        })
+        .collect()
 }

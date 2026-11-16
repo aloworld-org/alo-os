@@ -1,4 +1,4 @@
-//! The choice on the Folders alo can use page of **where alo works in an
+//! The choice on the What alo can use page of **where alo works in an
 //! application**: in its own copy, or in the person's own window
 //! ([ADR 0143](../../../docs/decisions/0143-alo-works-inside-applications-and-may-post-in-the-persons-name.md)
 //! Q6, and the owner's answer A of 2026-11-10).

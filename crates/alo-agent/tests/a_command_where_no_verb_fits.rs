@@ -206,6 +206,7 @@ fn a_command_waiting_for_the_ok_ends_the_turn_as_a_change_waiting() {
         sentence,
         after,
         stands_for,
+        ..
     } = happened
     else {
         panic!("{happened:?}");

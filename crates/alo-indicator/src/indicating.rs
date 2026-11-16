@@ -158,6 +158,21 @@ impl Indicating {
         self.shown(compositor, Drawn::of_both(indicator, daemon))
     }
 
+    /// [`Indicating::show_both`], less the lines for alo's copies whose window
+    /// wears alo's border (`Drawn::of_both_except_on_borders`).
+    pub fn show_both_except_on_borders(
+        &mut self,
+        compositor: Option<&mut dyn Compositor>,
+        indicator: &Indicator,
+        daemon: &crate::FromTheDaemon,
+        on_borders: &[String],
+    ) -> Drew {
+        self.shown(
+            compositor,
+            Drawn::of_both_except_on_borders(indicator, daemon, on_borders),
+        )
+    }
+
     /// Hand one picture to the compositor, unless it is the one already shown.
     fn shown(&mut self, compositor: Option<&mut dyn Compositor>, drawn: Drawn) -> Drew {
         let Some(compositor) = compositor else {

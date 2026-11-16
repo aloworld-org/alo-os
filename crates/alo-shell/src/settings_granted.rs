@@ -26,6 +26,17 @@
 //! and **nothing an agent asks reaches any of it** — a grant comes from a
 //! person pressing a key in this window and from nowhere else.
 //!
+//! # And one application, by name (ADR 0143 Q10)
+//!
+//! A second row beside it gives alo one application: chosen from the ones this
+//! machine has, then how long — `crate::an_application_is_picked_in_settings`
+//! holds the two steps. **It is the same road**: the application is sealed by
+//! `alo-picking` as a folder is, and `GrantedSection::give_it` carries either
+//! to the disk with the one `alo_changing::Changing::granted` call, so a grant
+//! is still made by a person pressing a key in this window and from nowhere
+//! else. *Added 2026-11-15, the owner's decision: reuse the terminal settings'
+//! picker.*
+//!
 //! # Read once, and a list that did not read is not a list
 //!
 //! The grants are read through `alo_remembering::remembered` when Settings
@@ -43,11 +54,14 @@ use alo_capability::Grants;
 use alo_changing::{Changing, Door, Gone, Made, NotChanged, Row, SeenPairing};
 use alo_granted::{Listing, Revoked};
 use alo_nearby::{MachineId, MayAskIts, Pairings};
-use alo_picking::{Chosen, Folders};
+use alo_picking::{Applications, Chosen, Folders};
 use alo_remembering::NotRemembered;
 use alo_strings::{Filling, Strings};
 
 use crate::a_folder_is_picked_in_settings::{AFolderBeingPicked, PickingRow, WhatPickingDid};
+use crate::an_application_is_picked_in_settings::{
+    AnApplicationBeingPicked, ApplicationRow, WhatChoosingDid,
+};
 use crate::how_long_a_grant_lasts::HowLong;
 
 /// What revoking a row did.
@@ -90,6 +104,13 @@ pub(crate) struct GrantedSection {
     /// `crate::a_provider_is_added_in_settings`' rule: there is no flag beside
     /// it that could disagree with what is on the screen.
     picking: Option<AFolderBeingPicked>,
+    /// The applications this machine has, as Settings was last told — what a
+    /// person may give alo one of. Nothing until it is told.
+    applications: Applications,
+    /// The list of applications, while one is open — its presence the mode,
+    /// as [`Self::picking`]'s is. **Never both at once**: opening one closes
+    /// the other.
+    choosing: Option<AnApplicationBeingPicked>,
 }
 
 /// What giving alo a folder did.
@@ -162,6 +183,8 @@ impl GrantedSection {
                 home: home.map(Path::to_owned),
                 agent: agent.map(str::to_owned),
                 picking: None,
+                applications: Applications::default(),
+                choosing: None,
             },
             refused,
         )
@@ -189,6 +212,73 @@ impl GrantedSection {
         self.picking.as_ref()
     }
 
+    /// The list of applications, while one is open.
+    pub(crate) const fn choosing(&self) -> Option<&AnApplicationBeingPicked> {
+        self.choosing.as_ref()
+    }
+
+    /// Whether either chooser is open, which is what Escape closes.
+    pub(crate) const fn is_choosing_something(&self) -> bool {
+        self.picking.is_some() || self.choosing.is_some()
+    }
+
+    /// The applications this machine has, as the seat last read them.
+    ///
+    /// **Each by the name its packager gave**, and by its identifier where it
+    /// gave none or the name is one of this project's own words, which needs
+    /// the vocabulary and is not a third party's to give.
+    pub(crate) fn the_applications_are(&mut self, installed: &alo_applications::Installed) {
+        self.applications = Applications::of(installed.all().map(|application| {
+            let called = match application.name() {
+                Some(alo_applications::Called::ByWhoeverPackagedIt(called)) => Some(called.clone()),
+                Some(alo_applications::Called::InOurOwnWords(_)) | None => None,
+            };
+            (application.identifier().to_owned(), called)
+        }));
+    }
+
+    /// Whether a person can give alo an application from here.
+    ///
+    /// [`Self::a_folder_can_be_given`]'s three conditions less the home
+    /// folder, which an application does not need — and one more: there has
+    /// to be an application to give. **Absent rather than empty**, for the
+    /// same rule: a row that opens a list with nothing in it teaches somebody
+    /// the list lies.
+    pub(crate) fn an_application_can_be_given(&self) -> bool {
+        self.agent.is_some() && self.grants.is_some() && !self.applications.is_empty()
+    }
+
+    /// A person asked to give alo an application: open the list.
+    pub(crate) fn give_alo_an_application(&mut self) -> SettingsGave {
+        if !self.an_application_can_be_given() {
+            return SettingsGave::Nothing;
+        }
+        self.picking = None;
+        self.choosing = Some(AnApplicationBeingPicked::among(self.applications.clone()));
+        self.told.clear();
+        SettingsGave::ItChanged
+    }
+
+    /// The person pressed Enter on one of the list's rows.
+    pub(crate) fn act_on_an_application(
+        &mut self,
+        row: &ApplicationRow,
+        daemon: &dyn Door,
+        now: SystemTime,
+        strings: &Strings,
+    ) -> SettingsGave {
+        let Some(choosing) = &mut self.choosing else {
+            return SettingsGave::Nothing;
+        };
+        match choosing.act(row) {
+            WhatChoosingDid::ItChanged => SettingsGave::ItChanged,
+            WhatChoosingDid::Nothing => SettingsGave::Nothing,
+            WhatChoosingDid::GiveItThisApplication { chosen, how_long } => {
+                self.give_it(&chosen, how_long, daemon, now, strings)
+            }
+        }
+    }
+
     /// A person asked to give alo a folder: open a picker in their home.
     ///
     /// A picker that will not open says so and leaves the section as it was —
@@ -204,6 +294,7 @@ impl GrantedSection {
         };
         match AFolderBeingPicked::standing_in(&home, folders) {
             Ok(picking) => {
+                self.choosing = None;
                 self.picking = Some(picking);
                 self.told.clear();
                 SettingsGave::ItChanged
@@ -215,9 +306,11 @@ impl GrantedSection {
         }
     }
 
-    /// Stop picking without giving anything away.
+    /// Stop picking without giving anything away — a folder or an
+    /// application, whichever was open.
     pub(crate) fn that_folder_is_not_being_given(&mut self) {
         self.picking = None;
+        self.choosing = None;
     }
 
     /// The person pressed Enter on one of the picker's rows.
@@ -244,7 +337,8 @@ impl GrantedSection {
         }
     }
 
-    /// Make the grant the person just asked for, and close the picker.
+    /// Make the grant the person just asked for — a folder or an application
+    /// — and close whichever chooser it came from.
     ///
     /// **The picker closes whichever way this goes.** A person who has
     /// answered both questions has finished asking; leaving them inside a
@@ -259,6 +353,7 @@ impl GrantedSection {
         strings: &Strings,
     ) -> SettingsGave {
         self.picking = None;
+        self.choosing = None;
         let (Some(grants), Some(agent)) = (&mut self.grants, self.agent.clone()) else {
             // Unreachable: `a_folder_can_be_given` is what put the row there.
             // An arm rather than an unwrap, because a window that panicked on
@@ -272,25 +367,33 @@ impl GrantedSection {
         let granting = how_long.granting_to(&agent);
         match Changing::of(grants, &self.grants_at, daemon).granted(&granting, chosen, now) {
             Ok(Made::Granted { .. }) => {
-                self.told = chosen
-                    .folder()
-                    .map(|folder| {
-                        strings
-                            .say(
-                                &crate::the_pickers_words::IT_WAS_GIVEN.key(),
-                                &Filling::of(
-                                    crate::the_pickers_words::THE_FOLDER,
-                                    folder.display().to_string(),
-                                ),
-                            )
-                            .into_text()
-                    })
+                let folder = chosen.folder().map(|folder| {
+                    strings.say(
+                        &crate::the_pickers_words::IT_WAS_GIVEN.key(),
+                        &Filling::of(
+                            crate::the_pickers_words::THE_FOLDER,
+                            folder.display().to_string(),
+                        ),
+                    )
+                });
+                let application = chosen.application().map(|application| {
+                    strings.say(
+                        &crate::the_pickers_words::IT_WAS_GIVEN_AN_APPLICATION.key(),
+                        &Filling::of(
+                            crate::the_pickers_words::THE_APPLICATION,
+                            application.called().to_owned(),
+                        ),
+                    )
+                });
+                self.told = folder
                     .into_iter()
+                    .chain(application)
+                    .map(alo_strings::Said::into_text)
                     .collect();
                 SettingsGave::ItWasGiven
             }
             // The picker was closed without picking, which cannot arrive here
-            // — `WhatPickingDid::GiveItThisFolder` only carries a folder.
+            // — both choosers hand over only a folder or an application.
             Ok(Made::Nothing) => SettingsGave::Nothing,
             Err(why) => {
                 self.told = vec![why.said(strings).into_text()];
@@ -353,6 +456,20 @@ impl GrantedSection {
                     .map(|name| name.as_str().to_owned())
             })
             .unwrap_or_else(|| identity.to_owned())
+    }
+
+    /// **What an application is shown as** in the list of what alo was given:
+    /// the name it was listed under, and its identifier where it is not
+    /// listed or gave none.
+    pub(crate) fn what_an_application_is_called(&self, identifier: &str) -> String {
+        self.applications
+            .listed()
+            .iter()
+            .find(|listed| listed.identifier() == identifier)
+            .map_or_else(
+                || identifier.to_owned(),
+                |listed| listed.called().to_owned(),
+            )
     }
 
     /// What a pairing's row may do, as its pairing says.

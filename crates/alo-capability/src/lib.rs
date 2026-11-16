@@ -239,7 +239,7 @@ pub use authorised::{Authorised, NotAuthorised, Refused};
 pub use call::{Call, CallError, Permission};
 pub use facility::Facility;
 pub use full_access::Permitted;
-pub use grant::{Grant, GrantError, TheWordRemoved, Until};
+pub use grant::{Grant, GrantError, TheWordRemoved, TheWordSignOut, Until};
 pub use grantee::{Applicant, Grantee};
 pub use grants::{GrantId, Grants, Held, NotOneList};
 pub use how_code_runs::{AlwaysOn, HowCodeRuns};
