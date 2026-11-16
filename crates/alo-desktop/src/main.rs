@@ -488,6 +488,11 @@ mod running {
         /// so it can leave it alone when nothing has changed, which is what
         /// stops every frame rewriting the same row.
         indicating: alo_indicator::Indicating,
+        /// **The applications whose window wears alo's border this frame**,
+        /// as the shell drew it: the corner leaves their copy's line to the
+        /// border (the owner, 2026-11-15: *the border is enough*). Empty until
+        /// told, so every copy is in the corner until a border is drawn.
+        on_alos_border: Vec<String>,
         /// **What `alo-agentd`'s indicator shows**, as it last told this
         /// desktop — or that it has not (ADR 0134). The service opens the
         /// connection to a provider, so a question sent to one is on *its*
@@ -891,6 +896,7 @@ mod running {
                 opening_in_their_window: None,
                 entries: crate::what_this_machine_offers::WhereToLook::on_this_machine().entries,
                 indicating,
+                on_alos_border: Vec::new(),
                 daemon,
                 told,
                 github_needs_a_sign_in,
@@ -1635,6 +1641,14 @@ mod running {
         /// each new ask is taken in under the name a person calls the
         /// application, and all of alo's work is looked at, on this desktop's
         /// own indicator, with the same counter a person's commands use.
+        fn these_applications_wear_alos_border(&mut self, applications: Vec<String>) {
+            self.on_alos_border = applications;
+        }
+
+        fn what_alos_work_is_sending(&self) -> Vec<(String, alo_egress::HowItIsShown)> {
+            self.working.what_is_sending()
+        }
+
         fn alo_at_work(
             &mut self,
             asked: Vec<alo_shell::alo_at_work::AskedToWork>,
@@ -1644,7 +1658,7 @@ mod running {
             if !asked.is_empty() {
                 let installed = alo_installed::read(&self.entries);
                 // **Where the person lets alo work, read from their own file
-                // for these asks** (Settings → Folders alo can use). A file
+                // for these asks** (Settings → What alo can use). A file
                 // that will not read is alo's own copy, the answer that
                 // watches nothing of theirs.
                 let chosen = alo_remembering::alo_in_applications_remembered(std::path::Path::new(
@@ -1775,8 +1789,12 @@ mod running {
             if let Some(drawn) = self.between_frames.this_frame(told) {
                 self.daemon = drawn;
             }
-            self.indicating
-                .show_both(Some(&mut self.egress), &self.indicator, &self.daemon);
+            self.indicating.show_both_except_on_borders(
+                Some(&mut self.egress),
+                &self.indicator,
+                &self.daemon,
+                &self.on_alos_border,
+            );
             if self.read_at.elapsed() < HOW_OFTEN {
                 return;
             }

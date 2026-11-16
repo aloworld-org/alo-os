@@ -598,6 +598,7 @@ fn a_window_with_a_card(
             once: approved.map(|(_, once)| once),
             touches,
             does,
+            texts: &[],
             between: None,
         }),
     });

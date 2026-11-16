@@ -32,6 +32,10 @@
 //! daemon that cannot answer within it is answered by the next sign-in, like
 //! a daemon that is not there. The bound is generous against a busy machine
 //! and short against a person watching a surface that appears to have died.
+//!
+//! **An approve and a decline wait longer** (`AN_ANSWERS_PATIENCE`), because
+//! the daemon carries the change out before it answers, and their caller asks
+//! off any frame loop (2026-11-15).
 
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::UnixStream;
@@ -51,6 +55,17 @@ use crate::unpairing::{RevokingPairings, Unpaired};
 /// How long one write or one read at the door may take before the change is
 /// left for the next sign-in.
 const PATIENCE: Duration = Duration::from_secs(5);
+
+/// How long the daemon may take to answer an `approve` or a `decline`.
+///
+/// **Longer than [`PATIENCE`], because the daemon carries the change out before
+/// it answers** — opening a file in an application starts that application —
+/// and a shell that stopped listening first would tell the person the machine
+/// did not say what happened, about a change that then ran. Its caller is off
+/// any frame loop (`alo-shell`'s `an_answer_goes_off_the_frame`). Five
+/// minutes, as `alo-agent`'s own wait on the daemon is; the turn the change
+/// runs in would be gone by then anyway.
+const AN_ANSWERS_PATIENCE: Duration = Duration::from_secs(300);
 
 /// The socket this machine's agent service listens on, knocked on.
 ///
@@ -100,7 +115,7 @@ impl TheDaemonsDoor {
 
     /// What an approve or a decline came back as.
     fn answer(&self, request: &FromAPerson) -> Option<Answered> {
-        match self.asked(request).ok()? {
+        match self.asked_within(request, AN_ANSWERS_PATIENCE).ok()? {
             ToAPerson::Did(done) => Some(Answered::It(Box::new(done))),
             // **A change that ran and cannot be undone** (2026-10-28) — see
             // `Answered::ItCannotBeUndone`.
@@ -122,12 +137,21 @@ impl TheDaemonsDoor {
     /// Crate-wide so that a conversation in a file of its own —
     /// `crate::keeping_github_sign_ins` — is the same shortest conversation.
     pub(crate) fn asked(&self, request: &FromAPerson) -> Result<ToAPerson, Unheard> {
+        self.asked_within(request, PATIENCE)
+    }
+
+    /// One line out and one line back, waiting at most `patience` for each.
+    fn asked_within(
+        &self,
+        request: &FromAPerson,
+        patience: Duration,
+    ) -> Result<ToAPerson, Unheard> {
         let stream = UnixStream::connect(&self.socket).map_err(|_| Unheard::NobodyThere)?;
         stream
-            .set_write_timeout(Some(PATIENCE))
+            .set_write_timeout(Some(patience))
             .map_err(|_| Unheard::NotAnswered)?;
         stream
-            .set_read_timeout(Some(PATIENCE))
+            .set_read_timeout(Some(patience))
             .map_err(|_| Unheard::NotAnswered)?;
 
         let line = request.written().map_err(|_| Unheard::NotAnswered)?;

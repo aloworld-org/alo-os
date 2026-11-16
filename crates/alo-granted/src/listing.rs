@@ -291,4 +291,31 @@ mod tests {
         assert!(revoked.is_nothing_granted());
         assert!(revoked.said(&in_english()).is_some());
     }
+
+    /// **A grant for this session is a row that says so**, a week on as at
+    /// noon, and is gone once the session is over — the owner's decision of
+    /// 2026-11-16: it shows in Settings while it lasts.
+    #[test]
+    fn a_session_grant_is_a_row_until_the_session_is_over() {
+        let mut grants = Grants::default();
+        grants.grant(
+            Grant::checked_until_sign_out(
+                &alo_capability::Grantee::named("alo"),
+                Reach::Application("com.vscodium.codium".to_owned()),
+                noon(),
+                alo_capability::ATerminalForTheAgent::NotAtAll,
+            )
+            .unwrap(),
+        );
+        let a_week = std::time::Duration::from_secs(7 * 24 * 60 * 60);
+        for at in [noon(), noon() + a_week] {
+            let listing = Listing::of(&grants, at);
+            assert_eq!(listing.rows().len(), 1, "{:?}", listing.rows());
+            let row = listing.rows().first().unwrap();
+            assert!(row.lasts().is_until_sign_out());
+            assert!(!row.lasts().is_until_removed());
+        }
+        grants.the_session_is_over();
+        assert!(Listing::of(&grants, noon()).is_nothing_granted());
+    }
 }

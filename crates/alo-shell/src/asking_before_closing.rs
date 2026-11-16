@@ -111,7 +111,11 @@ impl ClosingAsked {
                 .selected
                 .map_or(WhatTheKeyDid::NotForIt, WhatTheKeyDid::Chose),
             ApprovalKey::Decline => WhatTheKeyDid::Chose(WhichChoice::Cancel),
-            ApprovalKey::Nothing => WhatTheKeyDid::NotForIt,
+            ApprovalKey::EarlierLines
+            | ApprovalKey::LaterLines
+            | ApprovalKey::AnEarlierPage
+            | ApprovalKey::ALaterPage
+            | ApprovalKey::Nothing => WhatTheKeyDid::NotForIt,
         }
     }
 }

@@ -316,12 +316,22 @@ fn two_answers_no_third_and_nowhere_to_give_a_reason() {
     // Escape declines here. Nothing was added to what a person can
     // answer — `ApprovalAnswer` above is still the two — and a key that
     // dismissed, deferred or asked for a reason would still fail here.
+    //
+    // **The four scroll keys are not answers either** (the owner's decision
+    // of 2026-11-15): they move the text alo will type through its box, a
+    // line or a page, and answer nothing — which
+    // `a_change_waiting_carries_its_text_tests` holds by pressing them and
+    // finding nothing approved, declined or selected.
     assert_eq!(
         variants_of("approval_keys.rs", "ApprovalKey"),
         [
             "NextAnswer",
             "PreviousAnswer",
             "Choose",
+            "EarlierLines",
+            "LaterLines",
+            "AnEarlierPage",
+            "ALaterPage",
             "Decline",
             "Nothing"
         ]

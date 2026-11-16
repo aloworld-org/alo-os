@@ -102,6 +102,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod applications;
 pub mod browsing;
 pub mod folders;
 pub mod granting;
@@ -113,6 +114,7 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
+pub use applications::{Applications, Listed, PickedApplication};
 pub use browsing::Picker;
 pub use folders::{Folders, Inside, MOST_SHOWN, NotShown};
 pub use granting::{ForHowLong, Granting};

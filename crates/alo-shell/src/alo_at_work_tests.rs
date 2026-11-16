@@ -609,3 +609,43 @@ fn switched_off_an_application_with_no_copy_is_still_refused() {
     assert_eq!(machine.copies.borrow().starts, 0, "a copy was started");
     assert!(machine.ever_begun().is_empty());
 }
+
+/// **What alo's work is sending, by application, is exactly what the
+/// indicator says** — nothing before the first byte, the copy once it is seen
+/// sending, and nothing once the work is over — so the border of the window
+/// alo works in can never say more or less than the indicator does.
+#[test]
+fn what_is_sending_follows_the_indicators_line() {
+    let mut machine = Machine::new(true);
+    let mut alo = machine.asked(FIREFOX, Where::InAlosCopy, 0);
+    assert_eq!(next(&alo), "counting");
+    machine.looked(0);
+    assert!(machine.working.what_is_sending().is_empty());
+
+    machine.sends(ALOS_SCOPE, 52_000);
+    machine.looked(1);
+    assert_eq!(
+        machine.working.what_is_sending(),
+        vec![(FIREFOX.to_owned(), HowItIsShown::Counted)]
+    );
+
+    done(&mut alo);
+    machine.looked(5);
+    assert!(machine.working.what_is_sending().is_empty());
+}
+
+/// **A machine that cannot count says so on the border too**, for the whole
+/// time, as the indicator does.
+#[test]
+fn what_cannot_be_counted_is_sending_for_the_whole_time() {
+    let mut machine = Machine::new(false);
+    let mut alo = machine.asked(FIREFOX, Where::InAlosCopy, 0);
+    assert_eq!(next(&alo), "cannot-count");
+    assert_eq!(
+        machine.working.what_is_sending(),
+        vec![(FIREFOX.to_owned(), HowItIsShown::Uncounted)]
+    );
+    done(&mut alo);
+    machine.looked(3);
+    assert!(machine.working.what_is_sending().is_empty());
+}

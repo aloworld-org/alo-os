@@ -32,7 +32,7 @@ use crate::settings_canvas::{Area, Canvas};
 pub(crate) enum ASettingsIcon {
     /// alo and AI.
     Chat,
-    /// Folders alo can use.
+    /// What alo can use.
     Folder,
     /// Running code.
     Code,

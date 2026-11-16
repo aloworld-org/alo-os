@@ -372,6 +372,92 @@ ADR 0143 Q10 puts letting alo use an application beside *Give alo a folder*,
 and this is a question about what alo reaches once it is let in. **A departure,
 recorded here for the next person to take to the design.**
 
+## Giving alo an application, from the terminal's own picker
+
+*The owner's decision of 2026-11-15, relayed by the coordinator: **reuse the
+terminal settings' picker**.* ADR 0143 Q10 puts letting alo use an application
+*in Settings … one application, by name*. Until this, nothing on the machine
+could make that grant, so at the default level (*ask each time*) every
+application verb was refused before an approval card could appear.
+
+**Folders alo can use** now has a second action under *Give alo a folder*:
+**Give alo an application**, with *Choose an application alo may control, and
+for how long.* beside it. Pressing it makes the list the whole page, as the
+folder picker does:
+
+| Drawn | Taken from | What was read off it |
+|---|---|---|
+| *Select an application* | `501:35565` *Select an application window* | heading |
+| *Choose one application to grant access.* | `501:35566` *Choose one window to grant access.* | line under the heading |
+| one row per application, by its own name | `501:35567`, `501:35570` (*Terminal / Settings choice*) | one choice per row |
+| *Only the selected application is included. Press Escape to cancel without granting access.* | `501:35573` | the line under the list |
+| *Give alo an application* / *Choose an application alo may control, and for how long.* | `494:29660` *Applications · None granted* / `494:29662` *Choose applications or windows alo may control.* | the row that opens it |
+
+Choosing an application moves the list on to *How long may alo use
+{application}? You can take it back whenever you like* and the folder
+picker's four lengths. Saying one makes the grant (`Reach::Application`, ADR
+0040's kind, to the agent by name) through the same `Changing::granted` call a
+folder goes through. The grant is then a row in *Given to alo* by the
+application's name, with *Take back*. Escape leaves at either step and grants
+nothing.
+
+**The readings this had to make, each one a departure for the next person to
+take to the design or the owner:**
+
+1. **The durations.** The frame offers *This task*, *This session* and
+   *Remember for this project*. A grant here ends at a set moment or lasts
+   until it is removed (`alo_capability::Until`), and Settings has no task,
+   session or project to tie one to. *Until I shut down* was already ruled
+   out for the same reason (`crate::how_long_a_grant_lasts`). So Settings
+   asks the folder picker's four, *every time*, by the owner's decision of
+   2026-10-24. The frame's three belong to the surface the compositor draws
+   when alo asks during a task, which ADR 0143 Q10 also names, and **that
+   surface is not built**. This reading was sent to the coordinator to put
+   to the owner on 2026-11-15, and **the owner confirmed it on 2026-11-16**,
+   relayed by the coordinator: *in Settings, pick an application, with the
+   folder lengths (an hour, a day, a month, until removed). The frame's
+   "this task / this session / remember for this project" lengths belong to
+   the surface the compositor draws when alo asks during a task.* That
+   surface is to be built next, as its own change.
+2. **An application, not a window.** The frames say *application window*
+   and *applications or windows*. ADR 0143 Q10 says *one application, by
+   name*, and a grant is over an application identifier, so the words say
+   *application*.
+3. **The opening row is an action, not a summary row.** `494:29660` is a
+   *kind · state* row in the terminal's access dialog. This page already
+   draws *Give alo a folder* as an action with a line beside it, so the
+   application row is drawn the same way, under it. What has been granted is
+   listed in *Given to alo*, as folders are.
+4. **No terminal is listed.** A grant over a terminal is refused by
+   `alo-capability` (ADR 0043), and ADR 0143 Q10 says the terminal stays ADR
+   0111's own choice. A row that can only be refused is left out.
+5. **No icon on an application's row** in *Given to alo*. The icon set has no
+   application icon, and a folder's icon on an application would be wrong.
+6. **No *Done* or *Cancel* buttons.** The frame's two actions
+   (`501:35574`) are not drawn. This window works with its four keys, so
+   Enter on a row is the choice and Escape is the cancel, as the folder
+   picker already does.
+
+**The page's words, changed by the owner — a departure from the design's
+words.** Shown pictures of this page drawn through the compositor's renderer,
+the owner answered on 2026-11-16, relayed by the coordinator: ***"Fix wording,
+then merge"***:
+
+- the page and its entry in the side column are **What alo can use**, not
+  *Folders alo can use* (`550:741` draws the latter);
+- the line under the heading is *alo can use only the folders and
+  applications you give it. Each one stays on this list until it ends or you
+  take it back.*;
+- an application's row in *Given to alo* is **its name only**, with no
+  identifier under it; a folder's row still says where the folder is;
+- the note under the list is *Taking a folder or an application back stops it
+  at once: …*.
+
+Each changed sentence has a new key (ADR 0068), and so do the two refusals
+that name the page (*… in Settings → What alo can use*). The internal name
+`SettingsCategory::FoldersAloCanUse` was kept, because it is not words a
+person reads.
+
 ## What is drawn and not built
 
 The design draws choices this computer does not have yet. **They are drawn as

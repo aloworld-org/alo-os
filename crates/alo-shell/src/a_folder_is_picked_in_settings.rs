@@ -279,7 +279,7 @@ impl AFolderBeingPicked {
                     self.chosen = Some(chosen);
                     WhatPickingDid::ItChanged
                 }
-                Ok(Chosen::Nothing) => WhatPickingDid::Nothing,
+                Ok(Chosen::Application(_) | Chosen::Nothing) => WhatPickingDid::Nothing,
                 Err(why) => self.refused(why, strings),
             },
             PickingRow::UpOneFolder => match self.picker.go_up(folders) {

@@ -371,8 +371,13 @@ pub(crate) fn furniture(
     // line, one under the other when they do not.
     let mut the_cards: Vec<Option<TheCard>> = Vec::new();
     let mut what_each_does: Vec<Vec<ALineOfWhatItDoes>> = Vec::new();
+    // **And how tall the words of each text the change would type come out**,
+    // wrapped in their box (the owner's decision of 2026-11-15), one list per
+    // card.
+    let mut the_texts_heights: Vec<Vec<u32>> = Vec::new();
     for one in said {
         let mut lines = Vec::new();
+        let mut heights = Vec::new();
         let the_card = one
             .answers
             .filter(|answers| answers.asking.is_some())
@@ -380,6 +385,36 @@ pub(crate) fn furniture(
                 let inside = row_is_wide.saturating_sub(m::INSIDE_THE_CONVERSATION * 2);
                 let wide = one.whose.how_wide().min(inside);
                 let room = TheCard::the_actions_room(wide);
+                // **Every line of each text, wrapped and never cut**: a line
+                // wider than the box goes on under itself.
+                let in_the_box = room.saturating_sub(card::INSIDE_THE_TEXT * 2);
+                heights = answers
+                    .texts
+                    .iter()
+                    .map(|text| {
+                        logical(
+                            i32::try_from(crate::task_text::how_tall(
+                                fonts,
+                                crate::task_text::ToWrite {
+                                    words: text.shown.text(),
+                                    marks: text.shown.marks(),
+                                    style: AStyle::WhereAFileIs,
+                                    ground: palette.cool,
+                                    ink: palette.ink,
+                                },
+                                px(in_the_box),
+                                measure,
+                            ))
+                            .unwrap_or(i32::MAX),
+                        )
+                    })
+                    .collect();
+                let the_texts_are_tall = answers
+                    .texts
+                    .iter()
+                    .zip(&heights)
+                    .map(|(text, tall)| card::a_text_is_tall(text.said_lines(), *tall))
+                    .sum();
                 let tall = crate::task_text::how_tall(
                     fonts,
                     crate::task_text::ToWrite {
@@ -464,10 +499,12 @@ pub(crate) fn furniture(
                     rows: u32::try_from(answers.touches.len().min(card::THE_MOST_ROWS))
                         .unwrap_or(0),
                     what_it_does_is_tall,
+                    the_texts_are_tall,
                 }
             });
         the_cards.push(the_card);
         what_each_does.push(lines);
+        the_texts_heights.push(heights);
     }
     let heights: Vec<(alo_tasks::WhoseBlock, u32)> = said
         .iter()
@@ -671,7 +708,12 @@ pub(crate) fn furniture(
     // meets the white, and the hairline over that row. Drawn in that order,
     // each over the last (`crate::dock_surface::AGround`).
     let mut grounds: Vec<crate::dock_surface::AGround> = Vec::new();
-    for (block, the_card) in blocks.each().iter().zip(&the_cards) {
+    for (((one, block), the_card), heights) in said
+        .iter()
+        .zip(blocks.each())
+        .zip(&the_cards)
+        .zip(&the_texts_heights)
+    {
         let Some(the_card) = the_card else {
             continue;
         };
@@ -758,6 +800,18 @@ pub(crate) fn furniture(
                 (card::BESIDE + card::INSIDE_A_ROW, card::A_TILE_IS),
                 card::A_TILES_CORNER,
                 palette.surface,
+            );
+        }
+        // **A `bg/cool` box with a 12 corner round each text** the change
+        // would type, under what is said about it.
+        let texts = one.answers.map_or(&[][..], |answers| answers.texts);
+        for (top, tall) in where_the_texts_are(the_card, texts, heights) {
+            ground_at(
+                top,
+                card::a_texts_box_is_tall(tall),
+                (card::BESIDE, wide.saturating_sub(card::BESIDE * 2)),
+                card::THE_TEXTS_CORNER,
+                palette.cool,
             );
         }
     }
@@ -1278,12 +1332,13 @@ pub(crate) fn furniture(
         None,
     );
 
-    for ((((one, block), the_card), rows_shown), its_lines) in said
+    for (((((one, block), the_card), rows_shown), its_lines), heights) in said
         .iter()
         .zip(blocks.each())
         .zip(&the_cards)
         .zip(&the_rows_shown)
         .zip(&what_each_does)
+        .zip(&the_texts_heights)
     {
         if !block.is_in_view(scrolled, view) {
             continue;
@@ -1358,6 +1413,58 @@ pub(crate) fn furniture(
                         card::WHERE_IT_IS_TALL,
                     ),
                     words_room,
+                    false,
+                    Some((scrolled, the_view)),
+                );
+            }
+            // **The text the change would type**: how long it is, how much is
+            // marked in the warning colour, and every line in view in
+            // System/Mono 12/18 inside its box, each hidden character a tag.
+            for ((box_top, tall), text) in where_the_texts_are(the_card, answers.texts, heights)
+                .into_iter()
+                .zip(answers.texts)
+            {
+                let said_top = box_top
+                    - card::UNDER_WHAT_IS_SAID
+                    - text.said_lines() * card::A_LINE_ABOUT_THE_TEXT;
+                write(
+                    &text.how_long,
+                    &[],
+                    AStyle::SmallBody,
+                    palette.surface,
+                    palette.ink_quiet,
+                    left + card::BESIDE,
+                    (top + said_top, card::A_LINE_ABOUT_THE_TEXT),
+                    room,
+                    false,
+                    Some((scrolled, the_view)),
+                );
+                if let Some(marked) = &text.marked {
+                    write(
+                        marked,
+                        &[],
+                        AStyle::SmallBody,
+                        palette.surface,
+                        palette.warning,
+                        left + card::BESIDE,
+                        (
+                            top + said_top + card::A_LINE_ABOUT_THE_TEXT,
+                            card::A_LINE_ABOUT_THE_TEXT,
+                        ),
+                        room,
+                        false,
+                        Some((scrolled, the_view)),
+                    );
+                }
+                write(
+                    text.shown.text(),
+                    text.shown.marks(),
+                    AStyle::WhereAFileIs,
+                    palette.cool,
+                    palette.ink,
+                    left + card::BESIDE + card::INSIDE_THE_TEXT,
+                    (top + box_top + card::INSIDE_THE_TEXT, tall),
+                    room.saturating_sub(card::INSIDE_THE_TEXT * 2),
                     false,
                     Some((scrolled, the_view)),
                 );
@@ -1564,3 +1671,26 @@ mod icons_tests;
 #[cfg(test)]
 #[path = "task_raster_closing_tests.rs"]
 mod closing_tests;
+
+/// **Where each text's box starts on its card, and how tall its words are** —
+/// under the rows naming what the change touches, each after what is said
+/// about it (`crate::the_approval_card`).
+fn where_the_texts_are(
+    the_card: &TheCard,
+    texts: &[crate::the_text_alo_will_type::ATextOnTheCard],
+    heights: &[u32],
+) -> Vec<(u32, u32)> {
+    let mut down = the_card.the_texts();
+    texts
+        .iter()
+        .zip(heights)
+        .map(|(text, tall)| {
+            let the_box = down
+                + card::ABOVE_A_TEXT
+                + text.said_lines() * card::A_LINE_ABOUT_THE_TEXT
+                + card::UNDER_WHAT_IS_SAID;
+            down = the_box + card::a_texts_box_is_tall(*tall);
+            (the_box, *tall)
+        })
+        .collect()
+}

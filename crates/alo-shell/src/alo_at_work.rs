@@ -287,6 +287,22 @@ impl WorkingInApplications {
         opened
     }
 
+    /// **What alo's work is sending now, by application, as the indicator
+    /// says it**: each application whose line is up, and which line. The
+    /// border of the window alo works in reads this
+    /// (`crate::alos_band_in_a_window`), so the two can never disagree.
+    #[must_use]
+    pub fn what_is_sending(&self) -> Vec<(String, HowItIsShown)> {
+        self.works
+            .iter()
+            .filter_map(|work| {
+                work.line
+                    .as_ref()
+                    .map(|(line, _)| (work.application.clone(), line.at_work().how()))
+            })
+            .collect()
+    }
+
     /// How many applications alo is working in now.
     #[must_use]
     pub fn how_many(&self) -> usize {

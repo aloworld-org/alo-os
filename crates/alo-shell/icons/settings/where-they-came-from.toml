@@ -29,7 +29,7 @@ group = [2.5, 2.5, 15.0, 15.0]
 
 [[icon]]
 svg = "folder.svg"
-names = "Folders alo can use, in the side column; a folder given"
+names = "What alo can use, in the side column; a folder given"
 node = "550:112"
 frame = 20
 group = [1.667, 2.5, 16.667, 14.167]

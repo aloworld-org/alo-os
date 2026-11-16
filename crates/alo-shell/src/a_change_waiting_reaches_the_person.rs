@@ -43,10 +43,17 @@
 //! proposed the change, and a refusal arrives already worded by the daemon.
 //! Both are passed through untouched.
 
-use alo_changing::{Answered, Answering};
+use alo_changing::Answering;
 use alo_tasks::{ATask, Turn};
 
 use crate::approval_keys::ApprovalKey;
+
+/// A page of the text: the twelve lines the card shows.
+#[expect(
+    clippy::cast_possible_wrap,
+    reason = "twelve fits in any signed number"
+)]
+const A_PAGE: isize = crate::the_approval_card::THE_MOST_LINES_SHOWN as isize;
 
 /// The change a person is being asked about, the number to answer it by, and
 /// which answer their keyboard is on.
@@ -78,6 +85,15 @@ pub struct AChangeWaiting {
     /// (`549:209`), already in the person's language. Empty when nothing is
     /// asked, or for a verb that says nothing.
     does: (Option<String>, Option<String>),
+    /// **The text the change would type, whole** — each text it carries, as
+    /// the card shows it (`alo_capability::TheWholeText`): every line, how
+    /// long it is, every hidden character marked. Empty when nothing is asked
+    /// and for a change that carries no text. ADR 0001 as amended 2026-11-13:
+    /// no length limit, nothing cut, never run.
+    texts: Vec<alo_capability::TheWholeText>,
+    /// The first line of each text the card shows, from nought — the card
+    /// shows twelve and then scrolls (the owner's decision of 2026-11-15).
+    first_line: usize,
 }
 
 /// The two answers, in reading order.
@@ -94,11 +110,23 @@ pub enum WhichAnswer {
 pub enum WhatThePressDid {
     /// The selection moved, so the screen is drawn again.
     ItMoved,
-    /// An answer was given, and this is what the daemon said — [`None`] when
-    /// it said nothing at all.
-    ItWasAnswered(Option<Answered>),
+    /// An answer was given, and this is the one answer to send the daemon.
+    ///
+    /// **Not sent here**: the daemon may carry the change out by asking this
+    /// shell's own door, so the answer is carried off the frame loop
+    /// (`crate::an_answer_goes_off_the_frame`).
+    ItWasAnswered(TheAnswerGiven),
     /// Nothing happened, which includes Enter with nothing selected.
     Nothing,
+}
+
+/// The one answer a press gave: which change, and whether it was allowed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TheAnswerGiven {
+    /// The number the daemon answers by.
+    pub number: u64,
+    /// Allow once, or Deny.
+    pub allowed: bool,
 }
 
 /// What putting a question in front of a person did.
@@ -127,6 +155,8 @@ impl AChangeWaiting {
             the_turn: None,
             touches: Vec::new(),
             does: (None, None),
+            texts: Vec::new(),
+            first_line: 0,
         }
     }
 
@@ -191,6 +221,8 @@ impl AChangeWaiting {
         );
         self.number = Some(first.number());
         self.touches = first.touches().to_vec();
+        self.texts = first.texts().iter().map(|text| text.shown()).collect();
+        self.first_line = 0;
         self.does = (
             first.changes().map(|it| it.text().to_owned()),
             first.leaves().map(|it| it.text().to_owned()),
@@ -200,33 +232,45 @@ impl AChangeWaiting {
         WhatArrived::AQuestion
     }
 
-    /// They allowed the one action being asked about.
+    /// They allowed the one action being asked about: the answer to send, and
+    /// [`None`] when nothing was being asked.
     ///
-    /// Answers [`None`] when nothing was being asked or no daemon answered,
-    /// which a surface treats the same way: nothing to show.
-    pub fn allow_once(&mut self, task: &mut ATask, daemon: &dyn Answering) -> Option<Answered> {
+    /// **The agent's turn is kept** — `Self::the_turn_it_held` hands it to
+    /// whatever carries the answer, which lets it go only after the daemon has
+    /// carried the change out inside it.
+    pub fn allow_once(&mut self, task: &mut ATask) -> Option<TheAnswerGiven> {
         let number = self.number.take()?;
         self.selected = None;
         self.touches.clear();
         self.does = (None, None);
+        self.texts.clear();
+        self.first_line = 0;
         task.allow_once();
-        let answered = daemon.approve(number);
-        // **Only now does the agent go**: the change was carried out inside
-        // its turn, so the turn ends after the answer and never under it.
-        self.the_turn = None;
-        answered
+        Some(TheAnswerGiven {
+            number,
+            allowed: true,
+        })
     }
 
     /// They said no. Nothing is carried about why, because nothing was asked.
-    pub fn deny(&mut self, task: &mut ATask, daemon: &dyn Answering) -> Option<Answered> {
+    pub fn deny(&mut self, task: &mut ATask) -> Option<TheAnswerGiven> {
         let number = self.number.take()?;
         self.selected = None;
         self.touches.clear();
         self.does = (None, None);
+        self.texts.clear();
+        self.first_line = 0;
         task.deny();
-        let answered = daemon.decline(number);
-        self.the_turn = None;
-        answered
+        Some(TheAnswerGiven {
+            number,
+            allowed: false,
+        })
+    }
+
+    /// The socket holding the agent's turn, handed to whatever carries the
+    /// answer, which drops it once the daemon has answered.
+    pub(crate) fn the_turn_it_held(&mut self) -> Option<std::os::unix::net::UnixStream> {
+        self.the_turn.take()
     }
 
     /// **Let the change go unanswered**, because the person pressed Stop
@@ -241,6 +285,8 @@ impl AChangeWaiting {
         self.selected = None;
         self.touches.clear();
         self.does = (None, None);
+        self.texts.clear();
+        self.first_line = 0;
         task.the_question_lapsed();
         self.the_turn.take()
     }
@@ -260,6 +306,39 @@ impl AChangeWaiting {
         &self.touches
     }
 
+    /// The text the change in front of the person would type, whole, and
+    /// nothing when no change is or it carries none.
+    #[must_use]
+    pub fn texts(&self) -> &[alo_capability::TheWholeText] {
+        &self.texts
+    }
+
+    /// The first line the card shows of each text, from nought.
+    #[must_use]
+    pub const fn first_line_shown(&self) -> usize {
+        self.first_line
+    }
+
+    /// Scroll the text by `lines`, back when negative, and stop at either
+    /// end: the last line it can start at leaves the last twelve showing.
+    fn scrolled(&mut self, lines: isize) -> WhatThePressDid {
+        let furthest = self
+            .texts
+            .iter()
+            .map(|text| {
+                text.how_many_lines()
+                    .saturating_sub(crate::the_approval_card::THE_MOST_LINES_SHOWN)
+            })
+            .max()
+            .unwrap_or(0);
+        let now = self.first_line.saturating_add_signed(lines).min(furthest);
+        if now == self.first_line {
+            return WhatThePressDid::Nothing;
+        }
+        self.first_line = now;
+        WhatThePressDid::ItMoved
+    }
+
     /// Which answer their keyboard is on, and [`None`] until they move to one.
     #[must_use]
     pub const fn selected(&self) -> Option<WhichAnswer> {
@@ -274,12 +353,7 @@ impl AChangeWaiting {
     ///
     /// **Escape says no** whatever is selected and whether or not anything is,
     /// because leaving a question unanswered is a refusal rather than a maybe.
-    pub fn pressed(
-        &mut self,
-        key: ApprovalKey,
-        task: &mut ATask,
-        daemon: &dyn Answering,
-    ) -> WhatThePressDid {
+    pub fn pressed(&mut self, key: ApprovalKey, task: &mut ATask) -> WhatThePressDid {
         if !self.is_asking() {
             return WhatThePressDid::Nothing;
         }
@@ -295,13 +369,23 @@ impl AChangeWaiting {
                 WhatThePressDid::ItMoved
             }
             ApprovalKey::Choose => match self.selected {
-                Some(WhichAnswer::AllowOnce) => {
-                    WhatThePressDid::ItWasAnswered(self.allow_once(task, daemon))
-                }
-                Some(WhichAnswer::Deny) => WhatThePressDid::ItWasAnswered(self.deny(task, daemon)),
+                Some(WhichAnswer::AllowOnce) => self
+                    .allow_once(task)
+                    .map_or(WhatThePressDid::Nothing, WhatThePressDid::ItWasAnswered),
+                Some(WhichAnswer::Deny) => self
+                    .deny(task)
+                    .map_or(WhatThePressDid::Nothing, WhatThePressDid::ItWasAnswered),
                 None => WhatThePressDid::Nothing,
             },
-            ApprovalKey::Decline => WhatThePressDid::ItWasAnswered(self.deny(task, daemon)),
+            ApprovalKey::Decline => self
+                .deny(task)
+                .map_or(WhatThePressDid::Nothing, WhatThePressDid::ItWasAnswered),
+            // **Scrolling the text answers nothing** and moves no answer: it
+            // is reading, and a person reads before they answer.
+            ApprovalKey::EarlierLines => self.scrolled(-1),
+            ApprovalKey::LaterLines => self.scrolled(1),
+            ApprovalKey::AnEarlierPage => self.scrolled(-A_PAGE),
+            ApprovalKey::ALaterPage => self.scrolled(A_PAGE),
             ApprovalKey::Nothing => WhatThePressDid::Nothing,
         }
     }

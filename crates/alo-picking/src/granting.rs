@@ -126,25 +126,27 @@ impl Granting {
         grants: &mut Grants,
         now: SystemTime,
     ) -> Result<Option<GrantId>, GrantError> {
-        let Chosen::Folder(picked) = chosen else {
-            return Ok(None);
+        // **A folder or an application, and the two differ in one thing**:
+        // where a folder really is. An application has no place on a disk.
+        let (reach, really) = match chosen {
+            Chosen::Folder(picked) => (picked.reach(), picked.really()),
+            Chosen::Application(picked) => (picked.reach(), None),
+            Chosen::Nothing => return Ok(None),
         };
         let grant = match self.lasting {
-            ForHowLong::Lasting(lasting) => {
-                Grant::checked(&self.grantee, picked.reach(), now, lasting)?
-            }
+            ForHowLong::Lasting(lasting) => Grant::checked(&self.grantee, reach, now, lasting)?,
             // **The same checks, and no length to get wrong.** Everything
             // else about the grant is held to exactly what a timed one is.
             ForHowLong::UntilRemoved => Grant::checked_until_removed(
                 &alo_capability::Grantee::named(&self.grantee),
-                picked.reach(),
+                reach,
                 now,
                 alo_capability::ATerminalForTheAgent::NotAtAll,
             )?,
         };
         // **Where the folder really is, recorded on the grant** — without it,
         // a folder reached through a link is refused by every file verb.
-        let grant = match picked.really() {
+        let grant = match really {
             Some(really) => grant.really_at(really.to_path_buf())?,
             None => grant,
         };

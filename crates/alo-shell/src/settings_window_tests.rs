@@ -28,7 +28,7 @@ use crate::how_long_a_grant_lasts::HowLong;
 use crate::settings_granted::SettingsGave;
 
 /// A key that means `key` and makes no chord.
-fn key(key: SettingsKey) -> SettingsPress {
+pub(super) fn key(key: SettingsKey) -> SettingsPress {
     SettingsPress {
         key,
         chord: None,
@@ -47,7 +47,7 @@ fn chord(held: Modifiers, pressed: Key) -> SettingsPress {
 
 /// Move the focus to `row`, the way a person does: the page it is on chosen
 /// in the side column, into the page, and down from its first row.
-fn focus_on(
+pub(super) fn focus_on(
     window: &mut SettingsWindow,
     row: &SettingsRow,
     strings: &Strings,
@@ -116,7 +116,7 @@ fn drawn_rows(window: &SettingsWindow) -> Vec<SettingsRow> {
 }
 
 /// Focus `row` and press Enter on it.
-fn chosen(
+pub(super) fn chosen(
     window: &mut SettingsWindow,
     row: &SettingsRow,
     strings: &Strings,
@@ -153,7 +153,7 @@ fn rows_drawn(page: &APage) -> Vec<&ARow> {
 }
 
 /// Every sentence Settings draws above its rows, on every page.
-fn said(window: &SettingsWindow) -> Vec<String> {
+pub(super) fn said(window: &SettingsWindow) -> Vec<String> {
     SettingsCategory::ALL
         .into_iter()
         .flat_map(|category| the_page_at(window, category, &words(), noon()).blocks)
@@ -175,8 +175,15 @@ fn the_two_rows(window: &SettingsWindow) -> (SettingsRow, SettingsRow) {
         // what the one list holds and how both are revoked — and the row that
         // gives alo a folder sits above them making neither claim.
         // So is the row that opens the record, since 2026-10-27, for the same
-        // reason.
-        .filter(|row| !matches!(row, SettingsRow::GrantAFolder | SettingsRow::SeeWhatAloDid))
+        // reason. And the row that gives alo an application, since 2026-11-15.
+        .filter(|row| {
+            !matches!(
+                row,
+                SettingsRow::GrantAFolder
+                    | SettingsRow::GrantAnApplication
+                    | SettingsRow::SeeWhatAloDid
+            )
+        })
         .collect();
     assert_eq!(granted.len(), 2, "{granted:?}");
     (granted[0].clone(), granted[1].clone())
@@ -456,6 +463,10 @@ fn no_choice_the_old_window_offered_is_dropped() {
     if open.granted.a_folder_can_be_given() {
         before.push(SettingsRow::GrantAFolder);
     }
+    // **Giving alo an application** (ADR 0143 Q10), added 2026-11-15: this
+    // machine was told of a browser and a mail application, so it is offered.
+    assert!(open.granted.an_application_can_be_given(), "the control");
+    before.push(SettingsRow::GrantAnApplication);
     before.extend(
         open.granted
             .rows(noon())
@@ -2777,7 +2788,7 @@ fn every_pointer_choice_is_reached_and_chosen_from_the_keyboard() {
     );
 }
 
-/// **Where alo works in an application is a choice on Folders alo can use**
+/// **Where alo works in an application is a choice on What alo can use**
 /// (ADR 0143 Q6 and the owner's decision of 2026-11-16): alo's own copy where
 /// an app has one and the person's window where it has none, chosen as a
 /// machine arrives, tagged *Default* and with what it costs; alo's own copy
