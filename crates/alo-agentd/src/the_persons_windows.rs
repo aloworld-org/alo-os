@@ -39,7 +39,7 @@ impl TheWindowsOnTheScreen for ThePersonsWindows {
             alo_access::keeping::at_sign_in(&folder).0
         });
         WorkingFully::for_one(
-            alo_launching::is_drawn_by_chromium(application) && access.apps_describe_themselves(),
+            alo_installed::is_drawn_by_chromium(application) && access.apps_describe_themselves(),
             access.alo_works_fully_inside_apps(),
         )
     }
