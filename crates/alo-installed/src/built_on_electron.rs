@@ -46,7 +46,6 @@ pub fn is_built_on_electron(machines: &Path, persons: Option<&Path>, identifier:
     // place is not looked for at all.
     if identifier.is_empty()
         || identifier.starts_with('.')
-        || identifier.contains("..")
         || !identifier
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))

@@ -90,6 +90,15 @@ fn nothing_that_is_not_on_electrons_base_is_read_as_electron() {
 fn an_identifier_that_names_another_place_is_never_read() {
     let machines = a_place("escape");
     a_package(&machines, "org.example.Chat", ON_ELECTRON);
+    a_package(&machines, ".hidden", ON_ELECTRON);
+    // **Where each escape would land, a manifest naming Electron**, so a guard
+    // that let one through would answer yes: `""` reads `app/current/…`, and
+    // `".."` reads `current/…` beside `app`.
+    for landing in [machines.join("app"), machines.clone()] {
+        let files = landing.join("current").join("active").join("files");
+        std::fs::create_dir_all(&files).unwrap();
+        std::fs::write(files.join("manifest.json"), ON_ELECTRON).unwrap();
+    }
     for identifier in [
         "",
         ".",
@@ -152,4 +161,13 @@ fn the_list_is_the_fallback_and_nothing_else_is_drawn_by_chromium() {
             );
         }
     }
+}
+
+/// **On this machine, as this process runs**: an application on the closed
+/// list is drawn by Chromium whatever is installed here, and one that is
+/// neither on it nor ever built on Electron is not.
+#[test]
+fn on_this_machine_the_list_answers_and_a_text_editor_is_not_chromium() {
+    assert!(is_drawn_by_chromium("com.vscodium.codium"));
+    assert!(!is_drawn_by_chromium("org.gnome.TextEditor"));
 }
