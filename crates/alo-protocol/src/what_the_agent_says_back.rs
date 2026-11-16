@@ -270,8 +270,7 @@ pub const IT_WAS_NOT_GIVEN: &str = "alo-not-granted:";
 /// at.
 #[must_use]
 pub fn the_grant_told(line: &str) -> Option<bool> {
-    match line.trim_end_matches(['', '
-']) {
+    match line.trim_end_matches(['\r', '\n']) {
         THE_APPLICATION_WAS_GIVEN => Some(true),
         IT_WAS_NOT_GIVEN => Some(false),
         _ => None,
@@ -285,8 +284,10 @@ mod tests {
     #[test]
     fn only_the_two_grant_lines_read_as_an_answer_about_an_application() {
         use super::{IT_WAS_NOT_GIVEN, THE_APPLICATION_WAS_GIVEN, the_grant_told};
-        assert_eq!(the_grant_told(&format!("{THE_APPLICATION_WAS_GIVEN}
-")), Some(true));
+        assert_eq!(
+            the_grant_told(&format!("{THE_APPLICATION_WAS_GIVEN}\n")),
+            Some(true)
+        );
         assert_eq!(the_grant_told(IT_WAS_NOT_GIVEN), Some(false));
         for not_one in [
             "",
