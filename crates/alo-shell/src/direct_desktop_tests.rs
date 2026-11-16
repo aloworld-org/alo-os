@@ -508,3 +508,6 @@ mod the_text_on_the_card_drawn_tests;
 
 #[path = "giving_an_application_drawn_tests.rs"]
 mod giving_an_application_drawn_tests;
+
+#[path = "the_sheets_shadow_drawn_tests.rs"]
+mod the_sheets_shadow_drawn_tests;
