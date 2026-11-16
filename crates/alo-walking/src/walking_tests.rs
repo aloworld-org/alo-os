@@ -191,6 +191,94 @@ fn without_its_secret_the_rest_is_skipped() {
     assert!(report.as_text().contains("needs ALO_WALK_PROVIDER_KEY"));
 }
 
+/// A machine that says two lines: one a check inside a section looks for,
+/// one a check after it looks for.
+fn saying_inside_and_after() -> PicturesAndLines {
+    PicturesAndLines::showing(screens())
+        .saying(Duration::ZERO, "inside the section")
+        .saying(Duration::ZERO, "after the section")
+}
+
+/// **Without its variable, a section is skipped and the walk goes on after
+/// it** — what a section gated on a hand-run choice needs, so the sections
+/// placed after it still run on every walk after a merge. Nothing inside the
+/// section is pressed; the step after it is. Under the gate this replaced
+/// (`Walk::only_with`), the check after it was skipped too.
+#[test]
+fn without_its_variable_only_the_section_is_skipped() {
+    let mut machine = saying_inside_and_after();
+    let walked = Walk::named("w")
+        .section_only_with("ALO_WALK_EVERY_APPLICATION", |section| {
+            section.press(Chord::key("esc")).expect_line(
+                "inside",
+                "inside the section",
+                Since::Boot,
+                Duration::from_secs(1),
+            )
+        })
+        .press(Chord::key("tab"))
+        .expect_line(
+            "after",
+            "after the section",
+            Since::Boot,
+            Duration::from_secs(1),
+        );
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![
+            ("inside".to_owned(), Verdict::Skipped),
+            ("after".to_owned(), Verdict::Passed),
+        ]
+    );
+    assert!(report.passed(), "{}", report.as_text());
+    assert_eq!(
+        machine.keys_pressed(),
+        vec!["tab"],
+        "a key inside the section was pressed"
+    );
+    assert!(
+        report
+            .as_text()
+            .contains("needs ALO_WALK_EVERY_APPLICATION"),
+        "{}",
+        report.as_text()
+    );
+}
+
+/// **With its variable, the section is walked like any other**, and the
+/// steps after it too.
+#[test]
+fn with_its_variable_the_section_is_walked() {
+    let mut machine = saying_inside_and_after();
+    let walked = Walk::named("w")
+        .section_only_with("ALO_WALK_EVERY_APPLICATION", |section| {
+            section.press(Chord::key("esc")).expect_line(
+                "inside",
+                "inside the section",
+                Since::Boot,
+                Duration::from_secs(1),
+            )
+        })
+        .press(Chord::key("tab"))
+        .expect_line(
+            "after",
+            "after the section",
+            Since::Boot,
+            Duration::from_secs(1),
+        );
+    let set = |name: &str| (name == "ALO_WALK_EVERY_APPLICATION").then(|| "yes".to_owned());
+    let report = walk(&mut machine, &walked, &set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![
+            ("inside".to_owned(), Verdict::Passed),
+            ("after".to_owned(), Verdict::Passed),
+        ]
+    );
+    assert_eq!(machine.keys_pressed(), vec!["esc", "tab"]);
+}
+
 /// **A secret typed is never said**: it reaches the machine as keys, and the
 /// report names the variable and the length only.
 #[test]
