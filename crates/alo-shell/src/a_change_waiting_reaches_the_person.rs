@@ -330,6 +330,16 @@ impl AChangeWaiting {
         &self.texts
     }
 
+    /// How many characters of text the card shows, all of them, across every
+    /// text the change carries — nought when it carries none.
+    #[must_use]
+    pub fn characters_of_text(&self) -> usize {
+        self.texts
+            .iter()
+            .map(|text| text.as_given().chars().count())
+            .sum()
+    }
+
     /// The first line the card shows of each text, from nought.
     #[must_use]
     pub const fn first_line_shown(&self) -> usize {
@@ -474,6 +484,15 @@ impl crate::Server {
             && let Some(the_turn) = the_turn
         {
             waiting.and_its_turn_is_held_by(the_turn);
+        }
+        // **Said on the journal when a card goes up**, with how much text it
+        // shows and never the text, so a walk can tell the card was put in
+        // front of the person and carried the whole of what alo would type.
+        if arrived == WhatArrived::AQuestion {
+            eprintln!(
+                "{}",
+                alo_acting::said_on_the_log::a_card_is_up(waiting.characters_of_text())
+            );
         }
         // **And a reply the person sent while alo was answering goes now**,
         // with the conversation as it stands — unless what just arrived is a

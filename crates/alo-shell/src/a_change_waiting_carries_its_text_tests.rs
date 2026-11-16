@@ -241,3 +241,21 @@ fn the_text_waiting_is_the_text_the_task_window_draws() {
         "the text outlived the question"
     );
 }
+
+/// **The card counts the text it shows in characters, all of it** — what the
+/// log line the walk reads says — and nought for a change that types nothing.
+#[test]
+fn the_card_counts_the_whole_text_it_shows() {
+    let text = "Written by alo, héllo\nsecond line";
+    let mut task = a_task();
+    let mut waiting = AChangeWaiting::nothing_yet();
+    waiting.arrived(&mut task, &ADaemon::holding(vec![typing(7, text)]));
+    assert_eq!(waiting.characters_of_text(), text.chars().count());
+
+    let mut nothing = AChangeWaiting::nothing_yet();
+    nothing.arrived(
+        &mut a_task(),
+        &ADaemon::holding(vec![standing(8, "Rename march.pdf")]),
+    );
+    assert_eq!(nothing.characters_of_text(), 0);
+}
