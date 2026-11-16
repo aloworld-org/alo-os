@@ -74,6 +74,9 @@ fn standing(number: u64, sentence: &str) -> Standing {
         .unwrap_or_else(|why| panic!("a waiting change did not read from {wire}: {why}"))
 }
 
+#[path = "a_change_waiting_carries_its_text_tests.rs"]
+mod the_text_it_carries;
+
 /// A task with nothing asked of it.
 fn a_task() -> ATask {
     ATask::asked_for("tidy my invoices", InferenceSource::ThisMachine)

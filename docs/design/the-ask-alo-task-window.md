@@ -447,6 +447,51 @@ What the block looks like — its type style (System/Mono, as the file row's
 path, is the obvious reading), its height before it scrolls, and the mark's
 look — is for the owner or the design file to settle before stage 6 draws it.
 
+**Settled by the owner on 2026-11-15, relayed by the coordinator, and drawn:**
+*System/Mono 12/18, inside the touches row's `bg/cool` box with a 12 corner;
+up to 12 lines, then it scrolls; each hidden character drawn as a small tag
+such as "U+200B" in the warning colour.* This stands with the owner's earlier
+decision of 2026-11-13: text alo sends has no length limit, hidden characters
+are marked and not refused, and the text is always shown and never run.
+
+What the card draws now (`crate::the_approval_card`,
+`crate::the_text_alo_will_type`), under the rows naming what the change
+touches:
+
+| | Measure | Where it comes from |
+|---|---|---|
+| above the text | 12 | the column's gap, as above a touches row |
+| *how long it is* (*3 lines, 39 characters*) | Body/Medium 18, `text/muted` | the rule above |
+| *how many characters are marked*, when any are | Body/Medium 18, `status/warning` | the rule above, in the warning colour |
+| between those and the box | 8 | |
+| the box | `bg/cool`, corner 12, 12 inside | the owner, from the touches row |
+| the text | System/Mono 12/18 (Geist Mono Medium) | the owner |
+| lines in view | 12, then it scrolls | the owner |
+| a hidden character | its code, *U+200B*, in `status/warning`, heavier, in its place | the owner |
+
+**The readings this had to make**, each a departure for the next person to
+take to the design or the owner:
+
+1. **A line wider than the box wraps** under itself; nothing is cut. So the
+   box holds twelve lines of the text, and can be taller than twelve rows of
+   type when a line wraps.
+2. **Scrolling is by line of the text, with the keyboard**: Up and Down move
+   a line, Shift+Up and Shift+Down a page of twelve, and the last twelve
+   lines are as far as it goes. Page Up and Page Down still scroll the
+   conversation, as before. **Scrolling answers nothing.** The wheel over the
+   box scrolls the conversation, not the box: that is not built.
+3. **No scroll bar is drawn.** *How long it is* above the box says how many
+   lines there are. Nothing in the design draws a scroll bar in a task window.
+4. **The tag is told apart by its weight as well as its colour**, so it is
+   never colour alone. A letter from another alphabet is visible, so it is
+   drawn and its tag follows it.
+5. **More than one text** (a verb with two text arguments; none ships today)
+   is drawn as one box after another, scrolled together.
+6. **A screen reader** hears, under the asking task's window, the sentence,
+   how long the text is, how much is marked, and every line with each hidden
+   character named in words in its place (*invisible character U+200B*)
+   (`crate::the_text_alo_will_type_as_read`).
+
 ### The action component both popovers and the card are built from
 
 `AskAloAction`, two styles, 48 high, radius `radius/md`, border

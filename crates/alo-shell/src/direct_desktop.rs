@@ -2034,6 +2034,11 @@ impl LoopInput for TheDesktopLane<'_> {
         )
         .with_the_closing_question(server.closing_asked, self.strings)
         .with_what_the_change_does(server.the_change_waiting.does())
+        .with_the_text_alo_will_type(
+            server.the_change_waiting.texts(),
+            server.the_change_waiting.first_line_shown(),
+            self.strings,
+        )
         .with_what_the_change_touches(
             server.the_change_waiting.touches(),
             server

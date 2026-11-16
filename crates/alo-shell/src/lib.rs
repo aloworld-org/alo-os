@@ -644,6 +644,8 @@ pub mod the_application_door;
 pub mod the_application_doors_place;
 /// The approval card's layout, measured off the approved frame.
 mod the_approval_card;
+pub mod the_text_alo_will_type;
+mod the_text_alo_will_type_as_read;
 /// The alo mark at the top of the approval card.
 mod the_approval_cards_icons;
 pub mod the_bar_finds;

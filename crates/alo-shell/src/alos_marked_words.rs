@@ -52,6 +52,11 @@ pub enum HowItIsMarked {
     Heading,
     /// `` `code` ``, or a line inside a fenced block.
     Code,
+    /// **A character a person could miss, drawn as its tag** — *U+200B* in
+    /// the warning colour and a heavier weight, where the character stands
+    /// (`crate::the_text_alo_will_type`). Never read from alo's words: only
+    /// the text a change would type is marked this way.
+    Unseen,
 }
 
 /// Where one marked stretch ends, and how it is marked.
@@ -121,7 +126,7 @@ impl MarkedWords {
 
     /// Add words marked this way, joining them to the stretch before when it
     /// is marked the same.
-    fn push(&mut self, words: &str, how: HowItIsMarked) {
+    pub(crate) fn push(&mut self, words: &str, how: HowItIsMarked) {
         if words.is_empty() {
             return;
         }

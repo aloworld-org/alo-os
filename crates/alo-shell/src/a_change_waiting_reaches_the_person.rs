@@ -48,6 +48,13 @@ use alo_tasks::{ATask, Turn};
 
 use crate::approval_keys::ApprovalKey;
 
+/// A page of the text: the twelve lines the card shows.
+#[expect(
+    clippy::cast_possible_wrap,
+    reason = "twelve fits in any signed number"
+)]
+const A_PAGE: isize = crate::the_approval_card::THE_MOST_LINES_SHOWN as isize;
+
 /// The change a person is being asked about, the number to answer it by, and
 /// which answer their keyboard is on.
 ///
@@ -78,6 +85,15 @@ pub struct AChangeWaiting {
     /// (`549:209`), already in the person's language. Empty when nothing is
     /// asked, or for a verb that says nothing.
     does: (Option<String>, Option<String>),
+    /// **The text the change would type, whole** — each text it carries, as
+    /// the card shows it (`alo_capability::TheWholeText`): every line, how
+    /// long it is, every hidden character marked. Empty when nothing is asked
+    /// and for a change that carries no text. ADR 0001 as amended 2026-11-13:
+    /// no length limit, nothing cut, never run.
+    texts: Vec<alo_capability::TheWholeText>,
+    /// The first line of each text the card shows, from nought — the card
+    /// shows twelve and then scrolls (the owner's decision of 2026-11-15).
+    first_line: usize,
 }
 
 /// The two answers, in reading order.
@@ -127,6 +143,8 @@ impl AChangeWaiting {
             the_turn: None,
             touches: Vec::new(),
             does: (None, None),
+            texts: Vec::new(),
+            first_line: 0,
         }
     }
 
@@ -191,6 +209,12 @@ impl AChangeWaiting {
         );
         self.number = Some(first.number());
         self.touches = first.touches().to_vec();
+        self.texts = first
+            .texts()
+            .iter()
+            .map(|text| text.shown())
+            .collect();
+        self.first_line = 0;
         self.does = (
             first.changes().map(|it| it.text().to_owned()),
             first.leaves().map(|it| it.text().to_owned()),
@@ -209,6 +233,8 @@ impl AChangeWaiting {
         self.selected = None;
         self.touches.clear();
         self.does = (None, None);
+        self.texts.clear();
+        self.first_line = 0;
         task.allow_once();
         let answered = daemon.approve(number);
         // **Only now does the agent go**: the change was carried out inside
@@ -223,6 +249,8 @@ impl AChangeWaiting {
         self.selected = None;
         self.touches.clear();
         self.does = (None, None);
+        self.texts.clear();
+        self.first_line = 0;
         task.deny();
         let answered = daemon.decline(number);
         self.the_turn = None;
@@ -241,6 +269,8 @@ impl AChangeWaiting {
         self.selected = None;
         self.touches.clear();
         self.does = (None, None);
+        self.texts.clear();
+        self.first_line = 0;
         task.the_question_lapsed();
         self.the_turn.take()
     }
@@ -258,6 +288,42 @@ impl AChangeWaiting {
     #[must_use]
     pub fn touches(&self) -> &[alo_changing::Touched] {
         &self.touches
+    }
+
+    /// The text the change in front of the person would type, whole, and
+    /// nothing when no change is or it carries none.
+    #[must_use]
+    pub fn texts(&self) -> &[alo_capability::TheWholeText] {
+        &self.texts
+    }
+
+    /// The first line the card shows of each text, from nought.
+    #[must_use]
+    pub const fn first_line_shown(&self) -> usize {
+        self.first_line
+    }
+
+    /// Scroll the text by `lines`, back when negative, and stop at either
+    /// end: the last line it can start at leaves the last twelve showing.
+    fn scrolled(&mut self, lines: isize) -> WhatThePressDid {
+        let furthest = self
+            .texts
+            .iter()
+            .map(|text| {
+                text.how_many_lines()
+                    .saturating_sub(crate::the_approval_card::THE_MOST_LINES_SHOWN)
+            })
+            .max()
+            .unwrap_or(0);
+        let now = self
+            .first_line
+            .saturating_add_signed(lines)
+            .min(furthest);
+        if now == self.first_line {
+            return WhatThePressDid::Nothing;
+        }
+        self.first_line = now;
+        WhatThePressDid::ItMoved
     }
 
     /// Which answer their keyboard is on, and [`None`] until they move to one.
@@ -302,6 +368,12 @@ impl AChangeWaiting {
                 None => WhatThePressDid::Nothing,
             },
             ApprovalKey::Decline => WhatThePressDid::ItWasAnswered(self.deny(task, daemon)),
+            // **Scrolling the text answers nothing** and moves no answer: it
+            // is reading, and a person reads before they answer.
+            ApprovalKey::EarlierLines => self.scrolled(-1),
+            ApprovalKey::LaterLines => self.scrolled(1),
+            ApprovalKey::AnEarlierPage => self.scrolled(-A_PAGE),
+            ApprovalKey::ALaterPage => self.scrolled(A_PAGE),
             ApprovalKey::Nothing => WhatThePressDid::Nothing,
         }
     }

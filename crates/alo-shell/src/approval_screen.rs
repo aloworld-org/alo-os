@@ -222,9 +222,15 @@ impl ApprovalScreen {
             ApprovalKey::Decline if self.shown.asked().is_some() => {
                 self.answer(ApprovalAnswer::No, turning, grants, now)
             }
+            // **This surface shows no text to scroll**, so the scroll keys
+            // are nothing here.
             ApprovalKey::NextAnswer
             | ApprovalKey::PreviousAnswer
             | ApprovalKey::Decline
+            | ApprovalKey::EarlierLines
+            | ApprovalKey::LaterLines
+            | ApprovalKey::AnEarlierPage
+            | ApprovalKey::ALaterPage
             | ApprovalKey::Nothing => ApprovalOutcome::default(),
         }
     }

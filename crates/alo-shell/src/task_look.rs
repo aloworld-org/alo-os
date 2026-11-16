@@ -111,6 +111,10 @@ pub(crate) struct TaskPalette {
     /// windows, which is `DesktopPalette::ground` (see the note above about
     /// that name).
     pub(crate) canvas: [u8; 3],
+    /// **Something a person could miss**: how many characters in a text are
+    /// marked, and each one's tag — `status/warning` (the owner's decision of
+    /// 2026-11-15).
+    pub(crate) warning: [u8; 3],
 }
 
 /// A role's colour as three bytes.
@@ -147,6 +151,7 @@ impl TaskPalette {
             the_one_button: desktop.ink,
             on_the_one_button: desktop.dock,
             canvas: desktop.ground,
+            warning: rgb_of(Role::StatusWarning),
         })
     }
 }

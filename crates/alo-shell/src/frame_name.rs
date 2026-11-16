@@ -184,7 +184,25 @@ impl crate::Server {
             Some((frame, met)) => tree.with_a_windows_panel_open(strings, frame, &met),
             None => tree,
         };
-        tree.with_the_task_windows_open(strings, &tasks, turned_on)
+        // **And the text the change waiting would type**, under the task
+        // window that is asking, every line with each hidden character named
+        // (`crate::the_text_alo_will_type_as_read`).
+        let asking = tasks.iter().find_map(|(which, _)| {
+            let sentence = self.tasks().the(*which)?.permissions().asking()?;
+            Some((*which, sentence.to_owned()))
+        });
+        let tree = tree.with_the_task_windows_open(strings, &tasks, turned_on);
+        let tree = match asking {
+            Some((which, sentence)) if self.the_change_waiting.is_asking() => tree
+                .with_the_text_alo_will_type(
+                    strings,
+                    which,
+                    &sentence,
+                    self.the_change_waiting.texts(),
+                ),
+            _ => tree,
+        };
+        tree
             // **And Settings as it is drawn**, while it is open here — before
             // any of alo's own sheets, which the desktop adds over it.
             .with_settings(

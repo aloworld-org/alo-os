@@ -221,6 +221,10 @@ pub struct TheTwoAnswers<'a> {
     /// a tick under the rows, as its verb words them. Neither for the closing
     /// question, or for a verb that says nothing.
     pub does: (Option<&'a str>, Option<&'a str>),
+    /// **The text the change would type**, each one whole as the card shows
+    /// it (`crate::the_text_alo_will_type`). Empty for the closing question
+    /// and for a change that carries no text.
+    pub texts: &'a [crate::the_text_alo_will_type::ATextOnTheCard],
     /// A third answer drawn between the two: *Keep running*, on the closing
     /// question (ADR 0139). [`None`] on an approval card, which has two.
     pub between: Option<TheAnswerBetween<'a>>,
@@ -351,6 +355,17 @@ fn the_runs<'a>(write: ToWrite<'a>, measure: Measure) -> Vec<(&'a str, Attrs<'a>
                     .attrs()
                     .metrics(AStyle::Heading.metrics(measure)),
                 HowItIsMarked::Code => crate::the_terminals_face::alos_own_mono(),
+                // **A hidden character's tag**: the block's own face, in the
+                // warning colour and heavier, so it is told apart from text
+                // that happens to read *U+200B* by more than its colour.
+                HowItIsMarked::Unseen => {
+                    let warning = alo_appearance::Role::StatusWarning.colour();
+                    plain.clone().weight(Weight(700)).color(cosmic_text::Color::rgb(
+                        warning.red(),
+                        warning.green(),
+                        warning.blue(),
+                    ))
+                }
             };
             Some((words, attrs))
         })
