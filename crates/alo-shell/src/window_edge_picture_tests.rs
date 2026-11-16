@@ -433,3 +433,61 @@ fn a_band_off_the_display_with_no_alo_is_still_refused() {
         .is_none()
     );
 }
+
+/// **A window alo operates reaching past the left of the screen still wears
+/// the border, on the sides that are on it** — the walk of 2026-11-16 on `main`
+/// at 4f3a92d4 (run 43889781022) placed VSCodium at x −24, its left side off
+/// the display. Asked through the road the compositor takes, as above.
+#[test]
+fn a_window_alo_operates_past_the_left_of_the_screen_wears_the_border_on_it() {
+    let output = (1280, 800);
+    let window = Rectangle::new(Point::from((-24, 70)), Size::from((1136, 630)));
+    let edge = edge_of(
+        window,
+        Decorations::TheApplicationDraws(crate::window_edge::ItsOwnButtons::NOT_KNOWN),
+        false,
+        Size::from(output),
+    );
+    let here = alo_operating();
+    let picture = EdgePicture::of(
+        &edge,
+        OverTheEdge {
+            menu: None,
+            field: None,
+            showing: None,
+            alo: Some(crate::alos_band_in_a_window::AlosBand {
+                here: &here,
+                card: edge.region.merge(window),
+                window,
+                stop_pointed_at: false,
+            }),
+        },
+        TheWindow {
+            title: Some("hello.txt - VSCodium"),
+            application: Some("VSCodium"),
+            look: WhichLook::of(true),
+            body: Some(window),
+            laid_over: false,
+            controls: controls(0),
+        },
+        &mut fonts(),
+        output,
+        100,
+    )
+    .expect("the window alo operates was given no picture at all");
+    // Top, foot and right side, each the border's width: well over 2 × 1100.
+    assert!(
+        teal_over(&picture) > 2 * 1100 + 630,
+        "the border was not drawn on the sides on the screen: {} teal pixels",
+        teal_over(&picture)
+    );
+    let screen = Rectangle::<i32, smithay::utils::Physical>::from_size(output.into());
+    for raster in picture.over() {
+        let area = crate::painted::on_the_frame(raster.area);
+        assert_eq!(
+            screen.intersection(area),
+            Some(area),
+            "{area:?} is off the display"
+        );
+    }
+}
