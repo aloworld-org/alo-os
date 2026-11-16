@@ -11,8 +11,8 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
-use std::cell::RefCell;
 use std::os::unix::fs::PermissionsExt as _;
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use alo_changing::{Answered, Answering, Standing};
 use alo_models::InferenceSource;
@@ -33,12 +33,27 @@ const TAB: u32 = 15;
 const ENTER: u32 = 28;
 const ESCAPE: u32 = 1;
 
+/// Something a stand-in daemon notes, shared with the copy the key path
+/// carries an answer on.
+#[derive(Debug, Default, Clone)]
+struct Noted<T>(Arc<Mutex<T>>);
+
+impl<T> Noted<T> {
+    fn borrow(&self) -> MutexGuard<'_, T> {
+        self.0.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    fn borrow_mut(&self) -> MutexGuard<'_, T> {
+        self.borrow()
+    }
+}
+
 /// A daemon holding what a test tells it to, and remembering every answer.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct ADaemon {
     holding: Vec<Standing>,
-    approved: RefCell<Vec<u64>>,
-    declined: RefCell<Vec<u64>>,
+    approved: Noted<Vec<u64>>,
+    declined: Noted<Vec<u64>>,
 }
 
 impl Answering for ADaemon {
@@ -146,7 +161,7 @@ fn alt_f4(server: &mut Server, daemon: &ADaemon) {
                 state,
                 time: 1,
             },
-            Some(daemon),
+            Some(Arc::new(daemon.clone()) as crate::an_answer_goes_off_the_frame::TheirDaemon),
             &strings,
         )
         .expect("the seat took the key");
@@ -323,7 +338,7 @@ fn press(server: &mut Server, code: u32, daemon: &ADaemon) {
                 state,
                 time: 1,
             },
-            Some(daemon),
+            Some(Arc::new(daemon.clone()) as crate::an_answer_goes_off_the_frame::TheirDaemon),
             &strings,
         )
         .expect("the seat took the key");

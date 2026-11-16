@@ -7,7 +7,7 @@ use alo_changing::{Done, Standing};
 use alo_models::InferenceSource;
 use alo_tasks::ATask;
 
-use super::{AChangeWaiting, WhatArrived, WhatThePressDid, WhichAnswer};
+use super::{AChangeWaiting, TheAnswerGiven, WhatArrived, WhatThePressDid, WhichAnswer};
 use crate::approval_keys::ApprovalKey;
 
 /// A daemon that holds what a test tells it to, and remembers what it was
@@ -132,7 +132,7 @@ fn what_a_change_touches_arrives_with_it_and_goes_when_it_is_answered() {
             Some("No other file is changed.")
         )
     );
-    waiting.deny(&mut task, &daemon);
+    waiting.deny(&mut task);
     assert!(
         waiting.touches().is_empty(),
         "the rows outlived the question"
@@ -153,9 +153,13 @@ fn allowing_once_answers_the_number_the_daemon_named() {
     let mut waiting = AChangeWaiting::nothing_yet();
     waiting.arrived(&mut task, &daemon);
 
-    assert!(waiting.allow_once(&mut task, &daemon).is_some());
-    assert_eq!(*daemon.approved.borrow(), [7]);
-    assert!(daemon.declined.borrow().is_empty());
+    assert_eq!(
+        waiting.allow_once(&mut task),
+        Some(TheAnswerGiven {
+            number: 7,
+            allowed: true,
+        })
+    );
     assert!(!waiting.is_asking(), "the question stayed up after a yes");
 }
 
@@ -167,9 +171,13 @@ fn denying_answers_the_same_number() {
     let mut waiting = AChangeWaiting::nothing_yet();
     waiting.arrived(&mut task, &daemon);
 
-    assert!(waiting.deny(&mut task, &daemon).is_some());
-    assert_eq!(*daemon.declined.borrow(), [3]);
-    assert!(daemon.approved.borrow().is_empty());
+    assert_eq!(
+        waiting.deny(&mut task),
+        Some(TheAnswerGiven {
+            number: 3,
+            allowed: false,
+        })
+    );
 }
 
 /// **A second answer sends nothing**, because there is nothing in front of the
@@ -186,10 +194,12 @@ fn answering_twice_sends_one_answer() {
     let mut waiting = AChangeWaiting::nothing_yet();
     waiting.arrived(&mut task, &daemon);
 
-    assert!(waiting.allow_once(&mut task, &daemon).is_some());
-    assert!(waiting.allow_once(&mut task, &daemon).is_none());
-    assert!(waiting.deny(&mut task, &daemon).is_none());
-    assert_eq!(*daemon.approved.borrow(), [7], "it was approved twice");
+    assert!(waiting.allow_once(&mut task).is_some());
+    assert!(
+        waiting.allow_once(&mut task).is_none(),
+        "it was approved twice"
+    );
+    assert!(waiting.deny(&mut task).is_none());
 }
 
 /// **A question in front of somebody is never replaced.** Asking again while
@@ -211,8 +221,13 @@ fn a_question_already_in_front_of_them_is_not_replaced() {
     assert_eq!(task.permissions().asking(), Some(first));
 
     // And the one answered is the one that was shown.
-    waiting.allow_once(&mut task, &daemon);
-    assert_eq!(*daemon.approved.borrow(), [7]);
+    assert_eq!(
+        waiting.allow_once(&mut task),
+        Some(TheAnswerGiven {
+            number: 7,
+            allowed: true,
+        })
+    );
 }
 
 /// **One at a time**, which is `ThePermissions`' own rule: a list of pending
@@ -247,7 +262,7 @@ fn no_daemon_means_no_question_and_no_answer() {
     assert_eq!(waiting.arrived(&mut task, &daemon), WhatArrived::Nothing);
     assert!(!waiting.is_asking());
     assert_eq!(task.permissions().asking(), None);
-    assert!(waiting.allow_once(&mut task, &daemon).is_none());
+    assert!(waiting.allow_once(&mut task).is_none());
 }
 
 /// A running daemon holding nothing is the same to a surface as one that said
@@ -278,11 +293,9 @@ fn enter_with_nothing_selected_answers_nothing() {
 
     assert_eq!(waiting.selected(), None, "an answer was preselected");
     assert_eq!(
-        waiting.pressed(ApprovalKey::Choose, &mut task, &daemon),
+        waiting.pressed(ApprovalKey::Choose, &mut task),
         WhatThePressDid::Nothing
     );
-    assert!(daemon.approved.borrow().is_empty(), "Enter approved it");
-    assert!(daemon.declined.borrow().is_empty(), "Enter declined it");
     assert!(
         waiting.is_asking(),
         "the question was taken down unanswered"
@@ -298,16 +311,16 @@ fn tab_moves_between_the_two_answers() {
     waiting.arrived(&mut task, &daemon);
 
     assert_eq!(
-        waiting.pressed(ApprovalKey::NextAnswer, &mut task, &daemon),
+        waiting.pressed(ApprovalKey::NextAnswer, &mut task),
         WhatThePressDid::ItMoved
     );
     assert_eq!(waiting.selected(), Some(WhichAnswer::AllowOnce));
 
-    waiting.pressed(ApprovalKey::NextAnswer, &mut task, &daemon);
+    waiting.pressed(ApprovalKey::NextAnswer, &mut task);
     assert_eq!(waiting.selected(), Some(WhichAnswer::Deny));
 
     // And back, because with two answers next and previous are one move.
-    waiting.pressed(ApprovalKey::PreviousAnswer, &mut task, &daemon);
+    waiting.pressed(ApprovalKey::PreviousAnswer, &mut task);
     assert_eq!(waiting.selected(), Some(WhichAnswer::AllowOnce));
 }
 
@@ -319,10 +332,15 @@ fn choosing_an_answer_sends_that_answer() {
     let mut waiting = AChangeWaiting::nothing_yet();
     waiting.arrived(&mut task, &daemon);
 
-    waiting.pressed(ApprovalKey::NextAnswer, &mut task, &daemon);
-    let did = waiting.pressed(ApprovalKey::Choose, &mut task, &daemon);
-    assert!(matches!(did, WhatThePressDid::ItWasAnswered(Some(_))));
-    assert_eq!(*daemon.approved.borrow(), [7]);
+    waiting.pressed(ApprovalKey::NextAnswer, &mut task);
+    let did = waiting.pressed(ApprovalKey::Choose, &mut task);
+    assert_eq!(
+        did,
+        WhatThePressDid::ItWasAnswered(TheAnswerGiven {
+            number: 7,
+            allowed: true,
+        })
+    );
     assert!(!waiting.is_asking());
     assert_eq!(
         waiting.selected(),
@@ -343,17 +361,20 @@ fn escape_declines_whatever_is_selected() {
     waiting.arrived(&mut task, &daemon);
 
     // Nothing selected, and it still says no.
-    let did = waiting.pressed(ApprovalKey::Decline, &mut task, &daemon);
-    assert!(matches!(did, WhatThePressDid::ItWasAnswered(Some(_))));
-    assert_eq!(*daemon.declined.borrow(), [4]);
-    assert!(daemon.approved.borrow().is_empty());
+    let did = waiting.pressed(ApprovalKey::Decline, &mut task);
+    assert_eq!(
+        did,
+        WhatThePressDid::ItWasAnswered(TheAnswerGiven {
+            number: 4,
+            allowed: false,
+        })
+    );
 }
 
 /// A press with no question in front of the person does nothing, which is a
 /// window somebody left open and came back to.
 #[test]
 fn a_press_with_nothing_waiting_does_nothing() {
-    let daemon = ADaemon::holding(Vec::new());
     let mut task = a_task();
     let mut waiting = AChangeWaiting::nothing_yet();
 
@@ -362,13 +383,8 @@ fn a_press_with_nothing_waiting_does_nothing() {
         ApprovalKey::Choose,
         ApprovalKey::Decline,
     ] {
-        assert_eq!(
-            waiting.pressed(key, &mut task, &daemon),
-            WhatThePressDid::Nothing
-        );
+        assert_eq!(waiting.pressed(key, &mut task), WhatThePressDid::Nothing);
     }
-    assert!(daemon.approved.borrow().is_empty());
-    assert!(daemon.declined.borrow().is_empty());
 }
 
 /// **The agent's announcement of a waiting change is not said twice.** Found
