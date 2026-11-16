@@ -423,9 +423,10 @@ said *"This is not a premium way to show that alo is working"*, and then ruled:
 with one of our brand colors."* So a window alo **operates** — opens a file
 in, types into, saves in, for a request typed in the Bar — wears:
 
-- **the teal edge**, deep teal `#0F6B72` (`accent/default`), 2 wide round the
-  whole card at its corner of 16, exactly as stage 3 draws it for an offered
-  window: one painter, `crate::alos_band_in_a_window`;
+- **the teal edge**, deep teal `#0F6B72` (`accent/default`), round the whole
+  card at its corner of 16, as stage 3 draws it for an offered window — one
+  painter, `crate::alos_band_in_a_window` — but 3 wide at rest and 6 while
+  sending (below);
 - **alo's mark, small, on the border**, because teal never comes alone
   (*who-is-acting.md*): a tab of the edge's own teal, 28 × 20 with corners of
   6, standing on the outside of the top edge 16 in from its right-hand corner,
@@ -468,28 +469,35 @@ Readings taken building it, each for the owner to overrule:
   `docs/misreadings/a-painter-tested-alone-passed-while-its-caller-drew-nothing.md`).
   Now the band alone is left out, and the border goes round the window, kept to
   the display.
-- **What alo's copy sends is said on the border**, by the owner's answer of
-  2026-11-15 — *"It's should be at the edges of the window"* — after three
-  places were drawn for them (a tab growing out of the mark's, a strip under
-  the foot, and the corner alone). While alo's work in the window's
-  application has a line up on the egress indicator, read from that same line
-  so the two can never disagree:
-  - the edge goes from 2 to **4** wide, so the change is seen without reading
-    a colour (*who-is-acting.md*);
-  - **the words** — *sending* once alo's copy is seen sending, *may be
-    sending* where nothing can count what it sends — stand on a tab of the
-    border's own ink, 20 tall with corners of 6 and 8 either side of the
-    words, SemiBold 11 in `bg/surface`, **outside the window on its foot, 16
-    in from the left-hand corner**, so no control of the application's is
-    covered and the mark's tab keeps the top edge's right-hand corner. With
-    no room under the window it stands on the top edge; with none there
-    either, inside the foot's left-hand corner. *The foot and the left were
-    this lane's reading of "the edges", shown to the owner before landing.*
-  - **The indicator in the corner is unchanged**, and so is the record (law
-    1). Whether the corner keeps saying it for alo's copy is a law-1 question
-    put to the owner, not decided here.
+- **While alo's copy sends, the border thickens, and that is the whole
+  sign** — ruled by the owner on 2026-11-15. Asked where the notice should
+  live, they first answered *"It's should be at the edges of the window"*;
+  shown that built as the word *sending* on a tab of the border, they ruled
+  *"We remove this and the sending, the border is enough"*, and asked about
+  law 1, chose *"Border only, it thickens"*. So:
+  - the border is **3 wide at rest and 6 while that window's application is
+    sending** — logical, through the display's scale — read from the same
+    line the egress indicator holds, so the two can never disagree. No words
+    and no colour change: the weight is the sign (*who-is-acting.md*). **3
+    rather than stage 3's 2** was the coordinator's call, because over a
+    dark window like VSCodium's 2 was too faint; an offered window's band
+    keeps 2;
+  - **the corner no longer shows alo's copy of an application while that
+    application's window wears the border** — drawn this frame, alo acting
+    (not waiting on the person, which draws no edge) and the turn not over.
+    Every other line stays in the corner exactly as it was: alo's own
+    questions to a provider, alo OS's own errands, a person's command, a copy
+    whose window wears no border (never marked, off the screen, put aside,
+    waiting on the person). `alo_indicator::Drawn::of_both_except_on_borders`
+    is the one place the line is left out;
+  - **law 1 still holds**: what alo's copy sends is visible at the moment it
+    leaves — by the border thickening, or, wherever the border is not drawn,
+    by the corner — and the record keeps it, untouched.
 
-  `crate::the_border_says_sending`.
+  A frame where a window's border was drawn and then goes off the screen is
+  the one gap: the corner is told from the borders the frame before drew, so
+  for that one frame the copy's line is in neither place. Named rather than
+  hidden.
 
 `crate::the_window_alo_acts_in`; the walk *writing in VSCodium* checks the
 edge in the screen's own pixels while alo works and gone after

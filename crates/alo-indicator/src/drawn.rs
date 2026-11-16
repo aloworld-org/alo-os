@@ -124,6 +124,40 @@ impl Drawn {
         }
     }
 
+    /// [`Drawn::of_both`], **less each line for alo's own copy of an
+    /// application whose window wears alo's border** — the owner, 2026-11-15:
+    /// *the border is enough*. The window's border thickens while that copy
+    /// sends, so the corner does not say it twice; every other line stays,
+    /// and the light counts only what is still shown here.
+    ///
+    /// `on_borders` names the applications whose window the compositor drew
+    /// that border round, by the identifier alo works in them by. **Empty, it
+    /// is exactly [`Drawn::of_both`]**: a copy whose window wears no border is
+    /// in the corner, so nothing it sends is shown nowhere. The record is not
+    /// this picture and is not touched by it.
+    #[must_use]
+    pub fn of_both_except_on_borders(
+        indicator: &Indicator,
+        daemon: &crate::FromTheDaemon,
+        on_borders: &[String],
+    ) -> Self {
+        let lines: Vec<Shown> = indicator
+            .showing()
+            .iter()
+            .filter(|line| {
+                line.showing()
+                    .alo_at_work()
+                    .is_none_or(|at| !on_borders.iter().any(|it| it == at.application()))
+            })
+            .cloned()
+            .collect();
+        Self {
+            lamp: Lamp::of_both_counting(lines.len(), daemon),
+            lines,
+            reported: daemon.lines().to_vec(),
+        }
+    }
+
     /// What `alo-agentd`'s indicator said it was showing, oldest first.
     #[must_use]
     pub fn reported(&self) -> &[Reported] {
@@ -341,5 +375,69 @@ mod tests {
             quiet.lamp().is_dark(),
             "told nothing is leaving, and it is dark"
         );
+    }
+
+    /// alo working in its own copy of an application, seen sending.
+    fn alos_copy(application: &str) -> alo_egress::AloAtWork {
+        alo_egress::AloAtWork::of(application, "VSCodium", alo_egress::HowItIsShown::Counted)
+            .unwrap()
+    }
+
+    /// The service has said, and said nothing is leaving from it.
+    fn the_service_quiet() -> crate::FromTheDaemon {
+        crate::FromTheDaemon::Told(crate::told::ToldByTheDaemon::heard(Vec::new()))
+    }
+
+    /// **While the window of alo's copy wears alo's border, the corner shows
+    /// nothing for that copy** — the owner, 2026-11-15: *the border is enough*
+    /// — and the light counts what is left, so a corner with nothing else
+    /// leaving is dark. Every other line stays exactly as it was.
+    #[test]
+    fn a_copy_whose_window_wears_the_border_leaves_the_corner() {
+        let mut indicator = Indicator::default();
+        drop(indicator.beginning_alo_at_work(alos_copy("com.vscodium.codium"), noon()));
+        let service = the_service_quiet();
+        let bordered = ["com.vscodium.codium".to_owned()];
+
+        let drawn = Drawn::of_both_except_on_borders(&indicator, &service, &bordered);
+        assert!(drawn.lines().is_empty(), "the copy was still in the corner");
+        assert!(
+            drawn.lamp().is_dark(),
+            "the light counted a line it does not show"
+        );
+
+        // **Anything else leaving stays**, the provider's question above all.
+        drop(indicator.beginning(&EgressPolicy::Anywhere, asking_a_provider(), noon()));
+        drop(indicator.beginning_alo_at_work(alos_copy("org.mozilla.firefox"), noon()));
+        let drawn = Drawn::of_both_except_on_borders(&indicator, &service, &bordered);
+        assert_eq!(
+            drawn.lines().len(),
+            2,
+            "a line that is not on a border left the corner"
+        );
+        assert_eq!(drawn.lamp().how_many(), 2);
+        assert!(drawn.lines().iter().all(|line| {
+            line.showing()
+                .alo_at_work()
+                .is_none_or(|at| at.application() != "com.vscodium.codium")
+        }));
+    }
+
+    /// **A copy whose window wears no border is shown in the corner** — the
+    /// refusal path that matters: nothing alo's copy sends is ever shown
+    /// nowhere. With no border named, the picture is the whole indicator.
+    #[test]
+    fn a_copy_whose_window_wears_no_border_stays_in_the_corner() {
+        let mut indicator = Indicator::default();
+        drop(indicator.beginning_alo_at_work(alos_copy("com.vscodium.codium"), noon()));
+        let service = the_service_quiet();
+        let drawn = Drawn::of_both_except_on_borders(&indicator, &service, &[]);
+        assert_eq!(drawn, Drawn::of_both(&indicator, &service));
+        assert_eq!(drawn.lines().len(), 1);
+        assert!(drawn.lamp().is_lit());
+        // Another application's border does not take this copy away.
+        let other = ["org.mozilla.firefox".to_owned()];
+        let drawn = Drawn::of_both_except_on_borders(&indicator, &service, &other);
+        assert_eq!(drawn.lines().len(), 1);
     }
 }

@@ -364,3 +364,74 @@ fn the_border_says_what_the_indicator_says_is_sending() {
     server.what_alos_work_is_sending(Vec::new());
     assert_eq!(sending(&server, &codium), None);
 }
+
+/// **The corner leaves alo's copy only for a window whose border was really
+/// drawn** — the owner, 2026-11-15: *the border is enough*. Drawn round a
+/// window alo is acting in, its application wears the border; and the drawing
+/// is asked again every frame, so a border not drawn since is not counted.
+#[test]
+fn an_application_wears_the_border_only_where_it_was_drawn() {
+    let (_display, _peer, codium, _other) = two_windows();
+    let (_runtime, mut server) = a_session("alo-border-drawn");
+    let _which = a_task_asked(&mut server, ASKED);
+    assert!(server.alo_acts_in(&codium, CODIUM).is_some());
+
+    server.alos_border_was_drawn_round(&codium);
+    assert_eq!(
+        server.the_applications_wearing_alos_border(),
+        vec![CODIUM.to_owned()]
+    );
+    // Not drawn again since: not counted again.
+    assert!(
+        server.the_applications_wearing_alos_border().is_empty(),
+        "a border drawn once was counted for ever"
+    );
+}
+
+/// **A window that is not wearing a drawn border leaves its copy in the
+/// corner**, so nothing alo's copy sends is ever shown nowhere: never marked,
+/// marked and not drawn this frame (off the screen, behind the panel), or
+/// waiting for the person — navy, with no edge.
+#[test]
+fn without_a_drawn_border_the_copy_stays_in_the_corner() {
+    let (_display, _peer, codium, _other) = two_windows();
+    let (_runtime, mut server) = a_session("alo-border-not-drawn");
+    // Drawn round a window alo is not acting in: nothing.
+    server.alos_border_was_drawn_round(&codium);
+    assert!(server.the_applications_wearing_alos_border().is_empty());
+
+    let which = a_task_asked(&mut server, ASKED);
+    assert!(server.alo_acts_in(&codium, CODIUM).is_some());
+    // Marked, but no border drawn this frame.
+    assert!(server.the_applications_wearing_alos_border().is_empty());
+
+    // Waiting for the person: no edge, so the corner keeps it.
+    {
+        let task = server.tasks_mut().the_mut(which).expect("open");
+        task.is_asking("Save hello.txt");
+        task.alo_says(Turn::alo_proposing("Save hello.txt"));
+    }
+    server.alos_border_was_drawn_round(&codium);
+    assert!(
+        server.the_applications_wearing_alos_border().is_empty(),
+        "a navy window with no edge took the copy out of the corner"
+    );
+}
+
+/// **The turn ending gives the copy back to the corner at once**, before any
+/// frame lets the window go: a border drawn last frame is not counted once
+/// the work it marked is over.
+#[test]
+fn the_turn_ending_gives_the_copy_back_to_the_corner_at_once() {
+    let (_display, _peer, codium, _other) = two_windows();
+    let (_runtime, mut server) = a_session("alo-border-and-the-turn-ends");
+    let which = a_task_asked(&mut server, ASKED);
+    assert!(server.alo_acts_in(&codium, CODIUM).is_some());
+    server.alos_border_was_drawn_round(&codium);
+    server
+        .tasks_mut()
+        .the_mut(which)
+        .expect("open")
+        .alo_says(Turn::from_alo("Done."));
+    assert!(server.the_applications_wearing_alos_border().is_empty());
+}

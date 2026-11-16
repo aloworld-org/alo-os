@@ -59,9 +59,9 @@ pub const SHORTEST_SIDE: usize = 120;
 /// corner of 16, at a scale of up to 3.
 pub const CORNER_ROOM: usize = 48;
 
-/// The thickest a side may be, in pixels: the edge is 2 at a scale of 1, so 6
-/// at 3, and 8 leaves room.
-pub const THICKEST: usize = 8;
+/// The thickest a side may be, in pixels: the border round a window alo
+/// operates is 3 at rest and 6 while it sends, at a scale of 1, so 18 at 3.
+pub const THICKEST: usize = 18;
 
 /// Where an edge is on the screen: its outermost columns and rows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

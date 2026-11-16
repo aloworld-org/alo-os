@@ -185,11 +185,18 @@ pub trait TheDesktop {
 
     /// **What alo's work is sending now**, by application, as the egress
     /// indicator says it — read once a frame for the border of the window alo
-    /// works in (`crate::the_border_says_sending`). **Nothing by default**: a
+    /// works in (`crate::alos_band_in_a_window`). **Nothing by default**: a
     /// desktop that holds no work has nothing sending.
     fn what_alos_work_is_sending(&self) -> Vec<(String, alo_egress::HowItIsShown)> {
         Vec::new()
     }
+
+    /// **The applications whose window wears alo's border this frame**, told
+    /// before [`Self::refreshed`] shows the indicator: the corner leaves each
+    /// one's copy to its border, which thickens while it sends (the owner,
+    /// 2026-11-15: *the border is enough*). **Ignored by default**, so a
+    /// desktop that is not told keeps every copy in the corner.
+    fn these_applications_wear_alos_border(&mut self, _applications: Vec<String>) {}
 
     /// **What an application sends while alo works in it**, once a frame: the
     /// work asked for at the door since the last frame, and a look at all of
@@ -1473,7 +1480,7 @@ impl LoopInput for TheDesktopLane<'_> {
         }
         // **And what alo's work is sending, for the border of the window it
         // works in**, read after both roads that start the counting
-        // (`crate::the_border_says_sending`).
+        // (`crate::alos_band_in_a_window`).
         server.what_alos_work_is_sending(self.desktop.what_alos_work_is_sending());
         // **And the window alo opened a file in comes in front once it is
         // there**, the one alo may type into, with the keyboard — rule 8's
@@ -1653,6 +1660,11 @@ impl LoopInput for TheDesktopLane<'_> {
         for told in self.desktop.passwords_asked() {
             self.password_sheet.told(told);
         }
+        // **Which copies' sending the border says, so the corner does not** —
+        // the borders the last frame drew round windows alo is still acting in
+        // (`crate::the_window_alo_acts_in`). Told before the indicator is shown.
+        self.desktop
+            .these_applications_wear_alos_border(server.the_applications_wearing_alos_border());
         // Asked before the frame is made, never after: a frame drawn from
         // readings taken after it would show a person the moment before.
         self.desktop.refreshed();

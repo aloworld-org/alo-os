@@ -69,6 +69,8 @@ pub struct TheWindowsAloActsIn {
     acting: Vec<ActedIn>,
     /// What alo's work is sending, by application, as the indicator says it.
     sending: Vec<(String, alo_egress::HowItIsShown)>,
+    /// The windows whose teal border was drawn since the corner last asked.
+    drawn_round: Vec<WlSurface>,
 }
 
 impl TheWindowsAloActsIn {
@@ -174,6 +176,46 @@ impl crate::Server {
     /// frame, and read by the border of the window alo works in.
     pub fn what_alos_work_is_sending(&mut self, sending: Vec<(String, alo_egress::HowItIsShown)>) {
         self.the_windows_alo_acts_in.sending = sending;
+    }
+
+    /// **alo's teal border was drawn round this window**, on some display,
+    /// this frame — told by the painter (`crate::every_windows_edge`), which
+    /// is the only one that knows a border was not left off a screen.
+    pub fn alos_border_was_drawn_round(&mut self, surface: &WlSurface) {
+        let drawn = &mut self.the_windows_alo_acts_in.drawn_round;
+        if !drawn.contains(surface) && drawn.len() < THE_MOST {
+            drawn.push(surface.clone());
+        }
+    }
+
+    /// **The applications whose copy's sending the border says, so the corner
+    /// does not** — the owner, 2026-11-15: *the border is enough*. Each is the
+    /// application of a window alo acts in whose teal edge was drawn since
+    /// this was last asked **and** is still drawn now: alo acting, not waiting
+    /// on the person (navy, no edge), and the turn not over. Anything else is
+    /// left in the corner, so nothing alo's copy sends is ever shown nowhere.
+    ///
+    /// Asked once a frame, before the corner is told what to show; the
+    /// drawing it read is let go, so a border not drawn again is not counted
+    /// again.
+    pub fn the_applications_wearing_alos_border(&mut self) -> Vec<String> {
+        let drawn = std::mem::take(&mut self.the_windows_alo_acts_in.drawn_round);
+        let mut wearing: Vec<String> = Vec::new();
+        for surface in &drawn {
+            let edged = self.alo_in_this_window(surface).is_some_and(|here| {
+                here.wears == crate::alo_in_a_window::Wears::TheBorder
+                    && here.how != crate::alo_in_a_window::HowAloIsHere::WaitingForThePerson
+            });
+            if !edged {
+                continue;
+            }
+            for acted in &self.the_windows_alo_acts_in.acting {
+                if acted.surface == *surface && !wearing.contains(&acted.application) {
+                    wearing.push(acted.application.clone());
+                }
+            }
+        }
+        wearing
     }
 
     /// **Once a frame**: let go of each window whose turn is over or which has

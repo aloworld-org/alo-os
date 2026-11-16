@@ -290,7 +290,7 @@ impl WorkingInApplications {
     /// **What alo's work is sending now, by application, as the indicator
     /// says it**: each application whose line is up, and which line. The
     /// border of the window alo works in reads this
-    /// (`crate::the_border_says_sending`), so the two can never disagree.
+    /// (`crate::alos_band_in_a_window`), so the two can never disagree.
     #[must_use]
     pub fn what_is_sending(&self) -> Vec<(String, HowItIsShown)> {
         self.works
