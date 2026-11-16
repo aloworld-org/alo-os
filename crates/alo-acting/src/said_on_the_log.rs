@@ -135,12 +135,42 @@ pub fn alo_in_an_application(verb: &str, application: &str, became: InAnApplicat
     )
 }
 
+/// The words the sentence begins with when the sheet asks the person to let
+/// alo use an application (`docs/design/when-alo-asks-for-an-application.md`).
+pub const A_SHEET_ASKS_FOR: &str = "the sheet asks the person to let alo use";
+
+/// The sentence for the sheet asking about `application`, by its identifier.
+/// **Never who asked or what for**: the application is all a walk needs.
+#[must_use]
+pub fn the_sheet_asks_for(application: &str) -> String {
+    format!("{A_SHEET_ASKS_FOR} {application}")
+}
+
+/// The sentence when a grant made for *This task* is taken back because its
+/// task ended — its window closed, or it was stopped.
+pub const A_TASKS_GRANT_WENT: &str = "a grant made for a task that ended was taken back";
+
+/// The sentence for a task's grant taken back.
+#[must_use]
+pub const fn a_tasks_grant_went() -> &'static str {
+    A_TASKS_GRANT_WENT
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
     reason = "in a test, a panic on an unexpected Err is the failure being reported"
 )]
 mod tests {
+    /// **The sheet's sentence names the application, and only it.**
+    #[test]
+    fn the_sheet_names_the_application_it_asks_for() {
+        let said = super::the_sheet_asks_for("org.gnome.Papers");
+        assert!(said.starts_with(super::A_SHEET_ASKS_FOR), "{said}");
+        assert!(said.ends_with(" org.gnome.Papers"), "{said}");
+        assert_ne!(said, super::the_sheet_asks_for("org.mozilla.firefox"));
+    }
+
     use alo_applications::Application;
 
     use super::*;

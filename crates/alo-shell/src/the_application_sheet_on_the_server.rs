@@ -42,6 +42,12 @@ impl crate::Server {
         for identifier in identifiers {
             let called = self.what_an_application_is_called(identifier);
             let wanted = AnApplicationWanted::by(which, identifier, &called);
+            // **Said on the journal**, by identifier, so a walk can tell the
+            // sheet was put in front of the person for this application.
+            eprintln!(
+                "{}",
+                alo_acting::said_on_the_log::the_sheet_asks_for(identifier)
+            );
             let answered = self.application_sheet.wanted(wanted, now);
             self.the_application_sheet_answered(answered);
         }
@@ -181,10 +187,19 @@ impl crate::Server {
         let door = alo_changing::TheDaemonsDoor::at(places.daemon());
         let now = SystemTime::now();
         for (_, id) in ending {
-            if let Err(why) = giving::a_tasks_grant_is_taken_back(places.grants(), &door, id, now) {
-                eprintln!(
-                    "alo-shell: a grant for a task that ended could not be taken back, and                      still stands until sign-out: {why}"
-                );
+            match giving::a_tasks_grant_is_taken_back(places.grants(), &door, id, now) {
+                // **Said on the journal**, so a walk can tell the grant went
+                // with its task.
+                Ok(alo_changing::Gone::Revoked { .. }) => {
+                    eprintln!("{}", alo_acting::said_on_the_log::a_tasks_grant_went());
+                }
+                Ok(alo_changing::Gone::AlreadyGone) => {}
+                Err(why) => {
+                    eprintln!(
+                        "alo-shell: a grant for a task that ended could not be taken back, and \
+                         still stands until sign-out: {why}"
+                    );
+                }
             }
         }
         self.the_grants_changed_here(now);
