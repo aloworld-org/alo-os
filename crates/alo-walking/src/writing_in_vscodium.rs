@@ -39,14 +39,11 @@
 //!    there. The owner's ruling of 2026-11-15: *if the window is being operated
 //!    by alo it should just have a border with one of our brand colors.*
 //!
-//! # What is not walked yet
+//! # And at the default level
 //!
-//! **The default level**, where the person approves the typing once with the
-//! whole text on the card, needs alo to be **let use VSCodium**, by name — and
-//! nothing on a booted machine makes that grant yet: the only surface that
-//! grants anything is the folder picker. The design for that surface is not
-//! drawn (`docs/design/the-settings-window.md`), so it is not invented here,
-//! and the walk does not pretend to have walked it.
+//! **The same request at *ask each time*** — the person gives alo VSCodium in
+//! Settings and approves each change on its card, the typing with the whole
+//! text on it — is walked next, by `crate::writing_in_vscodium_at_each_ask`.
 //!
 //! # Why this is the identifier
 //!

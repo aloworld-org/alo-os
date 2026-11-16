@@ -26,6 +26,9 @@ alo-acting = { path = "../alo-acting" }
 # `alo-cursors` for, never with a picture somebody saved.
 alo-appearance = { path = "../alo-appearance" }
 alo-cursors = { path = "../alo-cursors" }
+# **Where the level and the grant are in Settings**, counted from the lists
+# Settings draws them from rather than from a number somebody counted once.
+alo-capability = { path = "../alo-capability" }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 
@@ -35,6 +38,8 @@ alo-applications = { path = "../alo-applications" }
 # Reads the pictures a walk kept, in `tests/fixtures`, so a check is held to
 # the screen it was wrong about. The version the workspace already locks.
 image = { version = "=0.25.10", default-features = false, features = ["png"] }
+alo-picking = { path = "../alo-picking" }
+alo-software = { path = "../alo-software" }
 
 [lints]
 workspace = true

@@ -232,7 +232,9 @@ fn then_the_provider(walk: Walk) -> Walk {
     // With a provider, alo can be asked: Demo 2's second road, at full access.
     let walk = crate::writing_in_vscodium::at_full_access(walk);
     // And then every other application a fresh machine ships, where asked for.
-    crate::in_every_shipped_application::at_full_access(walk)
+    let walk = crate::in_every_shipped_application::at_full_access(walk);
+    // And then at *ask each time*, approving each change on its card.
+    crate::writing_in_vscodium_at_each_ask::at_each_ask(walk)
 }
 
 #[cfg(test)]

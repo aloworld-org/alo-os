@@ -135,6 +135,19 @@ pub fn alo_in_an_application(verb: &str, application: &str, became: InAnApplicat
     )
 }
 
+/// The words the sentence begins with when an approval card is put in front
+/// of the person.
+pub const A_CARD_IS_UP: &str = "an approval card is in front of the person, showing";
+
+/// The sentence for an approval card in front of the person, carrying
+/// `characters` of text to type, shown whole (ADR 0001 as amended
+/// 2026-11-13) — and nought for a change that types nothing. **How many, never
+/// the text**: what a person asked alo to type is theirs, not the journal's.
+#[must_use]
+pub fn a_card_is_up(characters: usize) -> String {
+    format!("{A_CARD_IS_UP} {characters} characters of text to type, whole")
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -226,5 +239,14 @@ mod tests {
             alo_in_an_application("open_application", "org.kde.ark", InAnApplication::NotDone);
         assert!(not.ends_with(", not done"), "{not}");
         assert!(!not.contains(", done"), "{not}");
+    }
+
+    /// **A card's sentence says how much text it shows, and never the text.**
+    #[test]
+    fn a_card_says_how_much_it_shows_and_not_what() {
+        let said = a_card_is_up(26);
+        assert!(said.starts_with(A_CARD_IS_UP), "{said}");
+        assert!(said.contains(" 26 characters"), "{said}");
+        assert_ne!(a_card_is_up(0), a_card_is_up(26));
     }
 }
