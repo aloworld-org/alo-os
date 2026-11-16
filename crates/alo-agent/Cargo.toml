@@ -42,3 +42,6 @@ thiserror = { workspace = true }
 # the daemon really sends rather than hand-made ones.
 alo-files = { path = "../alo-files" }
 alo-strings = { path = "../alo-strings" }
+# A folder of its own for the daemon's socket, when a test runs the agent
+# itself (`tests/the_agent_itself_pauses_and_asks_again.rs`).
+tempfile = "3"

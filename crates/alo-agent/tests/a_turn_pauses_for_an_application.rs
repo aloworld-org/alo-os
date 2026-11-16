@@ -214,7 +214,7 @@ fn sent_again_the_call_waits_for_its_own_approval() {
         number, proposed, ..
     } = *ended
     else {
-        panic!("it did not wait for an approval: {sent:?}");
+        panic!("it ended otherwise than waiting for an approval");
     };
     assert_eq!(number, 4);
     assert_eq!(proposed, OPEN_CODIUM);
