@@ -1701,6 +1701,7 @@ picking.covers	The agent will be able to reach {folder} and everything inside it
 picking.more-than-shown	There are more folders here than can be shown. Open one of these to narrow it down, or start somewhere further in
 picking.not-a-folder	That is not a folder, so there is nothing in it to pick. Pick a folder instead
 picking.not-a-full-path	That is not a place on this machine. Start the picker at a folder named in full, such as your home folder
+picking.not-an-application-shown	That application is not in the list. Choose one of the applications shown
 picking.not-shown-here	There is no folder of that name here. Pick one of the folders shown
 picking.nothing-above	This is as far up as the picker goes. Open one of the folders shown, and pick from there
 picking.nothing-there	That folder is not there any more. Go back, and pick another one
