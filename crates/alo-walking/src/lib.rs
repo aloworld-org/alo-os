@@ -52,6 +52,7 @@ pub mod the_pointer_seen;
 pub mod the_pointer_walk;
 pub mod walking;
 pub mod writing_in_vscodium;
+pub mod writing_in_vscodium_at_each_ask;
 
 #[cfg(test)]
 mod a_machine_of_pictures;

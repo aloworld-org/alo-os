@@ -1096,7 +1096,19 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   applications it should be able to drive any application installed."* **Only
   the ones the person has let it use**: by default the person lets alo use
   **one application at a time**, by name, for as long as they pick, and takes it
-  back in one action — and never because alo used it once. A person may instead
+  back in one action — and never because alo used it once. **In Settings**
+  (*Give alo an application*, for an hour, a day, a month or until removed),
+  **and, during a task, on a sheet the compositor draws when alo asks**, for
+  *This task*, *This session* or *Remember*, or *Not now*. *The owner,
+  2026-11-16, accepted all four proposals: "This task" ends when the task
+  ends, meaning its window closes or it is stopped, and shows in Settings
+  while it lasts; "This session" lasts until sign-out, removed at sign-out and
+  again at the next sign-in; "Remember" lasts until removed and is not tied to
+  a project until projects exist; the sheet replaces the refusal at the
+  default level, only the person's press grants, the one action is retried
+  and still needs its own approval card, and "Not now" stays refused and
+  recorded* (`docs/design/when-alo-asks-for-an-application.md`; the sheet is
+  not built yet). A person may instead
   let alo use **every application on the machine**, told that this includes the
   ones that hold their passwords; even then it is one row in the list of what
   alo may reach, with its length, removed in one action. **What "any" honestly covers** is written down

@@ -241,3 +241,38 @@ fn the_text_waiting_is_the_text_the_task_window_draws() {
         "the text outlived the question"
     );
 }
+
+/// **The card counts the text it shows in characters, all of it** — what the
+/// log line the walk reads says — and nought for a change that types nothing.
+#[test]
+fn the_card_counts_the_whole_text_it_shows() {
+    let text = "Written by alo, héllo\nsecond line";
+    let mut task = a_task();
+    let mut waiting = AChangeWaiting::nothing_yet();
+    waiting.arrived(&mut task, &ADaemon::holding(vec![typing(7, text)]));
+    assert_eq!(waiting.characters_of_text(), text.chars().count());
+
+    let mut nothing = AChangeWaiting::nothing_yet();
+    nothing.arrived(
+        &mut a_task(),
+        &ADaemon::holding(vec![standing(8, "Rename march.pdf")]),
+    );
+    assert_eq!(nothing.characters_of_text(), 0);
+}
+
+/// **The journal says a card is up only when one arrived**, with its count.
+#[test]
+fn the_journal_line_is_for_a_card_that_arrived() {
+    let text = "Written by alo after each yes";
+    let mut waiting = AChangeWaiting::nothing_yet();
+    let arrived = waiting.arrived(&mut a_task(), &ADaemon::holding(vec![typing(7, text)]));
+    assert_eq!(
+        waiting.said_on_the_log(arrived),
+        Some(alo_acting::said_on_the_log::a_card_is_up(
+            text.chars().count()
+        ))
+    );
+    for other in [WhatArrived::Nothing, WhatArrived::TheOneAlreadyThere] {
+        assert_eq!(waiting.said_on_the_log(other), None, "{other:?}");
+    }
+}
