@@ -221,3 +221,88 @@ fn a_pipe_that_cannot_be_read_is_never() {
     // for reading, which is neither *not yet* nor an interruption.
     assert_eq!(the_instance_heard(&write), Heard::Never);
 }
+
+/// This test process's own control group and the folder it is in, as the
+/// kernel says — or [`None`] where the machine has no cgroup v2 line for it.
+fn this_process_group() -> Option<(PathBuf, PathBuf)> {
+    let said = std::fs::read_to_string("/proc/self/cgroup").ok()?;
+    let path = said.lines().find_map(|line| line.strip_prefix("0::"))?;
+    let group = Path::new(CGROUPS).join(path.trim_start_matches('/'));
+    let slice = group.parent()?.to_path_buf();
+    (group != slice && slice.starts_with(CGROUPS)).then_some((group, slice))
+}
+
+/// **A copy this desktop started runs while its process does, and stops when
+/// it ends** — with a real process, and a slice nothing of it is in.
+#[test]
+fn a_copy_started_here_runs_while_its_process_does() {
+    let started = std::process::Command::new("/bin/sleep").arg("30").spawn();
+    assert!(started.is_ok(), "no process to stand in for the copy");
+    let Ok(child) = started else {
+        return;
+    };
+    let pid = child.id();
+    let mut copy = Running {
+        pid,
+        began: began_at(pid).unwrap_or(0),
+        child: Some(child),
+        unit: None,
+        seen: Vec::new(),
+        instance: None,
+    };
+    let nowhere = Path::new("/sys/fs/cgroup/no-such.slice");
+    assert!(looked_at(&mut copy, "com.vscodium.codium", nowhere));
+    if let Some(child) = copy.child.as_mut() {
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+    assert!(
+        !looked_at(&mut copy, "com.vscodium.codium", nowhere),
+        "a copy whose process ended, seen nowhere, still ran"
+    );
+}
+
+/// **A copy found again after a restart keeps its group only while its
+/// process is the one written down** — the process asked when it began, and
+/// a different answer keeps nothing.
+///
+/// What would have to be true for this to pass while broken: this machine
+/// running tests outside cgroup v2, where there is no group to keep and the
+/// test says so and stops.
+#[test]
+fn a_copy_found_again_keeps_its_group_only_while_it_is_the_same_process() {
+    let Some((group, slice)) = this_process_group() else {
+        eprintln!("no cgroup v2 group for this test; nothing to keep");
+        return;
+    };
+    let pid = std::process::id();
+    let began = began_at(pid).unwrap_or(0);
+    let mut the_same = Running {
+        pid,
+        began,
+        child: None,
+        unit: None,
+        seen: Vec::new(),
+        instance: None,
+    };
+    assert!(looked_at(&mut the_same, "com.vscodium.codium", &slice));
+    assert_eq!(
+        the_same.seen,
+        [group],
+        "the same process's group was not kept"
+    );
+
+    let mut another = Running {
+        pid,
+        began: began.wrapping_add(1),
+        child: None,
+        unit: None,
+        seen: Vec::new(),
+        instance: None,
+    };
+    assert!(
+        !looked_at(&mut another, "com.vscodium.codium", &slice),
+        "a process that began at another moment was read as the copy"
+    );
+    assert!(another.seen.is_empty(), "another process's group was kept");
+}

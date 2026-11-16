@@ -142,39 +142,7 @@ impl AlosCopies {
         let Some(copy) = self.running.get_mut(application) else {
             return false;
         };
-        let launcher = match copy.child.as_mut() {
-            Some(child) => matches!(child.try_wait(), Ok(None)),
-            None => began_at(copy.pid) == Some(copy.began),
-        };
-        // **What Flatpak said it is**, once it has: the scope that instance
-        // runs in is kept, however fast the process that moved there ended.
-        if let Some(read) = copy.instance.as_ref() {
-            match the_instance_heard(read) {
-                Heard::Nothing => {}
-                Heard::It(instance) => {
-                    if let Some(scope) =
-                        alo_launching::the_scope_of_an_instance(application, &instance)
-                    {
-                        kept(&mut copy.seen, self.slice.join(scope));
-                    }
-                    copy.instance = None;
-                }
-                Heard::Never => copy.instance = None,
-            }
-        }
-        // **Where it is now, kept**, while the process alo started still says.
-        // Where this desktop did not start it (a copy found again after a
-        // restart), the process is not held unreaped, so its number could be
-        // given to another process between the two reads: it is asked when it
-        // began again after its group is read, and a changed answer keeps
-        // nothing.
-        if launcher
-            && let Some(now) = where_it_runs(copy.pid, &self.slice)
-            && (copy.child.is_some() || began_at(copy.pid) == Some(copy.began))
-        {
-            kept(&mut copy.seen, now);
-        }
-        let alive = still_alive(launcher, &copy.seen);
+        let alive = looked_at(copy, application, &self.slice);
         if !alive {
             self.running.remove(application);
             if let Some(file) = self.the_file_for(application) {
@@ -773,6 +741,43 @@ fn the_instance_heard(read: &OwnedFd) -> Heard {
         }
         Err(_) => Heard::Never,
     }
+}
+
+/// **Look at one copy once**: hear what Flatpak said it is, keep where it is
+/// now, and answer whether it still runs. `slice` is the person's own
+/// applications' slice, outside which nothing is kept.
+fn looked_at(copy: &mut Running, application: &str, slice: &Path) -> bool {
+    let launcher = match copy.child.as_mut() {
+        Some(child) => matches!(child.try_wait(), Ok(None)),
+        None => began_at(copy.pid) == Some(copy.began),
+    };
+    // **What Flatpak said it is**, once it has: the scope that instance runs
+    // in is kept, however fast the process that moved there ended.
+    if let Some(read) = copy.instance.as_ref() {
+        match the_instance_heard(read) {
+            Heard::Nothing => {}
+            Heard::It(instance) => {
+                if let Some(scope) = alo_launching::the_scope_of_an_instance(application, &instance)
+                {
+                    kept(&mut copy.seen, slice.join(scope));
+                }
+                copy.instance = None;
+            }
+            Heard::Never => copy.instance = None,
+        }
+    }
+    // **Where it is now, kept**, while the process alo started still says.
+    // Where this desktop did not start it (a copy found again after a restart),
+    // the process is not held unreaped, so its number could be given to another
+    // process between the two reads: it is asked when it began again after its
+    // group is read, and a changed answer keeps nothing.
+    if launcher
+        && let Some(now) = where_it_runs(copy.pid, slice)
+        && (copy.child.is_some() || began_at(copy.pid) == Some(copy.began))
+    {
+        kept(&mut copy.seen, now);
+    }
+    still_alive(launcher, &copy.seen)
 }
 
 /// **Keep `group` among those a copy was seen in** — once, and only while there
