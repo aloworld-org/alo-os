@@ -57,6 +57,14 @@ impl Walking {
         within: Duration,
     ) -> Result<(), MachineError> {
         let start = machine.elapsed();
+        // **The screen when the edge is first looked for is kept**, so a
+        // failure is never judged only from the last picture, taken when the
+        // time is up — by then the turn may have ended and the edge gone with
+        // it, as on the walk of 2026-11-16 (run 43889781022), whose one picture
+        // was taken 21 seconds after the work it was looking for had ended.
+        if drawn {
+            let _kept = machine.keep_picture(&format!("{picture}-when-first-looked-for"))?;
+        }
         loop {
             let frame = machine.frame()?;
             let answered = if drawn {

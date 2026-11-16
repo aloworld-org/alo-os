@@ -201,7 +201,108 @@ pub fn a_ring_in(frame: &Frame) -> Result<Ring, Nearest> {
             }
         }
     }
-    Err(Nearest { across, down })
+    a_ring_cut_by_the_screen(frame.size(), &rows, &columns).ok_or(Nearest { across, down })
+}
+
+/// **An edge with one side past the screen's edge**: a window alo works in
+/// may reach past the display, and the shell draws its border on the sides
+/// that are on it (the walk of 2026-11-16, run 43889781022, placed VSCodium at
+/// x −24). So one side may be missing **only where it would lie past the
+/// screen** — the two sides that would meet it run to the screen's edge — and
+/// the other three are found as for a whole edge. A side missing anywhere on
+/// the screen is still no edge.
+fn a_ring_cut_by_the_screen(
+    (wide, high): (usize, usize),
+    rows: &[Stretch],
+    columns: &[Stretch],
+) -> Option<Ring> {
+    let near = |a: usize, b: usize| a.abs_diff(b) <= CORNER_ROOM;
+    // The left or the right side past the screen: a top and a foot that reach
+    // that edge of the screen, and the other side closing them.
+    for side in columns {
+        let (from, to) = (side.from, side.to);
+        let over_and_under = |reaches: &dyn Fn(&Stretch) -> bool| {
+            let over = rows
+                .iter()
+                .find(|row| reaches(row) && row.on <= from && near(row.on, from));
+            let under = rows.iter().find(|row| {
+                reaches(row) && row.on >= to.saturating_sub(THICKEST) && near(row.on, to)
+            });
+            over.zip(under)
+        };
+        // Left past the screen: this side is the right one.
+        if side.on >= SHORTEST_SIDE
+            && let Some((over, under)) = over_and_under(&|row: &Stretch| {
+                row.from == 0
+                    && row.to + CORNER_ROOM >= side.on
+                    && row.to <= side.on + side.thick + THICKEST
+            })
+        {
+            return Some(Ring {
+                left: 0,
+                top: over.on,
+                right: side.on + side.thick - 1,
+                bottom: under.on + under.thick - 1,
+            });
+        }
+        // Right past the screen: this side is the left one.
+        if side.on + SHORTEST_SIDE <= wide
+            && let Some((over, under)) = over_and_under(&|row: &Stretch| {
+                row.to == wide
+                    && row.from >= side.on
+                    && row.from <= side.on + side.thick + CORNER_ROOM
+            })
+        {
+            return Some(Ring {
+                left: side.on,
+                top: over.on,
+                right: wide - 1,
+                bottom: under.on + under.thick - 1,
+            });
+        }
+    }
+    // The top or the foot past the screen: two sides that reach that edge of
+    // the screen, and the other line across closing them.
+    for left in columns {
+        for right in columns {
+            if right.on < left.on + SHORTEST_SIDE {
+                continue;
+            }
+            let between =
+                |row: &&Stretch| row.from >= left.on && row.to <= right.on + right.thick + THICKEST;
+            if left.from == 0 && right.from == 0 {
+                let foot = left.to.max(right.to);
+                if let Some(under) = rows
+                    .iter()
+                    .filter(between)
+                    .find(|row| row.on >= foot.saturating_sub(THICKEST) && near(row.on, foot))
+                {
+                    return Some(Ring {
+                        left: left.on,
+                        top: 0,
+                        right: right.on + right.thick - 1,
+                        bottom: under.on + under.thick - 1,
+                    });
+                }
+            }
+            if left.to == high && right.to == high {
+                let top = left.from.min(right.from);
+                if let Some(over) = rows
+                    .iter()
+                    .filter(between)
+                    .find(|row| row.on <= top && near(row.on, top))
+                {
+                    return Some(Ring {
+                        left: left.on,
+                        top: over.on,
+                        right: right.on + right.thick - 1,
+                        bottom: high - 1,
+                    });
+                }
+            }
+        }
+    }
+    None
 }
 
 /// How far outside the edge's line the canvas behind a window is looked at.
