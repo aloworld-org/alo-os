@@ -175,7 +175,6 @@ fn run() -> Result<ExitCode, String> {
         // Ended before anything else reads the input: holding below reads it.
         let _ = stop.ended();
         let code = said(&happened, told_already);
-        told_already = happened.done_without_asking().len();
         let WhatHappened::AChangeIsWaiting {
             stands_for: Some(stands_for),
             ..
@@ -206,6 +205,11 @@ fn run() -> Result<ExitCode, String> {
             TheAnswer::Told(told) => match happened.going_on_after(&told) {
                 Some(steps) => {
                     eprintln!("alo-agent: the person answered, and the turn goes on");
+                    // **The answer is never told to the person from here**: it is
+                    // shown to the model in the shape of a change done without
+                    // asking, and their own shell already told them, in their
+                    // language, what it did.
+                    told_already = alo_agent::done_without_asking_in(&steps).len();
                     after = steps;
                 }
                 None => {

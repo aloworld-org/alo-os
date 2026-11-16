@@ -191,6 +191,49 @@ pub fn the_answer_told(line: &str) -> Option<crate::ToAPerson> {
     }
 }
 
+/// **What the model is shown after the person answered a change**, in the
+/// shape it is shown after a change at full access, so both levels speak
+/// alike (the coordinator, 2026-11-16, after every-try measured a model
+/// proposing an approved move a second time when shown the bare `did`).
+///
+/// - Done, or done and not undoable: `done-without-asking`, with what it did
+///   and the sentence *Done after the person approved it: {sentence}.* —
+///   built like full access's *Done without asking you first … : {sentence}.*
+/// - Declined: a refusal, *The person said no, so this was not done:
+///   {sentence}.*
+/// - Refused by the daemon at the approval: that refusal, in its own words.
+///
+/// **For the model only, and in English**, as every other line the model is
+/// shown about a step is the machine's and not the person's; the person is told
+/// what their answer did by their own shell, in their language.
+#[must_use]
+pub fn the_step_after_an_answer(answered: &crate::ToAPerson, sentence: &str) -> Option<String> {
+    use crate::{ToAPerson, ToAnAgent};
+    let worded = |text: String| -> Option<crate::Wording> {
+        serde_json::from_value(serde_json::json!({ "text": text, "came_from": "the-source" })).ok()
+    };
+    let shown = match answered {
+        ToAPerson::Did(did) | ToAPerson::DidAndCannotBeUndone(did) => {
+            ToAnAgent::DoneWithoutAsking {
+                did: did.clone(),
+                said: worded(format!("{THE_PERSON_APPROVED}{sentence}."))?,
+            }
+        }
+        ToAPerson::Declined => {
+            ToAnAgent::Refused(worded(format!("{THE_PERSON_SAID_NO}{sentence}."))?)
+        }
+        ToAPerson::Refused(wording) => ToAnAgent::Refused(wording.clone()),
+        _ => return None,
+    };
+    shown.written().ok()
+}
+
+/// The start of the sentence a model is shown after an approved change.
+pub const THE_PERSON_APPROVED: &str = "Done after the person approved it: ";
+
+/// The start of the sentence a model is shown after a declined change.
+pub const THE_PERSON_SAID_NO: &str = "The person said no, so this was not done: ";
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -304,6 +347,32 @@ mod tests {
         assert!(
             matches!(&told, Some(crate::ToAPerson::Refused(wording)) if wording.text() == "That question stood too long."),
             "{told:?}"
+        );
+    }
+
+    /// **An approved change is shown to the model as full access shows one**,
+    /// a decline as a refusal, and nothing else is shown at all.
+    #[test]
+    fn the_model_is_shown_an_answer_as_full_access_shows_a_change() {
+        use crate::{Done, ToAPerson, ToAnAgent};
+        let did = Done::Renamed { now_at: None };
+        let shown = the_step_after_an_answer(&ToAPerson::Did(did.clone()), "Move a.txt to b")
+            .unwrap_or_default();
+        let read = ToAnAgent::read(&shown);
+        assert!(
+            matches!(&read, Ok(ToAnAgent::DoneWithoutAsking { did: d, said })
+                if *d == did && said.text() == "Done after the person approved it: Move a.txt to b."),
+            "{read:?}"
+        );
+        let no =
+            the_step_after_an_answer(&ToAPerson::Declined, "Move a.txt to b").unwrap_or_default();
+        assert!(
+            matches!(ToAnAgent::read(&no), Ok(ToAnAgent::Refused(w)) if w.text().ends_with("Move a.txt to b.")),
+            "{no}"
+        );
+        assert_eq!(
+            the_step_after_an_answer(&ToAPerson::Granted { holding: 1 }, "x"),
+            None
         );
     }
 }

@@ -457,15 +457,16 @@ fn asking_each_time_takes_the_same_road_one_approval_per_change() {
     );
     assert_eq!(tried.went(), &Went::TheRoad, "{tried:?}");
     assert_eq!(tried.asked(), 4, "the model was not asked once per step");
-    // **What the model was shown after a change is the daemon's answer to
-    // an approval**, never the full-access one.
+    // **What the model was shown after a change is that the person approved
+    // it**, in the shape full access shows a change in — never that it was
+    // done without asking.
     let last = model.shown.last().cloned().unwrap_or_default();
     assert!(
-        last.contains("\"did\""),
+        last.contains("Done after the person approved it:"),
         "no approved change was shown: {last}"
     );
     assert!(
-        !last.contains("done-without-asking"),
+        !last.contains("because you chose full access"),
         "the model was shown a change done without asking: {last}"
     );
 }

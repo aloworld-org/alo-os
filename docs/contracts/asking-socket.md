@@ -319,8 +319,16 @@ that cannot be undone, `declined`, and `refused`. **The shell writes the line
 after the daemon answered, never before**, so the answer has already been given
 on the person's door, to the daemon, and the change has already run or not.
 
-**What the agent does with it:** the line is shown to the model as the step
-after its proposal, as the daemon wrote it, and the turn drives on — with the
+**What the agent does with it:** the answer is shown to the model as the step
+after its proposal, in the shape a change done at full access is shown in, so
+both levels speak alike: a change that ran as `done-without-asking` with what it
+did and *Done after the person approved it: {sentence}.*; a decline as a refusal,
+*The person said no, so this was not done: {sentence}.*; a refusal at the
+approval as that refusal (`alo_protocol::what_the_agent_says_back::the_step_after_an_answer`;
+measured with `alo-every-try` at both levels, 2026-11-16, after the bare `did`
+led a model to propose an approved move a second time). The agent never tells
+the person this line: their shell already told them what their answer did. The
+turn drives on — with the
 bound on rounds begun again, because each answer is the person's own act. The
 next change waits for its own approval on its own card; a decline is shown to
 the model like any other answer and the turn usually ends in words. Nothing

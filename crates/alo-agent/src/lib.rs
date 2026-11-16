@@ -56,5 +56,5 @@ pub use how_far::HowFar;
 pub use the_door::{NotAnswered, TheDoor};
 pub use the_person_may_stop::ThePersonMayStop;
 pub use waiting_for_the_answer::{TheAnswer, the_persons_answer};
-pub use what_happened::WhatHappened;
+pub use what_happened::{WhatHappened, done_without_asking_in};
 pub use what_the_person_sent::{WhatThePersonSent, read_what_the_person_sent};

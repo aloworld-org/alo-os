@@ -184,7 +184,8 @@ fn after_an_approval_the_turn_goes_on_to_the_next_change() {
     assert_eq!(proposals(&door).len(), 2, "{:?}", proposals(&door));
     let shown = the_last_question(&door);
     assert!(
-        shown.contains(&march_renamed().written().unwrap()),
+        shown.contains("Done after the person approved it: Rename march.pdf to march-final.pdf.")
+            && shown.contains("done-without-asking"),
         "the model was not shown what the approved change did: {shown}"
     );
 }
@@ -234,7 +235,9 @@ fn a_refused_second_change_ends_the_turn_with_nothing_done_for_it() {
         "a change was proposed again: {proposed:?}"
     );
     assert!(
-        the_last_question(&door).contains(&ToAPerson::Declined.written().unwrap()),
+        the_last_question(&door).contains(
+            "The person said no, so this was not done: Rename april.pdf to april-final.pdf."
+        ),
         "the model was not shown that the person said no"
     );
 }
@@ -294,7 +297,11 @@ fn every_answer_the_daemon_gives_is_shown_and_the_turn_goes_on() {
             matches!(ended, WhatHappened::ItWasAnsweredInWords { .. }),
             "{ended:?}"
         );
-        let told = the_answer_told(&line).unwrap().written().unwrap();
+        let told = alo_protocol::what_the_agent_says_back::the_step_after_an_answer(
+            &the_answer_told(&line).unwrap(),
+            "Rename march.pdf to march-final.pdf",
+        )
+        .unwrap();
         assert!(
             the_last_question(&door).contains(&told),
             "the model was not shown {told}"
