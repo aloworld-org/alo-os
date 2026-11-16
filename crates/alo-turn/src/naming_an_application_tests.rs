@@ -264,7 +264,11 @@ fn wanted_at(grants: &Grants, now: SystemTime, said: &str) -> Vec<String> {
 #[test]
 fn an_installed_application_nothing_grants_is_wanted_by_its_identifier() {
     for said in ["VSCodium", "vscodium", EDITOR] {
-        assert_eq!(wanted_at(&Grants::default(), noon(), said), [EDITOR], "{said}");
+        assert_eq!(
+            wanted_at(&Grants::default(), noon(), said),
+            [EDITOR],
+            "{said}"
+        );
     }
 }
 
@@ -275,9 +279,15 @@ fn an_installed_application_nothing_grants_is_wanted_by_its_identifier() {
 fn nothing_is_wanted_that_is_granted_missing_or_ambiguous() {
     let grants = granting(EDITOR);
     let a_minute_in = noon() + Duration::from_secs(60);
-    assert!(wanted_at(&grants, a_minute_in, "VSCodium").is_empty(), "granted");
+    assert!(
+        wanted_at(&grants, a_minute_in, "VSCodium").is_empty(),
+        "granted"
+    );
     assert_eq!(wanted_at(&grants, a_minute_in, "Firefox"), [FIREFOX]);
-    assert!(wanted_at(&Grants::default(), noon(), "GIMP").is_empty(), "not installed");
+    assert!(
+        wanted_at(&Grants::default(), noon(), "GIMP").is_empty(),
+        "not installed"
+    );
     assert!(
         wanted_at(&Grants::default(), noon(), "Text Editor").is_empty(),
         "two applications answer to it"
