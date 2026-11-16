@@ -163,3 +163,7 @@ impl crate::Server {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "an_answer_goes_off_the_frame_tests.rs"]
+mod tests;
