@@ -12,10 +12,10 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
-use std::cell::RefCell;
 use std::io::Read as _;
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::UnixStream;
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use alo_changing::{Answered, Answering, Done, Standing};
 use alo_models::InferenceSource;
@@ -34,16 +34,31 @@ const TAB: u32 = 15;
 const ENTER: u32 = 28;
 const A: u32 = 30;
 
+/// Something a stand-in daemon notes, shared with every copy of it — the copy a
+/// thread carries an answer on, and the one the test reads afterwards.
+#[derive(Debug, Default, Clone)]
+struct Noted<T>(Arc<Mutex<T>>);
+
+impl<T> Noted<T> {
+    fn borrow(&self) -> MutexGuard<'_, T> {
+        self.0.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    fn borrow_mut(&self) -> MutexGuard<'_, T> {
+        self.borrow()
+    }
+}
+
 /// A daemon holding what a test tells it to, and remembering what it was told.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct ADaemon {
     holding: Vec<Standing>,
-    approved: RefCell<Vec<u64>>,
-    declined: RefCell<Vec<u64>>,
+    approved: Noted<Vec<u64>>,
+    declined: Noted<Vec<u64>>,
     /// The agent's end of the turn's socket, when a test hands one over.
-    agents_end: Option<UnixStream>,
+    agents_end: Option<Arc<UnixStream>>,
     /// Whether the turn was still open each time an answer arrived here.
-    open_when_answered: RefCell<Vec<bool>>,
+    open_when_answered: Noted<Vec<bool>>,
     /// Whether it answers nothing at all, as a daemon that never replied.
     says_nothing: bool,
 }
@@ -171,11 +186,19 @@ fn press(server: &mut Server, code: u32, daemon: &ADaemon) {
                 state,
                 time: 1,
             },
-            Some(daemon),
+            Some(carried(daemon)),
             &in_english(),
         )
         .expect("the seat took the key");
     }
+    // **The frames in between**: the answer was carried off the loop, and is
+    // told to the person when the daemon has answered.
+    server.every_answer_came_back(&in_english());
+}
+
+/// The daemon as the key path holds it: a copy sharing what it notes.
+fn carried(daemon: &ADaemon) -> crate::an_answer_goes_off_the_frame::TheirDaemon {
+    Arc::new(daemon.clone())
 }
 
 /// The reply box's contents.
@@ -483,7 +506,7 @@ fn the_agents_turn_is_held_until_the_person_answers() {
         let which = a_task_holding_the_keyboard(&mut server);
         let (ours, agents_end) = UnixStream::pair().expect("a socket pair");
         let daemon = ADaemon {
-            agents_end: Some(agents_end),
+            agents_end: Some(Arc::new(agents_end)),
             ..holding(7, "Rename march.pdf")
         };
 
@@ -495,7 +518,7 @@ fn the_agents_turn_is_held_until_the_person_answers() {
             Some(&daemon),
             &in_english(),
         );
-        let held = daemon.agents_end.as_ref().is_some_and(still_open);
+        let held = daemon.agents_end.as_ref().is_some_and(|it| still_open(it));
         assert!(held, "the turn ended before the person was asked");
 
         press(&mut server, TAB, &daemon);
@@ -506,7 +529,7 @@ fn the_agents_turn_is_held_until_the_person_answers() {
             [true],
             "the turn was not open when the {the_answer_is} change reached the daemon"
         );
-        let after = daemon.agents_end.as_ref().is_some_and(still_open);
+        let after = daemon.agents_end.as_ref().is_some_and(|it| still_open(it));
         assert!(
             !after,
             "the turn was still held after it was {the_answer_is}"
@@ -559,7 +582,7 @@ fn press_holding(server: &mut Server, held: &[u32], code: u32, daemon: &ADaemon)
                 state,
                 time: 1,
             },
-            Some(daemon),
+            Some(carried(daemon)),
             &in_english(),
         )
         .expect("the seat took the key");
@@ -572,6 +595,7 @@ fn press_holding(server: &mut Server, held: &[u32], code: u32, daemon: &ADaemon)
     for &up in held.iter().rev() {
         one(up, KeyState::Released);
     }
+    server.every_answer_came_back(&in_english());
 }
 
 /// **Ctrl+Alt+T in a task window opens the terminal, types nothing, and the
@@ -1010,4 +1034,92 @@ fn page_up_scrolls_the_conversation_and_types_nothing() {
 
     assert!(the_view_starts(&server) < 600, "Page Up did not scroll");
     assert_eq!(draft(&server, which), "", "Page Up was typed");
+}
+
+/// A daemon whose answer to an approval waits on something only the screen
+/// can do — as `alo-agentd` waits on the shell's own door to open a file in an
+/// application — and so answers only once the test lets it, after the press
+/// has returned.
+#[derive(Debug, Clone)]
+struct ADaemonThatNeedsTheScreen {
+    holding: Vec<Standing>,
+    /// Signalled by the test once the press has returned, which is the screen
+    /// serving its door again.
+    released: Arc<Mutex<std::sync::mpsc::Receiver<()>>>,
+}
+
+impl Answering for ADaemonThatNeedsTheScreen {
+    fn waiting(&self) -> Option<Vec<Standing>> {
+        Some(self.holding.clone())
+    }
+
+    /// Done, once the screen has served its door; nothing, as a daemon that
+    /// gave up, if it never did.
+    fn approve(&self, _number: u64) -> Option<Answered> {
+        let released = self
+            .released
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .recv_timeout(std::time::Duration::from_secs(10));
+        released
+            .is_ok()
+            .then(|| Answered::It(Box::new(Done::Renamed { now_at: None })))
+    }
+
+    fn decline(&self, _number: u64) -> Option<Answered> {
+        Some(Answered::Declined)
+    }
+}
+
+/// **An approved change that needs the screen is carried out, and the person
+/// is told what it did.** Opening a file in an application is carried out by
+/// the daemon asking this shell's own door — served on the same frame loop that
+/// took the person's Enter. A shell that waited for the daemon's answer on that
+/// loop could never serve the door, so the change could never finish; the
+/// person was told the machine did not say what happened (walk of 2026-11-15,
+/// read off the code). The press must return before the daemon answers.
+#[test]
+fn an_approved_change_that_needs_the_screen_is_answered_with_what_it_did() {
+    let (_runtime, mut server) = a_session();
+    let which = a_task_holding_the_keyboard(&mut server);
+    let (release, released) = std::sync::mpsc::channel();
+    let daemon = ADaemonThatNeedsTheScreen {
+        holding: holding(7, "Open hello.txt in VSCodium").holding,
+        released: Arc::new(Mutex::new(released)),
+    };
+    server.an_answer_came_back(
+        which,
+        "Shall I?".to_owned(),
+        false,
+        None,
+        Some(&daemon),
+        &in_english(),
+    );
+
+    let pressed_at = std::time::Instant::now();
+    for code in [TAB, ENTER] {
+        for state in [KeyState::Pressed, KeyState::Released] {
+            the_key_the_task_took(
+                &mut server,
+                crate::DirectKeyEvent {
+                    code,
+                    state,
+                    time: 1,
+                },
+                Some(Arc::new(daemon.clone()) as crate::an_answer_goes_off_the_frame::TheirDaemon),
+                &in_english(),
+            )
+            .expect("the seat took the key");
+        }
+    }
+    let the_press_took = pressed_at.elapsed();
+    // The screen is free again, so the daemon can finish.
+    drop(release.send(()));
+    server.every_answer_came_back(&in_english());
+
+    assert!(
+        the_press_took < std::time::Duration::from_secs(2),
+        "the press held the screen for {the_press_took:?} while the daemon worked"
+    );
+    assert_eq!(the_last_thing_said(&server, which), "Done.");
 }

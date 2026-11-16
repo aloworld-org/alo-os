@@ -1921,6 +1921,14 @@ impl LoopInput for TheDesktopLane<'_> {
                 Err(why) => server.market.it_was_refused(&what.identifier, why),
             }
         }
+        // **And whatever the daemon said to the person's answers** since the
+        // last frame, carried off this loop so a change the daemon carries out
+        // by asking this shell's door can be served
+        // (`crate::an_answer_goes_off_the_frame`). Drained before what the
+        // agent said, so the person reads what their answer did first.
+        for did in server.the_answers.whatever_they_did() {
+            server.an_answer_came_back_from_the_daemon(did, self.strings);
+        }
         // **And whatever has come back since the last frame**, which is why
         // asking could return at once. Drained rather than read, so one answer
         // reaches one window once.

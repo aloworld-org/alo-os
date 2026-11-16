@@ -699,6 +699,7 @@ pub mod typing_into_the_window_in_front;
 pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};
 mod alos_window_placed;
 mod alos_windows_panel;
+mod an_answer_goes_off_the_frame;
 /// Closing alo's terminal: at once when idle, after a question when a command
 /// is running.
 mod closing_the_terminal;

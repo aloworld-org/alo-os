@@ -52,10 +52,10 @@ fn the_text_arrives_whole_and_goes_with_the_question() {
 
         match answer {
             0 => {
-                waiting.allow_once(&mut task, &daemon);
+                waiting.allow_once(&mut task);
             }
             1 => {
-                waiting.deny(&mut task, &daemon);
+                waiting.deny(&mut task);
             }
             _ => {
                 waiting.let_go_unanswered(&mut task);
@@ -82,7 +82,7 @@ fn a_change_with_no_text_shows_none_and_does_not_scroll() {
         ApprovalKey::AnEarlierPage,
     ] {
         assert_eq!(
-            waiting.pressed(key, &mut task, &daemon),
+            waiting.pressed(key, &mut task),
             WhatThePressDid::Nothing
         );
     }
@@ -99,36 +99,36 @@ fn a_long_text_scrolls_a_line_or_a_page_and_stops_at_both_ends() {
     assert_eq!(waiting.first_line_shown(), 0);
 
     assert_eq!(
-        waiting.pressed(ApprovalKey::EarlierLines, &mut task, &daemon),
+        waiting.pressed(ApprovalKey::EarlierLines, &mut task),
         WhatThePressDid::Nothing,
         "the top is the top"
     );
     assert_eq!(
-        waiting.pressed(ApprovalKey::LaterLines, &mut task, &daemon),
+        waiting.pressed(ApprovalKey::LaterLines, &mut task),
         WhatThePressDid::ItMoved
     );
     assert_eq!(waiting.first_line_shown(), 1);
-    waiting.pressed(ApprovalKey::ALaterPage, &mut task, &daemon);
+    waiting.pressed(ApprovalKey::ALaterPage, &mut task);
     assert_eq!(waiting.first_line_shown(), 13);
-    waiting.pressed(ApprovalKey::ALaterPage, &mut task, &daemon);
+    waiting.pressed(ApprovalKey::ALaterPage, &mut task);
     assert_eq!(waiting.first_line_shown(), 25);
-    waiting.pressed(ApprovalKey::ALaterPage, &mut task, &daemon);
+    waiting.pressed(ApprovalKey::ALaterPage, &mut task);
     assert_eq!(
         waiting.first_line_shown(),
         28,
         "the last twelve are 29 to 40"
     );
     assert_eq!(
-        waiting.pressed(ApprovalKey::LaterLines, &mut task, &daemon),
+        waiting.pressed(ApprovalKey::LaterLines, &mut task),
         WhatThePressDid::Nothing,
         "past the end"
     );
-    waiting.pressed(ApprovalKey::AnEarlierPage, &mut task, &daemon);
+    waiting.pressed(ApprovalKey::AnEarlierPage, &mut task);
     assert_eq!(waiting.first_line_shown(), 16);
-    waiting.pressed(ApprovalKey::EarlierLines, &mut task, &daemon);
+    waiting.pressed(ApprovalKey::EarlierLines, &mut task);
     assert_eq!(waiting.first_line_shown(), 15);
     for _ in 0..3 {
-        waiting.pressed(ApprovalKey::AnEarlierPage, &mut task, &daemon);
+        waiting.pressed(ApprovalKey::AnEarlierPage, &mut task);
     }
     assert_eq!(waiting.first_line_shown(), 0);
 }
@@ -142,7 +142,7 @@ fn twelve_lines_fit_and_thirteen_scroll_by_one() {
         let mut waiting = AChangeWaiting::nothing_yet();
         waiting.arrived(&mut task, &daemon);
         for _ in 0..5 {
-            waiting.pressed(ApprovalKey::ALaterPage, &mut task, &daemon);
+            waiting.pressed(ApprovalKey::ALaterPage, &mut task);
         }
         assert_eq!(waiting.first_line_shown(), furthest, "{how_many} lines");
     }
@@ -156,26 +156,34 @@ fn scrolling_answers_nothing_and_moves_no_answer() {
     let mut task = a_task();
     let mut waiting = AChangeWaiting::nothing_yet();
     waiting.arrived(&mut task, &daemon);
-    waiting.pressed(ApprovalKey::NextAnswer, &mut task, &daemon);
+    waiting.pressed(ApprovalKey::NextAnswer, &mut task);
     for key in [
         ApprovalKey::LaterLines,
         ApprovalKey::ALaterPage,
         ApprovalKey::EarlierLines,
         ApprovalKey::AnEarlierPage,
     ] {
-        waiting.pressed(key, &mut task, &daemon);
+        assert!(
+            !matches!(
+                waiting.pressed(key, &mut task),
+                WhatThePressDid::ItWasAnswered(_)
+            ),
+            "{key:?} answered the question"
+        );
     }
     assert!(waiting.is_asking());
     assert_eq!(waiting.selected(), Some(WhichAnswer::AllowOnce));
-    assert!(daemon.approved.borrow().is_empty());
-    assert!(daemon.declined.borrow().is_empty());
     // **The presses did something**: a later page is still in view.
-    waiting.pressed(ApprovalKey::ALaterPage, &mut task, &daemon);
+    waiting.pressed(ApprovalKey::ALaterPage, &mut task);
     assert_eq!(waiting.first_line_shown(), 12);
     // **And the answer is still the person's to give, once.**
-    waiting.pressed(ApprovalKey::Choose, &mut task, &daemon);
-    assert_eq!(*daemon.approved.borrow(), [7]);
-    assert!(daemon.declined.borrow().is_empty());
+    assert_eq!(
+        waiting.pressed(ApprovalKey::Choose, &mut task),
+        WhatThePressDid::ItWasAnswered(TheAnswerGiven {
+            number: 7,
+            allowed: true,
+        })
+    );
 }
 
 /// **A new question starts at its top**, however far the last one was
@@ -185,14 +193,10 @@ fn a_new_question_starts_at_its_top() {
     let mut task = a_task();
     let mut waiting = AChangeWaiting::nothing_yet();
     waiting.arrived(&mut task, &ADaemon::holding(vec![typing(7, &lines(40))]));
-    waiting.pressed(
-        ApprovalKey::ALaterPage,
-        &mut task,
-        &ADaemon::holding(vec![typing(7, &lines(40))]),
-    );
+    waiting.pressed(ApprovalKey::ALaterPage, &mut task);
     assert_eq!(waiting.first_line_shown(), 12, "the premise");
     let daemon = ADaemon::holding(vec![typing(8, &lines(40))]);
-    waiting.deny(&mut task, &daemon);
+    waiting.deny(&mut task);
     waiting.arrived(&mut task, &daemon);
     assert!(waiting.is_asking());
     assert_eq!(waiting.first_line_shown(), 0);
@@ -210,7 +214,7 @@ fn the_text_waiting_is_the_text_the_task_window_draws() {
     let mut task = a_task();
     let mut waiting = AChangeWaiting::nothing_yet();
     waiting.arrived(&mut task, &daemon);
-    waiting.pressed(ApprovalKey::LaterLines, &mut task, &daemon);
+    waiting.pressed(ApprovalKey::LaterLines, &mut task);
     let drawn = |task: &ATask, waiting: &AChangeWaiting| -> Vec<String> {
         let words = crate::the_tasks_words::TheTasksWords::said(
             std::slice::from_ref(task),
@@ -234,7 +238,7 @@ fn the_text_waiting_is_the_text_the_task_window_draws() {
     };
     assert_eq!(only.lines().next(), Some("line 2"), "scrolled by one");
     assert_eq!(only.lines().count(), 12);
-    waiting.deny(&mut task, &daemon);
+    waiting.deny(&mut task);
     assert!(
         drawn(&task, &waiting).is_empty(),
         "the text outlived the question"
