@@ -165,6 +165,7 @@ dependencies = [
  "alo-strings",
  "alo-turn",
  "rustix 1.1.4",
+ "serde_json",
  "thiserror 2.0.20",
 ]
 

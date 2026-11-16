@@ -320,9 +320,12 @@ after the daemon answered, never before**, so the answer has already been given
 on the person's door, to the daemon, and the change has already run or not.
 
 **What the agent does with it:** the answer is shown to the model as the step
-after its proposal. **A change that ran is shown byte for byte as full access
-shows the same change**: `done-without-asking`, with what it did and the
-sentence full access says (`alo_agent::shown_after_an_answer`). A decline is
+after its proposal. **A change that ran is shown in full access's short shape, and
+truly**: under the kind `done`, with what it did and the sentence *Done:
+{sentence}.* (`alo_agent::shown_after_an_answer`) — never as
+`done-without-asking` or with full access's *Done without asking you first*,
+which would be untrue at *ask each time* and which a model could repeat to the
+person. A decline is
 shown as a refusal, *The person said no, so this was not done: {sentence}.*, and
 a refusal at the approval as that refusal. Measured with `alo-every-try` at both
 levels on 2026-11-16: shown the bare `did`, a model proposed an approved move a

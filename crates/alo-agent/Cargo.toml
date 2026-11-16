@@ -37,6 +37,7 @@ alo-turn = { path = "../alo-turn" }
 # **The capability model's own words**, so a change the person approved is
 # shown to the model with the very sentence full access shows it with.
 alo-strings = { path = "../alo-strings" }
+serde_json = { workspace = true }
 rustix = { workspace = true, features = ["event", "net", "process"] }
 thiserror = { workspace = true }
 

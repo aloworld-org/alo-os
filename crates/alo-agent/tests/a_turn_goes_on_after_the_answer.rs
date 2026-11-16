@@ -190,7 +190,8 @@ fn after_an_approval_the_turn_goes_on_to_the_next_change() {
                 "Rename march.pdf to march-final.pdf",
             )
             .unwrap(),
-        ) && shown.contains("done-without-asking"),
+        ) && !shown.contains("without asking")
+            && !shown.contains("done-without-asking"),
         "the model was not shown what the approved change did: {shown}"
     );
 }
