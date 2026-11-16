@@ -33,7 +33,7 @@
 use std::time::SystemTime;
 
 use alo_applications::{AnsweringTo, Installed};
-use alo_capability::{Ask, Call, Given, Grants, Takes};
+use alo_capability::{Ask, Call, Given, Grantee, Grants, Takes, Verbs};
 
 use crate::refusing::NotDone;
 use crate::turning::Turning;
@@ -72,7 +72,8 @@ impl Turning<'_, '_> {
     }
 
     /// What the model gave, with each application argument that names one
-    /// installed, permitted application replaced by its identifier.
+    /// installed, permitted application replaced by its identifier
+    /// ([`as_this_machine_names_them`], with this turn's machine and grantee).
     fn as_this_machine_names_them<'g>(
         &mut self,
         verb: &str,
@@ -82,43 +83,82 @@ impl Turning<'_, '_> {
     ) -> Vec<(&'g str, Given)> {
         let grantee = self.grantee().clone();
         let machine = self.machine();
-        let applications: Vec<String> =
-            machine.verbs().of(verb).map_or_else(Vec::new, |declared| {
-                declared
-                    .args()
-                    .iter()
-                    .filter(|arg| matches!(arg.takes(), Takes::Application))
-                    .map(|arg| arg.name().to_owned())
-                    .collect()
-            });
-        if applications.is_empty() {
+        // **Nothing is read for a verb that names no application**, as before
+        // this was public: the installed list is asked only when it can matter.
+        if the_applications_named_in(machine.verbs(), verb).is_empty() {
             return given.to_vec();
         }
         let installed = machine.the_applications_installed_now();
-        given
-            .iter()
-            .map(|(argument, value)| {
-                let Given::Text(said) = value else {
-                    return (*argument, value.clone());
-                };
-                if !applications.iter().any(|name| name == argument) {
-                    return (*argument, value.clone());
-                }
-                let AnsweringTo::One(application) = installed.answering_to(said) else {
-                    return (*argument, value.clone());
-                };
-                let identifier = application.identifier();
-                let permitted = grants
-                    .permitted(&grantee, &Ask::Application(identifier.to_owned()), now)
-                    .is_ok();
-                if permitted {
-                    (*argument, Given::text(identifier))
-                } else {
-                    (*argument, value.clone())
-                }
-            })
-            .collect()
+        as_this_machine_names_them(
+            machine.verbs(),
+            &installed,
+            grants,
+            &grantee,
+            verb,
+            given,
+            now,
+        )
     }
+}
+
+/// **What `given` is, as this machine names an application**: each argument
+/// `verb` declares as taking an application ([`Takes::Application`]) that names
+/// one application in `installed` (`Installed::answering_to`) is put as that
+/// application's identifier — where `grants` permit `grantee` that
+/// identifier at `now`. Everything else is left as it was given.
+///
+/// This is the turn's own matching, public so that a check holding a model to
+/// what this machine accepts (`alo-every-try`) calls it rather than a copy.
+#[must_use]
+pub fn as_this_machine_names_them<'g>(
+    verbs: &Verbs,
+    installed: &Installed,
+    grants: &Grants,
+    grantee: &Grantee,
+    verb: &str,
+    given: &[(&'g str, Given)],
+    now: SystemTime,
+) -> Vec<(&'g str, Given)> {
+    let applications = the_applications_named_in(verbs, verb);
+    if applications.is_empty() {
+        return given.to_vec();
+    }
+    given
+        .iter()
+        .map(|(argument, value)| {
+            let Given::Text(said) = value else {
+                return (*argument, value.clone());
+            };
+            if !applications.iter().any(|name| name == argument) {
+                return (*argument, value.clone());
+            }
+            let AnsweringTo::One(application) = installed.answering_to(said) else {
+                return (*argument, value.clone());
+            };
+            let identifier = application.identifier();
+            let permitted = grants
+                .permitted(grantee, &Ask::Application(identifier.to_owned()), now)
+                .is_ok();
+            if permitted {
+                (*argument, Given::text(identifier))
+            } else {
+                (*argument, value.clone())
+            }
+        })
+        .collect()
+}
+
+/// The arguments `verb` declares as taking an application, by name; none for
+/// a verb nobody declared.
+fn the_applications_named_in<'v>(verbs: &'v Verbs, verb: &str) -> Vec<&'v str> {
+    verbs.of(verb).map_or_else(Vec::new, |declared| {
+        declared
+            .args()
+            .iter()
+            .filter(|arg| matches!(arg.takes(), Takes::Application))
+            .map(|arg| arg.name())
+            .collect()
+    })
 }
 
 /// What the decided catalogue offers, as applications a name can be matched
@@ -213,3 +253,7 @@ pub(crate) fn as_these_name_it<'g>(
         })
         .collect()
 }
+
+#[cfg(test)]
+#[path = "naming_an_application_tests.rs"]
+mod tests;

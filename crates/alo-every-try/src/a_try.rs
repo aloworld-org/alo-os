@@ -15,6 +15,7 @@ use alo_protocol::{FromAnAgent, ToAnAgent};
 use alo_strings::Strings;
 
 use crate::a_road::ARequest;
+use crate::as_the_machine_names::AsTheMachineNames;
 use crate::taking_a_step::taking;
 use crate::the_machine_answers::answering;
 use crate::went_wrong::WentWrong;
@@ -136,6 +137,7 @@ pub fn one_try(
     let mut door = Recording {
         request,
         verbs,
+        machine: AsTheMachineNames::of(may_reach),
         strings,
         model,
         taken: 0,
@@ -234,6 +236,8 @@ struct Recording<'a> {
     request: &'a ARequest,
     /// The machine's verbs, which a step is validated against.
     verbs: &'a Verbs,
+    /// How the machine names an application a step gives by its name.
+    machine: AsTheMachineNames,
     /// The words the answers are said in.
     strings: &'a Strings,
     /// The model a question goes to.
@@ -287,7 +291,14 @@ impl TheDoor for Recording<'_> {
             .and_then(|last| road.get(last))
             .filter(|last| last.is_a_look() && last.verb() == asked)
         {
-            return match taking(looked, self.taken, request, self.verbs, self.strings) {
+            return match taking(
+                looked,
+                self.taken,
+                request,
+                self.verbs,
+                &self.machine,
+                self.strings,
+            ) {
                 Ok(call) => Ok(answering(looked.answered(), &call, self.strings)),
                 Err(wrong) => {
                     self.wrong = Some(wrong);
@@ -319,7 +330,14 @@ impl TheDoor for Recording<'_> {
                 why: THE_TRY_IS_OVER.to_owned(),
             });
         };
-        match taking(step, self.taken + 1, request, self.verbs, self.strings) {
+        match taking(
+            step,
+            self.taken + 1,
+            request,
+            self.verbs,
+            &self.machine,
+            self.strings,
+        ) {
             Ok(call) => {
                 self.taken += 1;
                 Ok(answering(step.answered(), &call, self.strings))
@@ -379,7 +397,17 @@ impl Recording<'_> {
         }
         let (aside, call) = self.request.aside().iter().find_map(|aside| {
             (aside.verb() == asked)
-                .then(|| taking(aside, self.taken + 1, request, self.verbs, self.strings).ok())
+                .then(|| {
+                    taking(
+                        aside,
+                        self.taken + 1,
+                        request,
+                        self.verbs,
+                        &self.machine,
+                        self.strings,
+                    )
+                    .ok()
+                })
                 .flatten()
                 .map(|call| (aside, call))
         })?;

@@ -67,6 +67,10 @@ on:
       - "crates/alo-software/src/verbs.rs"
       - "crates/alo-software/src/words.rs"
       - "crates/alo-software/shipped.toml"
+      # The names the shipped applications are told by, and how a name is
+      # matched to one.
+      - "crates/alo-software/the-shipped-names.txt"
+      - "crates/alo-turn/src/naming_an_application.rs"
       - "crates/alo-applications/src/verbs.rs"
       - "crates/alo-applications/src/opening_a_file.rs"
       - "crates/alo-applications/src/words.rs"

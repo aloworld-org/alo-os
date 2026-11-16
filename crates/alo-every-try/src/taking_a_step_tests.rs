@@ -13,7 +13,7 @@ use alo_applications::verbs::APPLICATION;
 
 use super::taking;
 use crate::a_road::{Answered, Step};
-use crate::testing::{proposing, read, reading, running, the_verbs, the_words};
+use crate::testing::{proposing, read, reading, running, the_machine, the_verbs, the_words};
 use crate::went_wrong::WentWrong;
 
 const EDITOR: &str = "com.vscodium.codium";
@@ -26,7 +26,15 @@ fn opening() -> Step {
 }
 
 fn taken(line: &str) -> Result<(), WentWrong> {
-    taking(&opening(), 1, &read(line), &the_verbs(), &the_words()).map(|_| ())
+    taking(
+        &opening(),
+        1,
+        &read(line),
+        &the_verbs(),
+        &the_machine(),
+        &the_words(),
+    )
+    .map(|_| ())
 }
 
 #[test]
@@ -182,6 +190,7 @@ fn a_read_sent_as_a_change_is_the_wrong_door() {
             &[(APPLICATION, EDITOR)],
         )),
         &the_verbs(),
+        &the_machine(),
         &the_words(),
     )
     .map(|_| ());
@@ -231,7 +240,15 @@ fn an_installation_named_by_its_name_is_read_as_the_machine_reads_it() {
         ],
     );
     assert_eq!(
-        taking(&step, 1, &read(&line), &the_verbs(), &the_words()).map(|_| ()),
+        taking(
+            &step,
+            1,
+            &read(&line),
+            &the_verbs(),
+            &the_machine(),
+            &the_words()
+        )
+        .map(|_| ()),
         Ok(())
     );
 }
@@ -250,8 +267,63 @@ fn a_wrong_identifier_or_an_unknown_name_leaves_the_road() {
             ],
         );
         assert!(
-            taking(&step, 1, &read(&line), &the_verbs(), &the_words()).is_err(),
+            taking(
+                &step,
+                1,
+                &read(&line),
+                &the_verbs(),
+                &the_machine(),
+                &the_words()
+            )
+            .is_err(),
             "{said} took the step"
         );
     }
+}
+
+/// **The editor named as the model is told it** — *VSCodium*, on a machine at
+/// full access that tells it so — is the editor, as a booted machine takes it.
+#[test]
+fn the_editor_named_by_its_name_takes_the_step() {
+    assert_eq!(
+        taken(&proposing(
+            OPEN_FILE_IN_APPLICATION,
+            &[(APPLICATION, "VSCodium"), (PATH, FILE)]
+        )),
+        Ok(())
+    );
+}
+
+/// **And only there**: on a machine that told the model no name, *VSCodium*
+/// is another value, as that machine would refuse it.
+#[test]
+fn a_name_the_machine_does_not_give_is_another_value() {
+    let unnamed = crate::as_the_machine_names::AsTheMachineNames::of(
+        &alo_instructing::WhatItMayReach::nothing()
+            .at_full_access(true)
+            .with_these_applications(Some(alo_instructing::TheApplicationsInstalled::of([(
+                EDITOR, None,
+            )]))),
+    );
+    let went = taking(
+        &opening(),
+        1,
+        &read(&proposing(
+            OPEN_FILE_IN_APPLICATION,
+            &[(APPLICATION, "VSCodium"), (PATH, FILE)],
+        )),
+        &the_verbs(),
+        &unnamed,
+        &the_words(),
+    )
+    .map(|_| ());
+    assert_eq!(
+        went,
+        Err(WentWrong::AnotherValue {
+            step: 1,
+            argument: APPLICATION.to_owned(),
+            expected: EDITOR.to_owned(),
+            given: "VSCodium".to_owned(),
+        })
+    );
 }
