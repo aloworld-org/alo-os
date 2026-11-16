@@ -637,3 +637,32 @@ fn a_paired_machine_cannot_open_a_file_here() {
     assert!(asked.borrow().is_empty(), "a paired machine opened a file");
     assert_eq!(record.len(), 1, "the refusal was not written down");
 }
+
+/// **An application nobody granted is noted as wanted, once, for the person's
+/// sheet — and one that is granted is not.** Asked twice in one turn, it is
+/// still one entry (the owner's decision of 2026-11-16).
+#[test]
+fn an_application_nobody_granted_is_wanted_once_and_a_granted_one_is_not() {
+    for (granted, expected) in [(false, vec![EDITOR.to_owned()]), (true, Vec::new())] {
+        let wanted: RefCell<Vec<String>> = RefCell::new(Vec::new());
+        let arranged = Arranged {
+            the_editor: granted,
+            ..Arranged::answering(Ok(Opened::InAlosCopy))
+        };
+        let _ran = on_a_machine(arranged, |turning, grants, file| {
+            assert!(turning.applications_wanted().is_empty(), "the control");
+            for _ in 0..2 {
+                let _ = turning.proposing(
+                    OPEN_FILE_IN_APPLICATION,
+                    &given(EDITOR, file),
+                    grants,
+                    hour(),
+                    noon(),
+                );
+            }
+            *wanted.borrow_mut() = turning.applications_wanted().to_vec();
+            Ok(None)
+        });
+        assert_eq!(*wanted.borrow(), expected, "granted: {granted}");
+    }
+}

@@ -165,7 +165,8 @@ pub fn as_this_machine_names_them<'g>(
 /// **The installed applications `given` names that nothing grants `grantee` at
 /// `now`**, by identifier, once each: each argument `verb` declares as taking
 /// an application whose text names exactly one installed application
-/// (`Installed::answering_to`) that the grants do not permit.
+/// (`Installed::answering_to`) that the grants do not permit. The turn keeps
+/// each once (`Turning::applications_wanted`).
 ///
 /// What the person's desktop offers on the sheet that asks whether to give alo
 /// one (the owner's decision of 2026-11-16). Nothing for a name that means
@@ -197,7 +198,7 @@ pub fn the_applications_wanted(
         let permitted = grants
             .permitted(grantee, &Ask::Application(identifier.to_owned()), now)
             .is_ok();
-        if !permitted && !wanted.iter().any(|it| it == identifier) {
+        if !permitted {
             wanted.push(identifier.to_owned());
         }
     }
