@@ -40,6 +40,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::ffi::OsString;
+use std::os::fd::{AsRawFd as _, OwnedFd};
 use std::os::unix::fs::{DirBuilderExt as _, MetadataExt as _, PermissionsExt as _};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -68,9 +69,16 @@ struct Running {
     /// which moves itself into a scope of Flatpak's and then ends, while the
     /// application runs on there; the walk of 2026-11-15 (run 43726518930)
     /// saw VSCodium's window in that scope answered *not alo's copy*, because
-    /// the copy was forgotten when its first process ended. Seen by the
-    /// kernel's own account of that process, so never a group of the person's.
+    /// the copy was forgotten when its first process ended. Kept from the
+    /// kernel's own account of that process, and from the instance number
+    /// Flatpak writes on the copy's own pipe (`Running::instance`) — a number
+    /// only something holding that pipe's write end can write.
     seen: Vec<PathBuf>,
+    /// **Where Flatpak says which instance the copy is**, until it has: the
+    /// read end of the pipe `flatpak run` was told to write its instance on
+    /// (`alo_launching::flatpak_instance`). The scope that names is kept in
+    /// [`Running::seen`], however fast the process that moved there ended.
+    instance: Option<OwnedFd>,
 }
 
 /// alo's copies on this machine.
@@ -134,27 +142,7 @@ impl AlosCopies {
         let Some(copy) = self.running.get_mut(application) else {
             return false;
         };
-        let launcher = match copy.child.as_mut() {
-            Some(child) => matches!(child.try_wait(), Ok(None)),
-            None => began_at(copy.pid) == Some(copy.began),
-        };
-        // **Where it is now, kept**, while the process alo started still says.
-        // Where this desktop did not start it (a copy found again after a
-        // restart), the process is not held unreaped, so its number could be
-        // given to another process between the two reads: it is asked when it
-        // began again after its group is read, and a changed answer keeps
-        // nothing.
-        if launcher
-            && let Some(now) = where_it_runs(copy.pid, &self.slice)
-            && (copy.child.is_some() || began_at(copy.pid) == Some(copy.began))
-            && !copy.seen.contains(&now)
-            && copy.seen.len() < THE_MOST_SEEN
-        {
-            copy.seen.push(now);
-        }
-        // **Running while anything of it runs**: the process alo started, or
-        // any process still in a group it was seen in.
-        let alive = launcher || copy.seen.iter().any(|group| holds_a_process(group, 0));
+        let alive = looked_at(copy, application, &self.slice);
         if !alive {
             self.running.remove(application);
             if let Some(file) = self.the_file_for(application) {
@@ -178,6 +166,16 @@ impl AlosCopies {
         let Some(copy) = alo_launching::alos_copy(application, &home) else {
             return Err(NoCopy::OfItsOwn);
         };
+        // **Told to say which Flatpak instance it is**, where it is `flatpak
+        // run`, so the scope it runs in is named by Flatpak rather than caught
+        // in flight (`alo_launching::flatpak_instance`). A command that is not
+        // gets no pipe at all.
+        let pipe = an_instance_pipe();
+        let told = pipe
+            .as_ref()
+            .and_then(|(_, write)| alo_launching::told_its_instance(command, write.as_raw_fd()));
+        let pipe = if told.is_some() { pipe } else { None };
+        let command: &[String] = told.as_deref().unwrap_or(command);
         let Some((first, rest)) = command.split_first() else {
             return Err(said(application, "its command names nothing"));
         };
@@ -242,6 +240,12 @@ impl AlosCopies {
             Ok(child) => child,
             Err(why) => return Err(said(application, &format!("it would not start: {why}"))),
         };
+        // The child holds its own copy of the write end now; this desktop's is
+        // let go, so the read end ends when Flatpak's does.
+        let instance = pipe.map(|(read, write)| {
+            drop(write);
+            read
+        });
         let pid = child.id();
         self.starts = self.starts.wrapping_add(1);
         let unit = self.handed_to_the_manager(application, pid);
@@ -260,6 +264,7 @@ impl AlosCopies {
                 child: Some(child),
                 unit,
                 seen: Vec::new(),
+                instance,
             },
         );
         Ok(())
@@ -450,6 +455,7 @@ impl AlosCopies {
             child: None,
             unit: None,
             seen: Vec::new(),
+            instance: None,
         })
     }
 }
@@ -689,6 +695,103 @@ impl AlosCopies {
             groups.len()
         )
     }
+}
+
+/// **A pipe Flatpak can say its instance on**: the read end this desktop's
+/// own, closed in every program it starts; the write end inherited by the next
+/// one, under the number `--instance-id-fd` names. Neither end blocks.
+///
+/// **The write end is inheritable from here until the copy has started**, and a
+/// program another thread of this desktop starts in that moment (the screen
+/// reader, `gh`) inherits it too: the read end then never sees its end, which
+/// only keeps it until the number arrives, and that program could write on it.
+/// Mapping one descriptor into one child alone needs `pre_exec`, which is
+/// `unsafe` and forbidden here, so the moment is kept short instead.
+/// [`None`] where the kernel will not make one, and the copy is then found as
+/// before, by looking at its process.
+fn an_instance_pipe() -> Option<(OwnedFd, OwnedFd)> {
+    use rustix::pipe::PipeFlags;
+    let (read, write) = rustix::pipe::pipe_with(PipeFlags::CLOEXEC | PipeFlags::NONBLOCK).ok()?;
+    rustix::io::fcntl_setfd(&write, rustix::io::FdFlags::empty()).ok()?;
+    Some((read, write))
+}
+
+/// What one look at the instance pipe heard.
+#[derive(Debug, PartialEq, Eq)]
+enum Heard {
+    /// Nothing yet.
+    Nothing,
+    /// The instance number.
+    It(String),
+    /// It closed, or said something that is not an instance: nothing will come.
+    Never,
+}
+
+/// Look once at what Flatpak wrote on the instance pipe, never waiting.
+fn the_instance_heard(read: &OwnedFd) -> Heard {
+    let mut said = [0_u8; 32];
+    match rustix::io::read(read, said.as_mut_slice()) {
+        Ok(0) => Heard::Never,
+        Ok(length) => said
+            .get(..length)
+            .and_then(alo_launching::an_instance_number)
+            .map_or(Heard::Never, Heard::It),
+        Err(why) if why == rustix::io::Errno::AGAIN || why == rustix::io::Errno::INTR => {
+            Heard::Nothing
+        }
+        Err(_) => Heard::Never,
+    }
+}
+
+/// **Look at one copy once**: hear what Flatpak said it is, keep where it is
+/// now, and answer whether it still runs. `slice` is the person's own
+/// applications' slice, outside which nothing is kept.
+fn looked_at(copy: &mut Running, application: &str, slice: &Path) -> bool {
+    let launcher = match copy.child.as_mut() {
+        Some(child) => matches!(child.try_wait(), Ok(None)),
+        None => began_at(copy.pid) == Some(copy.began),
+    };
+    // **What Flatpak said it is**, once it has: the scope that instance runs
+    // in is kept, however fast the process that moved there ended.
+    if let Some(read) = copy.instance.as_ref() {
+        match the_instance_heard(read) {
+            Heard::Nothing => {}
+            Heard::It(instance) => {
+                if let Some(scope) = alo_launching::the_scope_of_an_instance(application, &instance)
+                {
+                    kept(&mut copy.seen, slice.join(scope));
+                }
+                copy.instance = None;
+            }
+            Heard::Never => copy.instance = None,
+        }
+    }
+    // **Where it is now, kept**, while the process alo started still says.
+    // Where this desktop did not start it (a copy found again after a restart),
+    // the process is not held unreaped, so its number could be given to another
+    // process between the two reads: it is asked when it began again after its
+    // group is read, and a changed answer keeps nothing.
+    if launcher
+        && let Some(now) = where_it_runs(copy.pid, slice)
+        && (copy.child.is_some() || began_at(copy.pid) == Some(copy.began))
+    {
+        kept(&mut copy.seen, now);
+    }
+    still_alive(launcher, &copy.seen)
+}
+
+/// **Keep `group` among those a copy was seen in** — once, and only while there
+/// is room for it.
+fn kept(seen: &mut Vec<PathBuf>, group: PathBuf) {
+    if !seen.contains(&group) && seen.len() < THE_MOST_SEEN {
+        seen.push(group);
+    }
+}
+
+/// **Whether a copy still runs**: the process alo started does, or a process
+/// still runs in a group the copy was seen in.
+fn still_alive(launcher: bool, seen: &[PathBuf]) -> bool {
+    launcher || seen.iter().any(|group| holds_a_process(group, 0))
 }
 
 /// The most groups one copy is remembered in: the unit, Flatpak's scope, and

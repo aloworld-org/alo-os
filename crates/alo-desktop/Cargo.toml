@@ -103,7 +103,7 @@ alo-acting = { path = "../alo-acting" }
 # never `alo-bounding`**, whose build compiles the kernel half: see
 # `tests/the_desktop_is_built_without_the_agent_service.rs`.
 alo-counting = { path = "../alo-counting" }
-rustix = { workspace = true, features = ["process"] }
+rustix = { workspace = true, features = ["process", "pipe"] }
 # Where the icon one of them named actually is, by the icon theme rules.
 alo-icons = { path = "../alo-icons" }
 # The one decoder in this workspace, already pinned by alo-shell at the same
