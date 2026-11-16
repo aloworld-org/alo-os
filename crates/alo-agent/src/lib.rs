@@ -43,6 +43,7 @@ pub mod at_the_daemons_socket;
 pub mod driving;
 pub mod holding_the_turn;
 pub mod how_far;
+pub mod shown_after_an_answer;
 pub mod the_door;
 pub mod the_person_may_stop;
 pub mod waiting_for_the_answer;

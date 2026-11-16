@@ -144,8 +144,8 @@ impl WhatHappened {
 
     /// **The steps a turn goes on from after the person answered the change it
     /// left waiting**: every step so far, then the model's proposal beside what
-    /// the answer did, in the shape full access shows a change in
-    /// (`alo_protocol::what_the_agent_says_back::the_step_after_an_answer`;
+    /// the answer did, exactly as full access shows the same change
+    /// (`crate::shown_after_an_answer`;
     /// `docs/contracts/asking-socket.md`, *The turn goes on after an answer*).
     /// [`None`] when nothing was waiting.
     #[must_use]
@@ -162,7 +162,7 @@ impl WhatHappened {
         let mut steps = after.clone();
         steps.push(AStep::of(
             proposed,
-            &alo_protocol::what_the_agent_says_back::the_step_after_an_answer(told, sentence)?,
+            &crate::shown_after_an_answer::the_step_after_an_answer(told, sentence)?,
         ));
         Some(steps)
     }
