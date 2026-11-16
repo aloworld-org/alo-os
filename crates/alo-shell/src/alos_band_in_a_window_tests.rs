@@ -274,3 +274,19 @@ fn the_tab_finds_room_and_scales() {
     let edge = rasters.first().expect("the edge").area;
     assert_eq!(edge, crate::painted::drawn_at(in_pixels(card, 200)));
 }
+
+/// **The room for the tab is measured in the display's own logical size**: a
+/// window filling a 2560 × 1600 display at scale 2 — 1280 × 800 logical — has
+/// no room above or below, so the tab stands inside its foot, exactly as at
+/// scale 1. A room read in pixels would put it under the foot, off the screen.
+#[test]
+fn a_window_filling_a_dense_display_keeps_its_tab_on_it() {
+    let whole = Rectangle::new(Point::from((0, 0)), Size::from((1280, 800)));
+    assert_eq!(
+        where_the_tab_is(whole, (2560, 1600), 200),
+        Rectangle::new(
+            Point::from((1280 - 16 - 28, 800 - 16 - 20)),
+            Size::from((28, 20))
+        )
+    );
+}
