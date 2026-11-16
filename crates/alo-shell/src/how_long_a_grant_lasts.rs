@@ -145,7 +145,7 @@ mod tests {
             .iter()
             .filter_map(|it| match it.granting_to(HERS).lasting() {
                 ForHowLong::Lasting(lasting) => Some(lasting),
-                ForHowLong::UntilRemoved => None,
+                ForHowLong::UntilRemoved | ForHowLong::UntilSignOut => None,
             })
             .collect()
     }

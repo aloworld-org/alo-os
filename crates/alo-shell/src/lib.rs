@@ -303,6 +303,8 @@ mod dock_history_mark;
 mod dock_raster;
 mod dock_surface;
 mod dock_tooltip;
+/// The person's answer on that sheet, carried to the grants.
+mod giving_alo_an_application_it_asked_for;
 /// How a rounded panel is lifted off what is behind it — its corner and its
 /// shadow — at the display scale its geometry is laid out in.
 mod how_a_panel_is_raised;
@@ -1036,6 +1038,7 @@ pub use booting::{
     AMachineToStandOn, Stood, WouldNotStand, stand_the_sign_in_screen_up, what_this_machine_can_say,
 };
 pub use capture_flatten::{NotFlattened, burnt_in};
+pub use giving_alo_an_application_it_asked_for::the_grants_for_the_session_go;
 pub use the_application_sheet::{HowLongForAnApplication, OnTheApplicationSheet};
 pub use the_github_sheet::OnTheGitHubSheet;
 // `DesktopFrame::capturing` is a public field of this type, so without these a

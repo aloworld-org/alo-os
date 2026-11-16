@@ -289,7 +289,11 @@ pub(crate) fn drawn(
     let at = |area: Area| Rectangle::new((area.loc.x + left, area.loc.y + top).into(), area.size);
     Ok(ApplicationSheetPicture {
         size,
-        washed: canvas.washed(),
+        // **Premultiplied for the renderer** (`crate::painted::Washed`), as
+        // Settings' raster is: straight alpha blended as premultiplied adds a
+        // transparent pixel's colour to what is under it, which drew the
+        // shadow's whole area as a white box.
+        washed: canvas.washed().premultiplied(),
         sheet,
         targets: targets
             .into_iter()

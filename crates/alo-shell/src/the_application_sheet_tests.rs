@@ -97,6 +97,7 @@ fn enter_grants_the_length_the_keyboard_is_on() {
         Some(TheSheetAnswered::Granted {
             wanted: codium(),
             how_long: HowLongForAnApplication::ThisSession,
+            pressed: APress(()),
         })
     );
     assert!(!sheet.is_up());
@@ -121,6 +122,7 @@ fn a_press_on_a_length_chooses_it_and_the_button_grants_it() {
         Some(TheSheetAnswered::Granted {
             wanted: codium(),
             how_long: HowLongForAnApplication::Remember,
+            pressed: APress(()),
         })
     );
 }
@@ -246,6 +248,7 @@ fn a_readers_press_is_held_to_the_sheet_it_was_heard_on() {
         Some(Some(TheSheetAnswered::Granted {
             wanted: codium(),
             how_long: HowLongForAnApplication::ThisTask,
+            pressed: APress(()),
         }))
     );
     // **Heard on the first, arriving on the second**: nothing.

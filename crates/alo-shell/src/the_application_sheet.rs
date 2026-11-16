@@ -164,6 +164,14 @@ impl AnApplicationWanted {
     }
 }
 
+/// **Proof that a person pressed**: the sheet's own `press` is the one place
+/// that makes one, because its field is private to this module. So no other
+/// file — and nothing an agent sends — can construct
+/// [`TheSheetAnswered::Granted`]: the compiler refuses it, rather than a
+/// review having to notice.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct APress(());
+
 /// What the person's answer was. **Only a press makes [`Self::Granted`].**
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum TheSheetAnswered {
@@ -173,6 +181,8 @@ pub(crate) enum TheSheetAnswered {
         wanted: AnApplicationWanted,
         /// How long.
         how_long: HowLongForAnApplication,
+        /// That a person pressed for it.
+        pressed: APress,
     },
     /// *Not now*, or no answer: the refusal stands.
     NotNow {
@@ -324,6 +334,7 @@ impl TheApplicationSheet {
                 TheSheetAnswered::Granted {
                     wanted: shown.wanted,
                     how_long: shown.focus,
+                    pressed: APress(()),
                 }
             }
             OnTheApplicationSheet::NotNow => TheSheetAnswered::NotNow {

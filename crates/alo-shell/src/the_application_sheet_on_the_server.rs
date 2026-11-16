@@ -12,10 +12,13 @@
 //! answers — five minutes with nobody answering, and a sheet that could not be
 //! drawn — are *not now*, never a grant.
 
-use std::time::Instant;
+use std::time::{Instant, SystemTime};
+
+use crate::giving_alo_an_application_it_asked_for as giving;
 
 use crate::the_application_sheet::{
-    AnApplicationWanted, ApplicationSheetKey, OnTheApplicationSheet, TheSheetAnswered,
+    AnApplicationWanted, ApplicationSheetKey, HowLongForAnApplication, OnTheApplicationSheet,
+    TheSheetAnswered,
 };
 use crate::the_tasks_a_person_opened::WhichTask;
 
@@ -94,18 +97,103 @@ impl crate::Server {
         not(test),
         expect(
             dead_code,
-            reason = "carried out by the frame loop in the change that makes the grant"
+            reason = "taken by the turn that asked, once the agent pauses on a refused application \n                      verb (#1310)"
         )
     )]
     pub(crate) fn take_what_the_application_sheet_answered(&mut self) -> Vec<TheSheetAnswered> {
         std::mem::take(&mut self.application_sheet_answers)
     }
 
-    /// Keep an answer for the frame loop.
+    /// **Carry an answer out, and keep it for the turn that asked.** A press
+    /// that granted is made into the grant now, through the one road Settings
+    /// uses; one that could not be made is kept as *not now*, because the
+    /// action would only be refused again.
     fn the_application_sheet_answered(&mut self, answered: Option<TheSheetAnswered>) {
-        if let Some(answered) = answered {
-            self.application_sheet_answers.push(answered);
+        let Some(answered) = answered else {
+            return;
+        };
+        let not_given = match &answered {
+            TheSheetAnswered::Granted {
+                wanted, how_long, ..
+            } => !self.alo_is_given_what_it_asked_for(wanted, *how_long),
+            TheSheetAnswered::NotNow { .. } => false,
+        };
+        let kept = match answered {
+            TheSheetAnswered::Granted { wanted, .. } if not_given => {
+                TheSheetAnswered::NotNow { wanted }
+            }
+            kept => kept,
+        };
+        self.application_sheet_answers.push(kept);
+    }
+
+    /// Make the grant the person pressed for. `false` where it was not made,
+    /// and why is said on the desktop's log.
+    fn alo_is_given_what_it_asked_for(
+        &mut self,
+        wanted: &AnApplicationWanted,
+        how_long: HowLongForAnApplication,
+    ) -> bool {
+        let Some(places) = self.settings_places.as_ref() else {
+            eprintln!("alo-shell: nothing was granted: this session was not told where grants are");
+            return false;
+        };
+        let Some(agent) = places.agent() else {
+            eprintln!("alo-shell: nothing was granted: this session names no agent");
+            return false;
+        };
+        let door = alo_changing::TheDaemonsDoor::at(places.daemon());
+        let now = SystemTime::now();
+        match giving::alo_is_given(places.grants(), &door, agent, wanted, how_long, now) {
+            Ok(id) => {
+                if how_long == HowLongForAnApplication::ThisTask {
+                    self.grants_for_a_task.push((wanted.task(), id));
+                }
+                self.the_grants_changed_here(now);
+                true
+            }
+            Err(why) => {
+                eprintln!(
+                    "alo-shell: {} was not granted to alo: {why}",
+                    wanted.identifier()
+                );
+                false
+            }
         }
+    }
+
+    /// **A task ended — its window closed, or it was stopped — so every grant
+    /// made for *This task* goes now**, and the daemon is told. A grant already
+    /// gone (taken back in Settings) changes nothing.
+    pub(crate) fn a_tasks_grants_end(&mut self, which: WhichTask) {
+        let (ending, staying): (Vec<_>, Vec<_>) = self
+            .grants_for_a_task
+            .iter()
+            .copied()
+            .partition(|(task, _)| *task == which);
+        if ending.is_empty() {
+            return;
+        }
+        self.grants_for_a_task = staying;
+        let Some(places) = self.settings_places.as_ref() else {
+            return;
+        };
+        let door = alo_changing::TheDaemonsDoor::at(places.daemon());
+        let now = SystemTime::now();
+        for (_, id) in ending {
+            if let Err(why) = giving::a_tasks_grant_is_taken_back(places.grants(), &door, id, now) {
+                eprintln!(
+                    "alo-shell: a grant for a task that ended could not be taken back, and                      still stands until sign-out: {why}"
+                );
+            }
+        }
+        self.the_grants_changed_here(now);
+    }
+
+    /// Settings is told the grants changed, and which are a task's.
+    fn the_grants_changed_here(&mut self, now: SystemTime) {
+        let for_a_task = self.grants_for_a_task.iter().map(|(_, id)| *id).collect();
+        self.settings.the_grants_changed_elsewhere(for_a_task, now);
     }
 }
 
