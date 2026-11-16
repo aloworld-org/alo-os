@@ -45,16 +45,20 @@ pub mod holding_the_turn;
 pub mod how_far;
 pub mod the_door;
 pub mod the_person_may_stop;
+pub mod waiting_for_an_application;
 pub mod waiting_for_the_answer;
 pub mod what_happened;
 pub mod what_the_person_sent;
 
 pub use at_the_daemons_socket::AtTheDaemonsSocket;
-pub use driving::{driving, driving_about, driving_after, driving_on, driving_until_stopped};
+pub use driving::{
+    a_proposal_answered, driving, driving_about, driving_after, driving_on, driving_until_stopped,
+};
 pub use holding_the_turn::{Held, held_until_answered};
 pub use how_far::HowFar;
 pub use the_door::{NotAnswered, TheDoor};
 pub use the_person_may_stop::ThePersonMayStop;
+pub use waiting_for_an_application::{TheGrant, the_persons_grant};
 pub use waiting_for_the_answer::{TheAnswer, the_persons_answer};
 pub use what_happened::{WhatHappened, done_without_asking_in};
 pub use what_the_person_sent::{WhatThePersonSent, read_what_the_person_sent};

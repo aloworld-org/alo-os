@@ -245,6 +245,15 @@ pub fn one_try_at(
                 of,
                 why: format!("it was refused: {said}"),
             }),
+            // **Never here**: a try drives with `HowFar::THE_ORDINARY`, which
+            // does not pause for an application. Said, rather than assumed away.
+            WhatHappened::AnApplicationWasRefused { refusal, .. } => {
+                Went::WentWrong(WentWrong::EndedOtherwise {
+                    done,
+                    of,
+                    why: format!("it paused for an application: {refusal}"),
+                })
+            }
             WhatHappened::ItWasStopped { .. } => Went::WentWrong(WentWrong::EndedOtherwise {
                 done,
                 of,
