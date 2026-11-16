@@ -144,7 +144,9 @@ jobs:
       - name: Walk it
         env:
           ALO_WALK_PROVIDER_KEY: ${{ (github.event_name == 'push' || inputs.with_the_provider) && secrets.ALO_WALK_PROVIDER_KEY || '' }}
-          ALO_WALK_EVERY_APPLICATION: ${{ inputs.every_application && 'yes' || '' }}
+          # A word of its own, because the walk redacts every variable it reads
+          # from what it keeps: `yes` would be cut out of every log line.
+          ALO_WALK_EVERY_APPLICATION: ${{ inputs.every_application && 'alo-walk-every-application' || '' }}
         run: |
           target/release/alo-walk \
             --disk walk/alo.raw \

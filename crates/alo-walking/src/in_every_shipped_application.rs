@@ -39,7 +39,8 @@
 //!
 //! # Only when asked for
 //!
-//! The section runs only when `ALO_WALK_EVERY_APPLICATION` is set — by the
+//! The section runs only when `ALO_WALK_EVERY_APPLICATION` is set (to a word
+//! of its own, since the walk redacts every variable it reads) — by the
 //! *Walk* workflow's *every application* box — so that until every check here
 //! passes, a walk after each merge to `main` is not red because of it.
 
