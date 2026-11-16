@@ -14,7 +14,7 @@
 //!
 //! 1. **The level**, in Settings → *Running code*: *Ask me each time*, the row
 //!    [`ASK_EACH_TIME`] counts to from `alo_capability::HowCodeRuns::ALL`.
-//! 2. **The grant**, in Settings → *Folders alo can use* → *Give alo an
+//! 2. **The grant**, in Settings → *What alo can use* → *Give alo an
 //!    application*: VSCodium, which a fresh machine lists last (a test holds
 //!    that, from the shipped names ordered as `alo-picking` orders them), for
 //!    a day — the second length the list offers.
@@ -70,19 +70,19 @@ pub const ASK_EACH_TIME: usize = match HowCodeRuns::ALL {
     _ => 0,
 };
 
-/// How many rows up from the last row of *Folders alo can use* *Give alo an
+/// How many rows up from the last row of *What alo can use* *Give alo an
 /// application* is, with nothing given yet: the page ends with *See what alo
 /// did* and then the choices of where alo works
 /// (`alo_capability::AloInApplications::ALL`).
 pub const UP_TO_GIVE_AN_APPLICATION: usize = AloInApplications::ALL.len() + 1;
 
 /// *Running code*, counted down from the first page in Settings' side column
-/// (`alo_shell::SettingsCategory::ALL`: alo and AI, Folders alo can use,
+/// (`alo_shell::SettingsCategory::ALL`: alo and AI, What alo can use,
 /// Running code).
 const DOWN_TO_RUNNING_CODE: usize = 2;
 
-/// *Folders alo can use*, counted down from the first page.
-const DOWN_TO_FOLDERS: usize = 1;
+/// *What alo can use*, counted down from the first page.
+const DOWN_TO_WHAT_ALO_CAN_USE: usize = 1;
 
 /// *A day*, counted down from the first length the list offers (an hour, a
 /// day, a month, until I remove it): long enough for the rest of the walk, and
@@ -144,13 +144,13 @@ pub fn at_each_ask(walk: Walk) -> Walk {
         .look("ask-each-time-chosen", look)
         .press(esc.clone())
         .look("settings-closed-on-ask-each-time", look)
-        // **The grant**: Folders alo can use, Give alo an application,
+        // **The grant**: What alo can use, Give alo an application,
         // VSCodium, a day.
         .press(settings)
         .look("settings-for-the-application", look.at_most(minutes(1)))
         .press(home.clone())
-        .press_times(&down, DOWN_TO_FOLDERS)
-        .look("folders-alo-can-use", look)
+        .press_times(&down, DOWN_TO_WHAT_ALO_CAN_USE)
+        .look("what-alo-can-use", look)
         .press(tab.clone())
         .press(end.clone())
         .press_times(&up, UP_TO_GIVE_AN_APPLICATION)
