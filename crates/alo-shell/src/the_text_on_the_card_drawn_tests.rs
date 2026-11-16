@@ -142,7 +142,9 @@ fn written(frame: &(Vec<u8>, (i32, i32)), name: &str) {
     for (pixel, rgb) in image.pixels_mut().zip(every_pixel(frame)) {
         *pixel = image::Rgb(rgb);
     }
-    image.save(std::path::Path::new(&folder).join(name)).unwrap();
+    image
+        .save(std::path::Path::new(&folder).join(name))
+        .unwrap();
 }
 
 /// Each row of the frame that has pixels in the warning colour,
@@ -211,13 +213,20 @@ fn the_text_and_its_tags_reach_the_frame_a_display_is_handed() {
     let lower = handed(a_card_carrying(Some(
         "fn main() {\n    println!(\"hello\");\n}\u{200B}",
     )));
-    let (up, down) = (rows_in_the_warning_colour(&hidden), rows_in_the_warning_colour(&lower));
+    let (up, down) = (
+        rows_in_the_warning_colour(&hidden),
+        rows_in_the_warning_colour(&lower),
+    );
     assert!(
         down.last() > up.last(),
         "the tag did not move with its character: {up:?} {down:?}"
     );
     // **Scrolling reaches the frame**, and stops at the last twelve lines.
-    let long: String = (1..=40).map(|it| format!("line {it} of the text\n")).collect();
+    // Forty lines and no newline after the last, so the last twelve start at 28.
+    let long = (1..=40)
+        .map(|it| format!("line {it} of the text"))
+        .collect::<Vec<_>>()
+        .join("\n");
     let scrolls = handed(a_card_carrying(Some(&long)));
     written(&scrolls, "4-forty-lines-twelve-shown.png");
     let further = handed(a_card_scrolled(Some(&long), 28));

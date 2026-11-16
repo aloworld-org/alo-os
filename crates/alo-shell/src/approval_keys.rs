@@ -99,8 +99,14 @@ mod tests {
             shift: true,
             ..nothing_held()
         };
-        assert_eq!(ApprovalKey::of(Keysym::Up, &held), ApprovalKey::EarlierLines);
-        assert_eq!(ApprovalKey::of(Keysym::Down, &held), ApprovalKey::LaterLines);
+        assert_eq!(
+            ApprovalKey::of(Keysym::Up, &held),
+            ApprovalKey::EarlierLines
+        );
+        assert_eq!(
+            ApprovalKey::of(Keysym::Down, &held),
+            ApprovalKey::LaterLines
+        );
         assert_eq!(
             ApprovalKey::of(Keysym::Up, &shifted),
             ApprovalKey::AnEarlierPage

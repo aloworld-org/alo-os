@@ -209,11 +209,7 @@ impl AChangeWaiting {
         );
         self.number = Some(first.number());
         self.touches = first.touches().to_vec();
-        self.texts = first
-            .texts()
-            .iter()
-            .map(|text| text.shown())
-            .collect();
+        self.texts = first.texts().iter().map(|text| text.shown()).collect();
         self.first_line = 0;
         self.does = (
             first.changes().map(|it| it.text().to_owned()),
@@ -315,10 +311,7 @@ impl AChangeWaiting {
             })
             .max()
             .unwrap_or(0);
-        let now = self
-            .first_line
-            .saturating_add_signed(lines)
-            .min(furthest);
+        let now = self.first_line.saturating_add_signed(lines).min(furthest);
         if now == self.first_line {
             return WhatThePressDid::Nothing;
         }

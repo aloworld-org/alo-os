@@ -360,11 +360,14 @@ fn the_runs<'a>(write: ToWrite<'a>, measure: Measure) -> Vec<(&'a str, Attrs<'a>
                 // that happens to read *U+200B* by more than its colour.
                 HowItIsMarked::Unseen => {
                     let warning = alo_appearance::Role::StatusWarning.colour();
-                    plain.clone().weight(Weight(700)).color(cosmic_text::Color::rgb(
-                        warning.red(),
-                        warning.green(),
-                        warning.blue(),
-                    ))
+                    plain
+                        .clone()
+                        .weight(Weight(700))
+                        .color(cosmic_text::Color::rgb(
+                            warning.red(),
+                            warning.green(),
+                            warning.blue(),
+                        ))
                 }
             };
             Some((words, attrs))

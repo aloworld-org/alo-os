@@ -49,7 +49,12 @@ impl ATextOnTheCard {
         let lines = text.lines();
         let starts = first_line.min(lines.len().saturating_sub(THE_MOST_LINES_SHOWN));
         let mut shown = MarkedWords::default();
-        for (at, line) in lines.iter().skip(starts).take(THE_MOST_LINES_SHOWN).enumerate() {
+        for (at, line) in lines
+            .iter()
+            .skip(starts)
+            .take(THE_MOST_LINES_SHOWN)
+            .enumerate()
+        {
             if at > 0 {
                 shown.push("\n", HowItIsMarked::Plain);
             }
@@ -78,7 +83,9 @@ impl ATextOnTheCard {
         }
         Self {
             how_long: text.how_long(strings).into_text(),
-            marked: text.what_is_marked(strings).map(alo_strings::Said::into_text),
+            marked: text
+                .what_is_marked(strings)
+                .map(alo_strings::Said::into_text),
             shown,
         }
     }

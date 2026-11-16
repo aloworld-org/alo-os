@@ -644,8 +644,6 @@ pub mod the_application_door;
 pub mod the_application_doors_place;
 /// The approval card's layout, measured off the approved frame.
 mod the_approval_card;
-pub mod the_text_alo_will_type;
-mod the_text_alo_will_type_as_read;
 /// The alo mark at the top of the approval card.
 mod the_approval_cards_icons;
 pub mod the_bar_finds;
@@ -686,6 +684,8 @@ mod the_room_a_window_fills;
 /// Task windows opened into a full view find room as other windows do.
 mod the_task_windows_find_room;
 mod the_terminals_face;
+pub mod the_text_alo_will_type;
+mod the_text_alo_will_type_as_read;
 /// The view gliding, or jumping where less motion was asked for.
 mod the_view_glides;
 /// The view travelling to a window of alo's rather than the window moving.

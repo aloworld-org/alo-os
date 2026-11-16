@@ -3,6 +3,8 @@
 
 #![expect(
     clippy::unwrap_used,
+    clippy::panic,
+    clippy::indexing_slicing,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
@@ -56,7 +58,10 @@ fn every_line_is_heard_with_each_hidden_character_named() {
         panic!("a zero-width space is not marked");
     };
     let in_words = unseen.said(&strings).into_text();
-    assert!(!unseen.said(&strings).is_a_bug(), "the name is not declared");
+    assert!(
+        !unseen.said(&strings).is_a_bug(),
+        "the name is not declared"
+    );
     assert!(in_words.contains("U+200B"), "{in_words}");
     assert_eq!(heard, format!("one\ntw ({in_words}) o\nthree"));
 }
@@ -69,17 +74,28 @@ fn it_hangs_under_the_asking_tasks_window_and_no_other() {
     let (tree, typing, other) = two_windows(&strings);
     let text = TheWholeText::of("fn main() {\n\u{200B}}");
     let before = tree.nodes().len();
-    let tree = tree.with_the_text_alo_will_type(&strings, typing, SENTENCE, &[text.clone()]);
-    assert_eq!(tree.nodes().len(), before + 4, "the card and its three lines");
+    let tree = tree.with_the_text_alo_will_type(&strings, typing, SENTENCE, std::slice::from_ref(&text));
+    assert_eq!(
+        tree.nodes().len(),
+        before + 4,
+        "the card and its three lines"
+    );
 
-    let card = tree.nodes().iter().position(|node| node.name == SENTENCE).unwrap();
+    let card = tree
+        .nodes()
+        .iter()
+        .position(|node| node.name == SENTENCE)
+        .unwrap();
     let window = tree.nodes()[card].parent;
     let closes = |which| {
         tree.nodes()
             .iter()
             .any(|node| node.parent == window && node.press == Some(Pressed::CloseTheTask(which)))
     };
-    assert!(closes(typing), "the card is not under the asking task's window");
+    assert!(
+        closes(typing),
+        "the card is not under the asking task's window"
+    );
     assert!(!closes(other));
     let under: Vec<&str> = tree.nodes()[card]
         .children
@@ -101,7 +117,9 @@ fn it_hangs_under_the_asking_tasks_window_and_no_other() {
 fn no_text_or_no_window_leaves_the_tree_alone() {
     let strings = words();
     let (tree, typing, _) = two_windows(&strings);
-    let same = tree.clone().with_the_text_alo_will_type(&strings, typing, SENTENCE, &[]);
+    let same = tree
+        .clone()
+        .with_the_text_alo_will_type(&strings, typing, SENTENCE, &[]);
     assert_eq!(same, tree);
     let nowhere = ReadAloudTree::of(&strings, &[Surface::Desktop], &TurnedOn::nothing());
     let still = nowhere.clone().with_the_text_alo_will_type(
@@ -122,7 +140,10 @@ fn every_kind_of_hidden_character_is_named() {
     for code in ["U+202E", "U+0007", "U+00A0"] {
         assert!(heard.contains(code), "{code} is not named: {heard}");
     }
-    assert!(!heard.contains('\u{202E}'), "a direction mark reached the reader");
+    assert!(
+        !heard.contains('\u{202E}'),
+        "a direction mark reached the reader"
+    );
 }
 
 /// **A long text is heard whole**: nothing a reader is given is cut.

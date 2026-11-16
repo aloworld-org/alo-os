@@ -1424,7 +1424,9 @@ pub(crate) fn furniture(
                 .into_iter()
                 .zip(answers.texts)
             {
-                let said_top = box_top - card::UNDER_WHAT_IS_SAID - text.said_lines() * card::A_LINE_ABOUT_THE_TEXT;
+                let said_top = box_top
+                    - card::UNDER_WHAT_IS_SAID
+                    - text.said_lines() * card::A_LINE_ABOUT_THE_TEXT;
                 write(
                     &text.how_long,
                     &[],
@@ -1445,7 +1447,10 @@ pub(crate) fn furniture(
                         palette.surface,
                         palette.warning,
                         left + card::BESIDE,
-                        (top + said_top + card::A_LINE_ABOUT_THE_TEXT, card::A_LINE_ABOUT_THE_TEXT),
+                        (
+                            top + said_top + card::A_LINE_ABOUT_THE_TEXT,
+                            card::A_LINE_ABOUT_THE_TEXT,
+                        ),
                         room,
                         false,
                         Some((scrolled, the_view)),

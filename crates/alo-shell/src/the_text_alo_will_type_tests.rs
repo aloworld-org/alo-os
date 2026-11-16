@@ -48,13 +48,17 @@ fn a_hidden_character_is_a_tag_in_its_place() {
     let card = ATextOnTheCard::of(&text, 0, &words());
     assert_eq!(card.shown.text(), "héU+200Bllo\tworld");
     assert_eq!(tags(&card.shown), ["U+200B"]);
-    assert_eq!(card.said_lines(), 2, "how long it is, and that one is marked");
+    assert_eq!(
+        card.said_lines(),
+        2,
+        "how long it is, and that one is marked"
+    );
     assert_eq!(
         card.marked,
         Some(text.what_is_marked(&words()).unwrap().into_text())
     );
     // **How long counts the text, not its tags**: one line, 12 characters.
-    assert_eq!(card.how_long, "1 line, 12 characters");
+    assert_eq!(card.how_long, "one line, 12 characters");
 }
 
 /// **Every kind of hidden character is a tag**, and two in a row are two
@@ -114,7 +118,11 @@ fn twelve_lines_are_in_view_from_where_it_is_scrolled() {
     assert_eq!(past.shown.text().lines().next().unwrap(), "line 29");
     assert_eq!(past.shown.text().lines().last().unwrap(), "line 40");
     // **How long it is counts the whole text**, not the twelve in view.
-    assert!(at_the_top.how_long.starts_with("40 lines"), "{}", at_the_top.how_long);
+    assert!(
+        at_the_top.how_long.starts_with("40 lines"),
+        "{}",
+        at_the_top.how_long
+    );
 }
 
 /// **A very long line is kept whole** — the box wraps it; nothing here cuts.

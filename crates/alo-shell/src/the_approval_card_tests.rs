@@ -126,7 +126,7 @@ fn a_text_sits_under_the_rows_and_moves_the_rest_down_by_its_height() {
         the_texts_are_tall: 0,
     };
     // Three lines of System/Mono 12/18, how long it is said on one line.
-    let three = super::a_text_is_tall(1, 3 * super::A_LINE_OF_TEXT);
+    let three = super::a_text_is_tall(1, 3 * 18);
     assert_eq!(three, 12 + 18 + 8 + 12 + 54 + 12);
     // A hidden character adds the line saying so.
     assert_eq!(super::a_text_is_tall(2, 54) - three, 18);

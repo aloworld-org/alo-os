@@ -113,7 +113,11 @@ fn a_long_text_scrolls_a_line_or_a_page_and_stops_at_both_ends() {
     waiting.pressed(ApprovalKey::ALaterPage, &mut task, &daemon);
     assert_eq!(waiting.first_line_shown(), 25);
     waiting.pressed(ApprovalKey::ALaterPage, &mut task, &daemon);
-    assert_eq!(waiting.first_line_shown(), 28, "the last twelve are 29 to 40");
+    assert_eq!(
+        waiting.first_line_shown(),
+        28,
+        "the last twelve are 29 to 40"
+    );
     assert_eq!(
         waiting.pressed(ApprovalKey::LaterLines, &mut task, &daemon),
         WhatThePressDid::Nothing,
@@ -225,9 +229,14 @@ fn the_text_waiting_is_the_text_the_task_window_draws() {
             .collect()
     };
     let shown = drawn(&task, &waiting);
-    assert_eq!(shown.len(), 1, "{shown:?}");
-    assert_eq!(shown[0].lines().next(), Some("line 2"), "scrolled by one");
-    assert_eq!(shown[0].lines().count(), 12);
+    let [only] = shown.as_slice() else {
+        panic!("one text on the card, and {shown:?}");
+    };
+    assert_eq!(only.lines().next(), Some("line 2"), "scrolled by one");
+    assert_eq!(only.lines().count(), 12);
     waiting.deny(&mut task, &daemon);
-    assert!(drawn(&task, &waiting).is_empty(), "the text outlived the question");
+    assert!(
+        drawn(&task, &waiting).is_empty(),
+        "the text outlived the question"
+    );
 }

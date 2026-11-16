@@ -94,13 +94,14 @@ pub(crate) const UNDER_WHAT_IS_SAID: u32 = 8;
 pub(crate) const INSIDE_THE_TEXT: u32 = 12;
 /// The box's corner.
 pub(crate) const THE_TEXTS_CORNER: u32 = 12;
-/// One line of the text: System/Mono's 18.
-pub(crate) const A_LINE_OF_TEXT: u32 = 18;
 
 /// How tall one text is on the card: what is said above it, in `said` lines,
 /// and its box, whose words come out `words_are_tall`.
 pub(crate) const fn a_text_is_tall(said: u32, words_are_tall: u32) -> u32 {
-    ABOVE_A_TEXT + said * A_LINE_ABOUT_THE_TEXT + UNDER_WHAT_IS_SAID + a_texts_box_is_tall(words_are_tall)
+    ABOVE_A_TEXT
+        + said * A_LINE_ABOUT_THE_TEXT
+        + UNDER_WHAT_IS_SAID
+        + a_texts_box_is_tall(words_are_tall)
 }
 
 /// How tall a text's box is, round words that come out `words_are_tall`.
