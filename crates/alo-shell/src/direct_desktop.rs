@@ -1533,6 +1533,15 @@ impl LoopInput for TheDesktopLane<'_> {
         // **And a sheet asking for an application that nobody answered in five
         // minutes** is *not now*, so a turn is never held for ever.
         server.the_application_sheet_waited(std::time::Instant::now());
+        // **And the person's answer told to the turn that paused for it**, which
+        // then goes on and is heard on again.
+        server.the_paused_turns_are_told();
+        for (which, the_turn) in server.take_the_turns_to_hear_again() {
+            self.asking.hear_the_rest(
+                crate::what_a_person_asked_goes_to_the_agent::WhoAsked::ATaskWindow(which),
+                the_turn,
+            );
+        }
         for not_started in server.start_what_was_asked_for_now() {
             // **Said rather than dropped**, the same rule the edge's menu
             // follows two blocks up: a press that reached here and vanished is
@@ -2003,6 +2012,24 @@ impl LoopInput for TheDesktopLane<'_> {
                         .settings_places
                         .as_ref()
                         .map(|places| alo_changing::TheDaemonsDoor::at(places.daemon()));
+                    // **The turn paused because a call for an application was
+                    // refused** (the owner's decision of 2026-11-16): not words
+                    // for the window. The daemon says what was wanted, on the
+                    // person's door, and the sheet asks; the agent never hears
+                    // what.
+                    if came.the_turn_goes_on
+                        && came.said.trim()
+                            == alo_protocol::what_the_agent_says_back::AN_APPLICATION_WAS_REFUSED
+                    {
+                        if let Some(the_turn) = came.the_turn {
+                            let wanted = daemon
+                                .as_ref()
+                                .and_then(alo_changing::AskingWhatIsWanted::wanted)
+                                .unwrap_or_default();
+                            server.a_call_for_an_application_was_refused(which, the_turn, &wanted);
+                        }
+                        continue;
+                    }
                     let goes_on = came.the_turn_goes_on;
                     server.an_answer_came_back(
                         which,

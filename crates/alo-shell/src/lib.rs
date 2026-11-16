@@ -296,6 +296,8 @@ mod display_resources;
 /// One display's scale, moved to `alo-drawing` (the UI kit plan, task 2) and
 /// named here so every `crate::display_scale` path in the shell still holds.
 use alo_drawing::display_scale;
+/// A turn paused for an application, and told what the person answered.
+mod a_paused_turn_is_told;
 mod division_raster;
 /// The Dock's own surface: a rounded panel with a hairline and a shadow,
 /// rasterised with alpha because neither is a rectangle.

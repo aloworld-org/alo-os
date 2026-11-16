@@ -45,3 +45,6 @@ thiserror = { workspace = true }
 # The real verbs and the real words a turn is about, so the tests script shapes
 # the daemon really sends rather than hand-made ones.
 alo-files = { path = "../alo-files" }
+# A folder of its own for the daemon's socket, when a test runs the agent
+# itself (`tests/the_agent_itself_pauses_and_asks_again.rs`).
+tempfile = "3"

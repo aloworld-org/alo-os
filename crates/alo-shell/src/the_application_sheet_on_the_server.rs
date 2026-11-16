@@ -26,13 +26,6 @@ impl crate::Server {
     /// **A task's turn wanted these applications and nothing grants them**:
     /// each goes up on the sheet, or waits behind the one up. Each is named
     /// as alo's own surfaces name it.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "raised once the agent pauses on a refused application verb, which needs \n                      the turn that goes on after an answer (#1310); until then nothing reaches \n                      this sheet on a real machine"
-        )
-    )]
     pub(crate) fn applications_were_wanted(
         &mut self,
         which: WhichTask,
@@ -93,13 +86,6 @@ impl crate::Server {
 
     /// **The answers given since the frame loop last asked**, taken so each
     /// is carried out once.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "taken by the turn that asked, once the agent pauses on a refused application \n                      verb (#1310)"
-        )
-    )]
     pub(crate) fn take_what_the_application_sheet_answered(&mut self) -> Vec<TheSheetAnswered> {
         std::mem::take(&mut self.application_sheet_answers)
     }

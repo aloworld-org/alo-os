@@ -351,6 +351,70 @@ anything: the agent's door has no approval on it.
 - **One turn at a time is unchanged.** The daemon serves one turn, so a request
   sent while a turn goes on waits for it to end.
 
+### alo asks again once it is let use an application
+
+*Added 2026-11-16, additively. This is the owner's decision of that day, in
+`docs/design/when-alo-asks-for-an-application.md`.* At the default level, a call
+for an application nothing grants is refused. Until this, the refusal was only
+a step shown to the model. Now the person is asked whether to let alo use the
+application, and if they do, the call is asked again.
+
+**Only with line 8.** A shell that does not say the answer follows is answered
+exactly as before: the refusal is a step, and the turn goes on.
+
+**From the agent, when a call of a verb that takes an application is
+refused:** the whole reply is this one line, and then
+`alo-waiting-for-the-answer`. The agent's sending side stays open, as it does
+when a change waits.
+
+```text
+alo-an-application-was-refused
+alo-waiting-for-the-answer
+```
+
+**It says nothing about why the call was refused, and the agent does not
+know.** It pauses after any refused call of such a verb.
+
+- Which applications were wanted is the daemon's to say. It says so only on
+  the person's door (`wanted`, in `docs/contracts/daemon-protocol.md`).
+- The agent's door refuses that question, so the agent never learns from a
+  refusal what is installed.
+- The line is read only as the whole reply before the pause. A model's words
+  never come before a pause except in a change's reply, whose first line is
+  the change's own.
+
+**The shell** asks its daemon `wanted`.
+- If nothing was wanted, it writes `alo-not-granted:` at once.
+- Otherwise it shows the person the sheet that asks, and writes one line once
+  they answer.
+
+```text
+alo-granted:
+alo-not-granted:
+```
+
+`alo-granted:` is written **only after the grant is on the disk and the daemon
+has been told**, which the person's press made through the one road Settings
+also uses. `alo-not-granted:` covers every other ending: *Not now*, five
+minutes with no answer, a sheet that could not be drawn, and nothing wanted.
+
+**What the agent does with it:**
+
+- **`alo-granted:`** It sends the **identical** call again, without asking the
+  model, and reads the answer exactly as it reads any proposal's. So the call
+  waits for its own approval on its own card. **Being let use the application
+  approves nothing.**
+- **`alo-not-granted:`** The refusal is shown to the model as the step after
+  its call, as any refused call is, and the turn drives on.
+- **Anything else, the socket closing, or six minutes with nothing said** ends
+  the turn. Six minutes is the sheet's five, and one more.
+
+- **It grants nothing.** No line the shell writes can make a grant. A shell that
+  wrote `alo-granted:` falsely would only have the call refused a second time,
+  and then shown to the model as a step.
+- **Stop is unchanged.** A Stop while the sheet is up travels on the turn the
+  sheet holds, the sheet comes down, and nothing is granted.
+
 ## Versioning
 
 **Additive only.** A new line goes after the last one a current agent reads,

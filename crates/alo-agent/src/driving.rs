@@ -380,55 +380,31 @@ fn driving_from(
                 }
                 Err(not_answered) => return could_not_be_asked(not_answered, steps),
             },
-            FromAnAgent::Propose { .. } => match door.asking(&next) {
-                Ok(ToAnAgent::Proposed(standing)) => {
-                    return WhatHappened::AChangeIsWaiting {
-                        number: standing.number(),
-                        sentence: standing.sentence().text().to_owned(),
-                        proposed: said.clone(),
-                        after: steps,
-                        stands_for: standing.lapses_in().map(std::time::Duration::from_secs),
-                    };
-                }
-                // **A refused proposal is a step too, for the same reason a
-                // refused read is**, and this arm used to end the turn.
-                //
-                // It was right while a refused proposal could only mean *the
-                // grants said no*, which no amount of trying again fixes. Since
-                // `alo_turn::the_sentence_is_about_something` it can also mean
-                // *there is nothing at that path* — which is exactly what a
-                // model that guessed a filename needs to be told, and it has
-                // rounds left to use. Measured: `gpt-4o-mini` proposed
-                // `March-invoice.pdf` in a folder holding `march.pdf`, and
-                // ending here meant the one refusal that could teach it was the
-                // one it never saw.
-                //
-                // **The loop does not tell the two apart**, and will not: which
-                // refusals are worth another go is the capability model's
-                // opinion and it has exactly one per request. A model that
-                // proposes the same forbidden thing until the bound stops it is
-                // a short turn and a record full of correct refusals, which is
-                // the cheaper mistake.
-                Ok(ToAnAgent::Refused(why)) => {
-                    let line = ToAnAgent::Refused(why).written().unwrap_or_default();
-                    steps.push(AStep::of(&said, &line));
-                }
-                // **Carried out at once, because the person chose full access**
-                // (ADR 0149): a step, as a command that ran at full access is,
-                // and the turn goes on. What the person is told about it is in
-                // the step, and `WhatHappened::done_without_asking` reads it
-                // back for them whichever way the turn ends.
-                Ok(answer @ ToAnAgent::DoneWithoutAsking { .. }) => {
-                    steps.push(AStep::of(&said, &as_a_step(&answer)));
-                }
-                Ok(ToAnAgent::Did(_) | ToAnAgent::Answered { .. }) => {
-                    return WhatHappened::TheMachineCouldNotBeAsked {
-                        why: "a change was answered as though it had already run".to_owned(),
+            FromAnAgent::Propose { .. } => {
+                let answer = door.asking(&next);
+                // **A call for an application refused pauses the drive**, where
+                // the person's shell can ask them to let alo use it (the
+                // owner's decision of 2026-11-16). Any refusal of a verb that
+                // takes an application: why it was refused is the daemon's to
+                // say, and the agent is never told.
+                if how_far.pauses_for_an_application()
+                    && let Ok(ToAnAgent::Refused(why)) = &answer
+                    && it_takes_an_application(&next, verbs)
+                {
+                    return WhatHappened::AnApplicationWasRefused {
+                        proposed: said,
+                        again: next,
+                        refusal: ToAnAgent::Refused(why.clone())
+                            .written()
+                            .unwrap_or_default(),
                         after: steps,
                     };
                 }
-                Err(not_answered) => return could_not_be_asked(not_answered, steps),
-            },
+                match a_proposal_answered(&said, answer, steps) {
+                    Ok(more) => steps = more,
+                    Err(happened) => return *happened,
+                }
+            }
             // **One command, where no verb fits** (ADR 0149). The daemon reads
             // the person's level and answers one of three ways, and this loop
             // decides nothing from the command itself.
@@ -477,6 +453,84 @@ fn driving_from(
     }
 
     WhatHappened::ItRanOutOfRounds { after: steps }
+}
+
+/// **What a proposal's answer comes to**: the steps to go on with, or how the
+/// turn ends. The one reading of a proposal's answer, shared by the loop and
+/// by the agent sending a call again once the person let alo use the
+/// application it needed — so the second sending is read exactly as the first.
+///
+/// # Errors
+/// The end the answer makes: a change waiting, or the machine answering
+/// something a proposal cannot earn.
+pub fn a_proposal_answered(
+    said: &str,
+    answer: Result<ToAnAgent, crate::NotAnswered>,
+    mut steps: Vec<AStep>,
+) -> Result<Vec<AStep>, Box<WhatHappened>> {
+    match answer {
+        Ok(ToAnAgent::Proposed(standing)) => {
+            return Err(Box::new(WhatHappened::AChangeIsWaiting {
+                number: standing.number(),
+                sentence: standing.sentence().text().to_owned(),
+                proposed: said.to_owned(),
+                after: steps,
+                stands_for: standing.lapses_in().map(std::time::Duration::from_secs),
+            }));
+        }
+        // **A refused proposal is a step too, for the same reason a
+        // refused read is**, and this arm used to end the turn.
+        //
+        // It was right while a refused proposal could only mean *the
+        // grants said no*, which no amount of trying again fixes. Since
+        // `alo_turn::the_sentence_is_about_something` it can also mean
+        // *there is nothing at that path* — which is exactly what a
+        // model that guessed a filename needs to be told, and it has
+        // rounds left to use. Measured: `gpt-4o-mini` proposed
+        // `March-invoice.pdf` in a folder holding `march.pdf`, and
+        // ending here meant the one refusal that could teach it was the
+        // one it never saw.
+        //
+        // **The loop does not tell the two apart**, and will not: which
+        // refusals are worth another go is the capability model's
+        // opinion and it has exactly one per request. A model that
+        // proposes the same forbidden thing until the bound stops it is
+        // a short turn and a record full of correct refusals, which is
+        // the cheaper mistake.
+        Ok(ToAnAgent::Refused(why)) => {
+            let line = ToAnAgent::Refused(why).written().unwrap_or_default();
+            steps.push(AStep::of(said, &line));
+        }
+        // **Carried out at once, because the person chose full access**
+        // (ADR 0149): a step, as a command that ran at full access is,
+        // and the turn goes on. What the person is told about it is in
+        // the step, and `WhatHappened::done_without_asking` reads it
+        // back for them whichever way the turn ends.
+        Ok(answer @ ToAnAgent::DoneWithoutAsking { .. }) => {
+            steps.push(AStep::of(said, &as_a_step(&answer)));
+        }
+        Ok(ToAnAgent::Did(_) | ToAnAgent::Answered { .. }) => {
+            return Err(Box::new(WhatHappened::TheMachineCouldNotBeAsked {
+                why: "a change was answered as though it had already run".to_owned(),
+                after: steps,
+            }));
+        }
+        Err(not_answered) => return Err(Box::new(could_not_be_asked(not_answered, steps))),
+    }
+    Ok(steps)
+}
+
+/// Whether `request` calls a verb that takes an application.
+fn it_takes_an_application(request: &FromAnAgent, verbs: &Verbs) -> bool {
+    let (FromAnAgent::Propose { verb, .. } | FromAnAgent::Read { verb, .. }) = request else {
+        return false;
+    };
+    verbs.of(verb).is_some_and(|declared| {
+        declared
+            .args()
+            .iter()
+            .any(|arg| *arg.takes() == alo_capability::Takes::Application)
+    })
 }
 
 /// One answer, as the line a model is shown.

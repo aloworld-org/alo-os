@@ -20,11 +20,18 @@
 //! ever been measured**, so there is no number to derive it from, and saying so
 //! here is cheaper than letting a reader assume one.
 
-/// How many rounds a turn may take.
+/// How many rounds a turn may take, and whether it pauses for the person when
+/// a call for an application is refused.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct HowFar {
     /// The most requests this turn may make, counting the first.
     rounds: usize,
+    /// Whether a refused proposal of a verb that takes an application ends
+    /// the drive as [`crate::WhatHappened::AnApplicationWasRefused`], so the
+    /// person can be asked to let alo use it, rather than becoming a step.
+    /// Only a shell that tells the agent the answer can ask, so it is off
+    /// unless asked for ([`HowFar::pausing_for_an_application`]).
+    pauses: bool,
 }
 
 impl HowFar {
@@ -33,7 +40,10 @@ impl HowFar {
     /// Eight: enough for a job of several steps with a refusal or two on the
     /// way, and few enough that a model going in circles stops while a person
     /// is still watching. **Not measured** — see this module's header.
-    pub const THE_ORDINARY: Self = Self { rounds: 8 };
+    pub const THE_ORDINARY: Self = Self {
+        rounds: 8,
+        pauses: false,
+    };
 
     /// This many rounds, and at least one.
     ///
@@ -44,6 +54,7 @@ impl HowFar {
     pub const fn of(rounds: usize) -> Self {
         Self {
             rounds: if rounds == 0 { 1 } else { rounds },
+            pauses: false,
         }
     }
 
@@ -51,6 +62,23 @@ impl HowFar {
     #[must_use]
     pub const fn rounds(self) -> usize {
         self.rounds
+    }
+
+    /// The same, pausing for the person when a call for an application is
+    /// refused (the owner's decision of 2026-11-16,
+    /// `docs/design/when-alo-asks-for-an-application.md`).
+    #[must_use]
+    pub const fn pausing_for_an_application(self) -> Self {
+        Self {
+            pauses: true,
+            ..self
+        }
+    }
+
+    /// Whether a refused call for an application pauses the drive.
+    #[must_use]
+    pub const fn pauses_for_an_application(self) -> bool {
+        self.pauses
     }
 }
 

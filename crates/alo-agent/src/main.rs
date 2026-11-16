@@ -71,10 +71,12 @@
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use alo_agent::{AtTheDaemonsSocket, HowFar, TheAnswer, WhatHappened, driving_on};
+use alo_agent::{
+    AtTheDaemonsSocket, HowFar, TheAnswer, TheDoor, TheGrant, WhatHappened, driving_on,
+};
 use alo_instructing::{Instructions, TheConversationSoFar, TheWindowOffered, WhatItMayReach};
 use alo_protocol::what_the_agent_says_back::{
-    THE_REPLY_WAITS, never_read_as_a_change, never_read_as_the_end,
+    AN_APPLICATION_WAS_REFUSED, THE_REPLY_WAITS, never_read_as_a_change, never_read_as_the_end,
 };
 
 /// Where the daemon's doors live, which the image makes at boot.
@@ -151,8 +153,21 @@ fn run() -> Result<ExitCode, String> {
     // turn goes on after an answer*): each change still waits for its own
     // approval on the person's door, and the model is shown what that answer
     // did before it chooses what comes next.
+    //
+    // **And a call for an application refused pauses the turn** where the
+    // shell tells this process the answer, so the person can be asked to let
+    // alo use it (the owner's decision of 2026-11-16).
+    let how_far = if asked.answer_follows {
+        HowFar::THE_ORDINARY.pausing_for_an_application()
+    } else {
+        HowFar::THE_ORDINARY
+    };
     let mut after: Vec<alo_instructing::AStep> = Vec::new();
     let mut told_already = 0;
+    // **What sending a call again came to**, once the person let alo use the
+    // application it needed: read as the loop reads a proposal's answer, and
+    // ended on here rather than driven again.
+    let mut sent_again: Option<WhatHappened> = None;
     let code = loop {
         let stop = match (asked.may_stop, door.a_second_handle(), the_input()) {
             (true, Some(to_the_daemon), Some(input)) => {
@@ -160,21 +175,64 @@ fn run() -> Result<ExitCode, String> {
             }
             _ => alo_agent::ThePersonMayStop::cannot(),
         };
-        let happened = driving_on(
-            &asked.earlier,
-            asked.window.as_ref(),
-            &asked.request,
-            &verbs,
-            &asked.may_reach,
-            &mut door,
-            HowFar::THE_ORDINARY,
-            Instructions::SHOWN_TO_A_TURN,
-            &|| stop.has_stopped(),
-            std::mem::take(&mut after),
-        );
+        let happened = match sent_again.take() {
+            Some(happened) => happened,
+            None => driving_on(
+                &asked.earlier,
+                asked.window.as_ref(),
+                &asked.request,
+                &verbs,
+                &asked.may_reach,
+                &mut door,
+                how_far,
+                Instructions::SHOWN_TO_A_TURN,
+                &|| stop.has_stopped(),
+                std::mem::take(&mut after),
+            ),
+        };
         // Ended before anything else reads the input: holding below reads it.
         let _ = stop.ended();
         let code = said(&happened, told_already);
+        // **A call for an application was refused, and the turn pauses**: the
+        // shell asks its daemon what was wanted, and the person may let alo
+        // use it. Read only once the Stop watcher has ended, because it reads
+        // the same input and drops what it hears.
+        if let WhatHappened::AnApplicationWasRefused {
+            proposed, again, ..
+        } = &happened
+        {
+            println!("{THE_REPLY_WAITS}");
+            let _ = std::io::Write::flush(&mut std::io::stdout());
+            let stdin = std::io::stdin();
+            let grant = alo_agent::the_persons_grant(
+                &mut stdin.lock(),
+                std::os::fd::AsFd::as_fd(&stdin),
+                alo_agent::waiting_for_an_application::HOW_LONG_IT_WAITS,
+            );
+            match grant {
+                // **Asked again, without asking the model**: the identical
+                // call, which waits for its own approval like any change.
+                TheGrant::Given => {
+                    eprintln!("alo-agent: the person let alo use it, so the call is sent again");
+                    let steps = happened.after().to_vec();
+                    match alo_agent::a_proposal_answered(proposed, door.asking(again), steps) {
+                        Ok(steps) => after = steps,
+                        Err(ended) => sent_again = Some(*ended),
+                    }
+                }
+                TheGrant::NotGiven => {
+                    eprintln!("alo-agent: nobody let alo use it, and the turn goes on");
+                    after = happened.going_on_without_it().unwrap_or_default();
+                }
+                ended => {
+                    eprintln!(
+                        "alo-agent: the turn ended while it paused for an application: {ended:?}"
+                    );
+                    break code;
+                }
+            }
+            continue;
+        }
         let WhatHappened::AChangeIsWaiting {
             stands_for: Some(stands_for),
             ..
@@ -254,6 +312,16 @@ fn said(happened: &WhatHappened, told_already: usize) -> ExitCode {
         tell_what_was_done(happened, told_already);
     }
     match happened {
+        // **The pause's whole reply**: the marker alone, so the shell knows to
+        // ask its daemon what was wanted. Nothing about why it was refused.
+        WhatHappened::AnApplicationWasRefused { after, .. } => {
+            println!("{AN_APPLICATION_WAS_REFUSED}");
+            eprintln!(
+                "alo-agent: a call for an application was refused after {} step(s)",
+                after.len()
+            );
+            ExitCode::SUCCESS
+        }
         WhatHappened::ItWasAnsweredInWords { said, after } => {
             // **Never read as a change waiting**, whatever the model wrote:
             // `alo-ask` reads the first line of this reply to learn whether

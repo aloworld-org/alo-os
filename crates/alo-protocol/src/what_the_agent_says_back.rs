@@ -234,8 +234,73 @@ pub const THE_PERSON_APPROVED: &str = "Done after the person approved it: ";
 /// The start of the sentence a model is shown after a declined change.
 pub const THE_PERSON_SAID_NO: &str = "The person said no, so this was not done: ";
 
+// ---------------------------------------------------------------------------
+// alo is let use an application, and asks again (added 2026-11-16)
+// ---------------------------------------------------------------------------
+
+/// **The whole reply an agent writes when a call for an application was
+/// refused** and it pauses for the person — then [`THE_REPLY_WAITS`]. The
+/// person's shell asks its daemon which application the turn wanted
+/// (`FromAPerson::Wanted`), and either puts the sheet that asks in front of the
+/// person or lets the turn go on at once.
+///
+/// **It says nothing about why the call was refused**, and the agent does not
+/// know: it pauses after any refused call of a verb that takes an application,
+/// because which refusals are for want of a grant is the daemon's to say, and
+/// telling the agent would tell it what is installed here. The owner's
+/// decision of 2026-11-16, `docs/design/when-alo-asks-for-an-application.md`.
+///
+/// **Never confused with a model's words.** It is read only as the whole
+/// reply before the pause, and an agent writes no model's words before a pause
+/// except in a change's reply, whose first line is the change's own.
+pub const AN_APPLICATION_WAS_REFUSED: &str = "alo-an-application-was-refused";
+
+/// The line a shell writes when the person let alo use the application: the
+/// agent then asks again, without asking the model, and the call waits for its
+/// own approval like any change.
+pub const THE_APPLICATION_WAS_GIVEN: &str = "alo-granted:";
+
+/// The line a shell writes when the person said *Not now*, or nothing was
+/// wanted: the refusal stands, and the turn goes on with it as a step.
+pub const IT_WAS_NOT_GIVEN: &str = "alo-not-granted:";
+
+/// Whether a shell's line says the application was given: `Some(true)` for
+/// [`THE_APPLICATION_WAS_GIVEN`], `Some(false)` for [`IT_WAS_NOT_GIVEN`], and
+/// [`None`] for any other line, which the agent refuses rather than guesses
+/// at.
+#[must_use]
+pub fn the_grant_told(line: &str) -> Option<bool> {
+    match line.trim_end_matches(['\r', '\n']) {
+        THE_APPLICATION_WAS_GIVEN => Some(true),
+        IT_WAS_NOT_GIVEN => Some(false),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    /// **The two answers about an application read back, and nothing else
+    /// does** — not a longer line, not an approve's answer, not a blank.
+    #[test]
+    fn only_the_two_grant_lines_read_as_an_answer_about_an_application() {
+        use super::{IT_WAS_NOT_GIVEN, THE_APPLICATION_WAS_GIVEN, the_grant_told};
+        assert_eq!(
+            the_grant_told(&format!("{THE_APPLICATION_WAS_GIVEN}\n")),
+            Some(true)
+        );
+        assert_eq!(the_grant_told(IT_WAS_NOT_GIVEN), Some(false));
+        for not_one in [
+            "",
+            "alo-granted",
+            "alo-granted:yes",
+            " alo-granted:",
+            "alo-answered:{}",
+            "alo-not-granted: please",
+        ] {
+            assert_eq!(the_grant_told(not_one), None, "{not_one:?}");
+        }
+    }
+
     use super::*;
 
     /// What the agent writes is what the command reads back.

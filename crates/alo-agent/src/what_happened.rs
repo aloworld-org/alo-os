@@ -54,6 +54,23 @@ pub enum WhatHappened {
         /// answer (`crate::driving::driving_on`).
         proposed: String,
     },
+    /// **A call for an application was refused, and the turn pauses for the
+    /// person** — only where the drive was asked to
+    /// (`crate::HowFar::pausing_for_an_application`). Their shell asks its
+    /// daemon which application was wanted and may ask them to let alo use it
+    /// (the owner's decision of 2026-11-16). If they do, `again` is sent once more and waits
+    /// for its own approval; if not, `refusal` is shown to the model as a step,
+    /// as any refusal is ([`Self::going_on_without_it`]).
+    AnApplicationWasRefused {
+        /// The line the model wrote, as it wrote it.
+        proposed: String,
+        /// The request, exactly as it was sent, to send again.
+        again: alo_protocol::FromAnAgent,
+        /// The refusal, as the model is shown one.
+        refusal: String,
+        /// Every step this turn took before it, oldest first.
+        after: Vec<AStep>,
+    },
     /// The request needed no change, and this is the answer to it.
     ///
     /// A model that read what it needed and then answered in words rather than
@@ -114,6 +131,7 @@ impl WhatHappened {
     pub fn after(&self) -> &[AStep] {
         match self {
             Self::AChangeIsWaiting { after, .. }
+            | Self::AnApplicationWasRefused { after, .. }
             | Self::ItWasAnsweredInWords { after, .. }
             | Self::ItWasRefused { after, .. }
             | Self::ItRanOutOfRounds { after }
@@ -139,7 +157,29 @@ impl WhatHappened {
     /// Whether this is the end a request that changes something reaches.
     #[must_use]
     pub const fn is_waiting_for_the_person(&self) -> bool {
-        matches!(self, Self::AChangeIsWaiting { .. })
+        matches!(
+            self,
+            Self::AChangeIsWaiting { .. } | Self::AnApplicationWasRefused { .. }
+        )
+    }
+
+    /// **The steps a turn goes on from when nobody let alo use the application**:
+    /// every step so far, then the model's call beside its refusal, as any
+    /// refused call is shown. [`None`] for every other end.
+    #[must_use]
+    pub fn going_on_without_it(&self) -> Option<Vec<AStep>> {
+        let Self::AnApplicationWasRefused {
+            proposed,
+            refusal,
+            after,
+            ..
+        } = self
+        else {
+            return None;
+        };
+        let mut steps = after.clone();
+        steps.push(AStep::of(proposed, refusal));
+        Some(steps)
     }
 
     /// **The steps a turn goes on from after the person answered the change it
