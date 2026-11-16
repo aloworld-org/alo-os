@@ -81,10 +81,7 @@ fn a_change_with_no_text_shows_none_and_does_not_scroll() {
         ApprovalKey::EarlierLines,
         ApprovalKey::AnEarlierPage,
     ] {
-        assert_eq!(
-            waiting.pressed(key, &mut task),
-            WhatThePressDid::Nothing
-        );
+        assert_eq!(waiting.pressed(key, &mut task), WhatThePressDid::Nothing);
     }
 }
 
