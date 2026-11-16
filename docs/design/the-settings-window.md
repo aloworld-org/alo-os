@@ -405,7 +405,12 @@ take to the design or the owner:**
    2026-10-24. The frame's three belong to the surface the compositor draws
    when alo asks during a task, which ADR 0143 Q10 also names, and **that
    surface is not built**. This reading was sent to the coordinator to put
-   to the owner on 2026-11-15.
+   to the owner on 2026-11-15, and **the owner confirmed it on 2026-11-16**,
+   relayed by the coordinator: *in Settings, pick an application, with the
+   folder lengths (an hour, a day, a month, until removed). The frame's
+   "this task / this session / remember for this project" lengths belong to
+   the surface the compositor draws when alo asks during a task.* That
+   surface is to be built next, as its own change.
 2. **An application, not a window.** The frames say *application window*
    and *applications or windows*. ADR 0143 Q10 says *one application, by
    name*, and a grant is over an application identifier, so the words say
