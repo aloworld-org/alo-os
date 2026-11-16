@@ -9,6 +9,7 @@
 //! ALO_EVERY_TRY_ONLY="write in VSCodium"          # one request, optional
 //! ALO_EVERY_TRY_SUMMARY=summary.md                # where the summary goes, optional
 //! ALO_EVERY_TRY_SHOWN=shown.txt                   # every question's whole text, optional
+//! ALO_EVERY_TRY_LEVEL=ask-each-time               # full-access (the default) or ask-each-time
 //!   alo-every-try
 //! ```
 //!
@@ -20,7 +21,9 @@
 use std::io::Write as _;
 use std::process::ExitCode;
 
-use alo_every_try::{AtAProvider, Tried, Verdict, Went, summary, tallying, the_set, verdict};
+use alo_every_try::{
+    AtAProvider, TheLevel, Tried, Verdict, Went, summary, tallying_at, the_set, verdict,
+};
 use alo_models::{Provider, Region, Secret};
 
 /// The key, read here and nowhere else, and never printed.
@@ -88,13 +91,26 @@ fn running() -> Result<Verdict, String> {
         asking = asking.writing_what_it_is_shown_to(shown.into());
     }
 
+    // **At which level a change is answered**: `full-access`, as before, or
+    // `ask-each-time`, where each change is approved once and the turn goes on
+    // from what the daemon told the person it did.
+    let level = match said("ALO_EVERY_TRY_LEVEL", "full-access").as_str() {
+        "full-access" => TheLevel::FullAccess,
+        "ask-each-time" => TheLevel::AskEachTime,
+        other => {
+            return Err(format!(
+                "ALO_EVERY_TRY_LEVEL is full-access or ask-each-time, not `{other}`"
+            ));
+        }
+    };
     let asked_of = format!("{model} at {endpoint}");
     println!(
         "Trying set {} against {asked_of}, {tries} times per request. This leaves the machine: \
          every try asks the provider.",
         alo_every_try::THE_VERSION
     );
-    let tallied = tallying(
+    let tallied = tallying_at(
+        level,
         &set,
         tries,
         &verbs,

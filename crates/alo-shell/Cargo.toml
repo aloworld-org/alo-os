@@ -82,6 +82,7 @@ alo-capability = { path = "../alo-capability" }
 # revokes through it and grants nothing — `tests/settings_source.rs` holds it
 # to that.
 alo-changing = { path = "../alo-changing" }
+alo-protocol = { path = "../alo-protocol" }
 # The one line a person reads after a folder was published to their GitHub
 # Pages site: on the internet, and Put back can't recall it — never *Done.*
 alo-publishing = { path = "../alo-publishing" }
