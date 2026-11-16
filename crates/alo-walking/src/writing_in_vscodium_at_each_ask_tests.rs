@@ -187,3 +187,21 @@ fn each_card_check_names_its_count_and_waits_long_enough() {
         assert_eq!(*within, std::time::Duration::from_secs(300));
     }
 }
+
+/// **The person also gives alo their home folder, where the file is**, before
+/// asking: at *ask each time* opening a file needs the file granted as well as
+/// the application (`alo_turn::opening_a_file_in_an_application`, step 2). The
+/// first merge walk with this section (run 43955643824) gave only VSCodium,
+/// and the turn ended in words after one step with no card.
+#[test]
+fn the_home_folder_is_given_before_the_ask() {
+    let steps = the_first_walk().steps().to_vec();
+    let on_the_row = the_look(&steps, "on-give-alo-a-folder");
+    let given = the_look(&steps, "the-home-folder-given");
+    let asked = the_look(&steps, "the-ask-at-each-time-typed");
+    assert!(
+        on_the_row < given && given < asked,
+        "{on_the_row} {given} {asked}"
+    );
+    assert_eq!(UP_TO_GIVE_A_FOLDER, UP_TO_GIVE_AN_APPLICATION + 1);
+}
