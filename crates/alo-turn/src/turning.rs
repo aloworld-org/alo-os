@@ -623,8 +623,6 @@ impl<'a, 'm> Turning<'a, 'm> {
         self.became.push((id.as_u64(), became));
     }
 
-    /// The changes and commands waiting, for the doors in
-    /// `crate::a_command_where_no_verb_exists`.
     /// The installed applications this turn asked for and nothing granted, in
     /// the order it asked, once each.
     #[must_use]
@@ -642,6 +640,8 @@ impl<'a, 'm> Turning<'a, 'm> {
         }
     }
 
+    /// The changes and commands waiting, for the doors in
+    /// `crate::a_command_where_no_verb_exists`.
     pub(crate) fn approvals(&self) -> &Approvals {
         &self.approvals
     }
