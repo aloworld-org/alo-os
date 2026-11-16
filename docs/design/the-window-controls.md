@@ -447,16 +447,19 @@ Readings taken building it, each for the owner to overrule:
   comes in front; typing a text, saving, and asking whether it may type (the
   road typing through the accessibility tree takes) — each only once every
   check that the window is alo's to type into has held. A refused act marks
-  nothing.
+  nothing. *Asking whether it may type counts as acting*: decided by the
+  coordinator on 2026-11-15, as built.
 - **Whose turn.** The door alo acts through names no task, and `alo-agentd`
-  serves one turn at a time, so the act is the one task whose window says
-  *alo is working*. **With two tasks working, no window is marked** — a
-  border cannot say which, and a wrong one is worse than none; the task
-  windows still say both are working. Put to the owner.
+  serves one turn at a time, so the act is the task whose window says *alo is
+  working*. **With two tasks working the window is marked anyway**, for the
+  one asked most recently — the owner, 2026-11-15, overruling this reading's
+  first form (*no window marked*): a window alo types into is never left
+  unmarked. The border says alo, which is true whichever task it was.
 - **For the turn, and no longer.** The border comes off when that turn ends —
   answered, stopped, or its task window closed — or the window goes. A
   follow-up is a new turn: the window wears alo again only if alo acts in it
   again, unlike an offered window, which every turn of its task is about.
+  Decided by the coordinator on 2026-11-15, as built.
 - **Near the top of the screen the border is still drawn, round the window
   alone.** A band that would fall off the display is not drawn (a band half
   off the screen is not drawn half), and until 2026-11-16 that refusal took
@@ -465,11 +468,28 @@ Readings taken building it, each for the owner to overrule:
   `docs/misreadings/a-painter-tested-alone-passed-while-its-caller-drew-nothing.md`).
   Now the band alone is left out, and the border goes round the window, kept to
   the display.
-- **The egress indicator is unchanged for now.** Law 1 needs what alo's copy
-  sends visible at the moment it leaves, and the design is silent on whether
-  that notice belongs to the border. Until the owner chooses among the options
-  brought to them, the indicator keeps the top-left corner (*the regions a
-  pointer can be in*).
+- **What alo's copy sends is said on the border**, by the owner's answer of
+  2026-11-15 — *"It's should be at the edges of the window"* — after three
+  places were drawn for them (a tab growing out of the mark's, a strip under
+  the foot, and the corner alone). While alo's work in the window's
+  application has a line up on the egress indicator, read from that same line
+  so the two can never disagree:
+  - the edge goes from 2 to **4** wide, so the change is seen without reading
+    a colour (*who-is-acting.md*);
+  - **the words** — *sending* once alo's copy is seen sending, *may be
+    sending* where nothing can count what it sends — stand on a tab of the
+    border's own ink, 20 tall with corners of 6 and 8 either side of the
+    words, SemiBold 11 in `bg/surface`, **outside the window on its foot, 16
+    in from the left-hand corner**, so no control of the application's is
+    covered and the mark's tab keeps the top edge's right-hand corner. With
+    no room under the window it stands on the top edge; with none there
+    either, inside the foot's left-hand corner. *The foot and the left were
+    this lane's reading of "the edges", shown to the owner before landing.*
+  - **The indicator in the corner is unchanged**, and so is the record (law
+    1). Whether the corner keeps saying it for alo's copy is a law-1 question
+    put to the owner, not decided here.
+
+  `crate::the_border_says_sending`.
 
 `crate::the_window_alo_acts_in`; the walk *writing in VSCodium* checks the
 edge in the screen's own pixels while alo works and gone after

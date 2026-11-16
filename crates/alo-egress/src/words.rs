@@ -309,6 +309,22 @@ pub const ALO_IS_IN_YOUR_WINDOW: Word = Word::saying(
      already in the reader's language.",
 );
 
+/// On the border of the window alo works in, while its copy is seen sending
+/// (the owner, 2026-11-15: *it should be at the edges of the window*).
+pub const ON_THE_BORDER_SENDING: Word = Word::saying("egress.on-the-border.sending", "sending").noting(
+    "Written on the deep teal border round a window alo is working in, from the moment alo's own      copy of that application is seen sending until alo stops working in it — the same moment      the indicator says so. One or two words: it sits on a small tab of the border, beside the      window, and the window's application is the window it is written on.",
+);
+
+/// On the border of the window alo works in, where what it sends cannot be
+/// counted: the person's own window, or a machine with no counter.
+pub const ON_THE_BORDER_MAY_BE_SENDING: Word = Word::saying(
+    "egress.on-the-border.may-be-sending",
+    "may be sending",
+)
+.noting(
+    "Written on the deep teal border round a window alo is working in, for the whole time alo      works there, where this machine cannot count what that window sends — so something      leaving is never unshown. A few words: it sits on a small tab of the border, beside the      window.",
+);
+
 /// A command alo is running, seen sending (ADR 0148, as amended 2026-11-13).
 pub const ALOS_COMMAND_IS_SENDING: Word = Word::saying(
     "egress.alos-command.sending",
@@ -443,7 +459,7 @@ pub const NOTHING_LEAVES: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 27] = [
+pub const EVERY_WORD: [Word; 29] = [
     A_PAIRED_MACHINE,
     A_PROVIDER,
     A_PROVIDER_SOMEWHERE,
@@ -462,6 +478,8 @@ pub const EVERY_WORD: [Word; 27] = [
     ALOS_COPY_IS_SENDING,
     ALOS_COPY_CANNOT_BE_COUNTED,
     ALO_IS_IN_YOUR_WINDOW,
+    ON_THE_BORDER_SENDING,
+    ON_THE_BORDER_MAY_BE_SENDING,
     ALOS_COMMAND_IS_SENDING,
     ALOS_COMMAND_CANNOT_BE_COUNTED,
     OUTSIDE_THE_BUILDING,
@@ -601,6 +619,8 @@ mod tests {
             ALOS_COPY_IS_SENDING,
             ALOS_COPY_CANNOT_BE_COUNTED,
             ALO_IS_IN_YOUR_WINDOW,
+            ON_THE_BORDER_SENDING,
+            ON_THE_BORDER_MAY_BE_SENDING,
             ALOS_COMMAND_IS_SENDING,
             ALOS_COMMAND_CANNOT_BE_COUNTED,
             A_PAIRED_MACHINE,

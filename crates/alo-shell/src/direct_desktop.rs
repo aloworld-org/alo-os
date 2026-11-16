@@ -183,6 +183,14 @@ pub trait TheDesktop {
         }
     }
 
+    /// **What alo's work is sending now**, by application, as the egress
+    /// indicator says it — read once a frame for the border of the window alo
+    /// works in (`crate::the_border_says_sending`). **Nothing by default**: a
+    /// desktop that holds no work has nothing sending.
+    fn what_alos_work_is_sending(&self) -> Vec<(String, alo_egress::HowItIsShown)> {
+        Vec::new()
+    }
+
     /// **What an application sends while alo works in it**, once a frame: the
     /// work asked for at the door since the last frame, and a look at all of
     /// it (ADR 0143 Q6). `crate::alo_at_work` is what it answers with.
@@ -1463,6 +1471,10 @@ impl LoopInput for TheDesktopLane<'_> {
                 server.alo_opened_a_file_in(&opened, now);
             }
         }
+        // **And what alo's work is sending, for the border of the window it
+        // works in**, read after both roads that start the counting
+        // (`crate::the_border_says_sending`).
+        server.what_alos_work_is_sending(self.desktop.what_alos_work_is_sending());
         // **And the window alo opened a file in comes in front once it is
         // there**, the one alo may type into, with the keyboard — rule 8's
         // *authorised interaction that calls for it*.

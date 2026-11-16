@@ -1635,6 +1635,10 @@ mod running {
         /// each new ask is taken in under the name a person calls the
         /// application, and all of alo's work is looked at, on this desktop's
         /// own indicator, with the same counter a person's commands use.
+        fn what_alos_work_is_sending(&self) -> Vec<(String, alo_egress::HowItIsShown)> {
+            self.working.what_is_sending()
+        }
+
         fn alo_at_work(
             &mut self,
             asked: Vec<alo_shell::alo_at_work::AskedToWork>,

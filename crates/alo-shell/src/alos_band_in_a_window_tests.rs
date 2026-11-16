@@ -25,6 +25,7 @@ fn alo(how: HowAloIsHere) -> AloHere {
         },
         what: "summarise this document".to_owned(),
         wears: crate::alo_in_a_window::Wears::TheBand,
+        sending: None,
     }
 }
 
@@ -288,5 +289,52 @@ fn a_window_filling_a_dense_display_keeps_its_tab_on_it() {
             Point::from((1280 - 16 - 28, 800 - 16 - 20)),
             Size::from((28, 20))
         )
+    );
+}
+
+/// How many fully teal pixels a set of rasters has.
+fn teal_pixels(rasters: &[Washed]) -> usize {
+    let teal = rgb(Role::AccentDefault);
+    solid_colours(rasters)
+        .iter()
+        .filter(|it| **it == teal)
+        .count()
+}
+
+/// **While alo's copy sends, the border changes in weight as well as in
+/// words**, never by colour alone (*who-is-acting.md*): the edge is twice as
+/// thick, and *sending* is written on it.
+#[test]
+fn while_sending_the_border_is_thicker_and_says_so() {
+    let card = Rectangle::new(Point::from((14, 28)), Size::from((1140, 634)));
+    let quiet = operating(HowAloIsHere::Working);
+    let sending = AloHere {
+        sending: Some(alo_egress::HowItIsShown::Counted),
+        ..operating(HowAloIsHere::Working)
+    };
+    let draw = |here: &AloHere| {
+        drawn(
+            AlosBand {
+                here,
+                card,
+                window: card,
+                stop_pointed_at: false,
+            },
+            &mut fonts(),
+            100,
+            (1280, 800),
+        )
+    };
+    let (quiet_rasters, quiet_words) = draw(&quiet);
+    let (sending_rasters, sending_words) = draw(&sending);
+    assert!(quiet_words.is_empty());
+    assert!(!sending_words.is_empty(), "sending was not written");
+    let edge =
+        |rasters: &[Washed]| teal_pixels(std::slice::from_ref(rasters.first().expect("the edge")));
+    assert!(
+        edge(&sending_rasters) * 10 >= edge(&quiet_rasters) * 18,
+        "the edge did not grow: {} against {}",
+        edge(&sending_rasters),
+        edge(&quiet_rasters)
     );
 }

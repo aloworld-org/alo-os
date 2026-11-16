@@ -171,6 +171,8 @@ mod ease_in_and_out;
 mod miniature_measures;
 /// Windows put aside are asked to draw again at a bounded rate.
 mod put_aside_windows_draw_again;
+/// Where a window alo operates says, on its border, that it is sending.
+pub mod the_border_says_sending;
 #[cfg(test)]
 mod the_desktops_pictures_pinned;
 /// The name of a window put aside, beside its square while pointed at.

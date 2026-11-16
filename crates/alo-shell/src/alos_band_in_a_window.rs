@@ -241,12 +241,21 @@ pub(crate) fn drawn(
     };
     let mut rasters = Vec::new();
     let mut words = Vec::new();
-    // **The edge, only while alo is acting**: deep teal round the whole card.
+    // **The edge, only while alo is acting**: deep teal round the whole card —
+    // twice as thick on a window alo operates while its application is sending
+    // (`crate::the_border_says_sending`).
+    let border_sending =
+        alo.here.wears == crate::alo_in_a_window::Wears::TheBorder && alo.here.sending.is_some();
+    let weight = if border_sending {
+        crate::the_border_says_sending::THE_EDGE_WHILE_SENDING
+    } else {
+        THE_EDGE_IS
+    };
     if acting {
         rasters.extend(a_ring_of(
             in_pixels(alo.card, scale),
             as_f32(f64::from(THE_CARDS_CORNER) * fraction),
-            as_f32(f64::from(THE_EDGE_IS) * fraction).max(1.0),
+            as_f32(f64::from(weight) * fraction).max(1.0),
             ink,
         ));
     }
@@ -254,6 +263,14 @@ pub(crate) fn drawn(
     // 2026-11-15): the edge above, and alo's mark on a tab of it.
     if alo.here.wears == crate::alo_in_a_window::Wears::TheBorder {
         rasters.extend(the_tab_drawn(alo.card, ink, scale, output));
+        // **And what its application is sending, on the border itself** (the
+        // owner, 2026-11-15: *at the edges of the window*).
+        if let Some(how) = alo.here.sending {
+            let (tab, said) =
+                crate::the_border_says_sending::drawn(how, alo.card, ink, fonts, scale, output);
+            rasters.extend(tab);
+            words.extend(said);
+        }
         return (rasters, words);
     }
     let Some(the_band) = the_band_of(alo.window) else {
