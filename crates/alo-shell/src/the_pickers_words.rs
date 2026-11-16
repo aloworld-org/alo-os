@@ -1,4 +1,5 @@
-//! What a person reads while they are giving the agent a folder.
+//! What a person reads while they are giving the agent a folder, or an
+//! application.
 //!
 //! `alo-picking` already words the picker's refusals and says what picking a
 //! folder will do. What it has no word for is the **surface**: the row that
@@ -142,8 +143,90 @@ pub const HIDE_HIDDEN_FOLDERS: Word =
     Word::saying("picker.hide-hidden-folders", "Hide hidden folders")
         .noting("The same row once hidden folders are shown: pressing it hides them again.");
 
+/// The row in Settings that opens the list of applications.
+///
+/// **The design's frame `494:29660` calls this row *Applications · None
+/// granted*, with the line *Choose applications or windows alo may control*
+/// under it.** This page's rows are actions with a line beside them, as *Give
+/// alo a folder* is, so it is worded the way its neighbour is and the line
+/// beside it is [`CHOOSE_AN_APPLICATION_AND_HOW_LONG`].
+pub const GRANT_AN_APPLICATION: Word =
+    Word::saying("picker.grant-an-application", "Give alo an application").noting(
+        "alo is the assistant built into alo OS, not a person. The row in Settings a person \
+         presses to choose one application on this computer that alo may then use: open it, \
+         read its window and type into it, always asking first. Sits under 'Give alo a folder' \
+         and is worded the same way.",
+    );
+
+/// What pressing [`GRANT_AN_APPLICATION`] does, beside it.
+pub const CHOOSE_AN_APPLICATION_AND_HOW_LONG: Word = Word::saying(
+    "picker.choose-an-application-and-how-long",
+    "Choose an application alo may control, and for how long.",
+)
+.noting(
+    "Beside the button that gives alo an application: what happens when it is pressed. From the \
+     design's line 'Choose applications or windows alo may control', for one application at a \
+     time, which is what alo OS lets a person give.",
+);
+
+/// The heading over the list of applications.
+///
+/// From frame `501:35565`, *Select an application window*: alo is given an
+/// application, not one of its windows (ADR 0143 Q10).
+pub const SELECT_AN_APPLICATION: Word =
+    Word::saying("picker.select-an-application", "Select an application").noting(
+        "The heading over the list of applications on this computer, shown after a person \
+         pressed 'Give alo an application'. An instruction: pick one of the rows below.",
+    );
+
+/// The line under that heading.
+pub const CHOOSE_ONE_APPLICATION: Word = Word::saying(
+    "picker.choose-one-application",
+    "Choose one application to grant access.",
+)
+.noting(
+    "Under the heading 'Select an application'. One, because alo is given one application at a \
+     time, by name. To grant access is for the person to allow alo, the assistant, to use it.",
+);
+
+/// What the list does and does not include, and how to leave it.
+pub const ONLY_THE_SELECTED_APPLICATION: Word = Word::saying(
+    "picker.only-the-selected-application",
+    "Only the selected application is included. Press Escape to cancel without granting access.",
+)
+.noting(
+    "Under the list of applications. Escape is the key of that name on the keyboard. Both \
+     sentences must be kept: the first says nothing else is given, the second how to give \
+     nothing at all.",
+);
+
+/// The heading over the four lengths, once an application is chosen.
+pub const HOW_LONG_FOR_AN_APPLICATION: Word = Word::saying(
+    "picker.how-long-for-an-application",
+    "How long may alo use {application}? You can take it back whenever you like",
+)
+.noting(
+    "alo is the assistant built into alo OS, not a person. The heading over the four lengths \
+     below, shown after a person chose an application. {application} is replaced with the \
+     application's name and must be kept. alo still asks before each thing it does in it.",
+);
+
+/// Said once an application has been given.
+pub const IT_WAS_GIVEN_AN_APPLICATION: Word = Word::saying(
+    "picker.it-was-given-an-application",
+    "alo can now use {application}. It is in the list below, and you can take it back there",
+)
+.noting(
+    "alo is the assistant built into alo OS, not a person. Shown after a person has given alo an \
+     application. {application} is replaced with the application's name and must be kept. The \
+     second half points at the list of everything granted, just below this.",
+);
+
+/// The gap the two sentences above leave for the application's name.
+pub const THE_APPLICATION: &str = "application";
+
 /// Every string this file declares, in the order a translator meets them.
-pub const THE_PICKERS_WORDS: [Word; 13] = [
+pub const THE_PICKERS_WORDS: [Word; 20] = [
     GRANT_A_FOLDER,
     YOU_ARE_IN,
     PICK_THIS_FOLDER,
@@ -157,6 +240,13 @@ pub const THE_PICKERS_WORDS: [Word; 13] = [
     UNTIL_I_REMOVE_IT,
     IT_LASTS_UNTIL_REMOVED,
     IT_WAS_GIVEN,
+    GRANT_AN_APPLICATION,
+    CHOOSE_AN_APPLICATION_AND_HOW_LONG,
+    SELECT_AN_APPLICATION,
+    CHOOSE_ONE_APPLICATION,
+    ONLY_THE_SELECTED_APPLICATION,
+    HOW_LONG_FOR_AN_APPLICATION,
+    IT_WAS_GIVEN_AN_APPLICATION,
 ];
 
 /// Why this file's words could not be declared.
@@ -228,6 +318,19 @@ mod tests {
             "{}",
             IT_WAS_GIVEN.says()
         );
+    }
+
+    /// **The two sentences naming the application have somewhere to put it**,
+    /// for [`IT_WAS_GIVEN`]'s reason.
+    #[test]
+    fn the_sentences_naming_the_application_have_somewhere_to_put_it() {
+        for word in [HOW_LONG_FOR_AN_APPLICATION, IT_WAS_GIVEN_AN_APPLICATION] {
+            assert!(
+                word.says().contains(&format!("{{{THE_APPLICATION}}}")),
+                "{}",
+                word.says()
+            );
+        }
     }
 
     /// No key here collides with another in this file.

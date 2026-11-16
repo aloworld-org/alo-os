@@ -28,7 +28,7 @@ use crate::how_long_a_grant_lasts::HowLong;
 use crate::settings_granted::SettingsGave;
 
 /// A key that means `key` and makes no chord.
-fn key(key: SettingsKey) -> SettingsPress {
+pub(super) fn key(key: SettingsKey) -> SettingsPress {
     SettingsPress {
         key,
         chord: None,
@@ -47,7 +47,7 @@ fn chord(held: Modifiers, pressed: Key) -> SettingsPress {
 
 /// Move the focus to `row`, the way a person does: the page it is on chosen
 /// in the side column, into the page, and down from its first row.
-fn focus_on(
+pub(super) fn focus_on(
     window: &mut SettingsWindow,
     row: &SettingsRow,
     strings: &Strings,
@@ -116,7 +116,7 @@ fn drawn_rows(window: &SettingsWindow) -> Vec<SettingsRow> {
 }
 
 /// Focus `row` and press Enter on it.
-fn chosen(
+pub(super) fn chosen(
     window: &mut SettingsWindow,
     row: &SettingsRow,
     strings: &Strings,
@@ -153,7 +153,7 @@ fn rows_drawn(page: &APage) -> Vec<&ARow> {
 }
 
 /// Every sentence Settings draws above its rows, on every page.
-fn said(window: &SettingsWindow) -> Vec<String> {
+pub(super) fn said(window: &SettingsWindow) -> Vec<String> {
     SettingsCategory::ALL
         .into_iter()
         .flat_map(|category| the_page_at(window, category, &words(), noon()).blocks)
@@ -453,6 +453,10 @@ fn no_choice_the_old_window_offered_is_dropped() {
     if open.granted.a_folder_can_be_given() {
         before.push(SettingsRow::GrantAFolder);
     }
+    // **Giving alo an application** (ADR 0143 Q10), added 2026-11-15: this
+    // machine was told of a browser and a mail application, so it is offered.
+    assert!(open.granted.an_application_can_be_given(), "the control");
+    before.push(SettingsRow::GrantAnApplication);
     before.extend(
         open.granted
             .rows(noon())

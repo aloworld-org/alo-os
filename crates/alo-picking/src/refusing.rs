@@ -45,6 +45,9 @@ pub enum NotPicked {
     /// A pick at the top of the disk, which would be a grant to the whole
     /// machine — and there is no such grant (ADR 0001 §3).
     TheWholeMachine,
+    /// An application that is not among the ones being shown, which cannot be
+    /// chosen and so cannot be granted.
+    NotAnApplicationShown,
 }
 
 impl NotPicked {
@@ -61,6 +64,7 @@ impl NotPicked {
             Self::NotShownHere => words::NOT_SHOWN_HERE,
             Self::NothingAbove => words::NOTHING_ABOVE,
             Self::TheWholeMachine => words::THE_WHOLE_MACHINE,
+            Self::NotAnApplicationShown => words::NOT_AN_APPLICATION_SHOWN,
         }
     }
 
@@ -98,7 +102,7 @@ mod tests {
     use crate::testing::{in_english, translated};
 
     /// Every way of not picking, so no test below quietly skips one.
-    const EVERY_REFUSAL: [NotPicked; 8] = [
+    const EVERY_REFUSAL: [NotPicked; 9] = [
         NotPicked::NotAFullPath,
         NotPicked::CouldLeadElsewhere,
         NotPicked::NothingThere,
@@ -107,6 +111,7 @@ mod tests {
         NotPicked::NotShownHere,
         NotPicked::NothingAbove,
         NotPicked::TheWholeMachine,
+        NotPicked::NotAnApplicationShown,
     ];
 
     /// **Every refusal says something a person could read**, and no two ways

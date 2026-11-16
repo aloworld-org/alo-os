@@ -164,8 +164,19 @@ pub const THE_WHOLE_MACHINE: Word = Word::saying(
      than as a failure.",
 );
 
+/// An application that is not one of the ones being shown.
+pub const NOT_AN_APPLICATION_SHOWN: Word = Word::saying(
+    "picking.not-an-application-shown",
+    "That application is not in the list. Choose one of the applications shown",
+)
+.noting(
+    "Shown when something asks to give alo an application that is not in the list of \
+     applications in front of the person: one removed since the list was drawn, or a name \
+     nobody chose from it. alo is the assistant built into alo OS, not a person.",
+);
+
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 11] = [
+pub const EVERY_WORD: [Word; 12] = [
     ASK,
     COVERS,
     MORE_THAN_SHOWN,
@@ -177,6 +188,7 @@ pub const EVERY_WORD: [Word; 11] = [
     NOT_SHOWN_HERE,
     NOTHING_ABOVE,
     THE_WHOLE_MACHINE,
+    NOT_AN_APPLICATION_SHOWN,
 ];
 
 /// The gap [`COVERS`] leaves for the folder a person is about to grant.

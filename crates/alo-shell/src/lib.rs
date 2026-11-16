@@ -90,6 +90,7 @@ mod a_chord_sends_the_keyboard_to_a_window;
 mod a_click_brings_a_window_back;
 mod a_display_has_gone;
 pub mod a_folder_is_picked_in_settings;
+pub mod an_application_is_picked_in_settings;
 mod a_frame_per_display;
 pub mod a_key_fills_in_a_provider;
 pub mod a_key_reaches_a_task_window;
