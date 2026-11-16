@@ -207,9 +207,12 @@ fn sent_again_the_call_waits_for_its_own_approval() {
         asked: Vec::new(),
     };
     let sent = a_proposal_answered(proposed, door.asking(again), happened.after().to_vec());
-    let Err(WhatHappened::AChangeIsWaiting {
+    let Err(ended) = sent else {
+        panic!("it did not wait for an approval");
+    };
+    let WhatHappened::AChangeIsWaiting {
         number, proposed, ..
-    }) = sent
+    } = *ended
     else {
         panic!("it did not wait for an approval: {sent:?}");
     };

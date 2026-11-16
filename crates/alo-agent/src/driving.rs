@@ -402,7 +402,7 @@ fn driving_from(
                 }
                 match a_proposal_answered(&said, answer, steps) {
                     Ok(more) => steps = more,
-                    Err(happened) => return happened,
+                    Err(happened) => return *happened,
                 }
             }
             // **One command, where no verb fits** (ADR 0149). The daemon reads
@@ -467,16 +467,16 @@ pub fn a_proposal_answered(
     said: &str,
     answer: Result<ToAnAgent, crate::NotAnswered>,
     mut steps: Vec<AStep>,
-) -> Result<Vec<AStep>, WhatHappened> {
+) -> Result<Vec<AStep>, Box<WhatHappened>> {
     match answer {
         Ok(ToAnAgent::Proposed(standing)) => {
-            return Err(WhatHappened::AChangeIsWaiting {
+            return Err(Box::new(WhatHappened::AChangeIsWaiting {
                 number: standing.number(),
                 sentence: standing.sentence().text().to_owned(),
                 proposed: said.to_owned(),
                 after: steps,
                 stands_for: standing.lapses_in().map(std::time::Duration::from_secs),
-            });
+            }));
         }
         // **A refused proposal is a step too, for the same reason a
         // refused read is**, and this arm used to end the turn.
@@ -510,12 +510,12 @@ pub fn a_proposal_answered(
             steps.push(AStep::of(said, &as_a_step(&answer)));
         }
         Ok(ToAnAgent::Did(_) | ToAnAgent::Answered { .. }) => {
-            return Err(WhatHappened::TheMachineCouldNotBeAsked {
+            return Err(Box::new(WhatHappened::TheMachineCouldNotBeAsked {
                 why: "a change was answered as though it had already run".to_owned(),
                 after: steps,
-            });
+            }));
         }
-        Err(not_answered) => return Err(could_not_be_asked(not_answered, steps)),
+        Err(not_answered) => return Err(Box::new(could_not_be_asked(not_answered, steps))),
     }
     Ok(steps)
 }

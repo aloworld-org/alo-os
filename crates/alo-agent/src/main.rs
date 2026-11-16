@@ -217,7 +217,7 @@ fn run() -> Result<ExitCode, String> {
                     let steps = happened.after().to_vec();
                     match alo_agent::a_proposal_answered(proposed, door.asking(again), steps) {
                         Ok(steps) => after = steps,
-                        Err(ended) => sent_again = Some(ended),
+                        Err(ended) => sent_again = Some(*ended),
                     }
                 }
                 TheGrant::NotGiven => {

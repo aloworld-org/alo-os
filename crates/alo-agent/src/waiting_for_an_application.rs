@@ -39,6 +39,10 @@ pub enum TheGrant {
 /// so.
 pub const HOW_LONG_IT_WAITS: Duration = Duration::from_secs(6 * 60);
 
+/// The longest line the shell writes here, and its line ending: what is read,
+/// and no more.
+pub const THE_LONGEST_LINE: usize = IT_WAS_NOT_GIVEN.len() + 2;
+
 /// Wait up to `bound` for the shell's one line about the application.
 ///
 /// `socket` is the input's own descriptor, so the wait is bounded by the
@@ -54,8 +58,7 @@ pub fn the_persons_grant(
     if set_socket_timeout(socket, Timeout::Recv, Some(bound)).is_err() {
         return TheGrant::TheyLeft;
     }
-    // The longer of the two lines and its newline: read no further.
-    let most = u64::try_from(IT_WAS_NOT_GIVEN.len() + 2).unwrap_or(u64::MAX);
+    let most = u64::try_from(THE_LONGEST_LINE).unwrap_or(u64::MAX);
     let mut line = String::new();
     let read = std::io::Read::take(&mut *input, most).read_line(&mut line);
     let _ = set_socket_timeout(socket, Timeout::Recv, None);
@@ -138,6 +141,26 @@ mod tests {
                 "{line:?}"
             );
         }
+    }
+
+    /// **How long it waits, and how much it reads**, held to what they are
+    /// for: the sheet's five minutes and one more, and the longer of the two
+    /// lines with a carriage return and a newline.
+    #[test]
+    fn it_waits_six_minutes_and_reads_one_line() {
+        assert_eq!(HOW_LONG_IT_WAITS, Duration::from_secs(360));
+        assert_eq!(THE_LONGEST_LINE, "alo-not-granted:\r\n".len());
+        assert!("alo-granted:\r\n".len() <= THE_LONGEST_LINE);
+    }
+
+    /// **Half a line and then silence is the shell gone wrong, not silence**:
+    /// the turn ends rather than lapsing as though nothing had been said.
+    #[test]
+    fn half_a_line_then_silence_is_not_a_lapse() {
+        assert_eq!(
+            heard(Some("alo-gran"), false, Duration::from_millis(50)),
+            TheGrant::TheyLeft
+        );
     }
 
     /// **The shell going is the person leaving**, and silence lapses.
