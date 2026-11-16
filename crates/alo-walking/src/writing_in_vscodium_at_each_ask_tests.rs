@@ -136,3 +136,47 @@ fn vscodium_is_the_last_application_listed() {
     let last = listed.listed().last().map(alo_picking::Listed::identifier);
     assert_eq!(last, Some(crate::writing_in_vscodium::VSCODIUM));
 }
+
+/// **What the person types names the file and the text**: the line that makes
+/// the file, beginning with a space, and the ask, both typed by the walk.
+#[test]
+fn what_is_typed_names_the_file_and_the_text() {
+    let making = making_the_file_at_each_ask();
+    assert!(making.starts_with(' '), "{making:?}");
+    assert!(
+        making.contains(&format!("~/{THE_FILE_AT_EACH_ASK}")),
+        "{making}"
+    );
+    assert!(making.contains(THE_FILE_IS_MADE_AT_EACH_ASK), "{making}");
+    let ask = the_ask_at_each_time();
+    assert!(ask.contains(THE_FILE_AT_EACH_ASK) && ask.contains(THE_TEXT_AT_EACH_ASK));
+    assert!(ask.contains("VSCodium"), "{ask}");
+    let steps = the_first_walk().steps().to_vec();
+    for typed in [making, ask] {
+        assert!(
+            steps.contains(&Step::Type(typed.clone())),
+            "never typed {typed:?}"
+        );
+    }
+}
+
+/// **Each card's check names its count exactly, and waits five minutes** for
+/// a model to propose it.
+#[test]
+fn each_card_check_names_its_count_and_waits_long_enough() {
+    let steps = the_first_walk().steps().to_vec();
+    for characters in [0, THE_TEXT_AT_EACH_ASK.chars().count()] {
+        let at = the_card(&steps, characters);
+        let Some(Step::ExpectLine {
+            and_says: Some(also),
+            within,
+            ..
+        }) = steps.get(at)
+        else {
+            panic!("no card check at {at}");
+        };
+        assert_eq!(also, &format!(" {characters} characters of text to type"));
+        assert!(a_card_is_up(characters).contains(also.as_str()));
+        assert_eq!(*within, std::time::Duration::from_secs(300));
+    }
+}

@@ -259,3 +259,20 @@ fn the_card_counts_the_whole_text_it_shows() {
     );
     assert_eq!(nothing.characters_of_text(), 0);
 }
+
+/// **The journal says a card is up only when one arrived**, with its count.
+#[test]
+fn the_journal_line_is_for_a_card_that_arrived() {
+    let text = "Written by alo after each yes";
+    let mut waiting = AChangeWaiting::nothing_yet();
+    let arrived = waiting.arrived(&mut a_task(), &ADaemon::holding(vec![typing(7, text)]));
+    assert_eq!(
+        waiting.said_on_the_log(arrived),
+        Some(alo_acting::said_on_the_log::a_card_is_up(
+            text.chars().count()
+        ))
+    );
+    for other in [WhatArrived::Nothing, WhatArrived::TheOneAlreadyThere] {
+        assert_eq!(waiting.said_on_the_log(other), None, "{other:?}");
+    }
+}

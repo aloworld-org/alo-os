@@ -330,6 +330,14 @@ impl AChangeWaiting {
         &self.texts
     }
 
+    /// The journal's line when this arrival put a card in front of the person,
+    /// and nothing for any other arrival.
+    #[must_use]
+    pub fn said_on_the_log(&self, arrived: WhatArrived) -> Option<String> {
+        (arrived == WhatArrived::AQuestion)
+            .then(|| alo_acting::said_on_the_log::a_card_is_up(self.characters_of_text()))
+    }
+
     /// How many characters of text the card shows, all of them, across every
     /// text the change carries — nought when it carries none.
     #[must_use]
@@ -488,11 +496,8 @@ impl crate::Server {
         // **Said on the journal when a card goes up**, with how much text it
         // shows and never the text, so a walk can tell the card was put in
         // front of the person and carried the whole of what alo would type.
-        if arrived == WhatArrived::AQuestion {
-            eprintln!(
-                "{}",
-                alo_acting::said_on_the_log::a_card_is_up(waiting.characters_of_text())
-            );
+        if let Some(line) = waiting.said_on_the_log(arrived) {
+            eprintln!("{line}");
         }
         // **And a reply the person sent while alo was answering goes now**,
         // with the conversation as it stands — unless what just arrived is a
