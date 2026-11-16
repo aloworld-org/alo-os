@@ -147,6 +147,10 @@ impl Seen {
         // duration.
         let lasts = if grant.lasts_until_removed() {
             Lasts::UntilRemoved
+        } else if grant.lasts_until_sign_out() {
+            // **A session's grant is a row too**, for the endless one's
+            // reason: it does not run out, so the list is where it is found.
+            Lasts::UntilSignOut
         } else {
             Lasts::For(grant.expires_in(now)?)
         };

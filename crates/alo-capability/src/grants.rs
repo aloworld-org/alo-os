@@ -245,6 +245,18 @@ impl Grants {
         before.saturating_sub(self.held.len())
     }
 
+    /// **The session is over**: take away every grant that lasts until
+    /// sign-out, and say how many went.
+    ///
+    /// Called at sign-out, and again at the next sign-in, because a machine
+    /// that lost power never signed out (the owner, 2026-11-16). Nothing else
+    /// is touched: a grant for an hour or until removed outlives a session.
+    pub fn the_session_is_over(&mut self) -> usize {
+        let before = self.held.len();
+        self.held.retain(|held| !held.grant.lasts_until_sign_out());
+        before.saturating_sub(self.held.len())
+    }
+
     /// Drop the grants that have expired, and say how many went.
     ///
     /// Housekeeping only: an expired grant permits nothing whether or not this
