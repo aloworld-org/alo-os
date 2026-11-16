@@ -165,3 +165,18 @@ which needs a secret).** Every pointer check passed:
 Each was found again a few pixels on after the pointer was nudged. The walk
 runs after every merge to main (`walk.yml`), so these run again there; this
 table is one run's result, not a standing property.
+
+**Run 43801984900, 2026-11-15, image from main, once.** The walk stopped at
+*the pointer goes onto Firefox's page*, before the VSCodium section. The
+picture after Enter (`43-the-pointer-page.png`) shows Firefox asking *Open
+the ata link with System Handler?*: the address reached the bar **without its
+first letter**, so Firefox read `ata:` as a kind of link it does not know.
+Ctrl+L and every key after the first reached Firefox. Firefox was still
+starting — its bar's placeholder reads *Search or enter address* in
+`42-firefox-continued.png` and *Search with Google or enter address* in `43-`
+— and moving the keyboard into its bar is Firefox's own work, done after the
+key that asks for it. That **fits** the first letter landing where the
+keyboard was a moment before; it is **not checked**. The walk now presses
+Ctrl+L, waits for the screen to change and settle — a look fails if it does
+not change — and only then types the address
+(`the-address-bar-has-the-keyboard`). The checks on the page are unchanged.

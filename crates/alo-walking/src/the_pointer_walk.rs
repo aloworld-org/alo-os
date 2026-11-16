@@ -270,6 +270,18 @@ fn over_firefox(walk: Walk) -> Walk {
         .pointer(Pointing::Click)
         .look("firefox-continued", look.at_most(Duration::from_secs(60)))
         .press(Chord::with("ctrl", "l"))
+        // **The address bar is seen to take the keyboard before the address
+        // is typed.** Run 43801984900 typed straight after Ctrl+L, Firefox's
+        // bar received `ata:text/html,…` without its first letter, and
+        // Firefox asked to open *the ata link with System Handler*
+        // (`43-the-pointer-page.png`). Firefox was still starting — its bar's
+        // placeholder changed between `42-` and `43-` — and moving the
+        // keyboard to its bar is Firefox's own work, done after the key that
+        // asked for it; that fits the first letter going where the keyboard
+        // was before, and is not checked. A look fails when the screen does
+        // not change, so this waits for the bar to be drawn holding the
+        // keyboard and settled, rather than for a time chosen by guess.
+        .look("the-address-bar-has-the-keyboard", look)
         .type_text(&the_page())
         .press(Chord::key("ret"))
         .look("the-pointer-page", look.at_most(Duration::from_secs(60)))
