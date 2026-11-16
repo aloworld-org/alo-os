@@ -30,6 +30,7 @@
 use std::path::Path;
 
 use alo_adapters::fallback_verbs::{self, NAME, READ_WINDOW, TEXT, TYPE_TEXT};
+use alo_adapters::places_for_text::APlaceForText;
 use alo_applications::OPEN_FILE_IN_APPLICATION;
 use alo_applications::opening_a_file::PATH;
 use alo_applications::verbs::{APPLICATION, OPEN_APPLICATION};
@@ -46,7 +47,7 @@ use crate::a_road::{ARequest, Answered, Step};
 
 /// The version of the set. Up by one for every change to a request, a road or
 /// the machine.
-pub const THE_VERSION: u32 = 7;
+pub const THE_VERSION: u32 = 8;
 
 /// The person's home on the machine the walk boots: Fedora's atomic layout
 /// puts homes under `/var/home`, measured on 2026-11-10
@@ -159,7 +160,15 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
             .a_look(),
             Step::of(TYPE_TEXT, Answered::TypedAndSaved)
                 .expecting(fallback_verbs::APPLICATION, editor.as_str())
-                .expecting(NAME, THE_FILE)
+                // **The field as the window shows it**: VSCodium's entry is
+                // named after the file, in a window titled after it, and is in
+                // front with the keyboard once it is opened (walk 43748155951,
+                // relayed: the model named it by the title and it was typed
+                // into). Any name the machine's typing takes for it will do.
+                .expecting_the_field(
+                    NAME,
+                    APlaceForText::as_shown(THE_FILE, &format!("{THE_FILE} - VSCodium"), true),
+                )
                 .expecting(TEXT, THE_TEXT),
         ],
     )

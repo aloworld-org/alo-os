@@ -1,6 +1,8 @@
 //! **A request and the road it is expected to take**: the verbs, in order,
 //! the arguments whose values matter, and what the machine answers at each.
 
+use alo_adapters::places_for_text::APlaceForText;
+
 /// What the machine answers when a step is taken — as a booted machine at full
 /// access would, written by [`crate::the_machine_answers`].
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -61,6 +63,9 @@ pub struct Step {
     verb: &'static str,
     /// The arguments whose values the road decides, and those values.
     expecting: Vec<(&'static str, String)>,
+    /// The arguments that name a place for text, and the place as the window
+    /// shows it: any name the machine's typing takes for it will do.
+    fields: Vec<(&'static str, APlaceForText)>,
     /// What the machine answers when the step is taken.
     answered: Answered,
     /// Whether this is a look the model may skip, or take more than once.
@@ -74,6 +79,7 @@ impl Step {
         Self {
             verb,
             expecting: Vec::new(),
+            fields: Vec::new(),
             answered,
             look: false,
         }
@@ -102,6 +108,21 @@ impl Step {
     pub fn expecting(mut self, argument: &'static str, is: impl Into<String>) -> Self {
         self.expecting.push((argument, is.into()));
         self
+    }
+
+    /// And `argument` must name `place` as the machine's typing reads a name
+    /// (`alo_adapters::places_for_text::is_meant_by`): its own name, or the
+    /// title of its window where it has the keyboard or no name.
+    #[must_use]
+    pub fn expecting_the_field(mut self, argument: &'static str, place: APlaceForText) -> Self {
+        self.fields.push((argument, place));
+        self
+    }
+
+    /// The arguments that name a place for text, and those places.
+    #[must_use]
+    pub fn fields(&self) -> &[(&'static str, APlaceForText)] {
+        &self.fields
     }
 
     /// The verb this step expects.

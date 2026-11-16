@@ -31,7 +31,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 7);
+    assert_eq!(THE_VERSION, 8);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -314,4 +314,39 @@ fn every_shipped_application_is_told_by_its_packages_name() {
     for (identifier, name) in names.every() {
         assert!(told.contains(&format!("{name} ({identifier})")), "{told}");
     }
+}
+
+/// **Typing in VSCodium names the field as the machine finds it**: the entry
+/// named after the file, in its window, with the keyboard — not one spelling
+/// of its name.
+#[test]
+fn typing_in_vscodium_expects_the_field_the_window_shows() {
+    let set = the_set().expect("the set builds");
+    let writing = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "write in VSCodium")
+        .expect("the set writes in VSCodium");
+    let typing = writing
+        .road()
+        .iter()
+        .find(|step| step.verb() == TYPE_TEXT)
+        .expect("the road types");
+    assert!(
+        typing
+            .expected()
+            .iter()
+            .all(|(argument, _)| *argument != alo_adapters::fallback_verbs::NAME)
+    );
+    assert_eq!(
+        typing.fields(),
+        [(
+            alo_adapters::fallback_verbs::NAME,
+            alo_adapters::places_for_text::APlaceForText::as_shown(
+                THE_FILE,
+                &format!("{THE_FILE} - VSCodium"),
+                true
+            )
+        )]
+    );
 }

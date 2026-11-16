@@ -267,3 +267,35 @@ pub fn where_a_file_is_typed_into(
     }
     Some((file_name.to_owned(), place.window.clone()))
 }
+
+impl APlaceForText {
+    /// **A place as a window shows it**, at no address: named `name`, in a
+    /// window titled `window`, with the keyboard or not — so a check that has
+    /// no tree to read can ask [`is_meant_by`], the rule typing uses, about the
+    /// place it describes.
+    #[must_use]
+    pub fn as_shown(name: &str, window: &str, with_the_keyboard: bool) -> Self {
+        let mut states = Vec::new();
+        if with_the_keyboard {
+            let word = usize::try_from(FOCUSED / 32).unwrap_or(0);
+            states.resize(word + 1, 0);
+            if let Some(bits) = states.get_mut(word) {
+                *bits |= 1_u32 << (FOCUSED % 32);
+            }
+        }
+        Self {
+            at: NodeAt {
+                holder: String::new(),
+                object: String::new(),
+            },
+            role: 0,
+            name: name.to_owned(),
+            states,
+            window: window.to_owned(),
+        }
+    }
+}
+
+#[cfg(test)]
+#[path = "places_for_text_tests.rs"]
+mod tests;

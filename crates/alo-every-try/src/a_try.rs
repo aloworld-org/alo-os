@@ -398,15 +398,9 @@ impl Recording<'_> {
         let (aside, call) = self.request.aside().iter().find_map(|aside| {
             (aside.verb() == asked)
                 .then(|| {
-                    taking(
-                        aside,
-                        self.taken + 1,
-                        request,
-                        self.verbs,
-                        &self.machine,
-                        self.strings,
-                    )
-                    .ok()
+                    // **A read aside is not a step of the road**, and a refusal
+                    // of it is not reported, so it carries no step's number.
+                    taking(aside, 0, request, self.verbs, &self.machine, self.strings).ok()
                 })
                 .flatten()
                 .map(|call| (aside, call))
