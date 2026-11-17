@@ -61,8 +61,8 @@ promised that alo can answer the file chooser inside granted folders. The
 - **Seen failing first (law 6)**, locally, once, each against a planted break:
   - the wire: 2 of 3 tests failed against a planted reader;
   - the chooser's answer: it failed when planted to believe anything;
-  - the turn: the link test should fail with the link check planted away (see
-    the PR for the run).
+  - the turn: the link test failed (1 of 8) with the link check planted away,
+    and the other seven passed against the real code.
 - **Every refusal goes through a whole turn**:
   - a folder nobody granted;
   - a link out of a granted folder;
@@ -74,9 +74,15 @@ promised that alo can answer the file chooser inside granted folders. The
 
   Also tested: full access with no folder granted, and one approval leading to
   exactly one door ask.
-- **Law 7, the second reader:** not done for this change, and said so here.
-- **Law 9** runs in CI (`every-try.yml`, ten tries at both levels by dispatch).
-  Its result is on the PR.
+- **Law 7:** a second reader wrote
+  `crates/alo-acting/tests/alo_chooses_file_from_the_contract.rs` and
+  `crates/alo-file-chooser/tests/alo_answers_from_the_promise.rs` from the
+  contract alone. Its questions settled four points in the contract: the root is
+  a folder, a hidden file can be named, an approved save replaces without the
+  sheet's second press, and a line is at most 4096 bytes.
+- **Law 9:** CHECKED in CI, run 44112123288: **10 of 10 at full access and 10
+  of 10 at ask each time** for this request. The run fails as a whole on other
+  requests this change does not touch.
 
 ## Limits
 
