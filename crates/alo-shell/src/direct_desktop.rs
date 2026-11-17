@@ -2200,6 +2200,10 @@ impl LoopInput for TheDesktopLane<'_> {
         // **Said once a frame and kept alive as long as the frame is**, for the
         // task words' reason exactly: the raster borrows these strings.
         let the_markets_words = crate::TheMarketsWords::said(self.strings);
+        // **The pictures the Dock draws, lent to the market too**: the same
+        // map, with the catalogue's own pictures beside the installed ones'
+        // (`alo_desktop::the_artwork_the_catalogue_has`).
+        let the_markets_artwork = std::sync::Arc::clone(&server.what_each_application_draws);
         let the_market = the_market_window.as_ref().and_then(|window| {
             let showing = window.shows();
             crate::where_the_market_opens::where_the_market_opens(
@@ -2217,6 +2221,7 @@ impl LoopInput for TheDesktopLane<'_> {
                 at,
                 showing,
                 words: &the_markets_words,
+                artwork: &the_markets_artwork,
             })
         });
         // **The alo Bar, worked out once a frame and kept alive beside the

@@ -36,7 +36,7 @@ use crate::{MarketKey, TheMarketsWords};
 fn a_catalogue_with_every_label() -> Catalogue {
     let text = format!(
         "{}\n[[application]]\ncategory = \"music-making\"\nidentifier = \
-         \"ai.storyteller.soundcraft\"\nsource = \"flathub\"\nversion = \"0.20.1\"\nlicence = \
+         \"ai.storyteller.soundcraft\"\nname = \"SoundCraft\"\nsource = \"flathub\"\nversion = \"0.20.1\"\nlicence = \
          \"Apache-2.0\"\nverified = true\nearly = true\n",
         alo_software::catalogue::THE_CATALOGUE
     );
@@ -90,6 +90,7 @@ impl crate::TheDesktop for WithTheMarket {
             at,
             showing: self.window.shows(),
             words: &self.words,
+            artwork: &alo_dock::artwork::NOTHING,
         });
         assert!(frame.market.is_some(), "the market had nowhere to be drawn");
         frame
@@ -161,7 +162,7 @@ fn the_three_labels_reach_the_frame_a_display_is_handed() {
     // Every entry made open, verified and not early, line by line.
     let plain_text: String = format!(
         "{}\n[[application]]\ncategory = \"music-making\"\nidentifier = \
-         \"ai.storyteller.soundcraft\"\nsource = \"flathub\"\nversion = \"0.20.1\"\nlicence = \
+         \"ai.storyteller.soundcraft\"\nname = \"SoundCraft\"\nsource = \"flathub\"\nversion = \"0.20.1\"\nlicence = \
          \"Apache-2.0\"\nverified = true\nearly = false\n",
         alo_software::catalogue::THE_CATALOGUE
     )

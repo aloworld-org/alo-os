@@ -30,7 +30,7 @@ fn what_a_machine_ships() -> Shipped {
 fn with_one_more(category: &str, identifier: &str, version: &str, licence: &str) -> String {
     format!(
         "{THE_CATALOGUE}\n[[application]]\ncategory = \"{category}\"\nidentifier = \
-         \"{identifier}\"\nsource = \"flathub\"\nversion = \"{version}\"\nlicence = \
+         \"{identifier}\"\nname = \"An application\"\nsource = \"flathub\"\nversion = \"{version}\"\nlicence = \
          \"{licence}\"\nverified = true\nearly = false\n"
     )
 }
@@ -43,7 +43,7 @@ fn an_entrys_labels_are_read_off_it() {
     let shipped = what_a_machine_ships();
     let text = format!(
         "{THE_CATALOGUE}\n[[application]]\ncategory = \"audio\"\nidentifier = \
-         \"com.example.All\"\nsource = \"flathub\"\nversion = \"1.0\"\nlicence = \
+         \"com.example.All\"\nname = \"All of them\"\nsource = \"flathub\"\nversion = \"1.0\"\nlicence = \
          \"LicenseRef-proprietary\"\nverified = false\nearly = true\n"
     );
     let catalogue = Catalogue::read(&text, &shipped).unwrap();
@@ -68,6 +68,39 @@ fn an_entrys_labels_are_read_off_it() {
         labels_of("org.darktable.Darktable"),
         vec![Label::NotVerified]
     );
+}
+
+/// **The name a person reads is the makers' own, and an entry without one,
+/// or with one that is not a name, is refused** — so the market never falls
+/// back to drawing an identifier (the owner, 2026-11-17).
+#[test]
+fn an_entry_is_read_with_its_name_and_one_without_a_name_is_refused() {
+    let shipped = what_a_machine_ships();
+    let catalogue = Catalogue::read(THE_CATALOGUE, &shipped).unwrap();
+    let gimp = catalogue
+        .every()
+        .iter()
+        .find(|one| one.application().identifier() == "org.gimp.GIMP")
+        .unwrap();
+    assert_eq!(gimp.name(), "GNU Image Manipulation Program");
+    let named = "name = \"GNU Image Manipulation Program\"\n";
+    let too_long = format!("name = \"{}\"\n", "a".repeat(THE_LONGEST_NAME + 1));
+    for instead in [
+        String::new(),
+        "name = \"\"\n".to_owned(),
+        "name = \"   \"\n".to_owned(),
+        "name = \"GIMP\\nand more\"\n".to_owned(),
+        too_long,
+    ] {
+        let text = replacing(named, &instead);
+        assert!(
+            matches!(
+                Catalogue::read(&text, &shipped),
+                Err(NotCatalogued::NotRead { .. } | NotCatalogued::NotAName { .. })
+            ),
+            "{instead:?} was read"
+        );
+    }
 }
 
 /// **An entry that does not say whether it is verified, or whether it is
@@ -459,6 +492,7 @@ fn the_catalogue_holds_no_words_a_person_would_read() {
                     "format"
                         | "category"
                         | "identifier"
+                        | "name"
                         | "source"
                         | "version"
                         | "licence"
@@ -472,7 +506,7 @@ fn the_catalogue_holds_no_words_a_person_would_read() {
         read += 1;
     }
     assert_eq!(
-        read, 435,
-        "format, and seven keys for each of sixty-two entries"
+        read, 497,
+        "format, and eight keys for each of sixty-two entries"
     );
 }

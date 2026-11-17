@@ -91,6 +91,13 @@
 # is refused, so a forgotten one is a refused file rather than a label quietly
 # missing from a row.
 #
+# ## Names
+#
+# Each entry's `name` is what its makers call it, as Flathub's `name` gives it
+# (read 2026-11-17). The owner, on seeing the market draw identifiers:
+# *real application names, never identifiers.* A name is the makers' own and is
+# not translated here; everything else a person reads is in `crate::words`.
+#
 # Each is installed the way a person installs one — from `source`, through the
 # rented tool, arriving granted nothing.
 
@@ -103,6 +110,7 @@ format = 1
 [[application]]
 category = "pictures"
 identifier = "org.gimp.GIMP"
+name = "GNU Image Manipulation Program"
 source = "flathub"
 version = "3.2.8"
 licence = "GPL-3.0+ AND LGPL-3.0+"
@@ -112,6 +120,7 @@ early = false
 [[application]]
 category = "pictures"
 identifier = "com.github.PintaProject.Pinta"
+name = "Pinta"
 source = "flathub"
 version = "3.1.2"
 licence = "MIT"
@@ -125,6 +134,7 @@ early = false
 [[application]]
 category = "painting"
 identifier = "org.kde.krita"
+name = "Krita"
 source = "flathub"
 version = "5.3.4.1"
 licence = "GPL-3.0-only"
@@ -137,6 +147,7 @@ early = false
 [[application]]
 category = "illustration"
 identifier = "org.inkscape.Inkscape"
+name = "Inkscape"
 source = "flathub"
 version = "1.4.4"
 licence = "GPL-2.0-or-later"
@@ -149,6 +160,7 @@ early = false
 [[application]]
 category = "photographs"
 identifier = "org.darktable.Darktable"
+name = "darktable"
 source = "flathub"
 version = "5.6.2"
 licence = "GPL-3.0+"
@@ -158,6 +170,7 @@ early = false
 [[application]]
 category = "photographs"
 identifier = "org.kde.digikam"
+name = "digiKam"
 source = "flathub"
 version = "9.1.0"
 licence = "GPL-2.0+"
@@ -167,6 +180,7 @@ early = false
 [[application]]
 category = "photographs"
 identifier = "com.rawtherapee.RawTherapee"
+name = "RawTherapee"
 source = "flathub"
 version = "5.13"
 licence = "GPL-3.0+"
@@ -179,6 +193,7 @@ early = false
 [[application]]
 category = "page-layout"
 identifier = "net.scribus.Scribus"
+name = "Scribus"
 source = "flathub"
 version = "1.6.5"
 licence = "GPL-2.0+"
@@ -190,6 +205,7 @@ early = false
 [[application]]
 category = "video"
 identifier = "org.kde.kdenlive"
+name = "Kdenlive"
 source = "flathub"
 version = "26.08.3"
 licence = "GPL-3.0-only"
@@ -199,6 +215,7 @@ early = false
 [[application]]
 category = "video"
 identifier = "org.shotcut.Shotcut"
+name = "Shotcut"
 source = "flathub"
 version = "26.9.27"
 licence = "GPL-3.0-only"
@@ -208,6 +225,7 @@ early = false
 [[application]]
 category = "video"
 identifier = "org.openshot.OpenShot"
+name = "OpenShot Video Editor"
 source = "flathub"
 version = "3.5.1"
 licence = "GPL-3.0-or-later"
@@ -219,6 +237,7 @@ early = false
 [[application]]
 category = "audio"
 identifier = "org.audacityteam.Audacity"
+name = "Audacity"
 source = "flathub"
 version = "3.7.8"
 licence = "GPL-3.0-only"
@@ -228,6 +247,7 @@ early = false
 [[application]]
 category = "audio"
 identifier = "org.tenacityaudio.Tenacity"
+name = "Tenacity"
 source = "flathub"
 version = "1.3.5"
 licence = "GPL-2.0 and CC-BY-3.0"
@@ -243,6 +263,7 @@ early = false
 [[application]]
 category = "documents"
 identifier = "org.libreoffice.LibreOffice"
+name = "LibreOffice"
 source = "flathub"
 version = "26.8.3.1"
 licence = "MPL-2.0"
@@ -252,6 +273,7 @@ early = false
 [[application]]
 category = "documents"
 identifier = "org.onlyoffice.desktopeditors"
+name = "ONLYOFFICE Desktop Editors"
 source = "flathub"
 version = "10.0.0"
 licence = "AGPL-3.0-only"
@@ -263,6 +285,7 @@ early = false
 [[application]]
 category = "diagrams"
 identifier = "com.jgraph.drawio.desktop"
+name = "draw.io"
 source = "flathub"
 version = "32.6.10"
 licence = "Apache-2.0"
@@ -274,6 +297,7 @@ early = false
 [[application]]
 category = "modelling"
 identifier = "org.blender.Blender"
+name = "Blender"
 source = "flathub"
 version = "5.3"
 licence = "GPL-3.0"
@@ -283,6 +307,7 @@ early = false
 [[application]]
 category = "modelling"
 identifier = "org.freecad.FreeCAD"
+name = "FreeCAD"
 source = "flathub"
 version = "1.1.4"
 licence = "LGPL-2.1"
@@ -294,6 +319,7 @@ early = false
 [[application]]
 category = "music-making"
 identifier = "org.ardour.Ardour"
+name = "Ardour"
 source = "flathub"
 version = "9.8.0"
 licence = "GPL-2.0+"
@@ -303,6 +329,7 @@ early = false
 [[application]]
 category = "music-making"
 identifier = "org.musescore.MuseScore"
+name = "MuseScore"
 source = "flathub"
 version = "4.7.5"
 licence = "GPL-3.0-only"
@@ -312,6 +339,7 @@ early = false
 [[application]]
 category = "music-making"
 identifier = "com.bitwig.BitwigStudio"
+name = "Bitwig Studio"
 source = "flathub"
 version = "6.1.7"
 licence = "LicenseRef-proprietary"
@@ -321,6 +349,7 @@ early = false
 [[application]]
 category = "music-making"
 identifier = "fm.reaper.Reaper"
+name = "Reaper"
 source = "flathub"
 version = "7.85"
 licence = "LicenseRef-proprietary=https://www.reaper.fm/dist-agreement.php"
@@ -331,6 +360,7 @@ early = false
 [[application]]
 category = "screen-recording"
 identifier = "com.obsproject.Studio"
+name = "OBS Studio"
 source = "flathub"
 version = "33.0.1"
 licence = "GPL-2.0-or-later"
@@ -340,6 +370,7 @@ early = false
 [[application]]
 category = "screen-recording"
 identifier = "io.github.seadve.Kooha"
+name = "Kooha"
 source = "flathub"
 version = "2.3.2"
 licence = "GPL-3.0-or-later"
@@ -351,6 +382,7 @@ early = false
 [[application]]
 category = "code"
 identifier = "org.gnome.Builder"
+name = "Builder"
 source = "flathub"
 version = "50.0"
 licence = "GPL-3.0+ and GPL-2.0+ and LGPL-3.0+ and LGPL-2.0+ and MIT"
@@ -360,6 +392,7 @@ early = false
 [[application]]
 category = "code"
 identifier = "org.kde.kate"
+name = "Kate"
 source = "flathub"
 version = "26.08.3"
 licence = "LGPL-2.1+"
@@ -369,6 +402,7 @@ early = false
 [[application]]
 category = "code"
 identifier = "com.jetbrains.IntelliJ-IDEA-Community"
+name = "IntelliJ IDEA OSS"
 source = "flathub"
 version = "2026.3"
 licence = "Apache-2.0"
@@ -380,6 +414,7 @@ early = false
 [[application]]
 category = "chat"
 identifier = "org.signal.Signal"
+name = "Signal Desktop"
 source = "flathub"
 version = "8.35.0"
 licence = "AGPL-3.0-only"
@@ -389,6 +424,7 @@ early = false
 [[application]]
 category = "chat"
 identifier = "im.riot.Riot"
+name = "Element"
 source = "flathub"
 version = "1.12.35"
 licence = "AGPL-3.0-only OR GPL-3.0-only"
@@ -398,6 +434,7 @@ early = false
 [[application]]
 category = "chat"
 identifier = "org.gnome.Fractal"
+name = "Fractal"
 source = "flathub"
 version = "14.3"
 licence = "GPL-3.0+"
@@ -407,6 +444,7 @@ early = false
 [[application]]
 category = "chat"
 identifier = "org.telegram.desktop"
+name = "Telegram"
 source = "flathub"
 version = "7.4.4"
 licence = "GPL-3.0"
@@ -416,6 +454,7 @@ early = false
 [[application]]
 category = "chat"
 identifier = "com.discordapp.Discord"
+name = "Discord"
 source = "flathub"
 version = "1.0.169"
 licence = "LicenseRef-proprietary=https://discord.com/terms"
@@ -425,6 +464,7 @@ early = false
 [[application]]
 category = "chat"
 identifier = "com.slack.Slack"
+name = "Slack"
 source = "flathub"
 version = "4.53.280"
 licence = "LicenseRef-proprietary=https://slack.com/terms-of-service/user"
@@ -435,6 +475,7 @@ early = false
 [[application]]
 category = "calls"
 identifier = "org.jitsi.jitsi-meet"
+name = "Jitsi Meet"
 source = "flathub"
 version = "2026.10.0"
 licence = "Apache-2.0"
@@ -444,6 +485,7 @@ early = false
 [[application]]
 category = "calls"
 identifier = "us.zoom.Zoom"
+name = "Zoom"
 source = "flathub"
 version = "7.2.1.5760"
 licence = "LicenseRef-proprietary"
@@ -455,6 +497,7 @@ early = false
 [[application]]
 category = "email"
 identifier = "org.mozilla.thunderbird"
+name = "Thunderbird"
 source = "flathub"
 version = "160.0"
 licence = "MPL-2.0"
@@ -464,6 +507,7 @@ early = false
 [[application]]
 category = "email"
 identifier = "org.gnome.Evolution"
+name = "Evolution"
 source = "flathub"
 version = "3.62.1"
 licence = "GPL-2.0+ and GFDL-1.3"
@@ -474,6 +518,7 @@ early = false
 [[application]]
 category = "notes"
 identifier = "net.cozic.joplin_desktop"
+name = "Joplin"
 source = "flathub"
 version = "3.7.21"
 licence = "AGPL-3.0-or-later"
@@ -483,6 +528,7 @@ early = false
 [[application]]
 category = "notes"
 identifier = "com.logseq.Logseq"
+name = "Logseq"
 source = "flathub"
 version = "0.10.15"
 licence = "AGPL-3.0-or-later"
@@ -492,6 +538,7 @@ early = false
 [[application]]
 category = "notes"
 identifier = "com.github.flxzt.rnote"
+name = "Rnote"
 source = "flathub"
 version = "0.14.2"
 licence = "GPL-3.0-or-later"
@@ -501,6 +548,7 @@ early = false
 [[application]]
 category = "notes"
 identifier = "com.github.xournalpp.xournalpp"
+name = "Xournal++"
 source = "flathub"
 version = "1.3.8"
 licence = "GPL-2.0"
@@ -510,6 +558,7 @@ early = false
 [[application]]
 category = "notes"
 identifier = "md.obsidian.Obsidian"
+name = "Obsidian"
 source = "flathub"
 version = "1.15.1"
 licence = "LicenseRef-proprietary=https://obsidian.md/eula"
@@ -520,6 +569,7 @@ early = false
 [[application]]
 category = "music"
 identifier = "io.bassi.Amberol"
+name = "Amberol"
 source = "flathub"
 version = "2026.1"
 licence = "GPL-3.0-or-later"
@@ -529,6 +579,7 @@ early = false
 [[application]]
 category = "music"
 identifier = "org.strawberrymusicplayer.strawberry"
+name = "Strawberry Music Player"
 source = "flathub"
 version = "1.2.31"
 licence = "GPL-3.0+"
@@ -538,6 +589,7 @@ early = false
 [[application]]
 category = "music"
 identifier = "de.haeckerfelix.Shortwave"
+name = "Shortwave"
 source = "flathub"
 version = "5.1.0"
 licence = "GPL-3.0-or-later"
@@ -547,6 +599,7 @@ early = false
 [[application]]
 category = "music"
 identifier = "com.spotify.Client"
+name = "Spotify"
 source = "flathub"
 version = "1.2.95.453.g0eeebbed"
 licence = "LicenseRef-proprietary=https://www.spotify.com/us/legal/end-user-agreement/"
@@ -557,6 +610,7 @@ early = false
 [[application]]
 category = "books"
 identifier = "com.github.johnfactotum.Foliate"
+name = "Foliate"
 source = "flathub"
 version = "3.3.0"
 licence = "GPL-3.0-or-later"
@@ -566,6 +620,7 @@ early = false
 [[application]]
 category = "books"
 identifier = "com.calibre_ebook.calibre"
+name = "calibre"
 source = "flathub"
 version = "9.17.0"
 licence = "GPL-3.0"
@@ -576,6 +631,7 @@ early = false
 [[application]]
 category = "maps"
 identifier = "org.gnome.Maps"
+name = "Maps"
 source = "flathub"
 version = "51.2"
 licence = "GPL-2.0-or-later"
@@ -586,6 +642,7 @@ early = false
 [[application]]
 category = "games"
 identifier = "com.valvesoftware.Steam"
+name = "Steam"
 source = "flathub"
 version = "1.0.0.87"
 licence = "LicenseRef-proprietary"
@@ -595,6 +652,7 @@ early = false
 [[application]]
 category = "games"
 identifier = "com.heroicgameslauncher.hgl"
+name = "Heroic"
 source = "flathub"
 version = "v2.22.4"
 licence = "GPL-3.0"
@@ -604,6 +662,7 @@ early = false
 [[application]]
 category = "games"
 identifier = "net.lutris.Lutris"
+name = "Lutris"
 source = "flathub"
 version = "0.5.23"
 licence = "GPL-3.0-or-later"
@@ -613,6 +672,7 @@ early = false
 [[application]]
 category = "games"
 identifier = "net.supertuxkart.SuperTuxKart"
+name = "SuperTuxKart"
 source = "flathub"
 version = "1.5"
 licence = "GPL-3.0+"
@@ -622,6 +682,7 @@ early = false
 [[application]]
 category = "games"
 identifier = "org.libretro.RetroArch"
+name = "RetroArch"
 source = "flathub"
 version = "1.22.2"
 licence = "GPL-3.0-or-later"
@@ -632,6 +693,7 @@ early = false
 [[application]]
 category = "passwords"
 identifier = "org.keepassxc.KeePassXC"
+name = "KeePassXC"
 source = "flathub"
 version = "2.8.0"
 licence = "GPL-3.0-or-later"
@@ -641,6 +703,7 @@ early = false
 [[application]]
 category = "passwords"
 identifier = "org.gnome.World.Secrets"
+name = "Secrets"
 source = "flathub"
 version = "14.0"
 licence = "GPL-3.0-only"
@@ -650,6 +713,7 @@ early = false
 [[application]]
 category = "passwords"
 identifier = "com.bitwarden.desktop"
+name = "Bitwarden"
 source = "flathub"
 version = "2026.10.3"
 licence = "LicenseRef-proprietary=https://raw.githubusercontent.com/bitwarden/clients/refs/heads/main/LICENSE_BITWARDEN.txt"
@@ -659,6 +723,7 @@ early = false
 [[application]]
 category = "passwords"
 identifier = "com.onepassword.OnePassword"
+name = "1Password"
 source = "flathub"
 version = "8.12.44"
 licence = "LicenseRef-proprietary=https://1password.com/legal/terms-of-service"
@@ -669,6 +734,7 @@ early = false
 [[application]]
 category = "remote-desktop"
 identifier = "org.remmina.Remmina"
+name = "Remmina"
 source = "flathub"
 version = "1.4.43"
 licence = "GPL-2.0+"
@@ -678,6 +744,7 @@ early = false
 [[application]]
 category = "remote-desktop"
 identifier = "org.gnome.Connections"
+name = "Connections"
 source = "flathub"
 version = "51.0"
 licence = "GPL-3.0-or-later"
@@ -687,6 +754,7 @@ early = false
 [[application]]
 category = "remote-desktop"
 identifier = "com.rustdesk.RustDesk"
+name = "RustDesk"
 source = "flathub"
 version = "1.5.3"
 licence = "AGPL-3.0-only"
@@ -696,6 +764,7 @@ early = false
 [[application]]
 category = "remote-desktop"
 identifier = "com.anydesk.Anydesk"
+name = "AnyDesk"
 source = "flathub"
 version = "8.0.4"
 licence = "LicenseRef-proprietary"

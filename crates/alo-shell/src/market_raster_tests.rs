@@ -50,6 +50,7 @@ fn drawn(
         },
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
+        &alo_dock::artwork::NOTHING,
     )
     .unwrap()
 }
@@ -103,6 +104,7 @@ fn a_closed_window_draws_nothing() {
         },
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
+        &alo_dock::artwork::NOTHING,
     );
     assert!(nothing.is_none());
 }
@@ -261,6 +263,7 @@ fn a_window_with_no_room_in_it_is_not_drawn() {
         },
         &mut fonts,
         crate::display_scale::DisplayScale::ONE,
+        &alo_dock::artwork::NOTHING,
     );
     assert!(nothing.is_none(), "a four-pixel window was drawn");
 }
@@ -321,6 +324,7 @@ fn the_rectangle_the_placement_gives_is_one_the_raster_will_draw() {
             },
             &mut fonts,
             crate::display_scale::DisplayScale::ONE,
+            &alo_dock::artwork::NOTHING,
         )
         .is_some(),
         "the market was placed at {at:?} and the raster refuses to draw that rectangle, \
@@ -378,6 +382,7 @@ fn at_two_hundred_the_market_is_placed_and_drawn_twice_the_size() {
             },
             &mut crate::WindowControlLabels::new().unwrap().fonts,
             scale,
+            &alo_dock::artwork::NOTHING,
         )
     };
     let (Some(small), Some(big)) = (draw(sparse, one), draw(dense, two)) else {

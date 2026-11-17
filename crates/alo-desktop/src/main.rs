@@ -56,6 +56,7 @@ mod a_scalable_icon_drawn;
 
 #[cfg(target_os = "linux")]
 mod the_artwork_each_application_has;
+mod the_artwork_the_catalogue_has;
 
 #[cfg(target_os = "linux")]
 mod what_this_machine_offers;

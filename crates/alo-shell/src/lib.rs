@@ -459,6 +459,7 @@ mod lock_pixels;
 mod lock_raster;
 mod lock_surface;
 mod lock_texture;
+mod market_inking;
 mod market_keys;
 mod market_measures;
 /// How the window of what a person can install is drawn.

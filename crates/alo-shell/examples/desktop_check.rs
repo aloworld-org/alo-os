@@ -383,6 +383,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         at: smithay::utils::Rectangle::new((700, 40).into(), (632, 688).into()),
                         showing: the_market.shows(),
                         words: &the_markets_words,
+                        artwork: &alo_dock::artwork::NOTHING,
                     };
                     let until = Instant::now() + Duration::from_millis(60);
                     while Instant::now() < until {
