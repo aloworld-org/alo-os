@@ -515,3 +515,105 @@ fn a_reader_hears_the_list_of_applications() {
         assert!(heard.contains(&said), "a reader does not hear {said:?}");
     }
 }
+
+/// How many rows down from the page's first row *Give alo an application* is
+/// with nothing given: *Give alo a folder* is above it. `alo-walking`'s
+/// `DOWN_TO_GIVE_AN_APPLICATION` is this number, and walks these keys.
+const DOWN_TO_GIVE_AN_APPLICATION: usize = 1;
+
+/// How many rows down from the page's first row *Give alo a folder* is with one
+/// application given: that application's row is above it. `alo-walking`'s
+/// `DOWN_TO_GIVE_A_FOLDER` is this number.
+const DOWN_TO_GIVE_A_FOLDER: usize = 1;
+
+/// The keys the walk presses to reach *What alo can use* and go into it: the
+/// side column's first page, down one, and Tab.
+fn into_what_alo_can_use(window: &mut SettingsWindow, door: &CountingDoor) {
+    let strings = settings_words();
+    // Out of the page first, as closing Settings and opening it again does.
+    for _ in 0..8 {
+        if !window.is_in_the_page() {
+            break;
+        }
+        window.pressed(key(SettingsKey::PreviousSection), doors(&strings, door));
+    }
+    window.pressed(key(SettingsKey::First), doors(&strings, door));
+    window.pressed(key(SettingsKey::Next), doors(&strings, door));
+    window.pressed(key(SettingsKey::NextSection), doors(&strings, door));
+    assert_eq!(window.category(), Some(SettingsCategory::FoldersAloCanUse));
+    assert!(window.is_in_the_page());
+}
+
+/// Home, then Down `times`, inside the page: the row the keyboard is then on.
+fn from_the_top(
+    window: &mut SettingsWindow,
+    times: usize,
+    door: &CountingDoor,
+) -> Option<SettingsRow> {
+    let strings = settings_words();
+    window.pressed(key(SettingsKey::First), doors(&strings, door));
+    for _ in 0..times {
+        window.pressed(key(SettingsKey::Next), doors(&strings, door));
+    }
+    window.focused(noon())
+}
+
+/// **The walk finds the two rows that give alo something by counting from the
+/// page's top, which does not move with what is installed.** Since #1342 the
+/// page ends with one switch per installed application, so a count up from its
+/// end lands among those switches: main's walk at 775237b3 (run 44034387104)
+/// never gave VSCodium (its picture 86 shows the list of applications still
+/// open) and switched on *pictures and keys in LibreOffice 26.2 Draw* where it
+/// meant to give a folder (picture 91). The rows above these two are only what
+/// is already given, which the walk's own section decides.
+#[test]
+fn the_rows_that_give_are_counted_from_the_top_whatever_is_installed() {
+    let (_machine, mut window) = opened("counted-from-the-top");
+    let strings = settings_words();
+    let door = CountingDoor::revoking();
+    into_what_alo_can_use(&mut window, &door);
+    // **The control**: the page does end with a switch per application, so a
+    // count from its end is not a count of the rows the walk means.
+    assert!(
+        matches!(
+            window.rows_on_the_page(noon()).last(),
+            Some(SettingsRow::PicturesAndKeys(_))
+        ),
+        "{:?}",
+        window.rows_on_the_page(noon())
+    );
+    window.pressed(key(SettingsKey::Last), doors(&strings, &door));
+    for _ in 0..alo_capability::AloInApplications::ALL.len() + 1 {
+        window.pressed(key(SettingsKey::Previous), doors(&strings, &door));
+    }
+    assert_ne!(
+        window.focused(noon()),
+        Some(SettingsRow::GrantAnApplication),
+        "the old count still reaches the row, so it was not what failed"
+    );
+
+    // **Only what is given is above them.** This fixture's machine has given a
+    // folder to another agent already; the walk's has given nothing (its
+    // picture 71 says *Nothing is granted right now*). So the walk's counts are
+    // read here after this machine's own given rows.
+    let already = window
+        .rows_on_the_page(noon())
+        .iter()
+        .take_while(|row| matches!(row, SettingsRow::Granted(_)))
+        .count();
+    assert_eq!(
+        from_the_top(&mut window, already + DOWN_TO_GIVE_AN_APPLICATION, &door),
+        Some(SettingsRow::GrantAnApplication)
+    );
+    // **One application given**: its row joins those above, and the folder's
+    // row is next.
+    assert_eq!(
+        given(&mut window, FIREFOX, HowLong::AnHour, &door),
+        Some(SettingsDid::Gave(SettingsGave::ItWasGiven))
+    );
+    into_what_alo_can_use(&mut window, &door);
+    assert_eq!(
+        from_the_top(&mut window, already + DOWN_TO_GIVE_A_FOLDER, &door),
+        Some(SettingsRow::GrantAFolder)
+    );
+}

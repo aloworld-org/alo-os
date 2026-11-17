@@ -427,6 +427,7 @@ pub(crate) fn a_row(
                 (inside_wide, bottom - top).into(),
             ),
             section_starts,
+            filled: false,
         });
     }
     for (part, area) in row.parts.iter().zip(part_areas) {
@@ -434,6 +435,7 @@ pub(crate) fn a_row(
             row: part.row.clone(),
             area,
             section_starts,
+            filled: false,
         });
     }
     if let Some((area, target)) = button_area {
@@ -441,6 +443,7 @@ pub(crate) fn a_row(
             row: target,
             area,
             section_starts,
+            filled: false,
         });
     }
     bottom

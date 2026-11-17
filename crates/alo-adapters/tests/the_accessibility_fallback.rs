@@ -222,6 +222,9 @@ mod roles {
     pub const LABEL: u32 = 29;
     pub const LIST: u32 = 31;
     pub const LIST_ITEM: u32 = 32;
+    pub const MENU: u32 = 33;
+    pub const MENU_BAR: u32 = 34;
+    pub const MENU_ITEM: u32 = 35;
     pub const PAGE_TAB: u32 = 37;
     pub const PROGRESS_BAR: u32 = 42;
     pub const SLIDER: u32 = 51;
@@ -1076,6 +1079,69 @@ fn one_approval_presses_the_control_it_names_once_and_is_recorded() {
     assert!(
         what.sentence()
             .is("press the button named “Sign in” in org.example.Mail")
+    );
+}
+
+/// **A menu's heading can be opened.** In a menu bar, *File* and *Edit* are
+/// not menu items to the tree but menus (`ROLE_MENU`) — GTK 3's, LibreOffice's,
+/// Firefox's — and so were walked past as layout, which left every menu bar on
+/// the machine shut to alo. A named menu is now a menu item a press opens, by
+/// the same kind and the same sentence; a menu with no name — the list a
+/// heading opens, in GTK 3 — is still layout, and is not said as a control
+/// alo cannot name.
+#[test]
+fn a_menus_heading_is_a_menu_item_a_press_opens() {
+    let strings = in_english();
+    let grants = granting(&[MAIL]);
+    let tree = ATree::default().with(
+        ":1.7",
+        Some(MAIL),
+        vec![
+            thing(roles::FRAME, "Letter").holding(vec![thing(roles::MENU_BAR, "").holding(vec![
+                thing(roles::MENU, "File").doing(&["click"]).holding(vec![
+                    thing(roles::MENU, "").holding(vec![
+                        thing(roles::MENU_ITEM, "Save").doing(&["click"]),
+                    ]),
+                ]),
+            ])]),
+        ],
+    );
+    let read = ReadingWindows::of(
+        Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
+        &Adapters::default(),
+        &grants,
+        &installed(),
+        &strings,
+    )
+    .unwrap()
+    .read(&tree, &strings)
+    .unwrap();
+    let seen: Vec<(Role, &str, Option<Limit>)> = read
+        .shown()
+        .everything()
+        .map(|seen| (seen.role(), seen.name(), seen.limit()))
+        .collect();
+    assert_eq!(
+        seen,
+        [
+            (Role::MenuItem, "File", None),
+            (Role::MenuItem, "Save", None),
+        ]
+    );
+
+    let pressed = Activating::of(
+        approved(&pressing(MAIL, "menu_item", "File"), &grants),
+        &Adapters::default(),
+        &grants,
+        &installed(),
+        &strings,
+    )
+    .unwrap()
+    .press(&tree, WorkingFully::NothingMoreToTurnOn, &strings);
+    assert!(pressed.is_ok(), "the menu's heading was not pressed");
+    assert_eq!(
+        tree.asked().last(),
+        Some(&Asked::Act(tree.named(":1.7", "File"), 0))
     );
 }
 

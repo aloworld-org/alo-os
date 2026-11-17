@@ -31,10 +31,12 @@ use alo_record::WhatTouchedIt;
 use alo_software::{Installed, WhatTheCatalogueHolds};
 
 use crate::acting_on_an_application::Reached;
+use crate::choosing_in_an_application::AChoiceMade;
 use crate::opening_a_file_in_an_application::AFileOpened;
 use crate::pressing_a_control::AControlPressed;
 use crate::reading_an_applications_windows::TheWindowsShowed;
 use crate::scrolling_in_an_application::AWindowScrolled;
+use crate::setting_in_an_application::AValueSet;
 use crate::typing_into_an_application::ATextTyped;
 
 /// What a verb this machine carried out answered with.
@@ -92,9 +94,34 @@ pub enum WhatAVerbDid {
     /// An application's window was scrolled, to a named thing or by a page
     /// (`accessible.scroll_to`, `accessible.scroll_page`, 2026-11-17).
     AWindowWasScrolled(AWindowScrolled),
+    /// A slider or a number box was moved to a number in an application
+    /// (`accessible.set_value`, 2026-11-17).
+    AValueWasSet(AValueSet),
+    /// An option of a drop-down was chosen, or an item of a list selected, in
+    /// an application (`accessible.choose_option`, `accessible.select_item`,
+    /// 2026-11-17).
+    SomethingWasChosen(AChoiceMade),
 }
 
 impl WhatAVerbDid {
+    /// The slider or number box moved, when one was.
+    #[must_use]
+    pub const fn set(&self) -> Option<&AValueSet> {
+        match self {
+            Self::AValueWasSet(set) => Some(set),
+            _ => None,
+        }
+    }
+
+    /// The choice made, when one was.
+    #[must_use]
+    pub const fn chosen(&self) -> Option<&AChoiceMade> {
+        match self {
+            Self::SomethingWasChosen(chosen) => Some(chosen),
+            _ => None,
+        }
+    }
+
     /// The file opened, when one was.
     #[must_use]
     pub const fn opened(&self) -> Option<&AFileOpened> {
@@ -118,7 +145,9 @@ impl WhatAVerbDid {
             | Self::AControlWasPressed(_)
             | Self::TextWasTyped(_)
             | Self::AFileWasOpened(_)
-            | Self::AWindowWasScrolled(_) => None,
+            | Self::AWindowWasScrolled(_)
+            | Self::AValueWasSet(_)
+            | Self::SomethingWasChosen(_) => None,
         }
     }
 
@@ -140,7 +169,9 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
-            | Self::AWindowWasScrolled(_) => None,
+            | Self::AWindowWasScrolled(_)
+            | Self::AValueWasSet(_)
+            | Self::SomethingWasChosen(_) => None,
         }
     }
 
@@ -158,7 +189,9 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
-            | Self::AWindowWasScrolled(_) => None,
+            | Self::AWindowWasScrolled(_)
+            | Self::AValueWasSet(_)
+            | Self::SomethingWasChosen(_) => None,
         }
     }
 
@@ -176,7 +209,9 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
-            | Self::AWindowWasScrolled(_) => None,
+            | Self::AWindowWasScrolled(_)
+            | Self::AValueWasSet(_)
+            | Self::SomethingWasChosen(_) => None,
         }
     }
 
@@ -194,7 +229,9 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
-            | Self::AWindowWasScrolled(_) => None,
+            | Self::AWindowWasScrolled(_)
+            | Self::AValueWasSet(_)
+            | Self::SomethingWasChosen(_) => None,
         }
     }
 
@@ -248,7 +285,9 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
-            | Self::AWindowWasScrolled(_) => None,
+            | Self::AWindowWasScrolled(_)
+            | Self::AValueWasSet(_)
+            | Self::SomethingWasChosen(_) => None,
         }
     }
 }
@@ -268,6 +307,18 @@ impl From<AWindowScrolled> for WhatAVerbDid {
 impl From<ATextTyped> for WhatAVerbDid {
     fn from(typed: ATextTyped) -> Self {
         Self::TextWasTyped(typed)
+    }
+}
+
+impl From<AValueSet> for WhatAVerbDid {
+    fn from(set: AValueSet) -> Self {
+        Self::AValueWasSet(set)
+    }
+}
+
+impl From<AChoiceMade> for WhatAVerbDid {
+    fn from(chosen: AChoiceMade) -> Self {
+        Self::SomethingWasChosen(chosen)
     }
 }
 

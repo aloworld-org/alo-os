@@ -98,6 +98,7 @@ mod a_key_reaches_settings;
 mod a_key_reaches_the_application_sheet;
 mod a_key_reaches_the_bar;
 mod a_key_reaches_the_docks_surfaces;
+mod a_key_reaches_the_file_chooser;
 mod a_key_reaches_the_github_sheet;
 mod a_key_reaches_the_market;
 mod a_key_reaches_the_open_with_sheet;
@@ -324,6 +325,12 @@ mod the_application_sheets_words;
 /// A full-screen window's band, out of sight until the top edge is reached.
 mod the_band_over_full_screen;
 mod the_buttons_an_application_draws;
+/// The file chooser: an application asked the person to choose a file to
+/// open or a place to save one. Public for the one type the door hands it.
+pub mod the_file_chooser;
+mod the_file_chooser_as_read;
+mod the_file_chooser_drawn;
+mod the_file_choosers_words;
 /// The GitHub sign-in sheet (`docs/design/github-sign-in.md`).
 mod the_github_sheet;
 mod the_github_sheet_as_read;
@@ -351,6 +358,8 @@ mod the_screens_before_sign_in_as_read;
 mod the_shell_copies;
 mod the_spoken_hint;
 pub mod what_is_on_the_clipboard;
+/// Where a sheet sits on a display: clear of the alo Bar.
+mod where_a_sheet_sits;
 mod where_a_travelling_window_lands;
 mod where_the_docks_surface_is;
 pub use where_a_travelling_window_lands::TheCards;
@@ -1046,6 +1055,7 @@ pub use booting::{
 pub use capture_flatten::{NotFlattened, burnt_in};
 pub use giving_alo_an_application_it_asked_for::the_grants_for_the_session_go;
 pub use the_application_sheet::{HowLongForAnApplication, OnTheApplicationSheet};
+pub use the_file_chooser::OnTheFileChooser;
 pub use the_github_sheet::OnTheGitHubSheet;
 // `DesktopFrame::capturing` is a public field of this type, so without these a
 // caller outside this crate could only ever pass `None` — the capture tools were

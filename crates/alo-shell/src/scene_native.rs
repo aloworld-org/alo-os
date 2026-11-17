@@ -83,6 +83,10 @@ pub(crate) struct NativeLayers<'a> {
     /// the person — in the question's place, above the GitHub sheet and below
     /// *Open with* (`crate::the_application_sheet_drawn`).
     pub(crate) application_sheet: Option<&'a crate::painted::Washed>,
+    /// The file chooser, while a portal waits on the person to choose a file
+    /// — in the question's place, above every other sheet but the password
+    /// sheet (`crate::the_file_chooser_drawn`).
+    pub(crate) file_chooser: Option<&'a crate::painted::Washed>,
     /// The egress indicator, when the frame carries a status area.
     pub(crate) status: Option<&'a crate::egress_status_raster::EgressStatusPicture>,
     /// What on this machine is watching or listening, beside the egress
@@ -159,6 +163,7 @@ impl NativeLayers<'_> {
             open_with: None,
             github_sheet: None,
             application_sheet: None,
+            file_chooser: None,
             status: None,
             in_use: None,
             notifications: None,

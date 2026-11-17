@@ -63,6 +63,7 @@ use crate::acting_on_an_application::acting_on_an_application;
 use crate::arriving::worded_here;
 use crate::asking_the_record::asking_the_record;
 use crate::bounding::Doing;
+use crate::choosing_in_an_application::choosing_in_an_application;
 use crate::installing_an_application::installing_an_application;
 use crate::looking_at_the_catalogue::looking_at_the_catalogue;
 use crate::machine::Machine;
@@ -74,6 +75,7 @@ use crate::refusing::NotDone;
 use crate::said_in_an_application;
 use crate::said_of_a_publication;
 use crate::scrolling_in_an_application::scrolling_in_an_application;
+use crate::setting_in_an_application::setting_in_an_application;
 use crate::typing_into_an_application::typing_into_an_application;
 use crate::what_a_verb_did::WhatAVerbDid;
 
@@ -194,6 +196,20 @@ fn carrying_it_out(
     {
         let (entry, scrolled) = scrolling_in_an_application(machine, authorised, grants);
         return (entry, scrolled.map(WhatAVerbDid::from));
+    }
+    // **Moving a slider or a number box** (2026-11-17), before the boundary
+    // for the same reason.
+    if authorised.verb() == alo_adapters::SET_VALUE {
+        let (entry, set) = setting_in_an_application(machine, authorised, grants);
+        return (entry, set.map(WhatAVerbDid::from));
+    }
+    // **Choosing in an application** (2026-11-17): an option of a drop-down or
+    // an item of a list, before the boundary for the same reason.
+    if authorised.verb() == alo_adapters::CHOOSE_OPTION
+        || authorised.verb() == alo_adapters::SELECT_ITEM
+    {
+        let (entry, chosen) = choosing_in_an_application(machine, authorised, grants);
+        return (entry, chosen.map(WhatAVerbDid::from));
     }
     // **Opening a file in an application, routed by name like the rest**
     // (2026-11-14). Before the boundary, for the accessibility verbs' reason:

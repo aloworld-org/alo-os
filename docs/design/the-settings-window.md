@@ -510,6 +510,14 @@ the design draws them, and choosing one says in words that nothing changed**
    oversized halo on the first thing a person sees when Settings opens, which
    the frames do not draw. Waiting for a chord is still a doubled outline, the
    second one ring's width inside the first.
+   **Except round a page's own action** (*Give alo a folder*, *Give alo an
+   application*), which is filled in that same navy: on its edge the outline
+   was navy on navy and could not be seen, so a keyboard user could not tell
+   which button Enter would press (walk run 43996140707, pictures 70 and 71).
+   Since 2026-11-17 the outline stands four units outside a filled button, with
+   its corner grown by the same — `docs/design/the-first-start.md`'s *2px navy
+   outer ring with a 4px gap*, as the task window's answers and the Dock
+   already draw it (`alo_dock::measures::THE_FOCUS_RING_STANDS_OFF`).
 2. **A provider row's line in the frame** says *key kept in this computer's
    keyring*; the window says that only when the provider's key reference is
    set, which is what the settings know.

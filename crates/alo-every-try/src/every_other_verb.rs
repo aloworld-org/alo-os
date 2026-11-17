@@ -20,7 +20,8 @@ use std::time::SystemTime;
 
 use alo_acting::Acting;
 use alo_adapters::fallback_verbs::{
-    self, ACTIVATE_CONTROL, KIND, NAME, READ_WINDOW, SCROLL_PAGE, SCROLL_TO, TOWARD,
+    self, ACTIVATE_CONTROL, CHOOSE_OPTION, KIND, NAME, OPTION, READ_WINDOW, SCROLL_PAGE, SCROLL_TO,
+    SELECT_ITEM, SET_VALUE, TOWARD, VALUE,
 };
 use alo_adapters::scrolling::Toward;
 use alo_adapters::{Pressable, Role as OnScreen, Seen, Shown, ShownWindow};
@@ -59,6 +60,22 @@ pub const THE_ARCHIVE: &str = "pictures.zip";
 
 /// The button the pressing request names, and the window it is in.
 pub const RELOAD: &str = "Reload";
+
+/// The slider the setting request names, in the image viewer.
+pub const ZOOM: &str = "Zoom";
+
+/// The number the setting request asks for.
+pub const ZOOMED: i64 = 200;
+
+/// The title of the image viewer's window the setting request reads.
+pub const THE_PICTURE: &str = "holiday.jpg";
+
+/// The option the choosing request names, in the document viewer's
+/// [`ZOOM`] drop-down.
+pub const FIT_WIDTH: &str = "Fit Width";
+
+/// What the [`ZOOM`] drop-down shows before anything is chosen.
+pub const AT_FULL_SIZE: &str = "100%";
 
 /// The title of the browser's window the pressing request reads.
 pub const THE_BROWSERS_WINDOW: &str = "Mozilla Firefox";
@@ -424,6 +441,114 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         ],
     )
     .or_looking_at(the_window_read_again(&the_page, &browser));
+    let viewer = shipped
+        .the(Role::ImageViewer)
+        .application()
+        .identifier()
+        .to_owned();
+    let the_viewers_window = Shown::of(
+        viewer.clone(),
+        vec![ShownWindow::titled(
+            THE_PICTURE.to_owned(),
+            vec![Seen::of(OnScreen::Range, ZOOM.to_owned(), None, 1).valued(Some(100.0))],
+        )],
+        false,
+    );
+    let setting = ARequest::asking(
+        "move a slider in an application",
+        format!("In Loupe, set the {ZOOM} slider to {ZOOMED}."),
+        vec![
+            // **A look**: the person named the slider and the number.
+            Step::of(
+                READ_WINDOW,
+                Answered::With(Done::of_a_window_read(&the_viewers_window, &[])),
+            )
+            .expecting(fallback_verbs::APPLICATION, viewer.as_str())
+            .a_look(),
+            Step::of(
+                SET_VALUE,
+                Answered::With(Done::of_a_setting(&viewer, ZOOM, ZOOMED, true, false)),
+            )
+            .expecting(fallback_verbs::APPLICATION, viewer.as_str())
+            .expecting(NAME, ZOOM)
+            .expecting(VALUE, ZOOMED.to_string()),
+        ],
+    );
+    let papers = shipped
+        .the(Role::DocumentViewer)
+        .application()
+        .identifier()
+        .to_owned();
+    let the_papers_window = Shown::of(
+        papers.clone(),
+        vec![ShownWindow::titled(
+            REPORT.to_owned(),
+            vec![Seen::of(
+                OnScreen::DropDown,
+                ZOOM.to_owned(),
+                Some(AT_FULL_SIZE.to_owned()),
+                1,
+            )],
+        )],
+        false,
+    );
+    let choosing = ARequest::asking(
+        "choose an option in a drop-down",
+        format!("In Papers, set the {ZOOM} drop-down to {FIT_WIDTH}."),
+        vec![
+            // **A look**: the person named the drop-down and the option.
+            Step::of(
+                READ_WINDOW,
+                Answered::With(Done::of_a_window_read(&the_papers_window, &[])),
+            )
+            .expecting(fallback_verbs::APPLICATION, papers.as_str())
+            .a_look(),
+            Step::of(
+                CHOOSE_OPTION,
+                Answered::With(Done::of_a_choice(
+                    &papers,
+                    ZOOM,
+                    Some(FIT_WIDTH),
+                    true,
+                    false,
+                )),
+            )
+            .expecting(fallback_verbs::APPLICATION, papers.as_str())
+            .expecting(NAME, ZOOM)
+            .expecting(OPTION, FIT_WIDTH),
+        ],
+    );
+    let files = shipped
+        .the(Role::FileManager)
+        .application()
+        .identifier()
+        .to_owned();
+    let the_folders_window = Shown::of(
+        files.clone(),
+        vec![ShownWindow::titled(
+            downloads_named.to_owned(),
+            vec![Seen::of(OnScreen::Item, REPORT.to_owned(), None, 1)],
+        )],
+        false,
+    );
+    let selecting = ARequest::asking(
+        "select a file in the file manager",
+        format!("Select {REPORT} in Dolphin, but do not open it."),
+        vec![
+            Step::of(
+                READ_WINDOW,
+                Answered::With(Done::of_a_window_read(&the_folders_window, &[])),
+            )
+            .expecting(fallback_verbs::APPLICATION, files.as_str())
+            .a_look(),
+            Step::of(
+                SELECT_ITEM,
+                Answered::With(Done::of_a_choice(&files, REPORT, None, true, false)),
+            )
+            .expecting(fallback_verbs::APPLICATION, files.as_str())
+            .expecting(NAME, REPORT),
+        ],
+    );
     Ok(vec![
         listing,
         reading,
@@ -439,5 +564,8 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         pressing,
         scrolling_to,
         scrolling_a_page,
+        setting,
+        choosing,
+        selecting,
     ])
 }

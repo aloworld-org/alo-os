@@ -122,6 +122,9 @@ pub struct TheApplicationDoor {
     /// The portal asking the person to choose what opens a link, for the
     /// desktop's *Open with* sheet to take (`choose-link`, 2026-11-12).
     choosing: Vec<crate::the_open_with_sheet::AskedToChoose>,
+    /// The portal asking the person to choose a file, for the desktop's file
+    /// chooser to take (`choose-file`, 2026-11-17).
+    choosing_files: Vec<crate::the_file_chooser::AskedForAFile>,
     /// Texts alo asked to type, part-way read (ADR 0153).
     reading: Vec<ReadingText>,
     /// Typing asked for and read whole, for the compositor to carry out.
@@ -149,6 +152,7 @@ impl TheApplicationDoor {
             counting: Vec::new(),
             working: Vec::new(),
             choosing: Vec::new(),
+            choosing_files: Vec::new(),
             reading: Vec::new(),
             typing: Vec::new(),
             opening: Vec::new(),
@@ -174,6 +178,7 @@ impl TheApplicationDoor {
             counting: Vec::new(),
             working: Vec::new(),
             choosing: Vec::new(),
+            choosing_files: Vec::new(),
             reading: Vec::new(),
             typing: Vec::new(),
             opening: Vec::new(),
@@ -255,6 +260,13 @@ impl TheApplicationDoor {
     /// answered by the desktop's *Open with* sheet when the person has.
     pub fn asked_to_choose(&mut self) -> Vec<crate::the_open_with_sheet::AskedToChoose> {
         std::mem::take(&mut self.choosing)
+    }
+
+    /// Every time the portal has asked the person to choose a file since the
+    /// last time this was asked, handed over with its connection — answered by
+    /// the desktop's file chooser when the person has.
+    pub fn asked_for_files(&mut self) -> Vec<crate::the_file_chooser::AskedForAFile> {
+        std::mem::take(&mut self.choosing_files)
     }
 
     /// Take the door away. The socket goes; the daemon's directory stays.
@@ -341,6 +353,22 @@ impl TheApplicationDoor {
                         Some(Ok(asked)) => {
                             self.choosing
                                 .push(crate::the_open_with_sheet::AskedToChoose::of(
+                                    asked,
+                                    caller.talking,
+                                ));
+                            continue;
+                        }
+                        Some(Err(_)) => {
+                            drop(caller.talking);
+                            continue;
+                        }
+                        None => {}
+                    }
+                    // **And so does the person choosing a file**.
+                    match alo_acting::ToChooseAFile::read(&line) {
+                        Some(Ok(asked)) => {
+                            self.choosing_files
+                                .push(crate::the_file_chooser::AskedForAFile::of(
                                     asked,
                                     caller.talking,
                                 ));

@@ -149,6 +149,7 @@ pub(crate) fn pressed(
         shown,
         pressable,
         not_drawn_yet,
+        ..
     } = walk(tree, whose, within).map_err(Unpressed::NotWalked)?;
     let (by_its_name, by_its_old_name): (Vec<Found>, Vec<Found>) = pressable
         .into_iter()

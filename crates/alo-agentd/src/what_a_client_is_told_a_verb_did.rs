@@ -70,6 +70,23 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
             typed.through_the_tree(),
             typed.saved(),
         ),
+        // A slider or a number box moved (2026-11-17).
+        WhatAVerbDid::AValueWasSet(set) => Done::of_a_setting(
+            set.application(),
+            set.name(),
+            set.value(),
+            set.seen(),
+            set.unanswered(),
+        ),
+        // A choice in an application (2026-11-17): an option of a drop-down
+        // or an item of a list.
+        WhatAVerbDid::SomethingWasChosen(chosen) => Done::of_a_choice(
+            chosen.application(),
+            chosen.name(),
+            chosen.option(),
+            chosen.seen(),
+            chosen.unanswered(),
+        ),
         // The seventh family: a folder sent to the person's GitHub Pages site
         // (2026-11-13). The folder and the address cross as text, so the wire
         // need not learn what a publication is.

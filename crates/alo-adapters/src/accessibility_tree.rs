@@ -167,6 +167,26 @@ pub trait AccessibilityTree {
         Ok(false)
     }
 
+    /// **Choose `at` through `list`, the thing that holds it** — AT-SPI's
+    /// `Selection` on the list, asked to select the child at `at`'s place in
+    /// it, as a screen reader chooses an option (`accessible.choose_option`,
+    /// `accessible.select_item`, 2026-11-17). `list` is `at`'s parent, as the
+    /// walk that found `at` reached it.
+    ///
+    /// [`None`] when the list offers no way to choose its children from
+    /// outside the application, so the caller tries the thing's own action;
+    /// `Some(true)` when the application says it chose it, which a caller
+    /// still reads back. **None by default**, which is what a tree that offers
+    /// no selection says.
+    ///
+    /// # Errors
+    /// [`TreeFault`].
+    // The body is the answer itself, so the mutation check has no other
+    // version of it to try that means the same.
+    fn select_in(&self, _list: &NodeAt, _at: &NodeAt) -> Result<Option<bool>, TreeFault> {
+        Ok(None)
+    }
+
     /// Ask the application to scroll whatever holds one thing until that thing
     /// is on the screen, against `edge` of what it shows — `true` when the
     /// application says it did (`crate::scrolling`). **It takes a thing, never
@@ -184,6 +204,57 @@ pub trait AccessibilityTree {
     fn scroll_to(&self, _at: &NodeAt, _edge: Edge) -> Result<bool, TreeFault> {
         Ok(false)
     }
+
+    /// **The range a slider or a number box says it moves in** — AT-SPI's
+    /// `Value`: its least, its most and its smallest step — or [`None`] for a
+    /// thing that says none (`accessible.set_value`, 2026-11-17). **None by
+    /// default**, which is what a tree that offers no numbers says.
+    ///
+    /// # Errors
+    /// [`TreeFault`].
+    // The body is the answer itself, so the mutation check has no other
+    // version of it to try that means the same.
+    fn range(&self, _at: &NodeAt) -> Result<Option<Bounds>, TreeFault> {
+        Ok(None)
+    }
+
+    /// Move one thing to `value`, through AT-SPI's `Value` — `true` when the
+    /// application took it. **The answer is not evidence it moved**: a caller
+    /// reads [`AccessibilityTree::value`] back. Never asked of a thing whose
+    /// [`AccessibilityTree::range`] is [`None`]; **no by default**.
+    ///
+    /// # Errors
+    /// [`TreeFault`].
+    fn set_value(&self, _at: &NodeAt, _value: f64) -> Result<bool, TreeFault> {
+        Ok(false)
+    }
+}
+
+/// The range a slider or a number box moves in, as the application says it.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Bounds {
+    /// The least it may be.
+    pub least: f64,
+    /// The most it may be.
+    pub most: f64,
+    /// Its smallest step — `0` for one that says none.
+    pub step: f64,
+}
+
+impl Bounds {
+    /// The range an application said, from its least, its most and its
+    /// smallest step — or [`None`] where it said no least or no most, or a
+    /// least above its most, which is no range at all. A step it did not say,
+    /// or said below nothing, is `0`.
+    #[must_use]
+    pub fn said(least: Option<f64>, most: Option<f64>, step: Option<f64>) -> Option<Self> {
+        let (least, most) = (least?, most?);
+        (least <= most).then(|| Self {
+            least,
+            most,
+            step: step.map_or(0.0, |step| step.max(0.0)),
+        })
+    }
 }
 
 /// Which edge of what a window shows a thing is scrolled to.
@@ -198,6 +269,37 @@ pub enum Edge {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// **A range is what the application said, or nothing**: both ends are
+    /// needed, a least above the most is refused, and a step below nothing
+    /// is none.
+    #[test]
+    fn a_range_is_both_ends_in_order_and_a_step_never_below_nothing() {
+        let range = |least, most, step| Bounds::said(least, most, step);
+        assert_eq!(
+            range(Some(0.0), Some(100.0), Some(5.0)),
+            Some(Bounds {
+                least: 0.0,
+                most: 100.0,
+                step: 5.0
+            })
+        );
+        assert_eq!(
+            range(Some(3.0), Some(3.0), None),
+            Some(Bounds {
+                least: 3.0,
+                most: 3.0,
+                step: 0.0
+            })
+        );
+        assert_eq!(
+            range(Some(0.0), Some(1.0), Some(-1.0)).map(|it| it.step),
+            Some(0.0)
+        );
+        assert_eq!(range(Some(5.0), Some(1.0), Some(1.0)), None);
+        assert_eq!(range(None, Some(1.0), Some(1.0)), None);
+        assert_eq!(range(Some(0.0), None, Some(1.0)), None);
+    }
 
     /// A tree that answers only what every tree must.
     struct OnlyWhatIsRequired;
@@ -229,5 +331,10 @@ mod tests {
             object: "/slider".to_owned(),
         };
         assert_eq!(OnlyWhatIsRequired.value(&at), Ok(None));
+        // Nor a range, and it moves nothing.
+        assert_eq!(OnlyWhatIsRequired.range(&at), Ok(None));
+        assert_eq!(OnlyWhatIsRequired.set_value(&at, 1.0), Ok(false));
+        // Nor a way to choose through a list.
+        assert_eq!(OnlyWhatIsRequired.select_in(&at, &at), Ok(None));
     }
 }

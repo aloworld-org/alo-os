@@ -49,6 +49,10 @@ pub(crate) struct ATargetDrawn {
     /// Where the section it is in begins, so a scroll can keep its heading in
     /// view with it.
     pub(crate) section_starts: i32,
+    /// **Filled in the navy the keyboard's ring is drawn in**, as a page's own
+    /// action is: its ring stands outside it with a gap, because a ring on its
+    /// edge would be navy on navy (`crate::settings_raster`'s `a_focus_ring`).
+    pub(crate) filled: bool,
 }
 
 /// One piece of text, as drawn: for a test to read back.
@@ -225,6 +229,7 @@ fn an_action(out: &mut ThePageDrawn, laying: &mut Laying<'_>, y: i32, action: &A
         row: action.row.clone(),
         area: button,
         section_starts: y,
+        filled: true,
     });
     bottom.max(y + tall)
 }

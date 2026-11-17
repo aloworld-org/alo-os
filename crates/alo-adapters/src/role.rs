@@ -70,8 +70,11 @@ impl Role {
             44 => Self::RadioButton,
             // SWITCH
             130 => Self::Switch,
-            // CHECK_MENU_ITEM, MENU_ITEM, RADIO_MENU_ITEM
-            8 | 35 | 45 => Self::MenuItem,
+            // CHECK_MENU_ITEM, MENU, MENU_ITEM, RADIO_MENU_ITEM — a menu is the
+            // heading of one, *File* in a menu bar, which a press opens. One
+            // with no name is the list a heading opens, and the walk passes it
+            // as layout (`crate::walking`).
+            8 | 33 | 35 | 45 => Self::MenuItem,
             // PAGE_TAB
             37 => Self::Tab,
             // LINK

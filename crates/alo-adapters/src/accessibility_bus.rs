@@ -27,7 +27,9 @@ use zbus::blocking::Connection;
 use zbus::blocking::connection::Builder;
 use zbus::zvariant::{OwnedObjectPath, OwnedValue};
 
-use crate::accessibility_tree::{AccessibilityTree, Edge, Facts, NodeAt, Running, TreeFault};
+use crate::accessibility_tree::{
+    AccessibilityTree, Bounds, Edge, Facts, NodeAt, Running, TreeFault,
+};
 use crate::whose_connection::application_of;
 
 /// How long an application has to answer one question.
@@ -61,6 +63,9 @@ const VALUE: &str = "org.a11y.atspi.Value";
 /// The interface through which a thing is scrolled onto the screen — and the
 /// only one of its methods called here, `ScrollTo`.
 const COMPONENT: &str = "org.a11y.atspi.Component";
+/// The interface through which a list's children are chosen
+/// (`accessible.choose_option`, `accessible.select_item`).
+const SELECTION: &str = "org.a11y.atspi.Selection";
 
 /// The accessibility tree of one session, for one turn.
 #[derive(Debug)]
@@ -266,6 +271,55 @@ impl AccessibilityTree for AccessibleSession {
         Ok(f64::try_from(value).ok().filter(|value| value.is_finite()))
     }
 
+    fn range(&self, at: &NodeAt) -> Result<Option<Bounds>, TreeFault> {
+        let interfaces: Vec<String> = self.ask(at, ACCESSIBLE, "GetInterfaces", &())?;
+        if !offers(&interfaces, VALUE) {
+            return Ok(None);
+        }
+        let read = |property: &str| -> Result<Option<f64>, TreeFault> {
+            let value: OwnedValue = self.ask(
+                at,
+                "org.freedesktop.DBus.Properties",
+                "Get",
+                &(VALUE, property),
+            )?;
+            Ok(f64::try_from(value).ok().filter(|value| value.is_finite()))
+        };
+        Ok(Bounds::said(
+            read("MinimumValue")?,
+            read("MaximumValue")?,
+            read("MinimumIncrement")?,
+        ))
+    }
+
+    fn set_value(&self, at: &NodeAt, value: f64) -> Result<bool, TreeFault> {
+        self.bus
+            .call_method(
+                Some(at.holder.as_str()),
+                at.object.as_str(),
+                Some("org.freedesktop.DBus.Properties"),
+                "Set",
+                &(VALUE, "CurrentValue", zbus::zvariant::Value::from(value)),
+            )
+            .map(|_| true)
+            .or_else(|why| match heard(&why) {
+                // **A refusal is an answer**: a value the application will not
+                // take is said as one rather than as a thing that vanished.
+                TreeFault::Vanished => Ok(false),
+                fault => Err(fault),
+            })
+    }
+
+    fn select_in(&self, list: &NodeAt, at: &NodeAt) -> Result<Option<bool>, TreeFault> {
+        let interfaces: Vec<String> = self.ask(list, ACCESSIBLE, "GetInterfaces", &())?;
+        if !offers(&interfaces, SELECTION) {
+            return Ok(None);
+        }
+        let index = a_place(self.ask(at, ACCESSIBLE, "GetIndexInParent", &())?)?;
+        self.ask(list, SELECTION, "SelectChild", &(index,))
+            .map(Some)
+    }
+
     fn takes_text(&self, at: &NodeAt) -> Result<bool, TreeFault> {
         let interfaces: Vec<String> = self.ask(at, ACCESSIBLE, "GetInterfaces", &())?;
         Ok(interfaces
@@ -334,6 +388,17 @@ fn offers(interfaces: &[String], interface: &str) -> bool {
     interfaces.iter().any(|offered| offered == interface)
 }
 
+/// A thing's place among its parent's children, as `GetIndexInParent` said
+/// it — or, for the `-1` a tree answers about a thing no longer in its list,
+/// [`TreeFault::Vanished`].
+fn a_place(index: i32) -> Result<i32, TreeFault> {
+    if index >= 0 {
+        Ok(index)
+    } else {
+        Err(TreeFault::Vanished)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -348,5 +413,14 @@ mod tests {
         assert!(!offers(&button, VALUE));
         assert!(!offers(&[format!("{VALUE}2")], VALUE));
         assert!(!offers(&[], VALUE));
+    }
+
+    /// **A place is a place from the first child on**; the `-1` of a thing
+    /// that left its list is a thing that vanished, and nothing is chosen.
+    #[test]
+    fn a_place_is_from_the_first_child_and_minus_one_has_vanished() {
+        assert_eq!(a_place(0), Ok(0));
+        assert_eq!(a_place(3), Ok(3));
+        assert_eq!(a_place(-1), Err(TreeFault::Vanished));
     }
 }

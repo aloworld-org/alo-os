@@ -987,6 +987,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-file-chooser"
+version = "0.0.1"
+dependencies = [
+ "alo-acting",
+]
+
+[[package]]
 name = "alo-files"
 version = "0.0.1"
 dependencies = [
@@ -1906,6 +1913,7 @@ dependencies = [
  "alo-dock",
  "alo-drawing",
  "alo-egress",
+ "alo-file-chooser",
  "alo-files",
  "alo-folded-light",
  "alo-formats",

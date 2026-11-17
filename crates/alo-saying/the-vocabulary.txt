@@ -80,6 +80,24 @@ adapters.fallback.activate-control.sentence	press the {kind} named “{name}” 
 adapters.fallback.cannot-be-pressed	The {kind} named “{name}” in {application} cannot be pressed from outside the application, so nothing was pressed
 adapters.fallback.cannot-be-pressed-until-alo-works-fully	The {kind} named “{name}” in {application} cannot be pressed from outside the application as it was started, so nothing was pressed. If you want alo to press it, turn on “Let alo work fully inside apps like VSCodium” in Settings → Accessibility → Applications, then close {application} and open it again
 adapters.fallback.cannot-be-used-now	The {kind} named “{name}” in {application} cannot be used right now, so it was not pressed
+adapters.fallback.choose-option.application	the application the drop-down is in
+adapters.fallback.choose-option.changes	Chooses that one option of that one drop-down, as a person picking it would, and then looks to see that it is chosen.
+adapters.fallback.choose-option.leaves	Nothing is typed, no other control is pressed or chosen, and nothing is found by where it is on the screen.
+adapters.fallback.choose-option.name	the drop-down, by the name it shows or the choice it shows now
+adapters.fallback.choose-option.option	the option to choose, exactly as the drop-down lists it
+adapters.fallback.choose-option.purpose	choose one option of a drop-down in an application's window
+adapters.fallback.choose-option.sentence	choose “{option}” in the drop-down “{name}” in {application}
+adapters.fallback.choose.cannot-be-chosen	{application} does not let “{name}” be chosen from outside the application, so nothing was chosen. Choose it yourself in the window
+adapters.fallback.choose.cannot-be-used-now	“{name}” in {application} is greyed out, so nothing was chosen
+adapters.fallback.choose.did-not-answer	{application} did not answer in time, so whether “{name}” was chosen is not known. Look at the window
+adapters.fallback.choose.did-not-choose	{application} said it did not choose “{name}”, so nothing was chosen
+adapters.fallback.choose.more-than-one	{application} shows more than one “{name}”, so alo did not guess which, and nothing was chosen
+adapters.fallback.choose.more-than-one-option	The drop-down “{name}” in {application} lists “{option}” more than once, so alo did not guess which, and nothing was chosen
+adapters.fallback.choose.no-such-drop-down	{application} shows no drop-down named “{name}” now, so nothing was chosen
+adapters.fallback.choose.no-such-item	{application} shows no item named “{name}” now, so nothing was selected
+adapters.fallback.choose.no-such-option	The drop-down “{name}” in {application} lists no option “{option}”, so nothing was chosen
+adapters.fallback.choose.not-seen-chosen	alo asked {application} to choose “{name}”, and the window does not show it chosen yet. Look at the window before going on
+adapters.fallback.choose.too-much-to-be-sure	{application} shows more than can be read at once, so whether “{name}” is the only one is not known, and nothing was chosen
 adapters.fallback.did-not-answer-pressing	{application} did not answer in time, so whether the {kind} named “{name}” was pressed is not known
 adapters.fallback.did-not-answer-reading	{application} did not answer in time, so nothing was read or pressed in it
 adapters.fallback.did-not-press	{application} did not press the {kind} named “{name}”
@@ -128,6 +146,29 @@ adapters.fallback.scroll.changes	Moves what one window of the application shows,
 adapters.fallback.scroll.did-not	{application} answered that it could not scroll there, so nothing was scrolled
 adapters.fallback.scroll.leaves	Nothing is typed, nothing is pressed, no text is changed, and nothing is found by where it is on the screen.
 adapters.fallback.scroll.not-seen-to-move	alo asked {application} to scroll, and its window does not yet say that what was off the screen is on it now. Read the window again to see what it shows
+adapters.fallback.set-value.application	the application the slider or number box is in
+adapters.fallback.set-value.cannot-be-moved	{application} does not let “{name}” be moved from outside the application, so nothing was moved. Move it yourself in the window
+adapters.fallback.set-value.cannot-be-used-now	“{name}” in {application} is greyed out, so nothing was moved
+adapters.fallback.set-value.changes	Moves that one slider or number box to that number, as a person moving it would, and then reads it back.
+adapters.fallback.set-value.did-not-answer	{application} did not answer in time, so whether “{name}” moved to {value} is not known. Look at the window
+adapters.fallback.set-value.did-not-take	{application} did not take {value} for “{name}”, so nothing was moved
+adapters.fallback.set-value.leaves	Nothing is typed, no other control is moved or pressed, a number outside the control's own range is refused, and nothing is found by where it is on the screen.
+adapters.fallback.set-value.more-than-one	{application} shows more than one “{name}”, so alo did not guess which, and nothing was moved
+adapters.fallback.set-value.name	the slider or number box, by the name it shows
+adapters.fallback.set-value.no-such-control	{application} shows no slider or number box named “{name}” now, so nothing was moved
+adapters.fallback.set-value.only-shows-a-number	“{name}” in {application} only shows how far something has got, and cannot be moved, so nothing was moved
+adapters.fallback.set-value.outside-its-range	“{name}” in {application} goes from {least} to {most}, so {value} is outside it, and nothing was moved
+adapters.fallback.set-value.purpose	move a slider or a number box in an application's window to a number
+adapters.fallback.set-value.reads-back-differently	alo asked {application} to move “{name}” to {value}, and it shows a different number now. Look at the window before going on
+adapters.fallback.set-value.sentence	move “{name}” in {application} to {value}
+adapters.fallback.set-value.too-much-to-be-sure	{application} shows more than can be read at once, so whether “{name}” is the only one is not known, and nothing was moved
+adapters.fallback.set-value.value	the whole number to move it to, inside the range it shows
+adapters.fallback.select-item.application	the application the list is in
+adapters.fallback.select-item.changes	Selects that one item, as a person clicking it once would, and then looks to see that it is selected.
+adapters.fallback.select-item.leaves	The item is not opened, moved or changed, nothing is typed, and nothing is found by where it is on the screen.
+adapters.fallback.select-item.name	the item, by the name or the words it shows
+adapters.fallback.select-item.purpose	select one item of a list in an application's window, such as a file in a folder, without opening it
+adapters.fallback.select-item.sentence	select “{name}” in {application}
 adapters.fallback.text-cut-short	{application} shows a text longer than is read at once, so only its first {most} characters were read
 adapters.fallback.too-much-to-be-sure	{application} shows more than can be read at once, so whether its {kind} named “{name}” is the only one is not known, and nothing was pressed
 adapters.fallback.type-text.application	the application to type into
@@ -2115,6 +2156,7 @@ software.refused.already-installed	{application} is already installed on this ma
 software.refused.did-not-answer	The part of this machine that installs applications did not respond, so nothing was changed. Restarting this machine starts it again
 software.refused.names-more-than-one	“{application}” could be more than one application that can be installed, so alo did not guess which and nothing was proposed. Name the one you mean by its identifier
 software.refused.not-enabled	{source} is not a place this machine installs applications from, so nothing was installed. Choose one of the places listed under Software in Settings
+software.refused.not-held-but-this-is	{application} is not in what alo knows {source} offers, but {instead} is, by that name. Name that one if it is the one meant
 software.refused.not-installed	{application} is not installed on this machine, so there is nothing to update or remove. Check the application's name
 software.refused.not-offered	{source} does not offer {application}, so nothing was installed. Check the application's name, or choose another place it comes from
 software.refused.not-verified	{source} is set up without checking that what it sends really comes from it, so this machine does not install or update anything from it. Nothing was installed

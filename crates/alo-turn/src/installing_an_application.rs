@@ -474,6 +474,122 @@ mod tests {
         );
     }
 
+    /// **An identifier the catalogue does not hold, whose last part is one
+    /// application it does, is refused naming that one** — before anything is
+    /// proposed, so the person is never asked to approve a guess, and the
+    /// model is told which identifier the catalogue has. Nothing is rewritten:
+    /// the model has to ask again with it.
+    #[test]
+    fn an_identifier_the_catalogue_does_not_hold_is_refused_naming_the_one_it_does() {
+        use crate::naming_an_application::as_these_name_it;
+        let installable = alo_applications::Installed::holding([
+            Application::called("org.gimp.GIMP", "GIMP").unwrap(),
+            Application::called("org.gnome.TextEditor", "Text Editor").unwrap(),
+        ]);
+        let naming = |said: &str| {
+            as_these_name_it(
+                Some(&installable),
+                INSTALL_APPLICATION,
+                vec![
+                    ("application", Given::text(said)),
+                    ("source", Given::text("flathub")),
+                ],
+            )
+        };
+        for guessed in ["org.gnome.GIMP", "org.gnome.gimp", "io.github.Gimp"] {
+            let refused = naming(guessed);
+            assert!(
+                matches!(
+                    &refused,
+                    Err(NotDone::CouldNotInstall(
+                        alo_software::NotDone::NotHeldButThisIs {
+                            source,
+                            application,
+                            instead,
+                        }
+                    )) if source == "flathub" && application == guessed && instead == "org.gimp.GIMP"
+                ),
+                "{guessed}: {refused:?}"
+            );
+            let said = refused.unwrap_err().said(&in_english()).into_text();
+            assert!(
+                said.contains(guessed) && said.contains("org.gimp.GIMP"),
+                "the refusal does not name both identifiers: {said}"
+            );
+        }
+        // **The refusal cases**: an identifier whose last part no one
+        // application answers to is left exactly as it was given.
+        assert_eq!(
+            naming("org.example.Unheard")
+                .unwrap()
+                .first()
+                .map(|(_, value)| value.clone()),
+            Some(Given::text("org.example.Unheard")),
+            "an identifier with no match was refused or rewritten"
+        );
+    }
+
+    /// **On a machine, at the turn**: proposing `org.gnome.GIMP` is refused
+    /// before the person is asked, names the decided catalogue's GIMP, reaches
+    /// no tool, and is written down.
+    #[test]
+    fn a_guessed_identifier_is_refused_before_anybody_is_asked_and_recorded() {
+        let strings = in_english();
+        let tool = TwoPlaces::default();
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+        let mut bounding = crate::testing::NothingIsBounded;
+        let folder = crate::testing::a_folder_of_our_own("installing-a-guess");
+        let there = folder.join("a-note.txt");
+        std::fs::write(&there, "anything").unwrap();
+        {
+            let mut machine = Machine::carrying_out_file_and_software_verbs(
+                &strings,
+                &OnThisMachine,
+                &tool,
+                Bound::Nobodys,
+                &mut bounding,
+                &mut indicator,
+                &mut record,
+            )
+            .unwrap();
+            let mut grants = Grants::default();
+            let mut turning = Turning::beginning(
+                offering(&there),
+                "@software",
+                hour(),
+                &mut grants,
+                &mut machine,
+            )
+            .unwrap();
+            let refused = turning.proposing(
+                INSTALL_APPLICATION,
+                &[
+                    ("application", Given::text("org.gnome.GIMP")),
+                    ("source", Given::text("flathub")),
+                ],
+                &grants,
+                hour(),
+                noon(),
+            );
+            assert!(
+                matches!(
+                    &refused,
+                    Err(NotDone::CouldNotInstall(
+                        alo_software::NotDone::NotHeldButThisIs { instead, .. }
+                    )) if instead == "org.gimp.GIMP"
+                ),
+                "a guessed identifier was proposed: {refused:?}"
+            );
+        }
+        assert!(tool.installed.borrow().is_empty());
+        assert_eq!(
+            record.answering(&alo_record::Asking::anything()).count(),
+            1,
+            "the refusal was not written down"
+        );
+    }
+
     /// **The whole road, in one test**: a machine that can install offers the
     /// verb, a person approves the sentence, the tool is reached once, and what
     /// comes back says what was installed and that it is sandboxed.

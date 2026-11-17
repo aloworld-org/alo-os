@@ -54,6 +54,9 @@ pub const DEEPEST: usize = 48;
 /// The most characters of one thing's text that are read.
 pub const LONGEST_TEXT: usize = 4_000;
 
+/// `ROLE_MENU`: the heading of a menu, or the list it opens.
+const A_MENU: u32 = 33;
+
 /// A control that can be pressed, as the walk found it.
 #[derive(Debug)]
 pub(crate) struct Found {
@@ -71,6 +74,44 @@ pub(crate) struct Found {
     pub(crate) formerly: Option<String>,
 }
 
+/// A thing that holds a number, as the walk found it — what `crate::setting`
+/// moves (2026-11-17).
+#[derive(Debug)]
+pub(crate) struct Numbered {
+    /// What it is called.
+    pub(crate) name: String,
+    /// Whether a person can move it — a slider or a number box — rather than
+    /// only read it, as a progress bar or a meter.
+    pub(crate) movable: bool,
+    /// Where it is.
+    pub(crate) at: NodeAt,
+    /// Whether a person could use it now.
+    pub(crate) usable: bool,
+}
+
+/// A drop-down or an item of a list, as the walk found it — what
+/// `crate::choosing` chooses in (2026-11-17).
+#[derive(Debug)]
+pub(crate) struct Choosable {
+    /// A drop-down or an item.
+    pub(crate) role: Role,
+    /// What it is called: the name it shows, or where it shows none, the text
+    /// it shows — so it is found by what `accessible.read_window` said of it.
+    pub(crate) called: String,
+    /// Where it is.
+    pub(crate) at: NodeAt,
+    /// The thing that holds it — its list, for an item.
+    pub(crate) list: NodeAt,
+    /// Whether a person could use it now.
+    pub(crate) usable: bool,
+}
+
+/// `ATSPI_ROLE_SLIDER` and `ATSPI_ROLE_SPIN_BUTTON`: what a person moves.
+pub(crate) const MOVED: [u32; 2] = [51, 52];
+
+/// `ATSPI_ROLE_PROGRESS_BAR` and `ATSPI_ROLE_LEVEL_BAR`: what only says how far.
+pub(crate) const ONLY_SAID: [u32; 2] = [42, 103];
+
 /// What one walk found.
 #[derive(Debug)]
 pub(crate) struct Walked {
@@ -78,6 +119,10 @@ pub(crate) struct Walked {
     pub(crate) shown: Shown,
     /// Every named control that can be pressed.
     pub(crate) pressable: Vec<Found>,
+    /// Every named slider, number box, progress bar and meter, showing now.
+    pub(crate) numbered: Vec<Numbered>,
+    /// Every drop-down and item with a name or a text, showing now.
+    pub(crate) choosable: Vec<Choosable>,
     /// The names of the settings no page of Settings draws yet, as the windows
     /// walked say them — empty on every tree but alo's own.
     pub(crate) not_drawn_yet: Vec<String>,
@@ -142,6 +187,8 @@ pub(crate) fn walk(
         asked: 0,
         not_all_read: false,
         pressable: Vec::new(),
+        numbered: Vec::new(),
+        choosable: Vec::new(),
         alos_own: matches!(whose, Whose::AlosOwn { .. }),
     };
     let mut showing = Vec::new();
@@ -190,6 +237,8 @@ pub(crate) fn walk(
     Ok(Walked {
         shown: Shown::of(whose.named().to_owned(), windows, walker.not_all_read),
         pressable: walker.pressable,
+        numbered: walker.numbered,
+        choosable: walker.choosable,
         not_drawn_yet,
     })
 }
@@ -206,6 +255,10 @@ struct Walker<'t> {
     not_all_read: bool,
     /// The named controls found so far.
     pressable: Vec<Found>,
+    /// The named things holding a number found so far.
+    numbered: Vec<Numbered>,
+    /// The drop-downs and items found so far.
+    choosable: Vec<Choosable>,
     /// Whether this is alo's own tree, the one tree whose old names are
     /// promised to keep working (`alo_access::old_names`).
     alos_own: bool,
@@ -306,24 +359,42 @@ impl Walker<'_> {
                 return Ok(());
             }
             self.read += 1;
-            self.one(child, &facts, states, depth, seen)?;
+            self.one(parent, child, &facts, states, depth, seen)?;
             self.inside(child, &facts, depth + 1, seen)?;
         }
         Ok(())
     }
 
-    /// One thing on the screen, described if it says anything.
+    /// One thing on the screen, inside `parent`, described if it says
+    /// anything.
     fn one(
         &mut self,
+        parent: &NodeAt,
         at: &NodeAt,
         facts: &Facts,
         states: States,
         depth: usize,
         seen: &mut Vec<Seen>,
     ) -> Result<(), NotWalked> {
-        let role = Role::of_the_tree(facts.role);
         let name = facts.name.trim().to_owned();
+        // **A menu with no name is not a heading**: it is the list a heading
+        // opens (GTK 3 puts one under every heading), which is layout, and not
+        // a control alo cannot name.
+        let role = match Role::of_the_tree(facts.role) {
+            Role::MenuItem if facts.role == A_MENU && name.is_empty() => Role::Part,
+            role => role,
+        };
         let mut cut_short = false;
+        // **What holds a number, by its name**, for `crate::setting`.
+        let movable = MOVED.contains(&facts.role);
+        if !name.is_empty() && (movable || ONLY_SAID.contains(&facts.role)) {
+            self.numbered.push(Numbered {
+                name: name.clone(),
+                movable,
+                at: at.clone(),
+                usable: states.usable(),
+            });
+        }
         // The one question never put to a password field.
         let text = if role.text_is_read() && role != Role::PasswordField && facts.has_text {
             match self.tree.text(at) {
@@ -347,6 +418,27 @@ impl Walker<'_> {
         } else {
             None
         };
+        // **What a drop-down or an item is chosen by**: its name, or the text
+        // it shows where it has none — what a read said of it either way.
+        if matches!(role, Role::DropDown | Role::Item) {
+            let called = if name.is_empty() {
+                text.as_deref()
+                    .map(str::trim)
+                    .unwrap_or_default()
+                    .to_owned()
+            } else {
+                name.clone()
+            };
+            if !called.is_empty() {
+                self.choosable.push(Choosable {
+                    role,
+                    called,
+                    at: at.clone(),
+                    list: parent.clone(),
+                    usable: states.usable(),
+                });
+            }
+        }
         let described = Seen::of(role, name.clone(), text, depth)
             .on(states.on(role))
             .usable(states.usable())

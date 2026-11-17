@@ -29,11 +29,13 @@
 
 use alo_capability::{Arg, Effect, Requires, Takes, Verb, Verbs};
 
+use crate::choosing_words as choosing;
 use crate::fallback_words as words;
 use crate::not_loaded::NotLoaded;
 use crate::pressable::Pressable;
 use crate::scrolling::Toward;
 use crate::scrolling_words as scrolling;
+use crate::setting_words as setting;
 use crate::typing_words as typing;
 
 /// The prefix both verbs are named under.
@@ -58,8 +60,30 @@ pub const SCROLL_PAGE: &str = "accessible.scroll_page";
 /// The argument naming which way a page is scrolled.
 pub const TOWARD: &str = "toward";
 
+/// The verb that moves a slider or a number box to a whole number
+/// (2026-11-17, the owner's "Yes do all").
+pub const SET_VALUE: &str = "accessible.set_value";
+
+/// The argument carrying the number.
+pub const VALUE: &str = "value";
+
+/// The largest number either way `accessible.set_value` takes. The control's
+/// own range is what decides at the moment of moving; this only keeps the
+/// number one a slider could hold.
+pub const LARGEST_VALUE: i64 = 1_000_000_000;
+
 /// The argument carrying the text, whole.
 pub const TEXT: &str = "text";
+
+/// The verb that chooses one option of a drop-down (2026-11-17, the owner's
+/// "Yes do all").
+pub const CHOOSE_OPTION: &str = "accessible.choose_option";
+
+/// The verb that selects one item of a list, without opening it (2026-11-17).
+pub const SELECT_ITEM: &str = "accessible.select_item";
+
+/// The argument naming the option chosen.
+pub const OPTION: &str = "option";
 
 /// The argument naming the application, in both verbs.
 pub const APPLICATION: &str = "application";
@@ -184,6 +208,69 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
             scrolling::SCROLL_PAGE_SENTENCE,
         )
         .and_then(|verb| verb.changing(scrolling::SCROLL_CHANGES, Some(scrolling::SCROLL_LEAVES))),
+    )?)?;
+    verbs.declare(checked(
+        SET_VALUE,
+        Verb::checked(
+            SET_VALUE,
+            setting::SET_PURPOSE,
+            Effect::Change,
+            vec![
+                Arg::taking(APPLICATION, setting::SET_APPLICATION, Takes::Application),
+                Arg::taking(NAME, setting::SET_NAME, Takes::name(LONGEST_NAME)),
+                Arg::taking(
+                    VALUE,
+                    setting::SET_VALUE_WORD,
+                    Takes::count(-LARGEST_VALUE, LARGEST_VALUE),
+                ),
+            ],
+            Requires::grants_over([APPLICATION]),
+            setting::SET_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(setting::SET_CHANGES, Some(setting::SET_LEAVES))),
+    )?)?;
+    verbs.declare(checked(
+        CHOOSE_OPTION,
+        Verb::checked(
+            CHOOSE_OPTION,
+            choosing::CHOOSE_PURPOSE,
+            Effect::Change,
+            vec![
+                Arg::taking(
+                    APPLICATION,
+                    choosing::CHOOSE_APPLICATION,
+                    Takes::Application,
+                ),
+                Arg::taking(NAME, choosing::CHOOSE_NAME, Takes::name(LONGEST_NAME)),
+                Arg::taking(
+                    OPTION,
+                    choosing::CHOOSE_OPTION_WORD,
+                    Takes::name(LONGEST_NAME),
+                ),
+            ],
+            Requires::grants_over([APPLICATION]),
+            choosing::CHOOSE_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(choosing::CHOOSE_CHANGES, Some(choosing::CHOOSE_LEAVES))),
+    )?)?;
+    verbs.declare(checked(
+        SELECT_ITEM,
+        Verb::checked(
+            SELECT_ITEM,
+            choosing::SELECT_PURPOSE,
+            Effect::Change,
+            vec![
+                Arg::taking(
+                    APPLICATION,
+                    choosing::SELECT_APPLICATION,
+                    Takes::Application,
+                ),
+                Arg::taking(NAME, choosing::SELECT_NAME, Takes::name(LONGEST_NAME)),
+            ],
+            Requires::grants_over([APPLICATION]),
+            choosing::SELECT_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(choosing::SELECT_CHANGES, Some(choosing::SELECT_LEAVES))),
     )?)?;
     Ok(())
 }

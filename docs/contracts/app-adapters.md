@@ -425,3 +425,85 @@ grant.
 
 **Not built on the day this was written.** Nothing in this workspace declares the
 browser's adapter or carries `api` out.
+
+## Amended 2026-11-17 — the fallback moves a slider or a number box
+
+*The owner's "Yes do all", 2026-11-17. Additive: no verb above changes
+meaning.*
+
+The fallback gains one verb, offered by a turn
+(`crates/alo-turn/src/setting_in_an_application.rs`):
+
+| Verb | Effect | Takes | Sentence |
+|---|---|---|---|
+| `accessible.set_value` | change | `application`; `name`, the slider or number box by the name it shows, up to 200 characters; `value`, a whole number from −1,000,000,000 to 1,000,000,000 | *move “{name}” in {application} to {value}* |
+
+It requires a grant over the application. What anyone building on it can rely
+on, beside everything the fallback already promises:
+
+- **Found again, at the moment of moving**: a slider (`SLIDER`) or a number box
+  (`SPIN_BUTTON`) on the screen, named exactly what was approved, usable, and
+  the only thing of that name holding a number. A progress bar or meter of that
+  name is refused in its own words, because nobody can move it.
+- **Inside the range the control itself says**, asked of it at that moment
+  through AT-SPI's `Value` (`MinimumValue`, `MaximumValue`): a number outside it
+  is refused before anything moves, naming the range, as `terminal-commands.md`
+  promises for `set`. A control that says no range cannot be moved from
+  outside, and is said so.
+- **Moved through `Value`'s `CurrentValue`**, never by keys or a drag, and
+  **read back for up to a second**: the answer, `set`, says whether it read back
+  as the number (`seen`, within half the control's own step) and whether the
+  application did not answer. A move the application was asked to make is
+  recorded as run either way, with what alo saw beside it.
+- **Whole numbers only.** A slider whose range is a fraction — from 0 to 1 —
+  can be moved only to its ends. Taking a fraction is a wider argument kind
+  than this repository has, and is left for when a person needs it.
+
+**Measured: nothing yet.** Which toolkits let `CurrentValue` be set from
+outside is unmeasured; the tests stand in a tree built from the published roles
+(`crates/alo-adapters/tests/setting_a_value.rs`).
+
+## Amended 2026-11-17 — the fallback chooses an option and selects an item
+
+*The owner's "Yes do all", 2026-11-17, approving alo choosing in an
+application's window. Additive: no verb above changes meaning.*
+
+The fallback gains two verbs, offered by a turn
+(`crates/alo-turn/src/choosing_in_an_application.rs`):
+
+| Verb | Effect | Takes | Sentence |
+|---|---|---|---|
+| `accessible.choose_option` | change | `application`; `name`, the drop-down by the name it shows, or where it shows none by the choice it shows, up to 200 characters; `option`, one name of up to 200 characters | *choose “{option}” in the drop-down “{name}” in {application}* |
+| `accessible.select_item` | change | `application`; `name`, the item by the name or the words it shows, up to 200 characters | *select “{name}” in {application}* |
+
+Both require a grant over the application. What anyone building on them can
+rely on, beside everything the fallback already promises:
+
+- **Found again, at the moment of choosing.** The drop-down or item must be
+  showing, named exactly what was approved, usable, and the only one; none,
+  more than one, too much to read whole, and greyed out are each refused in
+  words.
+- **An option is looked for inside its drop-down alone**, whether or not it is on
+  the screen, because a closed drop-down keeps its options out of sight. Nothing
+  outside that drop-down is read this way, only names are compared, and no text
+  is asked of anything. An option the drop-down does not list, or lists twice,
+  is refused.
+- **Chosen the way a screen reader chooses**: through the list's own
+  `Selection`, asked to select the child at the option's or item's place.
+  Where the list offers none, an option is chosen by its own `select`, `click`,
+  `press` or `activate`, and an item **only by `select`** — never `activate`,
+  `click` or `open`, which open an item in many toolkits. **Selecting never
+  opens.**
+- **Read back for up to a second.** The option or item says it is selected, or
+  the drop-down shows the option by its name or text. The answer, `chosen`, says
+  whether it was seen; a choice the application was asked to make is recorded
+  as run either way, with *the window does not show it chosen yet* or *did not
+  answer* beside it.
+- **Opening an item is not here.** Opening a file from a file manager starts
+  whatever that file opens with, which may be a program; whether alo may do
+  that, and at which setting, is put to the owner rather than decided in this
+  contract.
+
+**Measured: nothing yet.** Which toolkits offer `Selection` on a drop-down's
+options and a file list's items is unmeasured; the tests stand in a tree built
+from the published roles (`crates/alo-adapters/tests/choosing_in_a_window.rs`).

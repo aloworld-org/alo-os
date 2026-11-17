@@ -630,6 +630,45 @@ fn a_link_to_choose_for_is_handed_on_with_its_connection_held() {
     let _ = std::fs::remove_dir_all(root);
 }
 
+/// **The person choosing a file is handed on with its connection held**,
+/// nothing answered by the door itself — and a line meant as `choose-file`
+/// that is not one is closed with nothing written.
+#[test]
+fn a_file_to_choose_is_handed_on_with_its_connection_held() {
+    let (root, place) = a_place("choose-file");
+    let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
+    let mut hand = AHand::answering(Answer::Acted);
+    let mut portal = UnixStream::connect(place.socket()).unwrap();
+    portal
+        .write_all(b"choose-file org.gnome.TextEditor open /\n")
+        .unwrap();
+    assert_eq!(door.answered(&mut hand), 0);
+    let asked = door.asked_for_files();
+    assert_eq!(asked.len(), 1);
+    assert!(door.asked_for_files().is_empty(), "handed over once");
+    let mut sheet = crate::the_file_chooser::TheFileChooser::none();
+    let now = std::time::Instant::now();
+    let disk = crate::the_file_chooser::THE_DISK;
+    sheet.asked(asked, true, now, &disk);
+    assert!(sheet.is_up());
+    sheet.pressed(alo_file_chooser::Key::Escape, now, &disk);
+    assert_eq!(one_line(&mut portal).as_deref(), Some("cancelled"));
+    for line in [
+        "choose-file org.gnome.TextEditor open relative/folder\n",
+        "choose-file org.gnome.TextEditor save /home a/b\n",
+        "choose-file org.gnome.TextEditor print /home\n",
+    ] {
+        let mut portal = UnixStream::connect(place.socket()).unwrap();
+        portal.write_all(line.as_bytes()).unwrap();
+        assert_eq!(door.answered(&mut hand), 0, "{line}");
+        assert_eq!(one_line(&mut portal), None, "{line}");
+        assert!(door.asked_for_files().is_empty(), "{line}");
+    }
+    assert!(hand.links.is_empty() && hand.carried.is_empty());
+    door.taken_away();
+    let _ = std::fs::remove_dir_all(root);
+}
+
 /// **A text alo asked to type is handed on whole, however it arrives**, and
 /// nothing is carried out as an act (ADR 0153).
 #[test]

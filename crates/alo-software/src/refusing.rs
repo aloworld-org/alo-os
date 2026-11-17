@@ -52,6 +52,17 @@ pub enum NotDone {
         /// The application asked for.
         application: String,
     },
+    /// The identifier given is not one the catalogue holds, and the catalogue
+    /// holds one application its last part answers to: that one is named, and
+    /// nothing is rewritten or proposed.
+    NotHeldButThisIs {
+        /// The place.
+        source: String,
+        /// The identifier asked for, as it was given.
+        application: String,
+        /// The identifier of the catalogue's application it answers to.
+        instead: String,
+    },
     /// The name given answers to more than one application that can be
     /// installed, so none was chosen.
     NamesMoreThanOne {
@@ -121,6 +132,7 @@ impl NotDone {
             Self::NowhereToReach { .. } => words::NOWHERE_TO_REACH,
             Self::SignatureNotShown { .. } => words::SIGNATURE_NOT_SHOWN,
             Self::NotOffered { .. } => words::NOT_OFFERED,
+            Self::NotHeldButThisIs { .. } => words::NOT_HELD_BUT_THIS_IS,
             Self::NamesMoreThanOne { .. } => words::NAMES_MORE_THAN_ONE,
             Self::AlreadyInstalled { .. } => words::ALREADY_INSTALLED,
             Self::NotInstalled { .. } => words::NOT_INSTALLED,
@@ -146,6 +158,13 @@ impl NotDone {
                 application,
             } => Filling::of(words::SOURCE, source.clone())
                 .and(words::APPLICATION, application.clone()),
+            Self::NotHeldButThisIs {
+                source,
+                application,
+                instead,
+            } => Filling::of(words::SOURCE, source.clone())
+                .and(words::APPLICATION, application.clone())
+                .and(words::INSTEAD, instead.clone()),
             Self::AlreadyInstalled { application }
             | Self::NamesMoreThanOne { application }
             | Self::NotInstalled { application }
@@ -197,6 +216,11 @@ mod tests {
             NotDone::NotOffered {
                 source: source(),
                 application: application(),
+            },
+            NotDone::NotHeldButThisIs {
+                source: source(),
+                application: "org.gnome.Gedit".to_owned(),
+                instead: application(),
             },
             NotDone::NamesMoreThanOne {
                 application: "Paint".to_owned(),
