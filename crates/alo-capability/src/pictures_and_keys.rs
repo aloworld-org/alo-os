@@ -47,6 +47,11 @@ use alo_strings::Word;
 
 use crate::words;
 
+/// The name [`words::LET_ALO_USE_PICTURES_AND_KEYS_IN`] fills with the
+/// application's name, given once here so the sentence and whoever fills it
+/// cannot come to disagree.
+pub const THE_APPLICATION: &str = "application";
+
 /// The applications the person let alo use pictures and keys in.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct PicturesAndKeys {

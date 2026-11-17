@@ -88,3 +88,14 @@ fn an_application_named_twice_is_kept_once() {
         .switched_on(A_GAME);
     assert_eq!(twice.applications().count(), 1);
 }
+
+/// **The switch's sentence has a place for the name this file fills**, so a
+/// switch is never drawn with the brace still in it.
+#[test]
+fn the_switchs_sentence_is_filled_by_the_name_given_here() {
+    assert!(
+        words::LET_ALO_USE_PICTURES_AND_KEYS_IN
+            .says()
+            .contains(&format!("{{{THE_APPLICATION}}}"))
+    );
+}

@@ -278,7 +278,10 @@ fn pictures_and_keys(open: &Open, strings: &Strings) -> Option<Vec<ARow>> {
         let title = strings
             .say(
                 &cw::LET_ALO_USE_PICTURES_AND_KEYS_IN.key(),
-                &Filling::of("application", application.called().to_owned()),
+                &Filling::of(
+                    alo_capability::pictures_and_keys::THE_APPLICATION,
+                    application.called().to_owned(),
+                ),
             )
             .into_text();
         let mut drawn = ARow::named(
