@@ -48,7 +48,7 @@ pub struct TheMarketsWords {
     /// Every kind of work a person can narrow by, in the order the window
     /// shows them — the widest first.
     ///
-    /// **Nine, not eight.** `Category` has eight; the first of these is
+    /// **One more than `Category::EVERY`.** The first of these is
     /// *everything*, which narrows nothing and is not a `Category` at all. A
     /// caller walking `Category::EVERY` beside this must skip the first or it
     /// draws every label one place to the left, which looks like a layout
@@ -147,7 +147,7 @@ mod tests {
         assert!(!words.install.is_empty());
         assert!(!words.installing.is_empty());
         assert!(!words.open.is_empty());
-        assert_eq!(words.kinds_of_work.len(), 9);
+        assert_eq!(words.kinds_of_work.len(), Category::EVERY.len() + 1);
         assert_eq!(words.labels.len(), 3);
         for one in &words.labels {
             assert!(!one.is_empty());
@@ -157,7 +157,7 @@ mod tests {
         }
     }
 
-    /// **The widest view is first and the eight follow it in their own order**,
+    /// **The widest view is first and the kinds follow it in their own order**,
     /// so a caller that walked `Category::EVERY` beside this list would be one
     /// place out — which is what `the` exists to prevent.
     #[test]
@@ -176,7 +176,7 @@ mod tests {
             );
             seen.push(name.to_owned());
         }
-        assert_eq!(seen.len(), 9);
+        assert_eq!(seen.len(), Category::EVERY.len() + 1);
     }
 
     /// **No identifier, version or licence is in here.** Those are the
@@ -202,6 +202,10 @@ mod tests {
             }
             read += 1;
         }
-        assert_eq!(read, 17, "the loop read every word");
+        assert_eq!(
+            read,
+            5 + Category::EVERY.len() + 1 + 3,
+            "the loop read every word"
+        );
     }
 }

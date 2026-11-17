@@ -143,9 +143,13 @@ fn an_odd_number_of_applications_still_gets_its_last_row() {
             let at =
                 where_the_market_opens(a_display(1920, 1080), &showing, TextScale::ordinary(), ONE)
                     .unwrap();
+            // **Cut to the display where the rows need more**, which the
+            // whole catalogue does since it held sixty-two (2026-11-17).
             assert_eq!(
                 at.size.h,
-                i32::try_from(m::the_window_is_tall(rows)).unwrap(),
+                i32::try_from(m::the_window_is_tall(rows))
+                    .unwrap()
+                    .min(1080),
                 "{how_many} applications were given {} pixels",
                 at.size.h
             );
@@ -181,7 +185,10 @@ fn a_display_too_small_holds_no_window() {
 /// through the person's scale rather than being a pixel count.
 #[test]
 fn a_person_who_reads_larger_gets_a_larger_window() {
-    let window = an_open_window();
+    // **Narrowed to one kind of work**, because the whole catalogue is taller
+    // than the display at either size and both are cut to it.
+    let mut window = an_open_window();
+    window.pressed(MarketKey::After);
     let view = a_display(3840, 2160);
     let ordinary =
         where_the_market_opens(view, &window.shows(), TextScale::ordinary(), ONE).unwrap();
@@ -200,14 +207,14 @@ fn a_person_who_reads_larger_gets_a_larger_window() {
 
 /// **A window too tall for the display is cut, not refused.**
 ///
-/// The whole catalogue needs 755 logical pixels and the largest text size a
-/// person may choose is 300 per cent, which is 2265 — taller than a 4K
-/// display. Refusing it, which this file did first, left a person who reads
-/// large with no market at all while everybody else had one.
+/// The whole catalogue needs far more than any display, and the largest text
+/// size a person may choose is 300 per cent. Refusing it, which this file did
+/// first, left a person who reads large with no market at all while everybody
+/// else had one.
 ///
-/// `crate::market_raster` draws a cut window correctly: it stops at the last
-/// whole card. What it cannot yet do is scroll to the rest, which
-/// `super`'s header states as the next change rather than half-building it.
+/// `crate::market_raster` draws a cut window by scrolling: as many whole rows
+/// as fit, starting from one that keeps the person's application in view
+/// (since 2026-11-17).
 #[test]
 fn a_window_too_tall_for_the_display_is_cut_rather_than_refused() {
     let window = an_open_window();

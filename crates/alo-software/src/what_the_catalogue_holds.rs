@@ -59,7 +59,7 @@ pub struct WhatTheCatalogueHolds {
 impl WhatTheCatalogueHolds {
     /// What is on one shelf of this catalogue, or on all of them.
     ///
-    /// `None` is *everything*, which is what the ninth choice means and what
+    /// `None` is *everything*, which is what the *everything* choice means and what
     /// the window a person opens shows first.
     #[must_use]
     pub fn under(catalogue: &Catalogue, kind: Option<Category>) -> Self {
@@ -107,7 +107,7 @@ mod tests {
         Catalogue::decided().unwrap()
     }
 
-    /// **Everything is everything**, which is the answer the ninth choice gets
+    /// **Everything is everything**, which is the answer the *everything* choice gets
     /// and the one the window opens on.
     #[test]
     fn looking_under_everything_shows_the_whole_catalogue() {

@@ -96,7 +96,7 @@ fn an_entry_that_does_not_say_verified_or_early_is_refused() {
 #[test]
 fn the_decided_catalogue_holds() {
     let catalogue = Catalogue::decided().unwrap();
-    assert_eq!(catalogue.how_many(), 8);
+    assert_eq!(catalogue.how_many(), 62);
     for category in Category::EVERY {
         assert!(
             catalogue.under(category).next().is_some(),
@@ -269,7 +269,7 @@ fn a_key_nothing_reads_is_refused() {
         matches!(why, NotCatalogued::NotRead { .. }),
         "an unknown key was not refused: {why:?}"
     );
-    let unknown_category = replacing("category = \"video\"", "category = \"games\"");
+    let unknown_category = replacing("category = \"video\"", "category = \"gardening\"");
     assert!(matches!(
         Catalogue::read(&unknown_category, &shipped).unwrap_err(),
         NotCatalogued::NotRead { .. }
@@ -311,7 +311,7 @@ fn a_place_that_is_not_a_sources_name_is_refused() {
 #[test]
 fn a_version_that_is_not_a_release_and_a_licence_that_is_not_one_are_refused() {
     let shipped = what_a_machine_ships();
-    let unpinned = replacing("version = \"3.2.6\"", "version = \"latest\"");
+    let unpinned = replacing("version = \"3.2.8\"", "version = \"latest\"");
     assert_eq!(
         Catalogue::read(&unpinned, &shipped).unwrap_err(),
         NotCatalogued::NotAVersion {
@@ -393,27 +393,47 @@ fn a_licence_reference_nobody_read_and_a_word_for_a_release_are_still_refused() 
     }
 }
 
-/// **Nothing in the catalogue is a proprietary licence**, and nothing is
-/// unstated. A list this product recommends is a list a person can keep using
-/// after we stop publishing it.
+/// **Every licence is an open one a person keeps, or is labelled as not one.**
+///
+/// Until 2026-11-17 this refused any proprietary licence outright. The owner
+/// decided that day that proprietary applications are listed, *labelled 'not
+/// open source'* — so the promise that survives is the one a person can check:
+/// an entry is either under a licence family that lets them keep using it, or
+/// its row says it is not open source. Nothing proprietary passes unlabelled.
 #[test]
-fn everything_offered_is_licensed_in_a_way_a_person_keeps() {
+fn every_licence_is_one_a_person_keeps_or_is_labelled_not_open_source() {
     let catalogue = Catalogue::decided().unwrap();
-    let mut seen = 0;
+    let mut open = 0;
+    let mut labelled = 0;
     for one in catalogue.every() {
         let licence = one.licence();
-        assert!(
-            licence.contains("GPL")
-                || licence.contains("MPL")
-                || licence.contains("MIT")
-                || licence.contains("Apache")
-                || licence.contains("BSD"),
-            "{} is offered under {licence}",
-            one.application().identifier()
-        );
-        seen += 1;
+        if one.is_open_source() {
+            assert!(
+                ["GPL", "MPL", "MIT", "Apache", "BSD"]
+                    .iter()
+                    .any(|family| licence.contains(family)),
+                "{} is offered under {licence} and not labelled",
+                one.application().identifier()
+            );
+            open += 1;
+        } else {
+            assert!(
+                one.labels().contains(&Label::NotOpenSource),
+                "{} is proprietary and its row would not say so",
+                one.application().identifier()
+            );
+            labelled += 1;
+        }
     }
-    assert_eq!(seen, 8, "the loop read every entry");
+    assert_eq!(
+        open + labelled,
+        catalogue.how_many(),
+        "the loop read every entry"
+    );
+    assert!(
+        labelled > 0,
+        "the premise: the catalogue lists proprietary applications"
+    );
 }
 
 /// **There is no English in the data.** Not a name, not a summary — those
@@ -451,5 +471,8 @@ fn the_catalogue_holds_no_words_a_person_would_read() {
         );
         read += 1;
     }
-    assert_eq!(read, 57, "format, and seven keys for each of eight entries");
+    assert_eq!(
+        read, 435,
+        "format, and seven keys for each of sixty-two entries"
+    );
 }
