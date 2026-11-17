@@ -33,6 +33,10 @@ pub const APPLICATION: &str = "application";
 /// The gap holding the name of a place applications come from.
 pub const SOURCE: &str = "source";
 
+/// The gap holding the identifier of the catalogue's application, where one
+/// was asked for by an identifier the catalogue does not hold.
+pub const INSTEAD: &str = "instead";
+
 /// The gap holding the kind of work a person is looking under.
 ///
 /// **Filled with the word a person reads, not with the identifier.**
@@ -193,6 +197,20 @@ pub const NOT_OFFERED: Word = Word::saying(
 .noting(
     "Said when the place named has no application by that identifier. {application} is the \
      identifier exactly as it was given, and {source} the name of the place.",
+);
+
+/// An identifier the catalogue does not hold, where it holds one application
+/// the identifier's last part answers to.
+pub const NOT_HELD_BUT_THIS_IS: Word = Word::saying(
+    "software.refused.not-held-but-this-is",
+    "{application} is not in what alo knows {source} offers, but {instead} is, by that name. Name \
+     that one if it is the one meant",
+)
+.noting(
+    "Said when an application to install was named by an identifier the catalogue does not \
+     hold, and one application the catalogue holds answers to its last part. {application} is \
+     the identifier exactly as it was given, {instead} the catalogue's, and {source} the name of \
+     the place. None of them is translated.",
 );
 
 /// The application is already on this machine.
@@ -359,7 +377,7 @@ pub const THE_NAMES: [Word; 5] = [
 ];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 41] = [
+pub const THE_SENTENCES: [Word; 42] = [
     READ_SENTENCE,
     INSTALLED,
     INSTALLED_UNSANDBOXED,
@@ -372,6 +390,7 @@ pub const THE_SENTENCES: [Word; 41] = [
     NOT_VERIFIED,
     SIGNATURE_NOT_SHOWN,
     NOT_OFFERED,
+    NOT_HELD_BUT_THIS_IS,
     NAMES_MORE_THAN_ONE,
     ALREADY_INSTALLED,
     NOT_INSTALLED,
@@ -405,13 +424,14 @@ pub const THE_SENTENCES: [Word; 41] = [
 
 /// Every refusal, so that a test can hold each of them to saying what did not
 /// happen **and** what a person does about it.
-pub const THE_REFUSALS: [Word; 12] = [
+pub const THE_REFUSALS: [Word; 13] = [
     NOT_ENABLED,
     OUTSIDE_THE_BOUND_BY_AN_ADMINISTRATOR,
     OUTSIDE_THE_BOUND_BY_THIS_PERSON,
     NOT_VERIFIED,
     SIGNATURE_NOT_SHOWN,
     NOT_OFFERED,
+    NOT_HELD_BUT_THIS_IS,
     NAMES_MORE_THAN_ONE,
     ALREADY_INSTALLED,
     NOT_INSTALLED,
@@ -617,7 +637,7 @@ pub const VERB_LEAVES: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 46] = [
+pub const EVERY_WORD: [Word; 47] = [
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
@@ -635,6 +655,7 @@ pub const EVERY_WORD: [Word; 46] = [
     NOT_VERIFIED,
     SIGNATURE_NOT_SHOWN,
     NOT_OFFERED,
+    NOT_HELD_BUT_THIS_IS,
     NAMES_MORE_THAN_ONE,
     ALREADY_INSTALLED,
     NOT_INSTALLED,
@@ -759,7 +780,7 @@ mod tests {
             assert!(word.note().is_some(), "{}", word.named());
             for gap in word.phrase().unwrap().source().gaps() {
                 assert!(
-                    [APPLICATION, SOURCE, KIND_OF_WORK].contains(&gap.as_str()),
+                    [APPLICATION, SOURCE, INSTEAD, KIND_OF_WORK].contains(&gap.as_str()),
                     "{} has a gap called {gap}",
                     word.named()
                 );

@@ -44,6 +44,20 @@ pub enum WentWrong {
         /// The machine's own sentence about it.
         why: String,
     },
+    /// The machine refused the step before asking anybody, as a booted machine
+    /// would: an application to install it could not name as one the catalogue
+    /// holds (`alo_turn::as_the_catalogue_names_it`). The model is shown the
+    /// refusal and the try goes on from it, so this ends a try only where the
+    /// model never corrects itself.
+    #[error("at step {step} the machine refused {verb} before asking anybody: {}", .said.text())]
+    RefusedBeforeAsking {
+        /// Which step.
+        step: usize,
+        /// The verb.
+        verb: String,
+        /// The machine's refusal, as the model is shown it.
+        said: Box<alo_strings::Said>,
+    },
     /// The arguments were accepted and one of them was not the value the road
     /// decides.
     #[error("at step {step} it gave {argument} as `{given}` where `{expected}` was expected")]

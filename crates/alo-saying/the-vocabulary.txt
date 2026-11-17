@@ -2132,6 +2132,7 @@ software.refused.already-installed	{application} is already installed on this ma
 software.refused.did-not-answer	The part of this machine that installs applications did not respond, so nothing was changed. Restarting this machine starts it again
 software.refused.names-more-than-one	“{application}” could be more than one application that can be installed, so alo did not guess which and nothing was proposed. Name the one you mean by its identifier
 software.refused.not-enabled	{source} is not a place this machine installs applications from, so nothing was installed. Choose one of the places listed under Software in Settings
+software.refused.not-held-but-this-is	{application} is not in what alo knows {source} offers, but {instead} is, by that name. Name that one if it is the one meant
 software.refused.not-installed	{application} is not installed on this machine, so there is nothing to update or remove. Check the application's name
 software.refused.not-offered	{source} does not offer {application}, so nothing was installed. Check the application's name, or choose another place it comes from
 software.refused.not-verified	{source} is set up without checking that what it sends really comes from it, so this machine does not install or update anything from it. Nothing was installed

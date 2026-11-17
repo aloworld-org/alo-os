@@ -1164,6 +1164,15 @@ proposed, and written down. An identifier is matched without regard to case;
 one the catalogue does not hold is left as given, and the place says whether it
 offers it.
 
+**A guessed identifier is refused naming the catalogue's** (since 2026-11-17):
+an identifier the catalogue does not hold, whose last part exactly one
+application in the catalogue answers to (`org.gnome.GIMP`, whose `GIMP` is
+`org.gimp.GIMP`), is refused before anything is proposed, with
+`software.refused.not-held-but-this-is` naming that application's identifier,
+and written down. Nothing is rewritten: the agent asks again with the
+identifier it was told. One whose last part answers to none, or to several, is
+left as given.
+
 **The place is checked when it runs, not when it is proposed.** A `source` not
 set up on the machine, outside the organisation's bound, or set up without
 signature checking is refused at the moment of installation, in words, whatever
