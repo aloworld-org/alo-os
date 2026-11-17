@@ -1,0 +1,16 @@
+[package]
+name = "alo-file-chooser"
+version = "0.0.1"
+description = "The file chooser as a decision: a person standing in a folder, choosing a file to open or a name to save under, and nothing else."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# One rule for what a file name and a whole path are, shared with the door's
+# words so that a name the sheet accepts is a name the line can carry.
+alo-acting = { path = "../alo-acting" }
+
+[lints]
+workspace = true

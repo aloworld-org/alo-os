@@ -118,6 +118,15 @@ impl TheDoorOnTheDesktop {
             .unwrap_or_default()
     }
 
+    /// The portal's asks for the person to choose a file since the last
+    /// frame, or none while the door is not served.
+    pub(crate) fn asked_for_files(&mut self) -> Vec<crate::the_file_chooser::AskedForAFile> {
+        self.served
+            .as_mut()
+            .map(TheApplicationDoor::asked_for_files)
+            .unwrap_or_default()
+    }
+
     /// Whether the door is served — for a test; the desktop only answers.
     #[cfg(test)]
     pub(crate) const fn is_served(&self) -> bool {

@@ -62,7 +62,9 @@ impl Server {
                 WhatAReaderPressCameTo::ATaskGoesAside
             }
             Pressed::OnTheDock(what) => self.a_reader_pressed_on_the_dock(&what),
-            Pressed::OnTheOpenWithSheet { .. } => WhatAReaderPressCameTo::NotTheServers,
+            Pressed::OnTheOpenWithSheet { .. } | Pressed::OnTheFileChooser { .. } => {
+                WhatAReaderPressCameTo::NotTheServers
+            }
             // **The GitHub sign-in sheet is the server's**, so a press on it
             // is answered here, held to the sheet it was heard on.
             Pressed::OnTheGitHubSheet { sheet, on } => {

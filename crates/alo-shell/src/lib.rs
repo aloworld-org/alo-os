@@ -98,6 +98,7 @@ mod a_key_reaches_settings;
 mod a_key_reaches_the_application_sheet;
 mod a_key_reaches_the_bar;
 mod a_key_reaches_the_docks_surfaces;
+mod a_key_reaches_the_file_chooser;
 mod a_key_reaches_the_github_sheet;
 mod a_key_reaches_the_market;
 mod a_key_reaches_the_open_with_sheet;
@@ -327,6 +328,12 @@ mod the_buttons_an_application_draws;
 /// The GitHub sign-in sheet (`docs/design/github-sign-in.md`).
 mod the_github_sheet;
 mod the_github_sheet_as_read;
+/// The file chooser: an application asked the person to choose a file to
+/// open or a place to save one. Public for the one type the door hands it.
+pub mod the_file_chooser;
+mod the_file_chooser_as_read;
+mod the_file_chooser_drawn;
+mod the_file_choosers_words;
 mod the_github_sheet_drawn;
 mod the_github_sheet_on_the_server;
 /// The sheet going up when a command alo ran needed a GitHub sign-in.
@@ -1028,6 +1035,7 @@ pub use window_switch::{WindowSwitchDirection, WindowSwitchError};
 
 pub use a_frame_per_display::{DrawnPerDisplay, retire_each_display};
 pub use access_action::{InSettings, OnTheOpenWithSheet, Pressed};
+pub use the_file_chooser::OnTheFileChooser;
 pub use access_bus::{NotRead, ReadAloudBus};
 pub use access_contrast::Contrast;
 pub use access_magnifier::{NotMagnified, magnified, magnifying};
