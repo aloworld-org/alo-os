@@ -56,6 +56,8 @@ pub struct TheMarketsWords {
     pub kinds_of_work: Vec<String>,
     /// What each label says on a row, in `Label::EVERY`'s order.
     pub labels: Vec<String>,
+    /// What each label says in full, for a reader, in the same order.
+    pub labels_in_full: Vec<String>,
 }
 
 impl TheMarketsWords {
@@ -76,6 +78,10 @@ impl TheMarketsWords {
                 .iter()
                 .map(|label| say(strings, &label.word()))
                 .collect(),
+            labels_in_full: Label::EVERY
+                .iter()
+                .map(|label| say(strings, &label.said_in_full()))
+                .collect(),
         }
     }
 
@@ -85,6 +91,20 @@ impl TheMarketsWords {
         let at = Label::EVERY.iter().position(|one| *one == label);
         at.and_then(|at| self.labels.get(at))
             .map_or("", String::as_str)
+    }
+
+    /// Each label a row carries, said in full — what a reader is told, because
+    /// a reader cannot glance back at the row to see what a short label meant.
+    #[must_use]
+    pub fn labels_of_in_full(&self, one: &Listed) -> Vec<String> {
+        one.labels()
+            .into_iter()
+            .filter_map(|label| {
+                let at = Label::EVERY.iter().position(|each| *each == label)?;
+                self.labels_in_full.get(at).cloned()
+            })
+            .filter(|said| !said.is_empty())
+            .collect()
     }
 
     /// Everything a row says beside an application's name, on one line, or

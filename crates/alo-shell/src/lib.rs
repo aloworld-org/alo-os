@@ -492,6 +492,7 @@ mod output_metadata;
 mod output_retirement;
 mod overview_sheet;
 mod painted;
+mod the_market_as_read;
 use alo_drawing::painted_flat;
 use alo_drawing::painted_text;
 use alo_drawing::painted_text_wrapping;

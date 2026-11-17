@@ -202,6 +202,15 @@ impl crate::Server {
                 ),
             _ => tree,
         };
+        // **And the market, while it is open**, among the windows open: its
+        // title, what it is narrowed to, each application by name with every
+        // label read in full, and the line under the list.
+        let the_markets_words = crate::TheMarketsWords::said(strings);
+        let tree = tree.with_the_market(crate::the_market_as_read::TheMarketAsRead::of(
+            self.market.shows(),
+            &the_markets_words,
+            self.the_market_is_taking_the_keys(),
+        ));
         tree
             // **And Settings as it is drawn**, while it is open here — before
             // any of alo's own sheets, which the desktop adds over it.
