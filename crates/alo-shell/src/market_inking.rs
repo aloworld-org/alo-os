@@ -241,6 +241,31 @@ mod tests {
         );
     }
 
+    /// **A block is drawn in the size it was given**: the title is taller than
+    /// the small text, so a size that did not reach the drawing would be seen
+    /// here rather than on a person's screen.
+    #[test]
+    fn a_block_is_drawn_in_the_size_it_was_given() {
+        let mut fonts = FontSystem::new();
+        let measure = Measure::of(alo_appearance::TextScale::ordinary());
+        let band = a_box(0, 0, 400, 48);
+        let tall = |size: Size, fonts: &mut FontSystem| {
+            inked(
+                fonts,
+                vec![ToWrite::of(band, "Applications".to_owned(), [0; 3], [255; 3]).in_size(size)],
+                measure,
+            )
+            .first()
+            .map_or(0, |one| one.area.size.h)
+        };
+        let title = tall(Size::Title, &mut fonts);
+        let small = tall(Size::Small, &mut fonts);
+        assert!(
+            title > small,
+            "the title is {title} tall and small text {small}"
+        );
+    }
+
     /// A picture is laid on its tile: a transparent pixel is the tile's own
     /// colour, an opaque one is the picture's.
     #[test]
