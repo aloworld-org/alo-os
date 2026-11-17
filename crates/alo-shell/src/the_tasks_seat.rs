@@ -184,7 +184,9 @@ impl Server {
 
     /// **This task's window has left the screen** — closed, or gone into the
     /// right-hand panel — so if it held the keyboard, the keyboard goes to the
-    /// task window now in front, or is let go when none is left.
+    /// task window now in front, or — when none is left — to the window the
+    /// person sees in front (the owner, 2026-11-17:
+    /// `crate::the_keyboard_goes_to_the_window_in_front`).
     ///
     /// A window nobody can see that still holds the keyboard swallows every
     /// key typed, Escape included, which is the fault this exists to prevent.
@@ -196,7 +198,10 @@ impl Server {
         }
         match self.tasks().the_one_in_front() {
             Some(in_front) => self.this_task_took_the_keyboard(in_front),
-            None => self.the_task_gave_the_keyboard_up(),
+            None => {
+                self.the_task_gave_the_keyboard_up();
+                self.the_keyboard_goes_to_the_window_in_front();
+            }
         }
     }
 }
