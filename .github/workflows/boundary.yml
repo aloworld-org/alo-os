@@ -129,13 +129,19 @@ jobs:
           echo "filter=$filter" >> "$GITHUB_OUTPUT"
           echo "The boundary suite is \`$filter\`." | tee -a "$GITHUB_STEP_SUMMARY"
 
+      # Built here, as the runner, into one archive: the machine then runs the
+      # binaries it is handed and builds nothing. Measured on the first run of
+      # this file: `cargo nextest run` inside the machine found the build stale
+      # and rebuilt it, and the linker ran out of open files there.
       - name: Build the boundary suite
         env:
           FILTER: ${{ steps.filter.outputs.filter }}
         run: |
-          cargo nextest run --profile boundary -E "$FILTER" --no-run
-          cargo nextest list --profile boundary -E "$FILTER" --message-format oneline > "$RUNNER_TEMP/listed.txt"
-          echo "$(wc -l < "$RUNNER_TEMP/listed.txt") tests are in the suite."
+          packages=(-p alo-bounding -p alo-boundaryd -p alo-running -p alo-agentd)
+          cargo nextest archive "${packages[@]}" --archive-file "$RUNNER_TEMP/boundary.tar.zst"
+          cargo nextest list --archive-file "$RUNNER_TEMP/boundary.tar.zst" --workspace-remap . \
+            --profile boundary -E "$FILTER" --message-format oneline > "$RUNNER_TEMP/listed.txt"
+          echo "$(wc -l < "$RUNNER_TEMP/listed.txt") tests are in the suite." | tee -a "$GITHUB_STEP_SUMMARY"
 
       # The script the virtual machine runs. It writes its own exit code to a
       # file, so the code read afterwards is the tests' and not the machine's.
@@ -165,7 +171,9 @@ jobs:
           export LLVM_PREFIX=/usr/lib/llvm-22 CARGO_TERM_COLOR=never
           cd "$GITHUB_WORKSPACE"
           code=0
-          dbus-run-session -- cargo nextest run --profile boundary -E "$FILTER" || code=\$?
+          ulimit -n 65536
+          dbus-run-session -- cargo-nextest nextest run --archive-file "$RUNNER_TEMP/boundary.tar.zst" \
+            --workspace-remap "$GITHUB_WORKSPACE" --profile boundary -E "$FILTER" || code=\$?
           echo "\$code" > "$RUNNER_TEMP/boundary.code"
           EOF
           chmod +x "$inside"
