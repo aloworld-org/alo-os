@@ -31,7 +31,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 12);
+    assert_eq!(THE_VERSION, 13);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -61,6 +61,7 @@ fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
             "move a slider in an application",
             "choose an option in a drop-down",
             "select a file in the file manager",
+            "open a file in the file manager",
         ]
     );
 }

@@ -87,6 +87,10 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
             chosen.seen(),
             chosen.unanswered(),
         ),
+        // An item opened, as a double-click would (2026-11-17).
+        WhatAVerbDid::AnItemWasOpened(opened) => {
+            Done::of_an_item_opened(opened.application(), opened.name(), opened.unanswered())
+        }
         // The seventh family: a folder sent to the person's GitHub Pages site
         // (2026-11-13). The folder and the address cross as text, so the wire
         // need not learn what a publication is.

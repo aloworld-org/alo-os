@@ -32,6 +32,7 @@ use alo_capability::{Arg, Effect, Requires, Takes, Verb, Verbs};
 use crate::choosing_words as choosing;
 use crate::fallback_words as words;
 use crate::not_loaded::NotLoaded;
+use crate::opening_words as opening;
 use crate::pressable::Pressable;
 use crate::scrolling::Toward;
 use crate::scrolling_words as scrolling;
@@ -84,6 +85,11 @@ pub const SELECT_ITEM: &str = "accessible.select_item";
 
 /// The argument naming the option chosen.
 pub const OPTION: &str = "option";
+
+/// The verb that opens one item of a list, as a double-click would
+/// (2026-11-17, the owner's "Yes but it should be without okay on full
+/// access").
+pub const OPEN_ITEM: &str = "accessible.open_item";
 
 /// The argument naming the application, in both verbs.
 pub const APPLICATION: &str = "application";
@@ -271,6 +277,21 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
             choosing::SELECT_SENTENCE,
         )
         .and_then(|verb| verb.changing(choosing::SELECT_CHANGES, Some(choosing::SELECT_LEAVES))),
+    )?)?;
+    verbs.declare(checked(
+        OPEN_ITEM,
+        Verb::checked(
+            OPEN_ITEM,
+            opening::OPEN_PURPOSE,
+            Effect::Change,
+            vec![
+                Arg::taking(APPLICATION, opening::OPEN_APPLICATION, Takes::Application),
+                Arg::taking(NAME, opening::OPEN_NAME, Takes::name(LONGEST_NAME)),
+            ],
+            Requires::grants_over([APPLICATION]),
+            opening::OPEN_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(opening::OPEN_CHANGES, Some(opening::OPEN_LEAVES))),
     )?)?;
     Ok(())
 }

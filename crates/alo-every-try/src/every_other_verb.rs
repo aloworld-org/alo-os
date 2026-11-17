@@ -20,8 +20,8 @@ use std::time::SystemTime;
 
 use alo_acting::Acting;
 use alo_adapters::fallback_verbs::{
-    self, ACTIVATE_CONTROL, CHOOSE_OPTION, KIND, NAME, OPTION, READ_WINDOW, SCROLL_PAGE, SCROLL_TO,
-    SELECT_ITEM, SET_VALUE, TOWARD, VALUE,
+    self, ACTIVATE_CONTROL, CHOOSE_OPTION, KIND, NAME, OPEN_ITEM, OPTION, READ_WINDOW, SCROLL_PAGE,
+    SCROLL_TO, SELECT_ITEM, SET_VALUE, TOWARD, VALUE,
 };
 use alo_adapters::scrolling::Toward;
 use alo_adapters::{Pressable, Role as OnScreen, Seen, Shown, ShownWindow};
@@ -549,6 +549,24 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(NAME, REPORT),
         ],
     );
+    let opening = ARequest::asking(
+        "open a file in the file manager",
+        format!("Open {REPORT} in Dolphin."),
+        vec![
+            Step::of(
+                READ_WINDOW,
+                Answered::With(Done::of_a_window_read(&the_folders_window, &[])),
+            )
+            .expecting(fallback_verbs::APPLICATION, files.as_str())
+            .a_look(),
+            Step::of(
+                OPEN_ITEM,
+                Answered::With(Done::of_an_item_opened(&files, REPORT, false)),
+            )
+            .expecting(fallback_verbs::APPLICATION, files.as_str())
+            .expecting(NAME, REPORT),
+        ],
+    );
     Ok(vec![
         listing,
         reading,
@@ -567,5 +585,6 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         setting,
         choosing,
         selecting,
+        opening,
     ])
 }

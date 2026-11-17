@@ -55,6 +55,10 @@ pub const CHOOSE_OPTION: &str = "accessible.choose_option";
 /// The verb that selects one item of a list without opening it (2026-11-17).
 pub const SELECT_ITEM: &str = "accessible.select_item";
 
+/// The verb that opens one item of a list, as a double-click would
+/// (2026-11-17).
+pub const OPEN_ITEM: &str = "accessible.open_item";
+
 /// **The paragraph a model is told, for this registry** — empty when it does
 /// not declare both [`READ_WINDOW`] and [`TYPE_TEXT`].
 ///
@@ -101,10 +105,18 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
     } else {
         String::new()
     };
+    let opening = if verbs.of(OPEN_ITEM).is_some() {
+        format!(
+            " To open an item, such as a file in a folder, as a double-click would, send \
+             {OPEN_ITEM} with its name; only when the person asks to open it."
+        )
+    } else {
+        String::new()
+    };
     format!(
         "\n\nTo work in an application's window, send {READ_WINDOW} first: its answer names \
          the window's fields, documents and controls. Then type into one with {TYPE_TEXT}, \
-         giving its name exactly as that answer showed it{pressing}.{scrolling}{setting}{choosing} Never \
+         giving its name exactly as that answer showed it{pressing}.{scrolling}{setting}{choosing}{opening} Never \
          send a run line \
          that types, clicks or presses keys (xdotool, ydotool, wtype or anything like them): \
          {TYPE_TEXT} is how alo types into a window, and it shows the person the whole text \
