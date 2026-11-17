@@ -179,8 +179,9 @@ pub trait AccessibilityTree {
     ///
     /// # Errors
     /// [`TreeFault`].
-    fn scroll_to(&self, at: &NodeAt, edge: Edge) -> Result<bool, TreeFault> {
-        let _ = (at, edge);
+    // The body is the answer itself and nothing else, so the mutation check
+    // has no other version of it to try that means the same.
+    fn scroll_to(&self, _at: &NodeAt, _edge: Edge) -> Result<bool, TreeFault> {
         Ok(false)
     }
 }

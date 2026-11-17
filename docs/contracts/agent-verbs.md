@@ -708,7 +708,7 @@ by where it is on the screen.*
   password field is never scrolled to, and a page passes over one. A terminal
   is reached only where the person allowed their agent one (ADR 0111).
 - After the scroll the thing's states are asked again. The answer
-  (`scrolled` on the wire: `application`, `to`, `a-page`, `now-showing`) says
+  (`scrolled` on the wire: `application`, `to`, `a_page`, `now_showing`) says
   whether it reads as on the screen now; one that does not leaves something
   out, and the person is told to read the window again. What the window shows
   is never carried back: that is `accessible.read_window`'s.

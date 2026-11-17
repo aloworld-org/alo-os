@@ -66,6 +66,12 @@ pub const THE_BROWSERS_WINDOW: &str = "Mozilla Firefox";
 /// The heading the scrolling request names, below what the window shows.
 pub const FURTHER_DOWN: &str = "Downloads";
 
+/// The page the scrolling requests read.
+pub const THE_PAGE: &str = "alo OS";
+
+/// The heading on the top of [`THE_PAGE`], which is on the screen.
+pub const ON_ITS_TOP: &str = "Getting started";
+
 /// The kind of work the catalogue request asks about, by a word with one
 /// meaning in the catalogue (`catalogue.toml`): painting is Painting, where
 /// *editing photographs* could fairly be Pictures or Photographs.
@@ -360,14 +366,26 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
     );
     // **Scrolling, 2026-11-17**: to a thing the person names, and by a page.
     // Each may read the window first; neither needs to, since the request says
-    // what to scroll to.
+    // what to scroll to. **The window read is a page**, its top on the screen,
+    // as a long web page reads.
+    let the_page = Shown::of(
+        browser.clone(),
+        vec![ShownWindow::titled(
+            THE_BROWSERS_WINDOW.to_owned(),
+            vec![
+                Seen::of(OnScreen::Document, THE_PAGE.to_owned(), None, 1),
+                Seen::of(OnScreen::Label, ON_ITS_TOP.to_owned(), None, 2),
+            ],
+        )],
+        false,
+    );
     let scrolling_to = ARequest::asking(
         "scroll to a named thing in an application",
         format!("In Firefox, scroll down until the heading {FURTHER_DOWN} is on the screen."),
         vec![
             Step::of(
                 READ_WINDOW,
-                Answered::With(Done::of_a_window_read(&the_window, &[])),
+                Answered::With(Done::of_a_window_read(&the_page, &[])),
             )
             .expecting(fallback_verbs::APPLICATION, browser.as_str())
             .a_look(),
@@ -381,14 +399,14 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
     )
     // **Reading the window again after is aside of the road**: the model is
     // told to, and the machine answers it.
-    .or_looking_at(the_window_read_again(&the_window, &browser));
+    .or_looking_at(the_window_read_again(&the_page, &browser));
     let scrolling_a_page = ARequest::asking(
         "scroll a page in an application",
         "Scroll down one page in Firefox.",
         vec![
             Step::of(
                 READ_WINDOW,
-                Answered::With(Done::of_a_window_read(&the_window, &[])),
+                Answered::With(Done::of_a_window_read(&the_page, &[])),
             )
             .expecting(fallback_verbs::APPLICATION, browser.as_str())
             .a_look(),
@@ -405,7 +423,7 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(TOWARD, Toward::Down.named()),
         ],
     )
-    .or_looking_at(the_window_read_again(&the_window, &browser));
+    .or_looking_at(the_window_read_again(&the_page, &browser));
     Ok(vec![
         listing,
         reading,

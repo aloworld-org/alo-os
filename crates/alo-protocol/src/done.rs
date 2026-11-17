@@ -1074,4 +1074,17 @@ mod tests {
             r#"{"installed":{"application":"org.gnome.TextEditor","sandboxed":false}}"#
         );
     }
+
+    /// **A scroll the window does not yet show leaves something out**, and one
+    /// it shows does not (2026-11-17); its wire form names what was asked.
+    #[test]
+    fn a_scroll_leaves_something_out_only_when_the_window_does_not_show_it() {
+        let shown = Done::of_a_scroll("org.gnome.Papers", "Chapter 3", false, true);
+        assert!(!shown.left_something_out());
+        assert!(Done::of_a_scroll("org.gnome.Papers", "down", true, false).left_something_out());
+        assert_eq!(
+            serde_json::to_string(&shown).unwrap(),
+            r#"{"scrolled":{"application":"org.gnome.Papers","to":"Chapter 3","a_page":false,"now_showing":true}}"#
+        );
+    }
 }

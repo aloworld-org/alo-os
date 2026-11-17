@@ -60,6 +60,8 @@ const OFF: u32 = 1 << 30;
 struct Counted {
     opened: Rc<Cell<usize>>,
     scrolls: Rc<Cell<usize>>,
+    /// Whether the application says yes and stays where it was.
+    stays: Rc<Cell<bool>>,
 }
 
 /// One window of a long document: its top on the screen, *Chapter 3* below.
@@ -108,8 +110,9 @@ impl AccessibilityTree for ALongDocument {
 
     fn facts(&self, place: &NodeAt) -> Result<Facts, TreeFault> {
         let mut facts = Self::facts_of().remove(place).ok_or(TreeFault::Vanished)?;
-        // Once scrolled, everything reads as on the screen.
-        if self.counted.scrolls.get() > 0 {
+        // Once scrolled, everything reads as on the screen — unless the
+        // application stays where it was while saying yes.
+        if self.counted.scrolls.get() > 0 && !self.counted.stays.get() {
             facts.states = vec![ON, 0];
         }
         Ok(facts)
@@ -321,6 +324,14 @@ fn at_ask_each_time_one_approval_scrolls_once_and_nothing_before_it() {
         let scrolled = scrolled.scrolled().unwrap().clone();
         assert_eq!(scrolled.application(), READER);
         assert!(scrolled.now_showing());
+        // **What was asked crosses back as it was asked**: the thing's name, or
+        // the direction of a page.
+        let page = verb == SCROLL_PAGE;
+        assert_eq!(
+            (scrolled.to(), scrolled.a_page()),
+            (if page { "down" } else { "Chapter 3" }, page),
+            "{verb}"
+        );
         assert_eq!(counted.scrolls.get(), 1, "{verb}");
         assert_eq!(counted.opened.get(), 1, "{verb}");
         assert_eq!(entries(&record), 1, "{verb}");
@@ -415,4 +426,23 @@ fn a_terminal_nobody_allowed_is_never_scrolled_even_at_full_access() {
     assert_eq!(counted.opened.get(), 0);
     assert_eq!(counted.scrolls.get(), 0);
     assert_eq!(entries(&record), 1, "the refusal is written down");
+}
+
+/// **An application that says yes and does not move** ran — the scroll was
+/// asked under the approval — and the answer says the window does not show
+/// it yet, with the record saying the same.
+#[test]
+fn a_yes_that_does_not_move_ran_and_says_the_window_does_not_show_it() {
+    let mut windows = windows_of(READER);
+    windows.counted.stays.set(true);
+    let (did, record) = on_a_machine(&mut windows, the_reader_is_granted, |turning, grants| {
+        let (verb, given) = to_chapter_3(READER);
+        let id = turning
+            .proposing(verb, &given, grants, hour(), noon())
+            .unwrap();
+        turning.approving(id, grants, noon()).unwrap()
+    });
+    let scrolled = did.scrolled().unwrap();
+    assert!(!scrolled.now_showing());
+    assert_eq!(entries(&record), 1);
 }

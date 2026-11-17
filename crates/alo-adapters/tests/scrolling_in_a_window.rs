@@ -566,3 +566,159 @@ fn what_scrolling_says_it_changes_is_what_it_did() {
     assert_eq!(verb.what_it_changes(), Some(&words::SCROLL_CHANGES));
     assert_eq!(verb.what_it_leaves(), Some(&words::SCROLL_LEAVES));
 }
+
+/// Mark the thing at `object` as having more children than were listed.
+fn unlisted(tree: &ATree, object: &str) {
+    tree.facts
+        .borrow_mut()
+        .get_mut(&at(object))
+        .expect("a thing there")
+        .unlisted_children = true;
+}
+
+/// One thing inside another, `levels` deep, the deepest named `name`.
+fn nested(levels: usize, name: &'static str, states: u32) -> Thing {
+    let mut thing = a(HEADING, name, states);
+    for _ in 1..levels {
+        thing = holding(PARAGRAPH, "", ON, vec![thing]);
+    }
+    thing
+}
+
+#[test]
+fn the_application_approved_is_the_one_scrolled_in() {
+    assert_eq!(scrolling(&to_call("Chapter 3")).application(), READER);
+}
+
+/// **A window that holds more than was listed is never guessed in**: with
+/// none of that name found, or one, alo cannot know it is the only one.
+#[test]
+fn a_window_not_wholly_listed_is_too_much_to_be_sure_whether_one_is_found_or_none() {
+    for (name, object) in [
+        ("Chapter 9", "/root/0"),
+        ("Chapter 3", "/root/0"),
+        ("Chapter 3", "/root/0/0"),
+    ] {
+        let tree = ATree::of(a_long_document());
+        unlisted(&tree, object);
+        let refused = scrolling(&to_call(name))
+            .scroll(&tree, &in_english())
+            .unwrap_err();
+        assert_eq!(said(&refused), expected(words::TOO_MUCH, name), "{object}");
+        assert!(tree.scrolled().is_empty());
+    }
+}
+
+/// **The search stops at its bound and says so**: past
+/// [`alo_adapters::scrolling::MOST_ASKED`] things, a name not found is not
+/// *nothing of that name*.
+#[test]
+fn a_window_with_more_things_than_are_asked_about_is_too_much_to_be_sure() {
+    let many: Vec<Thing> = (0..=alo_adapters::scrolling::MOST_ASKED)
+        .map(|_| a(PARAGRAPH, "", OFF))
+        .collect();
+    let tree = ATree::of(many);
+    let refused = scrolling(&to_call("Chapter 9"))
+        .scroll(&tree, &in_english())
+        .unwrap_err();
+    assert_eq!(said(&refused), expected(words::TOO_MUCH, "Chapter 9"));
+}
+
+/// **As deep as a walk reads and no deeper**: a thing at the deepest level is
+/// found; one below it is not read, and that is said rather than *nothing of
+/// that name*.
+#[test]
+fn a_thing_at_the_deepest_level_is_found_and_one_below_it_is_too_much_to_be_sure() {
+    let deepest = alo_adapters::walking::DEEPEST;
+    let tree = ATree::of(vec![nested(deepest, "At the bottom", OFF)]);
+    scrolling(&to_call("At the bottom"))
+        .scroll(&tree, &in_english())
+        .unwrap();
+    assert_eq!(tree.scrolled().len(), 1);
+
+    let tree = ATree::of(vec![nested(deepest + 1, "Below it", OFF)]);
+    let refused = scrolling(&to_call("Below it"))
+        .scroll(&tree, &in_english())
+        .unwrap_err();
+    assert_eq!(said(&refused), expected(words::TOO_MUCH, "Below it"));
+    assert!(tree.scrolled().is_empty());
+}
+
+/// **A page down and a page up from the middle** go below and above what is
+/// on the screen, and never the other way.
+#[test]
+fn from_the_middle_a_page_goes_below_or_above_what_is_on_the_screen() {
+    let the_middle = || {
+        ATree::of(vec![holding(
+            DOCUMENT,
+            "report.pdf",
+            ON,
+            vec![
+                a(HEADING, "Above", OFF),
+                a(PARAGRAPH, "On the screen", ON),
+                a(HEADING, "Below", OFF),
+            ],
+        )])
+    };
+    let tree = the_middle();
+    scrolling(&page_call("down"))
+        .scroll(&tree, &in_english())
+        .unwrap();
+    assert_eq!(tree.scrolled(), [("Below".to_owned(), Edge::Top)]);
+    let tree = the_middle();
+    scrolling(&page_call("up"))
+        .scroll(&tree, &in_english())
+        .unwrap();
+    assert_eq!(tree.scrolled(), [("Above".to_owned(), Edge::Bottom)]);
+}
+
+/// **The page is the document's alone**: what comes after the document, beside
+/// it, is not scrolled to by a page in it.
+#[test]
+fn a_page_never_leaves_the_document_for_what_is_beside_it() {
+    let mut things = vec![holding(
+        DOCUMENT,
+        "report.pdf",
+        ON,
+        vec![a(PARAGRAPH, "All of it", ON)],
+    )];
+    things.push(a(LIST_ITEM, "Beside it", OFF));
+    let tree = ATree::of(things);
+    let refused = scrolling(&page_call("down"))
+        .scroll(&tree, &in_english())
+        .unwrap_err();
+    assert_eq!(said(&refused), expected(words::NOTHING_FURTHER_DOWN, ""));
+    assert!(tree.scrolled().is_empty());
+}
+
+/// A tree that answers only what every tree must, and nothing about scrolling.
+struct NoScrolling(ATree);
+
+impl AccessibilityTree for NoScrolling {
+    fn applications(&self) -> Result<Vec<Running>, TreeFault> {
+        self.0.applications()
+    }
+    fn facts(&self, place: &NodeAt) -> Result<Facts, TreeFault> {
+        self.0.facts(place)
+    }
+    fn text(&self, place: &NodeAt) -> Result<String, TreeFault> {
+        self.0.text(place)
+    }
+    fn actions(&self, place: &NodeAt) -> Result<Vec<String>, TreeFault> {
+        self.0.actions(place)
+    }
+    fn act(&self, place: &NodeAt, action: usize) -> Result<bool, TreeFault> {
+        self.0.act(place, action)
+    }
+}
+
+/// **A tree that does not know scrolling scrolls nothing**, and says so: its
+/// answer is the application's *no*, never a yes.
+#[test]
+fn a_tree_that_does_not_know_scrolling_says_no() {
+    let tree = NoScrolling(ATree::of(a_long_document()));
+    let refused = scrolling(&to_call("Chapter 3"))
+        .scroll(&tree, &in_english())
+        .unwrap_err();
+    assert_eq!(said(&refused), expected(words::DID_NOT_SCROLL, "Chapter 3"));
+}

@@ -333,4 +333,18 @@ mod tests {
             "a file read answered as an installation"
         );
     }
+
+    /// **A catalogue read is found as what the catalogue holds**, and as
+    /// nothing else.
+    #[test]
+    fn a_catalogue_read_is_found_as_what_the_catalogue_holds_and_nothing_else() {
+        let catalogue = alo_software::Catalogue::decided();
+        assert!(catalogue.is_ok(), "the decided catalogue reads");
+        if let Ok(catalogue) = catalogue {
+            let did = WhatAVerbDid::from(super::WhatTheCatalogueHolds::under(&catalogue, None));
+            assert!(did.what_can_be_installed().is_some());
+            assert!(did.what_touched_a_file().is_none());
+            assert!(did.scrolled().is_none());
+        }
+    }
 }
