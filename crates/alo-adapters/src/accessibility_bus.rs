@@ -247,7 +247,7 @@ impl AccessibilityTree for AccessibleSession {
 
     fn value(&self, at: &NodeAt) -> Result<Option<f64>, TreeFault> {
         let interfaces: Vec<String> = self.ask(at, ACCESSIBLE, "GetInterfaces", &())?;
-        if !interfaces.iter().any(|interface| interface == VALUE) {
+        if !offers(&interfaces, VALUE) {
             return Ok(None);
         }
         let value: OwnedValue = self.ask(
@@ -309,5 +309,28 @@ fn heard(why: &zbus::Error) -> TreeFault {
             TreeFault::DidNotAnswer
         }
         _ => TreeFault::NotThere,
+    }
+}
+
+/// Whether a thing whose interfaces are `interfaces` offers `interface`,
+/// matched exactly.
+fn offers(interfaces: &[String], interface: &str) -> bool {
+    interfaces.iter().any(|offered| offered == interface)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// **A number is asked only of a thing that offers one**, matched by the
+    /// interface's whole name — a slider says `Value`, a button does not.
+    #[test]
+    fn an_interface_is_offered_only_when_it_is_named_exactly() {
+        let slider = vec![ACCESSIBLE.to_owned(), VALUE.to_owned()];
+        let button = vec![ACCESSIBLE.to_owned(), ACTION.to_owned()];
+        assert!(offers(&slider, VALUE));
+        assert!(!offers(&button, VALUE));
+        assert!(!offers(&[format!("{VALUE}2")], VALUE));
+        assert!(!offers(&[], VALUE));
     }
 }

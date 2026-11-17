@@ -102,15 +102,6 @@ pub fn looked(
     Ended::Done
 }
 
-/// Whether a thing is a control: something a person presses or types into.
-fn is_a_control(seen: &Seen) -> bool {
-    Pressable::of(seen.role()).is_some()
-        || matches!(
-            seen.role(),
-            Role::TextField | Role::PasswordField | Role::DropDown | Role::Range
-        )
-}
-
 /// A control's kind, in words.
 fn kind_said(role: Role, strings: &Strings) -> Option<Said> {
     let word = match (Pressable::of(role), role) {
@@ -209,9 +200,8 @@ fn controls_said(shown: &Shown, strings: &Strings) -> Vec<String> {
                 lines.push(format!("  {limit}"));
                 continue;
             }
-            if !is_a_control(seen) {
-                continue;
-            }
+            // **A control is what has a kind in words**: anything else —
+            // words, a picture, a part of the layout — is not listed here.
             let Some(kind) = kind_said(seen.role(), strings) else {
                 continue;
             };
@@ -242,7 +232,7 @@ fn controls_said(shown: &Shown, strings: &Strings) -> Vec<String> {
 fn controls_as_values(shown: &Shown) -> Vec<String> {
     shown
         .everything()
-        .filter(|seen| seen.limit().is_none() && is_a_control(seen))
+        .filter(|seen| seen.limit().is_none())
         .filter_map(|seen| {
             let kind = kind_named(seen.role())?;
             let mut states: Vec<String> = Vec::new();
