@@ -121,6 +121,19 @@ adapters.fallback.not-all-read	{application} shows more than can be read at once
 adapters.fallback.not-drawn-yet	“{name}” is not on any page of Settings on this computer yet, so nothing was pressed
 adapters.fallback.not-readable-here	What applications show could not be read on this machine just now, so nothing was read or pressed in {application}
 adapters.fallback.not-this-verb	{verb} is not reading or pressing something in an application's window, so nothing was done
+adapters.fallback.open-item.application	the application the item is in
+adapters.fallback.open-item.cannot-be-opened	{application} does not let “{name}” be opened from outside the application, so nothing was opened. Double-click it yourself in the window
+adapters.fallback.open-item.cannot-be-used-now	“{name}” in {application} is greyed out, so nothing was opened
+adapters.fallback.open-item.changes	Opens that one item, as a person double-clicking it would. What it opens with is the application's choice: a file may open in another application, and a program may start.
+adapters.fallback.open-item.did-not-answer	{application} did not answer in time, so whether “{name}” was opened is not known. Look at the window
+adapters.fallback.open-item.did-not-open	{application} said it did not open “{name}”, so nothing was opened
+adapters.fallback.open-item.leaves	No other item is opened, nothing is typed, nothing is moved or deleted, and nothing is found by where it is on the screen.
+adapters.fallback.open-item.more-than-one	{application} shows more than one “{name}”, so alo did not guess which, and nothing was opened
+adapters.fallback.open-item.name	the item, by the name or the words it shows
+adapters.fallback.open-item.no-such-item	{application} shows no item named “{name}” now, so nothing was opened
+adapters.fallback.open-item.purpose	open one item of a list in an application's window, as a double-click would, such as a file in a folder
+adapters.fallback.open-item.sentence	open “{name}” in {application}
+adapters.fallback.open-item.too-much-to-be-sure	{application} shows more than can be read at once, so whether “{name}” is the only one is not known, and nothing was opened
 adapters.fallback.read-window.application	the application whose windows to read
 adapters.fallback.read-window.by-hand	Look at the application's window, or have the screen reader read it aloud
 adapters.fallback.read-window.purpose	read what an application's windows show

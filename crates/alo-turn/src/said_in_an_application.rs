@@ -35,6 +35,7 @@ const IN_AN_APPLICATION: [&str; 12] = [
     alo_adapters::SET_VALUE,
     alo_adapters::CHOOSE_OPTION,
     alo_adapters::SELECT_ITEM,
+    alo_adapters::OPEN_ITEM,
 ];
 
 /// The verb and the application an authorised call acts in, before it is
@@ -71,6 +72,12 @@ pub(crate) fn said(verb: &str, application: &str, did: &Result<WhatAVerbDid, Not
                 }
             } else if let Some(pressed) = did.pressed() {
                 if pressed.unanswered() {
+                    InAnApplication::Unanswered
+                } else {
+                    InAnApplication::Done
+                }
+            } else if let Some(opened) = did.item_opened() {
+                if opened.unanswered() {
                     InAnApplication::Unanswered
                 } else {
                     InAnApplication::Done

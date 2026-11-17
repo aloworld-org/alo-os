@@ -68,6 +68,7 @@ use crate::installing_an_application::installing_an_application;
 use crate::looking_at_the_catalogue::looking_at_the_catalogue;
 use crate::machine::Machine;
 use crate::opening_a_file_in_an_application::opening_a_file_in_an_application;
+use crate::opening_an_item_in_an_application::opening_an_item_in_an_application;
 use crate::pressing_a_control::pressing_a_control;
 use crate::publishing_a_folder::publishing_a_folder;
 use crate::reading_an_applications_windows::reading_an_applications_windows;
@@ -210,6 +211,12 @@ fn carrying_it_out(
     {
         let (entry, chosen) = choosing_in_an_application(machine, authorised, grants);
         return (entry, chosen.map(WhatAVerbDid::from));
+    }
+    // **Opening an item** (2026-11-17), before the boundary for the same
+    // reason.
+    if authorised.verb() == alo_adapters::OPEN_ITEM {
+        let (entry, opened) = opening_an_item_in_an_application(machine, authorised, grants);
+        return (entry, opened.map(WhatAVerbDid::from));
     }
     // **Opening a file in an application, routed by name like the rest**
     // (2026-11-14). Before the boundary, for the accessibility verbs' reason:

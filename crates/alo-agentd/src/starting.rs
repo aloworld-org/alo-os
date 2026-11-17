@@ -602,6 +602,7 @@ mod tests {
             [
                 "accessible.activate_control",
                 "accessible.choose_option",
+                "accessible.open_item",
                 "accessible.read_window",
                 "accessible.scroll_page",
                 "accessible.scroll_to",

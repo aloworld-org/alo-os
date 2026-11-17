@@ -27,9 +27,9 @@
 //! ([`AccessibilityTree::select_in`]); where the list offers no way, by the
 //! thing's own action — for an option [`CHOOSING_AN_OPTION`], for an item
 //! only [`SELECTING_AN_ITEM`], because an item's *activate* opens it, and
-//! *select* must never open a file. **Opening an item is not here**: what it
-//! starts is the application's to decide, and whether that may run a program
-//! is a question for the person this verb does not answer.
+//! *select* must never open a file. **Opening an item is not here** but in
+//! `crate::opening` (`accessible.open_item`), its own verb with its own card,
+//! because what it starts is the application's to decide.
 //!
 //! What was chosen is read back by the caller ([`Chosen::shows_chosen`]): the
 //! item or option says it is selected, or the drop-down now shows the option.
