@@ -359,7 +359,7 @@ pub const THE_NAMES: [Word; 5] = [
 ];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 35] = [
+pub const THE_SENTENCES: [Word; 41] = [
     READ_SENTENCE,
     INSTALLED,
     INSTALLED_UNSANDBOXED,
@@ -395,6 +395,12 @@ pub const THE_SENTENCES: [Word; 35] = [
     VIDEO,
     AUDIO,
     DOCUMENTS,
+    NOT_OPEN_SOURCE,
+    NOT_OPEN_SOURCE_IN_FULL,
+    NOT_VERIFIED_BY_ITS_MAKER,
+    NOT_VERIFIED_BY_ITS_MAKER_IN_FULL,
+    EARLY_VERSION,
+    EARLY_VERSION_IN_FULL,
 ];
 
 /// Every refusal, so that a test can hold each of them to saying what did not
@@ -531,6 +537,65 @@ pub const EVERY_CATEGORY: [Word; 9] = [
     DOCUMENTS,
 ];
 
+// ---------------------------------------------------------------------------
+// What the market says beside an application, when there is something to know.
+// ---------------------------------------------------------------------------
+
+/// Beside an application whose source code is not published.
+pub const NOT_OPEN_SOURCE: Word = Word::saying("software.label.not-open-source", "Not open source")
+    .noting(
+        "Shown beside an application in the list a person installs from, when the people who make it do not publish the code it is built from. A plain fact, not a warning: the person may install it. Three or four words at most where the language allows, because it sits on one line under the application's name.",
+    );
+
+/// The same, in full, for a screen reader.
+pub const NOT_OPEN_SOURCE_IN_FULL: Word = Word::saying(
+    "software.label.not-open-source.in-full",
+    "Not open source: the people who make it do not publish the code it is built from, so nobody outside can check what it does",
+)
+.noting(
+    "What a screen reader says for the short label Not open source, and what a person reads if they ask what it means. It states a fact and its consequence; it does not tell the person not to install the application.",
+);
+
+/// Beside an application its makers did not publish at its source themselves.
+pub const NOT_VERIFIED_BY_ITS_MAKER: Word = Word::saying("software.label.not-verified", "Not verified")
+    .noting(
+        "Shown beside an application in the list a person installs from, when the place it comes from cannot confirm that the people who make it published it there themselves. Somebody else may have published it. A plain fact, not a warning. Short, because it sits on one line under the application's name.",
+    );
+
+/// The same, in full, for a screen reader.
+pub const NOT_VERIFIED_BY_ITS_MAKER_IN_FULL: Word = Word::saying(
+    "software.label.not-verified.in-full",
+    "Not verified: the people who make it did not publish it here themselves, so the place it comes from cannot confirm who did",
+)
+.noting(
+    "What a screen reader says for the short label Not verified, and what a person reads if they ask what it means. 'Here' is the place the application is installed from. It does not say the application is unsafe, only who published it.",
+);
+
+/// Beside an application that is new and still changing.
+pub const EARLY_VERSION: Word = Word::saying("software.label.early-version", "Early version")
+    .noting(
+        "Shown beside an application in the list a person installs from, when it is new and its makers are still changing it a great deal. A plain fact, not a warning. Short, because it sits on one line under the application's name.",
+    );
+
+/// The same, in full, for a screen reader.
+pub const EARLY_VERSION_IN_FULL: Word = Word::saying(
+    "software.label.early-version.in-full",
+    "Early version: it is new and still changing, so some of it may not work yet",
+)
+.noting(
+    "What a screen reader says for the short label Early version, and what a person reads if they ask what it means.",
+);
+
+/// Every label's words, short then in full, in `crate::Label::EVERY`'s order.
+pub const EVERY_LABEL: [Word; 6] = [
+    NOT_OPEN_SOURCE,
+    NOT_OPEN_SOURCE_IN_FULL,
+    NOT_VERIFIED_BY_ITS_MAKER,
+    NOT_VERIFIED_BY_ITS_MAKER_IN_FULL,
+    EARLY_VERSION,
+    EARLY_VERSION_IN_FULL,
+];
+
 /// What `install_application` changes, under the action on the approval card.
 pub const VERB_CHANGES: Word = Word::saying(
     "software.verb.install-application.changes",
@@ -552,7 +617,7 @@ pub const VERB_LEAVES: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 40] = [
+pub const EVERY_WORD: [Word; 46] = [
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
@@ -593,6 +658,12 @@ pub const EVERY_WORD: [Word; 40] = [
     VIDEO,
     AUDIO,
     DOCUMENTS,
+    NOT_OPEN_SOURCE,
+    NOT_OPEN_SOURCE_IN_FULL,
+    NOT_VERIFIED_BY_ITS_MAKER,
+    NOT_VERIFIED_BY_ITS_MAKER_IN_FULL,
+    EARLY_VERSION,
+    EARLY_VERSION_IN_FULL,
 ];
 
 /// Why this crate's own words could not be declared.

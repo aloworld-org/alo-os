@@ -1113,6 +1113,13 @@ application with its identifier, the place it comes from, the release and the
 licence. The licence is there because it is the field somebody choosing between
 two of these actually weighs.
 
+**Since 2026-11-17 each entry may also carry `labels`** — `not_open_source`,
+`not_verified`, `early_version`, in that order — the same facts the market
+shows a person on that application's row (the owner's decision of that day).
+The field is **absent** when an application has none, so an answer about one
+with no label is written exactly as before; this is an additive change to the
+wire.
+
 **It requires no grant, and the reason is its own.** The catalogue is a file
 compiled into alo OS, byte-identical on every machine of a given release. There
 is nothing on this machine for a grant to be over, and nothing about the person

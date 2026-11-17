@@ -23,7 +23,7 @@
 //! from `alo_software::Listed` directly. `crate::the_docks_words` carries the
 //! person's own typed text for the same reason and says so in the same place.
 
-use alo_software::{Category, words};
+use alo_software::{Category, Label, Listed, words};
 use alo_strings::{Filling, Strings};
 
 /// One word, said. `Strings::say` takes a key and a filling; none of these
@@ -54,6 +54,8 @@ pub struct TheMarketsWords {
     /// draws every label one place to the left, which looks like a layout
     /// fault and is a counting one.
     pub kinds_of_work: Vec<String>,
+    /// What each label says on a row, in `Label::EVERY`'s order.
+    pub labels: Vec<String>,
 }
 
 impl TheMarketsWords {
@@ -70,7 +72,35 @@ impl TheMarketsWords {
                 .iter()
                 .map(|word| say(strings, word))
                 .collect(),
+            labels: Label::EVERY
+                .iter()
+                .map(|label| say(strings, &label.word()))
+                .collect(),
         }
+    }
+
+    /// What one label says on a row.
+    #[must_use]
+    pub fn the_label(&self, label: Label) -> &str {
+        let at = Label::EVERY.iter().position(|one| *one == label);
+        at.and_then(|at| self.labels.get(at))
+            .map_or("", String::as_str)
+    }
+
+    /// Everything a row says beside an application's name, on one line, or
+    /// nothing for an application with no label.
+    ///
+    /// **The middle dot between two labels is punctuation and is not
+    /// translated.** A language whose readers set a list apart some other way
+    /// would need a declared separator, which nothing here has yet.
+    #[must_use]
+    pub fn labels_of(&self, one: &Listed) -> String {
+        one.labels()
+            .into_iter()
+            .map(|label| self.the_label(label))
+            .filter(|said| !said.is_empty())
+            .collect::<Vec<_>>()
+            .join(" · ")
     }
 
     /// What one kind of work is called, or the widest view when it is [`None`].
@@ -118,6 +148,10 @@ mod tests {
         assert!(!words.installing.is_empty());
         assert!(!words.open.is_empty());
         assert_eq!(words.kinds_of_work.len(), 9);
+        assert_eq!(words.labels.len(), 3);
+        for one in &words.labels {
+            assert!(!one.is_empty());
+        }
         for one in &words.kinds_of_work {
             assert!(!one.is_empty());
         }
@@ -159,7 +193,8 @@ mod tests {
             &words.open,
         ]
         .into_iter()
-        .chain(words.kinds_of_work.iter());
+        .chain(words.kinds_of_work.iter())
+        .chain(words.labels.iter());
         let mut read = 0;
         for text in everything {
             for forbidden in ["org.", "GPL", "MPL", "flathub", "Flathub"] {
@@ -167,6 +202,6 @@ mod tests {
             }
             read += 1;
         }
-        assert_eq!(read, 14, "the loop read every word");
+        assert_eq!(read, 17, "the loop read every word");
     }
 }
