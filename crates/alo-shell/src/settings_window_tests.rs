@@ -2888,3 +2888,6 @@ fn where_alo_works_is_offered_with_its_cost_and_the_refusal_names_it() {
         );
     }
 }
+
+#[path = "pictures_and_keys_page_tests.rs"]
+mod pictures_and_keys_page_tests;

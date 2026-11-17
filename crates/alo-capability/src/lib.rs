@@ -198,6 +198,9 @@ pub mod not_signed_in_to_github;
 pub mod offered;
 pub mod path;
 pub mod persons_own;
+/// Which applications the person let alo use pictures and keys in (ADR 0143
+/// Q11).
+pub mod pictures_and_keys;
 pub mod proposal;
 pub mod reach;
 pub mod refusing;
@@ -245,6 +248,7 @@ pub use grants::{GrantId, Grants, Held, NotOneList};
 pub use how_code_runs::{AlwaysOn, HowCodeRuns};
 pub use offered::Offered;
 pub use persons_own::{A_PERSONS_OWN, is_a_persons_own};
+pub use pictures_and_keys::PicturesAndKeys;
 pub use proposal::{Proposal, ProposalError};
 pub use reach::{Ask, Reach};
 pub use refusing::NotGranted;

@@ -372,6 +372,22 @@ ADR 0143 Q10 puts letting alo use an application beside *Give alo a folder*,
 and this is a question about what alo reaches once it is let in. **A departure,
 recorded here for the next person to take to the design.**
 
+## Built and not drawn: pictures and keys, one switch per application
+
+*ADR 0143 Q11; the owner's "Yes, build it" of 2026-11-17, decided after the
+frames were drawn.* **What alo can use** ends, after *In applications*, with a
+section **Pictures and keys**: first a row of words, *For apps that tell alo
+nothing about their windows*, with a line saying what it does and the *What it
+risks* box holding ADR 0143's own sentence — *alo will act on what it sees in
+pictures of this window, and may press the wrong thing* — drawn once, above the
+switches, so it is read before any is pressed. Then one switch per application
+this computer has, by name, **a terminal never among them**: *Let alo use
+pictures and keys in SuperTuxKart*, Off until pressed, in the Terminal page's
+switch row (`551:168`). With no application known the section is absent. The
+design is silent, so it is built from the pieces it already has. **A departure,
+recorded here for the next person to take to the design.** The wording and a
+picture went to the coordinator before it landed.
+
 ## Giving alo an application, from the terminal's own picker
 
 *The owner's decision of 2026-11-15, relayed by the coordinator: **reuse the

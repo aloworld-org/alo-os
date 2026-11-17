@@ -68,6 +68,7 @@ impl SettingsRow {
             | Self::OpenThePicker(_)
             | Self::HowCodeRuns(_)
             | Self::WhereAloWorks(_)
+            | Self::PicturesAndKeys(_)
             | Self::DefaultFor(..)
             | Self::SignInToGitHub
             | Self::SignOutOfGitHub => None,
