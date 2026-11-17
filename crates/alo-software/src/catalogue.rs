@@ -264,8 +264,8 @@ impl Listed {
             .into_iter()
             .filter(|label| match label {
                 Label::NotOpenSource => !self.is_open_source(),
-                Label::NotVerified => !self.verified,
-                Label::EarlyVersion => self.early,
+                Label::NotVerified => !self.is_verified(),
+                Label::EarlyVersion => self.is_early(),
             })
             .collect()
     }
