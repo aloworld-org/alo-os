@@ -486,9 +486,8 @@ fn called(folder: &Path) -> String {
 
 #[cfg(test)]
 #[expect(
-    clippy::unwrap_used,
     clippy::indexing_slicing,
-    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+    reason = "in a test, a panic on a row that is not there is the failure being reported"
 )]
 #[path = "chooser_tests.rs"]
 mod tests;
