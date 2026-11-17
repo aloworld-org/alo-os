@@ -120,11 +120,44 @@ fn the_rows_are_counted_from_the_lists_settings_draws() {
         .iter()
         .position(|it| *it == alo_capability::HowCodeRuns::AskingEachTime);
     assert_eq!(Some(ASK_EACH_TIME), ask_each_time);
-    // *See what alo did*, then one row for each place alo can work.
-    assert_eq!(
-        UP_TO_GIVE_AN_APPLICATION,
-        alo_capability::AloInApplications::ALL.len() + 1
-    );
+}
+
+/// **The rows that give alo something are reached from the page's top**:
+/// Home, then one Down, and never End. Since #1342 the page ends with one
+/// switch per installed application, so a count up from its end depends on
+/// what is installed: main's walk at 775237b3 (run 44034387104) never gave
+/// VSCodium (picture 86) and switched on a LibreOffice switch where it meant
+/// to give a folder (picture 91). From the top, only what is already given is
+/// above them — nothing for the application, VSCodium for the folder — and
+/// `alo-shell`'s
+/// `the_rows_that_give_are_counted_from_the_top_whatever_is_installed`
+/// presses these keys in the real Settings window.
+#[test]
+fn the_rows_that_give_are_reached_from_the_top() {
+    let steps = the_first_walk().steps().to_vec();
+    for (entered, on_the_row) in [
+        ("what-alo-can-use", "on-give-alo-an-application"),
+        ("what-alo-can-use-for-the-folder", "on-give-alo-a-folder"),
+    ] {
+        let from = the_look(&steps, entered);
+        let to = the_look(&steps, on_the_row);
+        let Some(between) = steps.get(from + 1..to) else {
+            panic!("{on_the_row} is looked at before {entered}");
+        };
+        let pressed: Vec<&Step> = between
+            .iter()
+            .filter(|it| matches!(it, Step::Press(_)))
+            .collect();
+        assert_eq!(
+            pressed,
+            vec![
+                &Step::Press(Chord::key("tab")),
+                &Step::Press(Chord::key("home")),
+                &Step::Press(Chord::key("down")),
+            ],
+            "{on_the_row}"
+        );
+    }
 }
 
 /// **On a fresh machine VSCodium is the last application Settings lists**,
