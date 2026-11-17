@@ -64,9 +64,10 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
     };
     let scrolling = if verbs.of(SCROLL_PAGE).is_some() && verbs.of(SCROLL_TO).is_some() {
         format!(
-            " {READ_WINDOW} answers only what is on the screen: to see what is further down or \
-             up, send {SCROLL_PAGE}, or {SCROLL_TO} with the name of the thing you are looking \
-             for, and then {READ_WINDOW} again."
+            " {READ_WINDOW} answers only what is on the screen. When you know the name of the \
+             thing you want on the screen — a heading, a file, a button — send {SCROLL_TO} with \
+             that name, once, rather than scrolling page by page; when you do not, send \
+             {SCROLL_PAGE}. Then send {READ_WINDOW} again."
         )
     } else {
         String::new()

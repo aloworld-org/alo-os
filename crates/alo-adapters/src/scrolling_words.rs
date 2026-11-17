@@ -10,8 +10,8 @@ use alo_strings::Word;
 /// What scrolling to a named thing is for.
 pub const SCROLL_TO_PURPOSE: Word = Word::saying(
     "adapters.fallback.scroll-to.purpose",
-    "scroll an application's window until one thing, named as the application names it, is on \
-     the screen — for reading or pressing what is further down or further up",
+    "scroll an application's window, as far as it takes, until one thing you can name — a \
+     heading, a file, a button — is on the screen, in one step",
 )
 .noting("What one thing the agent can do is for, shown where its list of abilities is.");
 
@@ -43,8 +43,8 @@ pub const SCROLL_TO_SENTENCE: Word = Word::saying(
 /// What scrolling by a page is for.
 pub const SCROLL_PAGE_PURPOSE: Word = Word::saying(
     "adapters.fallback.scroll-page.purpose",
-    "scroll an application's window by about one screen, down or up, so that what was off the \
-     screen can be read",
+    "scroll an application's window by about one screen, down or up, to read on when you do \
+     not know the name of what you are looking for",
 )
 .noting("What one thing the agent can do is for, shown where its list of abilities is.");
 
