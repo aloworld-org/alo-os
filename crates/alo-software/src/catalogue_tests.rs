@@ -697,6 +697,42 @@ fn what_arrives_with_access_past_its_box_is_not_told_it_was_given_nothing() {
     }
 }
 
+/// **The internet is never a row's label** (the owner, 2026-11-17): GNOME
+/// Connections asks for the network and nothing else, and its row is as plain
+/// as one that asks for nothing; GIMP asks for both and is labelled for its
+/// files alone. The approval card says the internet instead.
+#[test]
+fn the_internet_is_read_from_the_catalogue_and_is_no_rows_label() {
+    let catalogue = Catalogue::decided().unwrap();
+    let entry = |identifier: &str| {
+        catalogue
+            .every()
+            .iter()
+            .find(|one| one.application().identifier() == identifier)
+            .unwrap()
+    };
+    let connections = entry("org.gnome.Connections");
+    assert_eq!(connections.reaches(), &[crate::Reach::TheInternet][..]);
+    assert!(
+        connections.labels().is_empty(),
+        "{:?}",
+        connections.labels()
+    );
+    assert_eq!(
+        entry("org.gimp.GIMP").labels(),
+        vec![Label::ReachesYourFiles]
+    );
+    let using_it = catalogue
+        .every()
+        .iter()
+        .filter(|one| one.reaches().contains(&crate::Reach::TheInternet))
+        .count();
+    assert_eq!(
+        using_it, 63,
+        "the count read from every entry's metadata on 2026-11-17"
+    );
+}
+
 /// **What a catalogued application's makers ask for travels with the
 /// installation**, so the sentence once it arrives is the true one; an
 /// installation asked for by hand knows nothing of it.
@@ -710,7 +746,7 @@ fn what_an_entry_reaches_travels_with_its_installation() {
         .unwrap();
     assert_eq!(
         gimp.wanted().reaches(),
-        Some(&[crate::Reach::YourFiles][..])
+        Some(&[crate::Reach::YourFiles, crate::Reach::TheInternet][..])
     );
     let by_hand = crate::installing::Wanted::by_hand(gimp.application().clone(), "flathub");
     assert_eq!(by_hand.reaches(), None);

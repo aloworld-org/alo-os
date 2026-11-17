@@ -2256,7 +2256,12 @@ software.verb.install-application.application	the application to install, by its
 software.verb.install-application.changes	Downloads this application and installs it for everyone who uses this computer.
 software.verb.install-application.leaves	It is given no access to your files, and no other application is updated or removed.
 software.verb.install-application.leaves.reaching-your-files	Its makers ask for it to read and change your files without asking you first, and it will be able to. No other application is updated or removed.
+software.verb.install-application.leaves.reaching-your-files-and-the-internet	Its makers ask for it to read and change your files without asking you first, and to use the internet, and it will be able to do both. No other application is updated or removed.
 software.verb.install-application.leaves.running-programs-outside	Its makers ask for it to run programs outside its box, so it will be able to do anything you can on this computer. No other application is updated or removed.
+software.verb.install-application.leaves.running-programs-outside-and-the-internet	Its makers ask for it to run programs outside its box and to use the internet, so it will be able to do anything you can on this computer. No other application is updated or removed.
+software.verb.install-application.leaves.running-programs-outside-and-your-files	Its makers ask for it to run programs outside its box and to read and change your files without asking you first, so it will be able to do anything you can on this computer. No other application is updated or removed.
+software.verb.install-application.leaves.running-programs-outside-your-files-and-the-internet	Its makers ask for it to run programs outside its box, to read and change your files without asking you first, and to use the internet, so it will be able to do anything you can on this computer. No other application is updated or removed.
+software.verb.install-application.leaves.using-the-internet	It is given no access to your files. Its makers ask for it to use the internet, and it will be able to. No other application is updated or removed.
 software.verb.install-application.purpose	install an application from a place this machine installs applications from
 software.verb.install-application.sentence	install {application} from {source}
 software.verb.install-application.source	the place to install it from, by the name this machine gives that place

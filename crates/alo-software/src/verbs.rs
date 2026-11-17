@@ -318,6 +318,10 @@ fn what_the_catalogue_says_it_reaches(identifier: &str) -> Option<Vec<Reach>> {
 /// application the catalogue lists whose makers ask for its files, or for
 /// programs outside its box, that is false, and the owner decided on
 /// 2026-11-17 that the card says so in words **before** the person approves.
+/// **The line names everything it reaches**, the internet among them — the
+/// owner's answer the same day: the internet is not a label on a row, and is
+/// said here with the rest. One sentence for each set of reaches, so no
+/// language has to join sentences this crate wrote separately.
 /// An application the catalogue does not list keeps the verb's line: nothing
 /// here can read what its makers ask for before it is installed, which is said
 /// as a gap in the change's report rather than guessed here.
@@ -329,13 +333,26 @@ pub fn what_installing_leaves(call: &Call) -> Option<alo_strings::Word> {
     let Some(Value::Application(identifier)) = call.value(words::APPLICATION) else {
         return None;
     };
-    let reaches = what_the_catalogue_says_it_reaches(identifier)?;
-    if reaches.contains(&Reach::ProgramsOutsideItsBox) {
-        Some(words::VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE)
-    } else if reaches.contains(&Reach::YourFiles) {
-        Some(words::VERB_LEAVES_REACHING_YOUR_FILES)
-    } else {
-        None
+    the_line_for(&what_the_catalogue_says_it_reaches(identifier)?)
+}
+
+/// The card's line for an application that reaches `reaches`, naming each —
+/// [`None`] for one that reaches nothing past its box.
+fn the_line_for(reaches: &[Reach]) -> Option<alo_strings::Word> {
+    let programs = reaches.contains(&Reach::ProgramsOutsideItsBox);
+    let files = reaches.contains(&Reach::YourFiles);
+    let internet = reaches.contains(&Reach::TheInternet);
+    match (programs, files, internet) {
+        (false, false, false) => None,
+        (false, false, true) => Some(words::VERB_LEAVES_USING_THE_INTERNET),
+        (false, true, false) => Some(words::VERB_LEAVES_REACHING_YOUR_FILES),
+        (false, true, true) => Some(words::VERB_LEAVES_REACHING_YOUR_FILES_AND_THE_INTERNET),
+        (true, false, false) => Some(words::VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE),
+        (true, false, true) => Some(words::VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_THE_INTERNET),
+        (true, true, false) => Some(words::VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_YOUR_FILES),
+        (true, true, true) => {
+            Some(words::VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_YOUR_FILES_AND_THE_INTERNET)
+        }
     }
 }
 
@@ -557,7 +574,64 @@ mod tests {
         assert!(gimp.contains("read and change your files"), "{gimp}");
         for one in [&obs, &gimp] {
             assert!(!one.contains("no access to your files"), "{one}");
+            assert!(one.contains("use the internet"), "{one}");
         }
+        // RawTherapee asks for programs outside its box and the person's files,
+        // and not for the network.
+        let rawtherapee = said("com.rawtherapee.RawTherapee");
+        assert!(rawtherapee.contains("your files"), "{rawtherapee}");
+        assert!(!rawtherapee.contains("internet"), "{rawtherapee}");
+        // GNOME Connections asks for the network and nothing else.
+        let connections = said("org.gnome.Connections");
+        assert!(connections.contains("use the internet"), "{connections}");
+        assert!(
+            connections.contains("no access to your files"),
+            "{connections}"
+        );
+    }
+
+    /// **Every set of reaches has its own line, and each line names exactly
+    /// what is in the set** — files, programs outside the box and the
+    /// internet, each said where it is asked for and never where it is not.
+    #[test]
+    fn the_cards_line_names_each_reach_and_nothing_else() {
+        let english = in_english();
+        let every = [
+            Reach::ProgramsOutsideItsBox,
+            Reach::YourFiles,
+            Reach::TheInternet,
+        ];
+        let mut lines = std::collections::BTreeSet::new();
+        for set in 1_u8..8 {
+            let reaches: Vec<Reach> = every
+                .iter()
+                .enumerate()
+                .filter(|(at, _)| set & (1 << at) != 0)
+                .map(|(_, reach)| *reach)
+                .collect();
+            let word = the_line_for(&reaches).unwrap();
+            let line = english
+                .say(&word.key(), &alo_strings::Filling::nothing())
+                .into_text();
+            let says = |phrase: &str| line.contains(phrase);
+            assert_eq!(
+                says("run programs outside its box"),
+                reaches.contains(&Reach::ProgramsOutsideItsBox),
+                "{reaches:?}: {line}"
+            );
+            assert_eq!(
+                says("read and change your files"),
+                reaches.contains(&Reach::YourFiles),
+                "{reaches:?}: {line}"
+            );
+            assert_eq!(
+                says("use the internet"),
+                reaches.contains(&Reach::TheInternet),
+                "{reaches:?}: {line}"
+            );
+            assert!(lines.insert(line), "two sets share a line: {reaches:?}");
+        }
+        assert_eq!(the_line_for(&[]), None);
     }
 
     /// **And an application that asks for nothing past its box, or one the
@@ -589,7 +663,7 @@ mod tests {
         let call = installing("org.gimp.GIMP");
         assert_eq!(
             what_the_catalogue_says_it_reaches("org.gimp.GIMP"),
-            Some(vec![Reach::YourFiles])
+            Some(vec![Reach::YourFiles, Reach::TheInternet])
         );
         assert_eq!(
             what_the_catalogue_says_it_reaches("org.gnome.TextEditor"),
