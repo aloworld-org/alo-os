@@ -236,7 +236,7 @@ fn the_home_folder_is_given_before_the_ask() {
         on_the_row < given && given < asked,
         "{on_the_row} {given} {asked}"
     );
-    assert_eq!(UP_TO_GIVE_A_FOLDER, UP_TO_GIVE_AN_APPLICATION + 1);
+    assert_eq!((DOWN_TO_GIVE_AN_APPLICATION, DOWN_TO_GIVE_A_FOLDER), (1, 1));
 }
 
 /// **The folder's row is reached from Settings opened afresh, as the
