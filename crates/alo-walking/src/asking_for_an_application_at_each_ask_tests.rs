@@ -34,8 +34,9 @@ fn the_second_close_may_find_nothing_left_to_close() {
     let Some(marked) = steps.iter().rposition(|it| *it == Step::Mark) else {
         panic!("the section never marks the log before closing");
     };
-    let closing = steps[marked..]
+    let closing = steps
         .iter()
+        .skip(marked)
         .cloned()
         .fold(Walk::named("w").look("86", Settling::UNDER_KVM), Walk::then);
     let opened = a_kept_picture("walk-9459e836-86-papers-opened-for-this-task.png");
