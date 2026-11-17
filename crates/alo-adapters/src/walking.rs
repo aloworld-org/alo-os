@@ -319,10 +319,22 @@ impl Walker<'_> {
         } else {
             None
         };
+        // The number a slider or a meter holds, asked of nothing else.
+        let value = if role == Role::Range {
+            match self.tree.value(at) {
+                Ok(value) => value,
+                Err(TreeFault::Vanished) => None,
+                Err(fault) => return Err(NotWalked::Tree(fault)),
+            }
+        } else {
+            None
+        };
         let described = Seen::of(role, name.clone(), text, depth)
             .on(states.on(role))
             .usable(states.usable())
-            .cut_short(cut_short);
+            .cut_short(cut_short)
+            .selected(states.selected())
+            .valued(value);
         let kept = match role {
             Role::Button
             | Role::CheckBox
@@ -357,7 +369,20 @@ impl Walker<'_> {
                 Some(described.limited(Limit::NotDescribed))
             }
             Role::TextField | Role::PasswordField | Role::Window | Role::Canvas => Some(described),
-            Role::Label | Role::Document | Role::Image | Role::Part => {
+            // **A drop-down with nothing to name it by** is a control alo can
+            // say nothing useful about, said as one.
+            Role::DropDown
+                if name.is_empty()
+                    && !matches!(described.contents(), crate::shown::Contents::Text(_)) =>
+            {
+                Some(described.limited(Limit::NoName))
+            }
+            Role::DropDown => Some(described),
+            Role::Range => {
+                let says_something = !name.is_empty() || described.value().is_some();
+                says_something.then_some(described)
+            }
+            Role::Label | Role::Document | Role::Image | Role::Item | Role::Part => {
                 let says_something = !name.is_empty()
                     || matches!(described.contents(), crate::shown::Contents::Text(_));
                 says_something.then_some(described)

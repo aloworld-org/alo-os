@@ -226,8 +226,10 @@ app.road.tree.described	Its controls: controls, read and press, through the acce
 app.road.tree.not-here	Its controls: controls, read and press, through the accessibility tree — which this session does not have now, so they cannot be reached
 app.road.tree.not-open	Its controls: controls, read and press, through the accessibility tree. None of its windows is open now, so whether they describe themselves is not known until one is
 app.road.window	Its window: open, focus and close, carried out by the desktop
+app.role.drop-down	drop-down
 app.role.field	field
 app.role.password-field	password field
+app.role.range	slider or meter
 app.show.ability	{ability} — {said}
 app.show.alo	alo OS's own surfaces, reached through the accessibility tree only, with --in naming one: {list}
 app.show.argument	<{typed}> — {said}
@@ -237,10 +239,12 @@ app.show.in-words	What it does: {said}
 app.show.reads	It only reads, and changes nothing
 app.show.sends	This cannot be undone once it has been sent
 app.show.typed-as	Typed as: {said}
+app.state.at-value	at {value}
 app.state.greyed-out	greyed out
 app.state.holds	holds “{said}”
 app.state.off	off
 app.state.on	on
+app.state.selected	selected
 app.state.withheld	what it holds is never read
 app.typed.front-and-in	front already means one window, the one you were working in, so --in cannot be added to it
 app.typed.in-needs-a-window	--in takes the title of one window after it, so nothing was done

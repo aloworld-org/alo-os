@@ -521,6 +521,25 @@ pub const STATE_ON: Word = Word::saying("app.state.on", "on")
 pub const STATE_OFF: Word = Word::saying("app.state.off", "off")
     .noting("A check box that is not ticked, or a switch that is off.");
 
+/// A drop-down, as a kind.
+pub const A_DROP_DOWN: Word = Word::saying("app.role.drop-down", "drop-down")
+    .noting("A kind of control: one choice of several, shown closed until opened.");
+
+/// A slider or a meter, as a kind.
+pub const A_RANGE: Word = Word::saying("app.role.range", "slider or meter")
+    .noting("A kind of control: a number within a range, like a zoom slider or a progress bar.");
+
+/// Selected.
+pub const STATE_SELECTED: Word = Word::saying("app.state.selected", "selected")
+    .noting("A tab or an item of a list that is the chosen one.");
+
+/// The number a slider or a meter holds.
+pub const AT_VALUE: Word = Word::saying("app.state.at-value", "at {value}")
+    .noting("Where a slider or a meter is. {value} is a number and is not translated.");
+
+/// The placeholder for a number a slider holds.
+pub const VALUE: &str = "value";
+
 /// What a field holds.
 pub const HOLDS: Word = Word::saying("app.state.holds", "holds “{said}”")
     .noting("{said} is the text in a field, shown as it is.");
@@ -791,7 +810,7 @@ pub const CANNOT_BE_UNDONE_ONCE_SENT: Word = Word::saying(
 .noting("The contract's own words, said beside an ability that sends, or may send, something off the machine.");
 
 /// Every word of this crate's own.
-pub const EVERY_WORD: [Word; 90] = [
+pub const EVERY_WORD: [Word; 94] = [
     NOTHING_ASKED,
     NOTHING_TO_DO,
     LEFT_OVER,
@@ -843,6 +862,10 @@ pub const EVERY_WORD: [Word; 90] = [
     GREYED_OUT,
     STATE_ON,
     STATE_OFF,
+    A_DROP_DOWN,
+    A_RANGE,
+    STATE_SELECTED,
+    AT_VALUE,
     HOLDS,
     WITHHELD,
     UNNAMED_CONTROL,

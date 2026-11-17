@@ -32,6 +32,13 @@ pub enum Role {
     Tab,
     /// A link.
     Link,
+    /// A drop-down: one choice of several, shown closed.
+    DropDown,
+    /// One item of a list, a table or a tree — a file in a folder, a row of
+    /// an archive.
+    Item,
+    /// A number within a range: a slider, a progress bar or a meter.
+    Range,
     /// Words that are read: a label, a heading, a paragraph.
     Label,
     /// A field a person types into, whose contents are shown.
@@ -69,6 +76,12 @@ impl Role {
             37 => Self::Tab,
             // LINK
             88 => Self::Link,
+            // COMBO_BOX
+            11 => Self::DropDown,
+            // LIST_ITEM, TABLE_CELL, TREE_ITEM
+            32 | 56 | 91 => Self::Item,
+            // PROGRESS_BAR, SLIDER, LEVEL_BAR
+            42 | 51 | 103 => Self::Range,
             // LABEL, PARAGRAPH, CAPTION, HEADING, STATIC
             29 | 73 | 81 | 83 | 116 => Self::Label,
             // SPIN_BUTTON, TEXT, ENTRY
@@ -92,7 +105,10 @@ impl Role {
     /// back.
     #[must_use]
     pub const fn text_is_read(self) -> bool {
-        matches!(self, Self::Label | Self::TextField | Self::Document)
+        matches!(
+            self,
+            Self::Label | Self::TextField | Self::Document | Self::DropDown | Self::Item
+        )
     }
 }
 

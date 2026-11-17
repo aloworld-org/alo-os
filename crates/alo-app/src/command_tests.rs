@@ -892,3 +892,49 @@ fn a_line_not_in_the_shape_asks_nothing() {
             .starts_with("Nothing was asked")
     );
 }
+
+/// **A person's `controls` names drop-downs and sliders, and says what is
+/// selected and where a slider stands** — the same things alo's own read is
+/// told, so the two roads agree.
+#[test]
+fn controls_name_drop_downs_and_sliders_and_say_what_is_selected() {
+    let known = Known::holding(&[EDITOR]);
+    let mut machine = AMachine {
+        tree: Some(the_editors_window().and_a_drop_down_a_slider_and_a_tab()),
+        ..AMachine::default()
+    };
+    assert_eq!(
+        known.running(&["texteditor", "controls"], &mut machine),
+        Ended::Done
+    );
+    for said in [
+        "drop-down “Font”",
+        "slider or meter “Zoom”: at 150",
+        "tab “General”: selected",
+    ] {
+        assert!(
+            machine.told.iter().any(|line| line.trim() == said),
+            "{said} not in {:?}",
+            machine.told
+        );
+    }
+    let mut piped = AMachine {
+        tree: Some(the_editors_window().and_a_drop_down_a_slider_and_a_tab()),
+        ..AMachine::default()
+    };
+    assert_eq!(
+        known.piped(&["texteditor", "controls"], &mut piped),
+        Ended::Done
+    );
+    for value in [
+        "drop_down\tFont\t",
+        "slider\tZoom\tvalue=150",
+        "tab\tGeneral\tselected",
+    ] {
+        assert!(
+            piped.told.contains(&value.to_owned()),
+            "{value:?} not in {:?}",
+            piped.told
+        );
+    }
+}
