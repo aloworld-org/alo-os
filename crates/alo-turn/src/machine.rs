@@ -317,6 +317,9 @@ pub fn the_verbs_a_whole_machine_offers() -> Result<Verbs, TheVerbsWouldNotDecla
     // **And opening a file in an application** (the owner's "Yes, add it",
     // 2026-11-14), carried out by `crate::opening_a_file_in_an_application`.
     alo_applications::declare_opening_a_file_into(&mut verbs)?;
+    // **And answering the file chooser** (the coordinator's approval,
+    // 2026-11-17), carried out by `crate::choosing_on_the_file_chooser`.
+    alo_applications::declare_choosing_on_the_file_chooser_into(&mut verbs)?;
     alo_record::declare_verbs_into(&mut verbs)?;
     alo_adapters::fallback_verbs::declare_into(&mut verbs)?;
     alo_publishing::verbs::declare_into(&mut verbs)?;
@@ -984,6 +987,9 @@ mod tests {
             // And opening a file in one, added 2026-11-14 (the owner's "Yes,
             // add it"): a change over an application and a granted file.
             "open_file_in_application",
+            // And answering the file chooser, added 2026-11-17: a change over
+            // a granted folder and one name in it.
+            "choose_on_the_file_chooser",
             // `alo-record`'s one, added 2026-10-18.
             "what_touched_this_file",
             // The accessibility fallback's two, added 2026-11-12: a read that

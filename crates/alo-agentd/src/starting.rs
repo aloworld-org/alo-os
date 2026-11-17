@@ -609,6 +609,7 @@ mod tests {
                 "accessible.select_item",
                 "accessible.type_text",
                 "archive_folder",
+                "choose_on_the_file_chooser",
                 "close_application",
                 "find_in_folder",
                 "focus_application",

@@ -1041,7 +1041,10 @@ for; nothing was renamed or removed.
 was renamed or removed). They are the compositor door's own spellings
 ([`application-door.md`](application-door.md)), so one vocabulary crosses two
 sockets rather than two that have to be kept in step. For `open-file` the file
-and where it opened are in the record, not on this line.
+and where it opened are in the record, not on this line. **And
+`alo-chooses-file`, added additively on 2026-11-17**: a file was chosen on the
+file chooser for `application`, the one whose sheet was up
+(`choose_on_the_file_chooser`); the file is in the record, not on this line.
 
 **And for `open-file`, added additively on 2026-11-15, `types_into`**: where
 text typed into the file just opened goes, once its window was in front and

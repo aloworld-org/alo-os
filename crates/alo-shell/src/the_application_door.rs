@@ -125,6 +125,9 @@ pub struct TheApplicationDoor {
     /// The portal asking the person to choose a file, for the desktop's file
     /// chooser to take (`choose-file`, 2026-11-17).
     choosing_files: Vec<crate::the_file_chooser::AskedForAFile>,
+    /// alo answering the file chooser with a file the person approved, for
+    /// the desktop to carry out (`alo-chooses-file`, 2026-11-17).
+    alo_answering: Vec<crate::alo_answers_the_file_chooser::AloAnswering>,
     /// Texts alo asked to type, part-way read (ADR 0153).
     reading: Vec<ReadingText>,
     /// Typing asked for and read whole, for the compositor to carry out.
@@ -153,6 +156,7 @@ impl TheApplicationDoor {
             working: Vec::new(),
             choosing: Vec::new(),
             choosing_files: Vec::new(),
+            alo_answering: Vec::new(),
             reading: Vec::new(),
             typing: Vec::new(),
             opening: Vec::new(),
@@ -179,6 +183,7 @@ impl TheApplicationDoor {
             working: Vec::new(),
             choosing: Vec::new(),
             choosing_files: Vec::new(),
+            alo_answering: Vec::new(),
             reading: Vec::new(),
             typing: Vec::new(),
             opening: Vec::new(),
@@ -269,6 +274,14 @@ impl TheApplicationDoor {
         std::mem::take(&mut self.choosing_files)
     }
 
+    /// Every answer alo was approved to give the file chooser since the last
+    /// time this was asked, handed over with its connection.
+    pub fn alo_answers_the_file_chooser(
+        &mut self,
+    ) -> Vec<crate::alo_answers_the_file_chooser::AloAnswering> {
+        std::mem::take(&mut self.alo_answering)
+    }
+
     /// Take the door away. The socket goes; the daemon's directory stays.
     pub fn taken_away(&self) {
         self.place.taken_away();
@@ -356,6 +369,24 @@ impl TheApplicationDoor {
                                     asked,
                                     caller.talking,
                                 ));
+                            continue;
+                        }
+                        Some(Err(_)) => {
+                            drop(caller.talking);
+                            continue;
+                        }
+                        None => {}
+                    }
+                    // **And alo answering the file chooser**, which the
+                    // desktop carries out on its next frame.
+                    match alo_acting::ToAnswerAFileChooser::read(&line) {
+                        Some(Ok(asked)) => {
+                            self.alo_answering.push(
+                                crate::alo_answers_the_file_chooser::AloAnswering::of(
+                                    asked,
+                                    caller.talking,
+                                ),
+                            );
                             continue;
                         }
                         Some(Err(_)) => {

@@ -135,6 +135,14 @@ a person`. The verb opens it the same way an application's own entry says it
 opens a file, and needs the approval because it is the agent choosing to put the
 person's file in front of them in an application.
 
+### choose_on_the_file_chooser
+
+**By hand:** a person answers the file chooser themselves: they go to the
+folder, choose the file or type the name, and press *Open* or *Save* —
+`Portals: file chooser and documents`. The verb answers the same sheet with
+the same file, and needs the approval because it is the agent choosing which of
+the person's files an application is given.
+
 ### arrange_application
 
 **By hand:** a person drags the window to an edge to take half the screen, or

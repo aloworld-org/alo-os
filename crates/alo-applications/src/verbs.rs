@@ -159,13 +159,17 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), Declaring> {
 /// # Errors
 /// [`Declaring::List`] if the list already holds one of these names.
 pub fn declare_every_verb_into(verbs: &mut Verbs) -> Result<(), Declaring> {
-    if verbs.of(crate::OPEN_FILE_IN_APPLICATION).is_some() {
-        return Err(Declaring::List(VerbsError::AlreadyDeclared {
-            name: crate::OPEN_FILE_IN_APPLICATION.to_owned(),
-        }));
+    for later in [crate::OPEN_FILE_IN_APPLICATION, crate::CHOOSE_ON_THE_FILE_CHOOSER] {
+        if verbs.of(later).is_some() {
+            return Err(Declaring::List(VerbsError::AlreadyDeclared {
+                name: later.to_owned(),
+            }));
+        }
     }
     declare_into(verbs)?;
-    crate::opening_a_file::declare_opening_a_file_into(verbs)
+    crate::opening_a_file::declare_opening_a_file_into(verbs)?;
+    // **And answering the file chooser** (2026-11-17).
+    crate::choosing_on_the_file_chooser::declare_choosing_on_the_file_chooser_into(verbs)
 }
 
 /// Put only the application verbs a machine can really carry out on a list.

@@ -99,6 +99,8 @@ mod a_key_reaches_the_application_sheet;
 mod a_key_reaches_the_bar;
 mod a_key_reaches_the_docks_surfaces;
 mod a_key_reaches_the_file_chooser;
+/// alo answering the file chooser with a file the person approved.
+pub mod alo_answers_the_file_chooser;
 mod a_key_reaches_the_github_sheet;
 mod a_key_reaches_the_market;
 mod a_key_reaches_the_open_with_sheet;

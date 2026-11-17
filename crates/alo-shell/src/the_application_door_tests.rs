@@ -630,6 +630,43 @@ fn a_link_to_choose_for_is_handed_on_with_its_connection_held() {
     let _ = std::fs::remove_dir_all(root);
 }
 
+/// **alo's approved answer to the file chooser is handed on with its
+/// connection held**, nothing answered by the door itself — the desktop
+/// answers it — and a line meant as `alo-chooses-file` that is not one is
+/// closed with nothing written.
+#[test]
+fn alos_answer_to_the_file_chooser_is_handed_on_with_its_connection_held() {
+    let (root, place) = a_place("alo-chooses-file");
+    let mut door = TheApplicationDoor::served(place.clone(), us()).unwrap();
+    let mut hand = AHand::answering(Answer::Acted);
+    let mut daemon = UnixStream::connect(place.socket()).unwrap();
+    daemon
+        .write_all(b"alo-chooses-file /var/home/alo/Documents notes.txt\n")
+        .unwrap();
+    assert_eq!(door.answered(&mut hand), 0);
+    let answers = door.alo_answers_the_file_chooser();
+    assert_eq!(answers.len(), 1);
+    assert!(door.alo_answers_the_file_chooser().is_empty(), "handed over once");
+    let mut sheet = crate::the_file_chooser::TheFileChooser::none();
+    let disk = crate::the_file_chooser::THE_DISK;
+    sheet.alo_answered(answers, std::time::Instant::now(), &disk);
+    assert_eq!(one_line(&mut daemon).as_deref(), Some("no-sheet"));
+    for line in [
+        "alo-chooses-file relative notes.txt\n",
+        "alo-chooses-file /var/home/alo a/b\n",
+        "alo-chooses-file /var/home/alo\n",
+    ] {
+        let mut daemon = UnixStream::connect(place.socket()).unwrap();
+        daemon.write_all(line.as_bytes()).unwrap();
+        assert_eq!(door.answered(&mut hand), 0, "{line}");
+        assert_eq!(one_line(&mut daemon), None, "{line}");
+        assert!(door.alo_answers_the_file_chooser().is_empty(), "{line}");
+    }
+    assert!(hand.links.is_empty() && hand.carried.is_empty());
+    door.taken_away();
+    let _ = std::fs::remove_dir_all(root);
+}
+
 /// **The person choosing a file is handed on with its connection held**,
 /// nothing answered by the door itself — and a line meant as `choose-file`
 /// that is not one is closed with nothing written.

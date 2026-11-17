@@ -32,6 +32,7 @@ use alo_software::{Installed, WhatTheCatalogueHolds};
 
 use crate::acting_on_an_application::Reached;
 use crate::choosing_in_an_application::AChoiceMade;
+use crate::choosing_on_the_file_chooser::AFileChosen;
 use crate::opening_a_file_in_an_application::AFileOpened;
 use crate::pressing_a_control::AControlPressed;
 use crate::reading_an_applications_windows::TheWindowsShowed;
@@ -91,6 +92,9 @@ pub enum WhatAVerbDid {
     /// A file was opened in an application the person named, in alo's own
     /// copy or in their own window (`open_file_in_application`, 2026-11-14).
     AFileWasOpened(AFileOpened),
+    /// A file was chosen on the file chooser an application had up
+    /// (`choose_on_the_file_chooser`, 2026-11-17).
+    AFileWasChosen(AFileChosen),
     /// An application's window was scrolled, to a named thing or by a page
     /// (`accessible.scroll_to`, `accessible.scroll_page`, 2026-11-17).
     AWindowWasScrolled(AWindowScrolled),
@@ -131,6 +135,15 @@ impl WhatAVerbDid {
         }
     }
 
+    /// The file chosen on the file chooser, when one was.
+    #[must_use]
+    pub const fn chosen_on_the_file_chooser(&self) -> Option<&AFileChosen> {
+        match self {
+            Self::AFileWasChosen(chosen) => Some(chosen),
+            _ => None,
+        }
+    }
+
     /// What was published, when a folder was.
     #[must_use]
     pub const fn published(&self) -> Option<&Published> {
@@ -145,6 +158,7 @@ impl WhatAVerbDid {
             | Self::AControlWasPressed(_)
             | Self::TextWasTyped(_)
             | Self::AFileWasOpened(_)
+            | Self::AFileWasChosen(_)
             | Self::AWindowWasScrolled(_)
             | Self::AValueWasSet(_)
             | Self::SomethingWasChosen(_) => None,
@@ -169,6 +183,7 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
+            | Self::AFileWasChosen(_)
             | Self::AWindowWasScrolled(_)
             | Self::AValueWasSet(_)
             | Self::SomethingWasChosen(_) => None,
@@ -189,6 +204,7 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
+            | Self::AFileWasChosen(_)
             | Self::AWindowWasScrolled(_)
             | Self::AValueWasSet(_)
             | Self::SomethingWasChosen(_) => None,
@@ -209,6 +225,7 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
+            | Self::AFileWasChosen(_)
             | Self::AWindowWasScrolled(_)
             | Self::AValueWasSet(_)
             | Self::SomethingWasChosen(_) => None,
@@ -229,6 +246,7 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
+            | Self::AFileWasChosen(_)
             | Self::AWindowWasScrolled(_)
             | Self::AValueWasSet(_)
             | Self::SomethingWasChosen(_) => None,
@@ -285,6 +303,7 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
+            | Self::AFileWasChosen(_)
             | Self::AWindowWasScrolled(_)
             | Self::AValueWasSet(_)
             | Self::SomethingWasChosen(_) => None,
@@ -361,6 +380,12 @@ impl From<WhatTouchedIt> for WhatAVerbDid {
 impl From<Published> for WhatAVerbDid {
     fn from(published: Published) -> Self {
         Self::AFolderWasPublished(published)
+    }
+}
+
+impl From<AFileChosen> for WhatAVerbDid {
+    fn from(chosen: AFileChosen) -> Self {
+        Self::AFileWasChosen(chosen)
     }
 }
 

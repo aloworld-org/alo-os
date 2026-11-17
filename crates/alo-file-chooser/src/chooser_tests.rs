@@ -117,3 +117,51 @@ fn a_page_at_a_time() {
     assert_eq!(chooser.shown(4), 8..10);
     assert_eq!(chooser.shown(0), 9..10, "a page is at least one row");
 }
+
+/// **alo's answer is held to what the sheet could have been answered with**:
+/// to open, a file that is there, wherever the person's folders are; to save,
+/// a name in a folder that is there and not a folder's name. A file already
+/// there may be saved over, because the person approved the sentence.
+#[test]
+fn alos_answer_is_one_the_sheet_could_have_given() {
+    let disk = a_home();
+    let opening = Chooser::to_open(Path::new("/home/anna"), &disk);
+    assert_eq!(
+        opening.alo_chose(Path::new("/home/anna/Letters"), "to Rui.txt", &disk),
+        Ok(PathBuf::from("/home/anna/Letters/to Rui.txt"))
+    );
+    for (folder, name) in [
+        ("/home/anna", "gone.txt"),
+        ("/home/anna", "Letters"),
+        ("/home/anna/Nowhere", "a.txt"),
+        ("/home/anna", ".."),
+    ] {
+        assert_eq!(
+            opening.alo_chose(Path::new(folder), name, &disk),
+            Err(NotBelieved),
+            "{folder} {name}"
+        );
+    }
+    let saving = Chooser::to_save(Path::new("/home/anna"), "new.txt", &disk);
+    assert_eq!(
+        saving.alo_chose(Path::new("/home/anna/Letters"), "new.txt", &disk),
+        Ok(PathBuf::from("/home/anna/Letters/new.txt"))
+    );
+    assert_eq!(
+        saving.alo_chose(Path::new("/home/anna"), "march.txt", &disk),
+        Ok(PathBuf::from("/home/anna/march.txt")),
+        "saved over, as approved"
+    );
+    for (folder, name) in [
+        ("/home/anna", "Letters"),
+        ("/home/anna/Nowhere", "a.txt"),
+        ("/home/anna", "a/b"),
+        ("/home/anna", ""),
+    ] {
+        assert_eq!(
+            saving.alo_chose(Path::new(folder), name, &disk),
+            Err(NotBelieved),
+            "{folder} {name}"
+        );
+    }
+}

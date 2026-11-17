@@ -118,6 +118,17 @@ impl TheDoorOnTheDesktop {
             .unwrap_or_default()
     }
 
+    /// alo's approved answers to the file chooser since the last frame, or
+    /// none while the door is not served.
+    pub(crate) fn alo_answers_the_file_chooser(
+        &mut self,
+    ) -> Vec<crate::alo_answers_the_file_chooser::AloAnswering> {
+        self.served
+            .as_mut()
+            .map(TheApplicationDoor::alo_answers_the_file_chooser)
+            .unwrap_or_default()
+    }
+
     /// The portal's asks for the person to choose a file since the last
     /// frame, or none while the door is not served.
     pub(crate) fn asked_for_files(&mut self) -> Vec<crate::the_file_chooser::AskedForAFile> {
