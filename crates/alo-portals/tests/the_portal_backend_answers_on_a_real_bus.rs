@@ -599,11 +599,11 @@ mod on_the_bus {
             .call_method(
                 Some(DESKTOP),
                 PORTALS,
-                Some("org.freedesktop.portal.FileChooser"),
-                "OpenFile",
-                &("", "Open", HashMap::<&str, Value<'_>>::new()),
+                Some("org.freedesktop.portal.Screenshot"),
+                "Screenshot",
+                &("", HashMap::<&str, Value<'_>>::new()),
             )
-            .expect_err("the file chooser was answered");
+            .expect_err("the screenshot portal was answered");
         assert!(
             matches!(&refused, zbus::Error::MethodError(name, _, _)
                 if name.as_str() == "org.freedesktop.DBus.Error.UnknownInterface"

@@ -648,6 +648,31 @@ RUN dnf install --assumeyes --setopt=install_weak_deps=False flatpak \
  && flatpak remote-add --if-not-exists --system flathub \
       https://dl.flathub.org/repo/flathub.flatpakrepo
 
+# **A file the person chooses reaches the application that asked**, through
+# upstream's documents portal ([ADR 0159](../docs/decisions/0159-a-chosen-file-reaches-an-application-through-the-documents-portal.md)).
+# A sandboxed application cannot open a path it was never given, so alo's file
+# chooser exports the one file chosen into `xdg-document-portal`'s folder for
+# that application alone, as every Linux desktop's chooser does. The package is
+# Fedora's `xdg-desktop-portal`, which carries two programs, and **only the
+# documents portal is used**: the frontend would take
+# `org.freedesktop.portal.Desktop`, which `alo-portald` owns, so its user unit
+# is **masked** and nothing can start it, not even D-Bus activation before
+# `alo-portald` is up. A pinned engine, configured and not patched.
+#
+# **And the program starts**: `--help` loads every library it links, so a
+# documents portal that would die at launch fails the build, which `test -x`
+# alone would not (`CLAUDE.md`, *a check that stands in for the thing*).
+# `crates/alo-image/tests/a_chosen_file_reaches_the_application_that_asked.rs`
+# holds this block to all three.
+RUN dnf install --assumeyes --setopt=install_weak_deps=False xdg-desktop-portal \
+ && dnf clean all \
+ && systemctl --global mask xdg-desktop-portal.service \
+ && test -L /etc/systemd/user/xdg-desktop-portal.service \
+ && grep -qs 'org.freedesktop.portal.Documents' \
+      /usr/share/dbus-1/services/org.freedesktop.portal.Documents.service \
+ && /usr/libexec/xdg-document-portal --help > /dev/null \
+ && echo "a chosen file reaches the application that asked, and upstream's frontend is masked"
+
 # The walker is in libexec with the others and for the same reason: systemd
 # runs it once at first boot and nobody runs it by hand. What it installs is
 # `crates/alo-software/shipped.toml`, compiled into it by `include_str!`, so

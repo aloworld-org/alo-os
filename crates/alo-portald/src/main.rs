@@ -217,7 +217,16 @@ mod running {
             Sandboxes::under(THE_PROCESSES),
             Arc::new(record),
         )
-        .opening_links_with(Arc::new(door));
+        .opening_links_with(Arc::new(door.clone()))
+        // **A file is chosen on the desktop's own sheet** and handed to the
+        // asking application through the documents portal on this bus.
+        .choosing_files_with(
+            Arc::new(door),
+            Arc::new(alo_portald::TheDocumentsPortal::on(format!(
+                "unix:path={}",
+                bus.at_path().display()
+            ))),
+        );
 
         // `serve_on` wants an address rather than a path, and the one this bus is
         // at is the only one it may take.

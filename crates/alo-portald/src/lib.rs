@@ -37,18 +37,22 @@
 //! refused on every machine because nothing read what is installed; the reader
 //! had existed since `alo-installed` arrived, and the paragraph had outlived it.*
 //!
-//! **FileChooser is not served at all**, and that is `alo-portals`' deliberate
-//! choice rather than this crate's omission: `serving.rs` registers only the
-//! portals decided without a dialog, so the bus itself tells an application that
-//! nothing answers the rest. A backend running from this crate can therefore
-//! hold the name, answer Secret, Settings and NetworkMonitor for real, and still
-//! not let an application open a file — which is the second half of task 1's own
-//! text and the content of task 6.
+//! **FileChooser is answered by alo's own file chooser** since 2026-11-17: the
+//! desktop shows the sheet at its door (`choosing_a_file_at_the_door`), and the
+//! file the person chose is handed to the asking application alone through
+//! upstream's documents portal ([`the_documents_portal`], ADR 0159). *This
+//! paragraph said until that day that FileChooser was not served at all.*
 
 #[cfg(unix)]
 pub mod at_the_desktops_door;
+#[cfg(unix)]
+mod choosing_a_file_at_the_door;
+#[cfg(unix)]
+pub mod the_documents_portal;
 pub mod this_machine;
 
 #[cfg(unix)]
 pub use at_the_desktops_door::AtTheDesktopsDoor;
+#[cfg(unix)]
+pub use the_documents_portal::TheDocumentsPortal;
 pub use this_machine::ThisMachine;

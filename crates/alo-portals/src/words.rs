@@ -379,6 +379,126 @@ pub const LINK_NOT_CHOSEN_COULD_NOT_ASK: Word = Word::saying(
      neither is translated. Something went wrong between the system and the desktop.",
 );
 
+/// The person chose a file to open, and the application was given it.
+pub const FILE_CHOSEN_TO_OPEN: Word = Word::saying(
+    "portals.file-chosen.to-open",
+    "{application} asked you to choose a file to open. You chose {file}, and it was given that \
+     file and no other",
+)
+.noting(
+    "{application} is an app's identifier and {file} the whole path of the file the person chose \
+     in alo's file chooser; neither is translated.",
+);
+
+/// The person chose where to save, and the application was given that place.
+pub const FILE_CHOSEN_TO_SAVE: Word = Word::saying(
+    "portals.file-chosen.to-save",
+    "{application} asked you where to save a file. You chose {file}, and it may write that file \
+     and no other",
+)
+.noting(
+    "{application} is an app's identifier and {file} the whole path the person chose to save \
+     under in alo's file chooser; neither is translated.",
+);
+
+/// The person cancelled the file chooser.
+pub const NO_FILE_CANCELLED: Word = Word::saying(
+    "portals.no-file.cancelled",
+    "{application} asked you to choose a file. You cancelled, so it was given nothing",
+)
+.noting(
+    "{application} is an app's identifier, not translated. The person pressed Cancel or Escape \
+     in alo's file chooser.",
+);
+
+/// Nobody answered the file chooser.
+pub const NO_FILE_UNANSWERED: Word = Word::saying(
+    "portals.no-file.unanswered",
+    "{application} asked you to choose a file. Nobody answered for five minutes, so it was given \
+     nothing",
+)
+.noting("{application} is an app's identifier, not translated.");
+
+/// The desktop could not show the file chooser.
+pub const NO_FILE_CANNOT_SHOW: Word = Word::saying(
+    "portals.no-file.cannot-show",
+    "{application} asked you to choose a file. The file chooser could not be shown then, so it \
+     was given nothing",
+)
+.noting(
+    "{application} is an app's identifier, not translated. Nobody was signed in, the screen was \
+     too small, or too many were waiting.",
+);
+
+/// There was no desktop to show the file chooser.
+pub const NO_FILE_NO_DESKTOP: Word = Word::saying(
+    "portals.no-file.no-desktop",
+    "{application} asked you to choose a file. No desktop was running to show the file chooser, \
+     so it was given nothing",
+)
+.noting("{application} is an app's identifier, not translated.");
+
+/// The desktop could not be asked.
+pub const NO_FILE_COULD_NOT_ASK: Word = Word::saying(
+    "portals.no-file.could-not-ask",
+    "{application} asked you to choose a file. The desktop could not be asked, so it was given \
+     nothing",
+)
+.noting(
+    "{application} is an app's identifier, not translated. Something went wrong between the \
+     system and the desktop.",
+);
+
+/// The desktop answered with something that cannot have been chosen.
+pub const NO_FILE_NOT_BELIEVED: Word = Word::saying(
+    "portals.no-file.not-believed",
+    "{application} asked you to choose a file. The desktop answered with something that cannot \
+     have been chosen, so it was not believed and the app was given nothing",
+)
+.noting(
+    "{application} is an app's identifier, not translated. The answer was a file that is not \
+     there, a folder where a file was asked for, or a path that is not whole: a fault, not a \
+     choice the person made.",
+);
+
+/// No documents portal was there to hand the file over.
+pub const NO_FILE_NO_DOCUMENTS_PORTAL: Word = Word::saying(
+    "portals.no-file.no-documents-portal",
+    "{application} asked you to choose a file and you chose one, but the part of the system that \
+     hands files to apps was not running, so it was given nothing",
+)
+.noting(
+    "{application} is an app's identifier, not translated. The 'part of the system' is the \
+     documents portal, which lets a sandboxed app open one file it was given.",
+);
+
+/// The chosen file was not there to hand over.
+pub const NO_FILE_NOT_THERE: Word = Word::saying(
+    "portals.no-file.not-there",
+    "{application} asked you to choose a file and you chose one, but it was gone before it could \
+     be given, so it was given nothing",
+)
+.noting("{application} is an app's identifier, not translated.");
+
+/// The documents portal refused.
+pub const NO_FILE_REFUSED: Word = Word::saying(
+    "portals.no-file.refused",
+    "{application} asked you to choose a file and you chose one, but it could not be handed to \
+     the app, so it was given nothing",
+)
+.noting(
+    "{application} is an app's identifier, not translated. The documents portal refused or \
+     answered something unexpected.",
+);
+
+/// A folder or several files, not offered yet.
+pub const NO_FILE_NOT_OFFERED_YET: Word = Word::saying(
+    "portals.no-file.not-offered-yet",
+    "{application} asked you to choose a folder or several files. alo's file chooser does not \
+     offer that yet, so it was given nothing",
+)
+.noting("{application} is an app's identifier, not translated. Keep the name alo as it is.");
+
 /// What arrived names a scheme this machine does not open.
 pub const NOT_A_LINK_SCHEME: Word = Word::saying(
     "portals.not-a-link.scheme",
@@ -662,7 +782,7 @@ pub const LINES_NOT_READ: Counted = Counted {
 pub const CLAUSES: [Word; 3] = [NOBODY_NAMED, WHAT_IT_ASKED_FOR, THAT_KIND_OF_FILE];
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 62] = [
+pub const EVERY_WORD: [Word; 74] = [
     FILE_CHOOSER,
     OPEN_WITH,
     NOTIFICATIONS,
@@ -696,6 +816,18 @@ pub const EVERY_WORD: [Word; 62] = [
     LINK_NOT_CHOSEN_CANNOT_SHOW,
     LINK_NOT_CHOSEN_NO_DESKTOP,
     LINK_NOT_CHOSEN_COULD_NOT_ASK,
+    FILE_CHOSEN_TO_OPEN,
+    FILE_CHOSEN_TO_SAVE,
+    NO_FILE_CANCELLED,
+    NO_FILE_UNANSWERED,
+    NO_FILE_CANNOT_SHOW,
+    NO_FILE_NO_DESKTOP,
+    NO_FILE_COULD_NOT_ASK,
+    NO_FILE_NOT_BELIEVED,
+    NO_FILE_NO_DOCUMENTS_PORTAL,
+    NO_FILE_NOT_THERE,
+    NO_FILE_REFUSED,
+    NO_FILE_NOT_OFFERED_YET,
     NOT_A_LINK_SCHEME,
     NOT_A_LINK,
     LINK_CARRIES_A_PASSWORD,
