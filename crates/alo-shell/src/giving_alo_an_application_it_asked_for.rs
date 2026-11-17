@@ -155,7 +155,7 @@ pub fn the_grants_for_the_session_go(places: &crate::SettingsPlaces) -> usize {
     }
 }
 
-#[cfg(all(test, unix))]
+#[cfg(test)]
 #[expect(
     clippy::expect_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
