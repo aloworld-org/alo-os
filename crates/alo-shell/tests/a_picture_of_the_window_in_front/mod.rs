@@ -7,7 +7,8 @@
 //! own bookkeeping. And every refusal is a refusal with **no bytes at all**.
 #![expect(
     clippy::expect_used,
-    reason = "in a test, a panic on an unexpected None is the failure being reported"
+    clippy::panic,
+    reason = "in a test, a panic on an unexpected None or answer is the failure being reported"
 )]
 
 use super::support::{Application, Fixture};
