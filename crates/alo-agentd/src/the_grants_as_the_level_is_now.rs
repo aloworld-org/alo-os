@@ -39,23 +39,28 @@
 
 use std::borrow::Cow;
 
-use alo_capability::{Grantee, Grants, HowCodeRuns};
+use alo_capability::{ATerminalForTheAgent, Grantee, Grants, HowCodeRuns};
 
 use crate::running_a_command::CommandsHere;
 
 /// The list a door is asked against at this moment: `grants` at full access
 /// for `agent` when the person's level is full access, and `grants` itself at
 /// every other level, when nothing was chosen, and when the level will not
-/// read.
+/// read — carrying, at every level, the person's terminal choice as their file
+/// says it now (ADR 0111, `alo_capability::Grants::with_the_terminal_as`).
 #[must_use]
 pub fn the_grants_as_the_level_is_now<'g>(
     grants: &'g Grants,
     here: &CommandsHere,
     agent: &Grantee,
 ) -> Cow<'g, Grants> {
-    match here.the_level_now() {
+    let at_the_level = match here.the_level_now() {
         HowCodeRuns::AtFullTrust => Cow::Owned(grants.at_full_access_for(agent)),
         HowCodeRuns::AskingEachTime | HowCodeRuns::InASealedBox => Cow::Borrowed(grants),
+    };
+    match here.the_terminal_now() {
+        ATerminalForTheAgent::NotAtAll => at_the_level,
+        terminal => Cow::Owned(at_the_level.with_the_terminal_as(terminal)),
     }
 }
 

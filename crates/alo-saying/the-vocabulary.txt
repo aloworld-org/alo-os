@@ -117,6 +117,7 @@ adapters.fallback.type-text.did-not-take	{application} did not take the text int
 adapters.fallback.type-text.leaves	Nothing is typed into any other window, into a password field, or into a terminal, and no file is written behind the application's back.
 adapters.fallback.type-text.more-than-one	{application} shows more than one field named “{name}”, so alo did not guess which, and nothing was typed
 adapters.fallback.type-text.name	the name of the field or document, as the application shows it
+adapters.fallback.type-text.never-a-terminal	“{name}” in {application} is a terminal, and typing there runs commands, so alo never types into a terminal, even one you let it use, and nothing was typed
 adapters.fallback.type-text.no-keyboard	This machine could not type into {application} just now, so nothing was typed
 adapters.fallback.type-text.no-such-field	{application} shows no field or document named “{name}” now, so nothing was typed
 adapters.fallback.type-text.no-such-field-but-these	{application} shows no field or document named “{name}” now, so nothing was typed. It shows: {there}
@@ -126,7 +127,6 @@ adapters.fallback.type-text.password-field	“{name}” in {application} is a pa
 adapters.fallback.type-text.purpose	type a text into a field or a document in an application's window, and save it
 adapters.fallback.type-text.read-back-differs	What “{name}” in {application} shows now is not exactly the text you approved, so it was not saved. Look at the window, and undo with Ctrl+Z if you want it gone
 adapters.fallback.type-text.sentence	type {text} into “{name}” in {application}, and save it
-adapters.fallback.type-text.terminal	“{name}” in {application} is a terminal, and typing there runs commands, which alo does only where you have let your agent use a terminal, so nothing was typed
 adapters.fallback.type-text.text	the text to type, shown to you in full before anything is typed
 adapters.not-carried-out.did-not-answer	{application} did not answer in time, so whether it did what was approved is not known
 adapters.not-carried-out.does-not-offer	{application} does not offer what was approved, so nothing was done in it. This release of it may not be one this machine knows how to ask
@@ -1947,6 +1947,7 @@ remembering.level.a-link	{path} is a link to somewhere else, and this is read on
 remembering.level.from-a-newer-alo-os	{path} was written by a newer alo OS than this one, so this machine does not know how you want code run
 remembering.level.no-such-level	{path} says {said}, which is not one of the three levels, so this machine does not know how you want code run
 remembering.level.not-a-terminal-answer	{path} says {said} for the terminal, which is neither asking-each-time nor at-full-trust, so this machine does not know how you want code run, and alo in the terminal asks first
+remembering.level.not-a-terminal-choice	{path} says {said} for whether alo may use a terminal, which is neither not-at-all nor may-open-one, so this machine does not know how you want code run, and alo uses no terminal
 remembering.level.not-an-applications-answer	{path} says {said} for applications, which is neither in-alos-copy nor in-their-window, so this machine does not know how you want code run, and alo works only in its own copy of an application
 remembering.level.not-read	{path} could not be read, so this machine does not know how you want code run
 remembering.level.not-the-shape	{path} is not the shape this file takes, so this machine does not know how you want code run

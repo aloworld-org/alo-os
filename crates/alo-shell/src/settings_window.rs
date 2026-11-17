@@ -72,6 +72,7 @@ use alo_strings::Strings;
 use crate::a_folder_is_picked_in_settings::{Folders, PickingRow};
 use crate::alo_in_applications_in_settings::AloInApplicationsHere;
 use crate::alo_in_the_terminal_in_settings::AloInTheTerminalHere;
+use crate::alo_uses_a_terminal_in_settings::AloUsesATerminalHere;
 use crate::an_application_is_picked_in_settings::ApplicationRow;
 use crate::how_code_runs_in_settings::HowCodeRunsHere;
 use crate::settings_answering::{AnsweringSection, SettingsAnswered, SettingsChoice};
@@ -235,6 +236,10 @@ pub enum SettingsRow {
     /// press. `crate::alo_in_the_terminal_in_settings` holds why it is off
     /// rather than *not set* for somebody who never touched it.
     ActWithoutAsking,
+    /// Let alo use a terminal — open one, read what it shows and press its
+    /// buttons, never type — (ADR 0111): one switch, on in one press and off
+    /// in one press. `crate::alo_uses_a_terminal_in_settings` keeps it.
+    AloUsesATerminal,
     /// Whether alo may use another model or API when the one the person chose
     /// is not available: one switch, and Enter turns it over.
     ///
@@ -387,9 +392,10 @@ impl SettingsRow {
             Self::WhereAloWorks(_) => SettingsSection::InApplications,
             Self::DefaultFor(..) => SettingsSection::DefaultApps,
             Self::SignInToGitHub | Self::SignOutOfGitHub => SettingsSection::Accounts,
-            Self::ShellIntegration | Self::APlaceToReturnTo | Self::ActWithoutAsking => {
-                SettingsSection::Terminal
-            }
+            Self::ShellIntegration
+            | Self::APlaceToReturnTo
+            | Self::ActWithoutAsking
+            | Self::AloUsesATerminal => SettingsSection::Terminal,
             Self::AddAProvider => SettingsSection::Answering,
         }
     }
@@ -525,6 +531,9 @@ pub(crate) struct Open {
     /// Whether what the person asks alo for in the terminal runs without the
     /// OK, kept in the same file as how code runs.
     pub(crate) alo_in_the_terminal: AloInTheTerminalHere,
+    /// Whether alo may use a terminal (ADR 0111), kept in the same file as how
+    /// code runs.
+    pub(crate) alo_uses_a_terminal: AloUsesATerminalHere,
     /// Where alo works in an application, kept in the same file as how code
     /// runs.
     pub(crate) alo_in_applications: AloInApplicationsHere,
@@ -623,6 +632,7 @@ impl SettingsWindow {
             ),
             how_code_runs: HowCodeRunsHere::at_sign_in(places.how_code_runs()),
             alo_in_the_terminal: AloInTheTerminalHere::at_sign_in(places.how_code_runs()),
+            alo_uses_a_terminal: AloUsesATerminalHere::at_sign_in(places.how_code_runs()),
             alo_in_applications: AloInApplicationsHere::at_sign_in(places.how_code_runs()),
             // Mounts that cannot be read are not said to be a machine where it
             // cannot run: the line is for what was read.
@@ -1063,6 +1073,7 @@ impl Open {
                 // that is off until the person turns it on is a switch they can
                 // see.
                 rows.push(SettingsRow::ActWithoutAsking);
+                rows.push(SettingsRow::AloUsesATerminal);
                 rows.push(SettingsRow::GoTo(SettingsCategory::RunningCode));
                 rows
             }
@@ -1769,6 +1780,13 @@ impl Open {
             SettingsRow::ActWithoutAsking => SettingsDid::Kept(
                 SettingsSection::Terminal,
                 self.alo_in_the_terminal.pressed(),
+            ),
+            // **Written before the switch moves**, for the same reason: a
+            // switch that moved first would say alo may not use a terminal
+            // when it may.
+            SettingsRow::AloUsesATerminal => SettingsDid::Kept(
+                SettingsSection::Terminal,
+                self.alo_uses_a_terminal.pressed(),
             ),
             // **The level is written before the tick moves.** A tick that moved
             // first would tell somebody their machine runs code at a level it

@@ -172,6 +172,8 @@ pub mod a_command_waiting;
 /// What a person has allowed their agent to do with a terminal (ADR 0111,
 /// which supersedes ADR 0043's outright wall).
 pub mod a_terminal_for_the_agent;
+/// The person's terminal choice, carried on the list it is asked against.
+pub mod a_terminal_on_the_list;
 pub mod agent;
 pub mod allowing;
 /// Where alo works in an application: its own copy, or the person's window

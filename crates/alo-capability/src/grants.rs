@@ -142,6 +142,15 @@ pub struct Grants {
     /// `crate::full_access` is the rest.
     #[serde(skip)]
     pub(crate) full_access: Option<Grantee>,
+    /// What the person allowed their agent to do with a terminal, as of the
+    /// moment this value was made (ADR 0111) — not at all unless it is a copy
+    /// made by [`Grants::with_the_terminal_as`].
+    ///
+    /// **Never written down and never read back**, for `full_access`'s reason:
+    /// the answer lives in the person's own file. `crate::a_terminal_on_the_list`
+    /// is the rest.
+    #[serde(skip)]
+    pub(crate) terminal: ATerminalForTheAgent,
 }
 
 impl Grants {
@@ -182,6 +191,7 @@ impl Grants {
             next,
             held,
             full_access: None,
+            terminal: ATerminalForTheAgent::NotAtAll,
         })
     }
 
@@ -326,8 +336,10 @@ impl Grants {
         ask: &Ask,
         now: SystemTime,
     ) -> Result<GrantId, NotGranted> {
-        // The strict reading, for the reason `Grant::checked_for` gives.
-        self.permitting_when(grantee, ask, now, ATerminalForTheAgent::NotAtAll)
+        // **As this list says the person chose** (ADR 0111): not at all, the
+        // strict reading, unless it is a copy made for this moment by
+        // `Grants::with_the_terminal_as`.
+        self.permitting_when(grantee, ask, now, self.terminal)
     }
 
     /// The same, told what the person has allowed their agent to do with a
@@ -785,6 +797,7 @@ mod tests {
                 grant: by_hand(alo.clone(), "app.devsuite.Ptyxis"),
             }],
             full_access: None,
+            terminal: ATerminalForTheAgent::NotAtAll,
         };
         let ask = Ask::Application("app.devsuite.Ptyxis".to_owned());
 

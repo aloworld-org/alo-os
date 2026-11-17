@@ -24,17 +24,17 @@
 //! - **Matched exactly**, as `alo_capability::Reach` matches: an application
 //!   is its desktop file identifier, and a different case is a different
 //!   application.
-//! - **A terminal is not listed.** Whatever is typed into one runs, so a grant
-//!   over a terminal is a grant to the whole machine by another road and
-//!   `alo_capability::Grant::checked` refuses it (`GrantError::APersonsOwn`).
-//!   ADR 0143 Q10 says *the terminal stays ADR 0111's own choice*, so it is
-//!   left out here rather than drawn as a row that can only be refused.
+//! - **A terminal is not listed unless the person allowed their agent one**
+//!   ([`Applications::of_when`], ADR 0111). ADR 0143 Q10 says *the terminal
+//!   stays ADR 0111's own choice*, so where that choice is *not at all* it is
+//!   left out rather than drawn as a row that can only be refused
+//!   (`alo_capability::Grant::checked` refuses it, `GrantError::APersonsOwn`).
 //! - **Each application once**, the first reading kept — XDG's order puts a
 //!   person's own copy of an entry first.
 //! - **By the name a person reads**, and by its identifier where its entry gave
 //!   none. A name is never guessed from an identifier.
 
-use alo_capability::{Reach, is_a_persons_own};
+use alo_capability::{ATerminalForTheAgent, Reach, is_a_persons_own};
 
 use crate::picked::Chosen;
 use crate::refusing::NotPicked;
@@ -106,6 +106,17 @@ impl Applications {
     /// has: each identifier with the name its entry gave, if it gave one.
     #[must_use]
     pub fn of(here: impl IntoIterator<Item = (String, Option<String>)>) -> Self {
+        Self::of_when(here, ATerminalForTheAgent::NotAtAll)
+    }
+
+    /// As [`Self::of`], told what the person allowed their agent to do with a
+    /// terminal: a terminal is offered only where they allowed one (ADR 0111).
+    /// [`Self::of`] is this with [`ATerminalForTheAgent::NotAtAll`].
+    #[must_use]
+    pub fn of_when(
+        here: impl IntoIterator<Item = (String, Option<String>)>,
+        terminal: ATerminalForTheAgent,
+    ) -> Self {
         let mut listed: Vec<Listed> = Vec::new();
         for (identifier, called) in here {
             // **Not an application, rather than one tidied into being**: an
@@ -115,7 +126,8 @@ impl Applications {
             if identifier.is_empty() || identifier.trim() != identifier {
                 continue;
             }
-            if is_a_persons_own(&identifier) || listed.iter().any(|it| it.identifier == identifier)
+            if (is_a_persons_own(&identifier) && !terminal.may_open_one())
+                || listed.iter().any(|it| it.identifier == identifier)
             {
                 continue;
             }

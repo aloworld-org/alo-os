@@ -46,6 +46,7 @@ impl SettingsRow {
             | Self::AddAProvider
             | Self::APlaceToReturnTo
             | Self::ActWithoutAsking
+            | Self::AloUsesATerminal
             | Self::UsingAnother
             | Self::Way(_)
             | Self::AlosOwnService

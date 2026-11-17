@@ -133,6 +133,50 @@ mod tests {
         ));
     }
 
+    /// **A grant over a terminal the person made while they allowed one is
+    /// found again** — for an hour, until removed and until sign-out — beside
+    /// a folder's, rather than refusing the whole file (ADR 0111). What it
+    /// reaches is still the person's choice at the moment it is asked: on the
+    /// list as it comes off the disk, it reaches nothing.
+    #[test]
+    fn a_grant_over_a_terminal_is_found_again_and_reaches_nothing_by_itself() {
+        use alo_capability::{ATerminalForTheAgent, Grant, Reach};
+        const PTYXIS: &str = "app.devsuite.Ptyxis";
+        let terminal = || Reach::Application(PTYXIS.to_owned());
+        let hers = Grantee::named(HERS);
+        let allowed = ATerminalForTheAgent::MayOpenOne;
+        for grant in [
+            Grant::checked_for_when(&hers, terminal(), noon(), an_hour(), allowed).unwrap(),
+            Grant::checked_until_removed(&hers, terminal(), noon(), allowed).unwrap(),
+            Grant::checked_until_sign_out(&hers, terminal(), noon(), allowed).unwrap(),
+        ] {
+            let folder = a_folder_of_our_own("a-terminal-granted");
+            let at = folder.join("grants.toml");
+            let mut grants = granted_in("/home/ada/Invoices");
+            grants.grant(grant.clone());
+            kept(&at, &grants, noon()).unwrap();
+
+            let found = remembered(&at, noon()).unwrap();
+            assert_eq!(found.len(), 2, "{grant:?} did not come back");
+            assert!(
+                found.permits(&hers, &Ask::path("/home/ada/Invoices/march.pdf"), noon()),
+                "the folder beside {grant:?} was lost"
+            );
+            assert!(
+                !found.permits(&hers, &Ask::application(PTYXIS), noon()),
+                "a terminal was reached on a list nobody told the person allowed it"
+            );
+            assert!(
+                found.with_the_terminal_as(allowed).permits(
+                    &hers,
+                    &Ask::application(PTYXIS),
+                    noon()
+                ),
+                "{grant:?} came back reaching nothing while allowed"
+            );
+        }
+    }
+
     /// **A machine that has granted nothing yet is told exactly that**, apart
     /// from every other failure: nothing granted is not a broken machine.
     #[test]

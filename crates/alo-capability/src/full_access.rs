@@ -120,7 +120,8 @@ impl Grants {
         ask: &Ask,
         now: SystemTime,
     ) -> Result<Permitted, NotGranted> {
-        self.permitted_when(grantee, ask, now, ATerminalForTheAgent::NotAtAll)
+        // As this list says the person chose (`crate::a_terminal_on_the_list`).
+        self.permitted_when(grantee, ask, now, self.terminal)
     }
 
     /// The same, told what the person has allowed their agent to do with a

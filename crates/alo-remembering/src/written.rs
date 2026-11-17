@@ -336,6 +336,15 @@ impl KeptGrant {
             handle: self.handle,
             said: why.word().says(),
         };
+        // **A grant over a terminal is read back, not refused** (ADR 0111): the
+        // person made it while they allowed alo a terminal, and a whole file
+        // refused for it would take every other grant with it the moment they
+        // switched the terminal off. What it reaches is asked at each question,
+        // against the person's choice as it is then
+        // (`alo_capability::Grants::with_the_terminal_as`), so on a list nobody
+        // told the person allowed one it reaches nothing — and a grant written
+        // into this file by hand reaches nothing either.
+        let terminal = alo_capability::ATerminalForTheAgent::MayOpenOne;
         let grant = match self.expires {
             // Saturating rather than checked, because a file saying a grant
             // ended before it began is a file `Grant::checked` refuses in its
@@ -343,28 +352,21 @@ impl KeptGrant {
             // reading.
             Stops::AtASecond(second) => {
                 let lasting = Duration::from_secs(second.saturating_sub(self.granted));
-                Grant::checked_for(&grantee, reach, granted, lasting).map_err(made)?
+                Grant::checked_for_when(&grantee, reach, granted, lasting, terminal)
+                    .map_err(made)?
             }
             // **The same checks, and no length to get wrong.** ADR 0001 as
             // amended on 2026-10-25: a grant may run until the person removes
             // it, and everything else about it is held to exactly what a timed
             // one is held to.
-            Stops::WhenRemoved(_) => Grant::checked_until_removed(
-                &grantee,
-                reach,
-                granted,
-                alo_capability::ATerminalForTheAgent::NotAtAll,
-            )
-            .map_err(made)?,
+            Stops::WhenRemoved(_) => {
+                Grant::checked_until_removed(&grantee, reach, granted, terminal).map_err(made)?
+            }
             // **And a session's**, the same checks again; it is the person's
             // side that takes it away when the session ends.
-            Stops::WhenSignedOut(_) => Grant::checked_until_sign_out(
-                &grantee,
-                reach,
-                granted,
-                alo_capability::ATerminalForTheAgent::NotAtAll,
-            )
-            .map_err(made)?,
+            Stops::WhenSignedOut(_) => {
+                Grant::checked_until_sign_out(&grantee, reach, granted, terminal).map_err(made)?
+            }
         };
         // **Held to the rules a picked path is held to**, by the crate that
         // owns them — a file hand-edited into `really = "/"` is refused as a

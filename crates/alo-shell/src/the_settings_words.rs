@@ -500,6 +500,44 @@ pub const ACT_WITHOUT_ASKING_IS: Word = Word::saying(
      leaving the computer; use the same words your translation uses for them.",
 );
 
+/// The switch that lets alo use a terminal (ADR 0111).
+pub const ALO_USES_A_TERMINAL: Word = Word::saying(
+    "settings.terminal.alo-uses-a-terminal",
+    "Let alo use a terminal",
+)
+.noting(
+    "A switch on the Terminal page. When it is on, alo may open a terminal window, read what \
+         it shows and press its buttons. alo is the assistant. Sentence case.",
+);
+
+/// What that switch changes, under its name.
+pub const ALO_USES_A_TERMINAL_IS: Word = Word::saying(
+    "settings.terminal.alo-uses-a-terminal.is",
+    "alo can open a terminal, read what it shows and press its buttons when you ask. It never \
+     types into one, so it runs no command there. Asking each time, you give it each terminal \
+     first.",
+)
+.noting(
+    "Under the switch that lets alo use a terminal. 'Asking each time' is the name of a choice on \
+     the Running code page; use the same words your translation uses for it. alo is never \
+     written with a capital, even at the start of a sentence.",
+);
+
+/// What letting alo use a terminal costs, in plain words: ADR 0111's own
+/// sentence about a shell, and what reading a terminal can show.
+pub const WHAT_A_TERMINAL_FOR_ALO_COSTS: Word = Word::saying(
+    "settings.terminal.alo-uses-a-terminal.costs",
+    "alo will read everything the terminal shows, including any password or key a program \
+     printed there, and a shell is the whole machine by another road, so only you type into it",
+)
+.noting(
+    "Shown in the 'What it risks' box under the switch that lets alo use a terminal, before the \
+     person turns it on. A plain statement, not a scare. 'A shell is the whole machine by \
+     another road' is quoted from the decision that lets alo use a terminal; keep its meaning \
+     exactly: whoever can type into a shell can do anything on the computer. alo is never \
+     written with a capital.",
+);
+
 /// Accent colour.
 pub const ACCENT_COLOUR: Word = Word::saying("settings.appearance.accent", "Accent colour")
     .noting("The name of the setting for the colour that selections and switches are drawn in.");
@@ -1210,7 +1248,7 @@ pub const GITHUB_WILL_ASK_FOR_THIS_CODE: Word = Word::saying(
 /// The length is written out so that adding a word above and forgetting it
 /// here does not compile — a word declared and left out of this list reaches a
 /// person as its own key.
-pub const THE_WINDOWS_WORDS: [Word; 155] = [
+pub const THE_WINDOWS_WORDS: [Word; 158] = [
     SETTINGS,
     EVERYTHING_IN_ONE_PLACE,
     THE_GROUP_ALO,
@@ -1279,6 +1317,9 @@ pub const THE_WINDOWS_WORDS: [Word; 155] = [
     HOW_ALO_RUNS_CODE_IS,
     ACT_WITHOUT_ASKING,
     ACT_WITHOUT_ASKING_IS,
+    ALO_USES_A_TERMINAL,
+    ALO_USES_A_TERMINAL_IS,
+    WHAT_A_TERMINAL_FOR_ALO_COSTS,
     ACCENT_COLOUR,
     ACCENT_COLOUR_IS,
     THE_ACCENT_NOTE,

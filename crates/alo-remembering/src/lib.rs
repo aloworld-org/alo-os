@@ -116,7 +116,8 @@ mod written;
 #[cfg(unix)]
 pub use how_code_runs::{
     THE_LEVEL, alo_in_applications_kept, alo_in_applications_remembered, alo_in_the_terminal_kept,
-    alo_in_the_terminal_remembered, the_level_kept, the_level_remembered,
+    alo_in_the_terminal_remembered, alo_uses_a_terminal_kept, alo_uses_a_terminal_remembered,
+    the_level_kept, the_level_remembered,
 };
 #[cfg(unix)]
 pub use keeping::{THE_FOLDER, THE_GRANTS, kept, remembered};

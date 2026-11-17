@@ -417,8 +417,9 @@ impl Call {
         grantee: &Grantee,
         now: SystemTime,
     ) -> Result<Vec<GrantId>, NotGranted> {
-        // The strict reading, for the reason `Grant::checked_for` gives.
-        self.permitting_when(grants, grantee, now, ATerminalForTheAgent::NotAtAll)
+        // As the list says the person chose: not at all, the strict reading,
+        // unless it is a copy made for this moment (`crate::a_terminal_on_the_list`).
+        self.permitting_when(grants, grantee, now, grants.the_terminal())
     }
 
     /// The same, told what the person has allowed their agent to do with a
@@ -510,7 +511,7 @@ impl Call {
         grantee: &Grantee,
         now: SystemTime,
     ) -> Option<NotGranted> {
-        self.permitted_when(grants, grantee, now, ATerminalForTheAgent::NotAtAll)
+        self.permitted_when(grants, grantee, now, grants.the_terminal())
             .err()
     }
 }

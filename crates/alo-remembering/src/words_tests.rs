@@ -104,8 +104,9 @@ fn every_sentence_says_what_follows_from_it() {
     assert_eq!(
         (reading, writing),
         // Ten since 2026-11-10: `in-applications` saying a word it does not
-        // take is one more way the file did not read.
-        (10, 2),
+        // take is one more way the file did not read; eleven since
+        // 2026-11-17, for `alo-uses-a-terminal`.
+        (11, 2),
         "the split moved; the module header says which sentences are which"
     );
 }

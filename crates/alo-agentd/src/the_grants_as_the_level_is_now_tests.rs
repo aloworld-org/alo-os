@@ -242,6 +242,84 @@ fn only_full_access_chosen_gives_full_access() {
     assert!(matches!(now, std::borrow::Cow::Owned(_)));
 }
 
+/// **The person's terminal choice, read at the moment at every level**
+/// (ADR 0111): only an explicit *may open one* lets the list reach a
+/// terminal; nothing chosen, *not at all* and a file that will not read never
+/// do; switching it off takes effect at the next question; and the kept list
+/// is never touched.
+#[test]
+fn only_the_persons_terminal_choice_lets_the_list_reach_a_terminal() {
+    use alo_capability::ATerminalForTheAgent;
+    let agent = Grantee::named(THE_AGENT);
+    let grants = Grants::default();
+    let elsewhere = Elsewhere::with_the_level("terminal-read", None);
+    let allows = |elsewhere: &Elsewhere| {
+        the_grants_as_the_level_is_now(&grants, &elsewhere.here(), &agent).the_terminal()
+    };
+    assert_eq!(allows(&elsewhere), ATerminalForTheAgent::NotAtAll);
+
+    for level in HowCodeRuns::ALL {
+        elsewhere.choosing(level);
+        alo_remembering::alo_uses_a_terminal_kept(
+            &elsewhere.level_at,
+            ATerminalForTheAgent::MayOpenOne,
+        )
+        .unwrap();
+        let now = the_grants_as_the_level_is_now(&grants, &elsewhere.here(), &agent);
+        assert_eq!(
+            now.the_terminal(),
+            ATerminalForTheAgent::MayOpenOne,
+            "the person allowed it at {level:?} and the list did not say so"
+        );
+        assert_eq!(
+            now.has_full_access(&agent),
+            level == HowCodeRuns::AtFullTrust,
+            "allowing a terminal changed full access at {level:?}"
+        );
+        alo_remembering::alo_uses_a_terminal_kept(
+            &elsewhere.level_at,
+            ATerminalForTheAgent::NotAtAll,
+        )
+        .unwrap();
+        assert_eq!(
+            allows(&elsewhere),
+            ATerminalForTheAgent::NotAtAll,
+            "switching it off at {level:?} did not take effect at the next question"
+        );
+    }
+    assert_eq!(grants.the_terminal(), ATerminalForTheAgent::NotAtAll);
+
+    std::fs::write(
+        &elsewhere.level_at,
+        "format = 1\nalo-uses-a-terminal = \"may-open-on\"\n",
+    )
+    .unwrap();
+    assert_eq!(
+        allows(&elsewhere),
+        ATerminalForTheAgent::NotAtAll,
+        "a file that will not read let alo into a terminal"
+    );
+
+    // **A file another login could have written is not believed**, even
+    // saying *may open one*: an agent cannot let itself into a terminal.
+    std::fs::remove_file(&elsewhere.level_at).unwrap();
+    alo_remembering::alo_uses_a_terminal_kept(
+        &elsewhere.level_at,
+        ATerminalForTheAgent::MayOpenOne,
+    )
+    .unwrap();
+    {
+        use std::os::unix::fs::PermissionsExt as _;
+        std::fs::set_permissions(&elsewhere.level_at, std::fs::Permissions::from_mode(0o646))
+            .unwrap();
+    }
+    assert_eq!(
+        allows(&elsewhere),
+        ATerminalForTheAgent::NotAtAll,
+        "a file others could write let alo into a terminal"
+    );
+}
+
 /// **At full access a read reaches a file outside every grant** — and the
 /// record says full access allowed it, not a grant.
 #[test]

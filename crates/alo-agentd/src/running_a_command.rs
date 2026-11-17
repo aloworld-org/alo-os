@@ -59,7 +59,7 @@ use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 use std::time::{Duration, SystemTime};
 
-use alo_capability::{ACommand, AroundACommand, HowCodeRuns, ProposalId};
+use alo_capability::{ACommand, ATerminalForTheAgent, AroundACommand, HowCodeRuns, ProposalId};
 use alo_protocol::{Done, ToAPerson, ToAnAgent};
 use alo_strings::{Filling, Said, Strings};
 use alo_turn::{NotDone, Turning};
@@ -196,6 +196,24 @@ impl CommandsHere {
                     self.level_at.display()
                 );
                 HowCodeRuns::InASealedBox
+            }
+        }
+    }
+
+    /// What the person allowed their agent to do with a terminal, as their
+    /// file says it now (ADR 0111): **not at all** where nothing was chosen
+    /// and where the file will not read or could have been written by
+    /// somebody else.
+    pub fn the_terminal_now(&self) -> ATerminalForTheAgent {
+        match alo_remembering::alo_uses_a_terminal_remembered(&self.level_at) {
+            Ok(terminal) => terminal,
+            Err(why) => {
+                eprintln!(
+                    "alo-agentd: whether alo may use a terminal, at {}, would not read, so alo \
+                     uses none: {why:?}",
+                    self.level_at.display()
+                );
+                ATerminalForTheAgent::NotAtAll
             }
         }
     }

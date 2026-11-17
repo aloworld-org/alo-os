@@ -18,7 +18,7 @@ use std::rc::Rc;
 use alo_acting::{ToType, Typed};
 use alo_adapters::{AccessibilityTree, Facts, NodeAt, Running, TYPE_TEXT, TreeFault, WorkingFully};
 use alo_applications::{Application, Installed};
-use alo_capability::{Given, Grant, Grants, Reach};
+use alo_capability::{ATerminalForTheAgent, Given, Grant, Grantee, Grants, Reach};
 use alo_egress::Indicator;
 use alo_files::OnThisMachine;
 use alo_record::{Asking, Record};
@@ -239,6 +239,27 @@ struct Ran {
 /// Propose typing `THE_TEXT` into `index.html`, and approve it once — or
 /// decline it.
 fn typing_once(field: TheField, whose: Typed, rewriting: fn(&str) -> String, approve: bool) -> Ran {
+    typing_once_in(
+        EDITOR,
+        ATerminalForTheAgent::NotAtAll,
+        field,
+        whose,
+        rewriting,
+        approve,
+    )
+}
+
+/// As [`typing_once`], into `application`, granted to the agent while the
+/// person's terminal choice was `terminal` and asked against a list carrying
+/// it.
+fn typing_once_in(
+    application: &str,
+    terminal: ATerminalForTheAgent,
+    field: TheField,
+    whose: Typed,
+    rewriting: fn(&str) -> String,
+    approve: bool,
+) -> Ran {
     let strings = in_english();
     let tool = NoTool;
     let publisher = crate::testing::APublisher::that_publishes();
@@ -267,7 +288,8 @@ fn typing_once(field: TheField, whose: Typed, rewriting: fn(&str) -> String, app
                 publishing: crate::testing::publishing_through(&publisher),
             },
             WhatAnApplicationVerbNeeds {
-                installed: Installed::holding([Application::identified(EDITOR).unwrap()]).into(),
+                installed: Installed::holding([Application::identified(application).unwrap()])
+                    .into(),
                 door: &mut door,
                 starting: &NothingStarts,
                 windows: &mut windows,
@@ -279,29 +301,35 @@ fn typing_once(field: TheField, whose: Typed, rewriting: fn(&str) -> String, app
         .unwrap();
         let mut grants = Grants::default();
         grants.grant(
-            Grant::checked(AGENT, Reach::Application(EDITOR.to_owned()), noon(), hour()).unwrap(),
+            Grant::checked_for_when(
+                &Grantee::named(AGENT),
+                Reach::Application(application.to_owned()),
+                noon(),
+                hour(),
+                terminal,
+            )
+            .unwrap(),
         );
         let mut turning =
             Turning::beginning(offering(&there), AGENT, hour(), &mut grants, &mut machine).unwrap();
-        let id = turning
-            .proposing(
-                TYPE_TEXT,
-                &[
-                    ("application", Given::text(EDITOR)),
-                    ("name", Given::text("index.html")),
-                    ("text", Given::text(THE_TEXT)),
-                ],
-                &grants,
-                hour(),
-                noon(),
-            )
-            .unwrap();
+        let grants = grants.with_the_terminal_as(terminal);
+        let id = turning.proposing(
+            TYPE_TEXT,
+            &[
+                ("application", Given::text(application)),
+                ("name", Given::text("index.html")),
+                ("text", Given::text(THE_TEXT)),
+            ],
+            &grants,
+            hour(),
+            noon(),
+        );
         assert_eq!(opened.get(), 0, "a proposal opened the tree");
         assert!(asked.borrow().is_empty(), "a proposal asked the compositor");
-        if approve {
-            turning.approving(id, &grants, noon()).map(Some)
-        } else {
-            turning.declining(id, noon()).map(|()| None)
+        match id {
+            Err(refused) => Err(refused),
+            Ok(id) if approve => turning.approving(id, &grants, noon()).map(Some),
+            Ok(id) => turning.declining(id, noon()).map(|()| None),
         }
     };
     let entries = record.answering(&Asking::anything()).count();
@@ -402,6 +430,40 @@ fn a_terminal_is_refused_before_the_compositor_is_asked() {
     let ran = typing_once(field, Typed::MayType, as_it_is, true);
     assert!(matches!(ran.answered, Err(NotDone::Refused(_))));
     assert!(ran.asked.is_empty());
+}
+
+/// **Letting alo use a terminal does not let it type into one** (ADR 0111;
+/// the owner, 2026-11-17): what is typed into a terminal runs, so a terminal
+/// application the person allowed is refused before any tree is opened or
+/// the compositor asked, the field's own role notwithstanding — and the
+/// refusal is written down.
+#[test]
+fn a_terminal_the_person_allowed_is_still_never_typed_into() {
+    let ran = typing_once_in(
+        "app.devsuite.Ptyxis",
+        ATerminalForTheAgent::MayOpenOne,
+        TheField::an_editor(),
+        Typed::MayType,
+        as_it_is,
+        true,
+    );
+    assert!(
+        matches!(&ran.answered, Err(NotDone::Refused(_))),
+        "a terminal was typed into: {:?}",
+        ran.answered
+    );
+    let said = match &ran.answered {
+        Err(NotDone::Refused(refused)) => refused.said(&in_english()).text().to_owned(),
+        _ => String::new(),
+    };
+    assert!(said.contains("is a terminal"), "{said}");
+    assert!(
+        !said.contains("only where you have let"),
+        "the refusal still says letting alo use a terminal would let it type: {said}"
+    );
+    assert_eq!(ran.opened, 0, "the tree was opened for a terminal");
+    assert!(ran.asked.is_empty(), "the compositor was asked");
+    assert_eq!(ran.entries, 1);
 }
 
 #[test]

@@ -136,7 +136,19 @@ impl crate::Server {
         };
         let door = alo_changing::TheDaemonsDoor::at(places.daemon());
         let now = SystemTime::now();
-        match giving::alo_is_given(places.grants(), &door, agent, wanted, how_long, now) {
+        // **The person's terminal choice, read at the press** (ADR 0111): a
+        // file that would not read lets alo into no terminal.
+        let terminal = alo_remembering::alo_uses_a_terminal_remembered(places.how_code_runs())
+            .unwrap_or_default();
+        match giving::alo_is_given(
+            places.grants(),
+            &door,
+            agent,
+            wanted,
+            how_long,
+            terminal,
+            now,
+        ) {
             Ok(id) => {
                 if how_long == HowLongForAnApplication::ThisTask {
                     self.grants_for_a_task.push((wanted.task(), id));
