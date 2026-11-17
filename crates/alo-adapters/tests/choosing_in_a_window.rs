@@ -167,6 +167,8 @@ struct ATree {
     acted: RefCell<Vec<(NodeAt, String)>>,
     /// Whether choosing marks the thing selected, as an honest tree would.
     marks_it: bool,
+    /// Whether the application does not answer a selection.
+    does_not_answer: bool,
 }
 
 fn thing(role: u32, name: &str, states: u32, children: &[&str]) -> Facts {
@@ -216,6 +218,7 @@ impl ATree {
             texts: BTreeMap::new(),
             lists_select: true,
             selection_answers: true,
+            does_not_answer: false,
             actions: BTreeMap::new(),
             selected: RefCell::new(Vec::new()),
             acted: RefCell::new(Vec::new()),
@@ -275,6 +278,9 @@ impl AccessibilityTree for ATree {
         if !self.lists_select {
             return Ok(None);
         }
+        if self.does_not_answer {
+            return Err(TreeFault::DidNotAnswer);
+        }
         self.selected
             .borrow_mut()
             .push((list.clone(), place.clone()));
@@ -320,14 +326,53 @@ fn both_verbs_are_changes_over_a_granted_application() {
 #[test]
 fn an_option_out_of_sight_is_chosen_through_its_list_once() {
     let tree = ATree::of(&["Name", "Size", "Date"], &["report.pdf"]);
-    let chosen = choosing_option("Sort by", "Size")
-        .choose(&tree, &in_english())
-        .unwrap();
+    let choosing = choosing_option("Sort by", "Size");
+    assert_eq!(choosing.application(), FILES);
+    let chosen = choosing.choose(&tree, &in_english()).unwrap();
     assert_eq!(*tree.selected.borrow(), [(at("/menu"), at("/o/1"))]);
     assert!(tree.acted.borrow().is_empty());
+    assert_eq!(chosen.application(), FILES);
+    assert_eq!(chosen.authorised().verb(), CHOOSE_OPTION);
     assert!(!chosen.unanswered());
     assert!(chosen.shows_chosen(&tree));
     assert!(chosen.said(true, &in_english()).is_none());
+}
+
+/// **A drop-down that shows the option in its text reads as chosen — but only
+/// where it has text to show**: words the tree keeps for a thing without text
+/// are not read as what it shows.
+#[test]
+fn a_drop_down_showing_the_option_as_its_text_reads_as_chosen() {
+    let mut tree = ATree::of(&["Name", "Size"], &[]);
+    tree.marks_it = false;
+    tree.texts.insert(at("/sort"), "Size".to_owned());
+    let chosen = choosing_option("Sort by", "Size")
+        .choose(&tree, &in_english())
+        .unwrap();
+    assert!(!chosen.shows_chosen(&tree), "a thing without text was read");
+    tree.facts
+        .borrow_mut()
+        .get_mut(&at("/sort"))
+        .unwrap()
+        .has_text = true;
+    assert!(chosen.shows_chosen(&tree));
+    tree.texts.insert(at("/sort"), "Name".to_owned());
+    assert!(
+        !chosen.shows_chosen(&tree),
+        "another option was read as this one"
+    );
+}
+
+/// **An application that does not answer may have chosen**: nothing is
+/// refused, and what alo says is that it is not known.
+#[test]
+fn an_application_that_does_not_answer_may_have_chosen() {
+    let mut tree = ATree::of(&[], &["notes.txt"]);
+    tree.does_not_answer = true;
+    let chosen = selecting("notes.txt").choose(&tree, &in_english()).unwrap();
+    assert!(chosen.unanswered());
+    let told = chosen.said(false, &in_english()).unwrap();
+    assert!(told.text().contains("is not known"), "{told}");
 }
 
 /// **Where the list offers no selection, the option's own action chooses

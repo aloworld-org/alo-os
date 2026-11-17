@@ -181,10 +181,12 @@ pub trait AccessibilityTree {
     ///
     /// # Errors
     /// [`TreeFault`].
-    fn select_in(&self, list: &NodeAt, at: &NodeAt) -> Result<Option<bool>, TreeFault> {
-        let _ = (list, at);
+    // The body is the answer itself, so the mutation check has no other
+    // version of it to try that means the same.
+    fn select_in(&self, _list: &NodeAt, _at: &NodeAt) -> Result<Option<bool>, TreeFault> {
         Ok(None)
     }
+
     /// Ask the application to scroll whatever holds one thing until that thing
     /// is on the screen, against `edge` of what it shows — `true` when the
     /// application says it did (`crate::scrolling`). **It takes a thing, never
@@ -332,5 +334,7 @@ mod tests {
         // Nor a range, and it moves nothing.
         assert_eq!(OnlyWhatIsRequired.range(&at), Ok(None));
         assert_eq!(OnlyWhatIsRequired.set_value(&at, 1.0), Ok(false));
+        // Nor a way to choose through a list.
+        assert_eq!(OnlyWhatIsRequired.select_in(&at, &at), Ok(None));
     }
 }
