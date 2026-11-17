@@ -1088,7 +1088,7 @@ first for which those two came apart.
 
 | Verb | Effect | Arguments | Sentence |
 |---|---|---|---|
-| `what_can_be_installed` | read | `kind_of_work` (choice of nine) | see what can be installed under {kind_of_work} |
+| `what_can_be_installed` | read | `kind_of_work` (choice of twenty-four) | see what can be installed under {kind_of_work} |
 | `install_application` | change | `application` (application), `source` (name, at most 64) | install {application} from {source} |
 
 ### `what_can_be_installed`
@@ -1100,11 +1100,13 @@ tries to put it to a person, which
 `crates/alo-protocol/tests/what_a_person_could_install_as_a_client_sees_it.rs`
 asserts from the outside.
 
-**The nine choices are `everything` and the eight kinds of work** —
+**The choices are `everything` and the twenty-three kinds of work** —
 `pictures`, `painting`, `illustration`, `photographs`, `page_layout`, `video`,
-`audio`, `documents`. `Takes::Choice` means **the options exist before the model
+`audio`, `documents`, and since 2026-11-17 `diagrams`, `modelling`,
+`music_making`, `screen_recording`, `code`, `chat`, `calls`, `email`, `notes`,
+`music`, `books`, `maps`, `games`, `passwords` and `remote_desktop`. `Takes::Choice` means **the options exist before the model
 does and anything else is refused**, so there is no free text here: a kind of
-work nobody offered never becomes a call. *Everything* is the ninth choice
+work nobody offered never becomes a call. *Everything* is a choice of its own
 rather than an absent argument, because alo OS has no optional arguments —
 `alo_capability::Arg` says why.
 

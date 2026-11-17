@@ -2108,13 +2108,28 @@ sleeping.setting.keep-awake	Keep this machine awake
 sleeping.setting.lid-sleeps	Sleep when the lid is closed
 sleeping.setting.lid-stays-awake-with-a-display	Stay awake when the lid is closed and another display is attached
 software.category.audio	Audio
+software.category.books	Books
+software.category.calls	Calls
+software.category.chat	Chat
+software.category.code	Code
+software.category.diagrams	Diagrams
 software.category.documents	Documents
+software.category.email	Email
 software.category.everything	Everything
+software.category.games	Games
 software.category.illustration	Illustration
+software.category.maps	Maps
+software.category.modelling	3D models
+software.category.music	Music
+software.category.music-making	Making music
+software.category.notes	Notes
 software.category.page-layout	Page layout
 software.category.painting	Painting
+software.category.passwords	Passwords
 software.category.photographs	Photographs
 software.category.pictures	Pictures
+software.category.remote-desktop	Remote desktop
+software.category.screen-recording	Screen recording
 software.category.video	Video
 software.each-arrives-with-nothing	Each one installs from the place it is published, and arrives able to reach nothing
 software.install-it	Install

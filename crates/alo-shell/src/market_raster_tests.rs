@@ -462,3 +462,84 @@ fn a_label_is_written_on_its_row_and_a_row_without_one_has_nothing_there() {
 
 /// The decided catalogue's text.
 const THE_CATALOGUE_AS_IT_IS: &str = alo_software::catalogue::THE_CATALOGUE;
+
+/// The longest run of pixels in the primary ink along one row of the panel —
+/// a filled chip, or a stretch of a focus ring.
+fn longest_run_of_ink(picture: &MarketPicture, y: i32) -> i32 {
+    let ink = role(Role::TextPrimary);
+    let (mut best, mut run) = (0, 0);
+    for across in 0..picture.panel.area.size.w {
+        let got = pixel_at(&picture.panel, picture.panel.area.loc.x + across, y);
+        if got[3] > 200 && close_to(got, ink, 24) {
+            run += 1;
+            best = best.max(run);
+        } else {
+            run = 0;
+        }
+    }
+    best
+}
+
+/// The middle of the row of chips, at the ordinary size.
+fn the_chips_middle(at: Rectangle<i32, Physical>) -> i32 {
+    let measure = Measure::of(TextScale::ordinary());
+    let px = |of: u32| measure.px(i32::try_from(of).unwrap());
+    at.loc.y
+        + px(m::THE_TITLE_BAR_IS_TALL)
+        + px(m::ABOVE)
+        + px(m::THE_SEARCH_IS_TALL)
+        + px(m::A_GAP)
+        + px(m::A_CHIP_IS_TALL) / 2
+}
+
+/// **The chosen kind of work is on the row however far along it is.** There
+/// are more kinds than fit on one row, so a row that started at the first chip
+/// whatever was chosen would narrow the list to something the person cannot
+/// see. Narrowed to the last kind, the filled chip is still drawn.
+#[test]
+fn the_row_of_kinds_pans_so_the_chosen_one_is_drawn() {
+    let (mut window, words, at) = a_window();
+    let y = the_chips_middle(at);
+    assert!(
+        longest_run_of_ink(&drawn(&window, &words, at), y) > 20,
+        "the premise: the first chip is filled"
+    );
+    for _ in 0..alo_software::Category::EVERY.len() {
+        window.pressed(crate::MarketKey::After);
+    }
+    let last = drawn(&window, &words, at);
+    assert!(
+        longest_run_of_ink(&last, y) > 20,
+        "narrowed to the last kind of work, no chosen chip is drawn"
+    );
+}
+
+/// **The list scrolls to the application the person is on**, and rings it.
+/// The window here holds two rows; on the last application of the whole
+/// catalogue the ring is drawn round a card in those two rows, and on the
+/// first it is round the first card.
+#[test]
+fn the_list_scrolls_to_the_application_the_person_is_on_and_rings_it() {
+    let (mut window, words, at) = a_window();
+    let measure = Measure::of(TextScale::ordinary());
+    let px = |of: u32| measure.px(i32::try_from(of).unwrap());
+    let first_card_top = the_chips_middle(at) + px(m::A_CHIP_IS_TALL) / 2 + px(m::A_GAP);
+    let second_row_top = first_card_top + px(m::A_CARD_IS_TALL) + px(m::A_GAP);
+    // A ring stands three pixels off its card, so it crosses this line.
+    let ring_over = |top: i32| top - 2;
+
+    let at_first = drawn(&window, &words, at);
+    assert!(
+        longest_run_of_ink(&at_first, ring_over(first_card_top)) > 50,
+        "the first application is not ringed"
+    );
+
+    window.pressed(crate::MarketKey::Last);
+    let at_last = drawn(&window, &words, at);
+    let ringed_in_view = longest_run_of_ink(&at_last, ring_over(first_card_top)) > 50
+        || longest_run_of_ink(&at_last, ring_over(second_row_top)) > 50;
+    assert!(
+        ringed_in_view,
+        "on the last application, no card in the window is ringed: the list did not scroll"
+    );
+}

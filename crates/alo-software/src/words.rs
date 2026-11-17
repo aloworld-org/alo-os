@@ -377,7 +377,7 @@ pub const THE_NAMES: [Word; 5] = [
 ];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 42] = [
+pub const THE_SENTENCES: [Word; 57] = [
     READ_SENTENCE,
     INSTALLED,
     INSTALLED_UNSANDBOXED,
@@ -414,6 +414,21 @@ pub const THE_SENTENCES: [Word; 42] = [
     VIDEO,
     AUDIO,
     DOCUMENTS,
+    DIAGRAMS,
+    MODELLING,
+    MUSIC_MAKING,
+    SCREEN_RECORDING,
+    CODE,
+    CHAT,
+    CALLS,
+    EMAIL,
+    NOTES,
+    MUSIC,
+    BOOKS,
+    MAPS,
+    GAMES,
+    PASSWORDS,
+    REMOTE_DESKTOP,
     NOT_OPEN_SOURCE,
     NOT_OPEN_SOURCE_IN_FULL,
     NOT_VERIFIED_BY_ITS_MAKER,
@@ -544,8 +559,77 @@ pub const DOCUMENTS: Word = Word::saying("software.category.documents", "Documen
      application that writes one.",
 );
 
+/// Applications for this kind of work: diagrams.
+pub const DIAGRAMS: Word = Word::saying("software.category.diagrams", "Diagrams").noting(
+    "A kind of work: drawing boxes joined by lines and arrows — a flow chart, a plan, an organisation, a network.",
+);
+
+/// Applications for this kind of work: 3d models.
+pub const MODELLING: Word = Word::saying("software.category.modelling", "3D models").noting(
+    "A kind of work: making things in three dimensions — an object to render, animate or manufacture. Keep it short; 3D is understood in most languages.",
+);
+
+/// Applications for this kind of work: making music.
+pub const MUSIC_MAKING: Word = Word::saying("software.category.music-making", "Making music").noting(
+    "A kind of work: writing, playing in and recording music — a score, a track, a mix. Not listening to music, which is its own kind.",
+);
+
+/// Applications for this kind of work: screen recording.
+pub const SCREEN_RECORDING: Word =
+    Word::saying("software.category.screen-recording", "Screen recording")
+        .noting("A kind of work: recording or streaming what is on the screen as it happens.");
+
+/// Applications for this kind of work: code.
+pub const CODE: Word = Word::saying("software.category.code", "Code")
+    .noting("A kind of work: writing, running and correcting computer programs.");
+
+/// Applications for this kind of work: chat.
+pub const CHAT: Word = Word::saying("software.category.chat", "Chat").noting(
+    "A kind of application: writing messages to other people and reading theirs as they arrive.",
+);
+
+/// Applications for this kind of work: calls.
+pub const CALLS: Word = Word::saying("software.category.calls", "Calls").noting(
+    "A kind of application: talking to other people over the network, with or without video.",
+);
+
+/// Applications for this kind of work: email.
+pub const EMAIL: Word = Word::saying("software.category.email", "Email")
+    .noting("A kind of application: sending and receiving letters by address.");
+
+/// Applications for this kind of work: notes.
+pub const NOTES: Word = Word::saying("software.category.notes", "Notes").noting(
+    "A kind of application: keeping notes for oneself, typed, linked together or written by hand.",
+);
+
+/// Applications for this kind of work: music.
+pub const MUSIC: Word = Word::saying("software.category.music", "Music").noting(
+    "A kind of application: listening to music and radio. Not making music, which is its own kind.",
+);
+
+/// Applications for this kind of work: books.
+pub const BOOKS: Word = Word::saying("software.category.books", "Books")
+    .noting("A kind of application: reading books on the screen and keeping a shelf of them.");
+
+/// Applications for this kind of work: maps.
+pub const MAPS: Word = Word::saying("software.category.maps", "Maps")
+    .noting("A kind of application: finding where a place is and the way there.");
+
+/// Applications for this kind of work: games.
+pub const GAMES: Word = Word::saying("software.category.games", "Games")
+    .noting("A kind of application: playing games, and the places games are bought or kept.");
+
+/// Applications for this kind of work: passwords.
+pub const PASSWORDS: Word = Word::saying("software.category.passwords", "Passwords")
+    .noting("A kind of application: keeping passwords and other secrets in one locked place.");
+
+/// Applications for this kind of work: remote desktop.
+pub const REMOTE_DESKTOP: Word = Word::saying("software.category.remote-desktop", "Remote desktop").noting(
+    "A kind of application: seeing and using another computer from this one. Use the ordinary term in the language, if it has one.",
+);
+
 /// Every kind of work, in the order the window shows them.
-pub const EVERY_CATEGORY: [Word; 9] = [
+pub const EVERY_CATEGORY: [Word; 24] = [
     EVERYTHING,
     PICTURES,
     PAINTING,
@@ -555,6 +639,21 @@ pub const EVERY_CATEGORY: [Word; 9] = [
     VIDEO,
     AUDIO,
     DOCUMENTS,
+    DIAGRAMS,
+    MODELLING,
+    MUSIC_MAKING,
+    SCREEN_RECORDING,
+    CODE,
+    CHAT,
+    CALLS,
+    EMAIL,
+    NOTES,
+    MUSIC,
+    BOOKS,
+    MAPS,
+    GAMES,
+    PASSWORDS,
+    REMOTE_DESKTOP,
 ];
 
 // ---------------------------------------------------------------------------
@@ -637,7 +736,7 @@ pub const VERB_LEAVES: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 47] = [
+pub const EVERY_WORD: [Word; 62] = [
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
@@ -679,6 +778,21 @@ pub const EVERY_WORD: [Word; 47] = [
     VIDEO,
     AUDIO,
     DOCUMENTS,
+    DIAGRAMS,
+    MODELLING,
+    MUSIC_MAKING,
+    SCREEN_RECORDING,
+    CODE,
+    CHAT,
+    CALLS,
+    EMAIL,
+    NOTES,
+    MUSIC,
+    BOOKS,
+    MAPS,
+    GAMES,
+    PASSWORDS,
+    REMOTE_DESKTOP,
     NOT_OPEN_SOURCE,
     NOT_OPEN_SOURCE_IN_FULL,
     NOT_VERIFIED_BY_ITS_MAKER,

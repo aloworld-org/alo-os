@@ -1,5 +1,5 @@
 # What a person can find and install: the decided list, by what they would
-# make with it.
+# do with it.
 #
 # `shipped.toml` is what a machine has so it is not helpless — one application
 # for each thing a person needs before they have installed anything. This file
@@ -7,6 +7,15 @@
 # can browse, read and look at pictures and cannot make any of them is not a
 # workstation, and a fresh machine could do nothing else until this list
 # existed.
+#
+# **Every kind of application since 2026-11-17.** The owner, that day: *"Every
+# kind of app"* — chat, calls, music, notes, email, coding, maps, e-books,
+# games, passwords, remote desktop, 3D, music making and screen recording, and
+# diagrams as a kind of its own. The first eight kinds were all kinds of making;
+# the rest are what a person does all day besides. The candidates were
+# researched on Flathub on 2026-11-16 and every figure below was read again on
+# 2026-11-17 from `https://flathub.org/api/v2/appstream/<identifier>` and
+# `https://flathub.org/api/v2/verification/<identifier>/status`.
 #
 # It is data for the same reason `shipped.toml` is: a market screen, the agent's
 # installing verb and anything that audits what we recommend all read one list
@@ -23,7 +32,7 @@
 # - **no application twice**, under one category or two. A list that offers one
 #   thing twice is a list a person cannot count.
 # - **nothing a person's own** (`alo_capability::A_PERSONS_OWN`, ADR 0043). Every
-#   category here is a making-category and none of them is a terminal; a
+#   category here is a kind of work or use, and none of them is a terminal; a
 #   terminal reaches a machine through `shipped.toml`, which is where a reader
 #   looks for it. This does not stop anybody installing one — `Wanted::by_hand`
 #   takes any identifier, and a curated list is not the only road.
@@ -44,7 +53,7 @@
 #
 # ## What each category is called, and what it is not
 #
-# Each category names **a thing a person makes**, never a product it replaces.
+# Each category names **a thing a person does**, never a product it replaces.
 # These applications are the honest answers to "what do I use instead of
 # Photoshop" and this repository is not the place that sentence belongs: a
 # category called `photoshop-alternative` would age into a lie the day either
@@ -54,7 +63,7 @@
 # ## Pinning, and the same weaker pin for the same reason
 #
 # `version` is the upstream's own release as its source listed it on the date
-# this list was decided (2026-10-16), read from Flathub's own appstream answer
+# this list was last read (2026-11-17), from Flathub's own appstream answer
 # rather than from memory. It is a weaker pin than `image/pinned.toml`'s
 # digests, and that is ADR 0073's decision rather than an oversight — the
 # reasoning is in `shipped.toml`'s own note and has not changed. A newer release
@@ -95,8 +104,17 @@ format = 1
 category = "pictures"
 identifier = "org.gimp.GIMP"
 source = "flathub"
-version = "3.2.6"
+version = "3.2.8"
 licence = "GPL-3.0+ AND LGPL-3.0+"
+verified = true
+early = false
+
+[[application]]
+category = "pictures"
+identifier = "com.github.PintaProject.Pinta"
+source = "flathub"
+version = "3.1.2"
+licence = "MIT"
 verified = true
 early = false
 
@@ -137,6 +155,24 @@ licence = "GPL-3.0+"
 verified = false
 early = false
 
+[[application]]
+category = "photographs"
+identifier = "org.kde.digikam"
+source = "flathub"
+version = "9.1.0"
+licence = "GPL-2.0+"
+verified = true
+early = false
+
+[[application]]
+category = "photographs"
+identifier = "com.rawtherapee.RawTherapee"
+source = "flathub"
+version = "5.13"
+licence = "GPL-3.0+"
+verified = false
+early = false
+
 # Arrange a page that will be printed: a leaflet, a booklet, a poster, with the
 # colour and bleed a printer asks for. A word processor laying out a page for
 # print is the commonest way a job comes back from the printer wrong.
@@ -155,9 +191,27 @@ early = false
 category = "video"
 identifier = "org.kde.kdenlive"
 source = "flathub"
-version = "26.08.2"
+version = "26.08.3"
 licence = "GPL-3.0-only"
 verified = true
+early = false
+
+[[application]]
+category = "video"
+identifier = "org.shotcut.Shotcut"
+source = "flathub"
+version = "26.9.27"
+licence = "GPL-3.0-only"
+verified = true
+early = false
+
+[[application]]
+category = "video"
+identifier = "org.openshot.OpenShot"
+source = "flathub"
+version = "3.5.1"
+licence = "GPL-3.0-or-later"
+verified = false
 early = false
 
 # Record and edit sound: an interview, a voice-over, a podcast — trimmed,
@@ -171,6 +225,15 @@ licence = "GPL-3.0-only"
 verified = false
 early = false
 
+[[application]]
+category = "audio"
+identifier = "org.tenacityaudio.Tenacity"
+source = "flathub"
+version = "1.3.5"
+licence = "GPL-2.0 and CC-BY-3.0"
+verified = true
+early = false
+
 # Write, calculate and present. **One category for three things**, the way
 # `shipped.toml` has two roles for one developer's file manager: these arrive as
 # one application from one upstream, and three categories pointing at one
@@ -181,7 +244,460 @@ early = false
 category = "documents"
 identifier = "org.libreoffice.LibreOffice"
 source = "flathub"
-version = "26.8.1.1"
+version = "26.8.3.1"
 licence = "MPL-2.0"
 verified = true
+early = false
+
+[[application]]
+category = "documents"
+identifier = "org.onlyoffice.desktopeditors"
+source = "flathub"
+version = "10.0.0"
+licence = "AGPL-3.0-only"
+verified = true
+early = false
+
+# Draw a diagram: boxes joined by lines, a flow, a plan. Not verified on
+# Flathub, which its row says.
+[[application]]
+category = "diagrams"
+identifier = "com.jgraph.drawio.desktop"
+source = "flathub"
+version = "32.6.10"
+licence = "Apache-2.0"
+verified = false
+early = false
+
+# Make something in three dimensions: Blender for what is rendered and
+# animated, FreeCAD for what is measured and made.
+[[application]]
+category = "modelling"
+identifier = "org.blender.Blender"
+source = "flathub"
+version = "5.3"
+licence = "GPL-3.0"
+verified = false
+early = false
+
+[[application]]
+category = "modelling"
+identifier = "org.freecad.FreeCAD"
+source = "flathub"
+version = "1.1.4"
+licence = "LGPL-2.1"
+verified = true
+early = false
+
+# Make music: a recording studio, a score, and two proprietary studios the
+# owner's decision lists rather than leaves out — each labelled.
+[[application]]
+category = "music-making"
+identifier = "org.ardour.Ardour"
+source = "flathub"
+version = "9.8.0"
+licence = "GPL-2.0+"
+verified = false
+early = false
+
+[[application]]
+category = "music-making"
+identifier = "org.musescore.MuseScore"
+source = "flathub"
+version = "4.7.5"
+licence = "GPL-3.0-only"
+verified = false
+early = false
+
+[[application]]
+category = "music-making"
+identifier = "com.bitwig.BitwigStudio"
+source = "flathub"
+version = "6.1.7"
+licence = "LicenseRef-proprietary"
+verified = true
+early = false
+
+[[application]]
+category = "music-making"
+identifier = "fm.reaper.Reaper"
+source = "flathub"
+version = "7.85"
+licence = "LicenseRef-proprietary=https://www.reaper.fm/dist-agreement.php"
+verified = false
+early = false
+
+# Record or stream the screen.
+[[application]]
+category = "screen-recording"
+identifier = "com.obsproject.Studio"
+source = "flathub"
+version = "33.0.1"
+licence = "GPL-2.0-or-later"
+verified = true
+early = false
+
+[[application]]
+category = "screen-recording"
+identifier = "io.github.seadve.Kooha"
+source = "flathub"
+version = "2.3.2"
+licence = "GPL-3.0-or-later"
+verified = true
+early = false
+
+# Write programs. The shipped code editor (`shipped.toml`) is the light one;
+# these are the larger ones.
+[[application]]
+category = "code"
+identifier = "org.gnome.Builder"
+source = "flathub"
+version = "50.0"
+licence = "GPL-3.0+ and GPL-2.0+ and LGPL-3.0+ and LGPL-2.0+ and MIT"
+verified = true
+early = false
+
+[[application]]
+category = "code"
+identifier = "org.kde.kate"
+source = "flathub"
+version = "26.08.3"
+licence = "LGPL-2.1+"
+verified = true
+early = false
+
+[[application]]
+category = "code"
+identifier = "com.jetbrains.IntelliJ-IDEA-Community"
+source = "flathub"
+version = "2026.3"
+licence = "Apache-2.0"
+verified = false
+early = false
+
+# Write to other people. Signal and Element are open and not verified;
+# Discord and Slack are proprietary. Each says so on its row.
+[[application]]
+category = "chat"
+identifier = "org.signal.Signal"
+source = "flathub"
+version = "8.35.0"
+licence = "AGPL-3.0-only"
+verified = false
+early = false
+
+[[application]]
+category = "chat"
+identifier = "im.riot.Riot"
+source = "flathub"
+version = "1.12.35"
+licence = "AGPL-3.0-only OR GPL-3.0-only"
+verified = false
+early = false
+
+[[application]]
+category = "chat"
+identifier = "org.gnome.Fractal"
+source = "flathub"
+version = "14.3"
+licence = "GPL-3.0+"
+verified = true
+early = false
+
+[[application]]
+category = "chat"
+identifier = "org.telegram.desktop"
+source = "flathub"
+version = "7.4.4"
+licence = "GPL-3.0"
+verified = true
+early = false
+
+[[application]]
+category = "chat"
+identifier = "com.discordapp.Discord"
+source = "flathub"
+version = "1.0.169"
+licence = "LicenseRef-proprietary=https://discord.com/terms"
+verified = true
+early = false
+
+[[application]]
+category = "chat"
+identifier = "com.slack.Slack"
+source = "flathub"
+version = "4.53.280"
+licence = "LicenseRef-proprietary=https://slack.com/terms-of-service/user"
+verified = false
+early = false
+
+# Talk to other people, with or without video.
+[[application]]
+category = "calls"
+identifier = "org.jitsi.jitsi-meet"
+source = "flathub"
+version = "2026.10.0"
+licence = "Apache-2.0"
+verified = true
+early = false
+
+[[application]]
+category = "calls"
+identifier = "us.zoom.Zoom"
+source = "flathub"
+version = "7.2.1.5760"
+licence = "LicenseRef-proprietary"
+verified = false
+early = false
+
+# Send and receive email. `org.mozilla.thunderbird`, lower case, is the live
+# identifier; `org.mozilla.Thunderbird` is end-of-life on Flathub.
+[[application]]
+category = "email"
+identifier = "org.mozilla.thunderbird"
+source = "flathub"
+version = "160.0"
+licence = "MPL-2.0"
+verified = true
+early = false
+
+[[application]]
+category = "email"
+identifier = "org.gnome.Evolution"
+source = "flathub"
+version = "3.62.1"
+licence = "GPL-2.0+ and GFDL-1.3"
+verified = true
+early = false
+
+# Keep notes: typed, linked, or written by hand.
+[[application]]
+category = "notes"
+identifier = "net.cozic.joplin_desktop"
+source = "flathub"
+version = "3.7.21"
+licence = "AGPL-3.0-or-later"
+verified = false
+early = false
+
+[[application]]
+category = "notes"
+identifier = "com.logseq.Logseq"
+source = "flathub"
+version = "0.10.15"
+licence = "AGPL-3.0-or-later"
+verified = true
+early = false
+
+[[application]]
+category = "notes"
+identifier = "com.github.flxzt.rnote"
+source = "flathub"
+version = "0.14.2"
+licence = "GPL-3.0-or-later"
+verified = true
+early = false
+
+[[application]]
+category = "notes"
+identifier = "com.github.xournalpp.xournalpp"
+source = "flathub"
+version = "1.3.8"
+licence = "GPL-2.0"
+verified = true
+early = false
+
+[[application]]
+category = "notes"
+identifier = "md.obsidian.Obsidian"
+source = "flathub"
+version = "1.15.1"
+licence = "LicenseRef-proprietary=https://obsidian.md/eula"
+verified = true
+early = false
+
+# Listen to music and radio.
+[[application]]
+category = "music"
+identifier = "io.bassi.Amberol"
+source = "flathub"
+version = "2026.1"
+licence = "GPL-3.0-or-later"
+verified = true
+early = false
+
+[[application]]
+category = "music"
+identifier = "org.strawberrymusicplayer.strawberry"
+source = "flathub"
+version = "1.2.31"
+licence = "GPL-3.0+"
+verified = true
+early = false
+
+[[application]]
+category = "music"
+identifier = "de.haeckerfelix.Shortwave"
+source = "flathub"
+version = "5.1.0"
+licence = "GPL-3.0-or-later"
+verified = true
+early = false
+
+[[application]]
+category = "music"
+identifier = "com.spotify.Client"
+source = "flathub"
+version = "1.2.95.453.g0eeebbed"
+licence = "LicenseRef-proprietary=https://www.spotify.com/us/legal/end-user-agreement/"
+verified = false
+early = false
+
+# Read books and keep a shelf of them.
+[[application]]
+category = "books"
+identifier = "com.github.johnfactotum.Foliate"
+source = "flathub"
+version = "3.3.0"
+licence = "GPL-3.0-or-later"
+verified = true
+early = false
+
+[[application]]
+category = "books"
+identifier = "com.calibre_ebook.calibre"
+source = "flathub"
+version = "9.17.0"
+licence = "GPL-3.0"
+verified = false
+early = false
+
+# Find a place and the way there.
+[[application]]
+category = "maps"
+identifier = "org.gnome.Maps"
+source = "flathub"
+version = "51.2"
+licence = "GPL-2.0-or-later"
+verified = true
+early = false
+
+# Play games, and keep the shops and launchers games come through.
+[[application]]
+category = "games"
+identifier = "com.valvesoftware.Steam"
+source = "flathub"
+version = "1.0.0.87"
+licence = "LicenseRef-proprietary"
+verified = false
+early = false
+
+[[application]]
+category = "games"
+identifier = "com.heroicgameslauncher.hgl"
+source = "flathub"
+version = "v2.22.4"
+licence = "GPL-3.0"
+verified = true
+early = false
+
+[[application]]
+category = "games"
+identifier = "net.lutris.Lutris"
+source = "flathub"
+version = "0.5.23"
+licence = "GPL-3.0-or-later"
+verified = true
+early = false
+
+[[application]]
+category = "games"
+identifier = "net.supertuxkart.SuperTuxKart"
+source = "flathub"
+version = "1.5"
+licence = "GPL-3.0+"
+verified = true
+early = false
+
+[[application]]
+category = "games"
+identifier = "org.libretro.RetroArch"
+source = "flathub"
+version = "1.22.2"
+licence = "GPL-3.0-or-later"
+verified = true
+early = false
+
+# Keep passwords in one locked place.
+[[application]]
+category = "passwords"
+identifier = "org.keepassxc.KeePassXC"
+source = "flathub"
+version = "2.8.0"
+licence = "GPL-3.0-or-later"
+verified = true
+early = false
+
+[[application]]
+category = "passwords"
+identifier = "org.gnome.World.Secrets"
+source = "flathub"
+version = "14.0"
+licence = "GPL-3.0-only"
+verified = true
+early = false
+
+[[application]]
+category = "passwords"
+identifier = "com.bitwarden.desktop"
+source = "flathub"
+version = "2026.10.3"
+licence = "LicenseRef-proprietary=https://raw.githubusercontent.com/bitwarden/clients/refs/heads/main/LICENSE_BITWARDEN.txt"
+verified = true
+early = false
+
+[[application]]
+category = "passwords"
+identifier = "com.onepassword.OnePassword"
+source = "flathub"
+version = "8.12.44"
+licence = "LicenseRef-proprietary=https://1password.com/legal/terms-of-service"
+verified = true
+early = false
+
+# See and use another computer from this one.
+[[application]]
+category = "remote-desktop"
+identifier = "org.remmina.Remmina"
+source = "flathub"
+version = "1.4.43"
+licence = "GPL-2.0+"
+verified = true
+early = false
+
+[[application]]
+category = "remote-desktop"
+identifier = "org.gnome.Connections"
+source = "flathub"
+version = "51.0"
+licence = "GPL-3.0-or-later"
+verified = true
+early = false
+
+[[application]]
+category = "remote-desktop"
+identifier = "com.rustdesk.RustDesk"
+source = "flathub"
+version = "1.5.3"
+licence = "AGPL-3.0-only"
+verified = true
+early = false
+
+[[application]]
+category = "remote-desktop"
+identifier = "com.anydesk.Anydesk"
+source = "flathub"
+version = "8.0.4"
+licence = "LicenseRef-proprietary"
+verified = false
 early = false

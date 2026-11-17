@@ -162,7 +162,11 @@ fn every_kind_of_work_has_something_under_it() {
         }
         seen += 1;
     }
-    assert_eq!(seen, 8, "the loop walked every kind of work");
+    assert_eq!(
+        seen,
+        Category::EVERY.len(),
+        "the loop walked every kind of work"
+    );
 }
 
 /// Narrowed, the window shows that kind and nothing else — and the counts of
