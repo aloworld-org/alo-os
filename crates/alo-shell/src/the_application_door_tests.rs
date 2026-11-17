@@ -646,7 +646,10 @@ fn alos_answer_to_the_file_chooser_is_handed_on_with_its_connection_held() {
     assert_eq!(door.answered(&mut hand), 0);
     let answers = door.alo_answers_the_file_chooser();
     assert_eq!(answers.len(), 1);
-    assert!(door.alo_answers_the_file_chooser().is_empty(), "handed over once");
+    assert!(
+        door.alo_answers_the_file_chooser().is_empty(),
+        "handed over once"
+    );
     let mut sheet = crate::the_file_chooser::TheFileChooser::none();
     let disk = crate::the_file_chooser::THE_DISK;
     sheet.alo_answered(answers, std::time::Instant::now(), &disk);

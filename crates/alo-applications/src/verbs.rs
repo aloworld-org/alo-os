@@ -159,7 +159,10 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), Declaring> {
 /// # Errors
 /// [`Declaring::List`] if the list already holds one of these names.
 pub fn declare_every_verb_into(verbs: &mut Verbs) -> Result<(), Declaring> {
-    for later in [crate::OPEN_FILE_IN_APPLICATION, crate::CHOOSE_ON_THE_FILE_CHOOSER] {
+    for later in [
+        crate::OPEN_FILE_IN_APPLICATION,
+        crate::CHOOSE_ON_THE_FILE_CHOOSER,
+    ] {
         if verbs.of(later).is_some() {
             return Err(Declaring::List(VerbsError::AlreadyDeclared {
                 name: later.to_owned(),

@@ -30,7 +30,7 @@
 //! person's side they are the same fact: nothing was changed.
 
 use alo_acting::{
-    AnsweredTheChooser, Answer, Opened, Request, ToAnswerAFileChooser, ToOpenAFile, ToType, Typed,
+    Answer, AnsweredTheChooser, Opened, Request, ToAnswerAFileChooser, ToOpenAFile, ToType, Typed,
 };
 
 /// Whatever can put one request to the compositor and read one answer.

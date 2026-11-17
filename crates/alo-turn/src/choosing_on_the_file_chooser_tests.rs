@@ -154,7 +154,12 @@ struct Ran {
 /// nobody grants holding `secret.txt` — then do `doing`.
 fn on_a_machine(
     arranged: Arranged,
-    doing: impl FnOnce(&mut Turning<'_, '_>, &Grants, &Path, &Path) -> Result<Option<WhatAVerbDid>, NotDone>,
+    doing: impl FnOnce(
+        &mut Turning<'_, '_>,
+        &Grants,
+        &Path,
+        &Path,
+    ) -> Result<Option<WhatAVerbDid>, NotDone>,
 ) -> Ran {
     let strings = in_english();
     let tool = NoTool;
@@ -205,14 +210,9 @@ fn on_a_machine(
         };
         let offered = crate::testing::a_folder_of_our_own("offered").join("a-note.txt");
         std::fs::write(&offered, "anything").unwrap();
-        let mut turning = Turning::beginning(
-            offering(&offered),
-            AGENT,
-            hour(),
-            &mut grants,
-            &mut machine,
-        )
-        .unwrap();
+        let mut turning =
+            Turning::beginning(offering(&offered), AGENT, hour(), &mut grants, &mut machine)
+                .unwrap();
         doing(&mut turning, &grants, &folder, &elsewhere)
     };
     let anything = Asking::anything();
@@ -256,9 +256,10 @@ fn proposed_and_approved(
 /// and written down with whom it was chosen for** — and the file not changed.
 #[test]
 fn an_approved_choice_asks_the_door_once_and_is_recorded() {
-    let ran = on_a_machine(Arranged::answering(chosen()), |turning, grants, folder, _| {
-        proposed_and_approved(turning, grants, folder, "march.txt")
-    });
+    let ran = on_a_machine(
+        Arranged::answering(chosen()),
+        |turning, grants, folder, _| proposed_and_approved(turning, grants, folder, "march.txt"),
+    );
     let did = ran.answered.unwrap().unwrap();
     let chosen = did.chosen_on_the_file_chooser().unwrap();
     assert_eq!(chosen.application(), EDITOR);
@@ -285,9 +286,10 @@ fn an_approved_choice_asks_the_door_once_and_is_recorded() {
 /// **A name to save under, not there yet, is the folder's**: asked once.
 #[test]
 fn a_name_to_save_under_is_asked_once() {
-    let ran = on_a_machine(Arranged::answering(chosen()), |turning, grants, folder, _| {
-        proposed_and_approved(turning, grants, folder, "april.txt")
-    });
+    let ran = on_a_machine(
+        Arranged::answering(chosen()),
+        |turning, grants, folder, _| proposed_and_approved(turning, grants, folder, "april.txt"),
+    );
     assert!(ran.answered.is_ok(), "{:?}", ran.answered);
     assert_eq!(ran.asked.len(), 1);
 }
@@ -296,15 +298,21 @@ fn a_name_to_save_under_is_asked_once() {
 /// door never reached, and the refusal written down.
 #[test]
 fn a_folder_nobody_granted_is_refused_and_recorded() {
-    let ran = on_a_machine(Arranged::answering(chosen()), |turning, grants, _, elsewhere| {
-        proposed_and_approved(turning, grants, elsewhere, "secret.txt")
-    });
+    let ran = on_a_machine(
+        Arranged::answering(chosen()),
+        |turning, grants, _, elsewhere| {
+            proposed_and_approved(turning, grants, elsewhere, "secret.txt")
+        },
+    );
     assert!(
         matches!(ran.answered, Err(NotDone::NeverAsked(_))),
         "{:?}",
         ran.answered
     );
-    assert!(ran.asked.is_empty(), "a folder nobody granted reached the door");
+    assert!(
+        ran.asked.is_empty(),
+        "a folder nobody granted reached the door"
+    );
     assert_eq!(ran.entries, 1);
 }
 
@@ -314,29 +322,41 @@ fn a_folder_nobody_granted_is_refused_and_recorded() {
 #[cfg(unix)]
 #[test]
 fn a_link_out_of_a_granted_folder_is_refused_and_recorded() {
-    let ran = on_a_machine(Arranged::answering(chosen()), |turning, grants, folder, elsewhere| {
-        std::os::unix::fs::symlink(elsewhere.join("secret.txt"), folder.join("a-link.txt"))
-            .unwrap();
-        proposed_and_approved(turning, grants, folder, "a-link.txt")
-    });
+    let ran = on_a_machine(
+        Arranged::answering(chosen()),
+        |turning, grants, folder, elsewhere| {
+            std::os::unix::fs::symlink(elsewhere.join("secret.txt"), folder.join("a-link.txt"))
+                .unwrap();
+            proposed_and_approved(turning, grants, folder, "a-link.txt")
+        },
+    );
     let Err(NotDone::Refused(refused)) = &ran.answered else {
-        panic!("a link out of the grants was not refused: {:?}", ran.answered);
+        panic!(
+            "a link out of the grants was not refused: {:?}",
+            ran.answered
+        );
     };
     assert!(
         refused.said(&in_english()).text().contains("secret.txt"),
         "{}",
         refused.said(&in_english()).text()
     );
-    assert!(ran.asked.is_empty(), "a link out of the grants reached the door");
+    assert!(
+        ran.asked.is_empty(),
+        "a link out of the grants reached the door"
+    );
     assert_eq!(ran.entries, 1);
 }
 
 /// **A folder that is not there is refused before the door.**
 #[test]
 fn a_folder_that_is_not_there_is_refused() {
-    let ran = on_a_machine(Arranged::answering(chosen()), |turning, grants, folder, _| {
-        proposed_and_approved(turning, grants, &folder.join("gone"), "march.txt")
-    });
+    let ran = on_a_machine(
+        Arranged::answering(chosen()),
+        |turning, grants, folder, _| {
+            proposed_and_approved(turning, grants, &folder.join("gone"), "march.txt")
+        },
+    );
     assert!(ran.answered.is_err(), "{:?}", ran.answered);
     assert!(ran.asked.is_empty());
     assert_eq!(ran.entries, 1);
@@ -373,9 +393,12 @@ fn each_no_from_the_desktop_is_a_sentence_and_is_recorded() {
             "The desktop could not be asked",
         ),
     ] {
-        let ran = on_a_machine(Arranged::answering(answering), |turning, grants, folder, _| {
-            proposed_and_approved(turning, grants, folder, "march.txt")
-        });
+        let ran = on_a_machine(
+            Arranged::answering(answering),
+            |turning, grants, folder, _| {
+                proposed_and_approved(turning, grants, folder, "march.txt")
+            },
+        );
         let Err(NotDone::Refused(refused)) = &ran.answered else {
             panic!("{says}: not refused: {:?}", ran.answered);
         };
@@ -390,19 +413,22 @@ fn each_no_from_the_desktop_is_a_sentence_and_is_recorded() {
 /// **Declined, nothing is chosen**, and the no is written down.
 #[test]
 fn a_declined_choice_chooses_nothing_and_is_recorded() {
-    let ran = on_a_machine(Arranged::answering(chosen()), |turning, grants, folder, _| {
-        let id = turning.proposing(
-            CHOOSE_ON_THE_FILE_CHOOSER,
-            &[
-                ("folder", Given::text(folder.to_string_lossy().into_owned())),
-                ("name", Given::text("march.txt")),
-            ],
-            grants,
-            hour(),
-            noon(),
-        )?;
-        turning.declining(id, noon()).map(|()| None)
-    });
+    let ran = on_a_machine(
+        Arranged::answering(chosen()),
+        |turning, grants, folder, _| {
+            let id = turning.proposing(
+                CHOOSE_ON_THE_FILE_CHOOSER,
+                &[
+                    ("folder", Given::text(folder.to_string_lossy().into_owned())),
+                    ("name", Given::text("march.txt")),
+                ],
+                grants,
+                hour(),
+                noon(),
+            )?;
+            turning.declining(id, noon()).map(|()| None)
+        },
+    );
     assert!(ran.answered.is_ok(), "{:?}", ran.answered);
     assert!(ran.asked.is_empty(), "a declined choice reached the door");
     assert_eq!(ran.entries, 1);

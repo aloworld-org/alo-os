@@ -89,7 +89,11 @@ pub(crate) fn choosing_on_the_file_chooser(
     let Some(Value::Name(name)) = call.value(NAME).cloned() else {
         // The verb declares the argument as a name, so this is a declaration
         // and an executor having drifted apart. Said rather than unwrapped.
-        return refused(said_about(strings, words::NOT_A_FILE_TO_CHOOSE, Path::new("")));
+        return refused(said_about(
+            strings,
+            words::NOT_A_FILE_TO_CHOOSE,
+            Path::new(""),
+        ));
     };
 
     // Step 1. The folder: granted, there, and really where the grant is.
@@ -110,7 +114,11 @@ pub(crate) fn choosing_on_the_file_chooser(
         .real(alo_applications::choosing_on_the_file_chooser::FOLDER)
         .map(|real| real.as_path().to_path_buf())
     else {
-        return refused(said_about(strings, words::NOT_A_FILE_TO_CHOOSE, Path::new(&name)));
+        return refused(said_about(
+            strings,
+            words::NOT_A_FILE_TO_CHOOSE,
+            Path::new(&name),
+        ));
     };
     let file = folder.join(&name);
     let authorised = touching.into_authorised();
@@ -177,12 +185,14 @@ fn leads_where_nobody_granted(
     {
         return None;
     }
-    Some(strings.say(
-        &alo_files::words::REALLY_LEADS_ELSEWHERE.key(),
-        &Filling::of("path", file.display().to_string())
-            .and("really", real.display().to_string())
-            .and("who", agent.as_str()),
-    ))
+    Some(
+        strings.say(
+            &alo_files::words::REALLY_LEADS_ELSEWHERE.key(),
+            &Filling::of("path", file.display().to_string())
+                .and("really", real.display().to_string())
+                .and("who", agent.as_str()),
+        ),
+    )
 }
 
 /// One of this verb's words, about this file.

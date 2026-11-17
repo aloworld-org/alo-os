@@ -61,7 +61,11 @@ fn choose_on_the_file_chooser() -> Result<Verb, VerbError> {
         words::CHOOSE_ON_THE_FILE_CHOOSER,
         Effect::Change,
         vec![
-            Arg::taking(FOLDER, words::CHOOSE_ON_THE_FILE_CHOOSER_FOLDER, Takes::Path),
+            Arg::taking(
+                FOLDER,
+                words::CHOOSE_ON_THE_FILE_CHOOSER_FOLDER,
+                Takes::Path,
+            ),
             Arg::taking(
                 NAME,
                 words::CHOOSE_ON_THE_FILE_CHOOSER_NAME,

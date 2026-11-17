@@ -176,6 +176,7 @@ mod carrying;
 mod choosing_in_an_application;
 #[cfg(test)]
 mod choosing_in_an_application_tests;
+mod choosing_on_the_file_chooser;
 pub mod crossing;
 #[cfg(test)]
 mod down_the_corridor;
@@ -186,7 +187,6 @@ mod looking_at_the_catalogue;
 pub mod machine;
 mod naming_an_application;
 pub mod next_request;
-mod choosing_on_the_file_chooser;
 mod opening_a_file_in_an_application;
 #[cfg(test)]
 mod opening_a_file_in_an_application_tests;
@@ -241,6 +241,7 @@ pub use arriving::Arriving;
 pub use became::Became;
 pub use bounding::{Bounding, Doing, Done};
 pub use choosing_in_an_application::AChoiceMade;
+pub use choosing_on_the_file_chooser::AFileChosen;
 pub use crossing::Departed;
 pub use how_an_application_starts::{NoRoad, SaysHowAnApplicationStarts, TheRoad};
 pub use kept::Kept;
@@ -249,7 +250,6 @@ pub use machine::{
     the_verbs_a_whole_machine_offers,
 };
 pub use naming_an_application::{as_the_catalogue_names_it, as_this_machine_names_them};
-pub use choosing_on_the_file_chooser::AFileChosen;
 pub use opening_a_file_in_an_application::AFileOpened;
 pub use places::Places;
 pub use pressing_a_control::AControlPressed;

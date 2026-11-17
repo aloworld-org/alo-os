@@ -89,6 +89,7 @@
 
 pub mod answering_to;
 pub mod application;
+pub mod choosing_on_the_file_chooser;
 pub mod chosen;
 pub mod declared;
 pub mod installed;
@@ -101,7 +102,6 @@ pub mod media_types;
 pub mod nothing_opens;
 pub mod opener;
 pub mod opening_a_file;
-pub mod choosing_on_the_file_chooser;
 pub mod reaching;
 pub mod refusing;
 pub mod short_name;
@@ -117,6 +117,9 @@ mod testing;
 
 pub use answering_to::AnsweringTo;
 pub use application::{Application, Called};
+pub use choosing_on_the_file_chooser::{
+    CHOOSE_ON_THE_FILE_CHOOSER, declare_choosing_on_the_file_chooser_into,
+};
 pub use chosen::Chosen;
 pub use declared::Declared;
 pub use installed::Installed;
@@ -125,9 +128,6 @@ pub use link_opener::{LinkBecause, LinkOpener, NothingOpensLinks, PassedOver};
 pub use mail_address::{MailAddress, NotAMailAddress};
 pub use nothing_opens::NothingOpens;
 pub use opener::{Because, Opener};
-pub use choosing_on_the_file_chooser::{
-    CHOOSE_ON_THE_FILE_CHOOSER, declare_choosing_on_the_file_chooser_into,
-};
 pub use opening_a_file::{OPEN_FILE_IN_APPLICATION, declare_opening_a_file_into};
 pub use reaching::Reaching;
 pub use refusing::{NotAnApplication, NotInstalled};

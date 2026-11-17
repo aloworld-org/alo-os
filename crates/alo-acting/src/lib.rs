@@ -64,8 +64,8 @@
 
 pub mod acting;
 pub mod alos_tree;
-pub mod answering_a_file_chooser;
 pub mod answer;
+pub mod answering_a_file_chooser;
 pub mod choosing_a_file;
 pub mod choosing_a_link;
 pub mod counting;
@@ -79,11 +79,11 @@ pub mod typing_into;
 pub mod working_in;
 
 pub use acting::Acting;
+pub use alos_tree::{WhereAlosTreeIs, is_alo_tree};
+pub use answer::{Answer, NotActed};
 pub use answering_a_file_chooser::{
     ALO_CHOOSES_FILE, AnsweredTheChooser, NotAnAnswer, ToAnswerAFileChooser,
 };
-pub use alos_tree::{WhereAlosTreeIs, is_alo_tree};
-pub use answer::{Answer, NotActed};
 pub use choosing_a_file::{
     CHOOSE_FILE, ChoseAFile, NotAFileToChoose, THE_LONGEST_NAME, ToChoose, ToChooseAFile,
     is_a_name, is_a_whole_path,

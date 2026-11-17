@@ -61,6 +61,7 @@ fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
             "move a slider in an application",
             "choose an option in a drop-down",
             "select a file in the file manager",
+            "answer the file chooser",
         ]
     );
 }
