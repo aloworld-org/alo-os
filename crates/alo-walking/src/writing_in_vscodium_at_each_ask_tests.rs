@@ -220,7 +220,9 @@ fn the_folder_row_is_reached_from_settings_opened_afresh() {
     let steps = the_first_walk().steps().to_vec();
     let given = the_look(&steps, "vscodium-given");
     let on_the_row = the_look(&steps, "on-give-alo-a-folder");
-    let between = &steps[given + 1..on_the_row];
+    let Some(between) = steps.get(given + 1..on_the_row) else {
+        panic!("the folder's row is looked at before VSCodium is given");
+    };
     let place = |step: &Step| between.iter().position(|it| it == step);
     let (Some(closed), Some(opened), Some(side), Some(entered)) = (
         place(&Step::Press(Chord::key("esc"))),
