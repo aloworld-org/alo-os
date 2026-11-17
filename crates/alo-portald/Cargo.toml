@@ -67,6 +67,11 @@ alo-opening = { path = "../alo-opening" }
 # 2026-11-12: a link a person follows is started by the desktop as a press is).
 alo-acting = { path = "../alo-acting" }
 
+# The person's bus, asked for the documents portal that hands a chosen file to
+# one application (ADR 0159), and the `O_PATH` descriptor the file is named by.
+zbus = { version = "5.19", default-features = false, features = ["async-io", "blocking-api"] }
+rustix = { workspace = true }
+
 
 [dev-dependencies]
 # A folder to write a settings file into, for the tests that tell a file which

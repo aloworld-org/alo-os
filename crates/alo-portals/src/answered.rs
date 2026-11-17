@@ -135,6 +135,16 @@ pub enum Outcome {
     /// nothing was chosen: the person cancelled, nobody answered, or the sheet
     /// could not be shown.
     LinkUnchosen(crate::link_not_chosen::LinkUnchosen),
+    /// The person chose a file on alo's file chooser, and the application was
+    /// given it.
+    ///
+    /// Kept before the response carries it, so no application is given a file
+    /// the record does not hold.
+    FileChosen(crate::file_chosen::FileChosen),
+    /// An application asked for a file and was given none: the person
+    /// cancelled, nobody answered, the sheet could not be shown, or the file
+    /// could not be handed over.
+    FileUnchosen(crate::file_chosen::FileUnchosen),
     /// It was allowed as far as it went, or never reached the grants, and could
     /// not be answered.
     Unanswered(Unanswered),
@@ -153,9 +163,11 @@ impl Outcome {
     pub const fn response(&self) -> u32 {
         match self {
             Self::LinkUnchosen(not) => not.why().response(),
+            Self::FileUnchosen(not) => not.why().response(),
             Self::SecretHandedOver(_)
             | Self::Opened(_)
             | Self::LinkOpened(_)
+            | Self::FileChosen(_)
             | Self::AppearanceRead(_)
             | Self::AppearanceSent(_)
             | Self::NetworkRead(_) => 0,
@@ -207,6 +219,8 @@ impl Outcome {
             Self::NotALink(not) => not_a_link_said(not, strings),
             Self::NothingOpensLinks(nothing) => nothing.said(strings),
             Self::LinkUnchosen(not) => not.said(strings),
+            Self::FileChosen(chosen) => chosen.said(strings),
+            Self::FileUnchosen(not) => not.said(strings),
             Self::Unanswered(unanswered) => unanswered.said(strings),
         }
     }

@@ -160,13 +160,28 @@ impl Asked {
         connection: &zbus::Connection,
         response: u32,
     ) -> fdo::Result<OwnedObjectPath> {
+        self.responded_with(connection, response, HashMap::new())
+            .await
+    }
+
+    /// Send `response` with `results` — the file chooser's `uris`, the one
+    /// answer here that carries anything back — and give back the handle.
+    ///
+    /// # Errors
+    /// Whatever the bus says when the response cannot be sent.
+    pub(crate) async fn responded_with(
+        self,
+        connection: &zbus::Connection,
+        response: u32,
+        results: HashMap<String, OwnedValue>,
+    ) -> fdo::Result<OwnedObjectPath> {
         connection
             .emit_signal(
                 Some(BusName::Unique(self.sender.as_ref())),
                 self.handle.as_ref(),
                 A_REQUEST,
                 "Response",
-                &(response, HashMap::<String, OwnedValue>::new()),
+                &(response, results),
             )
             .await?;
         Ok(self.handle)
