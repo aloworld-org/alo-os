@@ -381,6 +381,14 @@ window shows.
 asks the application to bring what is just past the screen onto it, a page at a
 time; the approval is what an agent needs, for the same reason.
 
+### accessible.set_value
+
+**By hand:** a person drags the slider or types the number into the number box in
+the application's window, or moves it from the keyboard — `Sticky keys, slow
+keys, and keyboard-only operation of everything`. The verb moves the same control
+to the same number through its own value, inside the range it reports; the
+approval is what an agent needs, because it is the agent choosing the number.
+
 ### set_the_scheme
 
 **By hand:** a person opens the appearance pane of `Settings, as one place` and

@@ -168,7 +168,20 @@ pub fn summary(tallied: &[Tallied], asked_of: &str) -> String {
     });
     said.push_str("| Request | Took the road | Where the other tries went |\n|---|---|---|\n");
     let mut looked: Vec<String> = Vec::new();
+    let mut refused: Vec<String> = Vec::new();
     for one in tallied {
+        let passes_refused = one
+            .tries
+            .iter()
+            .filter(|tried| tried.took_the_road() && tried.refused_before_asking() > 0)
+            .count();
+        if passes_refused > 0 {
+            refused.push(format!(
+                "- {}: {passes_refused} of its passes {} refused first and went on",
+                one.request.named(),
+                if passes_refused == 1 { "was" } else { "were" }
+            ));
+        }
         let passes_that_looked = one
             .tries
             .iter()
@@ -217,6 +230,20 @@ pub fn summary(tallied: &[Tallied], asked_of: &str) -> String {
     } else {
         said.push_str("Passes that looked aside:\n\n");
         said.push_str(&looked.join("\n"));
+        said.push('\n');
+    }
+    // **A pass the machine refused first is said** too: on a machine that
+    // refusal is shown to the model before anybody is asked, so the pass is
+    // real, and it is still not a clean one.
+    said.push_str(
+        "\nA step the machine refuses before asking anybody is answered with the refusal, \
+         as on a machine, and the try may go on from it. ",
+    );
+    if refused.is_empty() {
+        said.push_str("No pass was refused first.\n");
+    } else {
+        said.push_str("Passes refused first:\n\n");
+        said.push_str(&refused.join("\n"));
         said.push('\n');
     }
     for one in tallied {

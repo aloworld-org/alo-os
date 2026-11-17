@@ -87,6 +87,13 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
             typed.through_the_tree(),
             typed.saved(),
         ),
+        alo_turn::WhatAVerbDid::AValueWasSet(set) => Done::of_a_setting(
+            set.application(),
+            set.name(),
+            set.value(),
+            set.seen(),
+            set.unanswered(),
+        ),
         // The seventh family, 2026-11-13: a folder published to GitHub Pages.
         alo_turn::WhatAVerbDid::AFolderWasPublished(published) => Done::of_a_publication(
             &published.folder().display().to_string(),

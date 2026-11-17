@@ -194,6 +194,10 @@ impl Tool for TheRentedTool {
     fn remove(&self, application: &Application) -> Result<(), Failed> {
         self.act(&asked::remove(application))
     }
+
+    fn install_a_file(&self, _: &Application, file: &std::path::Path) -> Result<(), Failed> {
+        self.act(&asked::install_a_file(file))
+    }
 }
 
 #[cfg(test)]
@@ -209,6 +213,11 @@ mod tests {
             missing.sources().map(drop),
             missing.installed().map(drop),
             missing.open().map(drop),
+            Application::identified("ai.storyteller.photocraft")
+                .map_err(|_| Failed::NotOffered)
+                .and_then(|craft| {
+                    missing.install_a_file(&craft, std::path::Path::new("/nonexistent/a.flatpak"))
+                }),
         ] {
             assert!(
                 matches!(answer, Err(Failed::DidNotAnswer { ref said }) if said.contains("could not be started")),

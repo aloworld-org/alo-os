@@ -74,6 +74,7 @@ use crate::refusing::NotDone;
 use crate::said_in_an_application;
 use crate::said_of_a_publication;
 use crate::scrolling_in_an_application::scrolling_in_an_application;
+use crate::setting_in_an_application::setting_in_an_application;
 use crate::typing_into_an_application::typing_into_an_application;
 use crate::what_a_verb_did::WhatAVerbDid;
 
@@ -194,6 +195,12 @@ fn carrying_it_out(
     {
         let (entry, scrolled) = scrolling_in_an_application(machine, authorised, grants);
         return (entry, scrolled.map(WhatAVerbDid::from));
+    }
+    // **Moving a slider or a number box** (2026-11-17), before the boundary
+    // for the same reason.
+    if authorised.verb() == alo_adapters::SET_VALUE {
+        let (entry, set) = setting_in_an_application(machine, authorised, grants);
+        return (entry, set.map(WhatAVerbDid::from));
     }
     // **Opening a file in an application, routed by name like the rest**
     // (2026-11-14). Before the boundary, for the accessibility verbs' reason:

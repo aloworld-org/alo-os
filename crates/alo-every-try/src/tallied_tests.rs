@@ -216,3 +216,35 @@ fn only_passes_that_looked_aside_are_counted_as_such() {
     let written = summary(&without, "a test model");
     assert!(written.contains("No pass looked aside."), "{written}");
 }
+
+/// **A pass the machine refused first is said**, so a pass that needed a
+/// refusal to find the road is not counted silently as a clean one; a try that
+/// was refused and still left the road is not a pass.
+#[test]
+fn passes_the_machine_refused_first_are_counted_as_such() {
+    let request = the_set()
+        .expect("the set builds")
+        .only("open an application by name")
+        .expect("it is in the set")
+        .requests()
+        .first()
+        .cloned()
+        .expect("one request");
+    let refused = vec![Tallied::of(
+        request.clone(),
+        vec![
+            the_road().refused_first(1),
+            the_road(),
+            off_the_road().refused_first(2),
+        ],
+    )];
+    let written = summary(&refused, "a test model");
+    assert!(
+        written
+            .contains("open an application by name: 1 of its passes was refused first and went on"),
+        "{written}"
+    );
+    let without = vec![Tallied::of(request, vec![the_road(), off_the_road()])];
+    let written = summary(&without, "a test model");
+    assert!(written.contains("No pass was refused first."), "{written}");
+}

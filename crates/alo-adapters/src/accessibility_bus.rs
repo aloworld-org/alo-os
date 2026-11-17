@@ -27,7 +27,9 @@ use zbus::blocking::Connection;
 use zbus::blocking::connection::Builder;
 use zbus::zvariant::{OwnedObjectPath, OwnedValue};
 
-use crate::accessibility_tree::{AccessibilityTree, Edge, Facts, NodeAt, Running, TreeFault};
+use crate::accessibility_tree::{
+    AccessibilityTree, Bounds, Edge, Facts, NodeAt, Running, TreeFault,
+};
 use crate::whose_connection::application_of;
 
 /// How long an application has to answer one question.
@@ -264,6 +266,45 @@ impl AccessibilityTree for AccessibleSession {
             &(VALUE, "CurrentValue"),
         )?;
         Ok(f64::try_from(value).ok().filter(|value| value.is_finite()))
+    }
+
+    fn range(&self, at: &NodeAt) -> Result<Option<Bounds>, TreeFault> {
+        let interfaces: Vec<String> = self.ask(at, ACCESSIBLE, "GetInterfaces", &())?;
+        if !offers(&interfaces, VALUE) {
+            return Ok(None);
+        }
+        let read = |property: &str| -> Result<Option<f64>, TreeFault> {
+            let value: OwnedValue = self.ask(
+                at,
+                "org.freedesktop.DBus.Properties",
+                "Get",
+                &(VALUE, property),
+            )?;
+            Ok(f64::try_from(value).ok().filter(|value| value.is_finite()))
+        };
+        Ok(Bounds::said(
+            read("MinimumValue")?,
+            read("MaximumValue")?,
+            read("MinimumIncrement")?,
+        ))
+    }
+
+    fn set_value(&self, at: &NodeAt, value: f64) -> Result<bool, TreeFault> {
+        self.bus
+            .call_method(
+                Some(at.holder.as_str()),
+                at.object.as_str(),
+                Some("org.freedesktop.DBus.Properties"),
+                "Set",
+                &(VALUE, "CurrentValue", zbus::zvariant::Value::from(value)),
+            )
+            .map(|_| true)
+            .or_else(|why| match heard(&why) {
+                // **A refusal is an answer**: a value the application will not
+                // take is said as one rather than as a thing that vanished.
+                TreeFault::Vanished => Ok(false),
+                fault => Err(fault),
+            })
     }
 
     fn takes_text(&self, at: &NodeAt) -> Result<bool, TreeFault> {
