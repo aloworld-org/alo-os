@@ -92,7 +92,7 @@ jobs:
             libwayland-dev libinput-dev libseat-dev libxkbcommon-dev \
             libpixman-1-dev libegl1-mesa-dev libgbm-dev libudev-dev \
             dbus-daemon dbus-x11 gnome-keyring \
-            qemu-system-x86 virtiofsd busybox-static python3-pip
+            qemu-system-x86 virtiofsd busybox-static python3-pip btrfs-progs
           if ! sudo apt-get install --no-install-recommends --yes virtme-ng; then
             echo "virtme-ng is not packaged here; installing it from PyPI"
             sudo pip3 install --break-system-packages virtme-ng
@@ -180,7 +180,7 @@ jobs:
           echo "Started with \`$started\`; the machine is started with \`lsm=$modules\`." | tee -a "$GITHUB_STEP_SUMMARY"
           machine=0
           vng --run "$RUNNER_TEMP/vmlinuz" --rw --user root \
-            --memory 12G --cpus "$(nproc)" \
+            --memory 12G --cpus "$(nproc)" --network user \
             --append "lsm=$modules" \
             --exec "$inside" 2>&1 | tee "$RUNNER_TEMP/boundary.log" || machine=$?
           code=$(cat "$RUNNER_TEMP/boundary.code" 2>/dev/null || echo "none")
