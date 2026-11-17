@@ -95,18 +95,35 @@ fn handed(sheet: &TheFileChooser, dark: bool) -> AFrame {
             identifier.to_owned()
         }
     };
+    // **Clear of the Bar as this frame draws it**, as `direct_desktop` asks.
+    let on = crate::where_a_sheet_sits::OnTheDisplay::with_the_bar_at(
+        (size.w, size.h),
+        pictures.desktop.dock.as_ref().map(|dock| dock.band),
+    );
     let drawn = sheet.shows().map(|shows| {
         crate::the_file_chooser_drawn::drawn(
             shows,
             &words(),
             &mut labels,
-            (size.w, size.h),
+            on,
             look,
             crate::display_scale::DisplayScale::of_per_cent(100),
             &called,
         )
         .unwrap()
     });
+    // **And the sheet's foot is above the Bar this frame draws**, which the
+    // owner saw it cover on 2026-11-17.
+    if let (Some(drawn), Some(bar)) = (
+        drawn.as_ref(),
+        pictures.desktop.dock.as_ref().map(|dock| dock.band),
+    ) {
+        assert!(
+            drawn.sheet.loc.y + drawn.sheet.size.h <= bar.loc.y,
+            "the sheet {:?} covers the Bar {bar:?}",
+            drawn.sheet
+        );
+    }
     crate::presentation::NativeTarget::submit_native_layers(
         &mut target,
         &[],

@@ -2572,11 +2572,16 @@ impl LoopInput for TheDesktopLane<'_> {
         let the_file_chooser = match self.file_chooser.shows() {
             Some(shows) => {
                 let called = |identifier: &str| server.what_an_application_is_called(identifier);
+                // **Clear of the alo Bar as drawn on this display.**
+                let on = crate::where_a_sheet_sits::OnTheDisplay::with_the_bar_at(
+                    (size.w, size.h),
+                    pictures.desktop.dock.as_ref().map(|dock| dock.band),
+                );
                 match crate::the_file_chooser_drawn::drawn(
                     shows,
                     self.strings,
                     self.labels,
-                    (size.w, size.h),
+                    on,
                     crate::SettingsLook {
                         scheme: frame.look.scheme(),
                         scale: frame.look.scale(),

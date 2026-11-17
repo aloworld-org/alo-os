@@ -358,6 +358,8 @@ mod the_screens_before_sign_in_as_read;
 mod the_shell_copies;
 mod the_spoken_hint;
 pub mod what_is_on_the_clipboard;
+/// Where a sheet sits on a display: clear of the alo Bar.
+mod where_a_sheet_sits;
 mod where_a_travelling_window_lands;
 mod where_the_docks_surface_is;
 pub use where_a_travelling_window_lands::TheCards;

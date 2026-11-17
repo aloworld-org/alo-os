@@ -11,6 +11,8 @@ use alo_applications::Application;
 use alo_file_chooser::{Folders, Key, Listing, NotListed};
 use alo_strings::Vocabulary;
 
+use smithay::utils::Rectangle;
+
 use super::*;
 use crate::the_file_chooser::{AskedForAFile, TheFileChooser};
 
@@ -79,7 +81,7 @@ fn drawn_at(
         sheet.shows().unwrap(),
         &words(),
         &mut labels,
-        size,
+        crate::where_a_sheet_sits::OnTheDisplay::with_the_bar_at(size, None),
         crate::settings_testing::light(),
         DisplayScale::of_per_cent(per_cent),
         &called,
@@ -156,6 +158,45 @@ fn the_rows_follow_the_display() {
     for size in [(1440, 1400), (1440, 700)] {
         let drawn = drawn_at(&sheet, size, 100).unwrap();
         assert!(drawn.rows.iter().any(|(at, _)| *at == focus), "{size:?}");
+    }
+}
+
+/// **Clear of the Bar at every display size**: with the Bar's band where a
+/// display draws it, the sheet's foot is above the band's top — on a small
+/// display, the design's, and a tall dense one.
+#[test]
+fn the_sheet_is_clear_of_the_bar_at_every_size() {
+    let (_portal, sheet) = a_sheet(ToChoose::Save {
+        name: "notes.txt".to_owned(),
+    });
+    for (size, per_cent) in [((1280, 720), 100), ((1440, 960), 100), ((2880, 1920), 200)] {
+        // A band a tenth of the display tall, floating a little above the
+        // bottom edge, as the Dock does: a proportion, not a figure.
+        let band = Rectangle::new(
+            (size.0 / 4, size.1 - size.1 / 10 - size.1 / 60).into(),
+            (size.0 / 2, size.1 / 10).into(),
+        );
+        let on = crate::where_a_sheet_sits::OnTheDisplay::with_the_bar_at(size, Some(band));
+        let mut labels = WindowControlLabels::new().unwrap();
+        let drawn = drawn(
+            sheet.shows().unwrap(),
+            &words(),
+            &mut labels,
+            on,
+            crate::settings_testing::light(),
+            DisplayScale::of_per_cent(per_cent),
+            &called,
+        )
+        .unwrap();
+        assert!(
+            drawn.sheet.loc.y + drawn.sheet.size.h <= band.loc.y,
+            "{size:?}: the sheet {:?} reaches the Bar {band:?}",
+            drawn.sheet
+        );
+        assert!(
+            drawn.button.loc.y + drawn.button.size.h <= band.loc.y,
+            "{size:?}"
+        );
     }
 }
 

@@ -17,6 +17,13 @@
 //! the rest of the sheet on this display — **derived from the display, never a
 //! fixed count** — a page at a time, so the row the keyboard is on is always
 //! shown. A display that cannot hold the fewest is answered *cannot show*.
+//!
+//! # Clear of the alo Bar
+//!
+//! The sheet is centred in **the room above the Bar**
+//! (`crate::where_a_sheet_sits`), never on the whole display, so its foot
+//! does not cover the Bar at any size — the owner's word of 2026-11-17 on
+//! seeing it drawn over the Bar: *"Yes, fix the overlap"*.
 
 use alo_file_chooser::{How, Kind, Where};
 use alo_strings::{Filling, Strings};
@@ -76,6 +83,8 @@ pub(crate) struct FileChooserPicture {
     pub(crate) cancel: Area,
     /// *Open* or *Save*.
     pub(crate) button: Area,
+    /// The sheet itself, its shadow left out.
+    pub(crate) sheet: Area,
     /// Every piece of text drawn, for a test to read back.
     pub(crate) texts: Vec<String>,
 }
@@ -94,7 +103,8 @@ struct LaidOut {
     tall: i32,
 }
 
-/// **The sheet for a display of `size` at `display`.**
+/// **The sheet for a display at `display`**, centred in `on`'s room — the
+/// part of the display clear of the alo Bar (`crate::where_a_sheet_sits`).
 ///
 /// # Errors
 /// [`RenderError::ApprovalScene`] when the display cannot hold the sheet with
@@ -104,21 +114,22 @@ pub(crate) fn drawn(
     shows: FileChooserShows<'_>,
     strings: &Strings,
     labels: &mut WindowControlLabels,
-    size: (i32, i32),
+    on: crate::where_a_sheet_sits::OnTheDisplay,
     look: SettingsLook,
     display: DisplayScale,
     called: &dyn Fn(&str) -> String,
 ) -> Result<FileChooserPicture, RenderError> {
+    let (size, room) = (on.size, on.room);
     let palette = SettingsPalette::of(look).map_err(|_| RenderError::ApprovalScene)?;
     let measure = Measure::of(look.scale).on(display);
     let px = |logical: u32| measure.px(i32::try_from(logical).unwrap_or(i32::MAX));
-    let wide = px(THE_SHEET_IS_WIDE).min(size.0 - 2 * px(BESIDE_THE_SHEET));
+    let wide = px(THE_SHEET_IS_WIDE).min(room.size.w - 2 * px(BESIDE_THE_SHEET));
     let inside = px(INSIDE_THE_SHEET);
     let column = wide - 2 * inside;
     if column < px(240) {
         return Err(RenderError::ApprovalScene);
     }
-    let room = size.1 - 2 * px(BESIDE_THE_SHEET);
+    let tallest = room.size.h - 2 * px(BESIDE_THE_SHEET);
     let mut laid = None;
     for how_many in (THE_FEWEST_ROWS..=THE_MOST_ROWS).rev() {
         let mut laying = Laying {
@@ -130,16 +141,16 @@ pub(crate) fn drawn(
             above: 0,
         };
         let one = laid_out(shows, strings, &mut laying, how_many, called);
-        if one.tall <= room {
+        if one.tall <= tallest {
             laid = Some(one);
             break;
         }
     }
     let laid = laid.ok_or(RenderError::ApprovalScene)?;
 
-    // **Placed**, centred on the display, and painted.
-    let left = (size.0 - wide) / 2;
-    let top = (size.1 - laid.tall) / 2;
+    // **Placed**, centred in the room above the Bar, and painted.
+    let left = room.loc.x + (room.size.w - wide) / 2;
+    let top = room.loc.y + (room.size.h - laid.tall) / 2;
     let sheet = Rectangle::new((left, top).into(), (wide, laid.tall).into());
     let raised =
         crate::how_a_panel_is_raised::HowItIsRaised::FLOATING.at(f64::from(measure.factor()));
@@ -243,6 +254,7 @@ pub(crate) fn drawn(
         name: laid.name.map(at),
         cancel,
         button,
+        sheet,
         texts,
     })
 }

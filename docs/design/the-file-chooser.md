@@ -25,7 +25,7 @@ a measurement.
 
 | | Reading | From |
 |---|---|---|
-| The sheet | 480 wide, 25 inside, the window's corner and a floating shadow, centred on the display, never wider than the display less 16 each side | *Open with*, `25:57` |
+| The sheet | 480 wide, 25 inside, the window's corner and a floating shadow, centred **in the room above the alo Bar**, never wider than that room less 16 each side | *Open with*, `25:57`; the room is the owner's word of 2026-11-17 on seeing the first pictures: *"Yes, fix the overlap"*. The room is the display less the Bar's band as drawn, the rule Settings fits by (`crate::where_a_sheet_sits`) |
 | Title | *Open a file*, or *Save a file* | *Open with*'s title, `25:58` |
 | The line under it | *&lt;App&gt; asked to open a file*, or *to save a file* | *Open with*'s *&lt;App&gt; asked to open &lt;address&gt;*, `25:59` |
 | Where the person is | a line *In &lt;the whole path of the folder&gt;*, muted, under that | none drawn. The whole path, because a folder's own name alone (*Documents*) does not say whose or where |
