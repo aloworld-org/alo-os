@@ -109,6 +109,23 @@ impl TheDoorOnTheDesktop {
             .unwrap_or_default()
     }
 
+    /// Pictures alo asked for since the last frame (`picture-of`), or none
+    /// while the door is not served.
+    pub(crate) fn asked_to_picture(&mut self) -> Vec<crate::a_picture_at_the_door::AskedToPicture> {
+        self.served
+            .as_mut()
+            .map(TheApplicationDoor::asked_to_picture)
+            .unwrap_or_default()
+    }
+
+    /// Send an answer with a picture in it, and send the rest on later; an
+    /// answer while the door is not served has nobody to go to.
+    pub(crate) fn sending(&mut self, answer: crate::a_picture_at_the_door::SendingAPicture) {
+        if let Some(served) = self.served.as_mut() {
+            served.sending(answer);
+        }
+    }
+
     /// The portal's asks for the person to choose what opens a link since the
     /// last frame, or none while the door is not served.
     pub(crate) fn asked_to_choose(&mut self) -> Vec<crate::the_open_with_sheet::AskedToChoose> {

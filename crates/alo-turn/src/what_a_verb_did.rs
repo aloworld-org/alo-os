@@ -34,6 +34,7 @@ use crate::acting_on_an_application::Reached;
 use crate::choosing_in_an_application::AChoiceMade;
 use crate::choosing_on_the_file_chooser::AFileChosen;
 use crate::opening_a_file_in_an_application::AFileOpened;
+use crate::opening_an_item_in_an_application::AnItemOpened;
 use crate::pressing_a_control::AControlPressed;
 use crate::reading_an_applications_windows::TheWindowsShowed;
 use crate::scrolling_in_an_application::AWindowScrolled;
@@ -105,6 +106,9 @@ pub enum WhatAVerbDid {
     /// an application (`accessible.choose_option`, `accessible.select_item`,
     /// 2026-11-17).
     SomethingWasChosen(AChoiceMade),
+    /// An item of a list was opened, as a double-click would
+    /// (`accessible.open_item`, 2026-11-17).
+    AnItemWasOpened(AnItemOpened),
 }
 
 impl WhatAVerbDid {
@@ -113,6 +117,15 @@ impl WhatAVerbDid {
     pub const fn set(&self) -> Option<&AValueSet> {
         match self {
             Self::AValueWasSet(set) => Some(set),
+            _ => None,
+        }
+    }
+
+    /// The item opened, when one was.
+    #[must_use]
+    pub const fn item_opened(&self) -> Option<&AnItemOpened> {
+        match self {
+            Self::AnItemWasOpened(opened) => Some(opened),
             _ => None,
         }
     }
@@ -161,7 +174,8 @@ impl WhatAVerbDid {
             | Self::AFileWasChosen(_)
             | Self::AWindowWasScrolled(_)
             | Self::AValueWasSet(_)
-            | Self::SomethingWasChosen(_) => None,
+            | Self::SomethingWasChosen(_)
+            | Self::AnItemWasOpened(_) => None,
         }
     }
 
@@ -186,7 +200,8 @@ impl WhatAVerbDid {
             | Self::AFileWasChosen(_)
             | Self::AWindowWasScrolled(_)
             | Self::AValueWasSet(_)
-            | Self::SomethingWasChosen(_) => None,
+            | Self::SomethingWasChosen(_)
+            | Self::AnItemWasOpened(_) => None,
         }
     }
 
@@ -207,7 +222,8 @@ impl WhatAVerbDid {
             | Self::AFileWasChosen(_)
             | Self::AWindowWasScrolled(_)
             | Self::AValueWasSet(_)
-            | Self::SomethingWasChosen(_) => None,
+            | Self::SomethingWasChosen(_)
+            | Self::AnItemWasOpened(_) => None,
         }
     }
 
@@ -228,7 +244,8 @@ impl WhatAVerbDid {
             | Self::AFileWasChosen(_)
             | Self::AWindowWasScrolled(_)
             | Self::AValueWasSet(_)
-            | Self::SomethingWasChosen(_) => None,
+            | Self::SomethingWasChosen(_)
+            | Self::AnItemWasOpened(_) => None,
         }
     }
 
@@ -249,7 +266,8 @@ impl WhatAVerbDid {
             | Self::AFileWasChosen(_)
             | Self::AWindowWasScrolled(_)
             | Self::AValueWasSet(_)
-            | Self::SomethingWasChosen(_) => None,
+            | Self::SomethingWasChosen(_)
+            | Self::AnItemWasOpened(_) => None,
         }
     }
 
@@ -306,7 +324,8 @@ impl WhatAVerbDid {
             | Self::AFileWasChosen(_)
             | Self::AWindowWasScrolled(_)
             | Self::AValueWasSet(_)
-            | Self::SomethingWasChosen(_) => None,
+            | Self::SomethingWasChosen(_)
+            | Self::AnItemWasOpened(_) => None,
         }
     }
 }
@@ -332,6 +351,12 @@ impl From<ATextTyped> for WhatAVerbDid {
 impl From<AValueSet> for WhatAVerbDid {
     fn from(set: AValueSet) -> Self {
         Self::AValueWasSet(set)
+    }
+}
+
+impl From<AnItemOpened> for WhatAVerbDid {
+    fn from(opened: AnItemOpened) -> Self {
+        Self::AnItemWasOpened(opened)
     }
 }
 

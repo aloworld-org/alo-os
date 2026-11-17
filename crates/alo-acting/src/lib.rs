@@ -72,6 +72,7 @@ pub mod counting;
 pub mod front;
 pub mod opening_a_file;
 pub mod opening_a_link;
+pub mod picturing;
 pub mod request;
 pub mod said_of_publishing;
 pub mod said_on_the_log;
@@ -93,6 +94,7 @@ pub use counting::{Begun, Counted, NotACount, ToCount};
 pub use front::{InFront, is_front};
 pub use opening_a_file::{NotAFileToOpen, OPEN_FILE, Opened, ToOpenAFile};
 pub use opening_a_link::{NotALinkToOpen, OPEN_LINK, ToOpenALink};
+pub use picturing::{NotToPicture, PICTURE_OF, Pictured, ToPicture};
 pub use request::{NotRead, Request};
 pub use typing_into::{
     MAY_TYPE_INTO, NotToType, SAVE_IN, TYPE_INTO, ToType, Typed, the_first_untypable,

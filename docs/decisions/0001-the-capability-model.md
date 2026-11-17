@@ -237,7 +237,9 @@ adds how it is kept honest: one window, read at the moment of the act and never
 kept, found by what it says, read again after, password fields never read or
 sent. **alo uses it for an application only after the person switches it on for
 that application; alo never acts by position; a person's own typed commands use
-it at once** (ADR 0147 §2–§3). *Screenshot-and-click as the universal
+it at once** (ADR 0147 §2–§3). *Since 2026-11-17 alo may click — not drag — by
+position on this road alone, under ADR 0147's amendment of that date (the owner:
+"Allow clicking by position").* *Screenshot-and-click as the universal
 mechanism* stays rejected, below: it is the last road, never the first.
 
 ---

@@ -58,21 +58,14 @@
 //! half a card says something the list does not.* So a cut window shows whole
 //! cards and its own closing line, and nothing is drawn off the edge.
 //!
-//! ## What a cut window costs, stated plainly
+//! ## A cut window scrolls, since 2026-11-17
 //!
-//! **The applications past the cut cannot be reached yet.** Nothing scrolls:
-//! `MarketWindow`'s cursor walks the whole list and the raster always begins at
-//! the first row, so pressing Down past the last visible card moves a selection
-//! a person cannot see. On an ordinary display at an ordinary text size the
-//! whole catalogue fits and none of this happens; it bites at large text sizes
-//! and on short screens, which is exactly where accessibility is already
-//! hardest.
-//!
-//! **That is the next change on this window** and it is a real one: the raster
-//! has to draw from a first row rather than from the top, and the cursor has to
-//! carry that row with it. It is written down rather than half-built, because a
-//! window that scrolls badly is harder to find than one that says it does not
-//! scroll.
+//! Until then nothing scrolled, and the applications past the cut could not be
+//! reached: the cursor walked the whole list and the raster began at the first
+//! row. On an ordinary display the eight-entry catalogue fitted, so it bit only
+//! at large text sizes. The catalogue grew to sixty-two that day and the whole
+//! of it is taller than any display, so `crate::market_raster` now draws from
+//! the first row that keeps the person's application in view, and rings it.
 
 use alo_appearance::TextScale;
 use smithay::utils::{Physical, Point, Rectangle, Size};

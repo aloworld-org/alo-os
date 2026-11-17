@@ -87,7 +87,7 @@ pub const WHAT_CAN_BE_INSTALLED: &str = "what_can_be_installed";
 
 /// The option meaning *do not narrow at all*.
 ///
-/// **A name a model sends, beside the eight `Category::as_an_option` names.** It
+/// **A name a model sends, beside every `Category::as_an_option` name.** It
 /// is not a `Category`, because narrowing to nothing is not a kind of work —
 /// `crate::Category`'s list says what a person makes, and *everything* is the
 /// absence of that question rather than an answer to it.
@@ -129,7 +129,7 @@ pub enum NotALook {
     /// ADR 0001 §5 is about.
     #[error("{WHAT_CAN_BE_INSTALLED} is a read, and this authority came from an approval")]
     Approved,
-    /// The kind of work is missing, or is not one of the nine.
+    /// The kind of work is missing, or is not one of the choices.
     #[error("{WHAT_CAN_BE_INSTALLED} arrived without a valid {argument}")]
     Malformed {
         /// Which argument.
@@ -189,12 +189,12 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), Declaring> {
 /// place the next reader of the verb list will look: there is nothing on the
 /// machine to grant over, because the catalogue is a file this crate ships.
 ///
-/// **One required argument with nine choices rather than an optional one.**
+/// **One required argument with a choice of every kind of work rather than an optional one.**
 /// `alo_capability::Arg`'s own rule: *every argument is required … a verb that
 /// needs to behave two ways declares a `Takes::Choice` and says so in its
-/// sentence, or it is two verbs.* So *everything* is the ninth choice and not
+/// sentence, or it is two verbs.* So *everything* is a choice of its own and not
 /// an absent argument, which is also how the window a person opens draws it —
-/// the chip for *Everything* sits beside the eight and is chosen first.
+/// the chip for *Everything* sits beside the kinds of work and is chosen first.
 fn what_can_be_installed() -> Result<Verb, VerbError> {
     // **The options are built from `Category::EVERY`**, so a category added to
     // that list is offered here without anybody remembering to come back. The
@@ -295,9 +295,9 @@ pub fn approved(authorised: &Authorised) -> Result<Wanted, NotAnInstallation> {
 /// The kind of work a person wants to look under, from the authority their
 /// agent's read became.
 ///
-/// [`None`] is *everything*, which is the ninth choice and not a missing
+/// [`None`] is *everything*, which is a choice of its own and not a missing
 /// argument — see this module's `what_can_be_installed`, which declares the
-/// nine.
+/// choices.
 ///
 /// **This is the only reader of the call**, as `approved` is for the
 /// installation: an executor that looked at an argument itself would be a
@@ -305,7 +305,7 @@ pub fn approved(authorised: &Authorised) -> Result<Wanted, NotAnInstallation> {
 ///
 /// # Errors
 /// [`NotALook`] for another verb's authority, one that came from an approval,
-/// and one whose kind of work is missing or is not one of the nine.
+/// and one whose kind of work is missing or is not one of the choices.
 pub fn looked_at(authorised: &Authorised) -> Result<Option<Category>, NotALook> {
     if authorised.verb() != WHAT_CAN_BE_INSTALLED {
         return Err(NotALook::AnotherVerb {
@@ -370,7 +370,7 @@ mod tests {
         );
     }
 
-    /// **The read offers nine kinds of work and nothing else**, which is what
+    /// **The read offers everything and every kind of work, and nothing else**, which is what
     /// `Takes::Choice` is for: *the options exist before the model does, and
     /// anything else is refused.*
     #[test]

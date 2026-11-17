@@ -413,6 +413,15 @@ everything`. The verb selects the same item through its list's own selection and
 never opens it; the approval is what an agent needs, because it is the agent
 choosing it.
 
+### accessible.open_item
+
+**By hand:** a person double-clicks the item in the application's window, or
+moves to it and presses Enter — `Sticky keys, slow keys, and keyboard-only
+operation of everything`. The verb opens the same item by its own *activate*, as
+a screen reader would; at *ask each time* the approval is what an agent needs,
+because it is the agent choosing what opens, and at full access the person has
+already chosen.
+
 ### set_the_scheme
 
 **By hand:** a person opens the appearance pane of `Settings, as one place` and

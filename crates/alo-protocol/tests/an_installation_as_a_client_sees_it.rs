@@ -97,6 +97,9 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
             chosen.seen(),
             chosen.unanswered(),
         ),
+        alo_turn::WhatAVerbDid::AnItemWasOpened(opened) => {
+            Done::of_an_item_opened(opened.application(), opened.name(), opened.unanswered())
+        }
         // The seventh family, 2026-11-13: a folder published to GitHub Pages.
         alo_turn::WhatAVerbDid::AFolderWasPublished(published) => Done::of_a_publication(
             &published.folder().display().to_string(),

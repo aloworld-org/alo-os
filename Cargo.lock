@@ -1559,7 +1559,9 @@ dependencies = [
  "alo-portals",
  "alo-remembering",
  "alo-secrets",
+ "rustix 1.1.4",
  "tempfile",
+ "zbus",
 ]
 
 [[package]]

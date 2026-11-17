@@ -45,6 +45,21 @@ pub fn alo_typed(asked: &ToType, answered: Typed) -> String {
     )
 }
 
+/// The sentence for one picture alo asked of the window in front: the
+/// application, and what the desktop answered — a picture's size and length,
+/// never what it shows.
+#[must_use]
+pub fn alo_pictured(asked: &crate::ToPicture, answered: crate::Pictured) -> String {
+    format!(
+        "{ALO_PICTURED} {}, and it was answered {}",
+        asked.application.identifier(),
+        answered.written()
+    )
+}
+
+/// The words every sentence about a picture alo asked for begins with.
+pub const ALO_PICTURED: &str = "alo asked for a picture of the window in front of";
+
 /// The words every sentence about the field alo was asked to type into
 /// begins with.
 pub const THE_FIELD_ASKED_FOR: &str = "alo was asked to type into the field";

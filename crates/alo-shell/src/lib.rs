@@ -341,6 +341,7 @@ mod the_github_sheet_on_the_server;
 /// The sheet going up when a command alo ran needed a GitHub sign-in.
 mod the_github_sheet_rises_by_itself;
 mod the_github_sheets_words;
+mod the_keyboard_goes_to_the_window_in_front;
 mod the_keyboard_on_the_docks_surfaces;
 /// The *Open with* sheet: an application asked for the person to choose what
 /// opens a link (frame `25:52`). Public for the one type the door hands it.
@@ -493,9 +494,13 @@ mod painted;
 use alo_drawing::painted_flat;
 use alo_drawing::painted_text;
 use alo_drawing::painted_text_wrapping;
+/// A picture asked for at the door, and its answer sent on across turns.
+pub mod a_picture_at_the_door;
 mod panel_cards;
 mod panel_raster;
 mod peeking_at_a_put_aside_window;
+/// One picture of the window in front, of that window alone (ADR 0147 §1).
+mod picturing_the_window_in_front;
 mod pointer;
 mod popup_grabs;
 mod popup_placement;
@@ -720,6 +725,9 @@ mod the_view_glides;
 mod the_view_travels_to_a_window;
 /// The compositor's answers to `front` and `alo-tree` at the door.
 mod the_window_before_this_terminal;
+/// The window in front, if alo may reach it for an application: asked by typing
+/// and by a picture alike.
+mod the_window_in_front_alo_may_reach;
 /// Every window on the Place being looked at, for a new one to be placed beside.
 mod the_windows_on_this_place;
 /// Typing into the window in front, as key presses, to that one client (ADR 0153).

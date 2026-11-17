@@ -84,6 +84,20 @@ pub enum KeptOutcome {
         /// Why nothing was chosen.
         why: crate::link_not_chosen::Unchosen,
     },
+    /// The person chose a file on alo's file chooser, and the application was
+    /// given it.
+    FileChosen {
+        /// The file the person chose, as a path on this machine.
+        file: String,
+        /// Whether it was chosen to save, rather than to open.
+        saving: bool,
+    },
+    /// An application asked for a file and was given none.
+    #[serde(rename = "file-not-chosen")]
+    FileUnchosen {
+        /// Why it was given none.
+        why: crate::file_chosen::NoFile,
+    },
     /// The application read the appearance settings, allowed by these grants.
     AppearanceRead {
         /// The grant behind each thing the request was for.
@@ -143,6 +157,7 @@ impl KeptOutcome {
             Self::SecretHandedOver { .. }
             | Self::Opened { .. }
             | Self::LinkOpened { .. }
+            | Self::FileChosen { .. }
             | Self::AppearanceRead { .. }
             | Self::AppearanceSent { .. }
             | Self::NetworkRead { .. } => false,
@@ -152,6 +167,7 @@ impl KeptOutcome {
             | Self::NotALink { .. }
             | Self::NothingOpensLinks { .. }
             | Self::LinkUnchosen { .. }
+            | Self::FileUnchosen { .. }
             | Self::Unanswered { .. } => true,
         }
     }
@@ -267,6 +283,11 @@ impl From<&Outcome> for KeptOutcome {
                 address: not.link().as_str().to_owned(),
                 why: not.why(),
             },
+            Outcome::FileChosen(chosen) => Self::FileChosen {
+                file: chosen.chosen().to_string_lossy().into_owned(),
+                saving: chosen.saving(),
+            },
+            Outcome::FileUnchosen(not) => Self::FileUnchosen { why: not.why() },
             Outcome::AppearanceRead(allowed) => Self::AppearanceRead {
                 against: allowed.against().to_vec(),
             },

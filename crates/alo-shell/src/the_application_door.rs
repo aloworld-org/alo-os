@@ -40,6 +40,7 @@ use std::os::unix::net::{UnixListener, UnixStream};
 use alo_acting::{Answer, Request, ToCount, ToWorkIn};
 
 use crate::a_file_alo_opens::AskedToOpenAFile;
+use crate::a_picture_at_the_door::{AskedToPicture, SendingAPicture};
 use crate::a_text_at_the_door::{AskedToType, ReadingText, SoFar};
 use crate::alo_at_work::AskedToWork;
 use crate::counting_during_their_commands::AskedToCount;
@@ -135,6 +136,11 @@ pub struct TheApplicationDoor {
     /// Files alo asked to open in an application, for the desktop to open
     /// and answer (2026-11-14).
     opening: Vec<AskedToOpenAFile>,
+    /// Pictures alo asked for, for the compositor to take and answer
+    /// (`picture-of`, ADR 0147 §1).
+    picturing: Vec<AskedToPicture>,
+    /// Answers with a picture in them, part-way sent.
+    sending: Vec<SendingAPicture>,
 }
 
 impl TheApplicationDoor {
@@ -160,6 +166,8 @@ impl TheApplicationDoor {
             reading: Vec::new(),
             typing: Vec::new(),
             opening: Vec::new(),
+            picturing: Vec::new(),
+            sending: Vec::new(),
         })
     }
 
@@ -187,6 +195,8 @@ impl TheApplicationDoor {
             reading: Vec::new(),
             typing: Vec::new(),
             opening: Vec::new(),
+            picturing: Vec::new(),
+            sending: Vec::new(),
         }
     }
 
@@ -210,7 +220,27 @@ impl TheApplicationDoor {
         self.let_them_in();
         let acted = self.hear_them_out(carrying_out);
         self.go_on_reading();
+        self.go_on_sending();
         acted
+    }
+
+    /// Every picture alo asked for since the last time this was asked, for the
+    /// compositor to take and answer (`picture-of`).
+    pub fn asked_to_picture(&mut self) -> Vec<AskedToPicture> {
+        std::mem::take(&mut self.picturing)
+    }
+
+    /// Send an answer with a picture in it as far as the socket takes now, and
+    /// keep the rest to send on the next visit — never waiting.
+    pub fn sending(&mut self, answer: SendingAPicture) {
+        self.sending.extend(answer.sent_on());
+    }
+
+    /// Send on every answer part-way sent.
+    fn go_on_sending(&mut self) {
+        for answer in std::mem::take(&mut self.sending) {
+            self.sending.extend(answer.sent_on());
+        }
     }
 
     /// Every typing alo asked for since the last time this was asked, read
@@ -438,6 +468,20 @@ impl TheApplicationDoor {
                         Some(Ok(asked)) => {
                             self.opening
                                 .push(AskedToOpenAFile::of(asked, caller.talking));
+                            continue;
+                        }
+                        Some(Err(_)) => {
+                            drop(caller.talking);
+                            continue;
+                        }
+                        None => {}
+                    }
+                    // **A picture alo asked for** is handed on with its
+                    // connection: the compositor takes it and answers.
+                    match alo_acting::ToPicture::read(&line) {
+                        Some(Ok(asked)) => {
+                            self.picturing
+                                .push(AskedToPicture::of(asked, caller.talking));
                             continue;
                         }
                         Some(Err(_)) => {

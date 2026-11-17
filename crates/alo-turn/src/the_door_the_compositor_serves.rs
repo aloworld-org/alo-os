@@ -30,7 +30,8 @@
 //! person's side they are the same fact: nothing was changed.
 
 use alo_acting::{
-    Answer, AnsweredTheChooser, Opened, Request, ToAnswerAFileChooser, ToOpenAFile, ToType, Typed,
+    AnsweredTheChooser, Answer, Opened, Pictured, Request, ToAnswerAFileChooser, ToOpenAFile,
+    ToPicture, ToType, Typed,
 };
 
 /// Whatever can put one request to the compositor and read one answer.
@@ -91,6 +92,21 @@ pub trait TheDoorTheCompositorServes {
         &mut self,
         asked: &ToAnswerAFileChooser,
     ) -> Result<AnsweredTheChooser, NotAtTheDoor> {
+        let _ = asked;
+        Err(NotAtTheDoor::NoCompositor)
+    }
+
+    /// Put `picture-of` to the compositor — one picture of the window in
+    /// front, of that window alone (ADR 0147 §1) — and wait for its answer and,
+    /// for a picture, its PNG's bytes. Every refusal carries no bytes.
+    ///
+    /// **No compositor by default**, as for [`Self::typing`], so a door that
+    /// does not know this act takes no picture.
+    ///
+    /// # Errors
+    /// [`NotAtTheDoor`], as for [`Self::asking`] — and for a picture cut short
+    /// of the length its head said, which is never a smaller picture.
+    fn picturing(&mut self, asked: &ToPicture) -> Result<(Pictured, Vec<u8>), NotAtTheDoor> {
         let _ = asked;
         Err(NotAtTheDoor::NoCompositor)
     }

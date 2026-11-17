@@ -640,6 +640,44 @@ Additive: nothing above changes meaning.
   turn's to decide before the line was written. The door checks only where the
   keyboard is, at the moment of delivering.
 
+## alo taking one picture of the window in front — `picture-of`, added 2026-11-17 (ADR 0147 §1)
+
+**What it gives a person:** for an application that describes nothing about
+its window — a game, a canvas — alo can see what the window shows, once the
+person has switched *pictures and keys* on for that application and chosen
+who reads the pictures (Settings → What alo can use). This act is the
+picture and nothing else; who may ask for one, and what reads it, are the
+turn's to decide before the line is written. Additive: nothing above changes
+meaning.
+
+```
+→ picture-of <application>
+← picture <bytes> <width> <height>
+← <exactly that many bytes: a PNG>
+  (or: not-in-front | not-alos-copy | could-not-draw)
+```
+
+- **Only the window that holds the keyboard**, and only when it is a window of
+  `<application>`, exactly as for `type-into`: otherwise `not-in-front`, and
+  no picture is taken. The compositor never moves the keyboard to take one.
+- **alo's own copy where the application has one**, by the same rule and the
+  same setting as `type-into`, asked of the window's process: otherwise
+  `not-alos-copy`.
+- **That window alone.** It is drawn by itself — its own menus with it, and
+  nothing in front of it or behind it, no pointer and none of alo's own
+  surfaces — at its logical size and without the shadow a client draws round
+  itself, on the processor whatever the display draws with.
+- **Never kept.** The picture belongs to this one answer. Nothing is taken
+  between asks and nothing is remembered.
+- **The length is said**, because a PNG holds every byte value; it is never
+  more than 32 MiB (`alo_acting::Pictured::THE_MOST`), and a refusal is its
+  one line with nothing after it.
+- `could-not-draw`: the window was that application's and could not be drawn
+  or made a PNG. No picture is sent.
+- **This door decides nothing about permission**, as for every act: whether
+  pictures and keys are switched on for the application, who reads the
+  picture, and whether the window holds a password field, are the turn's.
+
 ## alo opening a file in an application — `open-file`, added 2026-11-14
 
 **What it gives a person:** *open hello.txt in VSCodium*, once they approved

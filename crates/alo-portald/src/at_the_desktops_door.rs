@@ -48,7 +48,7 @@ const PATIENCE: Duration = Duration::from_secs(5);
 
 /// How long the person has to answer the *Open with* sheet, as this side
 /// counts it: the desktop's five minutes and half a minute more.
-const THE_PERSONS_PATIENCE: Duration = Duration::from_secs(5 * 60 + 30);
+pub(crate) const THE_PERSONS_PATIENCE: Duration = Duration::from_secs(5 * 60 + 30);
 
 /// The desktop's door on this machine.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -83,7 +83,7 @@ impl AtTheDesktopsDoor {
     }
 
     /// Say the line and read one line back, waiting `patience` for it.
-    fn said(&self, line: &str, patience: Duration) -> Heard {
+    pub(crate) fn said(&self, line: &str, patience: Duration) -> Heard {
         let mut talking = match UnixStream::connect(&self.socket) {
             Ok(talking) => talking,
             Err(why)
@@ -131,7 +131,7 @@ impl AtTheDesktopsDoor {
 }
 
 /// What came back from the desktop.
-enum Heard {
+pub(crate) enum Heard {
     /// One line, with its newline.
     This(String),
     /// No socket, or nobody listening at it.

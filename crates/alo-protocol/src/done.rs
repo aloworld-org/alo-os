@@ -294,6 +294,18 @@ pub enum Done {
         /// known.
         unanswered: bool,
     },
+    /// An item of a list was opened, as a double-click would
+    /// (`accessible.open_item`). Added 2026-11-17, additively. **What it
+    /// opened with is not here**: it may be another application's window.
+    ItemOpened {
+        /// The application.
+        application: String,
+        /// The item, by what it shows.
+        name: String,
+        /// Whether the application did not answer, so whether it opened is
+        /// not known.
+        unanswered: bool,
+    },
     /// A folder was published to the person's GitHub Pages site
     /// (`publish_to_github_pages`, added 2026-11-13, additively).
     ///
@@ -751,6 +763,17 @@ impl Done {
         }
     }
 
+    /// What an opening answered, as it goes on the wire — taking its parts,
+    /// for [`Done::of_a_press`]'s reason.
+    #[must_use]
+    pub fn of_an_item_opened(application: &str, name: &str, unanswered: bool) -> Self {
+        Self::ItemOpened {
+            application: application.to_owned(),
+            name: name.to_owned(),
+            unanswered,
+        }
+    }
+
     /// What one of the six file verbs answered, as it goes on the wire.
     #[must_use]
     pub fn of_a_file_verb(answer: &Answer) -> Self {
@@ -895,6 +918,9 @@ impl Done {
             Self::Set {
                 seen, unanswered, ..
             } => *unanswered || !*seen,
+            // **An opening the application did not answer** may or may not
+            // have happened.
+            Self::ItemOpened { unanswered, .. } => *unanswered,
             // **A publication leaves nothing out**: it names the folder and the
             // address, and what it cannot take back is said in its own line
             // ([`Done::put_back_can_recall_it`]), not as a caveat here.
@@ -1230,6 +1256,20 @@ mod tests {
             ))
             .unwrap(),
             r#"{"chosen":{"application":"org.kde.dolphin","name":"a.txt","seen":true,"unanswered":false}}"#
+        );
+    }
+
+    /// **An opening leaves something out only when the application did not
+    /// answer** (2026-11-17), and crosses as `item-opened`.
+    #[test]
+    fn an_opening_leaves_something_out_only_when_unanswered() {
+        let opened = |unanswered| Done::of_an_item_opened("org.kde.dolphin", "a.txt", unanswered);
+        assert!(!opened(false).left_something_out());
+        assert!(opened(true).left_something_out());
+        let wire = serde_json::to_string(&opened(false)).unwrap();
+        assert!(
+            wire.contains(r#""application":"org.kde.dolphin","name":"a.txt","unanswered":false"#),
+            "{wire}"
         );
     }
 }
