@@ -116,6 +116,12 @@ impl crate::Server {
         self.settings.github_answered(answered, strings);
         let waited_for = self.github_sheet.answered(answered);
         if waited_for && let GitHubAnswered::TheCodeIs { page, .. } = answered {
+            // **Said on the journal, never the code**, so a walk can tell gh
+            // reached GitHub and the sheet has a code to show.
+            eprintln!(
+                "{}",
+                alo_acting::said_of_publishing::THE_GITHUB_SHEET_SHOWS_A_CODE
+            );
             self.githubs_page_is_opened(page);
         }
     }

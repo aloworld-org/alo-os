@@ -72,6 +72,7 @@ use crate::publishing_a_folder::publishing_a_folder;
 use crate::reading_an_applications_windows::reading_an_applications_windows;
 use crate::refusing::NotDone;
 use crate::said_in_an_application;
+use crate::said_of_a_publication;
 use crate::typing_into_an_application::typing_into_an_application;
 use crate::what_a_verb_did::WhatAVerbDid;
 
@@ -100,7 +101,8 @@ const THE_APPLICATION_ACTS: [&str; 3] =
 /// machine exactly as it does here.
 ///
 /// **An act in an application is also said on the journal**, done or not
-/// (`crate::said_in_an_application`), so a walk can check it ran.
+/// (`crate::said_in_an_application`), so a walk can check it ran — and so
+/// is a publication, published or not (`crate::said_of_a_publication`).
 pub(crate) fn carrying_out(
     machine: &mut Machine<'_>,
     authorised: Authorised,
@@ -109,12 +111,16 @@ pub(crate) fn carrying_out(
     now: std::time::SystemTime,
 ) -> (Entry, Result<WhatAVerbDid, NotDone>) {
     let in_an_application = said_in_an_application::about(&authorised);
+    let a_publication = authorised.verb() == alo_publishing::PUBLISH_TO_GITHUB_PAGES;
     let (entry, did) = carrying_it_out(machine, authorised, grants, origin, now);
     if let Some((verb, application)) = in_an_application {
         eprintln!(
             "alo-agentd: {}",
             said_in_an_application::said(&verb, &application, &did)
         );
+    }
+    if a_publication {
+        eprintln!("alo-agentd: {}", said_of_a_publication::said(&did));
     }
     (entry, did)
 }
