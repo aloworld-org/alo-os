@@ -111,7 +111,7 @@ adapters.fallback.scroll-page.application	the application whose window is scroll
 adapters.fallback.scroll-page.down	down
 adapters.fallback.scroll-page.nothing-further-down	{application} shows nothing further down to scroll to, so nothing was scrolled
 adapters.fallback.scroll-page.nothing-further-up	{application} shows nothing further up to scroll to, so nothing was scrolled
-adapters.fallback.scroll-page.purpose	scroll an application's window by about one screen, down or up, to read on when you do not know the name of what you are looking for
+adapters.fallback.scroll-page.purpose	scroll an application's window by one screen, down or up, to read on when nothing ahead has a name you know; a thing you can name is scrolled to directly instead
 adapters.fallback.scroll-page.sentence	scroll {toward} by one page in {application}
 adapters.fallback.scroll-page.toward	which way to scroll: down or up
 adapters.fallback.scroll-page.up	up

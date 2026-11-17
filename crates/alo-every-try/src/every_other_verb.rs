@@ -86,6 +86,16 @@ fn written(path: &Path) -> String {
     path.display().to_string()
 }
 
+/// The browser's window read again — a look a scrolling road may take aside,
+/// after the scroll, as the model is told to.
+fn the_window_read_again(window: &Shown, browser: &str) -> Step {
+    Step::of(
+        READ_WINDOW,
+        Answered::With(Done::of_a_window_read(window, &[])),
+    )
+    .expecting(fallback_verbs::APPLICATION, browser.to_owned())
+}
+
 /// One thing in a folder, as the protocol carries it.
 fn a_file(name: &str, bytes: u64) -> Result<alo_protocol::Thing, NotTheSet> {
     serde_json::from_value(serde_json::json!({ "name": name, "kind": "file", "bytes": bytes }))
@@ -368,7 +378,10 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(fallback_verbs::APPLICATION, browser.as_str())
             .expecting(NAME, FURTHER_DOWN),
         ],
-    );
+    )
+    // **Reading the window again after is aside of the road**: the model is
+    // told to, and the machine answers it.
+    .or_looking_at(the_window_read_again(&the_window, &browser));
     let scrolling_a_page = ARequest::asking(
         "scroll a page in an application",
         "Scroll down one page in Firefox.",
@@ -391,7 +404,8 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(fallback_verbs::APPLICATION, browser.as_str())
             .expecting(TOWARD, Toward::Down.named()),
         ],
-    );
+    )
+    .or_looking_at(the_window_read_again(&the_window, &browser));
     Ok(vec![
         listing,
         reading,

@@ -43,8 +43,8 @@ pub const SCROLL_TO_SENTENCE: Word = Word::saying(
 /// What scrolling by a page is for.
 pub const SCROLL_PAGE_PURPOSE: Word = Word::saying(
     "adapters.fallback.scroll-page.purpose",
-    "scroll an application's window by about one screen, down or up, to read on when you do \
-     not know the name of what you are looking for",
+    "scroll an application's window by one screen, down or up, to read on when nothing ahead \
+     has a name you know; a thing you can name is scrolled to directly instead",
 )
 .noting("What one thing the agent can do is for, shown where its list of abilities is.");
 
