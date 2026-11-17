@@ -75,7 +75,7 @@ use alo_capability::is_a_persons_own;
 use serde::Deserialize;
 
 use crate::category::Category;
-use crate::fields::{is_a_licence, is_a_release};
+use crate::fields::{Licence, is_a_release};
 use crate::installing::Wanted;
 use crate::shipped::{NotShipped, Shipped};
 use crate::source::SourceName;
@@ -190,8 +190,8 @@ pub struct Listed {
     source: SourceName,
     /// The upstream release it was listed at.
     version: String,
-    /// Its licence, as its upstream states it.
-    licence: String,
+    /// Its licence, as its upstream states it, read.
+    licence: Licence,
 }
 
 impl Listed {
@@ -219,10 +219,21 @@ impl Listed {
         &self.version
     }
 
-    /// Its licence.
+    /// Its licence, exactly as the catalogue writes it.
     #[must_use]
     pub fn licence(&self) -> &str {
-        &self.licence
+        self.licence.written()
+    }
+
+    /// Whether every part of its licence is an open one.
+    ///
+    /// **False for anything Flathub records as `LicenseRef-proprietary`**, which
+    /// the market labels *not open source* (the owner, 2026-11-17). Read from the
+    /// licence by `crate::fields::Licence`, never written beside it, so the label
+    /// and the licence cannot disagree.
+    #[must_use]
+    pub const fn is_open_source(&self) -> bool {
+        self.licence.is_open_source()
     }
 
     /// The installation, as a person asks for any application: the same value,
@@ -376,11 +387,11 @@ fn checked(entry: Entry) -> Result<Listed, NotCatalogued> {
             version: entry.version,
         });
     }
-    if !is_a_licence(&entry.licence) {
+    let Some(licence) = Licence::read(&entry.licence) else {
         return Err(NotCatalogued::NoLicence {
             identifier: entry.identifier,
         });
-    }
+    };
     if is_a_persons_own(application.identifier()) {
         return Err(NotCatalogued::APersonsOwn {
             identifier: entry.identifier,
@@ -391,7 +402,7 @@ fn checked(entry: Entry) -> Result<Listed, NotCatalogued> {
         application,
         source,
         version: entry.version,
-        licence: entry.licence,
+        licence,
     })
 }
 
