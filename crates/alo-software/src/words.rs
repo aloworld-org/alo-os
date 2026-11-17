@@ -377,7 +377,7 @@ pub const THE_NAMES: [Word; 5] = [
 ];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 66] = [
+pub const THE_SENTENCES: [Word; 71] = [
     READ_SENTENCE,
     INSTALLED,
     INSTALLED_UNSANDBOXED,
@@ -409,6 +409,11 @@ pub const THE_SENTENCES: [Word; 66] = [
     INSTALLED_WITH_WHAT_ITS_MAKERS_ASK,
     VERB_LEAVES_REACHING_YOUR_FILES,
     VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE,
+    VERB_LEAVES_USING_THE_INTERNET,
+    VERB_LEAVES_REACHING_YOUR_FILES_AND_THE_INTERNET,
+    VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_YOUR_FILES,
+    VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_THE_INTERNET,
+    VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_YOUR_FILES_AND_THE_INTERNET,
     INSTALL_IT,
     INSTALLING_IT,
     OPEN_IT,
@@ -550,6 +555,56 @@ pub const VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE: Word = Word::saying(
 )
 .noting(
     "Shown on the card a person answers before alo installs an application, in place of the line that says it is given no access to their files, when its makers ask for it to start programs outside the closed box applications are kept in. Said before the person approves, so they choose knowing it.",
+);
+
+/// What installing leaves alone, for an application whose makers ask for it to
+/// use the internet.
+pub const VERB_LEAVES_USING_THE_INTERNET: Word = Word::saying(
+    "software.verb.install-application.leaves.using-the-internet",
+    "It is given no access to your files. Its makers ask for it to use the internet, and it will be able to. No other application is updated or removed.",
+)
+.noting(
+    "Shown on the card a person answers before alo installs an application, in place of the line that says it is given no access to their files. It names everything the application's makers ask for that reaches past the closed box applications are kept in, said before the person approves, so they choose knowing it.",
+);
+
+/// What installing leaves alone, for an application whose makers ask for it to
+/// read and change the person's files and use the internet.
+pub const VERB_LEAVES_REACHING_YOUR_FILES_AND_THE_INTERNET: Word = Word::saying(
+    "software.verb.install-application.leaves.reaching-your-files-and-the-internet",
+    "Its makers ask for it to read and change your files without asking you first, and to use the internet, and it will be able to do both. No other application is updated or removed.",
+)
+.noting(
+    "Shown on the card a person answers before alo installs an application, in place of the line that says it is given no access to their files. It names everything the application's makers ask for that reaches past the closed box applications are kept in, said before the person approves, so they choose knowing it.",
+);
+
+/// What installing leaves alone, for an application whose makers ask for it to
+/// start programs outside its box and read and change the person's files.
+pub const VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_YOUR_FILES: Word = Word::saying(
+    "software.verb.install-application.leaves.running-programs-outside-and-your-files",
+    "Its makers ask for it to run programs outside its box and to read and change your files without asking you first, so it will be able to do anything you can on this computer. No other application is updated or removed.",
+)
+.noting(
+    "Shown on the card a person answers before alo installs an application, in place of the line that says it is given no access to their files. It names everything the application's makers ask for that reaches past the closed box applications are kept in, said before the person approves, so they choose knowing it.",
+);
+
+/// What installing leaves alone, for an application whose makers ask for it to
+/// start programs outside its box and use the internet.
+pub const VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_THE_INTERNET: Word = Word::saying(
+    "software.verb.install-application.leaves.running-programs-outside-and-the-internet",
+    "Its makers ask for it to run programs outside its box and to use the internet, so it will be able to do anything you can on this computer. No other application is updated or removed.",
+)
+.noting(
+    "Shown on the card a person answers before alo installs an application, in place of the line that says it is given no access to their files. It names everything the application's makers ask for that reaches past the closed box applications are kept in, said before the person approves, so they choose knowing it.",
+);
+
+/// What installing leaves alone, for an application whose makers ask for it to
+/// start programs outside its box, read and change the person's files and use the internet.
+pub const VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_YOUR_FILES_AND_THE_INTERNET: Word = Word::saying(
+    "software.verb.install-application.leaves.running-programs-outside-your-files-and-the-internet",
+    "Its makers ask for it to run programs outside its box, to read and change your files without asking you first, and to use the internet, so it will be able to do anything you can on this computer. No other application is updated or removed.",
+)
+.noting(
+    "Shown on the card a person answers before alo installs an application, in place of the line that says it is given no access to their files. It names everything the application's makers ask for that reaches past the closed box applications are kept in, said before the person approves, so they choose knowing it.",
 );
 
 /// What a person presses to have an application installed.
@@ -841,7 +896,7 @@ pub const VERB_LEAVES: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 71] = [
+pub const EVERY_WORD: [Word; 76] = [
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
@@ -878,6 +933,11 @@ pub const EVERY_WORD: [Word; 71] = [
     INSTALLED_WITH_WHAT_ITS_MAKERS_ASK,
     VERB_LEAVES_REACHING_YOUR_FILES,
     VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE,
+    VERB_LEAVES_USING_THE_INTERNET,
+    VERB_LEAVES_REACHING_YOUR_FILES_AND_THE_INTERNET,
+    VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_YOUR_FILES,
+    VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_THE_INTERNET,
+    VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_YOUR_FILES_AND_THE_INTERNET,
     INSTALL_IT,
     INSTALLING_IT,
     OPEN_IT,

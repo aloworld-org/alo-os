@@ -7,16 +7,17 @@
 //! 2026-11-17 against the permissions in Flathub's own metadata for every
 //! catalogued application (`/api/v2/summary/<id>`): **not one** of the 62 does.
 //! 48 reach a person's files without asking and 8 can start programs outside
-//! their box; the seven Craft applications ask for both. Nothing on this
-//! machine overrides what an application's makers ask for, so what they ask
-//! for is what it gets.
+//! their box; the seven Craft applications ask for both. 63 of the 69 use the
+//! internet, each Craft bundle's own metadata read the same day. Nothing on
+//! this machine overrides what an application's makers ask for, so what they
+//! ask for is what it gets.
 //!
 //! The owner decided the same day: *list them with a plain warning.* So each
 //! catalogue entry records what its makers' real metadata asks for, read by
 //! [`Reach::asked_for`] — one rule, applied to every application alike — and the
 //! market's row and the approval card say it in words.
 //!
-//! # The two this names, and the one it does not
+//! # The three this names
 //!
 //! - [`Reach::ProgramsOutsideItsBox`]: it may talk to `org.freedesktop.Flatpak`,
 //!   which starts programs on the machine outside the box. An application that
@@ -25,9 +26,14 @@
 //!   machine, or one of their own folders (Documents, Downloads, Pictures,
 //!   Music, Videos, the desktop) without asking.
 //!
-//! **The network is not one of them.** 56 of the 62 use it, and the line under
-//! the market's list says so of all of them rather than a label on nearly
-//! every row; whether it should be a label too was put to the owner.
+//! - [`Reach::TheInternet`]: it may use the network (`shared=network`). 56 of
+//!   the 62 from Flathub ask for it, and all seven Craft applications.
+//!
+//! **The internet is said on the approval card, never as a row's label.** A
+//! label on nearly every row would say nothing, so the line under the market's
+//! list says it of all of them; the owner decided on 2026-11-17 that the card a
+//! person answers before an installation names it with everything else the
+//! application can reach.
 
 use serde::Deserialize;
 
@@ -39,14 +45,16 @@ pub enum Reach {
     ProgramsOutsideItsBox,
     /// It can read and change the person's files without asking.
     YourFiles,
+    /// It can use the internet.
+    TheInternet,
 }
 
 impl Reach {
     /// What an application's makers ask for reaches past its box, read from
-    /// its metadata's `filesystems` and session-bus `talk` names — the rule
-    /// every catalogue entry's `reaches` was written by.
+    /// its metadata's `filesystems`, session-bus `talk` names and `shared`
+    /// — the rule every catalogue entry's `reaches` was written by.
     #[must_use]
-    pub fn asked_for(filesystems: &[&str], talks_to: &[&str]) -> Vec<Self> {
+    pub fn asked_for(filesystems: &[&str], talks_to: &[&str], shared: &[&str]) -> Vec<Self> {
         let mut reaches = Vec::new();
         if talks_to.iter().any(|name| {
             *name == "org.freedesktop.Flatpak" || name.starts_with("org.freedesktop.Flatpak.")
@@ -55,6 +63,9 @@ impl Reach {
         }
         if filesystems.iter().any(|one| is_the_persons_files(one)) {
             reaches.push(Self::YourFiles);
+        }
+        if shared.contains(&"network") {
+            reaches.push(Self::TheInternet);
         }
         reaches
     }
@@ -99,8 +110,9 @@ mod tests {
                 "org.gtk.vfs.*",
                 "org.freedesktop.FileManager1",
             ],
+            &["network", "ipc"],
         );
-        assert_eq!(gimp, vec![Reach::YourFiles]);
+        assert_eq!(gimp, vec![Reach::YourFiles, Reach::TheInternet]);
 
         let photocraft = Reach::asked_for(
             &[
@@ -110,11 +122,20 @@ mod tests {
                 "xdg-documents",
             ],
             &["org.freedesktop.Flatpak"],
+            &["network", "ipc"],
         );
         assert_eq!(
             photocraft,
-            vec![Reach::ProgramsOutsideItsBox, Reach::YourFiles]
+            vec![
+                Reach::ProgramsOutsideItsBox,
+                Reach::YourFiles,
+                Reach::TheInternet
+            ]
         );
+
+        // RawTherapee's own: its files, and no network.
+        let rawtherapee = Reach::asked_for(&["host"], &[], &["ipc"]);
+        assert_eq!(rawtherapee, vec![Reach::YourFiles]);
     }
 
     /// **An application that asks for nothing past its box reaches nothing**,
@@ -122,7 +143,13 @@ mod tests {
     /// are not the person's files.
     #[test]
     fn what_stays_inside_the_box_is_not_a_reach() {
-        assert!(Reach::asked_for(&[], &[]).is_empty());
+        assert!(Reach::asked_for(&[], &[], &[]).is_empty());
+        // Sharing with the machine's other programs is not the internet.
+        assert!(Reach::asked_for(&[], &[], &["ipc"]).is_empty());
+        assert_eq!(
+            Reach::asked_for(&[], &[], &["network"]),
+            vec![Reach::TheInternet]
+        );
         assert!(
             Reach::asked_for(
                 &[
@@ -136,17 +163,21 @@ mod tests {
                     "org.freedesktop.portal.Flatpak",
                     "org.freedesktop.Notifications"
                 ],
+                &["ipc"],
             )
             .is_empty()
         );
         // A named folder of their own, read only, is still their files.
         assert_eq!(
-            Reach::asked_for(&["xdg-music:ro"], &[]),
+            Reach::asked_for(&["xdg-music:ro"], &[], &[]),
             vec![Reach::YourFiles]
         );
-        assert_eq!(Reach::asked_for(&["home:ro"], &[]), vec![Reach::YourFiles]);
         assert_eq!(
-            Reach::asked_for(&["xdg-documents/Zoom:create"], &[]),
+            Reach::asked_for(&["home:ro"], &[], &[]),
+            vec![Reach::YourFiles]
+        );
+        assert_eq!(
+            Reach::asked_for(&["xdg-documents/Zoom:create"], &[], &[]),
             vec![Reach::YourFiles]
         );
     }
