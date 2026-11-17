@@ -1545,6 +1545,19 @@ impl LoopInput for TheDesktopLane<'_> {
             );
             one.answered(typed);
         }
+        // **And every picture alo asked for** (ADR 0147 §1), of the window in
+        // front only, taken in the same frame and sent on from there.
+        for one in self.door.asked_to_picture() {
+            let mut asking =
+                crate::typing_into_the_window_in_front::TheDesktopAnswers(&mut *self.desktop);
+            let (pictured, png) = server.picture_of_the_window_in_front(one.asked(), &mut asking);
+            // Said on the log with how many bytes and never what they show.
+            eprintln!(
+                "alo-shell: {}",
+                alo_acting::said_on_the_log::alo_pictured(one.asked(), pictured)
+            );
+            self.door.sending(one.answered(pictured, png));
+        }
         // **And every link an application asked the person to choose for**,
         // shown one at a time on the *Open with* sheet; a sheet whose portal
         // hung up, or nobody answered in five minutes, comes down here.

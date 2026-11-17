@@ -8,6 +8,7 @@ mod a_frame_is_never_lost_while_dragging;
 mod a_frame_is_where_it_looks;
 mod a_keyboard_recovers_a_hidden_frame;
 mod a_new_window_glides_to_empty_space;
+mod a_picture_of_the_window_in_front;
 mod a_place_remembers_time;
 mod a_restore_travels;
 mod a_surface_says_how_big_it_is_drawn;
