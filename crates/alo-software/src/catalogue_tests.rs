@@ -163,7 +163,13 @@ fn what_is_catalogued_is_wanted_the_way_anything_is() {
     for one in catalogue.every() {
         let wanted = one.wanted();
         assert_eq!(wanted.application(), one.application());
-        assert_eq!(one.source().as_str(), "flathub");
+        // **From Flathub, or from its maker's signed release**, and never
+        // both: a maker's entry is the one with a release to check (ADR 0158).
+        if one.signed_release().is_some() {
+            assert_eq!(one.source().as_str(), "storytold");
+        } else {
+            assert_eq!(one.source().as_str(), "flathub");
+        }
     }
 }
 
