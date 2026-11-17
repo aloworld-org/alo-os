@@ -279,3 +279,27 @@ fn passes_the_machine_refused_first_are_counted_as_such() {
     let written = summary(&without, "a test model");
     assert!(written.contains("No pass was refused first."), "{written}");
 }
+
+/// **A pass by the other road is said**, so the longer way is counted rather
+/// than hidden among the passes; a try that took it and still left the road
+/// is not counted as one.
+#[test]
+fn passes_by_the_other_road_are_counted_as_such() {
+    let other_way = vec![Tallied::of(
+        a_request(),
+        vec![
+            the_road().the_other_way(),
+            the_road(),
+            off_the_road().the_other_way(),
+        ],
+    )];
+    let written = summary(&other_way, "a test model");
+    assert!(
+        written.contains("- open it: 1 of its passes took another road"),
+        "{written}"
+    );
+    assert!(!written.contains("No pass took another road."), "{written}");
+    let without = vec![Tallied::of(a_request(), vec![the_road(), off_the_road()])];
+    let written = summary(&without, "a test model");
+    assert!(written.contains("No pass took another road."), "{written}");
+}

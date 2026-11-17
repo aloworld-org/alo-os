@@ -89,3 +89,8 @@ key: turn.could-not-ask-the-record
 now: your agent could not be told what was done to that file: the record could not be read. Nothing was changed by asking, and asking again is safe
 why: only whitespace changed. A run of spaces nobody meant was collapsed to one; every word, every gap and every claim is exactly as it was, so a correct translation of the old English is a correct translation of this one unaltered.
 
+
+key: adapters.fallback.scroll-to.sentence
+now: scroll {application} until “{to}” is on the screen
+why: only the placeholder was renamed, from {name} to {to}, to follow the argument it is filled from; what fills it is the same name of the same thing, so a correct translation of the old English, with the placeholder renamed, is a correct translation of this one.
+

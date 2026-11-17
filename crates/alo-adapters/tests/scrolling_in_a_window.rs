@@ -18,7 +18,7 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::time::{Duration, SystemTime};
 
-use alo_adapters::fallback_verbs::{self, APPLICATION, NAME, SCROLL_PAGE, SCROLL_TO, TOWARD};
+use alo_adapters::fallback_verbs::{self, APPLICATION, NAME, SCROLL_PAGE, SCROLL_TO, TO, TOWARD};
 use alo_adapters::scrolling_words as words;
 use alo_adapters::{
     AccessibilityTree, Adapters, Edge, Facts, NodeAt, Running, Scrolling, TYPE_TEXT, TreeFault,
@@ -87,10 +87,7 @@ fn to_call(name: &str) -> Call {
         .unwrap()
         .call(
             SCROLL_TO,
-            &[
-                (APPLICATION, Given::text(READER)),
-                (NAME, Given::text(name)),
-            ],
+            &[(APPLICATION, Given::text(READER)), (TO, Given::text(name))],
         )
         .unwrap()
 }
@@ -291,7 +288,7 @@ fn a_long_document() -> Vec<Thing> {
 fn both_verbs_are_changes_over_a_granted_application_and_take_no_position() {
     let verbs = fallback_verbs::fallback_verbs().unwrap();
     for (verb, takes) in [
-        (SCROLL_TO, [APPLICATION, NAME]),
+        (SCROLL_TO, [APPLICATION, TO]),
         (SCROLL_PAGE, [APPLICATION, TOWARD]),
     ] {
         let verb = verbs.of(verb).unwrap();
@@ -721,4 +718,33 @@ fn a_tree_that_does_not_know_scrolling_says_no() {
         .scroll(&tree, &in_english())
         .unwrap_err();
     assert_eq!(said(&refused), expected(words::DID_NOT_SCROLL, "Chapter 3"));
+}
+
+/// **`name`, scroll_to's argument for its first day, is still taken**, read as
+/// `to` and deprecated (`docs/contracts/agent-verbs.md`): a caller written
+/// against the verb as it landed scrolls to the same thing.
+#[test]
+fn the_old_argument_name_still_scrolls_to_the_thing() {
+    let call = fallback_verbs::fallback_verbs()
+        .unwrap()
+        .call(
+            SCROLL_TO,
+            &[
+                (APPLICATION, Given::text(READER)),
+                (NAME, Given::text("Chapter 3")),
+            ],
+        )
+        .unwrap();
+    let tree = ATree::of(a_long_document());
+    scrolling(&call).scroll(&tree, &in_english()).unwrap();
+    assert_eq!(tree.scrolled(), [("Chapter 3".to_owned(), Edge::Top)]);
+    let offered = fallback_verbs::fallback_verbs().unwrap();
+    let names: Vec<&str> = offered
+        .of(SCROLL_TO)
+        .unwrap()
+        .args()
+        .iter()
+        .map(alo_capability::Arg::name)
+        .collect();
+    assert_eq!(names, [APPLICATION, TO], "the old name is never offered");
 }

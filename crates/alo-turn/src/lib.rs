@@ -190,6 +190,9 @@ pub mod next_request;
 mod opening_a_file_in_an_application;
 #[cfg(test)]
 mod opening_a_file_in_an_application_tests;
+mod opening_a_menu_in_an_application;
+#[cfg(test)]
+mod opening_a_menu_in_an_application_tests;
 mod opening_an_item_in_an_application;
 #[cfg(test)]
 mod opening_an_item_in_an_application_tests;
@@ -254,6 +257,7 @@ pub use machine::{
 };
 pub use naming_an_application::{as_the_catalogue_names_it, as_this_machine_names_them};
 pub use opening_a_file_in_an_application::AFileOpened;
+pub use opening_a_menu_in_an_application::AMenuOpened;
 pub use opening_an_item_in_an_application::AnItemOpened;
 pub use places::Places;
 pub use pressing_a_control::AControlPressed;

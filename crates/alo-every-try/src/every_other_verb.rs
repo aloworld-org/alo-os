@@ -20,8 +20,8 @@ use std::time::SystemTime;
 
 use alo_acting::Acting;
 use alo_adapters::fallback_verbs::{
-    self, ACTIVATE_CONTROL, CHOOSE_OPTION, KIND, NAME, OPEN_ITEM, OPTION, READ_WINDOW, SCROLL_PAGE,
-    SCROLL_TO, SELECT_ITEM, SET_VALUE, TOWARD, VALUE,
+    self, ACTIVATE_CONTROL, CHOOSE_OPTION, KIND, NAME, OPEN_ITEM, OPEN_MENU, OPTION, READ_WINDOW,
+    SCROLL_PAGE, SCROLL_TO, SELECT_ITEM, SET_VALUE, TOWARD, VALUE,
 };
 use alo_adapters::scrolling::Toward;
 use alo_adapters::{Pressable, Role as OnScreen, Seen, Shown, ShownWindow};
@@ -119,6 +119,18 @@ fn the_window_read_again(window: &Shown, browser: &str) -> Step {
     .expecting(fallback_verbs::APPLICATION, browser.to_owned())
 }
 
+/// A page down in the browser, as often as the model asks — each one a
+/// change, answered as the level answers it.
+fn a_page_down(browser: &str) -> Step {
+    Step::of(
+        SCROLL_PAGE,
+        Answered::With(Done::of_a_scroll(browser, Toward::Down.named(), true, true)),
+    )
+    .expecting(fallback_verbs::APPLICATION, browser.to_owned())
+    .expecting(TOWARD, Toward::Down.named())
+    .as_often_as_asked()
+}
+
 /// One thing in a folder, as the protocol carries it.
 fn a_file(name: &str, bytes: u64) -> Result<alo_protocol::Thing, NotTheSet> {
     serde_json::from_value(serde_json::json!({ "name": name, "kind": "file", "bytes": bytes }))
@@ -167,6 +179,11 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
     let report = downloads.join(REPORT);
     let browser = shipped
         .the(Role::WebBrowser)
+        .application()
+        .identifier()
+        .to_owned();
+    let files = shipped
+        .the(Role::FileManager)
         .application()
         .identifier()
         .to_owned();
@@ -399,6 +416,18 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         )],
         false,
     );
+    // **The same page a page further down**, the heading now on the screen.
+    let the_page_further_down = Shown::of(
+        browser.clone(),
+        vec![ShownWindow::titled(
+            THE_BROWSERS_WINDOW.to_owned(),
+            vec![
+                Seen::of(OnScreen::Document, THE_PAGE.to_owned(), None, 1),
+                Seen::of(OnScreen::Label, FURTHER_DOWN.to_owned(), None, 2),
+            ],
+        )],
+        false,
+    );
     let scrolling_to = ARequest::asking(
         "scroll to a named thing in an application",
         format!("In Firefox, scroll down until the heading {FURTHER_DOWN} is on the screen."),
@@ -414,9 +443,40 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
                 Answered::With(Done::of_a_scroll(&browser, FURTHER_DOWN, false, true)),
             )
             .expecting(fallback_verbs::APPLICATION, browser.as_str())
-            .expecting(NAME, FURTHER_DOWN),
+            .expecting(fallback_verbs::TO, FURTHER_DOWN),
         ],
     )
+    // **Pages down, and then the heading on the screen, reach the same place**:
+    // "scroll down until" is how a page at a time is asked for, so these are
+    // other roads, counted apart, and the request's words are not changed to
+    // steer the model off them. A page down is answered without what it now
+    // shows, so the heading is reached either by reading the window, which
+    // shows it, or by scrolling to it by name.
+    .or_by_another_road(vec![
+        Step::of(
+            READ_WINDOW,
+            Answered::With(Done::of_a_window_read(&the_page, &[])),
+        )
+        .expecting(fallback_verbs::APPLICATION, browser.as_str())
+        .a_look(),
+        a_page_down(&browser),
+        the_window_read_again(&the_page_further_down, &browser),
+    ])
+    .or_by_another_road(vec![
+        Step::of(
+            READ_WINDOW,
+            Answered::With(Done::of_a_window_read(&the_page, &[])),
+        )
+        .expecting(fallback_verbs::APPLICATION, browser.as_str())
+        .a_look(),
+        a_page_down(&browser),
+        Step::of(
+            SCROLL_TO,
+            Answered::With(Done::of_a_scroll(&browser, FURTHER_DOWN, false, true)),
+        )
+        .expecting(fallback_verbs::APPLICATION, browser.as_str())
+        .expecting(fallback_verbs::TO, FURTHER_DOWN),
+    ])
     // **Reading the window again after is aside of the road**: the model is
     // told to, and the machine answers it.
     .or_looking_at(the_window_read_again(&the_page, &browser));
@@ -523,11 +583,6 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         ],
     )
     .or_looking_at(the_window_read_again(&the_papers_window, &papers));
-    let files = shipped
-        .the(Role::FileManager)
-        .application()
-        .identifier()
-        .to_owned();
     let the_folders_window = Shown::of(
         files.clone(),
         vec![ShownWindow::titled(
@@ -574,6 +629,43 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         ],
     )
     .or_looking_at(the_window_read_again(&the_folders_window, &files));
+    // **A thing's own menu, 2026-11-17**: the person names the file, so reading
+    // the window first is a look.
+    let the_folder = Shown::of(
+        files.clone(),
+        vec![ShownWindow::titled(
+            documents_named.to_owned(),
+            vec![Seen::of(OnScreen::Part, NOTES.to_owned(), None, 1)],
+        )],
+        false,
+    );
+    let a_menu = ARequest::asking(
+        "open a thing's right-click menu in an application",
+        format!("In Dolphin, open the right-click menu of {NOTES}."),
+        vec![
+            Step::of(
+                READ_WINDOW,
+                Answered::With(Done::of_a_window_read(&the_folder, &[])),
+            )
+            .expecting(fallback_verbs::APPLICATION, files.as_str())
+            .a_look(),
+            Step::of(
+                OPEN_MENU,
+                Answered::With(Done::of_a_menu(&files, NOTES, false)),
+            )
+            .expecting(fallback_verbs::APPLICATION, files.as_str())
+            .expecting(fallback_verbs::THING, NOTES),
+        ],
+    )
+    // **Reading the window again after is aside of the road**: the model is
+    // told to read the menu's items, and the machine answers it.
+    .or_looking_at(
+        Step::of(
+            READ_WINDOW,
+            Answered::With(Done::of_a_window_read(&the_folder, &[])),
+        )
+        .expecting(fallback_verbs::APPLICATION, files.as_str()),
+    );
     Ok(vec![
         listing,
         reading,
@@ -593,5 +685,6 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         choosing,
         selecting,
         opening,
+        a_menu,
     ])
 }

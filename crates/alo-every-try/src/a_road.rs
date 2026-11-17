@@ -70,6 +70,8 @@ pub struct Step {
     answered: Answered,
     /// Whether this is a look the model may skip, or take more than once.
     look: bool,
+    /// Whether the model may take this step again, as often as it asks.
+    again: bool,
 }
 
 impl Step {
@@ -82,7 +84,25 @@ impl Step {
             fields: Vec::new(),
             answered,
             look: false,
+            again: false,
         }
+    }
+
+    /// **And the model may take it again**, as often as it asks, without the
+    /// road moving on — a page and then another page. Unlike a look it may be
+    /// a change, and it is never skipped: it is taken at least once. Each time
+    /// is answered as the level answers a change, so at ask each time each
+    /// page is one card.
+    #[must_use]
+    pub const fn as_often_as_asked(mut self) -> Self {
+        self.again = true;
+        self
+    }
+
+    /// Whether the model may take this step again.
+    #[must_use]
+    pub const fn is_taken_as_often_as_asked(&self) -> bool {
+        self.again
     }
 
     /// **And it is a look**: a read the model may skip when it already knows
@@ -156,6 +176,9 @@ pub struct ARequest {
     /// Reads the machine would answer at any point of the road, which a try
     /// may take aside of it ([`ARequest::or_looking_at`]).
     aside: Vec<Step>,
+    /// **Other roads to the same place** ([`ARequest::or_by_another_road`]),
+    /// which a try may take instead from where they part.
+    other: Vec<Vec<Step>>,
 }
 
 impl ARequest {
@@ -168,7 +191,29 @@ impl ARequest {
             words: words.into(),
             road,
             aside: Vec::new(),
+            other: Vec::new(),
         }
+    }
+
+    /// **And another road that ends where the person asked to be** — a page at
+    /// a time, say, where the road goes in one step. A try that asks, where
+    /// the two roads part, for the other road's step is held to the other road
+    /// from there, and a pass by it is a pass, counted apart in the summary so
+    /// the longer way is seen. The roads share their steps up to where they
+    /// part, and a try may go on from one to another while every step it has
+    /// taken is both roads' (the first declared, where two would do); a road
+    /// that ends with a read of what the person asked to see holds the try to
+    /// having seen it.
+    #[must_use]
+    pub fn or_by_another_road(mut self, road: Vec<Step>) -> Self {
+        self.other.push(road);
+        self
+    }
+
+    /// The other roads, in the order they were declared.
+    #[must_use]
+    pub fn other_roads(&self) -> &[Vec<Step>] {
+        &self.other
     }
 
     /// **And a read the machine would answer at any point of the road**,

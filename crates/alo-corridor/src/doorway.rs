@@ -602,6 +602,11 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> Option<alo_pro
             scrolled.a_page(),
             scrolled.now_showing(),
         ),
+        // A menu opened is a change this machine's person approved here, as a
+        // press is, so it crosses back as what was opened — never its items.
+        alo_turn::WhatAVerbDid::AMenuWasOpened(opened) => {
+            alo_protocol::Done::of_a_menu(opened.application(), opened.name(), opened.unanswered())
+        }
     })
 }
 

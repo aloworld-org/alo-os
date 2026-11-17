@@ -19,6 +19,7 @@
 //! | `accessible.set_value` | `crates/alo-adapters/tests/setting_a_value.rs` |
 //! | `accessible.choose_option`, `accessible.select_item` | `crates/alo-adapters/tests/choosing_in_a_window.rs` |
 //! | `accessible.open_item` | `crates/alo-adapters/tests/opening_an_item.rs` |
+//! | `accessible.open_menu` | `crates/alo-adapters/tests/opening_a_things_menu.rs` |
 //!
 //! This file is the other half: a change added to the list the daemon offers
 //! without its two sentences fails here, and a change added with them fails
@@ -49,6 +50,7 @@ const HELD: [&str; 18] = [
     "accessible.choose_option",
     "accessible.select_item",
     "accessible.open_item",
+    "accessible.open_menu",
 ];
 
 #[test]

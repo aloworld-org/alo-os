@@ -22,7 +22,7 @@ use crate::what_a_verb_did::WhatAVerbDid;
 
 /// The verbs alo acts in an application by: each one names the application in
 /// its `application` argument.
-const IN_AN_APPLICATION: [&str; 13] = [
+const IN_AN_APPLICATION: [&str; 14] = [
     "open_application",
     "focus_application",
     "close_application",
@@ -36,6 +36,7 @@ const IN_AN_APPLICATION: [&str; 13] = [
     alo_adapters::CHOOSE_OPTION,
     alo_adapters::SELECT_ITEM,
     alo_adapters::OPEN_ITEM,
+    alo_adapters::OPEN_MENU,
 ];
 
 /// The verb and the application an authorised call acts in, before it is
@@ -94,6 +95,11 @@ pub(crate) fn said(verb: &str, application: &str, did: &Result<WhatAVerbDid, Not
                 } else {
                     InAnApplication::TypedAndNotSaved
                 }
+            } else if did
+                .menu_opened()
+                .is_some_and(crate::AMenuOpened::unanswered)
+            {
+                InAnApplication::Unanswered
             } else {
                 InAnApplication::Done
             }

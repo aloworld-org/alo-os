@@ -124,5 +124,10 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
             scrolled.a_page(),
             scrolled.now_showing(),
         ),
+        // One thing's right-click menu opened (2026-11-17): what it holds is
+        // read by `accessible.read_window`, never carried here.
+        WhatAVerbDid::AMenuWasOpened(opened) => {
+            Done::of_a_menu(opened.application(), opened.name(), opened.unanswered())
+        }
     }
 }
