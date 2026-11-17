@@ -181,6 +181,11 @@ mod the_file {
                 "link-not-chosen/{}",
                 serde_json::to_value(why).unwrap().as_str().unwrap()
             ),
+            KeptOutcome::FileChosen { saving, .. } => format!("file-chosen/{saving}"),
+            KeptOutcome::FileUnchosen { why } => format!(
+                "file-not-chosen/{}",
+                serde_json::to_string(why).unwrap()
+            ),
             KeptOutcome::NotALink { why } => format!(
                 "not-a-link/{}",
                 match why {
@@ -295,6 +300,26 @@ mod the_file {
                 address: "https://example.com/invoice".to_owned(),
                 why,
             });
+        }
+        for saving in [false, true] {
+            every.push(KeptOutcome::FileChosen {
+                file: "/home/anna/march.txt".to_owned(),
+                saving,
+            });
+        }
+        for why in [
+            alo_portals::NoFile::Cancelled,
+            alo_portals::NoFile::Unanswered,
+            alo_portals::NoFile::CannotShow,
+            alo_portals::NoFile::NoDesktop,
+            alo_portals::NoFile::CouldNotAsk,
+            alo_portals::NoFile::NotBelieved,
+            alo_portals::NoFile::NotHandedOver(alo_portals::NotExported::NoDocumentsPortal),
+            alo_portals::NoFile::NotHandedOver(alo_portals::NotExported::NotThere),
+            alo_portals::NoFile::NotHandedOver(alo_portals::NotExported::Refused),
+            alo_portals::NoFile::NotOfferedYet,
+        ] {
+            every.push(KeptOutcome::FileUnchosen { why });
         }
         for why in [
             NotALinkAs::NotOpenedHere {
