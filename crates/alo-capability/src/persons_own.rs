@@ -90,6 +90,24 @@ mod tests {
         );
     }
 
+    /// **Every terminal found on 2026-11-17**: the ones in Flathub's own
+    /// *TerminalEmulator* category, and GNOME's two, which arrive from the
+    /// distribution rather than Flathub and are known by these desktop
+    /// identifiers. Before this list held them, a Settings switch or a grant
+    /// could be offered over GNOME Console.
+    #[test]
+    fn every_terminal_found_on_2026_11_17_is_a_persons_own() {
+        for terminal in [
+            "org.gnome.Console",
+            "org.gnome.Terminal",
+            "org.kde.yakuake",
+            "com.rioterm.Rio",
+            "page.codeberg.dnkl.foot",
+        ] {
+            assert!(is_a_persons_own(terminal), "{terminal} is not on the list");
+        }
+    }
+
     #[test]
     fn a_terminal_is_a_persons_own_and_an_editor_is_not() {
         assert!(is_a_persons_own("app.devsuite.Ptyxis"));
