@@ -54,6 +54,9 @@ const ACTION: &str = "org.a11y.atspi.Action";
 /// The interface through which text is put into a thing (ADR 0153).
 const EDITABLE_TEXT: &str = "org.a11y.atspi.EditableText";
 
+/// The interface a slider, a progress bar or a meter says its number through.
+const VALUE: &str = "org.a11y.atspi.Value";
+
 /// The accessibility tree of one session, for one turn.
 #[derive(Debug)]
 pub struct AccessibleSession {
@@ -240,6 +243,20 @@ impl AccessibilityTree for AccessibleSession {
     fn act(&self, at: &NodeAt, action: usize) -> Result<bool, TreeFault> {
         let index = i32::try_from(action).map_err(|_| TreeFault::Vanished)?;
         self.ask(at, ACTION, "DoAction", &(index,))
+    }
+
+    fn value(&self, at: &NodeAt) -> Result<Option<f64>, TreeFault> {
+        let interfaces: Vec<String> = self.ask(at, ACCESSIBLE, "GetInterfaces", &())?;
+        if !interfaces.iter().any(|interface| interface == VALUE) {
+            return Ok(None);
+        }
+        let value: OwnedValue = self.ask(
+            at,
+            "org.freedesktop.DBus.Properties",
+            "Get",
+            &(VALUE, "CurrentValue"),
+        )?;
+        Ok(f64::try_from(value).ok().filter(|value| value.is_finite()))
     }
 
     fn takes_text(&self, at: &NodeAt) -> Result<bool, TreeFault> {

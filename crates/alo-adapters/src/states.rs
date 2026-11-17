@@ -16,6 +16,10 @@ impl States {
     const CHECKED: u32 = 4;
     /// `ATSPI_STATE_ENABLED`.
     const ENABLED: u32 = 8;
+    /// `ATSPI_STATE_SELECTABLE`.
+    const SELECTABLE: u32 = 22;
+    /// `ATSPI_STATE_SELECTED`.
+    const SELECTED: u32 = 23;
     /// `ATSPI_STATE_SENSITIVE`.
     const SENSITIVE: u32 = 24;
     /// `ATSPI_STATE_SHOWING`.
@@ -56,6 +60,18 @@ impl States {
         Self(self.0 | (1 << Self::CHECKED))
     }
 
+    /// These states, and one of a set that can be selected.
+    #[must_use]
+    pub const fn selectable(self) -> Self {
+        Self(self.0 | (1 << Self::SELECTABLE))
+    }
+
+    /// These states, and selected.
+    #[must_use]
+    pub const fn and_selected(self) -> Self {
+        Self(self.0 | (1 << Self::SELECTED))
+    }
+
     /// These states, greyed out.
     #[must_use]
     pub const fn greyed_out(self) -> Self {
@@ -83,6 +99,17 @@ impl States {
     #[must_use]
     pub const fn usable(self) -> bool {
         self.has(Self::ENABLED) && self.has(Self::SENSITIVE)
+    }
+
+    /// Selected or not, for a thing that can be selected — a tab, an item of a
+    /// list — and [`None`] for one that cannot.
+    #[must_use]
+    pub const fn selected(self) -> Option<bool> {
+        if self.has(Self::SELECTABLE) {
+            Some(self.has(Self::SELECTED))
+        } else {
+            None
+        }
     }
 
     /// On or off, for a thing that can be either; [`None`] for one that cannot.

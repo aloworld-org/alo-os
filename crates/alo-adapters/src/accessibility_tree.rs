@@ -116,6 +116,18 @@ pub trait AccessibilityTree {
         Ok(Vec::new())
     }
 
+    /// The number one thing holds — AT-SPI's `Value`: where a slider is, how
+    /// far a progress bar has got — or [`None`] for a thing that holds none.
+    /// Asked only of a [`crate::Role::Range`]. **None by default**, which is
+    /// what a tree that offers no numbers says.
+    ///
+    /// # Errors
+    /// [`TreeFault`].
+    fn value(&self, at: &NodeAt) -> Result<Option<f64>, TreeFault> {
+        let _ = at;
+        Ok(None)
+    }
+
     /// Whether one thing takes text put into it through the tree — AT-SPI's
     /// `EditableText` (ADR 0153). **No by default**, which is what Chromium
     /// answers for every field it has; GTK answers yes.

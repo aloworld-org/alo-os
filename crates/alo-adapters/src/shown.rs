@@ -79,6 +79,11 @@ pub struct Seen {
     /// Whether its text was longer than is read at once, so only its beginning
     /// is here.
     cut_short: bool,
+    /// Selected or not, for a thing that can be selected.
+    selected: Option<bool>,
+    /// The number it holds, for a slider or a meter, as the application gives
+    /// it.
+    value: Option<String>,
 }
 
 impl Seen {
@@ -101,7 +106,39 @@ impl Seen {
             depth,
             limit: None,
             cut_short: false,
+            selected: None,
+            value: None,
         }
+    }
+
+    /// The same thing, selected or not.
+    #[must_use]
+    pub fn selected(mut self, selected: Option<bool>) -> Self {
+        self.selected = selected;
+        self
+    }
+
+    /// The same thing, holding this number — written as the shortest decimal
+    /// that is the number, and nothing for one that is not finite.
+    #[must_use]
+    pub fn valued(mut self, value: Option<f64>) -> Self {
+        self.value = value
+            .filter(|value| value.is_finite())
+            .map(|value| value.to_string());
+        self
+    }
+
+    /// Selected or not, for a thing that can be selected — a tab, an item of
+    /// a list — and [`None`] for one that cannot.
+    #[must_use]
+    pub fn is_selected(&self) -> Option<bool> {
+        self.selected
+    }
+
+    /// The number it holds, for a slider, a progress bar or a meter.
+    #[must_use]
+    pub fn value(&self) -> Option<&str> {
+        self.value.as_deref()
     }
 
     /// The same thing, on or off.
