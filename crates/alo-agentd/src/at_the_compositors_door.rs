@@ -196,6 +196,16 @@ impl TheDoorTheCompositorServes for AtTheCompositorsDoor {
         })
     }
 
+    fn picturing(
+        &mut self,
+        asked: &alo_acting::ToPicture,
+    ) -> Result<(alo_acting::Pictured, Vec<u8>), NotAtTheDoor> {
+        let _ = (asked, self.knocking()?);
+        Err(NotAtTheDoor::NotAnswered {
+            why: "not yet".to_owned(),
+        })
+    }
+
     fn opening_a_file(
         &mut self,
         asked: &alo_acting::ToOpenAFile,
@@ -231,6 +241,14 @@ impl TheDoorTheCompositorServes for AtTheCompositorsDoor {
         })
     }
 }
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+#[path = "at_the_compositors_door_picturing_tests.rs"]
+mod picturing_tests;
 
 #[cfg(test)]
 // Counted: 11 `unwrap` and 3 `panic!`, and no `expect` — an unfulfilled

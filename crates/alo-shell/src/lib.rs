@@ -713,6 +713,13 @@ mod the_window_before_this_terminal;
 mod the_windows_on_this_place;
 /// Typing into the window in front, as key presses, to that one client (ADR 0153).
 pub mod typing_into_the_window_in_front;
+/// One picture of the window in front, of that window alone (ADR 0147 §1).
+mod picturing_the_window_in_front;
+/// A picture asked for at the door, and its answer sent on across turns.
+pub mod a_picture_at_the_door;
+/// The window in front, if alo may reach it for an application: asked by typing
+/// and by a picture alike.
+mod the_window_in_front_alo_may_reach;
 pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};
 mod alos_window_placed;
 mod alos_windows_panel;

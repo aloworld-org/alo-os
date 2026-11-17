@@ -29,7 +29,7 @@
 //! sentence as a compositor that answered `could-not-ask`, because from the
 //! person's side they are the same fact: nothing was changed.
 
-use alo_acting::{Answer, Opened, Request, ToOpenAFile, ToType, Typed};
+use alo_acting::{Answer, Opened, Pictured, Request, ToOpenAFile, ToPicture, ToType, Typed};
 
 /// Whatever can put one request to the compositor and read one answer.
 ///
@@ -71,6 +71,21 @@ pub trait TheDoorTheCompositorServes {
     /// # Errors
     /// [`NotAtTheDoor`], as for [`Self::asking`].
     fn opening_a_file(&mut self, asked: &ToOpenAFile) -> Result<Opened, NotAtTheDoor> {
+        let _ = asked;
+        Err(NotAtTheDoor::NoCompositor)
+    }
+
+    /// Put `picture-of` to the compositor — one picture of the window in
+    /// front, of that window alone (ADR 0147 §1) — and wait for its answer and,
+    /// for a picture, its PNG's bytes. Every refusal carries no bytes.
+    ///
+    /// **No compositor by default**, as for [`Self::typing`], so a door that
+    /// does not know this act takes no picture.
+    ///
+    /// # Errors
+    /// [`NotAtTheDoor`], as for [`Self::asking`] — and for a picture cut short
+    /// of the length its head said, which is never a smaller picture.
+    fn picturing(&mut self, asked: &ToPicture) -> Result<(Pictured, Vec<u8>), NotAtTheDoor> {
         let _ = asked;
         Err(NotAtTheDoor::NoCompositor)
     }
