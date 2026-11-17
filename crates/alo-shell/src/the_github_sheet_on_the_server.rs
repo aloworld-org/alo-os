@@ -21,6 +21,8 @@ impl crate::Server {
     /// sheet is up already, so one press never starts two sign-ins.
     pub(crate) fn a_github_sign_in_begins(&mut self) {
         if self.github_sheet.opened() {
+            // **Said on the journal**, so a walk can tell the sheet went up.
+            eprintln!("{}", alo_acting::said_of_publishing::THE_GITHUB_SHEET_IS_UP);
             self.github_is_asked(AskingGitHub::SignIn);
         }
     }

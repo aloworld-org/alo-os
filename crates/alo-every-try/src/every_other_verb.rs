@@ -19,7 +19,10 @@ use std::path::Path;
 use std::time::SystemTime;
 
 use alo_acting::Acting;
-use alo_adapters::fallback_verbs::{self, ACTIVATE_CONTROL, KIND, NAME, READ_WINDOW};
+use alo_adapters::fallback_verbs::{
+    self, ACTIVATE_CONTROL, KIND, NAME, READ_WINDOW, SCROLL_PAGE, SCROLL_TO, TOWARD,
+};
+use alo_adapters::scrolling::Toward;
 use alo_adapters::{Pressable, Role as OnScreen, Seen, Shown, ShownWindow};
 use alo_applications::verbs::{APPLICATION, CLOSE_APPLICATION, FOCUS_APPLICATION};
 use alo_applications::{AnsweringTo, Application, Installed};
@@ -60,6 +63,15 @@ pub const RELOAD: &str = "Reload";
 /// The title of the browser's window the pressing request reads.
 pub const THE_BROWSERS_WINDOW: &str = "Mozilla Firefox";
 
+/// The heading the scrolling request names, below what the window shows.
+pub const FURTHER_DOWN: &str = "Downloads";
+
+/// The page the scrolling requests read.
+pub const THE_PAGE: &str = "alo OS";
+
+/// The heading on the top of [`THE_PAGE`], which is on the screen.
+pub const ON_ITS_TOP: &str = "Getting started";
+
 /// The kind of work the catalogue request asks about, by a word with one
 /// meaning in the catalogue (`catalogue.toml`): painting is Painting, where
 /// *editing photographs* could fairly be Pictures or Photographs.
@@ -78,6 +90,16 @@ fn in_their(home: &Path, folder: Folder) -> std::path::PathBuf {
 /// A path as a road expects it.
 fn written(path: &Path) -> String {
     path.display().to_string()
+}
+
+/// The browser's window read again — a look a scrolling road may take aside,
+/// after the scroll, as the model is told to.
+fn the_window_read_again(window: &Shown, browser: &str) -> Step {
+    Step::of(
+        READ_WINDOW,
+        Answered::With(Done::of_a_window_read(window, &[])),
+    )
+    .expecting(fallback_verbs::APPLICATION, browser.to_owned())
 }
 
 /// One thing in a folder, as the protocol carries it.
@@ -342,6 +364,66 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(NAME, RELOAD),
         ],
     );
+    // **Scrolling, 2026-11-17**: to a thing the person names, and by a page.
+    // Each may read the window first; neither needs to, since the request says
+    // what to scroll to. **The window read is a page**, its top on the screen,
+    // as a long web page reads.
+    let the_page = Shown::of(
+        browser.clone(),
+        vec![ShownWindow::titled(
+            THE_BROWSERS_WINDOW.to_owned(),
+            vec![
+                Seen::of(OnScreen::Document, THE_PAGE.to_owned(), None, 1),
+                Seen::of(OnScreen::Label, ON_ITS_TOP.to_owned(), None, 2),
+            ],
+        )],
+        false,
+    );
+    let scrolling_to = ARequest::asking(
+        "scroll to a named thing in an application",
+        format!("In Firefox, scroll down until the heading {FURTHER_DOWN} is on the screen."),
+        vec![
+            Step::of(
+                READ_WINDOW,
+                Answered::With(Done::of_a_window_read(&the_page, &[])),
+            )
+            .expecting(fallback_verbs::APPLICATION, browser.as_str())
+            .a_look(),
+            Step::of(
+                SCROLL_TO,
+                Answered::With(Done::of_a_scroll(&browser, FURTHER_DOWN, false, true)),
+            )
+            .expecting(fallback_verbs::APPLICATION, browser.as_str())
+            .expecting(NAME, FURTHER_DOWN),
+        ],
+    )
+    // **Reading the window again after is aside of the road**: the model is
+    // told to, and the machine answers it.
+    .or_looking_at(the_window_read_again(&the_page, &browser));
+    let scrolling_a_page = ARequest::asking(
+        "scroll a page in an application",
+        "Scroll down one page in Firefox.",
+        vec![
+            Step::of(
+                READ_WINDOW,
+                Answered::With(Done::of_a_window_read(&the_page, &[])),
+            )
+            .expecting(fallback_verbs::APPLICATION, browser.as_str())
+            .a_look(),
+            Step::of(
+                SCROLL_PAGE,
+                Answered::With(Done::of_a_scroll(
+                    &browser,
+                    Toward::Down.named(),
+                    true,
+                    true,
+                )),
+            )
+            .expecting(fallback_verbs::APPLICATION, browser.as_str())
+            .expecting(TOWARD, Toward::Down.named()),
+        ],
+    )
+    .or_looking_at(the_window_read_again(&the_page, &browser));
     Ok(vec![
         listing,
         reading,
@@ -355,5 +437,7 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         closing,
         asking_the_record,
         pressing,
+        scrolling_to,
+        scrolling_a_page,
     ])
 }

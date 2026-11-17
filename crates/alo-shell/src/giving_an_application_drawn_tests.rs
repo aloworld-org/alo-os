@@ -32,7 +32,7 @@ use crate::software_scanout::SoftwarePainter;
 use crate::{SettingsKey, SettingsPress, SettingsRow, SettingsWindow};
 
 /// A key that means `key` and nothing else.
-fn press(window: &mut SettingsWindow, key: SettingsKey, door: &CountingDoor) {
+pub(super) fn press(window: &mut SettingsWindow, key: SettingsKey, door: &CountingDoor) {
     let strings = settings_words();
     window.pressed(
         SettingsPress {
@@ -45,7 +45,7 @@ fn press(window: &mut SettingsWindow, key: SettingsKey, door: &CountingDoor) {
 }
 
 /// Move the keyboard to `row` on the folders page, without pressing it.
-fn focused_on(window: &mut SettingsWindow, row: &SettingsRow, door: &CountingDoor) {
+pub(super) fn focused_on(window: &mut SettingsWindow, row: &SettingsRow, door: &CountingDoor) {
     if window.focused(noon()).as_ref() == Some(row) {
         return;
     }
@@ -86,7 +86,7 @@ fn enter_changes_the_frame(
 
 /// The frame a card is handed for the desktop with Settings over it, as XRGB
 /// bytes with the fixture's padded rows, and the display's size.
-fn handed(window: &SettingsWindow) -> (Vec<u8>, (i32, i32)) {
+pub(super) fn handed(window: &SettingsWindow) -> (Vec<u8>, (i32, i32)) {
     use crate::FrameTarget;
 
     let desktop = ADesktop::with(None);
@@ -137,8 +137,18 @@ fn handed(window: &SettingsWindow) -> (Vec<u8>, (i32, i32)) {
 }
 
 /// Write the frame as a PNG, where a folder was named for it.
-fn written((pixels, (wide, tall)): &(Vec<u8>, (i32, i32)), name: &str) {
-    let Some(folder) = std::env::var_os("ALO_APPLICATION_GRANT_PICTURES") else {
+fn written(frame: &(Vec<u8>, (i32, i32)), name: &str) {
+    written_where(frame, "ALO_APPLICATION_GRANT_PICTURES", name);
+}
+
+/// Write the frame as a PNG into the folder this variable names, where it
+/// names one.
+pub(super) fn written_where(
+    (pixels, (wide, tall)): &(Vec<u8>, (i32, i32)),
+    variable: &str,
+    name: &str,
+) {
+    let Some(folder) = std::env::var_os(variable) else {
         return;
     };
     let row = row_of(*wide);

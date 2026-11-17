@@ -436,12 +436,39 @@ fn draw_one(
     // What is to be done about it, along the bottom.
     let foot_tall = measure.px(26);
     let foot_y = card.loc.y + card.size.h - inside - foot_tall;
-    let licence = box_at(card.loc.x + inside, foot_y, text_wide / 2, foot_tall);
-    wells.push(AWell {
-        at: licence,
-        corner: m::A_CAPSULE,
-    });
-    writing.push(ToWrite::of(licence, one.licence().to_owned(), cool, quiet));
+
+    // **What a person should know before choosing it, in plain words**, on the
+    // line between the name and the foot (the owner, 2026-11-17): *not open
+    // source*, *not verified*, *early version*. In the second rank of text and
+    // never in a colour that reads as alarm, or as alo's own teal: a label
+    // states a fact, and the person chooses.
+    let labels = words.labels_of(one);
+    if !labels.is_empty() {
+        let under_the_tile = tile.loc.y + tile_is;
+        writing.push(ToWrite::of(
+            box_at(
+                card.loc.x + inside,
+                under_the_tile,
+                card.size.w - 2 * inside,
+                (foot_y - under_the_tile).max(1),
+            ),
+            labels,
+            cool,
+            second,
+        ));
+    }
+
+    // **The licence as written, for an open one.** A proprietary licence reads
+    // `LicenseRef-proprietary`, which says nothing to a person that *not open
+    // source* above it does not say better.
+    if one.is_open_source() {
+        let licence = box_at(card.loc.x + inside, foot_y, text_wide / 2, foot_tall);
+        wells.push(AWell {
+            at: licence,
+            corner: m::A_CAPSULE,
+        });
+        writing.push(ToWrite::of(licence, one.licence().to_owned(), cool, quiet));
+    }
 
     // The action, which is a filled capsule for anything not already here.
     let action_wide = measure.px(72);

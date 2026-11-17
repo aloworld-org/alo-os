@@ -22,7 +22,16 @@ newest merge waits behind it — a later merge replaces the one waiting, and the
 one running is never cancelled.
 
 To run one by hand: **Actions → Walk → Run workflow**, on `main`. It took 25 to 45
-minutes on the four runs below, most of it building the image. When it ends, the run's summary page has a table of every
+minutes on the four runs below, most of it building the image.
+
+**To try a branch before it merges**, run it on that branch. Its walk harness
+is always the branch's own. Its image is main's unless you tick **Build the
+image from the branch this walk is started on**; then the image is built from
+the branch's commit, and the summary's first line names the branch and the
+commit. That image is never pushed, signed or published — the exception
+CLAUDE.md makes for a walk image — and a walk after a merge is always main's.
+
+When it ends, the run's summary page has a table of every
 check, and the artifact **the-walk** has:
 
 - one picture per look, numbered in the order taken (`01-first-start.png`, …);

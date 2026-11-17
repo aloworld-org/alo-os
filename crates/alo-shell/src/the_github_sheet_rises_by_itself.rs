@@ -117,8 +117,10 @@ impl crate::Server {
             .github_sign_in_wanted
             .this_frame(up, another_sheet_is_up, now)
             == ItGoesUp::Now
+            && self.github_sheet.opened_for_a_command()
         {
-            self.github_sheet.opened_for_a_command();
+            // **Said on the journal**, so a walk can tell the sheet rose.
+            eprintln!("{}", alo_acting::said_of_publishing::THE_GITHUB_SHEET_IS_UP);
         }
     }
 }

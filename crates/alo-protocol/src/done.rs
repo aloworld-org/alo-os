@@ -276,6 +276,23 @@ pub enum Done {
         /// was sent.
         nothing_new: bool,
     },
+    /// One application's window was scrolled, to a named thing or by a page
+    /// (`accessible.scroll_to`, `accessible.scroll_page`).
+    ///
+    /// Added 2026-11-17, additively. **What the window shows now is not carried
+    /// back**: a scroll is a change, and what is on the screen afterwards is
+    /// read by `accessible.read_window`, as every read is.
+    Scrolled {
+        /// The application.
+        application: String,
+        /// The thing's name, exactly as the application shows it — or, for a
+        /// page, `down` or `up`.
+        to: String,
+        /// Whether it was a page rather than a named thing.
+        a_page: bool,
+        /// Whether what was scrolled to reads as on the screen afterwards.
+        now_showing: bool,
+    },
 }
 
 /// One window an application showed, as it goes back to a client.
@@ -294,7 +311,11 @@ pub struct AWindowShowed {
 pub struct OneThingShown {
     /// What it is: one of the kinds a press takes (`button`, `check_box`,
     /// `radio_button`, `switch`, `menu_item`, `tab`, `link`), or `field`,
-    /// `password-field`, `text`, `document`, `image`, `window` or `drawn`.
+    /// `password-field`, `text`, `document`, `image`, `window` or `drawn` —
+    /// and since 2026-11-17, additively, `drop-down` (one choice of several,
+    /// shown closed, its choice in `shows`), `item` (one item of a list, a
+    /// table or a tree) and `slider` (a slider, or a progress bar or meter that
+    /// cannot be moved, its number in `value`).
     pub is: String,
     /// Its name, as the application shows it — empty for a thing with none.
     pub name: String,
@@ -311,6 +332,17 @@ pub struct OneThingShown {
     /// `no-name`, `not-described` or `shown-by-another-program`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cannot_be_read: Option<String>,
+    /// Whether what it shows was longer than is read at once, so `shows` holds
+    /// only its beginning. Absent when it was read whole.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub cut_short: bool,
+    /// Selected or not, for a thing that can be selected — a tab, an item.
+    /// Absent for one that cannot.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selected: Option<bool>,
+    /// The number a `slider` holds, as the application gives it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub value: Option<String>,
 }
 
 /// One thing the record says was done to a file, as it goes back to a client.
@@ -368,6 +400,16 @@ pub struct CanBeInstalled {
     pub licence: String,
     /// What a person would make with it, as a verb's option names it.
     pub kind_of_work: String,
+    /// What the market says beside it — `not_open_source`, `not_verified`,
+    /// `early_version` — in that order, as `alo_software::Label::named`
+    /// spells them (the owner's decision of 2026-11-17).
+    ///
+    /// **Added 2026-11-17, additively**: absent from the wire when there is
+    /// none, so an answer about an application with no label is written
+    /// exactly as before. An agent shown the list is shown what a person is
+    /// shown, so it can say so when it proposes one.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub labels: Vec<String>,
 }
 
 /// **Where text typed into a file just opened goes**: the name to give
@@ -474,6 +516,11 @@ impl Done {
                     version: one.version().to_owned(),
                     licence: one.licence().to_owned(),
                     kind_of_work: one.category().as_an_option(),
+                    labels: one
+                        .labels()
+                        .into_iter()
+                        .map(|label| label.named().to_owned())
+                        .collect(),
                 })
                 .collect(),
         }
@@ -620,6 +667,18 @@ impl Done {
         }
     }
 
+    /// What a scroll answered, as it goes on the wire — taking its parts, for
+    /// [`Done::of_a_press`]'s reason.
+    #[must_use]
+    pub fn of_a_scroll(application: &str, to: &str, a_page: bool, now_showing: bool) -> Self {
+        Self::Scrolled {
+            application: application.to_owned(),
+            to: to.to_owned(),
+            a_page,
+            now_showing,
+        }
+    }
+
     /// What one of the six file verbs answered, as it goes on the wire.
     #[must_use]
     pub fn of_a_file_verb(answer: &Answer) -> Self {
@@ -751,6 +810,9 @@ impl Done {
             // **A typing that was not saved** is the one a shell puts a caveat
             // beside: the text is in the window and not on the disk.
             Self::Typed { saved, .. } => !*saved,
+            // **A scroll the window does not yet show** may or may not have
+            // moved it, and that is what a shell puts a caveat beside.
+            Self::Scrolled { now_showing, .. } => !*now_showing,
             // **A publication leaves nothing out**: it names the folder and the
             // address, and what it cannot take back is said in its own line
             // ([`Done::put_back_can_recall_it`]), not as a caveat here.
@@ -771,6 +833,9 @@ impl OneThingShown {
             (None, Role::Image) => "image",
             (None, Role::Window) => "window",
             (None, Role::Canvas) => "drawn",
+            (None, Role::DropDown) => "drop-down",
+            (None, Role::Item) => "item",
+            (None, Role::Range) => "slider",
             (None, _) => "text",
         };
         let shows = match seen.contents() {
@@ -791,6 +856,9 @@ impl OneThingShown {
                 }
                 .to_owned()
             }),
+            cut_short: seen.is_cut_short(),
+            selected: seen.is_selected(),
+            value: seen.value().map(ToOwned::to_owned),
         }
     }
 }
@@ -1019,6 +1087,19 @@ mod tests {
             })
             .unwrap(),
             r#"{"installed":{"application":"org.gnome.TextEditor","sandboxed":false}}"#
+        );
+    }
+
+    /// **A scroll the window does not yet show leaves something out**, and one
+    /// it shows does not (2026-11-17); its wire form names what was asked.
+    #[test]
+    fn a_scroll_leaves_something_out_only_when_the_window_does_not_show_it() {
+        let shown = Done::of_a_scroll("org.gnome.Papers", "Chapter 3", false, true);
+        assert!(!shown.left_something_out());
+        assert!(Done::of_a_scroll("org.gnome.Papers", "down", true, false).left_something_out());
+        assert_eq!(
+            serde_json::to_string(&shown).unwrap(),
+            r#"{"scrolled":{"application":"org.gnome.Papers","to":"Chapter 3","a_page":false,"now_showing":true}}"#
         );
     }
 }

@@ -24,7 +24,9 @@
 //!    question is not put, so there is no answer to drop.
 //! 4. **Bounded.** At most [`MOST_THINGS`] things, [`DEEPEST`] levels and
 //!    [`LONGEST_TEXT`] characters of any one text; past that the answer says
-//!    not everything was read, rather than stopping silently.
+//!    so rather than stopping silently — a window, that not everything in it
+//!    was read; a text, on the thing itself, that only its beginning is here
+//!    ([`Seen::is_cut_short`]).
 
 use crate::accessibility_tree::{AccessibilityTree, Facts, NodeAt, Running, TreeFault};
 use crate::not_walked::NotWalked;
@@ -303,10 +305,24 @@ impl Walker<'_> {
     ) -> Result<(), NotWalked> {
         let role = Role::of_the_tree(facts.role);
         let name = facts.name.trim().to_owned();
+        let mut cut_short = false;
         // The one question never put to a password field.
         let text = if role.text_is_read() && role != Role::PasswordField && facts.has_text {
             match self.tree.text(at) {
-                Ok(text) => Some(text.chars().take(LONGEST_TEXT).collect()),
+                Ok(text) => {
+                    cut_short = text.chars().nth(LONGEST_TEXT).is_some();
+                    Some(text.chars().take(LONGEST_TEXT).collect())
+                }
+                Err(TreeFault::Vanished) => None,
+                Err(fault) => return Err(NotWalked::Tree(fault)),
+            }
+        } else {
+            None
+        };
+        // The number a slider or a meter holds, asked of nothing else.
+        let value = if role == Role::Range {
+            match self.tree.value(at) {
+                Ok(value) => value,
                 Err(TreeFault::Vanished) => None,
                 Err(fault) => return Err(NotWalked::Tree(fault)),
             }
@@ -315,7 +331,10 @@ impl Walker<'_> {
         };
         let described = Seen::of(role, name.clone(), text, depth)
             .on(states.on(role))
-            .usable(states.usable());
+            .usable(states.usable())
+            .cut_short(cut_short)
+            .selected(states.selected())
+            .valued(value);
         let kept = match role {
             Role::Button
             | Role::CheckBox
@@ -350,7 +369,20 @@ impl Walker<'_> {
                 Some(described.limited(Limit::NotDescribed))
             }
             Role::TextField | Role::PasswordField | Role::Window | Role::Canvas => Some(described),
-            Role::Label | Role::Document | Role::Image | Role::Part => {
+            // **A drop-down with nothing to name it by** is a control alo can
+            // say nothing useful about, said as one.
+            Role::DropDown
+                if name.is_empty()
+                    && !matches!(described.contents(), crate::shown::Contents::Text(_)) =>
+            {
+                Some(described.limited(Limit::NoName))
+            }
+            Role::DropDown => Some(described),
+            Role::Range => {
+                let says_something = !name.is_empty() || described.value().is_some();
+                says_something.then_some(described)
+            }
+            Role::Label | Role::Document | Role::Image | Role::Item | Role::Part => {
                 let says_something = !name.is_empty()
                     || matches!(described.contents(), crate::shown::Contents::Text(_));
                 says_something.then_some(described)

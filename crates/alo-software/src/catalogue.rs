@@ -75,8 +75,9 @@ use alo_capability::is_a_persons_own;
 use serde::Deserialize;
 
 use crate::category::Category;
-use crate::fields::{is_a_licence, is_a_release};
+use crate::fields::{Licence, is_a_release};
 use crate::installing::Wanted;
+use crate::label::Label;
 use crate::shipped::{NotShipped, Shipped};
 use crate::source::SourceName;
 
@@ -190,8 +191,12 @@ pub struct Listed {
     source: SourceName,
     /// The upstream release it was listed at.
     version: String,
-    /// Its licence, as its upstream states it.
-    licence: String,
+    /// Its licence, as its upstream states it, read.
+    licence: Licence,
+    /// Whether its makers published it at its source themselves.
+    verified: bool,
+    /// Whether it is an early version, still changing a great deal.
+    early: bool,
 }
 
 impl Listed {
@@ -219,10 +224,50 @@ impl Listed {
         &self.version
     }
 
-    /// Its licence.
+    /// Its licence, exactly as the catalogue writes it.
     #[must_use]
     pub fn licence(&self) -> &str {
-        &self.licence
+        self.licence.written()
+    }
+
+    /// Whether every part of its licence is an open one.
+    ///
+    /// **False for anything Flathub records as `LicenseRef-proprietary`**, which
+    /// the market labels *not open source* (the owner, 2026-11-17). Read from the
+    /// licence by `crate::fields::Licence`, never written beside it, so the label
+    /// and the licence cannot disagree.
+    #[must_use]
+    pub const fn is_open_source(&self) -> bool {
+        self.licence.is_open_source()
+    }
+
+    /// Whether its makers published it at its source themselves — for Flathub,
+    /// the verification Flathub shows on its page, read from
+    /// `https://flathub.org/api/v2/verification/<id>/status` when it was listed.
+    #[must_use]
+    pub const fn is_verified(&self) -> bool {
+        self.verified
+    }
+
+    /// Whether it is an early version, still changing a great deal.
+    #[must_use]
+    pub const fn is_early(&self) -> bool {
+        self.early
+    }
+
+    /// What the market says beside its name, in [`Label::EVERY`]'s order —
+    /// nothing, for an open-source application its makers published themselves
+    /// that is not an early version.
+    #[must_use]
+    pub fn labels(&self) -> Vec<Label> {
+        Label::EVERY
+            .into_iter()
+            .filter(|label| match label {
+                Label::NotOpenSource => !self.is_open_source(),
+                Label::NotVerified => !self.is_verified(),
+                Label::EarlyVersion => self.is_early(),
+            })
+            .collect()
     }
 
     /// The installation, as a person asks for any application: the same value,
@@ -339,6 +384,12 @@ struct Entry {
     version: String,
     /// Its licence.
     licence: String,
+    /// Whether its makers published it at its source themselves. Written on
+    /// every entry, so a forgotten one is a refused file rather than a
+    /// missing label.
+    verified: bool,
+    /// Whether it is an early version.
+    early: bool,
 }
 
 /// The file, as it is written.
@@ -376,11 +427,11 @@ fn checked(entry: Entry) -> Result<Listed, NotCatalogued> {
             version: entry.version,
         });
     }
-    if !is_a_licence(&entry.licence) {
+    let Some(licence) = Licence::read(&entry.licence) else {
         return Err(NotCatalogued::NoLicence {
             identifier: entry.identifier,
         });
-    }
+    };
     if is_a_persons_own(application.identifier()) {
         return Err(NotCatalogued::APersonsOwn {
             identifier: entry.identifier,
@@ -391,7 +442,9 @@ fn checked(entry: Entry) -> Result<Listed, NotCatalogued> {
         application,
         source,
         version: entry.version,
-        licence: entry.licence,
+        licence,
+        verified: entry.verified,
+        early: entry.early,
     })
 }
 

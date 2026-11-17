@@ -76,7 +76,7 @@ fn every_hole_is_one_that_gets_filled() {
 
 /// **The two endings, and no word with both or neither.**
 ///
-/// Nine are about reading and end *does not know how you want code run*. Two
+/// Eleven are about reading and end *does not know how you want code run*. Two
 /// are about writing and end *has not been changed*. A word with neither is a
 /// sentence that does not say what follows for the person, which is the half
 /// they act on.
@@ -104,8 +104,9 @@ fn every_sentence_says_what_follows_from_it() {
     assert_eq!(
         (reading, writing),
         // Ten since 2026-11-10: `in-applications` saying a word it does not
-        // take is one more way the file did not read.
-        (10, 2),
+        // take is one more way the file did not read. Eleven since
+        // 2026-11-17: `pictures-and-keys-in` naming a terminal is another.
+        (11, 2),
         "the split moved; the module header says which sentences are which"
     );
 }

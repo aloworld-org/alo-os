@@ -74,7 +74,7 @@ use crate::the_level::WhatTheFileSays;
 pub const THE_LEVEL: &str = "/var/lib/alo/how-code-runs.toml";
 
 /// Everything kept at this path, believed and read; `Ok(None)` for no file.
-fn what_is_kept(at: &Path) -> Result<Option<WhatTheFileSays>, NotRemembered> {
+pub(crate) fn what_is_kept(at: &Path) -> Result<Option<WhatTheFileSays>, NotRemembered> {
     match read_believed(at) {
         Ok(text) => match crate::the_level::read(&text) {
             Ok(says) => Ok(Some(says)),
@@ -95,7 +95,7 @@ fn what_is_kept(at: &Path) -> Result<Option<WhatTheFileSays>, NotRemembered> {
 }
 
 /// What the file is to say, written whole to this path.
-fn kept(at: &Path, says: WhatTheFileSays) -> Result<(), NotRemembered> {
+pub(crate) fn kept(at: &Path, says: WhatTheFileSays) -> Result<(), NotRemembered> {
     let text = crate::the_level::written(says).map_err(|why| NotRemembered::NotTheLevel {
         at: at.to_owned(),
         why,

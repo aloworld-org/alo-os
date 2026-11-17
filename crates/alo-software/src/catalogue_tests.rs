@@ -12,6 +12,7 @@
 )]
 
 use super::*;
+use crate::label::Label;
 use crate::role::Role;
 
 /// The decided catalogue with one line of it replaced.
@@ -30,8 +31,66 @@ fn with_one_more(category: &str, identifier: &str, version: &str, licence: &str)
     format!(
         "{THE_CATALOGUE}\n[[application]]\ncategory = \"{category}\"\nidentifier = \
          \"{identifier}\"\nsource = \"flathub\"\nversion = \"{version}\"\nlicence = \
-         \"{licence}\"\n"
+         \"{licence}\"\nverified = true\nearly = false\n"
     )
+}
+
+/// **A label is read off its entry**: proprietary terms are *not open source*,
+/// `verified = false` is *not verified*, `early = true` is *early version*, in
+/// that order — and an open entry its makers published, not early, has none.
+#[test]
+fn an_entrys_labels_are_read_off_it() {
+    let shipped = what_a_machine_ships();
+    let text = format!(
+        "{THE_CATALOGUE}\n[[application]]\ncategory = \"audio\"\nidentifier = \
+         \"com.example.All\"\nsource = \"flathub\"\nversion = \"1.0\"\nlicence = \
+         \"LicenseRef-proprietary\"\nverified = false\nearly = true\n"
+    );
+    let catalogue = Catalogue::read(&text, &shipped).unwrap();
+    let labels_of = |identifier: &str| {
+        catalogue
+            .every()
+            .iter()
+            .find(|one| one.application().identifier() == identifier)
+            .unwrap()
+            .labels()
+    };
+    assert_eq!(
+        labels_of("com.example.All"),
+        vec![
+            Label::NotOpenSource,
+            Label::NotVerified,
+            Label::EarlyVersion
+        ]
+    );
+    assert_eq!(labels_of("org.gimp.GIMP"), Vec::<Label>::new());
+    assert_eq!(
+        labels_of("org.darktable.Darktable"),
+        vec![Label::NotVerified]
+    );
+}
+
+/// **An entry that does not say whether it is verified, or whether it is
+/// early, is refused** — so a forgotten field is a refused file and never a
+/// label quietly missing from a row.
+#[test]
+fn an_entry_that_does_not_say_verified_or_early_is_refused() {
+    let shipped = what_a_machine_ships();
+    let gimps = "licence = \"GPL-3.0+ AND LGPL-3.0+\"\nverified = true\nearly = false\n";
+    for instead in [
+        "licence = \"GPL-3.0+ AND LGPL-3.0+\"\nearly = false\n",
+        "licence = \"GPL-3.0+ AND LGPL-3.0+\"\nverified = true\n",
+        "licence = \"GPL-3.0+ AND LGPL-3.0+\"\nverified = \"yes\"\nearly = false\n",
+    ] {
+        let text = replacing(gimps, instead);
+        assert!(
+            matches!(
+                Catalogue::read(&text, &shipped),
+                Err(NotCatalogued::NotRead { .. })
+            ),
+            "{instead:?} was read"
+        );
+    }
 }
 
 #[test]
@@ -269,6 +328,71 @@ fn a_version_that_is_not_a_release_and_a_licence_that_is_not_one_are_refused() {
     );
 }
 
+/// **A release and a licence are taken as Flathub writes them**, and the
+/// licence is read rather than copied: proprietary terms come through as not
+/// open source, with the address of the terms kept as written.
+#[test]
+fn a_release_and_a_licence_as_flathub_writes_them_are_read() {
+    let shipped = what_a_machine_ships();
+    let text = with_one_more(
+        "audio",
+        "com.example.Player",
+        "1.2.95.453.g0eeebbed",
+        "LicenseRef-proprietary=https://example.org/terms",
+    );
+    let catalogue = Catalogue::read(&text, &shipped).unwrap();
+    let player = catalogue
+        .every()
+        .iter()
+        .find(|one| one.application().identifier() == "com.example.Player")
+        .unwrap();
+    assert_eq!(player.version(), "1.2.95.453.g0eeebbed");
+    assert_eq!(
+        player.licence(),
+        "LicenseRef-proprietary=https://example.org/terms"
+    );
+    assert!(!player.is_open_source());
+    let gimp = catalogue
+        .every()
+        .iter()
+        .find(|one| one.application().identifier() == "org.gimp.GIMP")
+        .unwrap();
+    assert!(gimp.is_open_source());
+}
+
+/// **What the looser rules still refuse, through the catalogue**: a reference
+/// to terms nobody here has read, an address that is not `https`, and a
+/// release that is a word.
+#[test]
+fn a_licence_reference_nobody_read_and_a_word_for_a_release_are_still_refused() {
+    let shipped = what_a_machine_ships();
+    for licence in [
+        "LicenseRef-Discord",
+        "LicenseRef-proprietary=http://example.org",
+        "MIT Apache-2.0",
+    ] {
+        let text = with_one_more("audio", "com.example.Player", "1.0", licence);
+        assert_eq!(
+            Catalogue::read(&text, &shipped).unwrap_err(),
+            NotCatalogued::NoLicence {
+                identifier: "com.example.Player".to_owned()
+            },
+            "{licence}"
+        );
+    }
+    for version in ["stable", "-1", "1 .2"] {
+        let text = with_one_more("audio", "com.example.Player", version, "MIT");
+        assert_eq!(
+            Catalogue::read(&text, &shipped).unwrap_err(),
+            NotCatalogued::NotAVersion {
+                identifier: "com.example.Player".to_owned(),
+                version: version.to_owned()
+            },
+            "{version}"
+        );
+    }
+}
+
 /// **Nothing in the catalogue is a proprietary licence**, and nothing is
 /// unstated. A list this product recommends is a list a person can keep using
 /// after we stop publishing it.
@@ -311,12 +435,21 @@ fn the_catalogue_holds_no_words_a_person_would_read() {
         assert!(
             matches!(
                 key,
-                Some("format" | "category" | "identifier" | "source" | "version" | "licence")
+                Some(
+                    "format"
+                        | "category"
+                        | "identifier"
+                        | "source"
+                        | "version"
+                        | "licence"
+                        | "verified"
+                        | "early"
+                )
             ),
             "the catalogue holds {line:?}, which this reader does not know — and if it is \
              something a person reads, it belongs in crate::words"
         );
         read += 1;
     }
-    assert_eq!(read, 41, "format, and five keys for each of eight entries");
+    assert_eq!(read, 57, "format, and seven keys for each of eight entries");
 }

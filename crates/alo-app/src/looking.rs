@@ -15,8 +15,8 @@
 //! ```
 //!
 //! where `<kind>` is a kind `press` takes (`button`, `check_box`, …), or
-//! `field` or `password_field`, and what is true of it is any of `greyed-out`,
-//! `on` and `off`.
+//! `field`, `password_field`, `drop_down` or `slider`, and what is true of it
+//! is any of `greyed-out`, `on`, `off`, `selected` and `value=<number>`.
 
 use alo_adapters::{
     Contents, Limit, NotWalked, Pressable, Role, Seen, Shown, WorkingFully, nothing_to_read,
@@ -96,13 +96,10 @@ pub fn looked(
     if let Some(said) = shown.not_all_read_said(strings) {
         machine.warned(said.text());
     }
+    for said in shown.cut_short_said(strings) {
+        machine.warned(said.text());
+    }
     Ended::Done
-}
-
-/// Whether a thing is a control: something a person presses or types into.
-fn is_a_control(seen: &Seen) -> bool {
-    Pressable::of(seen.role()).is_some()
-        || matches!(seen.role(), Role::TextField | Role::PasswordField)
 }
 
 /// A control's kind, in words.
@@ -111,6 +108,8 @@ fn kind_said(role: Role, strings: &Strings) -> Option<Said> {
         (Some(kind), _) => kind.words(),
         (None, Role::TextField) => words::A_FIELD,
         (None, Role::PasswordField) => words::A_PASSWORD_FIELD,
+        (None, Role::DropDown) => words::A_DROP_DOWN,
+        (None, Role::Range) => words::A_RANGE,
         (None, _) => return None,
     };
     Some(strings.say(&word.key(), &Filling::nothing()))
@@ -122,6 +121,8 @@ fn kind_named(role: Role) -> Option<&'static str> {
         (Some(kind), _) => Some(kind.named()),
         (None, Role::TextField) => Some("field"),
         (None, Role::PasswordField) => Some("password_field"),
+        (None, Role::DropDown) => Some("drop_down"),
+        (None, Role::Range) => Some("slider"),
         (None, _) => None,
     }
 }
@@ -137,6 +138,19 @@ fn states_said(seen: &Seen, strings: &Strings) -> Vec<String> {
         Some(true) => states.push(say(words::STATE_ON)),
         Some(false) => states.push(say(words::STATE_OFF)),
         None => {}
+    }
+    if seen.is_selected() == Some(true) {
+        states.push(say(words::STATE_SELECTED));
+    }
+    if let Some(value) = seen.value() {
+        states.push(
+            strings
+                .say(
+                    &words::AT_VALUE.key(),
+                    &Filling::of(words::VALUE, value.to_owned()),
+                )
+                .into_text(),
+        );
     }
     match seen.contents() {
         Contents::Text(text) => states.push(
@@ -186,9 +200,8 @@ fn controls_said(shown: &Shown, strings: &Strings) -> Vec<String> {
                 lines.push(format!("  {limit}"));
                 continue;
             }
-            if !is_a_control(seen) {
-                continue;
-            }
+            // **A control is what has a kind in words**: anything else —
+            // words, a picture, a part of the layout — is not listed here.
             let Some(kind) = kind_said(seen.role(), strings) else {
                 continue;
             };
@@ -219,17 +232,23 @@ fn controls_said(shown: &Shown, strings: &Strings) -> Vec<String> {
 fn controls_as_values(shown: &Shown) -> Vec<String> {
     shown
         .everything()
-        .filter(|seen| seen.limit().is_none() && is_a_control(seen))
+        .filter(|seen| seen.limit().is_none())
         .filter_map(|seen| {
             let kind = kind_named(seen.role())?;
-            let mut states = Vec::new();
+            let mut states: Vec<String> = Vec::new();
             if !seen.is_usable() {
-                states.push("greyed-out");
+                states.push("greyed-out".to_owned());
             }
             match seen.is_on() {
-                Some(true) => states.push("on"),
-                Some(false) => states.push("off"),
+                Some(true) => states.push("on".to_owned()),
+                Some(false) => states.push("off".to_owned()),
                 None => {}
+            }
+            if seen.is_selected() == Some(true) {
+                states.push("selected".to_owned());
+            }
+            if let Some(value) = seen.value() {
+                states.push(format!("value={value}"));
             }
             Some(format!("{kind}\t{}\t{}", seen.name(), states.join(",")))
         })

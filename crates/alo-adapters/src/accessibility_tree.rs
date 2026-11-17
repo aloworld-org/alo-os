@@ -10,7 +10,9 @@
 //! **What is not here is the guarantee.** There is no method that answers with
 //! a position, a size or a picture, and none that takes one — so nothing built
 //! on this trait can find a control by where it is, click a point, or look at
-//! the screen. There is no method that subscribes to anything either: every
+//! the screen. Scrolling ([`AccessibilityTree::scroll_to`], 2026-11-17) takes a
+//! thing and an [`Edge`], never a point, and answers yes or no. There is no
+//! method that subscribes to anything either: every
 //! answer is to a question asked at that moment, and nothing arrives unasked.
 //! A control with no name, and an area an application draws itself, are
 //! therefore said in words (`crate::shown::Limit`) rather than guessed at.
@@ -116,6 +118,19 @@ pub trait AccessibilityTree {
         Ok(Vec::new())
     }
 
+    /// The number one thing holds — AT-SPI's `Value`: where a slider is, how
+    /// far a progress bar has got — or [`None`] for a thing that holds none.
+    /// Asked only of a [`crate::Role::Range`]. **None by default**, which is
+    /// what a tree that offers no numbers says.
+    ///
+    /// # Errors
+    /// [`TreeFault`].
+    // The body is the answer itself and nothing else, so the mutation check
+    // has no other version of it to try: `Ok(None)` is what it would put here.
+    fn value(&self, _at: &NodeAt) -> Result<Option<f64>, TreeFault> {
+        Ok(None)
+    }
+
     /// Whether one thing takes text put into it through the tree — AT-SPI's
     /// `EditableText` (ADR 0153). **No by default**, which is what Chromium
     /// answers for every field it has; GTK answers yes.
@@ -150,5 +165,69 @@ pub trait AccessibilityTree {
     fn insert_text(&self, at: &NodeAt, position: usize, text: &str) -> Result<bool, TreeFault> {
         let _ = (at, position, text);
         Ok(false)
+    }
+
+    /// Ask the application to scroll whatever holds one thing until that thing
+    /// is on the screen, against `edge` of what it shows — `true` when the
+    /// application says it did (`crate::scrolling`). **It takes a thing, never
+    /// a point**: where the thing lands is the application's to work out, so
+    /// nothing here learns or sends a position.
+    ///
+    /// **The answer is not evidence it moved**: a caller asks the thing's
+    /// states again. **No by default**, so a tree that does not know scrolling
+    /// scrolls nothing.
+    ///
+    /// # Errors
+    /// [`TreeFault`].
+    // The body is the answer itself and nothing else, so the mutation check
+    // has no other version of it to try that means the same.
+    fn scroll_to(&self, _at: &NodeAt, _edge: Edge) -> Result<bool, TreeFault> {
+        Ok(false)
+    }
+}
+
+/// Which edge of what a window shows a thing is scrolled to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Edge {
+    /// The thing's top against the top of what is shown — scrolling down.
+    Top,
+    /// The thing's bottom against the bottom of what is shown — scrolling up.
+    Bottom,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A tree that answers only what every tree must.
+    struct OnlyWhatIsRequired;
+
+    impl AccessibilityTree for OnlyWhatIsRequired {
+        fn applications(&self) -> Result<Vec<Running>, TreeFault> {
+            Ok(Vec::new())
+        }
+        fn facts(&self, _: &NodeAt) -> Result<Facts, TreeFault> {
+            Err(TreeFault::Vanished)
+        }
+        fn text(&self, _: &NodeAt) -> Result<String, TreeFault> {
+            Ok(String::new())
+        }
+        fn actions(&self, _: &NodeAt) -> Result<Vec<String>, TreeFault> {
+            Ok(Vec::new())
+        }
+        fn act(&self, _: &NodeAt, _: usize) -> Result<bool, TreeFault> {
+            Ok(false)
+        }
+    }
+
+    /// **A tree that offers no numbers says none**, rather than inventing
+    /// one: a slider read from it holds no value.
+    #[test]
+    fn a_tree_that_offers_no_numbers_says_none() {
+        let at = NodeAt {
+            holder: ":1.7".to_owned(),
+            object: "/slider".to_owned(),
+        };
+        assert_eq!(OnlyWhatIsRequired.value(&at), Ok(None));
     }
 }

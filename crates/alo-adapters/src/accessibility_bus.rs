@@ -6,9 +6,10 @@
 //! patched). [`AccessibleSession`] asks it exactly the questions
 //! [`AccessibilityTree`] lists, one method call each, and nothing else:
 //!
-//! - **no position, size or picture is ever asked for** — the `Component` and
-//!   `Image` interfaces are not called, because nothing here has a use for
-//!   where a thing is;
+//! - **no position, size or picture is ever asked for** — `Image` is not
+//!   called, and of `Component` only `ScrollTo` is, which takes a scroll type
+//!   and answers yes or no (`crate::scrolling`, 2026-11-17): nothing here has a
+//!   use for where a thing is;
 //! - **nothing is subscribed to** — no event is registered with the registry
 //!   and no match rule is added, so nothing arrives that was not asked for, and
 //!   every call is a plain method call rather than a proxy, which would ask the
@@ -26,7 +27,7 @@ use zbus::blocking::Connection;
 use zbus::blocking::connection::Builder;
 use zbus::zvariant::{OwnedObjectPath, OwnedValue};
 
-use crate::accessibility_tree::{AccessibilityTree, Facts, NodeAt, Running, TreeFault};
+use crate::accessibility_tree::{AccessibilityTree, Edge, Facts, NodeAt, Running, TreeFault};
 use crate::whose_connection::application_of;
 
 /// How long an application has to answer one question.
@@ -53,6 +54,13 @@ const ACTION: &str = "org.a11y.atspi.Action";
 
 /// The interface through which text is put into a thing (ADR 0153).
 const EDITABLE_TEXT: &str = "org.a11y.atspi.EditableText";
+
+/// The interface a slider, a progress bar or a meter says its number through.
+const VALUE: &str = "org.a11y.atspi.Value";
+
+/// The interface through which a thing is scrolled onto the screen — and the
+/// only one of its methods called here, `ScrollTo`.
+const COMPONENT: &str = "org.a11y.atspi.Component";
 
 /// The accessibility tree of one session, for one turn.
 #[derive(Debug)]
@@ -242,6 +250,20 @@ impl AccessibilityTree for AccessibleSession {
         self.ask(at, ACTION, "DoAction", &(index,))
     }
 
+    fn value(&self, at: &NodeAt) -> Result<Option<f64>, TreeFault> {
+        let interfaces: Vec<String> = self.ask(at, ACCESSIBLE, "GetInterfaces", &())?;
+        if !offers(&interfaces, VALUE) {
+            return Ok(None);
+        }
+        let value: OwnedValue = self.ask(
+            at,
+            "org.freedesktop.DBus.Properties",
+            "Get",
+            &(VALUE, "CurrentValue"),
+        )?;
+        Ok(f64::try_from(value).ok().filter(|value| value.is_finite()))
+    }
+
     fn takes_text(&self, at: &NodeAt) -> Result<bool, TreeFault> {
         let interfaces: Vec<String> = self.ask(at, ACCESSIBLE, "GetInterfaces", &())?;
         Ok(interfaces
@@ -265,6 +287,15 @@ impl AccessibilityTree for AccessibleSession {
         let position = i32::try_from(position).map_err(|_| TreeFault::Vanished)?;
         let length = i32::try_from(text.chars().count()).map_err(|_| TreeFault::Vanished)?;
         self.ask(at, EDITABLE_TEXT, "InsertText", &(position, text, length))
+    }
+
+    fn scroll_to(&self, at: &NodeAt, edge: Edge) -> Result<bool, TreeFault> {
+        // `AtspiScrollType`: 2 is the top edge, 3 the bottom edge.
+        let scroll_type: u32 = match edge {
+            Edge::Top => 2,
+            Edge::Bottom => 3,
+        };
+        self.ask(at, COMPONENT, "ScrollTo", &(scroll_type,))
     }
 
     fn attributes(&self, at: &NodeAt) -> Result<Vec<(String, String)>, TreeFault> {
@@ -292,5 +323,28 @@ fn heard(why: &zbus::Error) -> TreeFault {
             TreeFault::DidNotAnswer
         }
         _ => TreeFault::NotThere,
+    }
+}
+
+/// Whether a thing whose interfaces are `interfaces` offers `interface`,
+/// matched exactly.
+fn offers(interfaces: &[String], interface: &str) -> bool {
+    interfaces.iter().any(|offered| offered == interface)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// **A number is asked only of a thing that offers one**, matched by the
+    /// interface's whole name — a slider says `Value`, a button does not.
+    #[test]
+    fn an_interface_is_offered_only_when_it_is_named_exactly() {
+        let slider = vec![ACCESSIBLE.to_owned(), VALUE.to_owned()];
+        let button = vec![ACCESSIBLE.to_owned(), ACTION.to_owned()];
+        assert!(offers(&slider, VALUE));
+        assert!(!offers(&button, VALUE));
+        assert!(!offers(&[format!("{VALUE}2")], VALUE));
+        assert!(!offers(&[], VALUE));
     }
 }

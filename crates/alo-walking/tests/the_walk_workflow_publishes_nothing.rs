@@ -62,19 +62,35 @@ fn nothing_is_pushed_signed_or_published() {
     }
 }
 
-/// **The image is main's**: the checkout it is built from is the merged
-/// commit after a merge to main and `main` otherwise, and it is built from
-/// that checkout.
+/// **The image is main's unless a person asks for the branch's**: the
+/// checkout it is built from is the merged commit after a merge to main;
+/// `main` when a person starts it; and the commit they started it on only
+/// when they tick the box for it — a walk image of a branch, which CLAUDE.md
+/// allows, never published, and named in the summary with its branch and
+/// commit. It is built from that checkout.
 #[test]
 fn the_image_is_built_from_main() {
     let lines = said();
     let checkout = lines.windows(3).any(|three| {
-        three
-            .iter()
-            .any(|it| it == "ref: ${{ github.event_name == 'push' && github.sha || 'main' }}")
-            && three.iter().any(|it| it == "path: image-source")
+        three.iter().any(|it| {
+            it == "ref: ${{ github.event_name == 'push' && github.sha || inputs.image_from_this_branch && github.sha || 'main' }}"
+        }) && three.iter().any(|it| it == "path: image-source")
     });
-    assert!(checkout, "no checkout of main into image-source");
+    assert!(
+        checkout,
+        "no checkout of main, or of the branch asked for, into image-source"
+    );
+    assert!(
+        lines.iter().any(|it| it
+            == "IMAGE_FROM: ${{ github.event_name != 'push' && inputs.image_from_this_branch && github.ref_name || 'main' }}"),
+        "the summary does not name the branch the image is built from"
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|it| it.contains(r"built from \`$IMAGE_FROM\` at")),
+        "the summary does not say the branch and the commit"
+    );
     assert!(
         lines.windows(2).any(|two| matches!(two, [step, place]
             if step.starts_with("- name: Build the walk image")
@@ -142,7 +158,10 @@ fn it_runs_after_every_merge_to_main_and_by_hand() {
             "with_the_provider:",
             // The person's second box (2026-11-16): ask alo in every shipped
             // application. An input, not a trigger.
-            "every_application:"
+            "every_application:",
+            // The third (2026-11-17): build the image from the branch the
+            // walk was started on, to measure it before it merges.
+            "image_from_this_branch:"
         ],
         "a trigger beside a merge to main and a person"
     );

@@ -393,3 +393,72 @@ fn at_two_hundred_the_market_is_placed_and_drawn_twice_the_size() {
         "a line is {ratio} times as tall"
     );
 }
+
+/// Where the label line of the first card is, at the ordinary size: under the
+/// artwork tile and above the foot.
+fn the_first_cards_label_band(at: Rectangle<i32, Physical>) -> (i32, i32, i32, i32) {
+    let measure = Measure::of(TextScale::ordinary());
+    let px = |of: u32| measure.px(i32::try_from(of).unwrap());
+    let card_y = at.loc.y
+        + px(m::THE_TITLE_BAR_IS_TALL)
+        + px(m::ABOVE)
+        + px(m::THE_SEARCH_IS_TALL)
+        + px(m::A_GAP)
+        + px(m::A_CHIP_IS_TALL)
+        + px(m::A_GAP);
+    let left = at.loc.x + px(m::BESIDE);
+    let top = card_y + px(m::INSIDE_A_CARD) + px(m::A_TILE_IS);
+    let bottom = card_y + px(m::A_CARD_IS_TALL) - px(m::INSIDE_A_CARD) - measure.px(26);
+    (left, left + px(m::a_card_is_wide()), top, bottom)
+}
+
+/// The window narrowed to *Audio*, over this catalogue.
+fn narrowed_to_audio(text: &str) -> MarketWindow {
+    let mut window = MarketWindow::closed();
+    window.opened(
+        Catalogue::read(text, &alo_software::Shipped::decided().unwrap()).unwrap(),
+        Vec::new(),
+    );
+    for _ in 0..7 {
+        window.pressed(crate::MarketKey::After);
+    }
+    window
+}
+
+/// **A label is written on its row, between the name and the foot**, and a row
+/// with no label has nothing written there. The first card on the *Audio*
+/// shelf is Audacity, which Flathub does not list as verified (2026-11-17).
+#[test]
+fn a_label_is_written_on_its_row_and_a_row_without_one_has_nothing_there() {
+    let (_, words, at) = a_window();
+    let band = the_first_cards_label_band(at);
+    let something_in_the_band = |picture: &MarketPicture| {
+        picture.inked.iter().any(|one| {
+            let (x, y) = (one.area.loc.x, one.area.loc.y);
+            x >= band.0 && x < band.1 && y >= band.2 && y < band.3
+        })
+    };
+
+    let labelled = drawn(&narrowed_to_audio(THE_CATALOGUE_AS_IT_IS), &words, at);
+    assert!(
+        something_in_the_band(&labelled),
+        "Audacity's row has no label written on it"
+    );
+
+    let verified = THE_CATALOGUE_AS_IT_IS.replace(
+        "\"GPL-3.0-only\"\nverified = false",
+        "\"GPL-3.0-only\"\nverified = true",
+    );
+    assert_ne!(
+        verified, THE_CATALOGUE_AS_IT_IS,
+        "the premise: Audacity changed"
+    );
+    let plain = drawn(&narrowed_to_audio(&verified), &words, at);
+    assert!(
+        !something_in_the_band(&plain),
+        "a row with no label has something written where a label goes"
+    );
+}
+
+/// The decided catalogue's text.
+const THE_CATALOGUE_AS_IT_IS: &str = alo_software::catalogue::THE_CATALOGUE;

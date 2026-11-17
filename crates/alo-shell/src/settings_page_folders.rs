@@ -22,7 +22,9 @@ use alo_capability::{AloInApplications, Reach};
 use alo_changing::Row;
 use alo_strings::{Filling, Strings};
 
-use crate::settings_page::{ABlock, ANote, ARisk, ARow, ASection, AnAction, TheKind, said};
+use crate::settings_page::{
+    ABlock, ANote, ARisk, ARow, ASection, AnAction, AnEnd, SwitchIs, TheKind, said, switch_said,
+};
 use crate::settings_type::as_a_name;
 use crate::settings_window::{Open, SettingsRow};
 use crate::the_settings_icons::ASettingsIcon;
@@ -225,7 +227,74 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings, now: SystemTime) -> Vec
         rows: where_alo_works(open, strings),
         footnote: None,
     }));
+    if let Some(rows) = pictures_and_keys(open, strings) {
+        blocks.push(ABlock::Section(ASection {
+            heading: Some(said(strings, alo_capability::words::PICTURES_AND_KEYS)),
+            rows,
+            footnote: None,
+        }));
+    }
     blocks
+}
+
+/// **Pictures and keys, one switch per application** — ADR 0143 Q11 and the
+/// owner's *"Yes, build it"* of 2026-11-17: off until the person switches it
+/// on, with what it costs said first.
+///
+/// **The design has no frame for it**: it was decided after `550:741` was
+/// drawn. So it is built from the pieces the design already has — a row of
+/// words with the *What it risks* box (`550:874`), drawn once above the
+/// switches so it is read before any of them is pressed, and the Terminal
+/// page's switch row (`551:168`) for each application.
+/// `docs/design/the-settings-window.md` records the departure.
+///
+/// [`None`] where this machine has told Settings of no application: a heading
+/// over nothing to switch teaches somebody the list lies.
+fn pictures_and_keys(open: &Open, strings: &Strings) -> Option<Vec<ARow>> {
+    use alo_capability::words as cw;
+    let listed = open.granted.the_applications_listed();
+    if listed.is_empty() {
+        return None;
+    }
+    let mut what = ARow::named(
+        None,
+        TheKind::Plain,
+        said(strings, cw::PICTURES_AND_KEYS_ARE_FOR),
+    );
+    what.lines.push(said(strings, cw::PICTURES_AND_KEYS_ARE));
+    what.risk = Some(ARisk {
+        heading: said(strings, w::WHAT_IT_RISKS),
+        // **Not drawn as a name**: it begins with *alo*, which is never
+        // written with a capital.
+        words: said(strings, alo_capability::PicturesAndKeys::what_it_costs()),
+    });
+    let mut rows = vec![what];
+    rows.extend(listed.iter().map(|application| {
+        let is = if open.pictures_and_keys.is_on_in(application.identifier()) {
+            SwitchIs::On
+        } else {
+            SwitchIs::Off
+        };
+        let title = strings
+            .say(
+                &cw::LET_ALO_USE_PICTURES_AND_KEYS_IN.key(),
+                &Filling::of(
+                    alo_capability::pictures_and_keys::THE_APPLICATION,
+                    application.called().to_owned(),
+                ),
+            )
+            .into_text();
+        let mut drawn = ARow::named(
+            Some(SettingsRow::PicturesAndKeys(
+                application.identifier().to_owned(),
+            )),
+            TheKind::ASwitch(is),
+            title,
+        );
+        drawn.at_its_end = Some(AnEnd::Words(switch_said(is, strings)));
+        drawn
+    }));
+    Some(rows)
 }
 
 /// **Where alo works in an application** — ADR 0143 Q6 and the owner's answer

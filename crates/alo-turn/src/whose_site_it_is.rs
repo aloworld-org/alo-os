@@ -89,6 +89,12 @@ impl Turning<'_, '_> {
         ) {
             Ok(call) => Ok(call),
             Err(why) => {
+                // **Said on the journal** (`crate::said_of_a_publication`), so a
+                // walk sees the publication stop here, before any card.
+                eprintln!(
+                    "alo-agentd: {}",
+                    crate::said_of_a_publication::said_before_asking(&why)
+                );
                 let strings = self.machine().strings();
                 let entry = Entry::never_asked(
                     &offered,

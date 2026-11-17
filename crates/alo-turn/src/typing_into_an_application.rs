@@ -18,6 +18,8 @@
 //! 4. The text put in: through the tree where the field takes it
 //!    (`EditableText`), otherwise as key presses the compositor delivers to
 //!    that window alone — and for keys, only if the field has the keyboard.
+//!    **A field that says it took text through the tree and reads back
+//!    unchanged is typed by keys instead**, as Firefox needs.
 //! 5. **Read back**, for up to [`READ_BACK_FOR`]: the approved text must be in
 //!    the field exactly. Then `Ctrl+S`; otherwise nothing is saved and the
 //!    person is told why.
@@ -177,6 +179,7 @@ pub(crate) fn typing_into_an_application(
     };
 
     // Steps 3 and 4: whose window, then the text in.
+    let mut by_keys = !field.takes_text;
     if field.takes_text {
         let may = asking(
             &mut *door,
@@ -193,10 +196,23 @@ pub(crate) fn typing_into_an_application(
                 strings,
             ));
         }
+        let before = tree.text(&field.at).ok();
         if let Err(refused) = typing.put_in(tree.as_ref(), &field, strings) {
             return refusing(refused);
         }
-    } else {
+        // **A field that says it took the text and kept none of it** — Firefox,
+        // on every field it has
+        // (`docs/quirks/chromium-offers-no-editable-text-and-firefox-ignores-it.md`)
+        // — is typed by keys instead, and only when it reads back exactly as
+        // it was, so a text that arrived late is never typed twice.
+        if read_back(&typing, tree.as_ref(), &field, strings).is_err()
+            && before.is_some()
+            && tree.text(&field.at).ok() == before
+        {
+            by_keys = true;
+        }
+    }
+    if by_keys {
         if !field.has_the_keyboard {
             return refusing(typing.refused(words::NOT_IN_FRONT, None, strings));
         }
@@ -240,7 +256,7 @@ pub(crate) fn typing_into_an_application(
         application: typing.application().to_owned(),
         name: typing.name().to_owned(),
         characters: typing.text().chars().count(),
-        through_the_tree: field.takes_text,
+        through_the_tree: !by_keys,
         saved,
     };
     let entry = Entry::ran(&typing.into_authorised(), strings);

@@ -602,6 +602,8 @@ mod tests {
             [
                 "accessible.activate_control",
                 "accessible.read_window",
+                "accessible.scroll_page",
+                "accessible.scroll_to",
                 "accessible.type_text",
                 "archive_folder",
                 "close_application",

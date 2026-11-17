@@ -307,9 +307,18 @@ fn the_steering_names_the_verbs_the_machine_really_has() {
         alo_instructing::working_in_an_application::ACTIVATE_CONTROL,
         alo_adapters::ACTIVATE_CONTROL
     );
+    assert_eq!(
+        alo_instructing::working_in_an_application::SCROLL_PAGE,
+        alo_adapters::SCROLL_PAGE
+    );
+    assert_eq!(
+        alo_instructing::working_in_an_application::SCROLL_TO,
+        alo_adapters::SCROLL_TO
+    );
     let verbs = the_whole_machine();
     let told = alo_instructing::working_in_an_application(&verbs);
     assert!(told.contains("Never send a run line"), "{told}");
+    assert!(told.contains(alo_adapters::SCROLL_PAGE), "{told}");
     let words =
         alo_instructing::the_products_words(alo_instructing::Instructions::SHOWN_TO_A_TURN, &verbs);
     assert!(words.ends_with(&told), "{words}");

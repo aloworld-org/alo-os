@@ -32,6 +32,8 @@ use alo_capability::{Arg, Effect, Requires, Takes, Verb, Verbs};
 use crate::fallback_words as words;
 use crate::not_loaded::NotLoaded;
 use crate::pressable::Pressable;
+use crate::scrolling::Toward;
+use crate::scrolling_words as scrolling;
 use crate::typing_words as typing;
 
 /// The prefix both verbs are named under.
@@ -46,6 +48,15 @@ pub const ACTIVATE_CONTROL: &str = "accessible.activate_control";
 /// The verb that types one approved text into one field, and saves it (ADR
 /// 0153).
 pub const TYPE_TEXT: &str = "accessible.type_text";
+
+/// The verb that scrolls one named thing onto the screen (2026-11-17).
+pub const SCROLL_TO: &str = "accessible.scroll_to";
+
+/// The verb that scrolls by one page, down or up (2026-11-17).
+pub const SCROLL_PAGE: &str = "accessible.scroll_page";
+
+/// The argument naming which way a page is scrolled.
+pub const TOWARD: &str = "toward";
 
 /// The argument carrying the text, whole.
 pub const TEXT: &str = "text";
@@ -133,6 +144,46 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
             typing::TYPE_SENTENCE,
         )
         .and_then(|verb| verb.changing(typing::TYPE_CHANGES, Some(typing::TYPE_LEAVES))),
+    )?)?;
+    // **Scrolling, 2026-11-17** (`crate::scrolling`): a change, like a press —
+    // it moves what the person's window shows. Neither verb takes a position.
+    verbs.declare(checked(
+        SCROLL_TO,
+        Verb::checked(
+            SCROLL_TO,
+            scrolling::SCROLL_TO_PURPOSE,
+            Effect::Change,
+            vec![
+                Arg::taking(
+                    APPLICATION,
+                    scrolling::SCROLL_TO_APPLICATION,
+                    Takes::Application,
+                ),
+                Arg::taking(NAME, scrolling::SCROLL_TO_NAME, Takes::name(LONGEST_NAME)),
+            ],
+            Requires::grants_over([APPLICATION]),
+            scrolling::SCROLL_TO_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(scrolling::SCROLL_CHANGES, Some(scrolling::SCROLL_LEAVES))),
+    )?)?;
+    verbs.declare(checked(
+        SCROLL_PAGE,
+        Verb::checked(
+            SCROLL_PAGE,
+            scrolling::SCROLL_PAGE_PURPOSE,
+            Effect::Change,
+            vec![
+                Arg::taking(
+                    APPLICATION,
+                    scrolling::SCROLL_PAGE_APPLICATION,
+                    Takes::Application,
+                ),
+                Arg::taking(TOWARD, scrolling::SCROLL_PAGE_TOWARD, Toward::offered()),
+            ],
+            Requires::grants_over([APPLICATION]),
+            scrolling::SCROLL_PAGE_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(scrolling::SCROLL_CHANGES, Some(scrolling::SCROLL_LEAVES))),
     )?)?;
     Ok(())
 }

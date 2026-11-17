@@ -46,6 +46,9 @@ pub fn walk(
         before: None,
         mark: 0,
         stopped: None,
+        section: None,
+        stopped_in: None,
+        failed_sections: Vec::new(),
         skipping: None,
         pointer: the_pointer::ThePointer::default(),
         edge: the_edge::TheEdge::default(),
@@ -60,6 +63,12 @@ pub fn walk(
             if left > 1 {
                 walking.skipping = Some((left - 1, why));
             }
+            continue;
+        }
+        // **An independent section begins**: it runs even after an earlier
+        // section failed, unless it needs that one.
+        if let Step::Section { name, needs } = step {
+            walking.begin_section(machine.elapsed(), name, needs);
             continue;
         }
         if let Some((verdict, why)) = walking.stopped.clone() {
@@ -90,6 +99,15 @@ struct Walking {
     mark: usize,
     /// Why the walk stopped, and what that makes every later check.
     stopped: Option<(Verdict, String)>,
+    /// The independent section being walked, if one has begun.
+    section: Option<String>,
+    /// The section whose failure stopped the walk — which the next section
+    /// starts again after. `None` when what stopped it came before every
+    /// section, or skipped the rest of the walk: then every section stays
+    /// stopped.
+    stopped_in: Option<String>,
+    /// The sections that failed, or were not walked for one that did.
+    failed_sections: Vec<String>,
     /// A section being skipped: how many of its steps are left, and why.
     skipping: Option<(usize, String)>,
     /// What the walk knows about the pointer.
@@ -184,6 +202,8 @@ impl Walking {
                     );
                 }
             }
+            // Handled by the walk itself, before any stop.
+            Step::Section { .. } => {}
             Step::OnlyWith(variable) => {
                 if secret(variable).is_none_or(|it| it.is_empty()) {
                     self.stopped = Some((
@@ -391,9 +411,53 @@ impl Walking {
         }));
     }
 
-    /// Stop: every later check is not reached.
+    /// Stop: every later check is not reached — up to the next independent
+    /// section, when the failure was inside one.
     fn stop_after_failure(&mut self) {
         self.stopped = Some((Verdict::NotReached, "an earlier check failed".to_owned()));
+        self.stopped_in.clone_from(&self.section);
+        if let Some(name) = &self.section
+            && !self.failed_sections.contains(name)
+        {
+            self.failed_sections.push(name.clone());
+        }
+    }
+
+    /// **Begin an independent section**: start again after a failure in the
+    /// section before, unless the walk stopped before every section or the
+    /// section needs one that failed.
+    fn begin_section(&mut self, elapsed: Duration, name: &str, needs: &[&'static str]) {
+        if self.stopped.is_some() && self.stopped_in.is_none() {
+            // Stopped before the sections, or the rest skipped: it stands.
+            self.report.entries.push(Entry::Section(name.to_owned()));
+            return;
+        }
+        let after = self.stopped_in.take();
+        self.stopped = None;
+        self.section = Some(name.to_owned());
+        // A picture before from the section that stopped is not this one's.
+        self.before = None;
+        self.report.entries.push(Entry::Section(name.to_owned()));
+        if let Some(need) = needs
+            .iter()
+            .find(|need| self.failed_sections.iter().any(|it| it == *need))
+        {
+            let why = format!("this section needs the section {need}, which failed");
+            self.did(elapsed, format!("the section {name} is not walked: {why}"));
+            self.stopped = Some((Verdict::NotReached, why));
+            self.stopped_in = Some(name.to_owned());
+            self.failed_sections.push(name.to_owned());
+            return;
+        }
+        self.did(
+            elapsed,
+            match after {
+                Some(before) => format!(
+                    "the section {name} begins, from its own first step, after the section {before} failed"
+                ),
+                None => format!("the section {name} begins"),
+            },
+        );
     }
 }
 

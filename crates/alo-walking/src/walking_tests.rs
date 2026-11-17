@@ -612,3 +612,109 @@ fn a_window_gone_from_every_place_the_edge_was_seen_fails() {
         report.as_text()
     );
 }
+
+/// Two independent sections after a shared start: the first fails its look,
+/// and the second must still run.
+fn two_sections(second_needs_the_first: bool) -> Walk {
+    let walk = Walk::named("w")
+        .press(Chord::key("tab"))
+        .look("00-start", LOOK)
+        .section("the first", &[], |walk| {
+            walk.press(Chord::key("ret"))
+                .look("01-nothing", LOOK)
+                .expect_line("the first's line", "x", Since::Boot, Duration::from_secs(1))
+        });
+    let needs: &[&'static str] = if second_needs_the_first {
+        &["the first"]
+    } else {
+        &[]
+    };
+    walk.section("the second", needs, |walk| {
+        walk.expect_line(
+            "the second's line",
+            "the desktop is up",
+            Since::Boot,
+            Duration::from_secs(10),
+        )
+    })
+}
+
+/// A machine whose screen changes once, then never again: the shared start's
+/// look passes and the first section's fails.
+fn changes_once() -> PicturesAndLines {
+    PicturesAndLines::showing(screens()).saying(Duration::from_secs(1), "the desktop is up")
+}
+
+/// **A failure in one section does not stop the next**: the first section's
+/// later checks are not reached, the second section runs and passes, and the
+/// walk still fails.
+#[test]
+fn a_failing_section_does_not_stop_the_next() {
+    let mut machine = changes_once();
+    let report = walk(&mut machine, &two_sections(false), &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![
+            ("the screen 00-start".to_owned(), Verdict::Passed),
+            ("the screen 01-nothing".to_owned(), Verdict::Failed),
+            ("the first's line".to_owned(), Verdict::NotReached),
+            ("the second's line".to_owned(), Verdict::Passed),
+        ],
+        "{}",
+        report.as_text()
+    );
+    assert!(!report.passed(), "a walk with a failed section passed");
+    // **And the report gives each section its own result.**
+    assert_eq!(
+        report.sections(),
+        vec![
+            ("the first".to_owned(), Verdict::Failed),
+            ("the second".to_owned(), Verdict::Passed),
+        ]
+    );
+    let text = report.as_text();
+    assert!(text.contains("section the first: FAIL"), "{text}");
+    assert!(text.contains("section the second: PASS"), "{text}");
+    assert!(
+        report.as_markdown().contains("| FAIL | the first |"),
+        "{}",
+        report.as_markdown()
+    );
+}
+
+/// **A section that needs an earlier one is not reached when that one
+/// failed**, and says which.
+#[test]
+fn a_section_that_needs_a_failed_one_is_not_reached() {
+    let mut machine = changes_once();
+    let report = walk(&mut machine, &two_sections(true), &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report).last(),
+        Some(&("the second's line".to_owned(), Verdict::NotReached)),
+        "{}",
+        report.as_text()
+    );
+    assert!(
+        report.as_text().contains("needs the section the first"),
+        "{}",
+        report.as_text()
+    );
+}
+
+/// **A failure before any section stops every section**: they all stand on
+/// what came before them.
+#[test]
+fn a_failure_before_the_sections_stops_them_all() {
+    let mut machine = PicturesAndLines::showing(vec![Frame::filled(4, 4, [0, 0, 0])])
+        .saying(Duration::from_secs(1), "the desktop is up");
+    let report = walk(&mut machine, &two_sections(false), &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![
+            ("the screen 00-start".to_owned(), Verdict::Failed),
+            ("the screen 01-nothing".to_owned(), Verdict::NotReached),
+            ("the first's line".to_owned(), Verdict::NotReached),
+            ("the second's line".to_owned(), Verdict::NotReached),
+        ]
+    );
+}

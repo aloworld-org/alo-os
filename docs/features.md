@@ -980,6 +980,7 @@ each portal request is a grant in the sense of ADR 0001.
 
 - **Install applications**, sandboxed, from Flathub or a repository the organisation runs; update and remove them
 - **A decided list of what a person can install** — a curated catalogue, pinned and licence-recorded the way the fresh machine's own seven applications are, with an entry for each kind of work a person does: pictures, painting, illustration, photographs, page layout, video, audio and documents. A fresh machine can browse, read and look at a picture and cannot make one, which is the gap this closes. The list is data (`crates/alo-software/catalogue.toml`) and names no application a machine already ships, so a market screen cannot offer to install the browser a person is reading it in. *Asked for by the owner on 2026-10-16. The shape is what it is because of the candidate that prompted it: a Rust image editor with 65,000 stars that turned out to be sixteen days old, in early alpha, and published to no source a machine can install from — so an entry must name a source, a release and a licence, or it is refused.*
+  - **The market lists every kind of application, and says plainly what a person should know about one before choosing it.** *Decided by the owner on 2026-11-17:* (1) *"Every kind of app"* — the market is no longer only for making things; (2) *"Proprietary apps are listed, labelled 'not open source'"* in plain words on their row; (3) *"Flathub-unverified apps are listed, labelled 'not verified'"* — the maker did not publish it on Flathub themselves; (4) the Craft applications are *"added, labelled 'early version'"*, installed from their signed bundle on GitHub releases, with the signature and checksum verified before installing and a bad or missing signature refused. Each label is drawn on the row and has a sentence in full for a screen reader, and alo is told the same labels when it looks at what can be installed. A label states a fact and never asks twice or hides anything: the person chooses.
 - ★ **One list of what has been granted to what** — agents and applications in the same place, revoked the same way
 - Portals: file chooser and documents, open-with and default applications, notifications, print, screenshot, screen capture, camera, microphone, clipboard, trash, wallpaper, settings, inhibit (no sleep mid-presentation), network and power-profile monitors
 - **Secret storage** — one keyring behind the Secret portal, so applications stop inventing credential storage
@@ -1092,6 +1093,17 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   password field or a terminal. **Not built: *each block on its own* and
   *everything alo types for one request*** — today one approval always types
   one text. *Not yet seen on a booted machine.*
+  **Scrolling is built, since 2026-11-17** (the owner, approving five new ways
+  for alo to use an application as a person does: *"Yes do all"*): alo can
+  scroll an application's window until one thing it names is on the screen
+  (`accessible.scroll_to`), or by one page down or up (`accessible.scroll_page`),
+  so that it can read and press what is further down a document, a list or a
+  form. Each scroll is a change: at *ask each time* the person approves it, and
+  at full access it runs at once and is recorded. Never by position, never a
+  password field. *Not yet seen on a booted machine*; whether every toolkit says
+  which of its rows are scrolled away is not measured
+  ([`contracts/agent-verbs.md`](contracts/agent-verbs.md), *The scrolling
+  verbs*).
   **Any installed application** — the owner, the same day: *"for alo driving
   applications it should be able to drive any application installed."* **Only
   the ones the person has let it use**: by default the person lets alo use

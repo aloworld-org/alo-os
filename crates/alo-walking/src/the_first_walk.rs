@@ -229,15 +229,36 @@ fn then_the_provider(walk: Walk) -> Walk {
         .look("the-provider-form-filled", look)
         .press(Chord::key("ret"))
         .look("the-provider-saved", look);
+    // **Four independent sections**, each starting from its own Escape and
+    // setting its own level and grants, so a failure in one does not hide the
+    // others: the walk still fails, and the report gives each its result.
+    // None needs another; a section that did would name it in `needs`.
+    //
     // With a provider, alo can be asked: Demo 2's second road, at full access.
-    let walk = crate::writing_in_vscodium::at_full_access(walk);
+    let walk = walk.section(
+        "VSCodium at full access",
+        &[],
+        crate::writing_in_vscodium::at_full_access,
+    );
     // And then every other application a fresh machine ships, where asked for.
-    let walk = crate::in_every_shipped_application::at_full_access(walk);
+    let walk = walk.section(
+        "every application at full access",
+        &[],
+        crate::in_every_shipped_application::at_full_access,
+    );
     // And then at *ask each time*, approving each change on its card.
-    let walk = crate::writing_in_vscodium_at_each_ask::at_each_ask(walk);
+    let walk = walk.section(
+        "VSCodium at ask each time",
+        &[],
+        crate::writing_in_vscodium_at_each_ask::at_each_ask,
+    );
     // And then alo asks for an application nobody gave it, on the sheet,
     // and the grant goes with its task.
-    crate::asking_for_an_application_at_each_ask::for_this_task(walk)
+    walk.section(
+        "the Papers sheet at ask each time",
+        &[],
+        crate::asking_for_an_application_at_each_ask::for_this_task,
+    )
 }
 
 #[cfg(test)]
