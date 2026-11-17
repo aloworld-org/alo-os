@@ -385,4 +385,4 @@ pub fn a_window_is_where_the_edge_was(ring: Ring, now: &Frame) -> bool {
 
 #[cfg(test)]
 #[path = "the_edge_seen_tests.rs"]
-mod tests;
+pub(crate) mod tests;

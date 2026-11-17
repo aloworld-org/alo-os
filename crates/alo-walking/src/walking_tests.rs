@@ -510,3 +510,105 @@ fn the_edge_seen_round_an_unpainted_window_and_gone_once_it_is_painted_passes() 
     let report = walk(&mut machine, &walked, &nothing_set, QUICK);
     assert!(report.passed(), "{}", report.as_text());
 }
+
+/// **A look that may find the screen as it was passes once it settles** — for
+/// a key whose effect may already be on the screen, like bringing forward a
+/// window already in front — and keeps its picture, so the report can still be
+/// checked against it.
+#[test]
+fn a_look_that_may_find_the_screen_as_it_was_passes_once_settled() {
+    let mut machine = PicturesAndLines::showing(vec![Frame::filled(4, 4, [0, 0, 0])]);
+    let walked = Walk::named("w")
+        .press(Chord::key("ret"))
+        .look_as_it_settles("01-as-it-was", LOOK);
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![("the screen 01-as-it-was".to_owned(), Verdict::Passed)]
+    );
+    assert_eq!(machine.kept, vec!["01-as-it-was".to_owned()]);
+    assert!(
+        report.as_text().contains("settled after"),
+        "{}",
+        report.as_text()
+    );
+}
+
+/// **But one that never settles fails**, so the look can still fail: a screen
+/// that keeps changing for its whole time is not a terminal waiting for keys.
+#[test]
+fn a_look_that_may_find_the_screen_as_it_was_fails_if_it_never_settles() {
+    let mut machine = PicturesAndLines::showing(
+        (0..20_u8)
+            .map(|shade| Frame::filled(4, 4, [shade, shade, shade]))
+            .collect(),
+    );
+    let walked = Walk::named("w")
+        .press(Chord::key("ret"))
+        .look_as_it_settles("01-moving", LOOK)
+        .expect_line("a line", "x", Since::Boot, Duration::from_secs(1));
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![
+            ("the screen 01-moving".to_owned(), Verdict::Failed),
+            ("a line".to_owned(), Verdict::NotReached),
+        ]
+    );
+}
+
+/// Three pictures the walks kept, as the edge's checks would see them.
+fn pictures(names: &[&str]) -> Vec<Frame> {
+    names
+        .iter()
+        .map(|name| crate::the_edge_seen::tests::a_kept_picture(name))
+        .collect()
+}
+
+/// **The edge is followed when its window moves, and gone is judged where it
+/// went.** The walk of 2026-11-16 on `main` at 19202288 (run 43967583290)
+/// first saw the edge round VSCodium before VSCodium had drawn, from (16, 16)
+/// to (1151, 699) with the window's band shown (its picture 58); VSCodium then
+/// drew from x −24 and y 70 to (1111, 699) — where the walk at a5f5ffb8 (run
+/// 43933773704, its picture 58) saw the edge round it — and, the edge gone,
+/// picture 60 has VSCodium there. A walk that looked for the window only where
+/// the edge was first seen said it had gone too.
+#[test]
+fn the_edge_is_followed_where_its_window_goes() {
+    let mut machine = PicturesAndLines::showing(pictures(&[
+        "walk-19202288-58-vscodium-wearing-alo.png",
+        "walk-a5f5ffb8-58-vscodium-wearing-alo.png",
+        "walk-19202288-60-vscodium-after-alo.png",
+    ]));
+    let walked = the_edge_gone(the_edge_drawn(Walk::named("w"), 5), 30);
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert!(report.passed(), "{}", report.as_text());
+    assert!(
+        report.as_text().contains("it went with its window"),
+        "{}",
+        report.as_text()
+    );
+}
+
+/// **But a window gone from every place the edge was seen is not still
+/// there**: the same edge, followed, and then the person's terminal in front
+/// with VSCodium nowhere near (the walk at a5f5ffb8, picture 63).
+#[test]
+fn a_window_gone_from_every_place_the_edge_was_seen_fails() {
+    let mut machine = PicturesAndLines::showing(pictures(&[
+        "walk-19202288-58-vscodium-wearing-alo.png",
+        "walk-a5f5ffb8-58-vscodium-wearing-alo.png",
+        "walk-a5f5ffb8-63-the-terminal-and-no-vscodium.png",
+    ]));
+    let walked = the_edge_gone(the_edge_drawn(Walk::named("w"), 5), 5);
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![
+            ("the window wears the edge".to_owned(), Verdict::Passed),
+            ("the edge is gone".to_owned(), Verdict::Failed),
+        ],
+        "{}",
+        report.as_text()
+    );
+}
