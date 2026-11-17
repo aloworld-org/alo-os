@@ -16,6 +16,7 @@
 //! | `open_file_in_application` | `crates/alo-turn/src/opening_a_file_in_an_application_tests.rs` |
 //! | `accessible.scroll_to`, `accessible.scroll_page` | `crates/alo-adapters/tests/scrolling_in_a_window.rs` |
 //! | `accessible.set_value` | `crates/alo-adapters/tests/setting_a_value.rs` |
+//! | `accessible.choose_option`, `accessible.select_item` | `crates/alo-adapters/tests/choosing_in_a_window.rs` |
 //!
 //! This file is the other half: a change added to the list the daemon offers
 //! without its two sentences fails here, and a change added with them fails
@@ -27,7 +28,7 @@
 )]
 
 /// The change verbs the table above names.
-const HELD: [&str; 14] = [
+const HELD: [&str; 16] = [
     "rename_file",
     "move_file",
     "archive_folder",
@@ -42,6 +43,8 @@ const HELD: [&str; 14] = [
     "accessible.scroll_to",
     "accessible.scroll_page",
     "accessible.set_value",
+    "accessible.choose_option",
+    "accessible.select_item",
 ];
 
 #[test]

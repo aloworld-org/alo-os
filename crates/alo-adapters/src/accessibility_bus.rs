@@ -63,6 +63,9 @@ const VALUE: &str = "org.a11y.atspi.Value";
 /// The interface through which a thing is scrolled onto the screen — and the
 /// only one of its methods called here, `ScrollTo`.
 const COMPONENT: &str = "org.a11y.atspi.Component";
+/// The interface through which a list's children are chosen
+/// (`accessible.choose_option`, `accessible.select_item`).
+const SELECTION: &str = "org.a11y.atspi.Selection";
 
 /// The accessibility tree of one session, for one turn.
 #[derive(Debug)]
@@ -305,6 +308,19 @@ impl AccessibilityTree for AccessibleSession {
                 TreeFault::Vanished => Ok(false),
                 fault => Err(fault),
             })
+    }
+
+    fn select_in(&self, list: &NodeAt, at: &NodeAt) -> Result<Option<bool>, TreeFault> {
+        let interfaces: Vec<String> = self.ask(list, ACCESSIBLE, "GetInterfaces", &())?;
+        if !interfaces.iter().any(|interface| interface == SELECTION) {
+            return Ok(None);
+        }
+        let index: i32 = self.ask(at, ACCESSIBLE, "GetIndexInParent", &())?;
+        if index < 0 {
+            return Err(TreeFault::Vanished);
+        }
+        self.ask(list, SELECTION, "SelectChild", &(index,))
+            .map(Some)
     }
 
     fn takes_text(&self, at: &NodeAt) -> Result<bool, TreeFault> {

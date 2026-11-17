@@ -167,6 +167,24 @@ pub trait AccessibilityTree {
         Ok(false)
     }
 
+    /// **Choose `at` through `list`, the thing that holds it** — AT-SPI's
+    /// `Selection` on the list, asked to select the child at `at`'s place in
+    /// it, as a screen reader chooses an option (`accessible.choose_option`,
+    /// `accessible.select_item`, 2026-11-17). `list` is `at`'s parent, as the
+    /// walk that found `at` reached it.
+    ///
+    /// [`None`] when the list offers no way to choose its children from
+    /// outside the application, so the caller tries the thing's own action;
+    /// `Some(true)` when the application says it chose it, which a caller
+    /// still reads back. **None by default**, which is what a tree that offers
+    /// no selection says.
+    ///
+    /// # Errors
+    /// [`TreeFault`].
+    fn select_in(&self, list: &NodeAt, at: &NodeAt) -> Result<Option<bool>, TreeFault> {
+        let _ = (list, at);
+        Ok(None)
+    }
     /// Ask the application to scroll whatever holds one thing until that thing
     /// is on the screen, against `edge` of what it shows — `true` when the
     /// application says it did (`crate::scrolling`). **It takes a thing, never

@@ -462,3 +462,48 @@ on, beside everything the fallback already promises:
 **Measured: nothing yet.** Which toolkits let `CurrentValue` be set from
 outside is unmeasured; the tests stand in a tree built from the published roles
 (`crates/alo-adapters/tests/setting_a_value.rs`).
+
+## Amended 2026-11-17 — the fallback chooses an option and selects an item
+
+*The owner's "Yes do all", 2026-11-17, approving alo choosing in an
+application's window. Additive: no verb above changes meaning.*
+
+The fallback gains two verbs, offered by a turn
+(`crates/alo-turn/src/choosing_in_an_application.rs`):
+
+| Verb | Effect | Takes | Sentence |
+|---|---|---|---|
+| `accessible.choose_option` | change | `application`; `name`, the drop-down by the name it shows, or where it shows none by the choice it shows, up to 200 characters; `option`, one name of up to 200 characters | *choose “{option}” in the drop-down “{name}” in {application}* |
+| `accessible.select_item` | change | `application`; `name`, the item by the name or the words it shows, up to 200 characters | *select “{name}” in {application}* |
+
+Both require a grant over the application. What anyone building on them can
+rely on, beside everything the fallback already promises:
+
+- **Found again, at the moment of choosing.** The drop-down or item must be
+  showing, named exactly what was approved, usable, and the only one; none,
+  more than one, too much to read whole, and greyed out are each refused in
+  words.
+- **An option is looked for inside its drop-down alone**, whether or not it is on
+  the screen, because a closed drop-down keeps its options out of sight. Nothing
+  outside that drop-down is read this way, only names are compared, and no text
+  is asked of anything. An option the drop-down does not list, or lists twice,
+  is refused.
+- **Chosen the way a screen reader chooses**: through the list's own
+  `Selection`, asked to select the child at the option's or item's place.
+  Where the list offers none, an option is chosen by its own `select`, `click`,
+  `press` or `activate`, and an item **only by `select`** — never `activate`,
+  `click` or `open`, which open an item in many toolkits. **Selecting never
+  opens.**
+- **Read back for up to a second.** The option or item says it is selected, or
+  the drop-down shows the option by its name or text. The answer, `chosen`, says
+  whether it was seen; a choice the application was asked to make is recorded
+  as run either way, with *the window does not show it chosen yet* or *did not
+  answer* beside it.
+- **Opening an item is not here.** Opening a file from a file manager starts
+  whatever that file opens with, which may be a program; whether alo may do
+  that, and at which setting, is put to the owner rather than decided in this
+  contract.
+
+**Measured: nothing yet.** Which toolkits offer `Selection` on a drop-down's
+options and a file list's items is unmeasured; the tests stand in a tree built
+from the published roles (`crates/alo-adapters/tests/choosing_in_a_window.rs`).

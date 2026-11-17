@@ -31,6 +31,7 @@ use alo_record::WhatTouchedIt;
 use alo_software::{Installed, WhatTheCatalogueHolds};
 
 use crate::acting_on_an_application::Reached;
+use crate::choosing_in_an_application::AChoiceMade;
 use crate::opening_a_file_in_an_application::AFileOpened;
 use crate::pressing_a_control::AControlPressed;
 use crate::reading_an_applications_windows::TheWindowsShowed;
@@ -96,6 +97,10 @@ pub enum WhatAVerbDid {
     /// A slider or a number box was moved to a number in an application
     /// (`accessible.set_value`, 2026-11-17).
     AValueWasSet(AValueSet),
+    /// An option of a drop-down was chosen, or an item of a list selected, in
+    /// an application (`accessible.choose_option`, `accessible.select_item`,
+    /// 2026-11-17).
+    SomethingWasChosen(AChoiceMade),
 }
 
 impl WhatAVerbDid {
@@ -104,6 +109,15 @@ impl WhatAVerbDid {
     pub const fn set(&self) -> Option<&AValueSet> {
         match self {
             Self::AValueWasSet(set) => Some(set),
+            _ => None,
+        }
+    }
+
+    /// The choice made, when one was.
+    #[must_use]
+    pub const fn chosen(&self) -> Option<&AChoiceMade> {
+        match self {
+            Self::SomethingWasChosen(chosen) => Some(chosen),
             _ => None,
         }
     }
@@ -132,7 +146,8 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFileWasOpened(_)
             | Self::AWindowWasScrolled(_)
-            | Self::AValueWasSet(_) => None,
+            | Self::AValueWasSet(_)
+            | Self::SomethingWasChosen(_) => None,
         }
     }
 
@@ -155,7 +170,8 @@ impl WhatAVerbDid {
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
             | Self::AWindowWasScrolled(_)
-            | Self::AValueWasSet(_) => None,
+            | Self::AValueWasSet(_)
+            | Self::SomethingWasChosen(_) => None,
         }
     }
 
@@ -174,7 +190,8 @@ impl WhatAVerbDid {
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
             | Self::AWindowWasScrolled(_)
-            | Self::AValueWasSet(_) => None,
+            | Self::AValueWasSet(_)
+            | Self::SomethingWasChosen(_) => None,
         }
     }
 
@@ -193,7 +210,8 @@ impl WhatAVerbDid {
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
             | Self::AWindowWasScrolled(_)
-            | Self::AValueWasSet(_) => None,
+            | Self::AValueWasSet(_)
+            | Self::SomethingWasChosen(_) => None,
         }
     }
 
@@ -212,7 +230,8 @@ impl WhatAVerbDid {
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
             | Self::AWindowWasScrolled(_)
-            | Self::AValueWasSet(_) => None,
+            | Self::AValueWasSet(_)
+            | Self::SomethingWasChosen(_) => None,
         }
     }
 
@@ -267,7 +286,8 @@ impl WhatAVerbDid {
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
             | Self::AWindowWasScrolled(_)
-            | Self::AValueWasSet(_) => None,
+            | Self::AValueWasSet(_)
+            | Self::SomethingWasChosen(_) => None,
         }
     }
 }
@@ -293,6 +313,12 @@ impl From<ATextTyped> for WhatAVerbDid {
 impl From<AValueSet> for WhatAVerbDid {
     fn from(set: AValueSet) -> Self {
         Self::AValueWasSet(set)
+    }
+}
+
+impl From<AChoiceMade> for WhatAVerbDid {
+    fn from(chosen: AChoiceMade) -> Self {
+        Self::SomethingWasChosen(chosen)
     }
 }
 
