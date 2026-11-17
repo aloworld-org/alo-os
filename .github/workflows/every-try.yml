@@ -79,6 +79,7 @@ on:
       - "crates/alo-adapters/src/fallback_verbs.rs"
       - "crates/alo-adapters/src/fallback_words.rs"
       - "crates/alo-adapters/src/typing_words.rs"
+      - "crates/alo-adapters/src/scrolling_words.rs"
       # How the machine finds the field a name means.
       - "crates/alo-adapters/src/places_for_text.rs"
       - "crates/alo-publishing/src/verbs.rs"

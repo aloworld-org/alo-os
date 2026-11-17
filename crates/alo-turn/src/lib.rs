@@ -195,6 +195,9 @@ mod reading_and_pressing_tests;
 pub mod refusing;
 mod said_in_an_application;
 mod said_of_a_publication;
+mod scrolling_in_an_application;
+#[cfg(test)]
+mod scrolling_in_an_application_tests;
 pub mod shortening;
 pub mod the_applications_here;
 pub mod the_bracket_a_turn_takes;
@@ -243,6 +246,7 @@ pub use places::Places;
 pub use pressing_a_control::AControlPressed;
 pub use reading_an_applications_windows::TheWindowsShowed;
 pub use refusing::NotDone;
+pub use scrolling_in_an_application::AWindowScrolled;
 pub use shortening::{Shortened, Shortening};
 pub use the_applications_here::{SaysWhatIsInstalled, TheApplicationsHere};
 pub use the_door_the_compositor_serves::{NotAtTheDoor, TheDoorTheCompositorServes};

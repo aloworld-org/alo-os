@@ -34,6 +34,7 @@ use crate::acting_on_an_application::Reached;
 use crate::opening_a_file_in_an_application::AFileOpened;
 use crate::pressing_a_control::AControlPressed;
 use crate::reading_an_applications_windows::TheWindowsShowed;
+use crate::scrolling_in_an_application::AWindowScrolled;
 use crate::typing_into_an_application::ATextTyped;
 
 /// What a verb this machine carried out answered with.
@@ -88,6 +89,9 @@ pub enum WhatAVerbDid {
     /// A file was opened in an application the person named, in alo's own
     /// copy or in their own window (`open_file_in_application`, 2026-11-14).
     AFileWasOpened(AFileOpened),
+    /// An application's window was scrolled, to a named thing or by a page
+    /// (`accessible.scroll_to`, `accessible.scroll_page`, 2026-11-17).
+    AWindowWasScrolled(AWindowScrolled),
 }
 
 impl WhatAVerbDid {
@@ -113,7 +117,8 @@ impl WhatAVerbDid {
             | Self::WhatTheWindowsShowed(_)
             | Self::AControlWasPressed(_)
             | Self::TextWasTyped(_)
-            | Self::AFileWasOpened(_) => None,
+            | Self::AFileWasOpened(_)
+            | Self::AWindowWasScrolled(_) => None,
         }
     }
 
@@ -134,7 +139,8 @@ impl WhatAVerbDid {
             | Self::AControlWasPressed(_)
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
-            | Self::AFileWasOpened(_) => None,
+            | Self::AFileWasOpened(_)
+            | Self::AWindowWasScrolled(_) => None,
         }
     }
 
@@ -151,7 +157,8 @@ impl WhatAVerbDid {
             | Self::AControlWasPressed(_)
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
-            | Self::AFileWasOpened(_) => None,
+            | Self::AFileWasOpened(_)
+            | Self::AWindowWasScrolled(_) => None,
         }
     }
 
@@ -168,7 +175,8 @@ impl WhatAVerbDid {
             | Self::AControlWasPressed(_)
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
-            | Self::AFileWasOpened(_) => None,
+            | Self::AFileWasOpened(_)
+            | Self::AWindowWasScrolled(_) => None,
         }
     }
 
@@ -185,7 +193,8 @@ impl WhatAVerbDid {
             | Self::AControlWasPressed(_)
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
-            | Self::AFileWasOpened(_) => None,
+            | Self::AFileWasOpened(_)
+            | Self::AWindowWasScrolled(_) => None,
         }
     }
 
@@ -194,6 +203,15 @@ impl WhatAVerbDid {
     pub const fn the_windows_showed(&self) -> Option<&TheWindowsShowed> {
         match self {
             Self::WhatTheWindowsShowed(read) => Some(read),
+            _ => None,
+        }
+    }
+
+    /// The scroll made, when one was.
+    #[must_use]
+    pub const fn scrolled(&self) -> Option<&AWindowScrolled> {
+        match self {
+            Self::AWindowWasScrolled(scrolled) => Some(scrolled),
             _ => None,
         }
     }
@@ -229,7 +247,8 @@ impl WhatAVerbDid {
             | Self::AControlWasPressed(_)
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
-            | Self::AFileWasOpened(_) => None,
+            | Self::AFileWasOpened(_)
+            | Self::AWindowWasScrolled(_) => None,
         }
     }
 }
@@ -237,6 +256,12 @@ impl WhatAVerbDid {
 impl From<TheWindowsShowed> for WhatAVerbDid {
     fn from(read: TheWindowsShowed) -> Self {
         Self::WhatTheWindowsShowed(read)
+    }
+}
+
+impl From<AWindowScrolled> for WhatAVerbDid {
+    fn from(scrolled: AWindowScrolled) -> Self {
+        Self::AWindowWasScrolled(scrolled)
     }
 }
 
@@ -307,5 +332,19 @@ mod tests {
             did.installed().is_none(),
             "a file read answered as an installation"
         );
+    }
+
+    /// **A catalogue read is found as what the catalogue holds**, and as
+    /// nothing else.
+    #[test]
+    fn a_catalogue_read_is_found_as_what_the_catalogue_holds_and_nothing_else() {
+        let catalogue = alo_software::Catalogue::decided();
+        assert!(catalogue.is_ok(), "the decided catalogue reads");
+        if let Ok(catalogue) = catalogue {
+            let did = WhatAVerbDid::from(super::WhatTheCatalogueHolds::under(&catalogue, None));
+            assert!(did.what_can_be_installed().is_some());
+            assert!(did.what_touched_a_file().is_none());
+            assert!(did.scrolled().is_none());
+        }
     }
 }

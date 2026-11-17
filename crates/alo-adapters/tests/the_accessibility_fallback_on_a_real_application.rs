@@ -862,3 +862,110 @@ fn a_real_control_is_pressed_by_its_kind_and_name() {
     }
     assert_eq!(record.everything().count(), 4);
 }
+
+/// A long list in a short window: sixty lines in a scrolled window two
+/// hundred pixels high, so most of them are below what is shown.
+const A_LONG_LIST: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="GtkWindow" id="window">
+    <property name="title">A long list</property>
+    <property name="default-width">300</property>
+    <property name="default-height">200</property>
+    <child>
+      <object class="GtkScrolledWindow">
+        <property name="visible">True</property>
+        <child>
+          <object class="GtkBox" id="lines">
+            <property name="visible">True</property>
+            <property name="orientation">vertical</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>
+"#;
+
+/// [`A_LONG_LIST`] with its sixty lines, `Line 1` to `Line 60`.
+fn a_long_list() -> String {
+    let lines: String = (1..=60)
+        .map(|n| {
+            format!(
+                "<child><object class=\"GtkLabel\"><property name=\"visible\">True</property>\
+                 <property name=\"label\">Line {n}</property></object></child>"
+            )
+        })
+        .collect();
+    A_LONG_LIST.replace(
+        "<property name=\"orientation\">vertical</property>\n          </object>",
+        &format!(
+            "<property name=\"orientation\">vertical</property>\n{lines}\n          </object>"
+        ),
+    )
+}
+
+/// **A real application is asked to scroll one named line onto the screen,
+/// once, through its own `ScrollTo`** — and nothing else is asked of its
+/// `Component` interface (2026-11-17).
+///
+/// What the wire must show is asserted. **What GTK 3 does with the request is
+/// printed, not asserted**: whether it describes the line as off the screen
+/// before and on it after is the measurement `crate::scrolling` rests on, and
+/// it is said on every run of this test rather than assumed.
+#[test]
+fn a_real_application_is_asked_to_scroll_a_named_line_onto_the_screen_once() {
+    let mut session = ASession::started("scroll");
+    session.showing("a-long-list.ui", &a_long_list(), FIXTURE);
+    session.waiting_for_window_of(FIXTURE);
+    let monitor = AMonitor::of(&session.accessibility);
+    let strings = in_english();
+    let at = noon();
+    let grants = the_fixture_granted(at);
+
+    let tree = session.tree();
+    let asks_as = tree.asks_as().unwrap();
+    let call = fallback_verbs()
+        .unwrap()
+        .call(
+            alo_adapters::SCROLL_TO,
+            &[
+                ("application", Given::text(FIXTURE)),
+                ("name", Given::text("Line 55")),
+            ],
+        )
+        .unwrap();
+    let scrolled = alo_adapters::Scrolling::of(
+        approved(&call, &grants, at),
+        &Adapters::default(),
+        &grants,
+        &installed(),
+        &strings,
+    )
+    .unwrap()
+    .scroll(&tree, &strings);
+    let heard = monitor.everything();
+    let on_the_component: Vec<&Heard> = sent_by(&heard, &asks_as)
+        .filter(|message| message.interface == "org.a11y.atspi.Component")
+        .collect();
+    assert_eq!(
+        on_the_component
+            .iter()
+            .map(|message| message.member.as_str())
+            .collect::<Vec<_>>(),
+        ["ScrollTo"],
+        "one approval, one scroll, and nothing asked about where anything is"
+    );
+    eprintln!(
+        "measured: GTK 3 answered scrolling to Line 55 with {:?}",
+        scrolled.as_ref().map(alo_adapters::Scrolled::now_showing)
+    );
+    match scrolled {
+        Ok(_) => {}
+        Err(refused) => assert_eq!(
+            refused.said(&strings).text(),
+            "org.example.Fixture answered that it could not scroll there, so nothing was \
+             scrolled",
+            "a scroll that did not happen is said as the application's no"
+        ),
+    }
+}

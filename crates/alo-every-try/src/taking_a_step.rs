@@ -39,6 +39,7 @@ pub fn taking(
                 step: at,
                 expected: step.verb().to_owned(),
                 asked: "a question to a model".to_owned(),
+                given: String::new(),
             });
         }
         FromAnAgent::Read { verb, .. } | FromAnAgent::Propose { verb, .. } => verb.trim(),
@@ -48,6 +49,7 @@ pub fn taking(
             step: at,
             expected: step.verb().to_owned(),
             asked: named.to_owned(),
+            given: crate::went_wrong::as_said(&asked.given()),
         });
     }
     // **As the machine reads it**: an application named by its name is the

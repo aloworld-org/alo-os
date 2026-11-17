@@ -67,6 +67,10 @@ fn another_verb_is_another_road() {
             step: 1,
             expected: OPEN_FILE_IN_APPLICATION.to_owned(),
             asked: "open_application".to_owned(),
+            given: crate::went_wrong::as_said(&[(
+                APPLICATION,
+                alo_capability::Given::text(EDITOR)
+            )]),
         })
     );
 }

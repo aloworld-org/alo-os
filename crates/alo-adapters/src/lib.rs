@@ -98,6 +98,8 @@ pub mod places_for_text;
 pub mod pressable;
 pub mod reading_windows;
 pub mod role;
+pub mod scrolling;
+pub mod scrolling_words;
 #[cfg(target_os = "linux")]
 pub mod session_bus;
 pub mod shown;
@@ -113,7 +115,7 @@ pub mod words;
 
 #[cfg(target_os = "linux")]
 pub use accessibility_bus::AccessibleSession;
-pub use accessibility_tree::{AccessibilityTree, Facts, NodeAt, Running, TreeFault};
+pub use accessibility_tree::{AccessibilityTree, Edge, Facts, NodeAt, Running, TreeFault};
 pub use activating::{Activating, PRESSING, Pressed};
 pub use adapter::Adapter;
 pub use adapter_arg::{AdapterArg, Kind, Offer};
@@ -123,7 +125,9 @@ pub use by_their_hand::{PressedByHand, Unpressed, press_by_hand, read_by_hand};
 pub use delivering::{Delivers, NotDelivered};
 pub use driving::{Driven, Driving};
 pub use driving_by_hand::{DrivenByHand, NotDrivenByHand, drive_by_hand};
-pub use fallback_verbs::{ACTIVATE_CONTROL, READ_WINDOW, TYPE_TEXT, fallback_verbs};
+pub use fallback_verbs::{
+    ACTIVATE_CONTROL, READ_WINDOW, SCROLL_PAGE, SCROLL_TO, TYPE_TEXT, fallback_verbs,
+};
 pub use invocation::{DBusMethod, Invocation, Part};
 pub use loading::{Loaded, load};
 pub use mechanism::Mechanism;
@@ -135,6 +139,7 @@ pub use nothing_to_read::nothing_to_read;
 pub use pressable::Pressable;
 pub use reading_windows::{ReadingWindows, WindowsRead};
 pub use role::Role;
+pub use scrolling::{Asked, Scrolled, Scrolling, Toward};
 #[cfg(target_os = "linux")]
 pub use session_bus::SessionBus;
 pub use shown::{Contents, Limit, Seen, Shown, ShownWindow};

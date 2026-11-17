@@ -10,7 +10,9 @@
 //! **What is not here is the guarantee.** There is no method that answers with
 //! a position, a size or a picture, and none that takes one — so nothing built
 //! on this trait can find a control by where it is, click a point, or look at
-//! the screen. There is no method that subscribes to anything either: every
+//! the screen. Scrolling ([`AccessibilityTree::scroll_to`], 2026-11-17) takes a
+//! thing and an [`Edge`], never a point, and answers yes or no. There is no
+//! method that subscribes to anything either: every
 //! answer is to a question asked at that moment, and nothing arrives unasked.
 //! A control with no name, and an area an application draws itself, are
 //! therefore said in words (`crate::shown::Limit`) rather than guessed at.
@@ -164,6 +166,33 @@ pub trait AccessibilityTree {
         let _ = (at, position, text);
         Ok(false)
     }
+
+    /// Ask the application to scroll whatever holds one thing until that thing
+    /// is on the screen, against `edge` of what it shows — `true` when the
+    /// application says it did (`crate::scrolling`). **It takes a thing, never
+    /// a point**: where the thing lands is the application's to work out, so
+    /// nothing here learns or sends a position.
+    ///
+    /// **The answer is not evidence it moved**: a caller asks the thing's
+    /// states again. **No by default**, so a tree that does not know scrolling
+    /// scrolls nothing.
+    ///
+    /// # Errors
+    /// [`TreeFault`].
+    // The body is the answer itself and nothing else, so the mutation check
+    // has no other version of it to try that means the same.
+    fn scroll_to(&self, _at: &NodeAt, _edge: Edge) -> Result<bool, TreeFault> {
+        Ok(false)
+    }
+}
+
+/// Which edge of what a window shows a thing is scrolled to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Edge {
+    /// The thing's top against the top of what is shown — scrolling down.
+    Top,
+    /// The thing's bottom against the bottom of what is shown — scrolling up.
+    Bottom,
 }
 
 #[cfg(test)]

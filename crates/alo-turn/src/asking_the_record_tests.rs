@@ -75,6 +75,10 @@ fn what_the_record_says_comes_back_and_the_question_is_written_down() {
         "listing a folder changed nothing"
     );
     assert!(found.and_nothing_names_it().is_none());
+    // And what the turn answers with is found as what the record said.
+    let did = crate::WhatAVerbDid::from(found);
+    assert!(did.what_touched_a_file().is_some());
+    assert!(did.what_can_be_installed().is_none());
 
     // **The read is recorded exactly as a change is.** A person looking at
     // what their agent did should see the questions it asked about them.

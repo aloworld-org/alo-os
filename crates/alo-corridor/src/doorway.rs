@@ -570,6 +570,15 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> Option<alo_pro
         // puts this person's file in front of them, and a pairing permits that
         // no more than it permits looking at their screen.
         alo_turn::WhatAVerbDid::AFileWasOpened(_) => return None,
+        // A scroll is a change this machine's person approved here, as a press
+        // is, so it crosses back as what was asked — never as what the window
+        // shows now.
+        alo_turn::WhatAVerbDid::AWindowWasScrolled(scrolled) => alo_protocol::Done::of_a_scroll(
+            scrolled.application(),
+            scrolled.to(),
+            scrolled.a_page(),
+            scrolled.now_showing(),
+        ),
     })
 }
 

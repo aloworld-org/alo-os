@@ -134,6 +134,7 @@ pub fn declare_into(vocabulary: &mut Vocabulary) -> Result<(), WordsError> {
         .chain(text_editor::WORDS.iter())
         .chain(fallback_words::EVERY_WORD.iter())
         .chain(crate::typing_words::EVERY_WORD.iter())
+        .chain(crate::scrolling_words::EVERY_WORD.iter())
     {
         vocabulary.says(word.phrase()?)?;
     }
@@ -156,6 +157,7 @@ mod tests {
             .chain(text_editor::WORDS.iter())
             .chain(fallback_words::EVERY_WORD.iter())
             .chain(crate::typing_words::EVERY_WORD.iter())
+            .chain(crate::scrolling_words::EVERY_WORD.iter())
             .copied()
             .collect()
     }

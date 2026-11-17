@@ -1092,6 +1092,17 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   password field or a terminal. **Not built: *each block on its own* and
   *everything alo types for one request*** — today one approval always types
   one text. *Not yet seen on a booted machine.*
+  **Scrolling is built, since 2026-11-17** (the owner, approving five new ways
+  for alo to use an application as a person does: *"Yes do all"*): alo can
+  scroll an application's window until one thing it names is on the screen
+  (`accessible.scroll_to`), or by one page down or up (`accessible.scroll_page`),
+  so that it can read and press what is further down a document, a list or a
+  form. Each scroll is a change: at *ask each time* the person approves it, and
+  at full access it runs at once and is recorded. Never by position, never a
+  password field. *Not yet seen on a booted machine*; whether every toolkit says
+  which of its rows are scrolled away is not measured
+  ([`contracts/agent-verbs.md`](contracts/agent-verbs.md), *The scrolling
+  verbs*).
   **Any installed application** — the owner, the same day: *"for alo driving
   applications it should be able to drive any application installed."* **Only
   the ones the person has let it use**: by default the person lets alo use

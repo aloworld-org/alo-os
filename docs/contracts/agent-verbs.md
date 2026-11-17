@@ -676,6 +676,49 @@ through `alo_strings::Filling::and_said`, or through `Filling::and_composed`
 where the value is assembled out of several — never as text, which reports every
 half-English line as finished.
 
+## The scrolling verbs — added 2026-11-17, additively
+
+`accessible.read_window` answers only what is on the screen, so a long
+document, a long list or a form below its fold could not be read or pressed.
+Two changes reach it, declared in `alo-adapters` (`fallback_verbs.rs`) and
+carried out by `crates/alo-adapters/src/scrolling.rs` through a turn:
+
+| Verb | Arguments | The sentence a person approves |
+|---|---|---|
+| `accessible.scroll_to` | `application` (an application), `name` (a name, at most 200 characters) | *scroll {application} until “{name}” is on the screen* |
+| `accessible.scroll_page` | `application` (an application), `toward` (a choice: `down`, `up`) | *scroll {toward} by one page in {application}* |
+
+Both are **changes**: at *ask each time* each scroll waits for one approval and
+one approval scrolls once; at full access each runs at once, once, and is
+recorded the same way. Both say on the card *Moves what one window of the
+application shows, as scrolling would, so that more of it can be read* and
+*Nothing is typed, nothing is pressed, no text is changed, and nothing is found
+by where it is on the screen.*
+
+- **`scroll_to`** finds the one thing in the application's windows named
+  exactly `name` — on the screen or scrolled away, never one that is hidden —
+  and asks the application to scroll it onto the screen with its top against
+  the top. None, or more than one, is refused rather than guessed; so is a
+  window too large to be sure there is only one.
+- **`scroll_page`** brings the first thing below what is on the screen to the
+  top (`down`), or the last thing above it to the bottom (`up`); where exactly
+  one document is showing, the page is that document's. A window with nothing
+  further that way is refused in words, and nothing is scrolled.
+- **Neither takes a position or a distance**, and neither reads a text. A
+  password field is never scrolled to, and a page passes over one. A terminal
+  is reached only where the person allowed their agent one (ADR 0111).
+- After the scroll the thing's states are asked again. The answer
+  (`scrolled` on the wire: `application`, `to`, `a_page`, `now_showing`) says
+  whether it reads as on the screen now; one that does not leaves something
+  out, and the person is told to read the window again. What the window shows
+  is never carried back: that is `accessible.read_window`'s.
+
+What tells a thing is scrolled away is the tree's *visible* without *showing*.
+That list views describe their scrolled-away rows that way was found on
+2026-11-16 (#1337); that every toolkit does is **not measured**, and a toolkit
+that calls every row showing leaves `scroll_page` with nothing further to
+scroll to.
+
 ## The measurement verbs
 
 `docs/features.md` promises three measurements of the machine — *search
@@ -1235,7 +1278,7 @@ published*.
 | **Publishing** | Publish a granted folder to the person's own GitHub Pages site, with `git` and GitHub's own `gh` | `alo-agentd`, as the person, on the command road (ADR 0149) |
 | **Context** | The focused window, the selection, the open document | Offered at invocation only |
 | **Adapters** | An installed application's own verbs — `text_editor.open_document`, named under their adapter | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, not yet offered by a turn. See `app-adapters.md` |
-| **Accessibility fallback** | For a granted application with no adapter: read what its windows show (`accessible.read_window`, a read), press one control named by its kind and the name it shows (`accessible.activate_control`, a change), and — since 2026-11-13, ADR 0153 — type one approved text into one field named as the application shows it, and save it (`accessible.type_text`, a change taking the **text** kind; the approval shows the whole text; the text is read back and saved only if it matches; never a password field or a terminal; at the default only into alo's own copy of the application; one approval types one text, and the stricter and looser settings of ADR 0143 Q1 are not built). **What the read names each thing** is one of the press kinds, `field`, `password-field`, `text`, `document`, `image`, `window` or `drawn`, and since 2026-11-17, additively, `drop-down` (its choice in `shows`), `item` (one item of a list, a table or a tree) and `slider` (a slider, progress bar or meter, its number in `value`), with `selected` on a tab or item that can be chosen. Never a password field's contents, never a position | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, **offered by a turn since 2026-11-12**: the read answers inside the turn, the press waits for one approval. The tree is opened for one read or press and closed after it. A read never answers across a pairing. See `app-adapters.md` |
+| **Accessibility fallback** | For a granted application with no adapter: read what its windows show (`accessible.read_window`, a read), press one control named by its kind and the name it shows (`accessible.activate_control`, a change), and — since 2026-11-13, ADR 0153 — type one approved text into one field named as the application shows it, and save it (`accessible.type_text`, a change taking the **text** kind; the approval shows the whole text; the text is read back and saved only if it matches; never a password field or a terminal; at the default only into alo's own copy of the application; one approval types one text, and the stricter and looser settings of ADR 0143 Q1 are not built). **What the read names each thing** is one of the press kinds, `field`, `password-field`, `text`, `document`, `image`, `window` or `drawn`, and since 2026-11-17, additively, `drop-down` (its choice in `shows`), `item` (one item of a list, a table or a tree) and `slider` (a slider, progress bar or meter, its number in `value`), with `selected` on a tab or item that can be chosen. Since 2026-11-17 it also scrolls the window until one named thing is on the screen (`accessible.scroll_to`, a change) or by one page down or up (`accessible.scroll_page`, a change). Never a password field's contents, never a position | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, **offered by a turn since 2026-11-12**: the read answers inside the turn, the press waits for one approval. The tree is opened for one read or press and closed after it. A read never answers across a pairing. See `app-adapters.md` |
 | **Network** | Propose joining or forgetting a Wi-Fi network by the name it announces, or turning Wi-Fi on or off, saying what each does to the conversation | Carried out by the **privileged broker** (`alo-brokerd`), asked by `alo-changing-network`; declared, not yet offered by a turn |
 | **Printers** | Propose setting up, removing or choosing a printer, by the name it gave itself | Carried out by the **privileged broker** (`alo-brokerd`), asked by `alo-changing-printers`; declared, not yet offered by a turn |
 | **System** | Printers, network, updates, storage | The **privileged broker**, never the agent directly |

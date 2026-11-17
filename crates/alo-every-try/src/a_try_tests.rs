@@ -91,13 +91,12 @@ fn every_step_and_then_an_answer_is_the_road() {
 #[test]
 fn a_step_off_the_road_fails_the_try_there_and_asks_nothing_more() {
     let (tried, model) = tried(&[opening(), typing(), answering("Done.")]);
-    assert_eq!(
-        tried.went(),
-        &Went::WentWrong(WentWrong::AnotherVerb {
-            step: 2,
-            expected: READ_WINDOW.to_owned(),
-            asked: TYPE_TEXT.to_owned(),
-        }),
+    assert!(
+        matches!(
+            tried.went(),
+            Went::WentWrong(WentWrong::AnotherVerb { step: 2, expected, asked, given })
+                if expected == READ_WINDOW && asked == TYPE_TEXT && given.contains("text = ")
+        ),
         "{tried:?}"
     );
     assert!(!tried.took_the_road());
@@ -298,13 +297,14 @@ fn skipping_a_look_still_holds_the_next_step() {
         &writing_with_a_look(),
         &[opening(), opening(), answering("Opened.")],
     );
-    assert_eq!(
-        tried.went(),
-        &Went::WentWrong(WentWrong::AnotherVerb {
-            step: 3,
-            expected: TYPE_TEXT.to_owned(),
-            asked: OPEN_FILE_IN_APPLICATION.to_owned(),
-        }),
+    assert!(
+        matches!(
+            tried.went(),
+            Went::WentWrong(WentWrong::AnotherVerb { step: 3, expected, asked, given })
+                if expected == TYPE_TEXT
+                    && asked == OPEN_FILE_IN_APPLICATION
+                    && given.contains(EDITOR)
+        ),
         "{tried:?}"
     );
 }
