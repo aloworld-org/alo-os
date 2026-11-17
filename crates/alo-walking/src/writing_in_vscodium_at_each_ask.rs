@@ -251,6 +251,11 @@ pub fn at_each_ask(walk: Walk) -> Walk {
             Since::Mark,
             minutes(3),
         )
+        // **The typing card's picture first, then its count**, so a card with
+        // the wrong count still shows what alo would type (run 44069105568:
+        // 30 characters where the text is 29, and no picture kept).
+        .expect_line("a card asks to type", A_CARD_IS_UP, Since::Mark, minutes(5))
+        .look("the-card-shows-the-text", look.at_most(minutes(1)))
         .expect_line_saying(
             "a card asks to type, showing the whole text",
             A_CARD_IS_UP,
@@ -258,7 +263,6 @@ pub fn at_each_ask(walk: Walk) -> Walk {
             Since::Mark,
             minutes(5),
         )
-        .look("the-card-shows-the-text", look.at_most(minutes(1)))
         .press(tab)
         .press(ret.clone())
         .expect_line_saying(
