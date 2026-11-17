@@ -567,6 +567,13 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> Option<alo_pro
             set.seen(),
             set.unanswered(),
         ),
+        alo_turn::WhatAVerbDid::SomethingWasChosen(chosen) => alo_protocol::Done::of_a_choice(
+            chosen.application(),
+            chosen.name(),
+            chosen.option(),
+            chosen.seen(),
+            chosen.unanswered(),
+        ),
         // **Unreachable too, and nothing crosses**: `alo_turn::Arriving::proposing`
         // refuses `publish_to_github_pages` by name, because it sends this
         // person's folder to the internet under their own GitHub sign-in, and a

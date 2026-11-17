@@ -79,6 +79,8 @@ pub mod alos_own_tree;
 pub mod becoming_code;
 pub mod bus_names;
 pub mod by_their_hand;
+pub mod choosing;
+pub mod choosing_words;
 pub mod delivering;
 pub mod driving;
 pub mod driving_by_hand;
@@ -90,6 +92,7 @@ pub mod invocation;
 pub mod loading;
 pub mod mechanism;
 pub mod message;
+pub mod not_chosen;
 pub mod not_loaded;
 pub mod not_pressed;
 pub mod not_set;
@@ -125,16 +128,19 @@ pub use adapter_arg::{AdapterArg, Kind, Offer};
 pub use adapter_verb::{AdapterVerb, ONLY_ITS_APPLICATION, Reaches, Sends};
 pub use adapters::Adapters;
 pub use by_their_hand::{PressedByHand, Unpressed, press_by_hand, read_by_hand};
+pub use choosing::{Choosing, Chosen, ToChoose};
 pub use delivering::{Delivers, NotDelivered};
 pub use driving::{Driven, Driving};
 pub use driving_by_hand::{DrivenByHand, NotDrivenByHand, drive_by_hand};
 pub use fallback_verbs::{
-    ACTIVATE_CONTROL, READ_WINDOW, SCROLL_PAGE, SCROLL_TO, SET_VALUE, TYPE_TEXT, fallback_verbs,
+    ACTIVATE_CONTROL, CHOOSE_OPTION, READ_WINDOW, SCROLL_PAGE, SCROLL_TO, SELECT_ITEM, SET_VALUE,
+    TYPE_TEXT, fallback_verbs,
 };
 pub use invocation::{DBusMethod, Invocation, Part};
 pub use loading::{Loaded, load};
 pub use mechanism::Mechanism;
 pub use message::{Argument, Message};
+pub use not_chosen::NotChosen;
 pub use not_loaded::NotLoaded;
 pub use not_pressed::{NotPressed, WorkingFully};
 pub use not_set::NotSet;

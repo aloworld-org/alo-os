@@ -173,6 +173,9 @@ mod asking_the_record;
 pub mod became;
 pub mod bounding;
 mod carrying;
+mod choosing_in_an_application;
+#[cfg(test)]
+mod choosing_in_an_application_tests;
 pub mod crossing;
 #[cfg(test)]
 mod down_the_corridor;
@@ -236,6 +239,7 @@ pub use answers::Answers;
 pub use arriving::Arriving;
 pub use became::Became;
 pub use bounding::{Bounding, Doing, Done};
+pub use choosing_in_an_application::AChoiceMade;
 pub use crossing::Departed;
 pub use how_an_application_starts::{NoRoad, SaysHowAnApplicationStarts, TheRoad};
 pub use kept::Kept;

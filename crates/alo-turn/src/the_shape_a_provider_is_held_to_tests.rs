@@ -319,11 +319,20 @@ fn the_steering_names_the_verbs_the_machine_really_has() {
         alo_instructing::working_in_an_application::SET_VALUE,
         alo_adapters::SET_VALUE
     );
+    assert_eq!(
+        alo_instructing::working_in_an_application::CHOOSE_OPTION,
+        alo_adapters::CHOOSE_OPTION
+    );
+    assert_eq!(
+        alo_instructing::working_in_an_application::SELECT_ITEM,
+        alo_adapters::SELECT_ITEM
+    );
     let verbs = the_whole_machine();
     let told = alo_instructing::working_in_an_application(&verbs);
     assert!(told.contains("Never send a run line"), "{told}");
     assert!(told.contains(alo_adapters::SCROLL_PAGE), "{told}");
     assert!(told.contains(alo_adapters::SET_VALUE), "{told}");
+    assert!(told.contains(alo_adapters::CHOOSE_OPTION), "{told}");
     let words =
         alo_instructing::the_products_words(alo_instructing::Instructions::SHOWN_TO_A_TURN, &verbs);
     assert!(words.ends_with(&told), "{words}");
