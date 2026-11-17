@@ -696,6 +696,12 @@ impl ReadAloudTree {
     /// control `Surface::Desktop` names today and a third arriving above it would
     /// silently start collecting windows.
     fn the_windows_open(&self) -> Option<usize> {
+        self.the_windows_open_list()
+    }
+
+    /// Where a window hangs among the windows open on the desktop — the same
+    /// list, for a window another file describes (`crate::the_market_as_read`).
+    pub(crate) fn the_windows_open_list(&self) -> Option<usize> {
         let desktop = self
             .surfaces
             .iter()
