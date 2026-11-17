@@ -12,6 +12,7 @@
 )]
 
 use super::*;
+use crate::installing_a_signed_release::NotASignedRelease;
 use crate::label::Label;
 use crate::role::Role;
 
@@ -31,7 +32,7 @@ fn with_one_more(category: &str, identifier: &str, version: &str, licence: &str)
     format!(
         "{THE_CATALOGUE}\n[[application]]\ncategory = \"{category}\"\nidentifier = \
          \"{identifier}\"\nname = \"An application\"\nsource = \"flathub\"\nversion = \"{version}\"\nlicence = \
-         \"{licence}\"\nverified = true\nearly = false\n"
+         \"{licence}\"\nverified = true\nearly = false\nreaches = []\n"
     )
 }
 
@@ -44,7 +45,7 @@ fn an_entrys_labels_are_read_off_it() {
     let text = format!(
         "{THE_CATALOGUE}\n[[application]]\ncategory = \"audio\"\nidentifier = \
          \"com.example.All\"\nname = \"All of them\"\nsource = \"flathub\"\nversion = \"1.0\"\nlicence = \
-         \"LicenseRef-proprietary\"\nverified = false\nearly = true\n"
+         \"LicenseRef-proprietary\"\nverified = false\nearly = true\nreaches = []\n"
     );
     let catalogue = Catalogue::read(&text, &shipped).unwrap();
     let labels_of = |identifier: &str| {
@@ -63,10 +64,12 @@ fn an_entrys_labels_are_read_off_it() {
             Label::EarlyVersion
         ]
     );
-    assert_eq!(labels_of("org.gimp.GIMP"), Vec::<Label>::new());
+    // GIMP asks for the whole machine's files (Flathub, 2026-11-17), and
+    // darktable as well, and is not verified.
+    assert_eq!(labels_of("org.gimp.GIMP"), vec![Label::ReachesYourFiles]);
     assert_eq!(
         labels_of("org.darktable.Darktable"),
-        vec![Label::NotVerified]
+        vec![Label::ReachesYourFiles, Label::NotVerified]
     );
 }
 
@@ -129,7 +132,7 @@ fn an_entry_that_does_not_say_verified_or_early_is_refused() {
 #[test]
 fn the_decided_catalogue_holds() {
     let catalogue = Catalogue::decided().unwrap();
-    assert_eq!(catalogue.how_many(), 62);
+    assert_eq!(catalogue.how_many(), 69);
     for category in Category::EVERY {
         assert!(
             catalogue.under(category).next().is_some(),
@@ -162,7 +165,13 @@ fn what_is_catalogued_is_wanted_the_way_anything_is() {
     for one in catalogue.every() {
         let wanted = one.wanted();
         assert_eq!(wanted.application(), one.application());
-        assert_eq!(one.source().as_str(), "flathub");
+        // **From Flathub, or from its maker's signed release**, and never
+        // both: a maker's entry is the one with a release to check (ADR 0158).
+        if one.signed_release().is_some() {
+            assert_eq!(one.source().as_str(), "storytold");
+        } else {
+            assert_eq!(one.source().as_str(), "flathub");
+        }
     }
 }
 
@@ -498,6 +507,9 @@ fn the_catalogue_holds_no_words_a_person_would_read() {
                         | "licence"
                         | "verified"
                         | "early"
+                        | "bundle"
+                        | "sha256"
+                        | "reaches"
                 )
             ),
             "the catalogue holds {line:?}, which this reader does not know — and if it is \
@@ -506,7 +518,206 @@ fn the_catalogue_holds_no_words_a_person_would_read() {
         read += 1;
     }
     assert_eq!(
-        read, 497,
-        "format, and eight keys for each of sixty-two entries"
+        read, 636,
+        "format, nine keys for each of sixty-two entries from Flathub, and eleven for each of \
+         seven from their maker's signed release"
     );
+}
+
+/// **A Craft application is read as its maker's signed release**: early, with
+/// no automatic updates, published by its makers, and pinned to a bundle on
+/// their own release page with its checksum.
+#[test]
+fn a_craft_application_is_read_as_its_makers_signed_release() {
+    let catalogue = Catalogue::decided().unwrap();
+    let craft: Vec<&Listed> = catalogue
+        .every()
+        .iter()
+        .filter(|one| one.signed_release().is_some())
+        .collect();
+    assert_eq!(craft.len(), 7, "the seven the owner named");
+    for one in craft {
+        let release = one.signed_release().unwrap();
+        assert_eq!(release.maker().name(), "storytold");
+        assert_eq!(release.application(), one.application());
+        assert!(release.bundle().ends_with("-linux-x86_64.flatpak"));
+        assert_eq!(
+            one.labels(),
+            vec![
+                Label::RunsProgramsOutsideItsBox,
+                Label::EarlyVersion,
+                Label::NoAutomaticUpdates
+            ],
+            "{}",
+            one.application().identifier()
+        );
+    }
+    let gimp = catalogue
+        .every()
+        .iter()
+        .find(|one| one.application().identifier() == "org.gimp.GIMP")
+        .unwrap();
+    assert!(gimp.signed_release().is_none());
+}
+
+/// **What a signed release in the file may not be**: a maker with no bundle,
+/// a maker's bundle on somebody else's page, a checksum that is not one, and a
+/// bundle on an entry from a place.
+#[test]
+fn a_signed_release_that_does_not_hold_is_refused() {
+    let shipped = what_a_machine_ships();
+    let one_more = |source: &str, rest: &str| {
+        format!(
+            "{THE_CATALOGUE}\n[[application]]\ncategory = \"audio\"\nidentifier = \
+             \"ai.storyteller.example\"\nname = \"An example\"\nsource = \"{source}\"\nversion = \"0.1.0\"\nlicence = \
+             \"Apache-2.0\"\nverified = true\nearly = true\nreaches = []\n{rest}"
+        )
+    };
+    let sum = "5c9deb58f07bd54f323a5d985bed295b4c5b15789e02651e2f203d5e8ef211a5";
+    let theirs = "https://github.com/storytold/x/releases/download/v1/x.flatpak";
+    let somebody_elses = "https://github.com/someone/x/releases/download/v1/x.flatpak";
+    for (text, why) in [
+        (one_more("storytold", ""), NotASignedRelease::NotTheMakers),
+        (
+            one_more("storytold", &format!("bundle = \"{theirs}\"\n")),
+            NotASignedRelease::NotAChecksum,
+        ),
+        (
+            one_more(
+                "storytold",
+                &format!("bundle = \"{somebody_elses}\"\nsha256 = \"{sum}\"\n"),
+            ),
+            NotASignedRelease::NotTheMakers,
+        ),
+        (
+            one_more(
+                "storytold",
+                &format!("bundle = \"{theirs}\"\nsha256 = \"not-a-sum\"\n"),
+            ),
+            NotASignedRelease::NotAChecksum,
+        ),
+    ] {
+        assert_eq!(
+            Catalogue::read(&text, &shipped).unwrap_err(),
+            NotCatalogued::NotASignedRelease {
+                identifier: "ai.storyteller.example".to_owned(),
+                why
+            }
+        );
+    }
+    let from_a_place = one_more(
+        "flathub",
+        &format!("bundle = \"{theirs}\"\nsha256 = \"{sum}\"\n"),
+    );
+    assert_eq!(
+        Catalogue::read(&from_a_place, &shipped).unwrap_err(),
+        NotCatalogued::NotFromAMaker {
+            identifier: "ai.storyteller.example".to_owned()
+        }
+    );
+}
+
+/// **What its makers ask for past its box is on its row, read from its real
+/// metadata** (the owner, 2026-11-17): OBS Studio can run programs outside its
+/// box, GIMP reaches the person's files, and an application asking for neither
+/// carries neither — the three cases a row can be in.
+#[test]
+fn what_an_application_reaches_past_its_box_is_on_its_row() {
+    let catalogue = Catalogue::decided().unwrap();
+    let labels_of = |identifier: &str| {
+        catalogue
+            .every()
+            .iter()
+            .find(|one| one.application().identifier() == identifier)
+            .unwrap()
+            .labels()
+    };
+    let obs = labels_of("com.obsproject.Studio");
+    assert!(obs.contains(&Label::RunsProgramsOutsideItsBox), "{obs:?}");
+    assert!(
+        !obs.contains(&Label::ReachesYourFiles),
+        "the larger reach is said, and the lesser not said twice: {obs:?}"
+    );
+    assert_eq!(labels_of("org.gimp.GIMP"), vec![Label::ReachesYourFiles]);
+    let quiet = catalogue
+        .every()
+        .iter()
+        .find(|one| one.reaches().is_empty())
+        .unwrap();
+    assert!(
+        !quiet.labels().iter().any(|label| matches!(
+            label,
+            Label::RunsProgramsOutsideItsBox | Label::ReachesYourFiles
+        )),
+        "{} asks for nothing past its box and is labelled as if it did",
+        quiet.application().identifier()
+    );
+}
+
+/// **An entry that does not say what it reaches is refused**, and one naming
+/// a reach this reader does not know — so a forgotten field is a refused file,
+/// never a row that says nothing about what it can do.
+#[test]
+fn an_entry_that_does_not_say_what_it_reaches_is_refused() {
+    let shipped = what_a_machine_ships();
+    let gimps = "early = false\nreaches = [\"your-files\"]\n";
+    assert!(THE_CATALOGUE.contains(gimps));
+    for instead in [
+        "early = false\n",
+        "early = false\nreaches = [\"the-camera\"]\n",
+    ] {
+        let text = replacing(gimps, instead);
+        assert!(
+            matches!(
+                Catalogue::read(&text, &shipped),
+                Err(NotCatalogued::NotRead { .. })
+            ),
+            "{instead:?} was read"
+        );
+    }
+}
+
+/// **Installed, an application that reaches past its box is not told it was
+/// given nothing**; one that asks for nothing past it, or one nothing here
+/// knows, keeps the ordinary sentence.
+#[test]
+fn what_arrives_with_access_past_its_box_is_not_told_it_was_given_nothing() {
+    use crate::installing::Installed;
+    let english = crate::testing::in_english();
+    let gimp = alo_applications::Application::identified("org.gimp.GIMP").unwrap();
+    let reaching = Installed::sandboxed(gimp.clone(), Some(vec![crate::Reach::YourFiles]));
+    let said = reaching.said(&english).into_text();
+    assert!(!said.contains("given nothing"), "{said}");
+    assert!(said.contains("more than its box"), "{said}");
+    for quiet in [
+        Installed::sandboxed(gimp.clone(), Some(Vec::new())),
+        Installed::sandboxed(gimp, None),
+    ] {
+        assert!(quiet.said(&english).into_text().contains("given nothing"));
+    }
+}
+
+/// **What a catalogued application's makers ask for travels with the
+/// installation**, so the sentence once it arrives is the true one; an
+/// installation asked for by hand knows nothing of it.
+#[test]
+fn what_an_entry_reaches_travels_with_its_installation() {
+    let catalogue = Catalogue::decided().unwrap();
+    let gimp = catalogue
+        .every()
+        .iter()
+        .find(|one| one.application().identifier() == "org.gimp.GIMP")
+        .unwrap();
+    assert_eq!(
+        gimp.wanted().reaches(),
+        Some(&[crate::Reach::YourFiles][..])
+    );
+    let by_hand = crate::installing::Wanted::by_hand(gimp.application().clone(), "flathub");
+    assert_eq!(by_hand.reaches(), None);
+    let craft = catalogue
+        .every()
+        .iter()
+        .find(|one| one.signed_release().is_some())
+        .unwrap();
+    assert_eq!(craft.wanted().reaches(), Some(craft.reaches()));
 }

@@ -56,6 +56,17 @@ impl TheNetwork {
         Self { taking }
     }
 
+    /// The network to a maker's release host, on the road this machine takes
+    /// out to install an application — the machine's own proxy, read from its
+    /// own file, exactly as the rented tool's road is.
+    ///
+    /// # Errors
+    /// [`crate::NoRoad`], when the way out cannot be decided or signed in to.
+    pub fn to(maker: &crate::Maker) -> Result<Self, crate::NoRoad> {
+        crate::the_road_out(alo_proxy::Road::InstallingAnApplication, maker.host())
+            .map(Self::through)
+    }
+
     /// One answer, with no redirect followed.
     fn asked(&self, address: &str) -> Result<ureq::http::Response<ureq::Body>, Failed> {
         let through = self

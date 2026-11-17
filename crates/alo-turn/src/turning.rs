@@ -311,6 +311,12 @@ impl<'a, 'm> Turning<'a, 'm> {
         standing: Duration,
         now: SystemTime,
     ) -> Result<ProposalId, NotDone> {
+        // **The card says what installing this application reaches**, where
+        // the verb's own line would not be true of it (the owner, 2026-11-17).
+        let call = match alo_software::what_installing_leaves(&call) {
+            Some(instead) => call.leaving_instead(instead.key()),
+            None => call,
+        };
         let proposal = match Proposal::checked(&call, self.turn.grantee(), grants, now, standing) {
             Ok(proposal) => proposal,
             Err(why) => {

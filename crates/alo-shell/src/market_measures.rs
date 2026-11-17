@@ -91,7 +91,13 @@ pub(crate) const A_CHIP_IS_TALL: u32 = 29;
 /// same height or the row reads as broken, and the alternative — measuring
 /// every blurb and taking the tallest — makes the layout depend on the
 /// vocabulary, so a long translation would change the shape of the window.
-pub(crate) const A_CARD_IS_TALL: u32 = 124;
+///
+/// **164 since 2026-11-17, the design's own card** (`514:30954`). It was 124,
+/// which left one line between an application's name and its foot; a row
+/// that says it runs programs outside its box *and* is an early version with
+/// no automatic updates needs two, and a warning cut off is a warning not
+/// given.
+pub(crate) const A_CARD_IS_TALL: u32 = 164;
 
 /// How many cards sit side by side.
 pub(crate) const CARDS_ACROSS: u32 = 2;
