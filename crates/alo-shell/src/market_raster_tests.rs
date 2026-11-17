@@ -543,3 +543,21 @@ fn the_list_scrolls_to_the_application_the_person_is_on_and_rings_it() {
         "on the last application, no card in the window is ringed: the list did not scroll"
     );
 }
+
+/// **The row starts at the first chip from which the chosen one still fits,
+/// counting the gaps between them** — exactly, because a row that started one
+/// chip too early drops the chosen one off its end, and one that started too
+/// late hides kinds that had room.
+#[test]
+fn the_row_starts_where_the_chosen_kind_just_fits() {
+    // Four chips of 30 with gaps of 10: from chip 1, chips 1..=3 reach
+    // 30 + 10 + 30 + 10 + 30 = 110.
+    let widths = [30, 30, 30, 30];
+    assert_eq!(super::the_first_chip_drawn(&widths, 3, 10, 110), 1);
+    assert_eq!(super::the_first_chip_drawn(&widths, 3, 10, 109), 2);
+    assert_eq!(super::the_first_chip_drawn(&widths, 3, 10, 150), 0);
+    // A chosen chip at the start, or one too wide to fit at all, is where the
+    // row starts — never a chip past it.
+    assert_eq!(super::the_first_chip_drawn(&widths, 0, 10, 10), 0);
+    assert_eq!(super::the_first_chip_drawn(&[30, 500], 1, 10, 100), 1);
+}

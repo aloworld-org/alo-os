@@ -257,20 +257,8 @@ pub(crate) fn picture(
         .iter()
         .position(|(kind, _, _)| *kind == chosen)
         .unwrap_or(0);
-    let mut from = 0;
-    while from < chosen_at {
-        let reach: i32 = chips
-            .get(from..=chosen_at)
-            .unwrap_or_default()
-            .iter()
-            .map(|(_, _, wide)| wide + gap)
-            .sum::<i32>()
-            - gap;
-        if reach <= body_wide {
-            break;
-        }
-        from += 1;
-    }
+    let widths: Vec<i32> = chips.iter().map(|(_, _, wide)| *wide).collect();
+    let from = the_first_chip_drawn(&widths, chosen_at, gap, body_wide);
     let mut along = left;
     for (kind, label, wide) in chips.iter().skip(from) {
         if along + wide > left + body_wide {
@@ -556,6 +544,27 @@ fn draw_one(
             writing.push(ToWrite::of(action, words.install.clone(), ink, surface));
         }
     }
+}
+
+/// Which chip a row of these widths starts at so the one at `chosen` is on it:
+/// the first chip from which `chosen` still ends inside `room`, chips `gap`
+/// apart, and never past `chosen` itself.
+fn the_first_chip_drawn(widths: &[i32], chosen: usize, gap: i32, room: i32) -> usize {
+    let mut from = 0;
+    while from < chosen {
+        let reach: i32 = widths
+            .get(from..=chosen)
+            .unwrap_or_default()
+            .iter()
+            .map(|wide| wide + gap)
+            .sum::<i32>()
+            - gap;
+        if reach <= room {
+            break;
+        }
+        from += 1;
+    }
+    from
 }
 
 #[cfg(test)]
