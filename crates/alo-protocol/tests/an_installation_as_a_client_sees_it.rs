@@ -92,6 +92,13 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
         alo_turn::WhatAVerbDid::AFileWasOpened(opened) => {
             Done::of_an_application_act("open-file", opened.application())
         }
+        // A scroll, 2026-11-17.
+        alo_turn::WhatAVerbDid::AWindowWasScrolled(scrolled) => Done::of_a_scroll(
+            scrolled.application(),
+            scrolled.to(),
+            scrolled.a_page(),
+            scrolled.now_showing(),
+        ),
     }
 }
 

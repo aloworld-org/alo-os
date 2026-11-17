@@ -35,6 +35,7 @@ use crate::fallback_reach::reached;
 use crate::fallback_verbs::{NAME, SCROLL_PAGE, SCROLL_TO, TOWARD};
 use crate::fallback_words as fallback;
 use crate::not_walked::NotWalked;
+use crate::places_for_text::holds;
 use crate::role::Role;
 use crate::scrolling_words as words;
 use crate::states::States;
@@ -388,14 +389,6 @@ impl Scrolling {
     }
 }
 
-/// Whether a set of states, in the tree's two words, holds `state`.
-fn holds(states: &[u32], state: u32) -> bool {
-    let word = usize::try_from(state / 32).unwrap_or(usize::MAX);
-    states
-        .get(word)
-        .is_some_and(|bits| bits & (1 << (state % 32)) != 0)
-}
-
 /// The edge a page brings its thing to.
 const fn edge_for(toward: Toward) -> Edge {
     match toward {
@@ -417,27 +410,29 @@ fn a_page(places: &[Place], toward: Toward) -> Option<&Place> {
         .filter(|(_, place)| place.role == Role::Document && place.showing)
         .map(|(index, _)| index)
         .collect();
-    let within: &[Place] = match documents.as_slice() {
+    // The document's own things: everything after it that is deeper than it,
+    // up to the first that is not.
+    let within: Vec<&Place> = match documents.as_slice() {
         [one] => {
-            let depth = places[*one].depth;
-            let end = places[*one + 1..]
-                .iter()
-                .position(|place| place.depth <= depth)
-                .map_or(places.len(), |after| *one + 1 + after);
-            &places[*one + 1..end]
+            let mut after = places.iter().skip(*one);
+            let depth = after.next().map_or(0, |document| document.depth);
+            after.take_while(|place| place.depth > depth).collect()
         }
-        _ => places,
+        _ => places.iter().collect(),
     };
-    let candidate = |place: &&Place| !place.showing && place.role != Role::PasswordField;
+    let candidate = |place: &&&Place| !place.showing && place.role != Role::PasswordField;
     match toward {
-        Toward::Down => {
-            let first_showing = within.iter().position(|place| place.showing)?;
-            within[first_showing..].iter().find(candidate)
-        }
-        Toward::Up => {
-            let last_showing = within.iter().rposition(|place| place.showing)?;
-            within[..last_showing].iter().rev().find(candidate)
-        }
+        Toward::Down => within
+            .iter()
+            .skip_while(|place| !place.showing)
+            .find(candidate)
+            .copied(),
+        Toward::Up => within
+            .iter()
+            .rev()
+            .skip_while(|place| !place.showing)
+            .find(candidate)
+            .copied(),
     }
 }
 
