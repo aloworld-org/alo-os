@@ -77,9 +77,9 @@ fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
             "select a file in the file manager",
             "open a file in the file manager",
             "open a thing's right-click menu in an application",
-            "answer the file chooser",
             "press a key in an application",
             "type into a search box without saving",
+            "answer the file chooser",
         ]
     );
 }
