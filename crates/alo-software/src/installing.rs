@@ -119,6 +119,14 @@ pub struct Installed {
 }
 
 impl Installed {
+    /// An application installed sandboxed, by a road of this crate's own.
+    pub(crate) const fn sandboxed(application: Application) -> Self {
+        Self {
+            application,
+            sandboxing: Sandboxing::Sandboxed,
+        }
+    }
+
     /// The application.
     #[must_use]
     pub const fn application(&self) -> &Application {

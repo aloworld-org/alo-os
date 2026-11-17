@@ -60,6 +60,15 @@ pub fn install(source: &SourceName, application: &Application) -> Vec<String> {
     asked
 }
 
+/// Install an application from a file on this machine, for everyone who uses
+/// it — a maker's signed release, already checked (ADR 0158).
+#[must_use]
+pub fn install_a_file(file: &std::path::Path) -> Vec<String> {
+    let mut asked = owned(&["install", "--system", "--noninteractive", "--bundle", "--"]);
+    asked.push(file.display().to_string());
+    asked
+}
+
 /// Which installed applications this place has newer versions of.
 #[must_use]
 pub fn updates(source: &SourceName) -> Vec<String> {
@@ -113,6 +122,24 @@ mod tests {
 
     fn flathub() -> SourceName {
         SourceName::checked("flathub").unwrap()
+    }
+
+    /// **A file is installed by its path, after `--`**, so a path that began
+    /// like an option could never be read as one, and for everyone who uses
+    /// the machine like every other installation.
+    #[test]
+    fn a_file_is_installed_by_its_path_as_one_argument() {
+        assert_eq!(
+            install_a_file(std::path::Path::new("/run/user/1000/a b.flatpak")),
+            [
+                "install",
+                "--system",
+                "--noninteractive",
+                "--bundle",
+                "--",
+                "/run/user/1000/a b.flatpak"
+            ]
+        );
     }
 
     #[test]
