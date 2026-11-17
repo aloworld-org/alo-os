@@ -109,6 +109,7 @@ dependencies = [
 name = "alo-adapters"
 version = "0.0.1"
 dependencies = [
+ "alo-acting",
  "alo-applications",
  "alo-capability",
  "alo-portals",

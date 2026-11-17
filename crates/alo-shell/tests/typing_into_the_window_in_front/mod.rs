@@ -218,6 +218,44 @@ fn saving_holds_control_around_one_key() {
     assert_eq!(sent.last(), Some(&0));
 }
 
+/// **One key of the closed list is one press and one release, with no
+/// modifier held**, sent to the window in front only — and refused, with
+/// nothing sent, where that window may not be typed into (2026-11-17).
+#[test]
+fn a_key_is_one_press_with_no_modifier_and_only_where_it_may_go() {
+    let f = Fixture::keyboard();
+    let mut app = mapped(&f, EDITOR);
+    f.focus(Some(0)).expect("the window takes the keyboard");
+    app.sync();
+    let (keys, mods) = (
+        app.events.keyboard.keys.len(),
+        app.events.keyboard.modifiers.len(),
+    );
+    let enter = || ToType::Key {
+        application: Named::identified(EDITOR).expect("an identifier"),
+        key: alo_acting::AKey::Enter,
+    };
+    assert_eq!(typed(&f, enter(), "", false), Typed::NotAlosCopy);
+    app.sync();
+    assert!(
+        presses_after(&app, keys).is_empty(),
+        "a refused key was sent"
+    );
+    assert_eq!(typed(&f, enter(), "", true), Typed::PressedTheKey);
+    app.sync();
+    let pressed = presses_after(&app, keys);
+    assert_eq!(pressed.len(), 2, "{pressed:?}");
+    assert_eq!(pressed[0].1, KeyState::Pressed);
+    assert_eq!(pressed[1].1, KeyState::Released);
+    let sent = app
+        .events
+        .keyboard
+        .modifiers
+        .get(mods..)
+        .unwrap_or_default();
+    assert!(sent.iter().all(|mask| *mask == 0), "{sent:?}");
+}
+
 #[test]
 fn asking_whether_it_may_makes_every_check_and_sends_nothing() {
     let f = Fixture::keyboard();

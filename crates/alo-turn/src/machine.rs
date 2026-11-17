@@ -1014,6 +1014,10 @@ mod tests {
             "accessible.open_item",
             // And one thing's right-click menu, added 2026-11-17.
             "accessible.open_menu",
+            // And one key of a closed list, added 2026-11-17.
+            "accessible.press_key",
+            // And typing that saves nothing, added 2026-11-17.
+            "accessible.type_without_saving",
             // `alo-publishing`'s one, added 2026-11-13: Demo 2's second road.
             "publish_to_github_pages",
         ];

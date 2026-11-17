@@ -1118,6 +1118,20 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   something is. Qt applications such as Dolphin offer this; *whether other
   toolkits do is not measured, and it is not yet seen on a booted machine*
   ([`contracts/agent-verbs.md`](contracts/agent-verbs.md), *The menu verb*).
+  **Pressing a key is built, since 2026-11-17** (the owner, approving five new
+  ways for alo to use an application as a person does: *"Yes do all"*): alo can
+  press one of Enter, Escape, Tab or an arrow in the window that has the
+  keyboard (`accessible.press_key`) — to send a search, close a dialog or move
+  between fields. One key per approval at *ask each time*; at full access at
+  once, recorded. Never in a password field or a terminal, never a combination
+  or a shortcut, and only in alo's own copy unless the person chose otherwise.
+  *Not yet seen on a booted machine*
+  ([`contracts/agent-verbs.md`](contracts/agent-verbs.md), *The key verb*).
+  **And typing that saves nothing, since the same day** (the same approval):
+  `accessible.type_without_saving` types into a search box, a form, an address
+  or a message exactly as `accessible.type_text` does — the whole text shown
+  first, read back after — and never presses `Ctrl+S`, which in a web page
+  opens *Save Page*. *Not yet seen on a booted machine.*
   **Any installed application** — the owner, the same day: *"for alo driving
   applications it should be able to drive any application installed."* **Only
   the ones the person has let it use**: by default the person lets alo use

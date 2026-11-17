@@ -37,6 +37,7 @@ use crate::opening_a_file_in_an_application::AFileOpened;
 use crate::opening_a_menu_in_an_application::AMenuOpened;
 use crate::opening_an_item_in_an_application::AnItemOpened;
 use crate::pressing_a_control::AControlPressed;
+use crate::pressing_a_key_in_an_application::AKeyPressed;
 use crate::reading_an_applications_windows::TheWindowsShowed;
 use crate::scrolling_in_an_application::AWindowScrolled;
 use crate::setting_in_an_application::AValueSet;
@@ -113,6 +114,9 @@ pub enum WhatAVerbDid {
     /// One thing's right-click menu was opened in an application's window, or
     /// asked to be (`accessible.open_menu`, 2026-11-17).
     AMenuWasOpened(AMenuOpened),
+    /// One key of the closed list was pressed in an application's window
+    /// (`accessible.press_key`, 2026-11-17).
+    AKeyWasPressed(AKeyPressed),
 }
 
 impl WhatAVerbDid {
@@ -180,7 +184,8 @@ impl WhatAVerbDid {
             | Self::AValueWasSet(_)
             | Self::SomethingWasChosen(_)
             | Self::AnItemWasOpened(_)
-            | Self::AMenuWasOpened(_) => None,
+            | Self::AMenuWasOpened(_)
+            | Self::AKeyWasPressed(_) => None,
         }
     }
 
@@ -207,7 +212,8 @@ impl WhatAVerbDid {
             | Self::AValueWasSet(_)
             | Self::SomethingWasChosen(_)
             | Self::AnItemWasOpened(_)
-            | Self::AMenuWasOpened(_) => None,
+            | Self::AMenuWasOpened(_)
+            | Self::AKeyWasPressed(_) => None,
         }
     }
 
@@ -230,7 +236,8 @@ impl WhatAVerbDid {
             | Self::AValueWasSet(_)
             | Self::SomethingWasChosen(_)
             | Self::AnItemWasOpened(_)
-            | Self::AMenuWasOpened(_) => None,
+            | Self::AMenuWasOpened(_)
+            | Self::AKeyWasPressed(_) => None,
         }
     }
 
@@ -253,7 +260,8 @@ impl WhatAVerbDid {
             | Self::AValueWasSet(_)
             | Self::SomethingWasChosen(_)
             | Self::AnItemWasOpened(_)
-            | Self::AMenuWasOpened(_) => None,
+            | Self::AMenuWasOpened(_)
+            | Self::AKeyWasPressed(_) => None,
         }
     }
 
@@ -276,7 +284,8 @@ impl WhatAVerbDid {
             | Self::AValueWasSet(_)
             | Self::SomethingWasChosen(_)
             | Self::AnItemWasOpened(_)
-            | Self::AMenuWasOpened(_) => None,
+            | Self::AMenuWasOpened(_)
+            | Self::AKeyWasPressed(_) => None,
         }
     }
 
@@ -303,6 +312,15 @@ impl WhatAVerbDid {
     pub const fn menu_opened(&self) -> Option<&AMenuOpened> {
         match self {
             Self::AMenuWasOpened(opened) => Some(opened),
+            _ => None,
+        }
+    }
+
+    /// The key pressed, when one was.
+    #[must_use]
+    pub const fn key_pressed(&self) -> Option<&AKeyPressed> {
+        match self {
+            Self::AKeyWasPressed(pressed) => Some(pressed),
             _ => None,
         }
     }
@@ -344,7 +362,8 @@ impl WhatAVerbDid {
             | Self::AValueWasSet(_)
             | Self::SomethingWasChosen(_)
             | Self::AnItemWasOpened(_)
-            | Self::AMenuWasOpened(_) => None,
+            | Self::AMenuWasOpened(_)
+            | Self::AKeyWasPressed(_) => None,
         }
     }
 }
@@ -364,6 +383,12 @@ impl From<AWindowScrolled> for WhatAVerbDid {
 impl From<AMenuOpened> for WhatAVerbDid {
     fn from(opened: AMenuOpened) -> Self {
         Self::AMenuWasOpened(opened)
+    }
+}
+
+impl From<AKeyPressed> for WhatAVerbDid {
+    fn from(pressed: AKeyPressed) -> Self {
+        Self::AKeyWasPressed(pressed)
     }
 }
 
@@ -472,6 +497,7 @@ mod tests {
             assert!(did.what_touched_a_file().is_none());
             assert!(did.scrolled().is_none());
             assert!(did.menu_opened().is_none());
+            assert!(did.key_pressed().is_none());
         }
     }
 }

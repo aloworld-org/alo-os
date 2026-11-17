@@ -18,10 +18,11 @@
 use std::path::Path;
 use std::time::SystemTime;
 
-use alo_acting::Acting;
+use alo_acting::{AKey, Acting};
 use alo_adapters::fallback_verbs::{
-    self, ACTIVATE_CONTROL, CHOOSE_OPTION, KIND, NAME, OPEN_ITEM, OPEN_MENU, OPTION, READ_WINDOW,
-    SCROLL_PAGE, SCROLL_TO, SELECT_ITEM, SET_VALUE, TOWARD, VALUE,
+    self, ACTIVATE_CONTROL, CHOOSE_OPTION, KEY, KIND, NAME, OPEN_ITEM, OPEN_MENU, OPTION,
+    PRESS_KEY, READ_WINDOW, SCROLL_PAGE, SCROLL_TO, SELECT_ITEM, SET_VALUE, TOWARD,
+    TYPE_WITHOUT_SAVING, VALUE,
 };
 use alo_adapters::scrolling::Toward;
 use alo_adapters::{Pressable, Role as OnScreen, Seen, Shown, ShownWindow};
@@ -88,6 +89,11 @@ pub const THE_PAGE: &str = "alo OS";
 
 /// The heading on the top of [`THE_PAGE`], which is on the screen.
 pub const ON_ITS_TOP: &str = "Getting started";
+/// The field the typing-without-saving request names.
+pub const SEARCH: &str = "Search";
+
+/// What the typing-without-saving request types.
+pub const SEARCHED_FOR: &str = "alo OS";
 
 /// The kind of work the catalogue request asks about, by a word with one
 /// meaning in the catalogue (`catalogue.toml`): painting is Painting, where
@@ -666,6 +672,76 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         )
         .expecting(fallback_verbs::APPLICATION, files.as_str()),
     );
+    // **A key, 2026-11-17**: the person names it, so reading first is a look.
+    let a_key = ARequest::asking(
+        "press a key in an application",
+        "Press Enter in Firefox.",
+        vec![
+            Step::of(
+                READ_WINDOW,
+                Answered::With(Done::of_a_window_read(&the_window, &[])),
+            )
+            .expecting(fallback_verbs::APPLICATION, browser.as_str())
+            .a_look(),
+            Step::of(
+                PRESS_KEY,
+                Answered::With(Done::of_a_key(&browser, AKey::Enter.named())),
+            )
+            .expecting(fallback_verbs::APPLICATION, browser.as_str())
+            .expecting(KEY, AKey::Enter.named()),
+        ],
+    )
+    // **Reading the window again after is aside of the road**: what a key did
+    // is seen by reading, and the machine answers it.
+    .or_looking_at(
+        Step::of(
+            READ_WINDOW,
+            Answered::With(Done::of_a_window_read(&the_window, &[])),
+        )
+        .expecting(fallback_verbs::APPLICATION, browser.as_str()),
+    );
+    // **Typing that saves nothing, 2026-11-17**: a web page's search box,
+    // where `type_text`'s `Ctrl+S` would save the page.
+    let the_search = Shown::of(
+        browser.clone(),
+        vec![ShownWindow::titled(
+            THE_BROWSERS_WINDOW.to_owned(),
+            vec![Seen::of(OnScreen::TextField, SEARCH.to_owned(), None, 1)],
+        )],
+        false,
+    );
+    let typing_without_saving = ARequest::asking(
+        "type into a search box without saving",
+        format!("In Firefox, type {SEARCHED_FOR} into the field called {SEARCH}."),
+        vec![
+            Step::of(
+                READ_WINDOW,
+                Answered::With(Done::of_a_window_read(&the_search, &[])),
+            )
+            .expecting(fallback_verbs::APPLICATION, browser.as_str())
+            .a_look(),
+            Step::of(
+                TYPE_WITHOUT_SAVING,
+                Answered::With(Done::of_a_typing_without_saving(
+                    &browser,
+                    SEARCH,
+                    SEARCHED_FOR.chars().count(),
+                    false,
+                    true,
+                )),
+            )
+            .expecting(fallback_verbs::APPLICATION, browser.as_str())
+            .expecting(fallback_verbs::FIELD, SEARCH)
+            .expecting(fallback_verbs::TEXT, SEARCHED_FOR),
+        ],
+    )
+    .or_looking_at(
+        Step::of(
+            READ_WINDOW,
+            Answered::With(Done::of_a_window_read(&the_search, &[])),
+        )
+        .expecting(fallback_verbs::APPLICATION, browser.as_str()),
+    );
     Ok(vec![
         listing,
         reading,
@@ -686,5 +762,7 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         selecting,
         opening,
         a_menu,
+        a_key,
+        typing_without_saving,
     ])
 }

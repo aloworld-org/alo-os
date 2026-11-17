@@ -678,6 +678,22 @@ meaning.
   pictures and keys are switched on for the application, who reads the
   picture, and whether the window holds a password field, are the turn's.
 
+### One key — `press-in`, added 2026-11-17
+
+```
+→ press-in <application> <key>
+← pressed-the-key | not-in-front | not-alos-copy | no-keyboard
+```
+
+`<key>` is one of `enter`, `escape`, `tab`, `up`, `down`, `left` and `right`,
+exactly. Anything else, more than one key, or a missing key is a caller with a
+bug: the connection is closed with nothing written. The key is pressed and
+released once, through a layout holding only that key, by the same road and
+under the same three rules as `type-into`: only in the window that holds the
+keyboard, which must be `<application>`'s; alo's own copy where the setting
+asks for it; to that client alone, with the person's layout back after. No
+modifier is held.
+
 ## alo opening a file in an application — `open-file`, added 2026-11-14
 
 **What it gives a person:** *open hello.txt in VSCodium*, once they approved

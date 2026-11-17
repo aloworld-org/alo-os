@@ -5,7 +5,7 @@
 
 use alo_applications::Application;
 
-use super::{NotToType, ToType, Typed, the_first_untypable};
+use super::{AKey, NotToType, ToType, Typed, the_first_untypable};
 
 fn codium() -> Application {
     Application::identified("com.vscodium.codium").unwrap()
@@ -99,4 +99,47 @@ fn new_lines_and_tabs_are_typed_and_other_control_characters_are_not() {
     assert_eq!(the_first_untypable("a\n\tb é 日本 — ✓"), None);
     assert_eq!(the_first_untypable("bell\u{7}here"), Some('\u{7}'));
     assert_eq!(the_first_untypable("line\r\n"), Some('\r'));
+}
+
+#[test]
+fn a_key_is_read_back_as_it_was_written_and_only_from_the_closed_list() {
+    for key in AKey::ALL {
+        let asked = ToType::Key {
+            application: codium(),
+            key,
+        };
+        assert_eq!(
+            asked.written(),
+            format!("press-in com.vscodium.codium {}", key.named())
+        );
+        assert_eq!(ToType::read(&asked.written()), Some(Ok(asked)));
+    }
+    for line in [
+        "press-in com.vscodium.codium ctrl+s",
+        "press-in com.vscodium.codium Enter",
+        "press-in com.vscodium.codium",
+        "press-in com.vscodium.codium enter enter",
+    ] {
+        assert_eq!(ToType::read(line), Some(Err(NotToType::NotAKey)), "{line}");
+    }
+    assert_eq!(
+        ToType::read("press-in"),
+        Some(Err(NotToType::NotOneApplication))
+    );
+    assert_eq!(
+        Typed::read(&Typed::PressedTheKey.written()),
+        Some(Typed::PressedTheKey)
+    );
+}
+
+#[test]
+fn each_key_has_one_name_and_one_symbol() {
+    let names: std::collections::BTreeSet<&str> = AKey::ALL.iter().map(|key| key.named()).collect();
+    let symbols: std::collections::BTreeSet<&str> =
+        AKey::ALL.iter().map(|key| key.symbol()).collect();
+    assert_eq!(names.len(), AKey::ALL.len());
+    assert_eq!(symbols.len(), AKey::ALL.len());
+    assert_eq!(AKey::called("enter"), Some(AKey::Enter));
+    assert_eq!(AKey::Enter.symbol(), "Return");
+    assert_eq!(AKey::called("ctrl+s"), None);
 }

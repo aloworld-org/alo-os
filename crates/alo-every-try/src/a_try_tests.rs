@@ -770,3 +770,18 @@ fn pages_down_that_never_reach_the_heading_are_not_a_pass() {
         assert!(!elsewhere.took_the_road(), "{level:?}: {elsewhere:?}");
     }
 }
+
+/// **On a request's own road, a read declared aside is still answered aside**
+/// even where the road's next step is a look at the same verb, as before other
+/// roads existed: only the other road prefers its own next step.
+#[test]
+fn on_its_own_road_a_read_declared_aside_is_answered_aside() {
+    let request = writing_with_a_look().or_looking_at(the_editors_window());
+    let tried = tried_on(
+        &request,
+        &[opening(), looking(), typing(), answering("Typed.")],
+    );
+    assert!(tried.took_the_road(), "{tried:?}");
+    assert_eq!(tried.looked_aside(), 1, "{tried:?}");
+    assert!(!tried.by_the_other_road(), "{tried:?}");
+}

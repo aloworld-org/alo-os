@@ -147,6 +147,24 @@ adapters.fallback.open-menu.password-field	“{name}” in {application} is a pa
 adapters.fallback.open-menu.purpose	open the menu a right-click would open on one thing in an application's window, named as the application names it, so that one of its items can be chosen
 adapters.fallback.open-menu.sentence	open the right-click menu of “{thing}” in {application}
 adapters.fallback.open-menu.too-much	{application} shows more than alo can read at once, so alo could not be sure which “{name}” was meant, and no menu was opened
+adapters.fallback.press-key.application	the application whose window the key is pressed in
+adapters.fallback.press-key.changes	Presses that one key once in the application's window that has the keyboard, as a person pressing it would.
+adapters.fallback.press-key.down	the down arrow
+adapters.fallback.press-key.enter	Enter
+adapters.fallback.press-key.escape	Escape
+adapters.fallback.press-key.key	the key to press, once
+adapters.fallback.press-key.leaves	No other key is pressed, no other window is sent the key, and nothing is pressed in a password field or a terminal.
+adapters.fallback.press-key.left	the left arrow
+adapters.fallback.press-key.no-keyboard	This machine could not press a key in {application} just now, so no key was pressed
+adapters.fallback.press-key.not-alos-copy	That {application} window is yours, not alo's own copy, so no key was pressed. To let alo press keys in your own windows, choose “alo may work in your own window” in Settings → What alo can use
+adapters.fallback.press-key.not-in-front	No window of {application} has the keyboard, so no key was pressed. alo presses keys only where the keyboard is: bring the window forward first
+adapters.fallback.press-key.password-field	A password field has the keyboard in {application}, and alo never acts on one, so no key was pressed
+adapters.fallback.press-key.purpose	press one key — Enter, Escape, Tab or an arrow — in the window of an application that has the keyboard, as a person would
+adapters.fallback.press-key.right	the right arrow
+adapters.fallback.press-key.sentence	press {key} in {application}
+adapters.fallback.press-key.tab	Tab
+adapters.fallback.press-key.terminal	A terminal has the keyboard in {application}, and a key there can run a command, which alo does only where you have let your agent use a terminal, so no key was pressed
+adapters.fallback.press-key.up	the up arrow
 adapters.fallback.read-window.application	the application whose windows to read
 adapters.fallback.read-window.by-hand	Look at the application's window, or have the screen reader read it aloud
 adapters.fallback.read-window.purpose	read what an application's windows show
@@ -217,6 +235,11 @@ adapters.fallback.type-text.purpose	type a text into a field or a document in an
 adapters.fallback.type-text.read-back-differs	What “{name}” in {application} shows now is not exactly the text you approved, so it was not saved. Look at the window, and undo with Ctrl+Z if you want it gone
 adapters.fallback.type-text.sentence	type {text} into “{name}” in {application}, and save it
 adapters.fallback.type-text.text	the text to type, shown to you in full before anything is typed
+adapters.fallback.type-without-saving.cannot-read-back	The text was typed into “{name}” in {application}, and the window does not show it in a way alo can read back. Look at the window to check it
+adapters.fallback.type-without-saving.changes	The text below is typed where the field's cursor is and read back. Nothing is saved.
+adapters.fallback.type-without-saving.purpose	type a text into a field in an application's window — a search box, a form, an address, a message — and save nothing
+adapters.fallback.type-without-saving.read-back-differs	What “{name}” in {application} shows now is not exactly the text you approved. Look at the window, and undo with Ctrl+Z if you want it gone
+adapters.fallback.type-without-saving.sentence	type {text} into “{field}” in {application}
 adapters.not-carried-out.did-not-answer	{application} did not answer in time, so whether it did what was approved is not known
 adapters.not-carried-out.does-not-offer	{application} does not offer what was approved, so nothing was done in it. This release of it may not be one this machine knows how to ask
 adapters.not-carried-out.not-an-adapters-verb	{verb} is not something an application on this machine was asked to do, so nothing was sent

@@ -198,6 +198,9 @@ mod opening_an_item_in_an_application;
 mod opening_an_item_in_an_application_tests;
 pub mod places;
 mod pressing_a_control;
+mod pressing_a_key_in_an_application;
+#[cfg(test)]
+mod pressing_a_key_in_an_application_tests;
 mod publishing_a_folder;
 mod reading_an_applications_windows;
 #[cfg(test)]
@@ -261,6 +264,7 @@ pub use opening_a_menu_in_an_application::AMenuOpened;
 pub use opening_an_item_in_an_application::AnItemOpened;
 pub use places::Places;
 pub use pressing_a_control::AControlPressed;
+pub use pressing_a_key_in_an_application::AKeyPressed;
 pub use reading_an_applications_windows::TheWindowsShowed;
 pub use refusing::NotDone;
 pub use scrolling_in_an_application::AWindowScrolled;

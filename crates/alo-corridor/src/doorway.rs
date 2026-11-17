@@ -553,11 +553,13 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> Option<alo_pro
             pressed.name(),
             pressed.unanswered(),
         ),
-        alo_turn::WhatAVerbDid::TextWasTyped(typed) => alo_protocol::Done::of_a_typing(
+        alo_turn::WhatAVerbDid::TextWasTyped(typed) => alo_protocol::Done::of_either_typing(
             typed.application(),
             typed.name(),
             typed.characters(),
             typed.through_the_tree(),
+            typed.asked_to_save(),
+            typed.read_back(),
             typed.saved(),
         ),
         alo_turn::WhatAVerbDid::AValueWasSet(set) => alo_protocol::Done::of_a_setting(
@@ -606,6 +608,11 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> Option<alo_pro
         // press is, so it crosses back as what was opened — never its items.
         alo_turn::WhatAVerbDid::AMenuWasOpened(opened) => {
             alo_protocol::Done::of_a_menu(opened.application(), opened.name(), opened.unanswered())
+        }
+        // A key is a change this machine's person approved here, as a press
+        // is, so it crosses back as the key that was pressed.
+        alo_turn::WhatAVerbDid::AKeyWasPressed(pressed) => {
+            alo_protocol::Done::of_a_key(pressed.application(), pressed.key().named())
         }
     })
 }
