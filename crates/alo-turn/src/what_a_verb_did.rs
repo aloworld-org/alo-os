@@ -316,7 +316,6 @@ impl WhatAVerbDid {
         }
     }
 
-
     /// The key pressed, when one was.
     #[must_use]
     pub const fn key_pressed(&self) -> Option<&AKeyPressed> {
@@ -386,7 +385,6 @@ impl From<AMenuOpened> for WhatAVerbDid {
         Self::AMenuWasOpened(opened)
     }
 }
-
 
 impl From<AKeyPressed> for WhatAVerbDid {
     fn from(pressed: AKeyPressed) -> Self {

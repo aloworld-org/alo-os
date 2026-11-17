@@ -31,8 +31,8 @@ use alo_capability::{Arg, Effect, Requires, Takes, Verb, Verbs};
 
 use crate::choosing_words as choosing;
 use crate::fallback_words as words;
-use crate::menu_words as menu;
 use crate::keys_words as keys;
+use crate::menu_words as menu;
 use crate::not_loaded::NotLoaded;
 use crate::opening_words as opening;
 use crate::pressable::Pressable;

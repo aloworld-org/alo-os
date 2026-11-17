@@ -20,8 +20,9 @@ use std::time::SystemTime;
 
 use alo_acting::{AKey, Acting};
 use alo_adapters::fallback_verbs::{
-    self, ACTIVATE_CONTROL, CHOOSE_OPTION, KEY, KIND, NAME, OPEN_ITEM, OPEN_MENU, OPTION, PRESS_KEY,
-    READ_WINDOW, SCROLL_PAGE, SCROLL_TO, SELECT_ITEM, SET_VALUE, TOWARD, TYPE_WITHOUT_SAVING, VALUE,
+    self, ACTIVATE_CONTROL, CHOOSE_OPTION, KEY, KIND, NAME, OPEN_ITEM, OPEN_MENU, OPTION,
+    PRESS_KEY, READ_WINDOW, SCROLL_PAGE, SCROLL_TO, SELECT_ITEM, SET_VALUE, TOWARD,
+    TYPE_WITHOUT_SAVING, VALUE,
 };
 use alo_adapters::scrolling::Toward;
 use alo_adapters::{Pressable, Role as OnScreen, Seen, Shown, ShownWindow};

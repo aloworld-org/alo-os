@@ -282,7 +282,15 @@ fn typing_once_in(
     } else {
         Answering::Declining
     };
-    typing_once_as(TYPE_TEXT, application, terminal, field, whose, rewriting, answering)
+    typing_once_as(
+        TYPE_TEXT,
+        application,
+        terminal,
+        field,
+        whose,
+        rewriting,
+        answering,
+    )
 }
 
 /// How a typing is answered: approved or declined at *ask each time*, or run
