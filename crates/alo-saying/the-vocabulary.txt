@@ -146,6 +146,12 @@ adapters.fallback.scroll.changes	Moves what one window of the application shows,
 adapters.fallback.scroll.did-not	{application} answered that it could not scroll there, so nothing was scrolled
 adapters.fallback.scroll.leaves	Nothing is typed, nothing is pressed, no text is changed, and nothing is found by where it is on the screen.
 adapters.fallback.scroll.not-seen-to-move	alo asked {application} to scroll, and its window does not yet say that what was off the screen is on it now. Read the window again to see what it shows
+adapters.fallback.select-item.application	the application the list is in
+adapters.fallback.select-item.changes	Selects that one item, as a person clicking it once would, and then looks to see that it is selected.
+adapters.fallback.select-item.leaves	The item is not opened, moved or changed, nothing is typed, and nothing is found by where it is on the screen.
+adapters.fallback.select-item.name	the item, by the name or the words it shows
+adapters.fallback.select-item.purpose	select one item of a list in an application's window, such as a file in a folder, without opening it
+adapters.fallback.select-item.sentence	select “{name}” in {application}
 adapters.fallback.set-value.application	the application the slider or number box is in
 adapters.fallback.set-value.cannot-be-moved	{application} does not let “{name}” be moved from outside the application, so nothing was moved. Move it yourself in the window
 adapters.fallback.set-value.cannot-be-used-now	“{name}” in {application} is greyed out, so nothing was moved
@@ -163,12 +169,6 @@ adapters.fallback.set-value.reads-back-differently	alo asked {application} to mo
 adapters.fallback.set-value.sentence	move “{name}” in {application} to {value}
 adapters.fallback.set-value.too-much-to-be-sure	{application} shows more than can be read at once, so whether “{name}” is the only one is not known, and nothing was moved
 adapters.fallback.set-value.value	the whole number to move it to, inside the range it shows
-adapters.fallback.select-item.application	the application the list is in
-adapters.fallback.select-item.changes	Selects that one item, as a person clicking it once would, and then looks to see that it is selected.
-adapters.fallback.select-item.leaves	The item is not opened, moved or changed, nothing is typed, and nothing is found by where it is on the screen.
-adapters.fallback.select-item.name	the item, by the name or the words it shows
-adapters.fallback.select-item.purpose	select one item of a list in an application's window, such as a file in a folder, without opening it
-adapters.fallback.select-item.sentence	select “{name}” in {application}
 adapters.fallback.text-cut-short	{application} shows a text longer than is read at once, so only its first {most} characters were read
 adapters.fallback.too-much-to-be-sure	{application} shows more than can be read at once, so whether its {kind} named “{name}” is the only one is not known, and nothing was pressed
 adapters.fallback.type-text.application	the application to type into
@@ -1791,11 +1791,23 @@ portals.answered.link-opened-on-the-sheet	{application} asked for {address} to b
 portals.answered.network-read	{application} read whether this machine is connected, and whether the connection is metered
 portals.answered.opened-in	{application} had a file it was granted handed to {opener} to open
 portals.answered.secret-handed-over	{application} was given its own secret from your keyring
+portals.file-chosen.to-open	{application} asked you to choose a file to open. You chose {file}, and it was given that file and no other
+portals.file-chosen.to-save	{application} asked you where to save a file. You chose {file}, and it may write that file and no other
 portals.link-not-chosen.cancelled	{application} asked for {address} to be opened and for you to choose what opens it. You cancelled, so nothing was opened
 portals.link-not-chosen.cannot-show	{application} asked for {address} to be opened and for you to choose what opens it. The choice could not be shown, so nothing was opened
 portals.link-not-chosen.could-not-ask	{application} asked for {address} to be opened and for you to choose what opens it. The desktop could not be asked, so nothing was opened
 portals.link-not-chosen.no-desktop	{application} asked for {address} to be opened and for you to choose what opens it. No desktop was running to ask you, so nothing was opened
 portals.link-not-chosen.unanswered	{application} asked for {address} to be opened and for you to choose what opens it. Nobody answered within five minutes, so nothing was opened
+portals.no-file.cancelled	{application} asked you to choose a file. You cancelled, so it was given nothing
+portals.no-file.cannot-show	{application} asked you to choose a file. The file chooser could not be shown then, so it was given nothing
+portals.no-file.could-not-ask	{application} asked you to choose a file. The desktop could not be asked, so it was given nothing
+portals.no-file.no-desktop	{application} asked you to choose a file. No desktop was running to show the file chooser, so it was given nothing
+portals.no-file.no-documents-portal	{application} asked you to choose a file and you chose one, but the part of the system that hands files to apps was not running, so it was given nothing
+portals.no-file.not-believed	{application} asked you to choose a file. The desktop answered with something that cannot have been chosen, so it was not believed and the app was given nothing
+portals.no-file.not-offered-yet	{application} asked you to choose a folder or several files. alo's file chooser does not offer that yet, so it was given nothing
+portals.no-file.not-there	{application} asked you to choose a file and you chose one, but it was gone before it could be given, so it was given nothing
+portals.no-file.refused	{application} asked you to choose a file and you chose one, but it could not be handed to the app, so it was given nothing
+portals.no-file.unanswered	{application} asked you to choose a file. Nobody answered for five minutes, so it was given nothing
 portals.not-a-link.carries-a-password	That web link carries a name and a password inside it, so it was not opened. Open the site and sign in there instead
 portals.not-a-link.not-a-link	That is not a web link or an email address this machine can open, so nothing was opened
 portals.not-a-link.scheme	A {scheme}: link is not one this machine opens, so nothing was opened. Web links and email addresses are
