@@ -2072,6 +2072,12 @@ software.install-it	Install
 software.installed	{application} is installed. It has been given nothing: it asks when it needs a file, the camera or anything else, and you answer
 software.installed-reaching-everything	{application} is installed, and you chose to let it reach your files and the network without asking you first. Anything else you install has to ask; this one does not
 software.installing-it	Installing…
+software.label.early-version	Early version
+software.label.early-version.in-full	Early version: it is new and still changing, so some of it may not work yet
+software.label.not-open-source	Not open source
+software.label.not-open-source.in-full	Not open source: the people who make it do not publish the code it is built from, so nobody outside can check what it does
+software.label.not-verified	Not verified
+software.label.not-verified.in-full	Not verified: the people who make it did not publish it here themselves, so the place it comes from cannot confirm who did
 software.open-it	Open
 software.refused.already-installed	{application} is already installed on this machine, so it was not installed again. Updates for it are offered in Software
 software.refused.did-not-answer	The part of this machine that installs applications did not respond, so nothing was changed. Restarting this machine starts it again

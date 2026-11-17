@@ -60,6 +60,28 @@
 # reasoning is in `shipped.toml`'s own note and has not changed. A newer release
 # reaches a machine as an offered update, like any application's.
 #
+# ## What a person is told beside an application
+#
+# The owner decided on 2026-11-17 that the market lists every kind of
+# application, and that three kinds carry a label on their row in plain words
+# (`alo_software::Label`):
+#
+# - *"Proprietary apps are listed, labelled 'not open source'."* Nothing here
+#   says so separately: the label is read off `licence`, and Flathub writes such
+#   a licence `LicenseRef-proprietary`.
+# - *"Flathub-unverified apps are listed, labelled 'not verified'."* That is
+#   `verified`: whether Flathub confirms the people who make it published it
+#   there themselves, read from
+#   `https://flathub.org/api/v2/verification/<identifier>/status` the day the
+#   entry was written. Three of the first eight are not: darktable, Scribus and
+#   Audacity, measured 2026-11-17.
+# - The Craft applications are *"added, labelled 'early version'."* That is
+#   `early`.
+#
+# `verified` and `early` are written on every entry, and an entry missing either
+# is refused, so a forgotten one is a refused file rather than a label quietly
+# missing from a row.
+#
 # Each is installed the way a person installs one — from `source`, through the
 # rented tool, arriving granted nothing.
 
@@ -75,6 +97,8 @@ identifier = "org.gimp.GIMP"
 source = "flathub"
 version = "3.2.6"
 licence = "GPL-3.0+ AND LGPL-3.0+"
+verified = true
+early = false
 
 # Make a picture that does not exist yet, with a brush. Chosen beside the
 # picture editor rather than instead of it because painting and correcting are
@@ -86,6 +110,8 @@ identifier = "org.kde.krita"
 source = "flathub"
 version = "5.3.4.1"
 licence = "GPL-3.0-only"
+verified = true
+early = false
 
 # Draw something that has to stay sharp at any size — a logo, a sign, a
 # diagram, a cut file. Vectors are a different thing from pixels and no amount
@@ -96,6 +122,8 @@ identifier = "org.inkscape.Inkscape"
 source = "flathub"
 version = "1.4.4"
 licence = "GPL-2.0-or-later"
+verified = true
+early = false
 
 # Develop what a camera recorded: a shoot of raw files, graded and exported
 # without altering the originals. The library-and-develop shape, which a
@@ -106,6 +134,8 @@ identifier = "org.darktable.Darktable"
 source = "flathub"
 version = "5.6.2"
 licence = "GPL-3.0+"
+verified = false
+early = false
 
 # Arrange a page that will be printed: a leaflet, a booklet, a poster, with the
 # colour and bleed a printer asks for. A word processor laying out a page for
@@ -116,6 +146,8 @@ identifier = "net.scribus.Scribus"
 source = "flathub"
 version = "1.6.5"
 licence = "GPL-2.0+"
+verified = false
+early = false
 
 # Cut video: clips on a timeline, with sound, titles and an export that plays
 # somewhere else.
@@ -125,6 +157,8 @@ identifier = "org.kde.kdenlive"
 source = "flathub"
 version = "26.08.2"
 licence = "GPL-3.0-only"
+verified = true
+early = false
 
 # Record and edit sound: an interview, a voice-over, a podcast — trimmed,
 # levelled and exported.
@@ -134,6 +168,8 @@ identifier = "org.audacityteam.Audacity"
 source = "flathub"
 version = "3.7.8"
 licence = "GPL-3.0-only"
+verified = false
+early = false
 
 # Write, calculate and present. **One category for three things**, the way
 # `shipped.toml` has two roles for one developer's file manager: these arrive as
@@ -147,3 +183,5 @@ identifier = "org.libreoffice.LibreOffice"
 source = "flathub"
 version = "26.8.1.1"
 licence = "MPL-2.0"
+verified = true
+early = false

@@ -295,6 +295,21 @@ fn a_real_read_of_the_catalogue_crosses_as_the_whole_shipped_list() {
     // And it reads back as itself off the wire.
     let line = told.written().unwrap();
     assert!(!line.contains('\n'), "a message is one line: {line}");
+    // **An application with no label is written exactly as before**: the
+    // field is absent, not empty, so the line carries one `labels` for each
+    // application that has one, and none for the rest.
+    assert!(
+        line.contains("\"labels\":[\"not_verified\"]"),
+        "no label crossed: {line}"
+    );
+    assert_eq!(
+        line.matches("\"labels\"").count(),
+        applications
+            .iter()
+            .filter(|one| !one.labels.is_empty())
+            .count(),
+        "a label field was written for an application with none"
+    );
     assert_eq!(ToAnAgent::read(&line).unwrap(), told);
 }
 
@@ -316,6 +331,16 @@ fn narrowing_crosses_as_one_shelf_named_by_its_option() {
 
     assert_eq!(kind_of_work, Some("page_layout".to_owned()));
     assert!(!applications.is_empty(), "the shelf crossed empty");
+    // **What a person is told beside an application crosses with it** (the
+    // owner, 2026-11-17): Scribus is not verified on Flathub, measured that
+    // day, so an agent proposing it is told what the person's row says.
+    let scribus = applications
+        .iter()
+        .find(|one| one.application == "net.scribus.Scribus");
+    assert_eq!(
+        scribus.map(|one| one.labels.clone()),
+        Some(vec!["not_verified".to_owned()])
+    );
     for one in &applications {
         assert_eq!(
             one.kind_of_work, "page_layout",

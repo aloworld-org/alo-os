@@ -12,6 +12,7 @@
 )]
 
 use super::*;
+use crate::label::Label;
 use crate::role::Role;
 
 /// The decided catalogue with one line of it replaced.
@@ -30,8 +31,66 @@ fn with_one_more(category: &str, identifier: &str, version: &str, licence: &str)
     format!(
         "{THE_CATALOGUE}\n[[application]]\ncategory = \"{category}\"\nidentifier = \
          \"{identifier}\"\nsource = \"flathub\"\nversion = \"{version}\"\nlicence = \
-         \"{licence}\"\n"
+         \"{licence}\"\nverified = true\nearly = false\n"
     )
+}
+
+/// **A label is read off its entry**: proprietary terms are *not open source*,
+/// `verified = false` is *not verified*, `early = true` is *early version*, in
+/// that order — and an open entry its makers published, not early, has none.
+#[test]
+fn an_entrys_labels_are_read_off_it() {
+    let shipped = what_a_machine_ships();
+    let text = format!(
+        "{THE_CATALOGUE}\n[[application]]\ncategory = \"audio\"\nidentifier = \
+         \"com.example.All\"\nsource = \"flathub\"\nversion = \"1.0\"\nlicence = \
+         \"LicenseRef-proprietary\"\nverified = false\nearly = true\n"
+    );
+    let catalogue = Catalogue::read(&text, &shipped).unwrap();
+    let labels_of = |identifier: &str| {
+        catalogue
+            .every()
+            .iter()
+            .find(|one| one.application().identifier() == identifier)
+            .unwrap()
+            .labels()
+    };
+    assert_eq!(
+        labels_of("com.example.All"),
+        vec![
+            Label::NotOpenSource,
+            Label::NotVerified,
+            Label::EarlyVersion
+        ]
+    );
+    assert_eq!(labels_of("org.gimp.GIMP"), Vec::<Label>::new());
+    assert_eq!(
+        labels_of("org.darktable.Darktable"),
+        vec![Label::NotVerified]
+    );
+}
+
+/// **An entry that does not say whether it is verified, or whether it is
+/// early, is refused** — so a forgotten field is a refused file and never a
+/// label quietly missing from a row.
+#[test]
+fn an_entry_that_does_not_say_verified_or_early_is_refused() {
+    let shipped = what_a_machine_ships();
+    let gimps = "licence = \"GPL-3.0+ AND LGPL-3.0+\"\nverified = true\nearly = false\n";
+    for instead in [
+        "licence = \"GPL-3.0+ AND LGPL-3.0+\"\nearly = false\n",
+        "licence = \"GPL-3.0+ AND LGPL-3.0+\"\nverified = true\n",
+        "licence = \"GPL-3.0+ AND LGPL-3.0+\"\nverified = \"yes\"\nearly = false\n",
+    ] {
+        let text = replacing(gimps, instead);
+        assert!(
+            matches!(
+                Catalogue::read(&text, &shipped),
+                Err(NotCatalogued::NotRead { .. })
+            ),
+            "{instead:?} was read"
+        );
+    }
 }
 
 #[test]
@@ -376,12 +435,21 @@ fn the_catalogue_holds_no_words_a_person_would_read() {
         assert!(
             matches!(
                 key,
-                Some("format" | "category" | "identifier" | "source" | "version" | "licence")
+                Some(
+                    "format"
+                        | "category"
+                        | "identifier"
+                        | "source"
+                        | "version"
+                        | "licence"
+                        | "verified"
+                        | "early"
+                )
             ),
             "the catalogue holds {line:?}, which this reader does not know — and if it is \
              something a person reads, it belongs in crate::words"
         );
         read += 1;
     }
-    assert_eq!(read, 41, "format, and five keys for each of eight entries");
+    assert_eq!(read, 57, "format, and seven keys for each of eight entries");
 }

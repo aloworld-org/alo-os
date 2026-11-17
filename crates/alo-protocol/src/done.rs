@@ -372,6 +372,16 @@ pub struct CanBeInstalled {
     pub licence: String,
     /// What a person would make with it, as a verb's option names it.
     pub kind_of_work: String,
+    /// What the market says beside it — `not_open_source`, `not_verified`,
+    /// `early_version` — in that order, as `alo_software::Label::named`
+    /// spells them (the owner's decision of 2026-11-17).
+    ///
+    /// **Added 2026-11-17, additively**: absent from the wire when there is
+    /// none, so an answer about an application with no label is written
+    /// exactly as before. An agent shown the list is shown what a person is
+    /// shown, so it can say so when it proposes one.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub labels: Vec<String>,
 }
 
 /// **Where text typed into a file just opened goes**: the name to give
@@ -478,6 +488,11 @@ impl Done {
                     version: one.version().to_owned(),
                     licence: one.licence().to_owned(),
                     kind_of_work: one.category().as_an_option(),
+                    labels: one
+                        .labels()
+                        .into_iter()
+                        .map(|label| label.named().to_owned())
+                        .collect(),
                 })
                 .collect(),
         }
