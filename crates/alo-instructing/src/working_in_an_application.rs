@@ -69,8 +69,8 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
              name, once, even when the person says \"scroll down until\" it shows: it scrolls as \
              far as it takes. Send {SCROLL_PAGE} only to read on when nothing ahead has a name \
              you know. Never type, and never send keys such as Page Down, to scroll or to find \
-             something: {TYPE_TEXT} would type them into the page and save it. Then send \
-             {READ_WINDOW} again."
+             something: {TYPE_TEXT} never brings anything onto the screen, and it would type \
+             into the page and save it. Then send {READ_WINDOW} again."
         )
     } else {
         String::new()
