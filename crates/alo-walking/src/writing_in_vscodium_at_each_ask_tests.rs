@@ -293,3 +293,33 @@ fn the_folder_row_is_reached_from_settings_opened_afresh() {
         "the folder's look is weaker than the application's"
     );
 }
+
+/// **The second card is read from a mark taken after the first card and
+/// before its approval.** A line check judges the first line with its phrase
+/// since the mark, so both card checks reading from the ask's mark judged the
+/// first card twice: main's walk at 313ca239 (run 44069105568) failed *a card
+/// asks to type* "after 0s" on the opening card's line (journal 1359.76 s,
+/// 0 characters) while the typing card came at 1366.44 s. The mark is taken
+/// before the approval rather than after the opening is seen, because the
+/// typing card followed the opening by under three seconds, inside one read of
+/// the log.
+#[test]
+fn the_second_card_is_read_from_a_mark_before_the_first_approval() {
+    let steps = the_first_walk().steps().to_vec();
+    let first = the_card(&steps, 0);
+    let second = the_card(&steps, THE_TEXT_AT_EACH_ASK.chars().count());
+    let Some(between) = steps.get(first + 1..second) else {
+        panic!("the typing card is checked before the opening card");
+    };
+    let marked = between.iter().position(|it| *it == Step::Mark);
+    let approved = between
+        .iter()
+        .position(|it| *it == Step::Press(Chord::key("ret")));
+    let (Some(marked), Some(approved)) = (marked, approved) else {
+        panic!("no mark, or no approval, between the two cards: {between:?}");
+    };
+    assert!(
+        marked < approved,
+        "the mark comes after the approval: {between:?}"
+    );
+}
