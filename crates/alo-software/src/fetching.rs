@@ -41,7 +41,9 @@ pub trait Fetcher {
 }
 
 /// The network, on the road this machine takes out.
-#[derive(Debug, Clone)]
+/// Not `Clone`, because `alo_proxy::Carried` is deliberately not: it can hold
+/// a proxy password.
+#[derive(Debug)]
 pub struct TheNetwork {
     /// The proxy, or none, as `crate::road` decided it.
     taking: Carried,

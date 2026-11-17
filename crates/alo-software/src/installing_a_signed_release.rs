@@ -252,8 +252,13 @@ fn hashes_to(path: &Path, sha256: &str) -> bool {
         return false;
     };
     let mut hasher = sha2::Sha256::new();
-    if std::io::copy(&mut file, &mut hasher).is_err() {
-        return false;
+    let mut piece = vec![0_u8; 1 << 16];
+    loop {
+        match std::io::Read::read(&mut file, &mut piece) {
+            Ok(0) => break,
+            Ok(read) => hasher.update(piece.get(..read).unwrap_or_default()),
+            Err(_) => return false,
+        }
     }
     let got: String = hasher
         .finalize()
