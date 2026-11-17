@@ -44,7 +44,7 @@ use std::time::Duration;
 
 use alo_acting::said_on_the_log::A_CARD_IS_UP;
 use alo_acting::{Opened, Typed};
-use alo_capability::{AloInApplications, HowCodeRuns};
+use alo_capability::HowCodeRuns;
 
 use crate::keys::Chord;
 use crate::settling::Settling;
@@ -72,15 +72,21 @@ pub const ASK_EACH_TIME: usize = match HowCodeRuns::ALL {
     _ => 0,
 };
 
-/// How many rows up from the last row of *What alo can use* *Give alo an
-/// application* is, with nothing given yet: the page ends with *See what alo
-/// did* and then the choices of where alo works
-/// (`alo_capability::AloInApplications::ALL`).
-pub const UP_TO_GIVE_AN_APPLICATION: usize = AloInApplications::ALL.len() + 1;
+/// How many rows down from the first row of *What alo can use* *Give alo an
+/// application* is, with nothing given yet: *Give alo a folder* is above it.
+///
+/// **Counted from the top**, because the page's end moves with what is
+/// installed: since #1342 it ends with one switch per application, and a count
+/// up from End landed among them (run 44034387104, pictures 86 and 91). Above
+/// these rows is only what is already given, which this section decides.
+/// `alo-shell`'s
+/// `the_rows_that_give_are_counted_from_the_top_whatever_is_installed`
+/// presses these keys in the real Settings window.
+pub const DOWN_TO_GIVE_AN_APPLICATION: usize = 1;
 
-/// How many rows up from the last row *Give alo a folder* is: one above *Give
-/// alo an application*.
-pub const UP_TO_GIVE_A_FOLDER: usize = UP_TO_GIVE_AN_APPLICATION + 1;
+/// How many rows down from the first row *Give alo a folder* is once VSCodium
+/// is given: VSCodium's row is above it.
+pub const DOWN_TO_GIVE_A_FOLDER: usize = 1;
 
 /// *Running code*, counted down from the first page in Settings' side column
 /// (`alo_shell::SettingsCategory::ALL`: alo and AI, What alo can use,
@@ -129,12 +135,7 @@ pub fn at_each_ask(walk: Walk) -> Walk {
     let minutes = |it: u64| Duration::from_secs(it * 60);
     let settings = Chord::with("meta_l", "i");
     let terminal = Chord::holding(&["ctrl", "alt"], "t");
-    let (home, down, up, end) = (
-        Chord::key("home"),
-        Chord::key("down"),
-        Chord::key("up"),
-        Chord::key("end"),
-    );
+    let (home, down, end) = (Chord::key("home"), Chord::key("down"), Chord::key("end"));
     let (tab, ret, esc) = (Chord::key("tab"), Chord::key("ret"), Chord::key("esc"));
     walk.press(esc.clone())
         // **The level**: Running code, Ask me each time.
@@ -158,8 +159,8 @@ pub fn at_each_ask(walk: Walk) -> Walk {
         .press_times(&down, DOWN_TO_WHAT_ALO_CAN_USE)
         .look("what-alo-can-use", look)
         .press(tab.clone())
-        .press(end.clone())
-        .press_times(&up, UP_TO_GIVE_AN_APPLICATION)
+        .press(home.clone())
+        .press_times(&down, DOWN_TO_GIVE_AN_APPLICATION)
         .look("on-give-alo-an-application", look)
         .press(ret.clone())
         .look("the-applications", look)
@@ -193,8 +194,8 @@ pub fn at_each_ask(walk: Walk) -> Walk {
         .press_times(&down, DOWN_TO_WHAT_ALO_CAN_USE)
         .look("what-alo-can-use-for-the-folder", look)
         .press(tab.clone())
-        .press(end.clone())
-        .press_times(&up, UP_TO_GIVE_A_FOLDER)
+        .press(home.clone())
+        .press_times(&down, DOWN_TO_GIVE_A_FOLDER)
         .look("on-give-alo-a-folder", look)
         .press(ret.clone())
         .look("the-folder-picker-at-home", look)
