@@ -183,9 +183,11 @@ pub(crate) fn a_picture_in(
     let scaled = picture.scaled_to(across, down);
     let pixels = scaled
         .pixels()
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .map(|rgba| {
-            let alpha = u32::from(rgba.get(3).copied().unwrap_or(0));
+            let alpha = u32::from(rgba[3]);
             let mut out = [0_u8; 3];
             for (at, value) in out.iter_mut().enumerate() {
                 let over = u32::from(rgba.get(at).copied().unwrap_or(0));
