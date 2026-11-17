@@ -9,7 +9,9 @@ use alo_strings::Word;
 
 /// What `accessible.open_item` is for.
 pub const OPEN_PURPOSE: Word = Word::saying(
-    "adapters.fallback.open-item.purpose",
+    // A new key (ADR 0068): the old English did not say the item is one a
+    // window shows, so a translation of it would not either.
+    "adapters.fallback.open-item.purpose-of-a-shown-item",
     "open one item an application's window shows, as a double-click would, such as a file a \
      file manager shows: it opens in the application that file opens with",
 )
