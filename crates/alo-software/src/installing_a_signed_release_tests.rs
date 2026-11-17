@@ -70,10 +70,17 @@ impl Holding {
 }
 
 impl Fetcher for Holding {
-    fn fetch(&self, address: &str, into: &Path, _: u64) -> Result<(), Failed> {
+    /// **Honours the limit it is handed**, as the network does, so a limit
+    /// too small for the file it is fetching is a failure here too.
+    fn fetch(&self, address: &str, into: &Path, at_most: u64) -> Result<(), Failed> {
         let bytes = self.0.get(address).ok_or_else(|| Failed::DidNotAnswer {
             said: format!("{address} answered 404"),
         })?;
+        if u64::try_from(bytes.len()).unwrap() > at_most {
+            return Err(Failed::DidNotAnswer {
+                said: format!("{address} is larger than {at_most} bytes"),
+            });
+        }
         std::fs::write(into, bytes).unwrap();
         Ok(())
     }

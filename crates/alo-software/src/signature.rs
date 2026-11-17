@@ -164,6 +164,14 @@ mod tests {
             "2B76741B414AAD6CD33E631213A005C0B9D7C3EZ\n",
         );
         let unprefixed = GOOD.replace("[GNUPG:] ", "");
+        // Two good signatures and one valid one: a second signer nobody named.
+        let a_second_goodsig = format!("{GOOD}[GNUPG:] GOODSIG 1111111111111111 Somebody Else\n");
+        // One good signature and no valid one at all.
+        let no_validsig = GOOD
+            .lines()
+            .filter(|line| !line.contains("VALIDSIG"))
+            .collect::<Vec<_>>()
+            .join("\n");
         for no in [
             BAD,
             NO_KEY,
@@ -175,6 +183,8 @@ mod tests {
             short.as_str(),
             not_hex.as_str(),
             unprefixed.as_str(),
+            a_second_goodsig.as_str(),
+            no_validsig.as_str(),
         ] {
             assert_eq!(signer(no), None, "{no:?} named a signer");
         }

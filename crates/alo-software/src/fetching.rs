@@ -111,3 +111,115 @@ impl Fetcher for TheNetwork {
         })
     }
 }
+
+/// **The limit is larger than any bundle the catalogue pins**, held when the
+/// crate is built: PhotoCraft 0.23.1's bundle is 104,570,384 bytes.
+const _: () = assert!(THE_LARGEST_FILE > 104_570_384);
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+mod tests {
+    use std::io::{BufRead as _, BufReader, Write as _};
+    use std::net::TcpListener;
+
+    use super::*;
+
+    /// A server on this machine that answers each path the way it is told to,
+    /// for as many requests as it is given answers, and its address.
+    fn a_server(answers: Vec<(&'static str, String)>) -> String {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = format!("http://{}", listener.local_addr().unwrap());
+        std::thread::spawn(move || {
+            for _ in 0..answers.len() {
+                let Ok((mut stream, _)) = listener.accept() else {
+                    return;
+                };
+                let mut first = String::new();
+                let mut reading = BufReader::new(stream.try_clone().unwrap());
+                reading.read_line(&mut first).unwrap();
+                loop {
+                    let mut line = String::new();
+                    if reading.read_line(&mut line).unwrap() == 0 || line == "\r\n" {
+                        break;
+                    }
+                }
+                let path = first.split(' ').nth(1).unwrap_or("").to_owned();
+                let answer = answers
+                    .iter()
+                    .find(|(wanted, _)| *wanted == path)
+                    .map_or_else(
+                        || "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n".to_owned(),
+                        |(_, answer)| answer.clone(),
+                    );
+                stream.write_all(answer.as_bytes()).unwrap();
+            }
+        });
+        address
+    }
+
+    fn ok(body: &str) -> String {
+        format!(
+            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+            body.len()
+        )
+    }
+
+    fn straight() -> TheNetwork {
+        TheNetwork::through(Carried::straight())
+    }
+
+    #[test]
+    fn a_file_that_is_there_is_fetched_whole() {
+        let at = a_server(vec![("/a.flatpak", ok("the bundle's bytes"))]);
+        let folder = tempfile::tempdir().unwrap();
+        let into = folder.path().join("a.flatpak");
+        straight()
+            .fetch(&format!("{at}/a.flatpak"), &into, THE_LARGEST_FILE)
+            .unwrap();
+        assert_eq!(std::fs::read(&into).unwrap(), b"the bundle's bytes");
+    }
+
+    /// **Anything but the file is refused**: an answer that is not *here it
+    /// is*, and a file larger than it may be.
+    #[test]
+    fn a_missing_file_and_one_too_large_are_refused() {
+        let at = a_server(vec![("/big", ok("more than four bytes"))]);
+        let folder = tempfile::tempdir().unwrap();
+        let into = folder.path().join("x");
+        assert!(
+            straight()
+                .fetch(&format!("{at}/not-there"), &into, THE_LARGEST_FILE)
+                .is_err(),
+            "a 404 was fetched"
+        );
+        let at = a_server(vec![("/big", ok("more than four bytes"))]);
+        assert!(
+            straight().fetch(&format!("{at}/big"), &into, 4).is_err(),
+            "a file larger than its limit was fetched"
+        );
+    }
+
+    /// **A release address that sends this machine anywhere but GitHub's own
+    /// file host is refused**, and the place it was sent is never asked.
+    #[test]
+    fn a_redirect_anywhere_else_is_refused() {
+        let elsewhere = a_server(vec![("/stolen", ok("somebody else's bytes"))]);
+        let at = a_server(vec![(
+            "/a.flatpak",
+            format!(
+                "HTTP/1.1 302 Found\r\nLocation: {elsewhere}/stolen\r\nContent-Length: 0\r\n\r\n"
+            ),
+        )]);
+        let folder = tempfile::tempdir().unwrap();
+        let into = folder.path().join("a.flatpak");
+        let answer = straight().fetch(&format!("{at}/a.flatpak"), &into, THE_LARGEST_FILE);
+        assert!(
+            matches!(answer, Err(Failed::DidNotAnswer { ref said }) if said.contains("sent this machine on")),
+            "{answer:?}"
+        );
+        assert!(!into.exists(), "a file was written");
+    }
+}
