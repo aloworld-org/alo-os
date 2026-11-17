@@ -198,6 +198,9 @@ mod said_of_a_publication;
 mod scrolling_in_an_application;
 #[cfg(test)]
 mod scrolling_in_an_application_tests;
+mod setting_in_an_application;
+#[cfg(test)]
+mod setting_in_an_application_tests;
 pub mod shortening;
 pub mod the_applications_here;
 pub mod the_bracket_a_turn_takes;
@@ -247,6 +250,7 @@ pub use pressing_a_control::AControlPressed;
 pub use reading_an_applications_windows::TheWindowsShowed;
 pub use refusing::NotDone;
 pub use scrolling_in_an_application::AWindowScrolled;
+pub use setting_in_an_application::AValueSet;
 pub use shortening::{Shortened, Shortening};
 pub use the_applications_here::{SaysWhatIsInstalled, TheApplicationsHere};
 pub use the_door_the_compositor_serves::{NotAtTheDoor, TheDoorTheCompositorServes};

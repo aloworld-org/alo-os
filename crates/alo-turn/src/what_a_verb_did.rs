@@ -35,6 +35,7 @@ use crate::opening_a_file_in_an_application::AFileOpened;
 use crate::pressing_a_control::AControlPressed;
 use crate::reading_an_applications_windows::TheWindowsShowed;
 use crate::scrolling_in_an_application::AWindowScrolled;
+use crate::setting_in_an_application::AValueSet;
 use crate::typing_into_an_application::ATextTyped;
 
 /// What a verb this machine carried out answered with.
@@ -92,9 +93,21 @@ pub enum WhatAVerbDid {
     /// An application's window was scrolled, to a named thing or by a page
     /// (`accessible.scroll_to`, `accessible.scroll_page`, 2026-11-17).
     AWindowWasScrolled(AWindowScrolled),
+    /// A slider or a number box was moved to a number in an application
+    /// (`accessible.set_value`, 2026-11-17).
+    AValueWasSet(AValueSet),
 }
 
 impl WhatAVerbDid {
+    /// The slider or number box moved, when one was.
+    #[must_use]
+    pub const fn set(&self) -> Option<&AValueSet> {
+        match self {
+            Self::AValueWasSet(set) => Some(set),
+            _ => None,
+        }
+    }
+
     /// The file opened, when one was.
     #[must_use]
     pub const fn opened(&self) -> Option<&AFileOpened> {
@@ -118,7 +131,8 @@ impl WhatAVerbDid {
             | Self::AControlWasPressed(_)
             | Self::TextWasTyped(_)
             | Self::AFileWasOpened(_)
-            | Self::AWindowWasScrolled(_) => None,
+            | Self::AWindowWasScrolled(_)
+            | Self::AValueWasSet(_) => None,
         }
     }
 
@@ -140,7 +154,8 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
-            | Self::AWindowWasScrolled(_) => None,
+            | Self::AWindowWasScrolled(_)
+            | Self::AValueWasSet(_) => None,
         }
     }
 
@@ -158,7 +173,8 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
-            | Self::AWindowWasScrolled(_) => None,
+            | Self::AWindowWasScrolled(_)
+            | Self::AValueWasSet(_) => None,
         }
     }
 
@@ -176,7 +192,8 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
-            | Self::AWindowWasScrolled(_) => None,
+            | Self::AWindowWasScrolled(_)
+            | Self::AValueWasSet(_) => None,
         }
     }
 
@@ -194,7 +211,8 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
-            | Self::AWindowWasScrolled(_) => None,
+            | Self::AWindowWasScrolled(_)
+            | Self::AValueWasSet(_) => None,
         }
     }
 
@@ -248,7 +266,8 @@ impl WhatAVerbDid {
             | Self::TextWasTyped(_)
             | Self::AFolderWasPublished(_)
             | Self::AFileWasOpened(_)
-            | Self::AWindowWasScrolled(_) => None,
+            | Self::AWindowWasScrolled(_)
+            | Self::AValueWasSet(_) => None,
         }
     }
 }
@@ -268,6 +287,12 @@ impl From<AWindowScrolled> for WhatAVerbDid {
 impl From<ATextTyped> for WhatAVerbDid {
     fn from(typed: ATextTyped) -> Self {
         Self::TextWasTyped(typed)
+    }
+}
+
+impl From<AValueSet> for WhatAVerbDid {
+    fn from(set: AValueSet) -> Self {
+        Self::AValueWasSet(set)
     }
 }
 

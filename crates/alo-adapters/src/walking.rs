@@ -61,6 +61,27 @@ pub(crate) struct Found {
     pub(crate) formerly: Option<String>,
 }
 
+/// A thing that holds a number, as the walk found it — what `crate::setting`
+/// moves (2026-11-17).
+#[derive(Debug)]
+pub(crate) struct Numbered {
+    /// What it is called.
+    pub(crate) name: String,
+    /// Whether a person can move it — a slider or a number box — rather than
+    /// only read it, as a progress bar or a meter.
+    pub(crate) movable: bool,
+    /// Where it is.
+    pub(crate) at: NodeAt,
+    /// Whether a person could use it now.
+    pub(crate) usable: bool,
+}
+
+/// `ATSPI_ROLE_SLIDER` and `ATSPI_ROLE_SPIN_BUTTON`: what a person moves.
+pub(crate) const MOVED: [u32; 2] = [51, 52];
+
+/// `ATSPI_ROLE_PROGRESS_BAR` and `ATSPI_ROLE_LEVEL_BAR`: what only says how far.
+pub(crate) const ONLY_SAID: [u32; 2] = [42, 103];
+
 /// What one walk found.
 #[derive(Debug)]
 pub(crate) struct Walked {
@@ -68,6 +89,8 @@ pub(crate) struct Walked {
     pub(crate) shown: Shown,
     /// Every named control that can be pressed.
     pub(crate) pressable: Vec<Found>,
+    /// Every named slider, number box, progress bar and meter, showing now.
+    pub(crate) numbered: Vec<Numbered>,
     /// The names of the settings no page of Settings draws yet, as the windows
     /// walked say them — empty on every tree but alo's own.
     pub(crate) not_drawn_yet: Vec<String>,
@@ -131,6 +154,7 @@ pub(crate) fn walk(
         read: 0,
         not_all_read: false,
         pressable: Vec::new(),
+        numbered: Vec::new(),
         alos_own: matches!(whose, Whose::AlosOwn { .. }),
     };
     let mut showing = Vec::new();
@@ -179,6 +203,7 @@ pub(crate) fn walk(
     Ok(Walked {
         shown: Shown::of(whose.named().to_owned(), windows, walker.not_all_read),
         pressable: walker.pressable,
+        numbered: walker.numbered,
         not_drawn_yet,
     })
 }
@@ -193,6 +218,8 @@ struct Walker<'t> {
     not_all_read: bool,
     /// The named controls found so far.
     pressable: Vec<Found>,
+    /// The named things holding a number found so far.
+    numbered: Vec<Numbered>,
     /// Whether this is alo's own tree, the one tree whose old names are
     /// promised to keep working (`alo_access::old_names`).
     alos_own: bool,
@@ -306,6 +333,16 @@ impl Walker<'_> {
         let role = Role::of_the_tree(facts.role);
         let name = facts.name.trim().to_owned();
         let mut cut_short = false;
+        // **What holds a number, by its name**, for `crate::setting`.
+        let movable = MOVED.contains(&facts.role);
+        if !name.is_empty() && (movable || ONLY_SAID.contains(&facts.role)) {
+            self.numbered.push(Numbered {
+                name: name.clone(),
+                movable,
+                at: at.clone(),
+                usable: states.usable(),
+            });
+        }
         // The one question never put to a password field.
         let text = if role.text_is_read() && role != Role::PasswordField && facts.has_text {
             match self.tree.text(at) {

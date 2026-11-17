@@ -261,6 +261,21 @@ pub enum Done {
         /// Whether it read back exactly and was saved.
         saved: bool,
     },
+    /// A slider or a number box was moved to a number in an application
+    /// (`accessible.set_value`). Added 2026-11-17, additively.
+    Set {
+        /// The application.
+        application: String,
+        /// The control, by its name.
+        name: String,
+        /// The number asked for.
+        value: i64,
+        /// Whether it read back as that number when alo looked again.
+        seen: bool,
+        /// Whether the application did not answer, so whether it moved is not
+        /// known.
+        unanswered: bool,
+    },
     /// A folder was published to the person's GitHub Pages site
     /// (`publish_to_github_pages`, added 2026-11-13, additively).
     ///
@@ -679,6 +694,25 @@ impl Done {
         }
     }
 
+    /// What a move of a slider or a number box answered, as it goes on the
+    /// wire — taking its parts, for [`Done::of_a_press`]'s reason.
+    #[must_use]
+    pub fn of_a_setting(
+        application: &str,
+        name: &str,
+        value: i64,
+        seen: bool,
+        unanswered: bool,
+    ) -> Self {
+        Self::Set {
+            application: application.to_owned(),
+            name: name.to_owned(),
+            value,
+            seen,
+            unanswered,
+        }
+    }
+
     /// What one of the six file verbs answered, as it goes on the wire.
     #[must_use]
     pub fn of_a_file_verb(answer: &Answer) -> Self {
@@ -813,6 +847,11 @@ impl Done {
             // **A scroll the window does not yet show** may or may not have
             // moved it, and that is what a shell puts a caveat beside.
             Self::Scrolled { now_showing, .. } => !*now_showing,
+            // **A number that did not read back, or an application that did
+            // not answer**, is the one a shell puts a caveat beside.
+            Self::Set {
+                seen, unanswered, ..
+            } => *unanswered || !*seen,
             // **A publication leaves nothing out**: it names the folder and the
             // address, and what it cannot take back is said in its own line
             // ([`Done::put_back_can_recall_it`]), not as a caveat here.

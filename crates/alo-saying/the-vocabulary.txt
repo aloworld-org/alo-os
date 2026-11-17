@@ -128,6 +128,23 @@ adapters.fallback.scroll.changes	Moves what one window of the application shows,
 adapters.fallback.scroll.did-not	{application} answered that it could not scroll there, so nothing was scrolled
 adapters.fallback.scroll.leaves	Nothing is typed, nothing is pressed, no text is changed, and nothing is found by where it is on the screen.
 adapters.fallback.scroll.not-seen-to-move	alo asked {application} to scroll, and its window does not yet say that what was off the screen is on it now. Read the window again to see what it shows
+adapters.fallback.set-value.application	the application the slider or number box is in
+adapters.fallback.set-value.cannot-be-moved	{application} does not let “{name}” be moved from outside the application, so nothing was moved. Move it yourself in the window
+adapters.fallback.set-value.cannot-be-used-now	“{name}” in {application} is greyed out, so nothing was moved
+adapters.fallback.set-value.changes	Moves that one slider or number box to that number, as a person moving it would, and then reads it back.
+adapters.fallback.set-value.did-not-answer	{application} did not answer in time, so whether “{name}” moved to {value} is not known. Look at the window
+adapters.fallback.set-value.did-not-take	{application} did not take {value} for “{name}”, so nothing was moved
+adapters.fallback.set-value.leaves	Nothing is typed, no other control is moved or pressed, a number outside the control's own range is refused, and nothing is found by where it is on the screen.
+adapters.fallback.set-value.more-than-one	{application} shows more than one “{name}”, so alo did not guess which, and nothing was moved
+adapters.fallback.set-value.name	the slider or number box, by the name it shows
+adapters.fallback.set-value.no-such-control	{application} shows no slider or number box named “{name}” now, so nothing was moved
+adapters.fallback.set-value.only-shows-a-number	“{name}” in {application} only shows how far something has got, and cannot be moved, so nothing was moved
+adapters.fallback.set-value.outside-its-range	“{name}” in {application} goes from {least} to {most}, so {value} is outside it, and nothing was moved
+adapters.fallback.set-value.purpose	move a slider or a number box in an application's window to a number
+adapters.fallback.set-value.reads-back-differently	alo asked {application} to move “{name}” to {value}, and it shows a different number now. Look at the window before going on
+adapters.fallback.set-value.sentence	move “{name}” in {application} to {value}
+adapters.fallback.set-value.too-much-to-be-sure	{application} shows more than can be read at once, so whether “{name}” is the only one is not known, and nothing was moved
+adapters.fallback.set-value.value	the whole number to move it to, inside the range it shows
 adapters.fallback.text-cut-short	{application} shows a text longer than is read at once, so only its first {most} characters were read
 adapters.fallback.too-much-to-be-sure	{application} shows more than can be read at once, so whether its {kind} named “{name}” is the only one is not known, and nothing was pressed
 adapters.fallback.type-text.application	the application to type into
