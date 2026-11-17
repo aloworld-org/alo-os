@@ -34,6 +34,7 @@ use crate::not_loaded::NotLoaded;
 use crate::pressable::Pressable;
 use crate::scrolling::Toward;
 use crate::scrolling_words as scrolling;
+use crate::setting_words as setting;
 use crate::typing_words as typing;
 
 /// The prefix both verbs are named under.
@@ -57,6 +58,18 @@ pub const SCROLL_PAGE: &str = "accessible.scroll_page";
 
 /// The argument naming which way a page is scrolled.
 pub const TOWARD: &str = "toward";
+
+/// The verb that moves a slider or a number box to a whole number
+/// (2026-11-17, the owner's "Yes do all").
+pub const SET_VALUE: &str = "accessible.set_value";
+
+/// The argument carrying the number.
+pub const VALUE: &str = "value";
+
+/// The largest number either way `accessible.set_value` takes. The control's
+/// own range is what decides at the moment of moving; this only keeps the
+/// number one a slider could hold.
+pub const LARGEST_VALUE: i64 = 1_000_000_000;
 
 /// The argument carrying the text, whole.
 pub const TEXT: &str = "text";
@@ -184,6 +197,26 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
             scrolling::SCROLL_PAGE_SENTENCE,
         )
         .and_then(|verb| verb.changing(scrolling::SCROLL_CHANGES, Some(scrolling::SCROLL_LEAVES))),
+    )?)?;
+    verbs.declare(checked(
+        SET_VALUE,
+        Verb::checked(
+            SET_VALUE,
+            setting::SET_PURPOSE,
+            Effect::Change,
+            vec![
+                Arg::taking(APPLICATION, setting::SET_APPLICATION, Takes::Application),
+                Arg::taking(NAME, setting::SET_NAME, Takes::name(LONGEST_NAME)),
+                Arg::taking(
+                    VALUE,
+                    setting::SET_VALUE_WORD,
+                    Takes::count(-LARGEST_VALUE, LARGEST_VALUE),
+                ),
+            ],
+            Requires::grants_over([APPLICATION]),
+            setting::SET_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(setting::SET_CHANGES, Some(setting::SET_LEAVES))),
     )?)?;
     Ok(())
 }

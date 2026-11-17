@@ -296,7 +296,8 @@ pub struct WhatAnApplicationVerbNeeds<'a> {
 ///
 /// Since 2026-11-12 the list ends with `accessible.read_window` and
 /// `accessible.activate_control`, since 2026-11-13 `accessible.type_text`, and
-/// since 2026-11-17 `accessible.scroll_to` and `accessible.scroll_page`
+/// since 2026-11-17 `accessible.scroll_to`, `accessible.scroll_page` and
+/// `accessible.set_value`
 /// (`alo_adapters::fallback_verbs`), which this
 /// machine carries out through [`TheWindowsOnTheScreen`]. **An adapter's own
 /// verbs — `text_editor.open_document` — are not on it**: they are carried out
@@ -994,6 +995,9 @@ mod tests {
             // And scrolling, added 2026-11-17: to a named thing, or by a page.
             "accessible.scroll_to",
             "accessible.scroll_page",
+            // And moving a slider or a number box, added 2026-11-17 (the
+            // owner's "Yes do all"), inside the range the control says.
+            "accessible.set_value",
             // `alo-publishing`'s one, added 2026-11-13: Demo 2's second road.
             "publish_to_github_pages",
         ];

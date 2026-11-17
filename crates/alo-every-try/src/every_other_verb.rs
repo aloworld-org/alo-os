@@ -20,7 +20,8 @@ use std::time::SystemTime;
 
 use alo_acting::Acting;
 use alo_adapters::fallback_verbs::{
-    self, ACTIVATE_CONTROL, KIND, NAME, READ_WINDOW, SCROLL_PAGE, SCROLL_TO, TOWARD,
+    self, ACTIVATE_CONTROL, KIND, NAME, READ_WINDOW, SCROLL_PAGE, SCROLL_TO, SET_VALUE, TOWARD,
+    VALUE,
 };
 use alo_adapters::scrolling::Toward;
 use alo_adapters::{Pressable, Role as OnScreen, Seen, Shown, ShownWindow};
@@ -59,6 +60,15 @@ pub const THE_ARCHIVE: &str = "pictures.zip";
 
 /// The button the pressing request names, and the window it is in.
 pub const RELOAD: &str = "Reload";
+
+/// The slider the setting request names, in the image viewer.
+pub const ZOOM: &str = "Zoom";
+
+/// The number the setting request asks for.
+pub const ZOOMED: i64 = 200;
+
+/// The title of the image viewer's window the setting request reads.
+pub const THE_PICTURE: &str = "holiday.jpg";
 
 /// The title of the browser's window the pressing request reads.
 pub const THE_BROWSERS_WINDOW: &str = "Mozilla Firefox";
@@ -424,6 +434,39 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         ],
     )
     .or_looking_at(the_window_read_again(&the_page, &browser));
+    let viewer = shipped
+        .the(Role::ImageViewer)
+        .application()
+        .identifier()
+        .to_owned();
+    let the_viewers_window = Shown::of(
+        viewer.clone(),
+        vec![ShownWindow::titled(
+            THE_PICTURE.to_owned(),
+            vec![Seen::of(OnScreen::Range, ZOOM.to_owned(), None, 1).valued(Some(100.0))],
+        )],
+        false,
+    );
+    let setting = ARequest::asking(
+        "move a slider in an application",
+        format!("In Loupe, set the {ZOOM} slider to {ZOOMED}."),
+        vec![
+            // **A look**: the person named the slider and the number.
+            Step::of(
+                READ_WINDOW,
+                Answered::With(Done::of_a_window_read(&the_viewers_window, &[])),
+            )
+            .expecting(fallback_verbs::APPLICATION, viewer.as_str())
+            .a_look(),
+            Step::of(
+                SET_VALUE,
+                Answered::With(Done::of_a_setting(&viewer, ZOOM, ZOOMED, true, false)),
+            )
+            .expecting(fallback_verbs::APPLICATION, viewer.as_str())
+            .expecting(NAME, ZOOM)
+            .expecting(VALUE, ZOOMED.to_string()),
+        ],
+    );
     Ok(vec![
         listing,
         reading,
@@ -439,5 +482,6 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         pressing,
         scrolling_to,
         scrolling_a_page,
+        setting,
     ])
 }

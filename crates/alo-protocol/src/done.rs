@@ -261,6 +261,21 @@ pub enum Done {
         /// Whether it read back exactly and was saved.
         saved: bool,
     },
+    /// A slider or a number box was moved to a number in an application
+    /// (`accessible.set_value`). Added 2026-11-17, additively.
+    Set {
+        /// The application.
+        application: String,
+        /// The control, by its name.
+        name: String,
+        /// The number asked for.
+        value: i64,
+        /// Whether it read back as that number when alo looked again.
+        seen: bool,
+        /// Whether the application did not answer, so whether it moved is not
+        /// known.
+        unanswered: bool,
+    },
     /// A folder was published to the person's GitHub Pages site
     /// (`publish_to_github_pages`, added 2026-11-13, additively).
     ///
@@ -679,6 +694,25 @@ impl Done {
         }
     }
 
+    /// What a move of a slider or a number box answered, as it goes on the
+    /// wire — taking its parts, for [`Done::of_a_press`]'s reason.
+    #[must_use]
+    pub fn of_a_setting(
+        application: &str,
+        name: &str,
+        value: i64,
+        seen: bool,
+        unanswered: bool,
+    ) -> Self {
+        Self::Set {
+            application: application.to_owned(),
+            name: name.to_owned(),
+            value,
+            seen,
+            unanswered,
+        }
+    }
+
     /// What one of the six file verbs answered, as it goes on the wire.
     #[must_use]
     pub fn of_a_file_verb(answer: &Answer) -> Self {
@@ -813,6 +847,11 @@ impl Done {
             // **A scroll the window does not yet show** may or may not have
             // moved it, and that is what a shell puts a caveat beside.
             Self::Scrolled { now_showing, .. } => !*now_showing,
+            // **A number that did not read back, or an application that did
+            // not answer**, is the one a shell puts a caveat beside.
+            Self::Set {
+                seen, unanswered, ..
+            } => *unanswered || !*seen,
             // **A publication leaves nothing out**: it names the folder and the
             // address, and what it cannot take back is said in its own line
             // ([`Done::put_back_can_recall_it`]), not as a caveat here.
@@ -1100,6 +1139,23 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&shown).unwrap(),
             r#"{"scrolled":{"application":"org.gnome.Papers","to":"Chapter 3","a_page":false,"now_showing":true}}"#
+        );
+    }
+
+    /// **A move leaves something out when it did not read back, or the
+    /// application did not answer**, and only then (2026-11-17).
+    #[test]
+    fn a_move_leaves_something_out_unless_it_read_back_and_was_answered() {
+        let set = |seen, unanswered| {
+            Done::of_a_setting("org.example.Mixer", "Volume", 40, seen, unanswered)
+        };
+        assert!(!set(true, false).left_something_out());
+        assert!(set(false, false).left_something_out());
+        assert!(set(true, true).left_something_out());
+        assert!(set(false, true).left_something_out());
+        assert_eq!(
+            serde_json::to_string(&set(true, false)).unwrap(),
+            r#"{"set":{"application":"org.example.Mixer","name":"Volume","value":40,"seen":true,"unanswered":false}}"#
         );
     }
 }

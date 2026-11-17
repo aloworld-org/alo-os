@@ -46,6 +46,9 @@ pub const SCROLL_PAGE: &str = "accessible.scroll_page";
 /// The verb that scrolls one named thing onto the screen (2026-11-17).
 pub const SCROLL_TO: &str = "accessible.scroll_to";
 
+/// The verb that moves a slider or a number box (2026-11-17).
+pub const SET_VALUE: &str = "accessible.set_value";
+
 /// **The paragraph a model is told, for this registry** — empty when it does
 /// not declare both [`READ_WINDOW`] and [`TYPE_TEXT`].
 ///
@@ -75,11 +78,19 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
     } else {
         String::new()
     };
+    let setting = if verbs.of(SET_VALUE).is_some() {
+        format!(
+            " Move a slider or a number box to a whole number with {SET_VALUE}, never by \
+             typing into it."
+        )
+    } else {
+        String::new()
+    };
     format!(
         "\n\nTo work in an application's window, send {READ_WINDOW} first: its answer names \
          the window's fields, documents and controls. Then type into one with {TYPE_TEXT}, \
-         giving its name exactly as that answer showed it{pressing}.{scrolling} Never send a \
-         run line \
+         giving its name exactly as that answer showed it{pressing}.{scrolling}{setting} Never \
+         send a run line \
          that types, clicks or presses keys (xdotool, ydotool, wtype or anything like them): \
          {TYPE_TEXT} is how alo types into a window, and it shows the person the whole text \
          before anything is typed."
@@ -145,6 +156,13 @@ mod tests {
             .declare(named(ACTIVATE_CONTROL, Effect::Change))
             .unwrap();
         assert!(working_in_an_application(&verbs).contains(ACTIVATE_CONTROL));
+        assert!(!working_in_an_application(&verbs).contains(SET_VALUE));
+        verbs.declare(named(SET_VALUE, Effect::Change)).unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(
+            told.contains(SET_VALUE) && told.contains("never by typing"),
+            "{told}"
+        );
     }
 
     /// **Scrolling is told only where both scrolls are offered**, and then it

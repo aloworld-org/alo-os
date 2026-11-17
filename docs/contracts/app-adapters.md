@@ -425,3 +425,40 @@ grant.
 
 **Not built on the day this was written.** Nothing in this workspace declares the
 browser's adapter or carries `api` out.
+
+## Amended 2026-11-17 — the fallback moves a slider or a number box
+
+*The owner's "Yes do all", 2026-11-17. Additive: no verb above changes
+meaning.*
+
+The fallback gains one verb, offered by a turn
+(`crates/alo-turn/src/setting_in_an_application.rs`):
+
+| Verb | Effect | Takes | Sentence |
+|---|---|---|---|
+| `accessible.set_value` | change | `application`; `name`, the slider or number box by the name it shows, up to 200 characters; `value`, a whole number from −1,000,000,000 to 1,000,000,000 | *move “{name}” in {application} to {value}* |
+
+It requires a grant over the application. What anyone building on it can rely
+on, beside everything the fallback already promises:
+
+- **Found again, at the moment of moving**: a slider (`SLIDER`) or a number box
+  (`SPIN_BUTTON`) on the screen, named exactly what was approved, usable, and
+  the only thing of that name holding a number. A progress bar or meter of that
+  name is refused in its own words, because nobody can move it.
+- **Inside the range the control itself says**, asked of it at that moment
+  through AT-SPI's `Value` (`MinimumValue`, `MaximumValue`): a number outside it
+  is refused before anything moves, naming the range, as `terminal-commands.md`
+  promises for `set`. A control that says no range cannot be moved from
+  outside, and is said so.
+- **Moved through `Value`'s `CurrentValue`**, never by keys or a drag, and
+  **read back for up to a second**: the answer, `set`, says whether it read back
+  as the number (`seen`, within half the control's own step) and whether the
+  application did not answer. A move the application was asked to make is
+  recorded as run either way, with what alo saw beside it.
+- **Whole numbers only.** A slider whose range is a fraction — from 0 to 1 —
+  can be moved only to its ends. Taking a fraction is a wider argument kind
+  than this repository has, and is left for when a person needs it.
+
+**Measured: nothing yet.** Which toolkits let `CurrentValue` be set from
+outside is unmeasured; the tests stand in a tree built from the published roles
+(`crates/alo-adapters/tests/setting_a_value.rs`).
