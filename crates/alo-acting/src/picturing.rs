@@ -34,15 +34,29 @@ impl ToPicture {
     /// The line, without its newline.
     #[must_use]
     pub fn written(&self) -> String {
-        String::new()
+        format!("{PICTURE_OF} {}", self.application.identifier())
     }
 
     /// One line, read — [`None`] when it is not about a picture at all, so the
     /// door can read it as one of the other acts.
     #[must_use]
     pub fn read(line: &str) -> Option<Result<Self, NotToPicture>> {
-        let _ = line;
-        None
+        let line = line.trim_end_matches(['\r', '\n']);
+        let mut words = line.split(' ');
+        if words.next()? != PICTURE_OF {
+            return None;
+        }
+        if line.len() > Request::THE_MOST {
+            return Some(Err(NotToPicture::TooLong));
+        }
+        let (Some(named), None) = (words.next(), words.next()) else {
+            return Some(Err(NotToPicture::NotOneApplication));
+        };
+        Some(
+            Application::identified(named)
+                .map(|application| Self { application })
+                .map_err(|_| NotToPicture::NotOneApplication),
+        )
     }
 }
 
@@ -91,15 +105,46 @@ impl Pictured {
     /// The words on the wire: for a picture, only its head.
     #[must_use]
     pub fn written(self) -> String {
-        String::new()
+        match self {
+            Self::Picture { bytes, wide, tall } => format!("picture {bytes} {wide} {tall}"),
+            Self::NotInFront => "not-in-front".to_owned(),
+            Self::NotAlosCopy => "not-alos-copy".to_owned(),
+            Self::CouldNotDraw => "could-not-draw".to_owned(),
+        }
     }
 
     /// One answer's line, read — [`None`] for a line that is not one.
     #[must_use]
     pub fn read(line: &str) -> Option<Self> {
-        let _ = line;
-        None
+        let line = line.trim_end_matches(['\r', '\n']);
+        match line {
+            "not-in-front" => return Some(Self::NotInFront),
+            "not-alos-copy" => return Some(Self::NotAlosCopy),
+            "could-not-draw" => return Some(Self::CouldNotDraw),
+            _ => {}
+        }
+        let mut words = line.strip_prefix("picture ")?.split(' ');
+        let (Some(bytes), Some(wide), Some(tall), None) =
+            (words.next(), words.next(), words.next(), words.next())
+        else {
+            return None;
+        };
+        let bytes = a_number(bytes)?;
+        let (wide, tall) = (
+            u32::try_from(a_number(wide)?).ok()?,
+            u32::try_from(a_number(tall)?).ok()?,
+        );
+        (bytes <= Self::THE_MOST).then_some(Self::Picture { bytes, wide, tall })
     }
+}
+
+/// A number above zero in digits alone: `+5` and ` 5` are not one the door
+/// wrote.
+fn a_number(said: &str) -> Option<usize> {
+    if said.is_empty() || !said.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    said.parse::<usize>().ok().filter(|number| *number > 0)
 }
 
 #[cfg(test)]

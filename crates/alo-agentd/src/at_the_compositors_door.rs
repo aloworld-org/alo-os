@@ -200,10 +200,43 @@ impl TheDoorTheCompositorServes for AtTheCompositorsDoor {
         &mut self,
         asked: &alo_acting::ToPicture,
     ) -> Result<(alo_acting::Pictured, Vec<u8>), NotAtTheDoor> {
-        let _ = (asked, self.knocking()?);
-        Err(NotAtTheDoor::NotAnswered {
-            why: "not yet".to_owned(),
-        })
+        let not = |why: String| NotAtTheDoor::NotAnswered { why };
+        let mut talking = self.knocking()?;
+        talking
+            .write_all(
+                format!(
+                    "{}
+",
+                    asked.written()
+                )
+                .as_bytes(),
+            )
+            .and_then(|()| talking.flush())
+            .map_err(|why| not(why.to_string()))?;
+        let mut reading = BufReader::new(&talking);
+        let mut heard = String::new();
+        let read = reading
+            .read_line(&mut heard)
+            .map_err(|why| not(why.to_string()))?;
+        if read == 0 {
+            return Err(not(
+                "the compositor closed the connection without answering".to_owned(),
+            ));
+        }
+        // As for an act: an unknown head is never read as a picture.
+        let pictured = alo_acting::Pictured::read(&heard).ok_or_else(|| {
+            not(format!(
+                "the compositor answered {heard:?}, which this machine does not know"
+            ))
+        })?;
+        let alo_acting::Pictured::Picture { bytes, .. } = pictured else {
+            return Ok((pictured, Vec::new()));
+        };
+        // **Exactly as many bytes as the head said**, read through the same
+        // buffer the head was: fewer is an answer that did not finish.
+        let mut png = vec![0_u8; bytes];
+        std::io::Read::read_exact(&mut reading, &mut png).map_err(|why| not(why.to_string()))?;
+        Ok((pictured, png))
     }
 
     fn opening_a_file(

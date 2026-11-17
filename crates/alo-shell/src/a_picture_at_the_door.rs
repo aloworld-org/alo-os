@@ -42,10 +42,20 @@ impl AskedToPicture {
     /// after it — **only** for a picture, so a refusal never carries bytes.
     #[must_use]
     pub fn answered(self, answer: Pictured, png: Vec<u8>) -> SendingAPicture {
-        let _ = (answer, png);
+        // **A head that says another length is never sent**: the daemon would
+        // read past the picture or stop inside it.
+        let answer = match answer {
+            Pictured::Picture { bytes, .. } if bytes != png.len() => Pictured::CouldNotDraw,
+            other => other,
+        };
+        let mut bytes = answer.written().into_bytes();
+        bytes.push(b'\n');
+        if matches!(answer, Pictured::Picture { .. }) {
+            bytes.extend_from_slice(&png);
+        }
         SendingAPicture {
             talking: self.talking,
-            bytes: Vec::new(),
+            bytes,
             sent: 0,
         }
     }
@@ -67,6 +77,15 @@ impl SendingAPicture {
     /// once it is all sent or cannot be.
     #[must_use]
     pub fn sent_on(mut self) -> Option<Self> {
+        while let Some(left) = self.bytes.get(self.sent..).filter(|left| !left.is_empty()) {
+            match self.talking.write(left) {
+                Ok(0) => return None,
+                Ok(written) => self.sent += written,
+                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => return Some(self),
+                Err(error) if error.kind() == std::io::ErrorKind::Interrupted => {}
+                Err(_) => return None,
+            }
+        }
         let _ = self.talking.flush();
         None
     }

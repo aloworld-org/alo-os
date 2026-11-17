@@ -27,8 +27,12 @@
 //! is also the smaller picture to send anywhere.
 
 use alo_acting::{Pictured, ToPicture};
+use image::ImageEncoder as _;
+use smithay::utils::Size;
 
 use crate::Server;
+use crate::direct_target::ScenePainter as _;
+use crate::the_window_in_front_alo_may_reach::NotReached;
 use crate::typing_into_the_window_in_front::MayTypeInto;
 
 impl Server {
@@ -40,17 +44,85 @@ impl Server {
         asked: &ToPicture,
         may: &mut dyn MayTypeInto,
     ) -> (Pictured, Vec<u8>) {
-        let _ = (asked, may);
-        (Pictured::CouldNotDraw, Vec::new())
+        let identifier = asked.application.identifier();
+        let root = match self.the_window_in_front_alo_may_reach(identifier, may) {
+            Ok((root, _)) => root,
+            Err(NotReached::NotInFront) => return (Pictured::NotInFront, Vec::new()),
+            Err(NotReached::NotAlosCopy) => return (Pictured::NotAlosCopy, Vec::new()),
+        };
+        // **alo's eyes are on this window**: it wears the task at work for the
+        // turn, as it does when alo types into it (`crate::the_window_alo_acts_in`).
+        let _ = self.alo_acts_in(&root, identifier);
+        let popups = self.popup_surfaces();
+        match the_picture_of(&root, &popups) {
+            Some((png, wide, tall)) => (
+                Pictured::Picture {
+                    bytes: png.len(),
+                    wide,
+                    tall,
+                },
+                png,
+            ),
+            None => (Pictured::CouldNotDraw, Vec::new()),
+        }
     }
+}
+
+/// `root` and its own menus drawn alone, at the window's own size and place,
+/// and made a PNG: the bytes and the size, or [`None`] where any step could not
+/// be done — never a picture of something else.
+fn the_picture_of(
+    root: &smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
+    popups: &[crate::Popup],
+) -> Option<(Vec<u8>, u32, u32)> {
+    // **The window as a person sees it**: its committed geometry, so a shadow
+    // a client draws round itself is not in the picture.
+    let window = crate::where_a_window_is(root);
+    if window.size.w <= 0 || window.size.h <= 0 {
+        return None;
+    }
+    let camera = alo_canvas::Camera::new().looking_at(alo_canvas::At {
+        x: window.loc.x,
+        y: window.loc.y,
+    })?;
+    let mut painter = crate::software_scanout::SoftwarePainter::new().ok()?;
+    let (pixels, _drawn) = painter
+        .paint(
+            Size::from((window.size.w, window.size.h)),
+            std::slice::from_ref(root),
+            popups,
+            &crate::Cursor::Default,
+            crate::scene_native::NativeLayers::nothing(),
+            camera,
+        )
+        .ok()?;
+    let (wide, tall) = pixels.size();
+    let png = a_png_of(wide, tall, pixels.pixels())?;
+    (png.len() <= Pictured::THE_MOST).then_some((png, wide, tall))
 }
 
 /// A PNG of a frame `wide` by `tall` whose rows are tightly packed blue, green,
 /// red and a byte nobody reads, top to bottom — [`None`] for bytes that are not
 /// that frame.
 pub(crate) fn a_png_of(wide: u32, tall: u32, bgr0: &[u8]) -> Option<Vec<u8>> {
-    let _ = (wide, tall, bgr0);
-    None
+    let pixels = usize::try_from(wide)
+        .ok()?
+        .checked_mul(usize::try_from(tall).ok()?)?;
+    if pixels == 0 || bgr0.len() != pixels.checked_mul(4)? {
+        return None;
+    }
+    let rgb: Vec<u8> = bgr0
+        .chunks_exact(4)
+        .flat_map(|pixel| match *pixel {
+            [blue, green, red, _] => [red, green, blue],
+            _ => [0, 0, 0],
+        })
+        .collect();
+    let mut png = Vec::new();
+    image::codecs::png::PngEncoder::new(&mut png)
+        .write_image(&rgb, wide, tall, image::ExtendedColorType::Rgb8)
+        .ok()?;
+    Some(png)
 }
 
 #[cfg(test)]
