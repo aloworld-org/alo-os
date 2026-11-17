@@ -205,3 +205,56 @@ fn the_home_folder_is_given_before_the_ask() {
     );
     assert_eq!(UP_TO_GIVE_A_FOLDER, UP_TO_GIVE_AN_APPLICATION + 1);
 }
+
+/// **The folder's row is reached from Settings opened afresh, as the
+/// application's was.** A button in the page draws no focus ring, so moving
+/// between two of them changes nothing on the screen: in main's walk at
+/// b4b98a04 (run 43996140707) pictures 76 and 77 are the same file, byte for
+/// byte, and the look on the folder's row failed after 60 s. What changed the
+/// screen on the application's row (pictures 70 and 71) was the ring leaving
+/// the side column. So after VSCodium is given, Settings is closed and opened
+/// again, its side column is looked at on *What alo can use*, and only then is
+/// the page entered — and the look on the row still needs the screen to change.
+#[test]
+fn the_folder_row_is_reached_from_settings_opened_afresh() {
+    let steps = the_first_walk().steps().to_vec();
+    let given = the_look(&steps, "vscodium-given");
+    let on_the_row = the_look(&steps, "on-give-alo-a-folder");
+    let between = &steps[given + 1..on_the_row];
+    let place = |step: &Step| between.iter().position(|it| it == step);
+    let (Some(closed), Some(opened), Some(side), Some(entered)) = (
+        place(&Step::Press(Chord::key("esc"))),
+        place(&Step::Press(Chord::with("meta_l", "i"))),
+        between.iter().position(
+            |it| matches!(it, Step::Look { name, .. } if name == "what-alo-can-use-for-the-folder"),
+        ),
+        place(&Step::Press(Chord::key("tab"))),
+    ) else {
+        panic!("Settings is not closed, opened and entered afresh: {between:?}");
+    };
+    assert!(
+        closed < opened && opened < side && side < entered,
+        "{between:?}"
+    );
+    let Some(Step::Look {
+        rule,
+        may_be_as_it_was,
+        ..
+    }) = steps.get(on_the_row)
+    else {
+        panic!("no look on the folder's row");
+    };
+    let Some(Step::Look { rule: first, .. }) =
+        steps.get(the_look(&steps, "on-give-alo-an-application"))
+    else {
+        panic!("no look on the application's row");
+    };
+    assert!(
+        !may_be_as_it_was,
+        "the look on the folder's row must still need the screen to change"
+    );
+    assert_eq!(
+        rule, first,
+        "the folder's look is weaker than the application's"
+    );
+}
