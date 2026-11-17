@@ -40,8 +40,18 @@ pub const TYPE_TEXT: &str = "accessible.type_text";
 /// The verb that presses one control.
 pub const ACTIVATE_CONTROL: &str = "accessible.activate_control";
 
+/// The verb that scrolls a page (2026-11-17).
+pub const SCROLL_PAGE: &str = "accessible.scroll_page";
+
+/// The verb that scrolls one named thing onto the screen (2026-11-17).
+pub const SCROLL_TO: &str = "accessible.scroll_to";
+
 /// **The paragraph a model is told, for this registry** — empty when it does
 /// not declare both [`READ_WINDOW`] and [`TYPE_TEXT`].
+///
+/// **Scrolling is told only where both scrolls are declared**: a read answers
+/// only what is on the screen, and nothing else tells a model that what it did
+/// not see may be further down.
 #[must_use]
 pub fn working_in_an_application(verbs: &Verbs) -> String {
     if verbs.of(READ_WINDOW).is_none() || verbs.of(TYPE_TEXT).is_none() {
@@ -52,10 +62,20 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
     } else {
         String::new()
     };
+    let scrolling = if verbs.of(SCROLL_PAGE).is_some() && verbs.of(SCROLL_TO).is_some() {
+        format!(
+            " {READ_WINDOW} answers only what is on the screen: to see what is further down or \
+             up, send {SCROLL_PAGE}, or {SCROLL_TO} with the name of the thing you are looking \
+             for, and then {READ_WINDOW} again."
+        )
+    } else {
+        String::new()
+    };
     format!(
         "\n\nTo work in an application's window, send {READ_WINDOW} first: its answer names \
          the window's fields, documents and controls. Then type into one with {TYPE_TEXT}, \
-         giving its name exactly as that answer showed it{pressing}. Never send a run line \
+         giving its name exactly as that answer showed it{pressing}.{scrolling} Never send a \
+         run line \
          that types, clicks or presses keys (xdotool, ydotool, wtype or anything like them): \
          {TYPE_TEXT} is how alo types into a window, and it shows the person the whole text \
          before anything is typed."
@@ -121,5 +141,24 @@ mod tests {
             .declare(named(ACTIVATE_CONTROL, Effect::Change))
             .unwrap();
         assert!(working_in_an_application(&verbs).contains(ACTIVATE_CONTROL));
+    }
+
+    /// **Scrolling is told only where both scrolls are offered**, and then it
+    /// names both and says to read again after.
+    #[test]
+    fn scrolling_is_told_only_where_both_scrolls_are_offered() {
+        let mut verbs = the_verbs();
+        verbs.declare(named(READ_WINDOW, Effect::Read)).unwrap();
+        verbs.declare(named(TYPE_TEXT, Effect::Change)).unwrap();
+        verbs.declare(named(SCROLL_PAGE, Effect::Change)).unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(!told.contains(SCROLL_PAGE), "{told}");
+        verbs.declare(named(SCROLL_TO, Effect::Change)).unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(
+            told.contains(SCROLL_PAGE) && told.contains(SCROLL_TO),
+            "{told}"
+        );
+        assert!(told.contains("only what is on the screen"), "{told}");
     }
 }

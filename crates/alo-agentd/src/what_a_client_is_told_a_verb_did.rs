@@ -89,5 +89,13 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
                 .types_into()
                 .map(|(name, window)| (name.to_owned(), window.to_owned())),
         ),
+        // A scroll in an application's window (2026-11-17): what was asked
+        // and whether it now reads as on the screen — never what it shows.
+        WhatAVerbDid::AWindowWasScrolled(scrolled) => Done::of_a_scroll(
+            scrolled.application(),
+            scrolled.to(),
+            scrolled.a_page(),
+            scrolled.now_showing(),
+        ),
     }
 }

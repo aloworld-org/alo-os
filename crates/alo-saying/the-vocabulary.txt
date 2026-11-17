@@ -107,6 +107,27 @@ adapters.fallback.read-window.application	the application whose windows to read
 adapters.fallback.read-window.by-hand	Look at the application's window, or have the screen reader read it aloud
 adapters.fallback.read-window.purpose	read what an application's windows show
 adapters.fallback.read-window.sentence	read what {application} shows in its windows
+adapters.fallback.scroll-page.application	the application whose window is scrolled
+adapters.fallback.scroll-page.down	down
+adapters.fallback.scroll-page.nothing-further-down	{application} shows nothing further down to scroll to, so nothing was scrolled
+adapters.fallback.scroll-page.nothing-further-up	{application} shows nothing further up to scroll to, so nothing was scrolled
+adapters.fallback.scroll-page.purpose	scroll an application's window by about one screen, down or up, so that what was off the screen can be read
+adapters.fallback.scroll-page.sentence	scroll {toward} by one page in {application}
+adapters.fallback.scroll-page.toward	which way to scroll: down or up
+adapters.fallback.scroll-page.up	up
+adapters.fallback.scroll-to.already-showing	“{name}” is already on the screen in {application}
+adapters.fallback.scroll-to.application	the application whose window is scrolled
+adapters.fallback.scroll-to.more-than-one	{application} has more than one thing named “{name}”, so alo did not guess which, and nothing was scrolled
+adapters.fallback.scroll-to.name	the name of the thing to bring onto the screen, exactly as the application shows it
+adapters.fallback.scroll-to.nothing-named	{application} has nothing named “{name}”, on the screen or off it, so nothing was scrolled
+adapters.fallback.scroll-to.password-field	“{name}” in {application} is a password field, and alo never acts on one, so nothing was scrolled
+adapters.fallback.scroll-to.purpose	scroll an application's window until one thing, named as the application names it, is on the screen — for reading or pressing what is further down or further up
+adapters.fallback.scroll-to.sentence	scroll {application} until “{name}” is on the screen
+adapters.fallback.scroll-to.too-much	{application} holds more than alo can read at once, so alo could not be sure which “{name}” was meant, and nothing was scrolled
+adapters.fallback.scroll.changes	Moves what one window of the application shows, as scrolling would, so that more of it can be read.
+adapters.fallback.scroll.did-not	{application} answered that it could not scroll there, so nothing was scrolled
+adapters.fallback.scroll.leaves	Nothing is typed, nothing is pressed, no text is changed, and nothing is found by where it is on the screen.
+adapters.fallback.scroll.not-seen-to-move	alo asked {application} to scroll, and its window does not yet say that what was off the screen is on it now. Read the window again to see what it shows
 adapters.fallback.text-cut-short	{application} shows a text longer than is read at once, so only its first {most} characters were read
 adapters.fallback.too-much-to-be-sure	{application} shows more than can be read at once, so whether its {kind} named “{name}” is the only one is not known, and nothing was pressed
 adapters.fallback.type-text.application	the application to type into

@@ -295,7 +295,8 @@ pub struct WhatAnApplicationVerbNeeds<'a> {
 /// # The accessibility fallback's two, and not the adapters' own
 ///
 /// Since 2026-11-12 the list ends with `accessible.read_window` and
-/// `accessible.activate_control`, and since 2026-11-13 `accessible.type_text`
+/// `accessible.activate_control`, since 2026-11-13 `accessible.type_text`, and
+/// since 2026-11-17 `accessible.scroll_to` and `accessible.scroll_page`
 /// (`alo_adapters::fallback_verbs`), which this
 /// machine carries out through [`TheWindowsOnTheScreen`]. **An adapter's own
 /// verbs — `text_editor.open_document` — are not on it**: they are carried out
@@ -946,7 +947,7 @@ mod tests {
     ///
     /// # Why the names and not a count
     ///
-    /// A count passes when one family replaces another. These are the seventeen
+    /// A count passes when one family replaces another. These are the verbs
     /// in `docs/contracts/agent-verbs.md`, which is the published list a third
     /// party builds an adapter against: *a closed list; if a capability is not
     /// written here, `alo-agentd` does not have it.* So this is the contract
@@ -959,10 +960,10 @@ mod tests {
     /// verb with nothing behind it is worse than the capability missing.
     #[test]
     fn every_verb_this_machine_offers_is_named_here_and_no_other() {
-        let offered = the_verbs_a_whole_machine_offers().expect("the seventeen verbs declare");
+        let offered = the_verbs_a_whole_machine_offers().expect("every verb declares");
         let told: Vec<&str> = offered.all().map(alo_capability::Verb::name).collect();
 
-        let the_seventeen = [
+        let every_verb = [
             // `alo-files`' six.
             "list_folder",
             "read_file",
@@ -990,10 +991,13 @@ mod tests {
             // And typing, added 2026-11-13 (ADR 0153): one approved text into
             // one field, read back before it is saved.
             "accessible.type_text",
+            // And scrolling, added 2026-11-17: to a named thing, or by a page.
+            "accessible.scroll_to",
+            "accessible.scroll_page",
             // `alo-publishing`'s one, added 2026-11-13: Demo 2's second road.
             "publish_to_github_pages",
         ];
-        for name in the_seventeen {
+        for name in every_verb {
             assert!(
                 told.contains(&name),
                 "{name} is in docs/contracts/agent-verbs.md and this machine does not offer it, \
@@ -1002,10 +1006,10 @@ mod tests {
         }
         assert_eq!(
             told.len(),
-            the_seventeen.len(),
+            every_verb.len(),
             "this machine offers {} verbs and {} are named here: {told:?}",
             told.len(),
-            the_seventeen.len()
+            every_verb.len()
         );
         assert!(
             !told.contains(&"arrange_application"),

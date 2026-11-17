@@ -276,6 +276,23 @@ pub enum Done {
         /// was sent.
         nothing_new: bool,
     },
+    /// One application's window was scrolled, to a named thing or by a page
+    /// (`accessible.scroll_to`, `accessible.scroll_page`).
+    ///
+    /// Added 2026-11-17, additively. **What the window shows now is not carried
+    /// back**: a scroll is a change, and what is on the screen afterwards is
+    /// read by `accessible.read_window`, as every read is.
+    Scrolled {
+        /// The application.
+        application: String,
+        /// The thing's name, exactly as the application shows it — or, for a
+        /// page, `down` or `up`.
+        to: String,
+        /// Whether it was a page rather than a named thing.
+        a_page: bool,
+        /// Whether what was scrolled to reads as on the screen afterwards.
+        now_showing: bool,
+    },
 }
 
 /// One window an application showed, as it goes back to a client.
@@ -635,6 +652,18 @@ impl Done {
         }
     }
 
+    /// What a scroll answered, as it goes on the wire — taking its parts, for
+    /// [`Done::of_a_press`]'s reason.
+    #[must_use]
+    pub fn of_a_scroll(application: &str, to: &str, a_page: bool, now_showing: bool) -> Self {
+        Self::Scrolled {
+            application: application.to_owned(),
+            to: to.to_owned(),
+            a_page,
+            now_showing,
+        }
+    }
+
     /// What one of the six file verbs answered, as it goes on the wire.
     #[must_use]
     pub fn of_a_file_verb(answer: &Answer) -> Self {
@@ -766,6 +795,9 @@ impl Done {
             // **A typing that was not saved** is the one a shell puts a caveat
             // beside: the text is in the window and not on the disk.
             Self::Typed { saved, .. } => !*saved,
+            // **A scroll the window does not yet show** may or may not have
+            // moved it, and that is what a shell puts a caveat beside.
+            Self::Scrolled { now_showing, .. } => !*now_showing,
             // **A publication leaves nothing out**: it names the folder and the
             // address, and what it cannot take back is said in its own line
             // ([`Done::put_back_can_recall_it`]), not as a caveat here.
