@@ -921,9 +921,7 @@ fn a_long_list_off_the_screen_does_not_stop_a_press() {
     let grants = granting(&[MAIL]);
     let hidden = |count: usize| -> Vec<Thing> {
         (0..count)
-            .map(|_| {
-                thing(roles::FILLER, "").in_states(States::showing_and_usable().hidden())
-            })
+            .map(|_| thing(roles::FILLER, "").in_states(States::showing_and_usable().hidden()))
             .collect()
     };
     let window = |rows: Vec<Thing>| {
@@ -967,7 +965,10 @@ fn a_long_list_off_the_screen_does_not_stop_a_press() {
 
     let endless = window(hidden(alo_adapters::walking::MOST_ASKED + 1));
     assert!(read(&endless).shown().not_all_read());
-    assert!(press(&endless).is_err(), "a list past every bound was pressed in");
+    assert!(
+        press(&endless).is_err(),
+        "a list past every bound was pressed in"
+    );
     assert_eq!(endless.presses_asked(), 0);
 }
 
