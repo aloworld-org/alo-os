@@ -572,12 +572,13 @@ fn the_rows_that_give_are_counted_from_the_top_whatever_is_installed() {
     let strings = settings_words();
     let door = CountingDoor::revoking();
     into_what_alo_can_use(&mut window, &door);
-    // **The control**: the page does end with a switch per application, so a
+    // **The control**: the page does end with a switch per application, and
+    // since #1359 the choice of who reads the pictures under them, so a
     // count from its end is not a count of the rows the walk means.
     assert!(
         matches!(
             window.rows_on_the_page(noon()).last(),
-            Some(SettingsRow::PicturesAndKeys(_))
+            Some(SettingsRow::PicturesAndKeys(_) | SettingsRow::WhoReadsPictures(_))
         ),
         "{:?}",
         window.rows_on_the_page(noon())
