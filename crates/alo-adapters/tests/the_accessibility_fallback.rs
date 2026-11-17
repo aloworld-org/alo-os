@@ -972,6 +972,43 @@ fn a_long_list_off_the_screen_does_not_stop_a_press() {
     assert_eq!(endless.presses_asked(), 0);
 }
 
+/// **Exactly as many things on the screen as one walk reads are all read**,
+/// and one more is said as not all read: the list itself and the labels in it
+/// are what count, one each.
+#[test]
+fn as_many_things_on_the_screen_as_are_read_are_read_and_one_more_is_not() {
+    let strings = in_english();
+    let grants = granting(&[MAIL]);
+    let shown =
+        |labels: usize| {
+            let tree =
+                ATree::default().with(
+                    ":1.7",
+                    Some(MAIL),
+                    vec![thing(roles::FRAME, "Inbox").holding(
+                        vec![thing(roles::FILLER, "").holding(
+                (0..labels).map(|_| thing(roles::LABEL, "A letter")).collect(),
+            )],
+                    )],
+                );
+            ReadingWindows::of(
+                Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
+                &Adapters::default(),
+                &grants,
+                &installed(),
+                &strings,
+            )
+            .unwrap()
+            .read(&tree, &strings)
+            .unwrap()
+            .shown()
+            .not_all_read()
+        };
+    let most = alo_adapters::walking::MOST_THINGS;
+    assert!(!shown(most - 1), "what fits was said as not all read");
+    assert!(shown(most), "one past what is read was read as all");
+}
+
 /// **With no invocation the tree is never asked anything**, and neither is it
 /// asked while anything before it is refused: declaring the verbs, loading the
 /// adapters, proposing and approving, and every refusal of the grants, the
