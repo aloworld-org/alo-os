@@ -39,36 +39,54 @@ fn a_game_and_a_browser() -> crate::settings_default_apps::WhatCouldOpenLinks {
 #[test]
 fn choosing_who_reads_the_pictures_reaches_the_frame_a_display_is_handed() {
     let machine = a_persons_machine("readers-drawn");
-    alo_choosing::Choosing::at(&machine.choosing())
-        .unwrap()
-        .adding(
-            alo_models::Provider::checked(
-                "Mistral",
-                "https://api.mistral.ai",
-                alo_models::Region::Declared("the EU".to_owned()),
-                None,
+    // **Any service, by its own name**: a well-known one and one on the
+    // person's own server. The fixture's own Harbour AI is there too.
+    let mut choosing = alo_choosing::Choosing::at(&machine.choosing()).unwrap();
+    for (name, address) in [
+        ("OpenAI", "https://api.openai.com"),
+        ("My own server", "http://192.168.1.20:8080"),
+    ] {
+        choosing
+            .adding(
+                alo_models::Provider::checked(name, address, alo_models::Region::Unknown, None)
+                    .unwrap(),
             )
-            .unwrap(),
-        )
-        .unwrap();
+            .unwrap();
+    }
     let door = CountingDoor::revoking();
     let mut window = machine.opened();
     window.the_applications_are(a_game_and_a_browser());
-    let mistral = WhoReadsPictures::a_provider("Mistral").unwrap();
-    let row = SettingsRow::WhoReadsPictures(mistral.clone());
+    let own = WhoReadsPictures::a_provider("My own server").unwrap();
+    let row = SettingsRow::WhoReadsPictures(own.clone());
     focused_on(&mut window, &row, &door);
     let before = handed(&window);
     written_where(&before, THE_FOLDER, "1-no-one-reads-the-pictures.png");
     press(&mut window, SettingsKey::Choose, &door);
     let after = handed(&window);
-    written_where(&after, THE_FOLDER, "2-mistral-reads-the-pictures.png");
+    written_where(&after, THE_FOLDER, "2-my-own-server-reads-the-pictures.png");
     assert_ne!(
         before.0, after.0,
         "Enter on the service did not reach the frame"
     );
     assert_eq!(
         alo_remembering::who_reads_pictures_remembered(machine.places.how_code_runs()).unwrap(),
-        mistral,
+        own,
         "the frame shows a choice the file does not say"
     );
+}
+
+/// **With no outside service added, the row that opens alo and AI is drawn**,
+/// in the bytes a display is handed — the picture the owner asked for.
+#[test]
+fn with_no_service_the_way_to_add_one_reaches_the_frame() {
+    let machine = a_persons_machine("readers-drawn-none");
+    std::fs::remove_file(machine.choosing()).unwrap();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    window.the_applications_are(a_game_and_a_browser());
+    let add = SettingsRow::GoTo(crate::SettingsCategory::AloAndAi);
+    focused_on(&mut window, &add, &door);
+    let frame = handed(&window);
+    written_where(&frame, THE_FOLDER, "3-no-service-yet.png");
+    assert_eq!(window.focused(crate::settings_testing::noon()), Some(add));
 }

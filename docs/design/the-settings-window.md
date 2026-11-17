@@ -409,7 +409,11 @@ computer**, *Nothing is sent*; then each service the person added, **by its own
 name**, with the *What it risks* box holding ADR 0147 §4's sentence, *A picture
 of the window alo is reading is sent to Mistral each time*. A service chosen and
 since removed is still drawn, chosen, so the page never hides what the file
-says. ADR 0147's built-in reader is not built and is not drawn. The design is
+says. **Every service the person added in alo and AI is offered, by its own name,
+whatever it is** — a well-known one or their own server at a bare address. With
+no service added, the last row is **Add a service in alo and AI**, which opens
+that page (*the owner, 2026-11-17: "Let's make it general and not limited to
+Mistral"*). ADR 0147's built-in reader is not built and is not drawn. The design is
 silent, so it is built from the pieces it already has. **A departure, recorded
 here for the next person to take to the design.**
 

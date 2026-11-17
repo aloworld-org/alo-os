@@ -1055,6 +1055,26 @@ pub const READ_BY_A_PROVIDER_IS: Word = Word::saying(
     "Under a choice in Settings named after an AI service the person added, such as Mistral. Choosing it means that service reads pictures of windows. alo is the assistant and is never written with a capital letter.",
 );
 
+/// The row under the readers when the person has added no outside service,
+/// which opens the page where one is added — so nobody is left with a choice
+/// they cannot reach.
+pub const ADD_A_SERVICE_TO_READ: Word = Word::saying(
+    "capability.pictures-read-by.add-a-service",
+    "Add a service in alo and AI",
+)
+.noting(
+    "The name of a row in Settings, under \"Who reads the pictures\", shown when the person has added no outside AI service. Pressing it opens the Settings page called \"alo and AI\": use exactly the translation that page's name has in the side column. alo is the assistant and is never written with a capital letter.",
+);
+
+/// The line under [`ADD_A_SERVICE_TO_READ`].
+pub const ADD_A_SERVICE_TO_READ_IS: Word = Word::saying(
+    "capability.pictures-read-by.add-a-service-is",
+    "To let an outside service read the pictures, add it there first. Any service you add is offered here by its own name",
+)
+.noting(
+    "Under the row \"Add a service in alo and AI\" in Settings. An outside service is an AI service on the internet, or one the person runs on their own server, that they add by its name and address. A plain description, not a warning.",
+);
+
 /// What choosing an outside service costs: **ADR 0147 §4's own sentence**,
 /// kept as it was written.
 pub const PICTURES_SENT_TO: Word = Word::saying(
@@ -1510,7 +1530,7 @@ pub const TEXT_HOLDS_ANOTHER_ALPHABET: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 135] = [
+pub const EVERY_WORD: [Word; 137] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -1601,6 +1621,8 @@ pub const EVERY_WORD: [Word; 135] = [
     READ_BY_THIS_COMPUTER_IS,
     READ_BY_A_PROVIDER_IS,
     PICTURES_SENT_TO,
+    ADD_A_SERVICE_TO_READ,
+    ADD_A_SERVICE_TO_READ_IS,
     NO_COPY_OF_ITS_OWN,
     DONE_WITHOUT_ASKING,
     DONE_WITHOUT_ASKING_AND_IT_CANNOT_BE_PUT_BACK,

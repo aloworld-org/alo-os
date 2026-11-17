@@ -242,3 +242,94 @@ fn a_file_others_could_write_does_not_draw_its_service_chosen() {
         ["No one"]
     );
 }
+
+/// **Every service the person added is offered, by its own name, whatever it
+/// is** — a well-known one, one on their own server at a bare address — and
+/// each with ADR 0147's sentence naming it. The owner, 2026-11-17: *"Let's
+/// make it general and not limited to Mistral."* Harbour AI is this fixture's
+/// own, added as every test machine is.
+#[test]
+fn every_service_added_is_offered_by_its_own_name_whatever_it_is() {
+    let machine = a_persons_machine("readers-any-service");
+    let mut choosing = Choosing::at(&machine.choosing()).unwrap();
+    for (name, address) in [
+        ("OpenAI", "https://api.openai.com"),
+        ("My own server", "http://192.168.1.20:8080"),
+    ] {
+        choosing
+            .adding(
+                alo_models::Provider::checked(name, address, alo_models::Region::Unknown, None)
+                    .unwrap(),
+            )
+            .unwrap();
+    }
+    let strings = words();
+    let mut window = machine.opened();
+    window.the_applications_are(one_application());
+    let rows = the_reader_rows(&window, &strings).unwrap();
+    for name in [crate::settings_testing::PROVIDER, "OpenAI", "My own server"] {
+        let row = rows
+            .iter()
+            .find(|row| row.title == name)
+            .unwrap_or_else(|| panic!("{name} is not offered"));
+        assert_eq!(
+            row.row,
+            Some(SettingsRow::WhoReadsPictures(
+                WhoReadsPictures::a_provider(name).unwrap()
+            ))
+        );
+        assert_eq!(
+            row.risk.as_ref().map(|risk| risk.words.clone()),
+            Some(format!(
+                "A picture of the window alo is reading is sent to {name} each time"
+            ))
+        );
+    }
+    // **With services added, nothing sends the person away to add one.**
+    assert!(
+        !reachable_all(&window).contains(&SettingsRow::GoTo(SettingsCategory::AloAndAi)),
+        "a row to add a service is offered beside the services"
+    );
+}
+
+/// **With no outside service added, the section says how to add one**, and
+/// the row opens alo and AI — so nobody is left at a choice they cannot reach.
+#[test]
+fn with_no_service_added_a_row_opens_alo_and_ai() {
+    let machine = a_persons_machine("readers-no-service");
+    // **A person who has added nothing**: no settings of theirs at all.
+    std::fs::remove_file(machine.choosing()).unwrap();
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    window.the_applications_are(one_application());
+    let rows = the_reader_rows(&window, &strings).unwrap();
+    let titles: Vec<&str> = rows[1..].iter().map(|row| row.title.as_str()).collect();
+    assert_eq!(
+        titles,
+        [
+            "No one",
+            "Your model on this computer",
+            "Add a service in alo and AI"
+        ]
+    );
+    let add = SettingsRow::GoTo(SettingsCategory::AloAndAi);
+    assert_eq!(rows[3].row, Some(add.clone()));
+    assert!(
+        reachable_all(&window).contains(&add),
+        "the keyboard cannot reach it"
+    );
+    assert_eq!(
+        chosen(&mut window, &add, &strings, &door),
+        Some(SettingsDid::WentTo(SettingsCategory::AloAndAi))
+    );
+    assert_eq!(window.category(), Some(SettingsCategory::AloAndAi));
+}
+
+/// Every row on the What alo can use page the keyboard reaches.
+fn reachable_all(window: &SettingsWindow) -> Vec<SettingsRow> {
+    window
+        .open()
+        .unwrap()
+        .rows_on(SettingsCategory::FoldersAloCanUse, noon())
+}

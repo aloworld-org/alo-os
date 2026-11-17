@@ -300,6 +300,20 @@ fn who_reads_pictures(open: &Open, strings: &Strings) -> Vec<ARow> {
         }
         row
     }));
+    // **No outside service yet: how to add one**, opening the page where any
+    // service is added by its name and address — whatever service it is.
+    if open.answering.the_providers_added().is_empty() {
+        let mut add = ARow::named(
+            Some(SettingsRow::GoTo(
+                crate::settings_categories::SettingsCategory::AloAndAi,
+            )),
+            TheKind::AnOpeningRow,
+            said(strings, cw::ADD_A_SERVICE_TO_READ),
+        );
+        add.lead = Some(ASettingsIcon::Chat);
+        add.lines.push(said(strings, cw::ADD_A_SERVICE_TO_READ_IS));
+        rows.push(add);
+    }
     rows
 }
 

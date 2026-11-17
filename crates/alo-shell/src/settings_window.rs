@@ -377,6 +377,10 @@ impl SettingsRow {
             Self::WrittenAs(_) => SettingsSection::Formats,
             Self::TimeZone(_) => SettingsSection::TimeZone,
             Self::Hiding(_) | Self::Edge(_) => SettingsSection::Dock,
+            // **A row that opens a page belongs to the page it is drawn on**:
+            // alo and AI is opened from under the readers of pictures, and
+            // Running code from the Terminal page.
+            Self::GoTo(SettingsCategory::AloAndAi) => SettingsSection::PicturesAndKeys,
             Self::GoTo(_) => SettingsSection::Terminal,
             Self::LightOrDark(_) | Self::WindowControls | Self::WhenThereIsNoRoom(_) => {
                 SettingsSection::Appearance
@@ -1293,6 +1297,11 @@ impl Open {
                     .into_iter()
                     .map(SettingsRow::WhoReadsPictures),
             );
+            // **With no outside service, the way to add one**, so a person who
+            // wants one is never left at a choice they cannot reach.
+            if self.answering.the_providers_added().is_empty() {
+                rows.push(SettingsRow::GoTo(SettingsCategory::AloAndAi));
+            }
         }
         rows
     }

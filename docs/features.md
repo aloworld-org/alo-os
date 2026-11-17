@@ -1139,7 +1139,8 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   alo can use, under *Pictures and keys*: **no one** (as a machine arrives:
   alo takes no picture and says it cannot see inside the application, and
   where to choose), **their model on this computer** (nothing is sent), or **a
-  service they added**, told *"A picture of the window alo is reading is sent
+  service they added** in alo and AI — any service, by its own name, and with
+  none added a row that opens alo and AI to add one — told *"A picture of the window alo is reading is sent
   to {provider} each time."* A reader that cannot read pictures is refused in
   words. *The owner, 2026-11-17: "It will always depend on the user, if he
   wants the third party to read the screens pictures then he causes"* (ADR

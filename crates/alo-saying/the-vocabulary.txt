@@ -532,6 +532,8 @@ capability.pictures-and-keys.what-it-costs	alo will act on what it sees in pictu
 capability.pictures-and-keys.what-it-is	Such as games. alo looks at a picture of that app's window and clicks or presses keys there. It never takes a picture of a window with a password field, and the indicator shows a picture leaving this computer
 capability.pictures-and-keys.what-it-is-for	For apps that tell alo nothing about their windows
 capability.pictures-read-by.a-provider-is	An outside service you added. If its model cannot read pictures, alo says so
+capability.pictures-read-by.add-a-service	Add a service in alo and AI
+capability.pictures-read-by.add-a-service-is	To let an outside service read the pictures, add it there first. Any service you add is offered here by its own name
 capability.pictures-read-by.heading	Who reads the pictures
 capability.pictures-read-by.no-one	No one
 capability.pictures-read-by.no-one-is	alo takes no pictures, and says it cannot see inside these apps
