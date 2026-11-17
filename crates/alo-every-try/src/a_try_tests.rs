@@ -470,3 +470,86 @@ fn asking_each_time_takes_the_same_road_one_approval_per_change() {
         "the model was told something untrue at ask each time: {last}"
     );
 }
+
+/// The set's installing request: GIMP, by the identifier the catalogue gives.
+fn installing_gimp() -> ARequest {
+    crate::the_set()
+        .expect("the set builds")
+        .only("install an application")
+        .expect("it is in the set")
+        .requests()
+        .first()
+        .cloned()
+        .expect("it is in the set")
+}
+
+/// An installation of `application` from Flathub, where the catalogue's GIMP
+/// comes from.
+fn installing(application: &str) -> String {
+    proposing(
+        alo_software::INSTALL_APPLICATION,
+        &[
+            (alo_software::words::APPLICATION, application),
+            (alo_software::words::SOURCE, "flathub"),
+        ],
+    )
+}
+
+/// **A guessed identifier is answered as the machine answers it**: refused
+/// before the person is asked, naming the catalogue's own, and a model that
+/// then asks for that one takes the road — counted, so a pass that needed the
+/// refusal is seen.
+#[test]
+fn a_guessed_identifier_is_refused_naming_the_catalogues_and_may_be_asked_again() {
+    for level in [super::TheLevel::FullAccess, super::TheLevel::AskEachTime] {
+        let mut model = Writing::these(&[
+            installing("org.gnome.GIMP"),
+            installing("org.gimp.GIMP"),
+            answering("GIMP is installed."),
+        ]);
+        let tried = super::one_try_at(
+            level,
+            &installing_gimp(),
+            &WhatItMayReach::nothing().at_full_access(true),
+            &the_verbs(),
+            &the_words(),
+            &mut model,
+        );
+        assert_eq!(tried.went(), &Went::TheRoad, "{level:?}: {tried:?}");
+        assert_eq!(tried.refused_before_asking(), 1, "{level:?}: {tried:?}");
+        let told = model.shown.get(1).cloned().unwrap_or_default();
+        assert!(
+            told.contains("org.gnome.GIMP") && told.contains("org.gimp.GIMP"),
+            "{level:?}: the refusal did not name both: {told}"
+        );
+    }
+}
+
+/// **The refusal cases**: a model that asks for the guess again is refused
+/// again and has not taken the road, and a pass with no refusal counts none.
+#[test]
+fn a_guess_asked_for_again_never_takes_the_road() {
+    let mut model = Writing::these(&[
+        installing("org.gnome.GIMP"),
+        installing("org.gnome.GIMP"),
+        answering("GIMP is installed."),
+    ]);
+    let twice = super::one_try(
+        &installing_gimp(),
+        &WhatItMayReach::nothing().at_full_access(true),
+        &the_verbs(),
+        &the_words(),
+        &mut model,
+    );
+    assert!(!twice.took_the_road(), "{twice:?}");
+    let mut model = Writing::these(&[installing("org.gimp.GIMP"), answering("Installed.")]);
+    let straight = super::one_try(
+        &installing_gimp(),
+        &WhatItMayReach::nothing().at_full_access(true),
+        &the_verbs(),
+        &the_words(),
+        &mut model,
+    );
+    assert_eq!(straight.went(), &Went::TheRoad, "{straight:?}");
+    assert_eq!(straight.refused_before_asking(), 0);
+}

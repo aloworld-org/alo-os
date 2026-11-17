@@ -56,6 +56,9 @@ pub struct Tried {
     said_last: Option<String>,
     /// How many reads it took aside of the road.
     looked_aside: usize,
+    /// How many times the machine refused a step before asking the person,
+    /// and the try went on from the refusal.
+    refused_before_asking: usize,
 }
 
 /// **The most reads a try may take aside of its road** — a read the machine
@@ -69,6 +72,20 @@ impl Tried {
     #[must_use]
     pub const fn looked_aside(&self) -> usize {
         self.looked_aside
+    }
+
+    /// How many times the machine refused a step of this try before asking
+    /// anybody, and the model went on from what the refusal said.
+    #[must_use]
+    pub const fn refused_before_asking(&self) -> usize {
+        self.refused_before_asking
+    }
+
+    /// The same try, having been refused `times` before anybody was asked.
+    #[must_use]
+    pub const fn refused_first(mut self, times: usize) -> Self {
+        self.refused_before_asking = times;
+        self
     }
 
     /// The same try, having taken `looks` reads aside of its road.
@@ -88,6 +105,7 @@ impl Tried {
             asked,
             said_last: None,
             looked_aside: 0,
+            refused_before_asking: 0,
         }
     }
 
@@ -183,6 +201,7 @@ pub fn one_try_at(
         asked: 0,
         said_last: None,
         looked_aside: 0,
+        refused_before_asking: 0,
     };
     let mut after = Vec::new();
     let happened = loop {
@@ -270,6 +289,7 @@ pub fn one_try_at(
         asked: door.asked,
         said_last: door.said_last,
         looked_aside: door.looked_aside,
+        refused_before_asking: door.refused_before_asking,
     }
 }
 
@@ -321,6 +341,8 @@ struct Recording<'a> {
     said_last: Option<String>,
     /// How many reads the try took aside of the road.
     looked_aside: usize,
+    /// How many steps the machine refused before asking anybody.
+    refused_before_asking: usize,
 }
 
 /// Why the loop is stopped once the road is left: the try is over.
