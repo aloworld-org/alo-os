@@ -169,6 +169,7 @@ pub fn summary(tallied: &[Tallied], asked_of: &str) -> String {
     said.push_str("| Request | Took the road | Where the other tries went |\n|---|---|---|\n");
     let mut looked: Vec<String> = Vec::new();
     let mut refused: Vec<String> = Vec::new();
+    let mut skipped: Vec<String> = Vec::new();
     for one in tallied {
         let passes_refused = one
             .tries
@@ -191,6 +192,18 @@ pub fn summary(tallied: &[Tallied], asked_of: &str) -> String {
             looked.push(format!(
                 "- {}: {passes_that_looked} of its passes looked aside",
                 one.request.named()
+            ));
+        }
+        let passes_that_skipped = one
+            .tries
+            .iter()
+            .filter(|tried| tried.took_the_road() && tried.skipped_looks() > 0)
+            .count();
+        if passes_that_skipped > 0 {
+            skipped.push(format!(
+                "- {}: {passes_that_skipped} of {} passes",
+                one.request.named(),
+                one.on_the_road()
             ));
         }
         let elsewhere: Vec<String> = one
@@ -230,6 +243,20 @@ pub fn summary(tallied: &[Tallied], asked_of: &str) -> String {
     } else {
         said.push_str("Passes that looked aside:\n\n");
         said.push_str(&looked.join("\n"));
+        said.push('\n');
+    }
+    // **A pass that skipped a look is counted**: going straight to an act the
+    // person named is a road the machine takes too — it finds the control by
+    // name — so it passes, and how often is said.
+    said.push_str(
+        "\nA look on the road — reading a window before acting in it — may be skipped, as the \
+         machine finds what is named without one. ",
+    );
+    if skipped.is_empty() {
+        said.push_str("No pass skipped a look.\n");
+    } else {
+        said.push_str("Passes that went straight to the act:\n\n");
+        said.push_str(&skipped.join("\n"));
         said.push('\n');
     }
     // **A pass the machine refused first is said** too: on a machine that

@@ -59,6 +59,8 @@ pub struct Tried {
     /// How many times the machine refused a step before asking the person,
     /// and the try went on from the refusal.
     refused_before_asking: usize,
+    /// How many looks of the road it skipped, going straight to the act.
+    skipped_looks: usize,
 }
 
 /// **The most reads a try may take aside of its road** — a read the machine
@@ -72,6 +74,20 @@ impl Tried {
     #[must_use]
     pub const fn looked_aside(&self) -> usize {
         self.looked_aside
+    }
+
+    /// How many looks of its road this try skipped — a window it went
+    /// straight to acting in, without reading first.
+    #[must_use]
+    pub const fn skipped_looks(&self) -> usize {
+        self.skipped_looks
+    }
+
+    /// The same try, having skipped `looks` looks of its road.
+    #[must_use]
+    pub const fn skipping_looks(mut self, looks: usize) -> Self {
+        self.skipped_looks = looks;
+        self
     }
 
     /// How many times the machine refused a step of this try before asking
@@ -106,6 +122,7 @@ impl Tried {
             said_last: None,
             looked_aside: 0,
             refused_before_asking: 0,
+            skipped_looks: 0,
         }
     }
 
@@ -202,6 +219,7 @@ pub fn one_try_at(
         said_last: None,
         looked_aside: 0,
         refused_before_asking: 0,
+        skipped_looks: 0,
     };
     let mut after = Vec::new();
     let happened = loop {
@@ -290,6 +308,7 @@ pub fn one_try_at(
         said_last: door.said_last,
         looked_aside: door.looked_aside,
         refused_before_asking: door.refused_before_asking,
+        skipped_looks: door.skipped_looks,
     }
 }
 
@@ -343,6 +362,8 @@ struct Recording<'a> {
     looked_aside: usize,
     /// How many steps the machine refused before asking anybody.
     refused_before_asking: usize,
+    /// How many looks of the road the try skipped.
+    skipped_looks: usize,
 }
 
 /// Why the loop is stopped once the road is left: the try is over.
@@ -402,6 +423,7 @@ impl TheDoor for Recording<'_> {
             .is_some_and(|next| next.is_a_look() && next.verb() != asked)
         {
             self.taken += 1;
+            self.skipped_looks += 1;
         }
         // **A read aside of the road**, which the request declares and the
         // machine would answer: answered, and the road stays where it was —

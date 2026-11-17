@@ -261,6 +261,13 @@ fn a_look_may_be_skipped() {
         &[opening(), typing(), answering("It is written.")],
     );
     assert_eq!(tried.went(), &Went::TheRoad, "{tried:?}");
+    // And the skip is counted, so a summary can say how often it happened.
+    assert_eq!(tried.skipped_looks(), 1, "{tried:?}");
+    let looked = tried_on(
+        &writing_with_a_look(),
+        &[opening(), looking(), typing(), answering("It is written.")],
+    );
+    assert_eq!(looked.skipped_looks(), 0, "{looked:?}");
 }
 
 /// **A look may be taken twice**, and the road goes on after it.
