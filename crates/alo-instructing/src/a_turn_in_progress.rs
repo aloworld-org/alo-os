@@ -255,10 +255,21 @@ pub fn shown_in_progress(
 /// **No grade is about this text.** It is shown only once a turn has taken a
 /// step, and every grade is earned on a first round, which
 /// [`shown_in_progress`] returns before reaching here.
+///
+/// **And a change that came back done is finished.** Until 2026-11-17 the
+/// middle way read *a propose line if the request asks for anything to be
+/// done*, which stays true of *Close Firefox* after Firefox was asked to close:
+/// shown `close_application` done, `gpt-4o-mini` proposed it again in 9 of 10
+/// tries at ask each time and 3 of 10 at full access (`alo-every-try`, run
+/// 44119951808), and *bring an application to the front* the same. The
+/// request is what the person asked for; what came back is what is left of
+/// it.
 pub const WHAT_TO_SEND_NEXT: &str = "\
-Send the next line: a read line if you still need something, a propose line if \
-the request asks for anything to be done, or an answer line if the request only \
-asks to be told something and what came back tells it.";
+Send the next line: a read line if you still need something; a propose line \
+only for something the request asks to be done that has not been done yet — a \
+change that came back done is finished, so never propose it again; or an answer \
+line once every change the request asks for came back done, or when the request \
+only asks to be told something and what came back tells it.";
 
 #[cfg(test)]
 #[expect(
@@ -346,6 +357,23 @@ mod tests {
     fn a_continued_turn_may_end_in_an_answer_and_is_not_steered_to_a_proposal() {
         assert!(super::WHAT_TO_SEND_NEXT.contains("an answer line"));
         assert!(!super::WHAT_TO_SEND_NEXT.contains("propose line that finishes the request"));
+    }
+
+    /// **A change that came back done is not proposed again.** Told only *a
+    /// propose line if the request asks for anything to be done*, a model shown
+    /// `close_application` done read *Close Firefox* as still asking for
+    /// something and proposed it again: 1 of 10 at ask each time, 7 of 10 at
+    /// full access, run 44119951808 on 2026-11-17.
+    #[test]
+    fn a_change_that_came_back_done_is_not_proposed_again() {
+        let next = super::WHAT_TO_SEND_NEXT;
+        assert!(next.contains("not been done yet"), "{next}");
+        assert!(next.contains("never propose it again"), "{next}");
+        assert!(next.contains("came back done"), "{next}");
+        // And the three ways on are still the three.
+        for way in ["a read line", "a propose line", "an answer line"] {
+            assert!(next.contains(way), "{way}: {next}");
+        }
     }
 
     /// **A long answer is cut and says it was cut.** The number is asserted
