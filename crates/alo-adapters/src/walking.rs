@@ -42,6 +42,9 @@ pub const DEEPEST: usize = 48;
 /// The most characters of one thing's text that are read.
 pub const LONGEST_TEXT: usize = 4_000;
 
+/// `ROLE_MENU`: the heading of a menu, or the list it opens.
+const A_MENU: u32 = 33;
+
 /// A control that can be pressed, as the walk found it.
 #[derive(Debug)]
 pub(crate) struct Found {
@@ -301,8 +304,14 @@ impl Walker<'_> {
         depth: usize,
         seen: &mut Vec<Seen>,
     ) -> Result<(), NotWalked> {
-        let role = Role::of_the_tree(facts.role);
         let name = facts.name.trim().to_owned();
+        // **A menu with no name is not a heading**: it is the list a heading
+        // opens (GTK 3 puts one under every heading), which is layout, and not
+        // a control alo cannot name.
+        let role = match Role::of_the_tree(facts.role) {
+            Role::MenuItem if facts.role == A_MENU && name.is_empty() => Role::Part,
+            role => role,
+        };
         // The one question never put to a password field.
         let text = if role.text_is_read() && role != Role::PasswordField && facts.has_text {
             match self.tree.text(at) {
