@@ -22,11 +22,11 @@
 //!    and neither is anything inside it.
 //! 3. **Never a password field's contents.** Its text is not asked for. The
 //!    question is not put, so there is no answer to drop.
-//! 4. **Bounded.** At most [`MOST_THINGS`] things, [`DEEPEST`] levels and
-//!    [`LONGEST_TEXT`] characters of any one text; past that the answer says
-//!    so rather than stopping silently — a window, that not everything in it
-//!    was read; a text, on the thing itself, that only its beginning is here
-//!    ([`Seen::is_cut_short`]).
+//! 4. **Bounded.** At most [`MOST_THINGS`] things on the screen, [`MOST_ASKED`]
+//!    asked about at all, [`DEEPEST`] levels and [`LONGEST_TEXT`] characters of
+//!    any one text; past that the answer says so rather than stopping silently
+//!    — a window, that not everything in it was read; a text, on the thing
+//!    itself, that only its beginning is here ([`Seen::is_cut_short`]).
 
 use crate::accessibility_tree::{AccessibilityTree, Facts, NodeAt, Running, TreeFault};
 use crate::not_walked::NotWalked;
@@ -35,8 +35,18 @@ use crate::role::Role;
 use crate::shown::{Limit, Seen, Shown, ShownWindow};
 use crate::states::States;
 
-/// The most things read from one application at once.
+/// The most things read from one application at once — **things on the
+/// screen**, which are all a person could read or press.
 pub const MOST_THINGS: usize = 2_000;
+
+/// The most things asked about in one walk, on the screen or not.
+///
+/// A list view lists every row it holds, shown or scrolled away, and each is
+/// asked whether it is showing before it is passed over. That is bounded here
+/// rather than by [`MOST_THINGS`], so a long list off the screen does not use
+/// up what is read of the screen; past this the walk says not everything was
+/// read, as it does past [`MOST_THINGS`].
+pub const MOST_ASKED: usize = 20_000;
 
 /// The deepest a thing is read inside its window.
 pub const DEEPEST: usize = 48;
@@ -129,6 +139,7 @@ pub(crate) fn walk(
     let mut walker = Walker {
         tree,
         read: 0,
+        asked: 0,
         not_all_read: false,
         pressable: Vec::new(),
         alos_own: matches!(whose, Whose::AlosOwn { .. }),
@@ -187,8 +198,10 @@ pub(crate) fn walk(
 struct Walker<'t> {
     /// The tree.
     tree: &'t dyn AccessibilityTree,
-    /// How many things have been read.
+    /// How many things on the screen have been read.
     read: usize,
+    /// How many things have been asked about, on the screen or not.
+    asked: usize,
     /// Whether something was left unread.
     not_all_read: bool,
     /// The named controls found so far.
@@ -269,7 +282,7 @@ impl Walker<'_> {
         }
         self.not_all_read |= facts.unlisted_children;
         for child in &facts.children {
-            if self.read >= MOST_THINGS {
+            if self.asked >= MOST_ASKED {
                 self.not_all_read = true;
                 return Ok(());
             }
@@ -283,11 +296,16 @@ impl Walker<'_> {
             let Some(facts) = self.facts(child)? else {
                 continue;
             };
-            self.read += 1;
+            self.asked += 1;
             let states = States::of_the_tree(&facts.states);
             if !states.showing() {
                 continue;
             }
+            if self.read >= MOST_THINGS {
+                self.not_all_read = true;
+                return Ok(());
+            }
+            self.read += 1;
             self.one(child, &facts, states, depth, seen)?;
             self.inside(child, &facts, depth + 1, seen)?;
         }

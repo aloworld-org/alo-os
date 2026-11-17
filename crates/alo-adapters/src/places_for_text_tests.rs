@@ -41,3 +41,85 @@ fn the_title_names_an_unnamed_place() {
         FILE
     ));
 }
+
+/// A window holding one field and, beside it, a list of `rows` empty rows the
+/// search meets first.
+struct ALongList {
+    rows: usize,
+}
+
+/// The application the long list is in.
+const LISTED: &str = "org.example.Listed";
+
+fn node(object: &str) -> crate::NodeAt {
+    crate::NodeAt {
+        holder: ":1.7".to_owned(),
+        object: object.to_owned(),
+    }
+}
+
+impl crate::AccessibilityTree for ALongList {
+    fn applications(&self) -> Result<Vec<crate::Running>, crate::TreeFault> {
+        Ok(vec![crate::Running {
+            at: node("/root"),
+            is: Some(LISTED.to_owned()),
+        }])
+    }
+
+    fn facts(&self, at: &crate::NodeAt) -> Result<crate::Facts, crate::TreeFault> {
+        let facts = |role, states, children| crate::Facts {
+            role,
+            name: String::new(),
+            states: vec![states, 0],
+            children,
+            has_text: false,
+            unlisted_children: false,
+        };
+        let showing = 1 << super::SHOWING;
+        Ok(match at.object.as_str() {
+            "/root" => facts(75, showing, vec![node("/window")]),
+            "/window" => facts(23, showing, vec![node("/field"), node("/list")]),
+            "/field" => facts(61, showing | (1 << super::EDITABLE), Vec::new()),
+            "/list" => facts(
+                20,
+                showing,
+                (0..self.rows)
+                    .map(|row| node(&format!("/row/{row}")))
+                    .collect(),
+            ),
+            _ => facts(20, 0, Vec::new()),
+        })
+    }
+
+    fn text(&self, _: &crate::NodeAt) -> Result<String, crate::TreeFault> {
+        Ok(String::new())
+    }
+
+    fn actions(&self, _: &crate::NodeAt) -> Result<Vec<String>, crate::TreeFault> {
+        Ok(Vec::new())
+    }
+
+    fn act(&self, _: &crate::NodeAt, _: usize) -> Result<bool, crate::TreeFault> {
+        Ok(false)
+    }
+}
+
+/// **The search for a field asks about at most `MOST_ASKED` things, exactly.**
+/// It meets the application, the window, the list and every row before the
+/// field, so the field is the `rows + 4`th thing asked about: found at
+/// `MOST_ASKED`, and not one past it.
+#[test]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected Err is the failure being reported"
+)]
+fn the_search_for_a_field_stops_at_most_asked_exactly() {
+    let most = crate::walking::MOST_ASKED;
+    let found = |rows| {
+        super::the_places_for_text(&ALongList { rows }, LISTED)
+            .unwrap()
+            .len()
+    };
+    assert_eq!(found(most - 4), 1, "the field at the bound was not found");
+    assert_eq!(found(most - 3), 0, "the search went past its bound");
+}

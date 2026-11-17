@@ -11,7 +11,7 @@
 
 use crate::accessibility_tree::{AccessibilityTree, NodeAt, TreeFault};
 use crate::role::Role;
-use crate::walking::{DEEPEST, MOST_THINGS};
+use crate::walking::{DEEPEST, MOST_ASKED};
 
 /// `ATSPI_STATE_EDITABLE`.
 pub(crate) const EDITABLE: u32 = 7;
@@ -114,7 +114,7 @@ pub fn is_meant_by(place: &APlaceForText, name: &str) -> bool {
 }
 
 /// Every place for text `application` shows now, in the order the walk met
-/// them, at most [`MOST_THINGS`] things looked at and [`DEEPEST`] deep.
+/// them, at most [`MOST_ASKED`] things looked at, on the screen or not, and [`DEEPEST`] deep.
 ///
 /// # Errors
 /// [`TreeFault`], other than a thing that vanished while it was read, which is
@@ -135,7 +135,7 @@ pub fn the_places_for_text(
     let mut seen = 0_usize;
     while let Some((at, depth, window)) = waiting.pop() {
         seen += 1;
-        if seen > MOST_THINGS {
+        if seen > MOST_ASKED {
             break;
         }
         let facts = match tree.facts(&at) {

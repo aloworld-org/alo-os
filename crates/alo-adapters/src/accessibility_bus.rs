@@ -204,8 +204,10 @@ impl AccessibilityTree for AccessibleSession {
         )?;
         let count = i32::try_from(count).unwrap_or(0).max(0);
         // A list of a hundred thousand rows is not asked for row by row: past
-        // what a walk reads at once, the rest are said to be there and unread.
-        let most = i32::try_from(crate::walking::MOST_THINGS).unwrap_or(i32::MAX);
+        // what a walk asks about at once, the rest are said to be there and
+        // unread. **What it asks about, not what it reads**: most rows of a long
+        // list are off the screen and are passed over unread.
+        let most = i32::try_from(crate::walking::MOST_ASKED).unwrap_or(i32::MAX);
         let unlisted_children = count > most;
         let count = count.min(most);
         let mut children = Vec::new();
