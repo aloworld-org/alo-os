@@ -39,7 +39,7 @@ fn every_application_but_a_terminal_has_a_switch_and_each_is_off() {
     let strings = words();
     let mut window = machine.opened();
     window.the_applications_are(a_game_a_browser_and_a_terminal());
-    let rows = the_pictures_rows(&window, &strings).expect("the section is drawn");
+    let rows = the_pictures_rows(&window, &strings).unwrap();
     let first = &rows[0];
     assert_eq!(
         first.row, None,
