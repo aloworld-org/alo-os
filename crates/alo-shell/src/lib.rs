@@ -460,7 +460,6 @@ mod lock_raster;
 mod lock_surface;
 mod lock_texture;
 mod market_inking;
-mod the_market_as_read;
 mod market_keys;
 mod market_measures;
 /// How the window of what a person can install is drawn.
@@ -491,6 +490,7 @@ mod output_metadata;
 mod output_retirement;
 mod overview_sheet;
 mod painted;
+mod the_market_as_read;
 use alo_drawing::painted_flat;
 use alo_drawing::painted_text;
 use alo_drawing::painted_text_wrapping;

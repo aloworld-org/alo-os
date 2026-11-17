@@ -69,7 +69,9 @@ fn a_reader_is_told_the_market_by_name_with_every_label_in_full() {
     assert!(names.contains(&"Making music"), "{names:?}");
     assert!(names.contains(&"Reaper"), "{names:?}");
     assert!(
-        names.iter().any(|name| name.starts_with("Each one installs")),
+        names
+            .iter()
+            .any(|name| name.starts_with("Each one installs")),
         "{names:?}"
     );
     let reaper = heard.iter().find(|(name, _)| name == "Reaper").unwrap();
@@ -81,7 +83,9 @@ fn a_reader_is_told_the_market_by_name_with_every_label_in_full() {
     assert!(reaper.1.contains("Not verified: "), "{}", reaper.1);
     assert!(reaper.1.ends_with("Install"), "{}", reaper.1);
     assert!(
-        !names.iter().any(|name| name.contains('.') && name.starts_with("org")),
+        !names
+            .iter()
+            .any(|name| name.contains('.') && name.starts_with("org")),
         "an identifier is read where a name belongs: {names:?}"
     );
 }
