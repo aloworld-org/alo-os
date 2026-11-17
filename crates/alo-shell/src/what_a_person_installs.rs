@@ -378,8 +378,11 @@ fn a_folder_of_its_own() -> std::io::Result<std::path::PathBuf> {
     let moment = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .map_or(0, |since| since.as_nanos());
+    // **And a count**, so two asked for in the same instant are still two.
+    static ASKED: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let count = ASKED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let folder = under.join(format!(
-        "alo-signed-release-{}-{moment}",
+        "alo-signed-release-{}-{moment}-{count}",
         std::process::id()
     ));
     std::fs::create_dir(&folder)?;

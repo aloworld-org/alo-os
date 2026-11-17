@@ -432,3 +432,12 @@ fn what_a_pinned_release_may_not_be() {
     }
     assert_eq!(the_release().signature(), format!("{BUNDLE}.asc"));
 }
+
+/// **A pinned release carries what its makers ask for past its box**, and one
+/// pinned without saying carries nothing.
+#[test]
+fn a_release_carries_what_its_makers_ask_for() {
+    assert_eq!(the_release().reaches, None);
+    let reaching = the_release().reaching(vec![crate::Reach::ProgramsOutsideItsBox]);
+    assert_eq!(reaching.reaches, Some(vec![crate::Reach::ProgramsOutsideItsBox]));
+}

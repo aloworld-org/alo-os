@@ -483,3 +483,16 @@ fn a_signed_release_kept_out_by_a_rule_leaves_the_indicator_quiet() {
         "the tool was asked to install a signed release from a place"
     );
 }
+
+/// **Each signed release is fetched into a folder of its own**: one that
+/// exists, and a different one each time.
+#[test]
+fn each_signed_release_has_a_folder_of_its_own() {
+    let first = super::a_folder_of_its_own().expect("a folder");
+    let second = super::a_folder_of_its_own().expect("another folder");
+    assert!(first.is_dir(), "{}", first.display());
+    assert!(second.is_dir(), "{}", second.display());
+    assert_ne!(first, second);
+    drop(std::fs::remove_dir(&first));
+    drop(std::fs::remove_dir(&second));
+}

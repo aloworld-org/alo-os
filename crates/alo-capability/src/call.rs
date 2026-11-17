@@ -595,6 +595,33 @@ mod tests {
     use alo_strings::Word;
     use std::path::PathBuf;
 
+    /// **A call can say something else for what it leaves alone**, and only
+    /// that call: the verb's own line stands for every other.
+    #[test]
+    fn a_call_can_leave_alone_in_its_own_words() {
+        const CHANGES: Word = Word::saying("testing.call.changes", "Moves one file.");
+        const LEAVES: Word = Word::saying("testing.call.leaves", "No other file is moved.");
+        const INSTEAD: Word = Word::saying("testing.call.instead", "Every file beside it goes too.");
+        let strings = translating(&[CHANGES, LEAVES, INSTEAD], &[]);
+        let verb = crate::test_calls::move_file()
+            .changing(CHANGES, Some(LEAVES))
+            .unwrap();
+        let given = [
+            ("file", Given::text("/home/anna/a.pdf")),
+            ("into", Given::text("/home/anna/Archive")),
+        ];
+        let ordinary = Call::of(&verb, &given).unwrap();
+        assert_eq!(
+            ordinary.what_it_leaves(&strings).unwrap().text(),
+            "No other file is moved."
+        );
+        let instead = Call::of(&verb, &given).unwrap().leaving_instead(INSTEAD.key());
+        assert_eq!(
+            instead.what_it_leaves(&strings).unwrap().text(),
+            "Every file beside it goes too."
+        );
+    }
+
     /// A call becomes a sentence and a set of questions for the grants, and
     /// nothing the model wrote appears in either.
     #[test]

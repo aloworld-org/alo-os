@@ -696,3 +696,25 @@ fn what_arrives_with_access_past_its_box_is_not_told_it_was_given_nothing() {
         assert!(quiet.said(&english).into_text().contains("given nothing"));
     }
 }
+
+/// **What a catalogued application's makers ask for travels with the
+/// installation**, so the sentence once it arrives is the true one; an
+/// installation asked for by hand knows nothing of it.
+#[test]
+fn what_an_entry_reaches_travels_with_its_installation() {
+    let catalogue = Catalogue::decided().unwrap();
+    let gimp = catalogue
+        .every()
+        .iter()
+        .find(|one| one.application().identifier() == "org.gimp.GIMP")
+        .unwrap();
+    assert_eq!(gimp.wanted().reaches(), Some(&[crate::Reach::YourFiles][..]));
+    let by_hand = crate::installing::Wanted::by_hand(gimp.application().clone(), "flathub");
+    assert_eq!(by_hand.reaches(), None);
+    let craft = catalogue
+        .every()
+        .iter()
+        .find(|one| one.signed_release().is_some())
+        .unwrap();
+    assert_eq!(craft.wanted().reaches(), Some(craft.reaches()));
+}
