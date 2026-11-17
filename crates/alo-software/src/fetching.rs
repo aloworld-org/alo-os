@@ -122,7 +122,7 @@ const _: () = assert!(THE_LARGEST_FILE > 104_570_384);
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 mod tests {
-    use std::io::{BufRead as _, BufReader, Write as _};
+    use std::io::{BufRead as _, BufReader};
     use std::net::TcpListener;
 
     use super::*;
