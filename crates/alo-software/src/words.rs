@@ -623,9 +623,9 @@ pub const GAMES: Word = Word::saying("software.category.games", "Games")
 pub const PASSWORDS: Word = Word::saying("software.category.passwords", "Passwords")
     .noting("A kind of application: keeping passwords and other secrets in one locked place.");
 
-/// Applications for this kind of work: remote desktop.
-pub const REMOTE_DESKTOP: Word = Word::saying("software.category.remote-desktop", "Remote desktop").noting(
-    "A kind of application: seeing and using another computer from this one. Use the ordinary term in the language, if it has one.",
+/// Applications for this kind of work: another computer, used from this one.
+pub const REMOTE_DESKTOP: Word = Word::saying("software.category.remote-desktop", "Another computer").noting(
+    "A kind of application: seeing and using another computer from this one, over the network. Use the ordinary term in the language, if it has one.",
 );
 
 /// Every kind of work, in the order the window shows them.

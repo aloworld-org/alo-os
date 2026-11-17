@@ -269,7 +269,7 @@ fn a_key_nothing_reads_is_refused() {
         matches!(why, NotCatalogued::NotRead { .. }),
         "an unknown key was not refused: {why:?}"
     );
-    let unknown_category = replacing("category = \"video\"", "category = \"games\"");
+    let unknown_category = replacing("category = \"video\"", "category = \"gardening\"");
     assert!(matches!(
         Catalogue::read(&unknown_category, &shipped).unwrap_err(),
         NotCatalogued::NotRead { .. }

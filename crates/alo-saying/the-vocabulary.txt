@@ -2128,7 +2128,7 @@ software.category.painting	Painting
 software.category.passwords	Passwords
 software.category.photographs	Photographs
 software.category.pictures	Pictures
-software.category.remote-desktop	Remote desktop
+software.category.remote-desktop	Another computer
 software.category.screen-recording	Screen recording
 software.category.video	Video
 software.each-arrives-with-nothing	Each one installs from the place it is published, and arrives able to reach nothing

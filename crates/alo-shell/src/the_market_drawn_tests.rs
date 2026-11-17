@@ -6,11 +6,12 @@
 //! `crate::nested_desktop::frame_pictures`, painted by the compositor's own
 //! software renderer and read back from the injected card.
 //!
-//! The catalogue is the decided one with two entries added under *Audio* so all
-//! three labels have a row to be on: REAPER, which Flathub lists as
-//! proprietary and unverified, and SoundCraft, an early version. Narrowed to
-//! *Audio*, the window shows Audacity (*not verified*), REAPER (*not open
-//! source · not verified*) and SoundCraft (*early version*).
+//! The catalogue is the decided one with one entry added under *Making music*,
+//! so all three labels have a row to be on: SoundCraft, an early version.
+//! Narrowed to *Making music*, the window shows Ardour and MuseScore (*not
+//! verified*), Bitwig Studio (*not open source*), REAPER (*not open source ·
+//! not verified*) and SoundCraft (*early version*) — every one but SoundCraft
+//! exactly as the decided catalogue lists it.
 //!
 //! When `ALO_MARKET_PICTURES` names a folder, the frame is written there as a
 //! PNG, which is a check somebody runs by hand. What runs on every build is
@@ -31,13 +32,10 @@ use crate::market_window::MarketWindow;
 use crate::software_scanout::SoftwarePainter;
 use crate::{MarketKey, TheMarketsWords};
 
-/// The decided catalogue, and two more under *Audio*.
+/// The decided catalogue, and SoundCraft under *Making music*.
 fn a_catalogue_with_every_label() -> Catalogue {
     let text = format!(
-        "{}\n[[application]]\ncategory = \"audio\"\nidentifier = \"fm.reaper.Reaper\"\nsource = \
-         \"flathub\"\nversion = \"7.85\"\nlicence = \
-         \"LicenseRef-proprietary=https://www.reaper.fm/dist-agreement.php\"\nverified = \
-         false\nearly = false\n\n[[application]]\ncategory = \"audio\"\nidentifier = \
+        "{}\n[[application]]\ncategory = \"music-making\"\nidentifier = \
          \"ai.storyteller.soundcraft\"\nsource = \"flathub\"\nversion = \"0.20.1\"\nlicence = \
          \"Apache-2.0\"\nverified = true\nearly = true\n",
         alo_software::catalogue::THE_CATALOGUE
@@ -45,7 +43,7 @@ fn a_catalogue_with_every_label() -> Catalogue {
     Catalogue::read(&text, &Shipped::decided().unwrap()).unwrap()
 }
 
-/// A desktop with the market open over it, narrowed to *Audio*.
+/// A desktop with the market open over it, narrowed to *Making music*.
 struct WithTheMarket {
     desktop: ADesktop,
     window: MarketWindow,
@@ -58,8 +56,13 @@ impl WithTheMarket {
         let words = TheMarketsWords::said(&desktop.strings);
         let mut window = MarketWindow::closed();
         window.opened(catalogue, Vec::new());
-        // Everything, then the eight kinds in order: Audio is the seventh.
-        for _ in 0..7 {
+        // Everything, then the kinds in order: Making music is the eleventh.
+        let eleventh = alo_software::Category::EVERY
+            .iter()
+            .position(|kind| *kind == alo_software::Category::MusicMaking)
+            .unwrap()
+            + 1;
+        for _ in 0..eleventh {
             window.pressed(MarketKey::After);
         }
         Self {
@@ -146,8 +149,8 @@ fn written((pixels, (wide, tall)): &(Vec<u8>, (i32, i32)), name: &str) {
         .unwrap();
 }
 
-/// **Each label reaches the frame**: the market narrowed to *Audio* with the
-/// labelled entries is a different frame from the same market with every
+/// **Each label reaches the frame**: the market narrowed to *Making music* with
+/// the labelled entries is a different frame from the same market with every
 /// entry made open, published by its maker and not early — so the labels,
 /// and not something else, are what differs.
 #[test]
@@ -155,19 +158,27 @@ fn the_three_labels_reach_the_frame_a_display_is_handed() {
     let labelled = handed(&WithTheMarket::open(a_catalogue_with_every_label()));
     written(&labelled, "market-labels.png");
 
-    let plain_text = format!(
-        "{}\n[[application]]\ncategory = \"audio\"\nidentifier = \"fm.reaper.Reaper\"\nsource = \
-         \"flathub\"\nversion = \"7.85\"\nlicence = \"MIT\"\nverified = true\nearly = \
-         false\n\n[[application]]\ncategory = \"audio\"\nidentifier = \
+    // Every entry made open, verified and not early, line by line.
+    let plain_text: String = format!(
+        "{}\n[[application]]\ncategory = \"music-making\"\nidentifier = \
          \"ai.storyteller.soundcraft\"\nsource = \"flathub\"\nversion = \"0.20.1\"\nlicence = \
          \"Apache-2.0\"\nverified = true\nearly = false\n",
-        alo_software::catalogue::THE_CATALOGUE.replace(
-            "identifier = \"org.audacityteam.Audacity\"\nsource = \"flathub\"\nversion = \
-             \"3.7.8\"\nlicence = \"GPL-3.0-only\"\nverified = false",
-            "identifier = \"org.audacityteam.Audacity\"\nsource = \"flathub\"\nversion = \
-             \"3.7.8\"\nlicence = \"GPL-3.0-only\"\nverified = true"
-        )
-    );
+        alo_software::catalogue::THE_CATALOGUE
+    )
+    .lines()
+    .map(|line| {
+        if line.starts_with("licence = \"LicenseRef-proprietary") {
+            "licence = \"MIT\""
+        } else if line == "verified = false" {
+            "verified = true"
+        } else if line == "early = true" {
+            "early = false"
+        } else {
+            line
+        }
+    })
+    .collect::<Vec<_>>()
+    .join("\n");
     let plain = Catalogue::read(&plain_text, &Shipped::decided().unwrap()).unwrap();
     assert!(
         plain
