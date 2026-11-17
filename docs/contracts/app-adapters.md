@@ -179,7 +179,10 @@ building on the fallback, can rely on:
   part of a window another program shows are each said in words. *Edited
   2026-11-06 by ADR 0147:* **except a person's own `click` and `drag`**, given as
   proportions of the window and recorded as done by position — **never an
-  agent's**;
+  agent's**. *Edited 2026-11-17 by ADR 0147's amendment of that date (the owner:
+  "Allow clicking by position"):* **and alo's own click on the screen road**,
+  inside that one window, read again after, never in a terminal, across a
+  pairing or in a window with a password field. No adapter declares either;
 - **nothing is guessed.** A press is refused when no control of that kind and name
   is showing, when more than one is, when the window is too large to read whole,
   when the control is greyed out, and when it offers no way to be pressed from
@@ -462,3 +465,77 @@ on, beside everything the fallback already promises:
 **Measured: nothing yet.** Which toolkits let `CurrentValue` be set from
 outside is unmeasured; the tests stand in a tree built from the published roles
 (`crates/alo-adapters/tests/setting_a_value.rs`).
+
+## Amended 2026-11-17 — the fallback chooses an option and selects an item
+
+*The owner's "Yes do all", 2026-11-17, approving alo choosing in an
+application's window. Additive: no verb above changes meaning.*
+
+The fallback gains two verbs, offered by a turn
+(`crates/alo-turn/src/choosing_in_an_application.rs`):
+
+| Verb | Effect | Takes | Sentence |
+|---|---|---|---|
+| `accessible.choose_option` | change | `application`; `name`, the drop-down by the name it shows, or where it shows none by the choice it shows, up to 200 characters; `option`, one name of up to 200 characters | *choose “{option}” in the drop-down “{name}” in {application}* |
+| `accessible.select_item` | change | `application`; `name`, the item by the name or the words it shows, up to 200 characters | *select “{name}” in {application}* |
+
+Both require a grant over the application. What anyone building on them can
+rely on, beside everything the fallback already promises:
+
+- **Found again, at the moment of choosing.** The drop-down or item must be
+  showing, named exactly what was approved, usable, and the only one; none,
+  more than one, too much to read whole, and greyed out are each refused in
+  words.
+- **An option is looked for inside its drop-down alone**, whether or not it is on
+  the screen, because a closed drop-down keeps its options out of sight. Nothing
+  outside that drop-down is read this way, only names are compared, and no text
+  is asked of anything. An option the drop-down does not list, or lists twice,
+  is refused.
+- **Chosen the way a screen reader chooses**: through the list's own
+  `Selection`, asked to select the child at the option's or item's place.
+  Where the list offers none, an option is chosen by its own `select`, `click`,
+  `press` or `activate`, and an item **only by `select`** — never `activate`,
+  `click` or `open`, which open an item in many toolkits. **Selecting never
+  opens.**
+- **Read back for up to a second.** The option or item says it is selected, or
+  the drop-down shows the option by its name or text. The answer, `chosen`, says
+  whether it was seen; a choice the application was asked to make is recorded
+  as run either way, with *the window does not show it chosen yet* or *did not
+  answer* beside it.
+- **Opening an item is its own verb**, `accessible.open_item` below: opening a
+  file from a file manager starts whatever that file opens with, which may be a
+  program, so selecting never does it.
+
+**Measured: nothing yet.** Which toolkits offer `Selection` on a drop-down's
+options and a file list's items is unmeasured; the tests stand in a tree built
+from the published roles (`crates/alo-adapters/tests/choosing_in_a_window.rs`).
+
+## Amended 2026-11-17, later — the fallback opens an item
+
+*The owner's answer of 2026-11-17 to whether alo may open items: "Yes but it
+should be without okay on full access". Additive.*
+
+| Verb | Effect | Takes | Sentence |
+|---|---|---|---|
+| `accessible.open_item` | change | `application`; `name`, the item by the name or the words it shows, up to 200 characters | *open “{name}” in {application}* |
+
+It requires a grant over the application, so a terminal nobody allowed their
+agent (ADR 0111) is refused at every level. A card is asked at *ask each time*;
+**at full access it runs with no card**, once, and is recorded, as every change
+at full access is. What anyone building on it can rely on:
+
+- **Found again, at the moment of opening**, as `select_item` finds an item:
+  showing, named exactly, usable, the only one — or refused in words.
+- **Opened by the item's own action**, `activate`, `open` or `invoke`, as a
+  double-click or a screen reader's *activate* would; **never `select`,
+  `click` or `press`**, which in many toolkits only select. An item that
+  offers none of the three is refused.
+- **The card says what may start**: *a file may open in another application,
+  and a program may start* — what it opens with is the application's choice.
+- **Nothing reads back that it opened**, because what opens may be another
+  application's window. The answer, `item-opened`, carries the application,
+  the item and whether the application did not answer.
+
+**Measured: nothing yet.** Which toolkits' items offer `activate` from outside
+is unmeasured; the tests stand in a tree built from the published roles
+(`crates/alo-adapters/tests/opening_an_item.rs`).

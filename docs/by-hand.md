@@ -389,6 +389,31 @@ keys, and keyboard-only operation of everything`. The verb moves the same contro
 to the same number through its own value, inside the range it reports; the
 approval is what an agent needs, because it is the agent choosing the number.
 
+### accessible.choose_option
+
+**By hand:** a person opens the drop-down in the application's window and picks
+the option, with the pointer or from the keyboard — `Sticky keys, slow keys, and
+keyboard-only operation of everything`. The verb chooses the same option through
+the list's own selection, as a screen reader does; the approval is what an agent
+needs, because it is the agent choosing it.
+
+### accessible.select_item
+
+**By hand:** a person clicks the item once in the application's window, or moves
+to it from the keyboard — `Sticky keys, slow keys, and keyboard-only operation of
+everything`. The verb selects the same item through its list's own selection and
+never opens it; the approval is what an agent needs, because it is the agent
+choosing it.
+
+### accessible.open_item
+
+**By hand:** a person double-clicks the item in the application's window, or
+moves to it and presses Enter — `Sticky keys, slow keys, and keyboard-only
+operation of everything`. The verb opens the same item by its own *activate*, as
+a screen reader would; at *ask each time* the approval is what an agent needs,
+because it is the agent choosing what opens, and at full access the person has
+already chosen.
+
 ### set_the_scheme
 
 **By hand:** a person opens the appearance pane of `Settings, as one place` and

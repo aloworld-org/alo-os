@@ -276,6 +276,36 @@ pub enum Done {
         /// known.
         unanswered: bool,
     },
+    /// An option of a drop-down was chosen, or an item of a list selected, in
+    /// an application (`accessible.choose_option`, `accessible.select_item`).
+    ///
+    /// Added 2026-11-17, additively.
+    Chosen {
+        /// The application.
+        application: String,
+        /// The drop-down or the item, by what it shows.
+        name: String,
+        /// The option chosen, for a drop-down; absent for an item selected.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        option: Option<String>,
+        /// Whether the window showed it chosen when alo looked again.
+        seen: bool,
+        /// Whether the application did not answer, so whether it chose is not
+        /// known.
+        unanswered: bool,
+    },
+    /// An item of a list was opened, as a double-click would
+    /// (`accessible.open_item`). Added 2026-11-17, additively. **What it
+    /// opened with is not here**: it may be another application's window.
+    ItemOpened {
+        /// The application.
+        application: String,
+        /// The item, by what it shows.
+        name: String,
+        /// Whether the application did not answer, so whether it opened is
+        /// not known.
+        unanswered: bool,
+    },
     /// A folder was published to the person's GitHub Pages site
     /// (`publish_to_github_pages`, added 2026-11-13, additively).
     ///
@@ -713,6 +743,37 @@ impl Done {
         }
     }
 
+    /// What a choice answered, as it goes on the wire — taking its parts, for
+    /// [`Done::of_a_press`]'s reason. `option` is the option chosen in a
+    /// drop-down, and [`None`] for an item selected.
+    #[must_use]
+    pub fn of_a_choice(
+        application: &str,
+        name: &str,
+        option: Option<&str>,
+        seen: bool,
+        unanswered: bool,
+    ) -> Self {
+        Self::Chosen {
+            application: application.to_owned(),
+            name: name.to_owned(),
+            option: option.map(ToOwned::to_owned),
+            seen,
+            unanswered,
+        }
+    }
+
+    /// What an opening answered, as it goes on the wire — taking its parts,
+    /// for [`Done::of_a_press`]'s reason.
+    #[must_use]
+    pub fn of_an_item_opened(application: &str, name: &str, unanswered: bool) -> Self {
+        Self::ItemOpened {
+            application: application.to_owned(),
+            name: name.to_owned(),
+            unanswered,
+        }
+    }
+
     /// What one of the six file verbs answered, as it goes on the wire.
     #[must_use]
     pub fn of_a_file_verb(answer: &Answer) -> Self {
@@ -847,11 +908,19 @@ impl Done {
             // **A scroll the window does not yet show** may or may not have
             // moved it, and that is what a shell puts a caveat beside.
             Self::Scrolled { now_showing, .. } => !*now_showing,
+            // **A choice the window did not show, or the application did not
+            // answer**, is the one a shell puts a caveat beside.
+            Self::Chosen {
+                seen, unanswered, ..
+            } => *unanswered || !*seen,
             // **A number that did not read back, or an application that did
             // not answer**, is the one a shell puts a caveat beside.
             Self::Set {
                 seen, unanswered, ..
             } => *unanswered || !*seen,
+            // **An opening the application did not answer** may or may not
+            // have happened.
+            Self::ItemOpened { unanswered, .. } => *unanswered,
             // **A publication leaves nothing out**: it names the folder and the
             // address, and what it cannot take back is said in its own line
             // ([`Done::put_back_can_recall_it`]), not as a caveat here.
@@ -1156,6 +1225,51 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&set(true, false)).unwrap(),
             r#"{"set":{"application":"org.example.Mixer","name":"Volume","value":40,"seen":true,"unanswered":false}}"#
+        );
+    }
+
+    /// **A choice leaves something out when the window did not show it, or
+    /// the application did not answer**, and only then (2026-11-17); an item
+    /// selected crosses with no option.
+    #[test]
+    fn a_choice_leaves_something_out_unless_it_was_seen_and_answered() {
+        let chosen = |seen, unanswered| {
+            Done::of_a_choice(
+                "org.gnome.Papers",
+                "Zoom",
+                Some("Fit Width"),
+                seen,
+                unanswered,
+            )
+        };
+        assert!(!chosen(true, false).left_something_out());
+        assert!(chosen(false, false).left_something_out());
+        assert!(chosen(true, true).left_something_out());
+        assert!(chosen(false, true).left_something_out());
+        assert_eq!(
+            serde_json::to_string(&Done::of_a_choice(
+                "org.kde.dolphin",
+                "a.txt",
+                None,
+                true,
+                false
+            ))
+            .unwrap(),
+            r#"{"chosen":{"application":"org.kde.dolphin","name":"a.txt","seen":true,"unanswered":false}}"#
+        );
+    }
+
+    /// **An opening leaves something out only when the application did not
+    /// answer** (2026-11-17), and crosses as `item-opened`.
+    #[test]
+    fn an_opening_leaves_something_out_only_when_unanswered() {
+        let opened = |unanswered| Done::of_an_item_opened("org.kde.dolphin", "a.txt", unanswered);
+        assert!(!opened(false).left_something_out());
+        assert!(opened(true).left_something_out());
+        let wire = serde_json::to_string(&opened(false)).unwrap();
+        assert!(
+            wire.contains(r#""application":"org.kde.dolphin","name":"a.txt","unanswered":false"#),
+            "{wire}"
         );
     }
 }

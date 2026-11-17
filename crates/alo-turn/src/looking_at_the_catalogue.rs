@@ -24,7 +24,7 @@
 //! # The one refusal, and why it is unreachable
 //!
 //! `alo_software::looked_at` refuses an authority for another verb, one that
-//! came from an approval, and one whose kind of work is not among the nine.
+//! came from an approval, and one whose kind of work is not among the choices.
 //! None can be reached from outside: `alo_capability` validated the call
 //! against the declaration, `Authorised::read` refuses a change offered as a
 //! read, and the options exist before the model does. It is still a `Result`,

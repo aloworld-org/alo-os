@@ -237,6 +237,11 @@ pub fn at_each_ask(walk: Walk) -> Walk {
             minutes(5),
         )
         .look("the-card-to-open", look.at_most(minutes(1)))
+        // **A fresh mark before the approval**, so the typing card is not
+        // judged on this card's line (run 44069105568); before rather than
+        // after the opening is seen, because the typing card follows the
+        // opening within one read of the log.
+        .mark()
         .press(tab.clone())
         .press(ret.clone())
         .expect_line_saying(

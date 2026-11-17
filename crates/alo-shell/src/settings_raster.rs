@@ -303,10 +303,31 @@ pub(crate) fn picture(
     }
     if let Some(target) = target {
         let area = moved(target.area);
+        // **A filled button's ring stands outside it, with a gap**: on its
+        // edge it would be navy on navy (`docs/design/the-first-start.md`'s
+        // *2px navy outer ring with a 4px gap*, as the task window's answers
+        // and the Dock draw it).
+        // Its corner grows by the same, so the ring runs parallel to the button.
+        let stands_off = if target.filled {
+            alo_dock::measures::THE_FOCUS_RING_STANDS_OFF
+        } else {
+            0
+        };
+        // Only then: `Measure::px` never answers below one, so asking it for a
+        // stand-off of nought would grow every other ring by a pixel.
+        let area = if target.filled {
+            let off = measure.px(i32::try_from(stands_off).unwrap_or(0));
+            Rectangle::new(
+                (area.loc.x - off, area.loc.y - off).into(),
+                (area.size.w + 2 * off, area.size.h + 2 * off).into(),
+            )
+        } else {
+            area
+        };
         a_focus_ring(
             &mut canvas,
             area,
-            m::A_CARDS_CORNER,
+            m::A_CARDS_CORNER + stands_off,
             measure,
             palette,
             window.is_waiting_for_a_chord(),

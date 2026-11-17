@@ -515,6 +515,9 @@ mod the_market_drawn_tests;
 #[path = "the_application_sheet_drawn_frame_tests.rs"]
 mod the_application_sheet_drawn_frame_tests;
 
+#[path = "the_file_chooser_drawn_frame_tests.rs"]
+mod the_file_chooser_drawn_frame_tests;
+
 #[path = "the_sheets_shadow_drawn_tests.rs"]
 mod the_sheets_shadow_drawn_tests;
 

@@ -228,39 +228,57 @@ pub(crate) fn picture(
     // are a different pair of lengths in every other language, so a fixed chip
     // would crop one of them in some translation nobody here reads.
     let chip_tall = px(m::A_CHIP_IS_TALL);
-    let mut along = left;
     let chosen = browsing.under();
-    for kind in std::iter::once(None).chain(alo_software::Category::EVERY.into_iter().map(Some)) {
-        let label = words.the(kind);
-        if label.is_empty() {
-            continue;
-        }
-        let shaped = sentence(fonts, label, body_wide, measure.metrics(), cool, ink);
-        // **The ink's own width, not the box's.** `Shaped::width_of_box` is
-        // the width the text was *wrapped in*, which is the whole body here —
-        // sizing a chip by it made the first one 608 pixels wide, overflowed
-        // the row, and broke the loop before any chip was drawn at all. The
-        // window looked like it had no categories and the fault read as a
-        // missing draw call.
-        let wide = shaped.width + 2 * px(12);
+    let chips: Vec<(Option<alo_software::Category>, &str, i32)> = std::iter::once(None)
+        .chain(alo_software::Category::EVERY.into_iter().map(Some))
+        .filter_map(|kind| {
+            let label = words.the(kind);
+            if label.is_empty() {
+                return None;
+            }
+            let shaped = sentence(fonts, label, body_wide, measure.metrics(), cool, ink);
+            // **The ink's own width, not the box's.** `Shaped::width_of_box` is
+            // the width the text was *wrapped in*, which is the whole body here —
+            // sizing a chip by it made the first one 608 pixels wide, overflowed
+            // the row, and broke the loop before any chip was drawn at all. The
+            // window looked like it had no categories and the fault read as a
+            // missing draw call.
+            Some((kind, label, shaped.width + 2 * px(12)))
+        })
+        .collect();
+    // **The row pans so the chosen kind is always on it.** Twenty-four kinds of
+    // work do not fit on one row in any language (2026-11-17), and a chosen
+    // chip drawn past the edge is a window narrowed to something a person
+    // cannot see. So the row starts at the first chip from which the chosen one
+    // still fits, which is the first chip of all until the person steps past
+    // the edge — and Left and Right step through every kind, drawn or not.
+    let gap = px(m::BETWEEN_CHIPS);
+    let chosen_at = chips
+        .iter()
+        .position(|(kind, _, _)| *kind == chosen)
+        .unwrap_or(0);
+    let widths: Vec<i32> = chips.iter().map(|(_, _, wide)| *wide).collect();
+    let from = the_first_chip_drawn(&widths, chosen_at, gap, body_wide);
+    let mut along = left;
+    for (kind, label, wide) in chips.iter().skip(from) {
         if along + wide > left + body_wide {
             break;
         }
-        let chip = box_at(along, down, wide, chip_tall);
-        if kind == chosen {
+        let chip = box_at(along, down, *wide, chip_tall);
+        if *kind == chosen {
             // The chosen one is filled and its label is the surface colour —
             // the primary-action treatment, so selection is carried by
             // contrast and not by hue alone.
             marks.push(chip);
-            writing.push(ToWrite::of(chip, label.to_owned(), ink, surface));
+            writing.push(ToWrite::of(chip, (*label).to_owned(), ink, surface));
         } else {
             wells.push(AWell {
                 at: chip,
                 corner: m::A_CAPSULE,
             });
-            writing.push(ToWrite::of(chip, label.to_owned(), cool, second));
+            writing.push(ToWrite::of(chip, (*label).to_owned(), cool, second));
         }
-        along += wide + px(m::BETWEEN_CHIPS);
+        along += wide + gap;
     }
     down += chip_tall + px(m::A_GAP);
 
@@ -268,20 +286,45 @@ pub(crate) fn picture(
     let card_wide = px(m::a_card_is_wide());
     let card_tall = px(m::A_CARD_IS_TALL);
     let bottom = at.loc.y + at.size.h - px(m::ABOVE) - px(m::THE_PROMISE_IS_TALL);
-    for (which, one) in browsing.rows().enumerate() {
-        let across = i32::try_from(which as u32 % m::CARDS_ACROSS).unwrap_or(0);
-        let row = i32::try_from(which as u32 / m::CARDS_ACROSS).unwrap_or(0);
+    // **The list scrolls so the application the person is on is drawn.** A
+    // window cut to the display's height — the whole catalogue is sixty-two
+    // applications since 2026-11-17 — held only its first rows, and Down moved
+    // the person on to rows nobody could see. So as many whole rows as fit are
+    // drawn, starting from the first row that still keeps theirs in view.
+    let across_each = usize::try_from(m::CARDS_ACROSS).unwrap_or(1).max(1);
+    let a_row = card_tall + px(m::A_GAP);
+    let rows_that_fit = usize::try_from(((bottom - down) + px(m::A_GAP)) / a_row.max(1))
+        .unwrap_or(0)
+        .max(1);
+    let their_row = browsing.at() / across_each;
+    let first_row = their_row.saturating_sub(rows_that_fit - 1);
+    let mut rings: Vec<Rectangle<i32, Physical>> = Vec::new();
+    for (which, one) in browsing.rows().enumerate().skip(first_row * across_each) {
+        let across = i32::try_from(which % across_each).unwrap_or(0);
+        let row = i32::try_from(which / across_each - first_row).unwrap_or(0);
         let x = left + across * (card_wide + px(m::A_GAP));
-        let y = down + row * (card_tall + px(m::A_GAP));
+        let y = down + row * a_row;
         // A card that would reach past the promise is not drawn, and neither is
         // any after it: half a card says something the list does not.
         if y + card_tall > bottom {
             break;
         }
+        let card = box_at(x, y, card_wide, card_tall);
+        if which == browsing.at() {
+            // **Where the next key press lands**, ringed the way every other
+            // focused thing on this machine is — Enter asks for this one.
+            let off = px(3);
+            rings.push(box_at(
+                x - off,
+                y - off,
+                card_wide + 2 * off,
+                card_tall + 2 * off,
+            ));
+        }
         draw_one(
             one,
             &browsing,
-            box_at(x, y, card_wide, card_tall),
+            card,
             px(m::INSIDE_A_CARD),
             px(m::A_TILE_IS),
             Inks {
@@ -321,8 +364,8 @@ pub(crate) fn picture(
             mark: ink,
             wells: &wells,
             well_is: cool,
-            rings: &[],
-            ring_is: edge,
+            rings: &rings,
+            ring_is: ink,
             in_primary: crate::dock_surface::InPrimary::NOTHING,
         },
     )?;
@@ -501,6 +544,27 @@ fn draw_one(
             writing.push(ToWrite::of(action, words.install.clone(), ink, surface));
         }
     }
+}
+
+/// Which chip a row of these widths starts at so the one at `chosen` is on it:
+/// the first chip from which `chosen` still ends inside `room`, chips `gap`
+/// apart, and never past `chosen` itself.
+fn the_first_chip_drawn(widths: &[i32], chosen: usize, gap: i32, room: i32) -> usize {
+    let mut from = 0;
+    while from < chosen {
+        let reach: i32 = widths
+            .get(from..=chosen)
+            .unwrap_or_default()
+            .iter()
+            .map(|wide| wide + gap)
+            .sum::<i32>()
+            - gap;
+        if reach <= room {
+            break;
+        }
+        from += 1;
+    }
+    from
 }
 
 #[cfg(test)]

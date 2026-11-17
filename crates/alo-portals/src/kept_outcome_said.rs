@@ -64,6 +64,15 @@ impl KeptOutcome {
             Self::LinkUnchosen { address, why, .. } => {
                 crate::link_not_chosen::said_as_not_chosen(asked, address, *why, strings)
             }
+            Self::FileChosen { file, saving, .. } => crate::file_chosen::said_as_chosen(
+                asked,
+                std::path::Path::new(file),
+                *saving,
+                strings,
+            ),
+            Self::FileUnchosen { why } => {
+                crate::file_chosen::said_as_unchosen(asked, *why, strings)
+            }
             Self::AppearanceRead { .. } => strings.say(&words::APPEARANCE_READ.key(), &asked),
             Self::AppearanceSent { .. } => strings.say(&words::APPEARANCE_SENT.key(), &asked),
             Self::NetworkRead { .. } => strings.say(&words::NETWORK_READ.key(), &asked),

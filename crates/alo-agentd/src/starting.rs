@@ -601,10 +601,13 @@ mod tests {
             sorted,
             [
                 "accessible.activate_control",
+                "accessible.choose_option",
+                "accessible.open_item",
                 "accessible.read_window",
                 "accessible.scroll_page",
                 "accessible.scroll_to",
                 "accessible.set_value",
+                "accessible.select_item",
                 "accessible.type_text",
                 "archive_folder",
                 "close_application",

@@ -201,6 +201,13 @@ fn run() -> Result<ExitCode, String> {
             proposed, again, ..
         } = &happened
         {
+            // **Which application it named**, on the person's own journal, as
+            // the daemon names a call it carries out — never the call's other
+            // arguments (`alo_agent::the_refused_call_named`).
+            eprintln!(
+                "alo-agent: the call refused was {}",
+                alo_agent::the_refused_call_named::the_refused_call_named(again, &verbs)
+            );
             println!("{THE_REPLY_WAITS}");
             let _ = std::io::Write::flush(&mut std::io::stdout());
             let stdin = std::io::stdin();

@@ -193,35 +193,18 @@ impl Server {
             keyboard.time,
             keyboard.names.clone(),
         );
-        let Some(root) = self.surfaces.keyboard_root() else {
-            return Typed::NotInFront;
-        };
         let identifier = asked.application().identifier();
-        let Ok(app) = AppId::named(identifier) else {
-            return Typed::NotInFront;
+        // **Whose window, asked in the one place a picture asks it too**
+        // (`crate::the_window_in_front_alo_may_reach`).
+        let (root, client) = match self.the_window_in_front_alo_may_reach(identifier, may) {
+            Ok(reached) => reached,
+            Err(crate::the_window_in_front_alo_may_reach::NotReached::NotInFront) => {
+                return Typed::NotInFront;
+            }
+            Err(crate::the_window_in_front_alo_may_reach::NotReached::NotAlosCopy) => {
+                return Typed::NotAlosCopy;
+            }
         };
-        let id = crate::window_number::the_window_id_of(&root);
-        let theirs = self
-            .the_windows_the_dock_sees()
-            .each_as_opened()
-            .any(|window| window.id() == id && a_window_of(window.app(), &app));
-        if !theirs {
-            return Typed::NotInFront;
-        }
-        let Some(client) = root.client() else {
-            return Typed::NotInFront;
-        };
-        // **The kernel's account of the process**, recorded when it connected
-        // — the same road the door asks of its own callers.
-        let Ok(credentials) = client.get_credentials(&self.display_handle()) else {
-            return Typed::NotAlosCopy;
-        };
-        let Ok(pid) = u32::try_from(credentials.pid) else {
-            return Typed::NotAlosCopy;
-        };
-        if !may.may_type_into(identifier, pid) {
-            return Typed::NotAlosCopy;
-        }
         // Asked only whether it may: every check above was made, and nothing
         // is sent.
         if matches!(asked, ToType::Check { .. }) {

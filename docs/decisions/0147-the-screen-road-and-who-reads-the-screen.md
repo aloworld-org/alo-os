@@ -185,6 +185,40 @@ picture at all** of a window with a password field (the *Pictures and keys*
 switch says so), so the second sentence would describe something alo does not
 do, and is not said.
 
+## Amended 2026-11-17 — alo may click by position, on the screen road only
+
+*The owner, 2026-11-17, relayed by the coordinator: **"Allow clicking by
+position"**.* This **reverses §3's sentence *alo never clicks or drags by
+position*, for the screen road only**, and the owner's answer 16 in
+[`terminal-commands.md`](../contracts/terminal-commands.md) with it. The
+reason is the one §3 already gave for the person: a control in a window that
+describes nothing has no words to be found by, so a picture read by a model can
+say *where* and never *what it is called* — and without a click there, alo can
+look at such a window and do nothing in it.
+
+What stays as it was: **every other road** — an application's own automation and
+its accessibility tree — still finds and presses by what a control says, and an
+adapter still cannot declare anything by position. **Dragging stays the
+person's alone**: the owner allowed clicking, and a drag was not asked about.
+
+Every click alo makes by position keeps all of these:
+
+- **Inside that one window only.** The point is given as proportions of the
+  window alo is working in — never in pixels, and never a point outside it — and
+  the compositor delivers the click to that window alone, as it delivers keys.
+- **Read again afterwards.** After every click the window is pictured and read
+  again, and what changed is said; where nothing visibly changed, the click is
+  recorded as having run with its outcome *not known*.
+- **One OK at *ask each time*, none at full access**, through the road every
+  change takes; every click is recorded as *done by position*.
+- **Never in a terminal, never across a pairing, and never in a window with a
+  password field** — at any setting.
+- **Only where the person switched *pictures and keys* on for that application
+  and chose who reads the pictures**, as for every act on the screen road.
+
+*Not built when this was written*: this amendment is written before the code,
+as the owner's answer 15 asked of the screen road's first change.
+
 ## What this does not decide
 
 The recognition engine itself; the Settings surface the three choices appear

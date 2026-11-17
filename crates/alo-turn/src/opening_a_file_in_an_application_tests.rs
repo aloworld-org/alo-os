@@ -666,3 +666,40 @@ fn an_application_nobody_granted_is_wanted_once_and_a_granted_one_is_not() {
         assert_eq!(*wanted.borrow(), expected, "granted: {granted}");
     }
 }
+
+/// How many times the wait asks in `within`, counting the first ask at once.
+fn asks_within(within: std::time::Duration) -> u32 {
+    let mut waited = std::time::Duration::ZERO;
+    let mut asks = 1;
+    loop {
+        waited += crate::opening_a_file_in_an_application::the_wait_after(asks);
+        if waited > within {
+            return asks;
+        }
+        asks += 1;
+    }
+}
+
+/// **Waiting for an opened file's window backs off**, and still answers a
+/// quick window quickly. A fixed quarter-second asked about forty times while
+/// Loupe's window took ten seconds to come, each ask a line on the desktop's
+/// journal (main's walk at 313ca239, run 44069105568: 59 lines from 888 s to
+/// 898 s). The first wait is still a quarter of a second, no wait is longer
+/// than two, and the bound of a minute is unchanged.
+#[test]
+fn waiting_for_an_opened_window_backs_off() {
+    use std::time::Duration;
+    assert_eq!(
+        crate::opening_a_file_in_an_application::the_wait_after(1),
+        Duration::from_millis(250),
+        "a window that comes at once is waited for longer than before"
+    );
+    for asks in 1..1000 {
+        assert!(
+            crate::opening_a_file_in_an_application::the_wait_after(asks) <= Duration::from_secs(2),
+            "a window that comes is noticed more than two seconds late"
+        );
+    }
+    assert!(asks_within(Duration::from_secs(10)) <= 8);
+    assert!(asks_within(Duration::from_secs(60)) <= 35);
+}

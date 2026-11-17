@@ -173,6 +173,9 @@ mod asking_the_record;
 pub mod became;
 pub mod bounding;
 mod carrying;
+mod choosing_in_an_application;
+#[cfg(test)]
+mod choosing_in_an_application_tests;
 pub mod crossing;
 #[cfg(test)]
 mod down_the_corridor;
@@ -186,6 +189,9 @@ pub mod next_request;
 mod opening_a_file_in_an_application;
 #[cfg(test)]
 mod opening_a_file_in_an_application_tests;
+mod opening_an_item_in_an_application;
+#[cfg(test)]
+mod opening_an_item_in_an_application_tests;
 pub mod places;
 mod pressing_a_control;
 mod publishing_a_folder;
@@ -236,6 +242,7 @@ pub use answers::Answers;
 pub use arriving::Arriving;
 pub use became::Became;
 pub use bounding::{Bounding, Doing, Done};
+pub use choosing_in_an_application::AChoiceMade;
 pub use crossing::Departed;
 pub use how_an_application_starts::{NoRoad, SaysHowAnApplicationStarts, TheRoad};
 pub use kept::Kept;
@@ -245,6 +252,7 @@ pub use machine::{
 };
 pub use naming_an_application::{as_the_catalogue_names_it, as_this_machine_names_them};
 pub use opening_a_file_in_an_application::AFileOpened;
+pub use opening_an_item_in_an_application::AnItemOpened;
 pub use places::Places;
 pub use pressing_a_control::AControlPressed;
 pub use reading_an_applications_windows::TheWindowsShowed;

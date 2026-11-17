@@ -67,6 +67,8 @@ fn every_word_the_three_declare() -> Vec<Word> {
         .chain(alo_adapters::typing_words::EVERY_WORD.iter())
         .chain(alo_adapters::scrolling_words::EVERY_WORD.iter())
         .chain(alo_adapters::setting_words::EVERY_WORD.iter())
+        .chain(alo_adapters::choosing_words::EVERY_WORD.iter())
+        .chain(alo_adapters::opening_words::EVERY_WORD.iter())
         .copied()
         .collect()
 }

@@ -170,8 +170,8 @@ impl Portal {
             Self::OpenWith => Some("org.freedesktop.portal.OpenURI"),
             Self::Settings => Some("org.freedesktop.portal.Settings"),
             Self::NetworkMonitor => Some("org.freedesktop.portal.NetworkMonitor"),
-            Self::FileChooser
-            | Self::Notifications
+            Self::FileChooser => Some("org.freedesktop.portal.FileChooser"),
+            Self::Notifications
             | Self::Print
             | Self::Screenshot
             | Self::ScreenCapture

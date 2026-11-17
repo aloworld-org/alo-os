@@ -174,8 +174,10 @@ from 0 to 1, both ends included, and a value outside that is refused. They are
 how a stroke on a canvas or a drag in a 3D view is reached, which no named
 control can be. **Every click and drag is recorded as *done by position***,
 because afterwards nobody can say what was at that place. They always go by the
-screen road, to that window only. **alo never clicks or drags by position**, on
-any road and at any setting: `alo` is never offered either form.
+screen road, to that window only. `alo` is never offered either form as a
+typed command. *Since 2026-11-17 alo itself may click — never drag — by
+position on the screen road, under ADR 0147's amendment of that date (answer
+16 below); until then this said alo never did, on any road.*
 
 ### Naming the application
 
@@ -1129,11 +1131,21 @@ is written. The text is
 **accepted by the owner on 2026-11-06** — *"yes"* — and both amendments are
 made in the change that accepted it. Closed.
 
-**16. Clicking and dragging by position — for the person now; never for alo.**
+**16. Clicking and dragging by position — for the person now; ~~never for alo~~.**
 `click` and `drag` are forms of `alo-app` from the start (section 1), with the
 position given **as proportions of the window, never in pixels**, and recorded
-as *done by position*. **alo never clicks or drags by position**, on any road
-and at any setting. Closed.
+as *done by position*. ~~**alo never clicks or drags by position**, on any road
+and at any setting.~~ Closed.
+
+*Changed 2026-11-17 by the owner — **"Allow clicking by position"** — and
+recorded in [ADR 0147](../decisions/0147-the-screen-road-and-who-reads-the-screen.md)'s
+amendment of that date.* **alo may now click by position on the screen road
+only**, because a window that describes nothing has no names to press by; a
+drag stays the person's alone, and every other road still goes by what a
+control says. Each such click is inside that one window, delivered to it alone,
+read again afterwards and recorded *not known* where nothing visibly changed,
+asked for at *ask each time* and not at full access, and never made in a
+terminal, across a pairing, or in a window with a password field.
 
 **17. The screen road for alo — off until the person switches it on, per
 application.** The person's typed commands use the screen road at once. alo uses

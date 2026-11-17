@@ -145,7 +145,7 @@ which is `daemon-protocol.md`'s rule for a stranger and its reason: an answer
 tells whoever knocked that there is an alo OS here.
 
 **A message is a line.** One request, then one answer, terminated by a newline.
-A request is at most **512 bytes** (an `open-link` and a `choose-link` line excepted, below), so that a caller cannot make a window system
+A request is at most **512 bytes** (an `open-link`, a `choose-link` and a `choose-file` line excepted, below), so that a caller cannot make a window system
 hold a line open while it reads it.
 
 ## The request
@@ -475,6 +475,65 @@ connection while the sheet is up:
   portal service writes it, as the person, and `alo-agentd` writes only
   `open`, `focus` and `close`.
 
+## The person chooses a file — `choose-file`, added 2026-11-17
+
+**What it gives a person:** one file chooser, the same for every application,
+drawn by alo OS — the owner's decision of 2026-11-17, *"Yes, build it"*. An
+application that asks to open a file or to save one is shown the sheet
+`docs/design/the-file-chooser.md` describes: *&lt;App&gt; asked to open a file*
+(or *to save a file*), the folder the person is in, its folders and files, a
+name to save under, and *Cancel* and *Open* (or *Save*).
+
+**Built and parked.** The desktop answers this act; **nothing asks it yet**.
+The portal service writes it once it serves `org.freedesktop.portal.FileChooser`
+(`docs/contracts/portals.md`), which is the next change. Until then an
+application's file dialog is the application's own, as it was.
+
+Like `choose-link`, it holds its connection while the sheet is up:
+
+```
+→ choose-file <asking-application> open <folder>
+→ choose-file <asking-application> save <folder> <name>
+← chosen <path> | cancelled | unanswered | cannot-show
+```
+
+- **The words.** The act; the identifier of the application that asked, as its
+  sandbox named it; `open` or `save`; the folder the sheet starts in; and, for
+  `save`, the name the application suggests. The line is at most **4096
+  bytes**.
+- **A folder, a name and a path are percent-encoded.** Each may hold a space,
+  and this line carries two of them, so every byte outside `A`–`Z`, `a`–`z`,
+  `0`–`9`, `-`, `.`, `_` and `~` — and, in a folder or a path, `/` — is written
+  `%XX`, as a `file:` address writes it. A folder is a whole path from the root
+  with only ordinary names in it: no `.`, no `..`, no empty name, no trailing
+  `/`. A name is one name: not empty, not `.` or `..`, no `/`, at most 255
+  bytes. Neither may decode to a control character or to anything that is not
+  text. A line beginning `choose-file` that is not exactly this is not a
+  request and is closed with nothing written.
+- **Where it starts is only where it starts.** The person may go anywhere their
+  own account can read, up to the root, and save in any folder they reach.
+  `chosen` is where they went.
+- `chosen <path>`: the person chose this file to open, or this place and name
+  to save under, written as a folder is written. **It opens nothing and writes
+  nothing.** What the application is then given is the portal's to decide and
+  record. A caller reads `chosen` of anything but a whole path to a file as no
+  answer.
+- `cancelled`: the person pressed *Cancel* or Escape.
+- `unanswered`: nobody answered while the sheet was up for **five minutes**,
+  and the desktop took it down. Not `cancelled`, because the person did not say
+  no.
+- `cannot-show`: this desktop cannot ask the person now — no person is signed
+  in at it, the display cannot hold the sheet, or four other sheets are already
+  waiting.
+- **One sheet at a time**, in the order they were asked; up to four more wait
+  behind it, each with its connection held. **A caller that hangs up takes the
+  sheet down**, with nothing chosen.
+- **A name that is there already is not replaced on the first press.** The
+  sheet says so, and a second *Save* with the name unchanged chooses it; the
+  replacing is the application's.
+- Nothing an agent sends reaches this act, for `open-link`'s reason: the portal
+  service writes it, as the person.
+
 ## The window you were working in — `front`, added 2026-11-07
 
 **What it gives a person:** typing `alo-app front press button "Save"` in a
@@ -580,6 +639,44 @@ Additive: nothing above changes meaning.
   alo may type, into which control, and whether the text was approved, were the
   turn's to decide before the line was written. The door checks only where the
   keyboard is, at the moment of delivering.
+
+## alo taking one picture of the window in front — `picture-of`, added 2026-11-17 (ADR 0147 §1)
+
+**What it gives a person:** for an application that describes nothing about
+its window — a game, a canvas — alo can see what the window shows, once the
+person has switched *pictures and keys* on for that application and chosen
+who reads the pictures (Settings → What alo can use). This act is the
+picture and nothing else; who may ask for one, and what reads it, are the
+turn's to decide before the line is written. Additive: nothing above changes
+meaning.
+
+```
+→ picture-of <application>
+← picture <bytes> <width> <height>
+← <exactly that many bytes: a PNG>
+  (or: not-in-front | not-alos-copy | could-not-draw)
+```
+
+- **Only the window that holds the keyboard**, and only when it is a window of
+  `<application>`, exactly as for `type-into`: otherwise `not-in-front`, and
+  no picture is taken. The compositor never moves the keyboard to take one.
+- **alo's own copy where the application has one**, by the same rule and the
+  same setting as `type-into`, asked of the window's process: otherwise
+  `not-alos-copy`.
+- **That window alone.** It is drawn by itself — its own menus with it, and
+  nothing in front of it or behind it, no pointer and none of alo's own
+  surfaces — at its logical size and without the shadow a client draws round
+  itself, on the processor whatever the display draws with.
+- **Never kept.** The picture belongs to this one answer. Nothing is taken
+  between asks and nothing is remembered.
+- **The length is said**, because a PNG holds every byte value; it is never
+  more than 32 MiB (`alo_acting::Pictured::THE_MOST`), and a refusal is its
+  one line with nothing after it.
+- `could-not-draw`: the window was that application's and could not be drawn
+  or made a PNG. No picture is sent.
+- **This door decides nothing about permission**, as for every act: whether
+  pictures and keys are switched on for the application, who reads the
+  picture, and whether the window holds a password field, are the turn's.
 
 ## alo opening a file in an application — `open-file`, added 2026-11-14
 

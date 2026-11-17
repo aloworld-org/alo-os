@@ -89,6 +89,23 @@ pub(crate) struct Numbered {
     pub(crate) usable: bool,
 }
 
+/// A drop-down or an item of a list, as the walk found it — what
+/// `crate::choosing` chooses in (2026-11-17).
+#[derive(Debug)]
+pub(crate) struct Choosable {
+    /// A drop-down or an item.
+    pub(crate) role: Role,
+    /// What it is called: the name it shows, or where it shows none, the text
+    /// it shows — so it is found by what `accessible.read_window` said of it.
+    pub(crate) called: String,
+    /// Where it is.
+    pub(crate) at: NodeAt,
+    /// The thing that holds it — its list, for an item.
+    pub(crate) list: NodeAt,
+    /// Whether a person could use it now.
+    pub(crate) usable: bool,
+}
+
 /// `ATSPI_ROLE_SLIDER` and `ATSPI_ROLE_SPIN_BUTTON`: what a person moves.
 pub(crate) const MOVED: [u32; 2] = [51, 52];
 
@@ -104,6 +121,8 @@ pub(crate) struct Walked {
     pub(crate) pressable: Vec<Found>,
     /// Every named slider, number box, progress bar and meter, showing now.
     pub(crate) numbered: Vec<Numbered>,
+    /// Every drop-down and item with a name or a text, showing now.
+    pub(crate) choosable: Vec<Choosable>,
     /// The names of the settings no page of Settings draws yet, as the windows
     /// walked say them — empty on every tree but alo's own.
     pub(crate) not_drawn_yet: Vec<String>,
@@ -169,6 +188,7 @@ pub(crate) fn walk(
         not_all_read: false,
         pressable: Vec::new(),
         numbered: Vec::new(),
+        choosable: Vec::new(),
         alos_own: matches!(whose, Whose::AlosOwn { .. }),
     };
     let mut showing = Vec::new();
@@ -218,6 +238,7 @@ pub(crate) fn walk(
         shown: Shown::of(whose.named().to_owned(), windows, walker.not_all_read),
         pressable: walker.pressable,
         numbered: walker.numbered,
+        choosable: walker.choosable,
         not_drawn_yet,
     })
 }
@@ -236,6 +257,8 @@ struct Walker<'t> {
     pressable: Vec<Found>,
     /// The named things holding a number found so far.
     numbered: Vec<Numbered>,
+    /// The drop-downs and items found so far.
+    choosable: Vec<Choosable>,
     /// Whether this is alo's own tree, the one tree whose old names are
     /// promised to keep working (`alo_access::old_names`).
     alos_own: bool,
@@ -336,15 +359,17 @@ impl Walker<'_> {
                 return Ok(());
             }
             self.read += 1;
-            self.one(child, &facts, states, depth, seen)?;
+            self.one(parent, child, &facts, states, depth, seen)?;
             self.inside(child, &facts, depth + 1, seen)?;
         }
         Ok(())
     }
 
-    /// One thing on the screen, described if it says anything.
+    /// One thing on the screen, inside `parent`, described if it says
+    /// anything.
     fn one(
         &mut self,
+        parent: &NodeAt,
         at: &NodeAt,
         facts: &Facts,
         states: States,
@@ -393,6 +418,27 @@ impl Walker<'_> {
         } else {
             None
         };
+        // **What a drop-down or an item is chosen by**: its name, or the text
+        // it shows where it has none — what a read said of it either way.
+        if matches!(role, Role::DropDown | Role::Item) {
+            let called = if name.is_empty() {
+                text.as_deref()
+                    .map(str::trim)
+                    .unwrap_or_default()
+                    .to_owned()
+            } else {
+                name.clone()
+            };
+            if !called.is_empty() {
+                self.choosable.push(Choosable {
+                    role,
+                    called,
+                    at: at.clone(),
+                    list: parent.clone(),
+                    usable: states.usable(),
+                });
+            }
+        }
         let described = Seen::of(role, name.clone(), text, depth)
             .on(states.on(role))
             .usable(states.usable())

@@ -112,6 +112,9 @@ mod answers_head;
 pub mod appearance_settings;
 #[cfg(unix)]
 mod believed_file;
+pub mod choosing_files;
+pub mod file_chosen;
+pub mod file_uri;
 pub mod handle;
 pub mod judging;
 pub mod keeping_secrets;
@@ -146,6 +149,8 @@ mod asked;
 #[cfg(target_os = "linux")]
 mod caller;
 #[cfg(target_os = "linux")]
+mod file_chooser_portal;
+#[cfg(target_os = "linux")]
 pub mod held_process;
 #[cfg(target_os = "linux")]
 mod network_monitor_portal;
@@ -153,6 +158,8 @@ mod network_monitor_portal;
 mod open_uri_portal;
 #[cfg(target_os = "linux")]
 mod opening;
+#[cfg(target_os = "linux")]
+mod the_person_chooses_a_file;
 #[cfg(target_os = "linux")]
 mod the_person_chooses_a_link;
 // **Gated with its module**, which it was not until 2026-10-19. The module is
@@ -180,6 +187,12 @@ pub use appearance_settings::{
     Setting, THE_INTERFACE_NAMESPACE, THE_NAMESPACE, THE_NAMESPACES, THE_WINDOW_NAMESPACE, Value,
     Values,
 };
+pub use choosing_files::{
+    ChoosesFiles, ExportedFor, ExportsDocuments, FileSheetAnswer, NoDocumentsPortal, NotExported,
+    ToChoose,
+};
+pub use file_chosen::{FileChosen, FileUnchosen, NoFile};
+pub use file_uri::{a_path_from, file_uri};
 pub use handle::{NotAToken, THE_PORTALS_OBJECT, handle_for};
 #[cfg(target_os = "linux")]
 pub use held_process::HeldProcess;

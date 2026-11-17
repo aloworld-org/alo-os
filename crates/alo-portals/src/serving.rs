@@ -11,6 +11,7 @@
 //! | `org.freedesktop.portal.OpenURI` | *what opens what*, and the desktop for a link (`crate::open_uri_portal`) |
 //! | `org.freedesktop.portal.Settings` | what the person set for how the machine looks (`crate::settings_portal`) |
 //! | `org.freedesktop.portal.NetworkMonitor` | how far this machine reaches (`crate::network_monitor_portal`) |
+//! | `org.freedesktop.portal.FileChooser` | the person, on alo's own file chooser, and the documents portal to hand the file over (`crate::file_chooser_portal`) |
 //!
 //! Every other portal is not registered, so the bus itself tells an application
 //! nothing answers it — [`crate::Portal::answered_on_the_bus`] is the list, and
@@ -34,6 +35,8 @@ use std::sync::Arc;
 use std::sync::mpsc::{Sender, channel};
 use std::thread::JoinHandle;
 
+use crate::choosing_files::{ChoosesFiles, ExportsDocuments, NoDocumentsPortal};
+use crate::file_chooser_portal::FileChooserPortal;
 use crate::keeping_secrets::KeepsSecrets;
 use crate::network_monitor_portal::NetworkMonitorPortal;
 use crate::open_uri_portal::OpenUriPortal;
@@ -62,6 +65,10 @@ pub struct Backend {
     record: Arc<dyn Recording>,
     /// How the desktop is asked to start the application a link opens in.
     links: Arc<dyn OpensLinks>,
+    /// How the person is asked, on the desktop, to choose a file.
+    files: Arc<dyn ChoosesFiles>,
+    /// How a chosen file is handed to the application that asked.
+    documents: Arc<dyn ExportsDocuments>,
 }
 
 impl Backend {
@@ -80,6 +87,8 @@ impl Backend {
             sandboxes,
             record,
             links: Arc::new(NoDesktopToAsk),
+            files: Arc::new(NoDesktopToAsk),
+            documents: Arc::new(NoDocumentsPortal),
         }
     }
 
@@ -92,6 +101,23 @@ impl Backend {
     #[must_use]
     pub fn opening_links_with(mut self, links: Arc<dyn OpensLinks>) -> Self {
         self.links = links;
+        self
+    }
+
+    /// The same backend, asking the person through `files` to choose a file
+    /// and handing what they chose over through `documents`.
+    ///
+    /// **A backend not given them answers every file chooser request with a
+    /// refusal** naming the desktop, or the documents portal, as not there —
+    /// never with a file nobody chose.
+    #[must_use]
+    pub fn choosing_files_with(
+        mut self,
+        files: Arc<dyn ChoosesFiles>,
+        documents: Arc<dyn ExportsDocuments>,
+    ) -> Self {
+        self.files = files;
+        self.documents = documents;
         self
     }
 
@@ -130,6 +156,13 @@ impl Backend {
             .serve_at(
                 THE_PORTALS_OBJECT,
                 NetworkMonitorPortal {
+                    backend: self.clone(),
+                },
+            )
+            .map_err(|_| NotServed::Unreachable)?
+            .serve_at(
+                THE_PORTALS_OBJECT,
+                FileChooserPortal {
                     backend: self.clone(),
                 },
             )
@@ -178,6 +211,16 @@ impl Backend {
     /// How the desktop is asked to start what a link opens in.
     pub(crate) fn links(&self) -> &dyn OpensLinks {
         self.links.as_ref()
+    }
+
+    /// How the person is asked to choose a file.
+    pub(crate) fn files(&self) -> &dyn ChoosesFiles {
+        self.files.as_ref()
+    }
+
+    /// How a chosen file is handed over.
+    pub(crate) fn documents(&self) -> &dyn ExportsDocuments {
+        self.documents.as_ref()
     }
 }
 

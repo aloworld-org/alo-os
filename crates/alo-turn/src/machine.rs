@@ -296,8 +296,9 @@ pub struct WhatAnApplicationVerbNeeds<'a> {
 ///
 /// Since 2026-11-12 the list ends with `accessible.read_window` and
 /// `accessible.activate_control`, since 2026-11-13 `accessible.type_text`, and
-/// since 2026-11-17 `accessible.scroll_to`, `accessible.scroll_page` and
-/// `accessible.set_value`
+/// since 2026-11-17 `accessible.scroll_to`, `accessible.scroll_page`,
+/// `accessible.set_value`, `accessible.choose_option`, `accessible.select_item`
+/// and `accessible.open_item`
 /// (`alo_adapters::fallback_verbs`), which this
 /// machine carries out through [`TheWindowsOnTheScreen`]. **An adapter's own
 /// verbs — `text_editor.open_document` — are not on it**: they are carried out
@@ -998,6 +999,13 @@ mod tests {
             // And moving a slider or a number box, added 2026-11-17 (the
             // owner's "Yes do all"), inside the range the control says.
             "accessible.set_value",
+            // And choosing, added 2026-11-17 (the owner's "Yes do all"): an
+            // option of a drop-down, and an item of a list selected unopened.
+            "accessible.choose_option",
+            "accessible.select_item",
+            // And opening an item, added 2026-11-17 (the owner's "Yes but it
+            // should be without okay on full access").
+            "accessible.open_item",
             // `alo-publishing`'s one, added 2026-11-13: Demo 2's second road.
             "publish_to_github_pages",
         ];

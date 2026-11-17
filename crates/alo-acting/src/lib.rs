@@ -44,6 +44,7 @@
 //! | [`Request`], [`Answer`] | One line in, one line out |
 //! | [`NotRead`], [`NotActed`] | Why a line is not a request, and why a request did nothing |
 //! | [`ToOpenALink`] | The portal asking for an application to be started with a link a person followed |
+//! | [`ToChooseAFile`], [`ChoseAFile`] | The portal asking the person to choose a file to open, or a place to save one, and what they chose |
 //! | [`ToOpenAFile`], [`Opened`] | alo asking for a file to be opened in an application the person named, and where it opened |
 //! | [`said_on_the_log`] | The sentences the desktop writes on its log for those acts, which a walk reads |
 //!
@@ -63,11 +64,13 @@
 pub mod acting;
 pub mod alos_tree;
 pub mod answer;
+pub mod choosing_a_file;
 pub mod choosing_a_link;
 pub mod counting;
 pub mod front;
 pub mod opening_a_file;
 pub mod opening_a_link;
+pub mod picturing;
 pub mod request;
 pub mod said_of_publishing;
 pub mod said_on_the_log;
@@ -77,11 +80,16 @@ pub mod working_in;
 pub use acting::Acting;
 pub use alos_tree::{WhereAlosTreeIs, is_alo_tree};
 pub use answer::{Answer, NotActed};
+pub use choosing_a_file::{
+    CHOOSE_FILE, ChoseAFile, NotAFileToChoose, THE_LONGEST_NAME, ToChoose, ToChooseAFile,
+    is_a_name, is_a_whole_path,
+};
 pub use choosing_a_link::{CHOOSE_LINK, Chose, NotALinkToChoose, ToChooseALink};
 pub use counting::{Begun, Counted, NotACount, ToCount};
 pub use front::{InFront, is_front};
 pub use opening_a_file::{NotAFileToOpen, OPEN_FILE, Opened, ToOpenAFile};
 pub use opening_a_link::{NotALinkToOpen, OPEN_LINK, ToOpenALink};
+pub use picturing::{NotToPicture, PICTURE_OF, Pictured, ToPicture};
 pub use request::{NotRead, Request};
 pub use typing_into::{
     MAY_TYPE_INTO, NotToType, SAVE_IN, TYPE_INTO, ToType, Typed, the_first_untypable,
