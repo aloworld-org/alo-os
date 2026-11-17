@@ -137,8 +137,7 @@ pub use driving::{Driven, Driving};
 pub use driving_by_hand::{DrivenByHand, NotDrivenByHand, drive_by_hand};
 pub use fallback_verbs::{
     ACTIVATE_CONTROL, CHOOSE_OPTION, OPEN_ITEM, READ_WINDOW, SCROLL_PAGE, SCROLL_TO, SELECT_ITEM,
-    SET_VALUE,
-    TYPE_TEXT, fallback_verbs,
+    SET_VALUE, TYPE_TEXT, fallback_verbs,
 };
 pub use invocation::{DBusMethod, Invocation, Part};
 pub use loading::{Loaded, load};

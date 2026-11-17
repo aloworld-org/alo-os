@@ -29,7 +29,7 @@
 )]
 
 /// The change verbs the table above names.
-const HELD: [&str; 16] = [
+const HELD: [&str; 17] = [
     "rename_file",
     "move_file",
     "archive_folder",

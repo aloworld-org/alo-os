@@ -22,7 +22,7 @@ use crate::what_a_verb_did::WhatAVerbDid;
 
 /// The verbs alo acts in an application by: each one names the application in
 /// its `application` argument.
-const IN_AN_APPLICATION: [&str; 12] = [
+const IN_AN_APPLICATION: [&str; 13] = [
     "open_application",
     "focus_application",
     "close_application",
