@@ -68,7 +68,8 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
              the screen has a name — a heading, a file, a button — send {SCROLL_TO} with that \
              name, once, even when the person says \"scroll down until\" it shows: it scrolls as \
              far as it takes. Send {SCROLL_PAGE} only to read on when nothing ahead has a name \
-             you know. Then send {READ_WINDOW} again."
+             you know. Typing never moves a window: never type a name to find it. Then send \
+             {READ_WINDOW} again."
         )
     } else {
         String::new()
