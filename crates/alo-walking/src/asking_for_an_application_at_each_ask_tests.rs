@@ -51,7 +51,7 @@ fn the_second_close_may_find_nothing_left_to_close() {
     ])
     .saying(
         Duration::from_secs(30),
-        &alo_acting::said_on_the_log::a_tasks_grant_went(),
+        alo_acting::said_on_the_log::a_tasks_grant_went(),
     );
     let quick = Pace {
         hold: Duration::ZERO,
