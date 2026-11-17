@@ -150,10 +150,6 @@ jobs:
           failed=0
           for level in full-access ask-each-time; do
             echo "## At $level" >> "$GITHUB_STEP_SUMMARY"
-            ALO_EVERY_TRY_LEVEL="$level" ALO_EVERY_TRY_SUMMARY="$GITHUB_STEP_SUMMARY" ALO_EVERY_TRY_SHOWN="$RUNNER_TEMP/shown-$level.txt" target/release/alo-every-try || failed=$?
-            # PROBE, never landed: the whole text shown, for one request.
-            if [ -n "$ALO_EVERY_TRY_ONLY" ] && [ -f "$RUNNER_TEMP/shown-$level.txt" ]; then
-              echo "=== SHOWN AT $level ==="; cat "$RUNNER_TEMP/shown-$level.txt"; echo "=== END SHOWN ==="
-            fi
+            ALO_EVERY_TRY_LEVEL="$level" ALO_EVERY_TRY_SUMMARY="$GITHUB_STEP_SUMMARY" target/release/alo-every-try || failed=$?
           done
           exit "$failed"
