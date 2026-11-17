@@ -365,6 +365,22 @@ key presses or through the field's own accessibility interface, and saves it
 only once it reads back exactly; the approval is what an agent needs, because it
 is the agent choosing what to type (ADR 0153).
 
+### accessible.scroll_to
+
+**By hand:** a person scrolls the window with the wheel, the scroll bar or the
+keyboard until the thing is in view — `Sticky keys, slow keys, and keyboard-only
+operation of everything`. The verb asks the application to bring the same named
+thing onto the screen through its own accessibility interface; the approval is
+what an agent needs, because it is the agent choosing to move what a person's
+window shows.
+
+### accessible.scroll_page
+
+**By hand:** a person presses Page Down or Page Up, or scrolls with the wheel —
+`Sticky keys, slow keys, and keyboard-only operation of everything`. The verb
+asks the application to bring what is just past the screen onto it, a page at a
+time; the approval is what an agent needs, for the same reason.
+
 ### set_the_scheme
 
 **By hand:** a person opens the appearance pane of `Settings, as one place` and
