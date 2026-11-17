@@ -30,7 +30,7 @@
 //! person's side they are the same fact: nothing was changed.
 
 use alo_acting::{
-    AnsweredTheChooser, Answer, Opened, Pictured, Request, ToAnswerAFileChooser, ToOpenAFile,
+    Answer, AnsweredTheChooser, Opened, Pictured, Request, ToAnswerAFileChooser, ToOpenAFile,
     ToPicture, ToType, Typed,
 };
 
