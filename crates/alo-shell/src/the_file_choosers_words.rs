@@ -9,16 +9,13 @@ use alo_strings::{Vocabulary, VocabularyError, Word, WordError};
 
 /// The title, when an application asked to open a file.
 pub const OPEN_A_FILE: Word = Word::saying("shell.file-chooser.open-a-file", "Open a file")
-    .noting(
-        "The title of a small window in which the person chooses a file for an app to open.",
-    );
+    .noting("The title of a small window in which the person chooses a file for an app to open.");
 
 /// The title, when an application asked to save a file.
-pub const SAVE_A_FILE: Word = Word::saying("shell.file-chooser.save-a-file", "Save a file")
-    .noting(
-        "The title of a small window in which the person chooses a folder and a name for an app \
+pub const SAVE_A_FILE: Word = Word::saying("shell.file-chooser.save-a-file", "Save a file").noting(
+    "The title of a small window in which the person chooses a folder and a name for an app \
          to save a file under.",
-    );
+);
 
 /// The line under the title, when opening.
 pub const ASKED_TO_OPEN: Word = Word::saying(

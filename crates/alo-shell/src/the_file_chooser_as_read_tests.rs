@@ -28,7 +28,10 @@ struct AHome;
 impl Folders for AHome {
     fn listed(&self, at: &Path) -> Result<Listing, NotListed> {
         if at == Path::new("/home/anna") {
-            Ok(Listing::of(vec!["Letters".to_owned()], vec!["march.txt".to_owned()]))
+            Ok(Listing::of(
+                vec!["Letters".to_owned()],
+                vec!["march.txt".to_owned()],
+            ))
         } else {
             Err(NotListed::NotThere)
         }
@@ -50,7 +53,12 @@ fn a_sheet(to: ToChoose) -> (TheFileChooser, UnixStream) {
     )
     .unwrap();
     let mut sheet = TheFileChooser::none();
-    sheet.asked(vec![AskedForAFile::of(asked, desktop)], true, Instant::now(), &AHome);
+    sheet.asked(
+        vec![AskedForAFile::of(asked, desktop)],
+        true,
+        Instant::now(),
+        &AHome,
+    );
     (sheet, portal)
 }
 
@@ -118,7 +126,10 @@ fn opening_is_read_as_it_is_drawn() {
         ]
     );
     let keyboard = &tree.nodes()[in_front.keyboard];
-    assert_eq!(keyboard.name, "Letters", "the keyboard starts inside the folder");
+    assert_eq!(
+        keyboard.name, "Letters",
+        "the keyboard starts inside the folder"
+    );
     let number = sheet.shows().unwrap().number;
     assert_eq!(
         rows[2].press,
@@ -149,10 +160,7 @@ fn saving_reads_the_name_and_what_happened() {
     assert_eq!(field.name, "Name");
     assert_eq!(field.description, "march.txt");
     assert_eq!(tree.nodes()[in_front.keyboard].name, "Name");
-    let note = parts
-        .iter()
-        .find(|it| it.announced)
-        .unwrap();
+    let note = parts.iter().find(|it| it.announced).unwrap();
     assert_eq!(
         note.name,
         "A file with this name is here already. Save again to replace it."

@@ -42,11 +42,18 @@ fn going_up_lands_on_the_folder_just_left() {
 fn a_starting_folder_that_cannot_be_read_can_be_left() {
     let disk = a_home();
     let mut chooser = Chooser::to_open(Path::new("/home/anna/Music"), &disk);
-    assert_eq!(chooser.note(), Some(&Note::CouldNotOpen("Music".to_owned())));
+    assert_eq!(
+        chooser.note(),
+        Some(&Note::CouldNotOpen("Music".to_owned()))
+    );
     assert_eq!(chooser.rows().len(), 1, "only the folder above");
     assert_eq!(chooser.key(Key::Enter, &disk), None);
     assert_eq!(chooser.at(), Path::new("/home/anna"));
-    assert_eq!(chooser.note(), None, "a sentence about a folder left behind");
+    assert_eq!(
+        chooser.note(),
+        None,
+        "a sentence about a folder left behind"
+    );
 }
 
 /// **A letter jump goes round**, sets case aside, and never lands on the

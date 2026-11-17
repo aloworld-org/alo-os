@@ -23,7 +23,10 @@ pub struct OnThisDisk;
 
 impl Folders for OnThisDisk {
     fn listed(&self, folder: &Path) -> Result<Listing, NotListed> {
-        if !fs::metadata(folder).map_err(|failed| why(&failed))?.is_dir() {
+        if !fs::metadata(folder)
+            .map_err(|failed| why(&failed))?
+            .is_dir()
+        {
             return Err(NotListed::NotThere);
         }
         let mut folders = Vec::new();

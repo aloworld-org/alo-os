@@ -27,7 +27,10 @@ impl Folders for AHome {
     fn listed(&self, at: &Path) -> Result<Listing, NotListed> {
         if at == Path::new("/home/anna") {
             let files = (0..40).map(|n| format!("letter {n:02}.txt")).collect();
-            Ok(Listing::of(vec!["Letters".to_owned(), "Music".to_owned()], files))
+            Ok(Listing::of(
+                vec!["Letters".to_owned(), "Music".to_owned()],
+                files,
+            ))
         } else {
             Err(NotListed::NotThere)
         }
@@ -49,7 +52,12 @@ fn a_sheet(to: ToChoose) -> (UnixStream, TheFileChooser) {
     )
     .unwrap();
     let mut sheet = TheFileChooser::none();
-    sheet.asked(vec![AskedForAFile::of(asked, desktop)], true, Instant::now(), &AHome);
+    sheet.asked(
+        vec![AskedForAFile::of(asked, desktop)],
+        true,
+        Instant::now(),
+        &AHome,
+    );
     (portal, sheet)
 }
 
@@ -95,7 +103,11 @@ fn opening_says_what_the_design_note_says() {
             "Cancel",
             "Open",
         ] {
-            assert!(drawn.texts.iter().any(|it| it == said), "{said}: {:?}", drawn.texts);
+            assert!(
+                drawn.texts.iter().any(|it| it == said),
+                "{said}: {:?}",
+                drawn.texts
+            );
         }
         assert!(drawn.name.is_none(), "no name when opening");
         assert!(drawn.cancel.loc.x + drawn.cancel.size.w <= drawn.button.loc.x);
@@ -110,8 +122,18 @@ fn saving_draws_the_name() {
         name: "notes.txt".to_owned(),
     });
     let drawn = drawn_at(&sheet, (1440, 960), 100).unwrap();
-    for said in ["Save a file", "Text Editor asked to save a file", "Name", "notes.txt", "Save"] {
-        assert!(drawn.texts.iter().any(|it| it == said), "{said}: {:?}", drawn.texts);
+    for said in [
+        "Save a file",
+        "Text Editor asked to save a file",
+        "Name",
+        "notes.txt",
+        "Save",
+    ] {
+        assert!(
+            drawn.texts.iter().any(|it| it == said),
+            "{said}: {:?}",
+            drawn.texts
+        );
     }
     assert!(drawn.name.is_some());
 }

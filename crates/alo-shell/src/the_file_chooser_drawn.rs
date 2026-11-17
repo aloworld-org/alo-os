@@ -181,10 +181,28 @@ pub(crate) fn drawn(
     });
     let cancel_words = say(words::CANCEL);
     let label = |text: &str, ground: [u8; 3], ink: [u8; 3], fonts: &mut _| {
-        written(fonts, text, TheType::Label, column / 2, measure, (ground, ink)).cropped_to_its_ink()
+        written(
+            fonts,
+            text,
+            TheType::Label,
+            column / 2,
+            measure,
+            (ground, ink),
+        )
+        .cropped_to_its_ink()
     };
-    let button_label = label(&button_words, palette.ink, palette.surface, &mut labels.fonts);
-    let cancel_label = label(&cancel_words, palette.surface, palette.ink, &mut labels.fonts);
+    let button_label = label(
+        &button_words,
+        palette.ink,
+        palette.surface,
+        &mut labels.fonts,
+    );
+    let cancel_label = label(
+        &cancel_words,
+        palette.surface,
+        palette.ink,
+        &mut labels.fonts,
+    );
     let beside = px(BESIDE_A_LABEL);
     let button_tall = px(m::A_TARGET);
     let button_wide = button_label.width_of_box + 2 * beside;
@@ -263,7 +281,12 @@ fn laid_out(
     let where_ = say(words::IN_THE_FOLDER, &Filling::of("folder", folder));
 
     let mut y = inside;
-    let shaped = laying.words(&title, TheType::Title, column, (palette.surface, palette.ink));
+    let shaped = laying.words(
+        &title,
+        TheType::Title,
+        column,
+        (palette.surface, palette.ink),
+    );
     y = crate::settings_drawn_page::text(&mut out, inside, y, shaped, &title);
     y += px(UNDER_THE_TITLE);
     for (said, colour) in [(&line, palette.secondary), (&where_, palette.secondary)] {
@@ -297,7 +320,11 @@ fn laid_out(
             y += hairline;
         }
         let (kind, icon, under) = match one.kind {
-            Kind::Above => (TheKind::Plain, ASettingsIcon::Folder, words::THE_FOLDER_ABOVE),
+            Kind::Above => (
+                TheKind::Plain,
+                ASettingsIcon::Folder,
+                words::THE_FOLDER_ABOVE,
+            ),
             Kind::Folder => (TheKind::AnOpeningRow, ASettingsIcon::Folder, words::FOLDER),
             Kind::File => (TheKind::Plain, ASettingsIcon::File, words::FILE),
         };
@@ -331,7 +358,12 @@ fn laid_out(
     // **What just happened**, when anything did.
     if let Some(note) = chooser.note() {
         let said = words::said(strings, note);
-        let shaped = laying.words(&said, TheType::Body, column, (palette.surface, palette.secondary));
+        let shaped = laying.words(
+            &said,
+            TheType::Body,
+            column,
+            (palette.surface, palette.secondary),
+        );
         y = crate::settings_drawn_page::text(&mut out, inside, y, shaped, &said);
         y += px(UNDER_THE_CARD);
     }
@@ -340,7 +372,12 @@ fn laid_out(
     let mut name_area = None;
     if chooser.how() == How::Save {
         let label = say(words::NAME, &Filling::nothing());
-        let shaped = laying.words(&label, TheType::Label, column, (palette.surface, palette.ink));
+        let shaped = laying.words(
+            &label,
+            TheType::Label,
+            column,
+            (palette.surface, palette.ink),
+        );
         y = crate::settings_drawn_page::text(&mut out, inside, y, shaped, &label);
         y += px(BETWEEN_LINES);
         let field_tall = px(m::A_TARGET);
@@ -360,7 +397,13 @@ fn laid_out(
         );
         let (text_wide, text_tall) = (shaped.width, shaped.height);
         let text_top = y + (field_tall - text_tall) / 2;
-        let _ = crate::settings_drawn_page::text(&mut out, inside + across, text_top, shaped, chooser.name());
+        let _ = crate::settings_drawn_page::text(
+            &mut out,
+            inside + across,
+            text_top,
+            shaped,
+            chooser.name(),
+        );
         if in_it {
             out.drawn.push(Drawn::Fill(
                 Rectangle::new(

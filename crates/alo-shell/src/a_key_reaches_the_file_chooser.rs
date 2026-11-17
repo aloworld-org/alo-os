@@ -111,11 +111,20 @@ mod tests {
             cancel: Some(Rectangle::new((300, 320).into(), (80, 48).into())),
             button: Some(Rectangle::new((390, 320).into(), (70, 48).into())),
         };
-        assert_eq!(drawn.pressed_at(120, 110), Some(OnTheFileChooser::TheRow(4)));
-        assert_eq!(drawn.pressed_at(120, 200), Some(OnTheFileChooser::TheRow(5)));
+        assert_eq!(
+            drawn.pressed_at(120, 110),
+            Some(OnTheFileChooser::TheRow(4))
+        );
+        assert_eq!(
+            drawn.pressed_at(120, 200),
+            Some(OnTheFileChooser::TheRow(5))
+        );
         assert_eq!(drawn.pressed_at(120, 270), Some(OnTheFileChooser::TheName));
         assert_eq!(drawn.pressed_at(310, 330), Some(OnTheFileChooser::Cancel));
-        assert_eq!(drawn.pressed_at(400, 330), Some(OnTheFileChooser::TheButton));
+        assert_eq!(
+            drawn.pressed_at(400, 330),
+            Some(OnTheFileChooser::TheButton)
+        );
         assert_eq!(drawn.pressed_at(10, 10), None);
         assert_eq!(WhereTheChooserIs::default().pressed_at(120, 110), None);
     }

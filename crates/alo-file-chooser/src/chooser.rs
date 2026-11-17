@@ -468,7 +468,11 @@ impl Chooser {
     /// is anything past it.
     fn the_first_inside(&self) -> usize {
         let above = usize::from(self.above().is_some());
-        if self.how_many_rows() > above { above } else { 0 }
+        if self.how_many_rows() > above {
+            above
+        } else {
+            0
+        }
     }
 }
 

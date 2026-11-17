@@ -193,7 +193,14 @@ fn names_are_ordered_with_case_set_aside() {
     let names: Vec<&str> = chooser.rows().iter().map(|row| row.name).collect();
     assert_eq!(
         names.get(1..).unwrap(),
-        ["Archive", "beta", "crates", "apple.txt", "Banana.txt", "Zed.txt"]
+        [
+            "Archive",
+            "beta",
+            "crates",
+            "apple.txt",
+            "Banana.txt",
+            "Zed.txt"
+        ]
     );
 }
 
@@ -233,7 +240,12 @@ fn at_the_root_there_is_no_folder_above() {
     let disk = annas_disk();
     let chooser = Chooser::to_open(Path::new("/"), &disk);
     assert_eq!(chooser.at(), Path::new("/"));
-    assert!(chooser.rows().iter().all(|row| !matches!(row.kind, Kind::Above)));
+    assert!(
+        chooser
+            .rows()
+            .iter()
+            .all(|row| !matches!(row.kind, Kind::Above))
+    );
     let names: Vec<&str> = chooser.rows().iter().map(|row| row.name).collect();
     assert_eq!(names, ["etc", "home"]);
 }
@@ -251,7 +263,12 @@ fn the_person_can_go_up_all_the_way_to_the_root() {
     assert_eq!(chooser.at(), Path::new("/"));
     assert_eq!(chooser.key(Key::Erase, &disk), None);
     assert_eq!(chooser.at(), Path::new("/"));
-    assert!(chooser.rows().iter().all(|row| !matches!(row.kind, Kind::Above)));
+    assert!(
+        chooser
+            .rows()
+            .iter()
+            .all(|row| !matches!(row.kind, Kind::Above))
+    );
 
     // And from the root, into a folder that is not the person's home at all.
     onto(&mut chooser, "etc", &disk);
@@ -290,7 +307,9 @@ fn enter_on_a_folder_goes_in_and_on_a_file_chooses_it() {
     onto(&mut chooser, "to Rui.txt", &disk);
     assert_eq!(
         chooser.key(Key::Enter, &disk),
-        Some(Ending::Chosen(PathBuf::from("/home/anna/Letters/to Rui.txt")))
+        Some(Ending::Chosen(PathBuf::from(
+            "/home/anna/Letters/to Rui.txt"
+        )))
     );
 }
 
@@ -367,12 +386,20 @@ fn escape_cancels_a_save() {
 fn a_folder_that_would_not_be_read_keeps_the_person_where_they_were() {
     let disk = annas_disk();
     let mut chooser = Chooser::to_open(home(), &disk);
-    let rows_before: Vec<String> = chooser.rows().iter().map(|row| row.name.to_owned()).collect();
+    let rows_before: Vec<String> = chooser
+        .rows()
+        .iter()
+        .map(|row| row.name.to_owned())
+        .collect();
     onto(&mut chooser, "Private", &disk);
     assert_eq!(chooser.key(Key::Enter, &disk), None);
     assert_eq!(chooser.at(), home());
     assert!(matches!(chooser.note(), Some(Note::CouldNotOpen(_))));
-    let rows_after: Vec<String> = chooser.rows().iter().map(|row| row.name.to_owned()).collect();
+    let rows_after: Vec<String> = chooser
+        .rows()
+        .iter()
+        .map(|row| row.name.to_owned())
+        .collect();
     assert_eq!(rows_after, rows_before);
 }
 
@@ -517,7 +544,11 @@ fn a_save_named_dot_or_dot_dot_saves_nothing_and_says_so() {
         typed(&mut chooser, name, &disk);
         assert_eq!(chooser.key(Key::Enter, &disk), None, "{name:?} was saved");
         assert!(matches!(chooser.note(), Some(Note::NotAName)), "{name:?}");
-        assert_eq!(chooser.pressed_the_button(&disk), None, "{name:?} was saved");
+        assert_eq!(
+            chooser.pressed_the_button(&disk),
+            None,
+            "{name:?} was saved"
+        );
         assert_eq!(chooser.at(), home(), "{name:?} moved the person");
     }
 }
@@ -572,7 +603,11 @@ fn a_name_a_folder_has_saves_nothing() {
     assert_eq!(chooser.key(Key::Enter, &disk), None);
     assert!(matches!(chooser.note(), Some(Note::AFolderHasThisName)));
     assert_eq!(chooser.pressed_the_button(&disk), None);
-    assert_eq!(chooser.at(), home(), "saving under a folder's name went into it");
+    assert_eq!(
+        chooser.at(),
+        home(),
+        "saving under a folder's name went into it"
+    );
 }
 
 /// A name that is there already is not replaced on the first Enter; the sheet
@@ -621,7 +656,11 @@ fn changing_the_name_withdraws_the_warning() {
     typed(&mut chooser, "x", &disk);
     assert_eq!(chooser.key(Key::Erase, &disk), None);
     assert_eq!(chooser.name(), "notes.md");
-    assert_eq!(chooser.key(Key::Enter, &disk), None, "a changed name replaced a file");
+    assert_eq!(
+        chooser.key(Key::Enter, &disk),
+        None,
+        "a changed name replaced a file"
+    );
     assert_eq!(
         chooser.key(Key::Enter, &disk),
         Some(Ending::Chosen(PathBuf::from("/home/anna/notes.md")))
@@ -841,18 +880,16 @@ fn the_rows_shown_always_hold_the_row_the_keyboard_is_on() {
     let names: Vec<&str> = many.iter().map(String::as_str).collect();
     let disk = Disk::default().with("/big", &["a", "b", "c"], &names);
     let moves = || {
-        std::iter::repeat_with(|| Key::Down)
-            .take(10)
-            .chain([
-                Key::Last,
-                Key::Up,
-                Key::Up,
-                Key::First,
-                Key::Last,
-                Key::Letter('f'),
-                Key::Down,
-                Key::Up,
-            ])
+        std::iter::repeat_with(|| Key::Down).take(10).chain([
+            Key::Last,
+            Key::Up,
+            Key::Up,
+            Key::First,
+            Key::Last,
+            Key::Letter('f'),
+            Key::Down,
+            Key::Up,
+        ])
     };
     for page in 3..=8 {
         let mut chooser = Chooser::to_open(Path::new("/big"), &disk);

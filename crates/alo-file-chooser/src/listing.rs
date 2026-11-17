@@ -164,7 +164,10 @@ mod tests {
             names(&["music", "Documents", ".config", "downloads"]),
             names(&["b.txt", ".bashrc", "A.txt", "..", "a/b"]),
         );
-        assert_eq!(listing.folders(), names(&["Documents", "downloads", "music"]));
+        assert_eq!(
+            listing.folders(),
+            names(&["Documents", "downloads", "music"])
+        );
         assert_eq!(listing.files(), names(&["A.txt", "b.txt"]));
         assert_eq!(listing.not_shown(), 4);
         assert!(!listing.there_are_more());
