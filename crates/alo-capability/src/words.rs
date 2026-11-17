@@ -937,6 +937,53 @@ pub const WHAT_WORKING_IN_YOUR_WINDOW_COSTS: Word = Word::saying(
     "Shown beside the choice that lets alo work in the person's own application window, so the person choosing it knows what it costs: alo's work happens beside their own open tabs and documents, and the computer can say that something is being sent but not how much. A plain statement, not a refusal, a scare or a recommendation. Keep it one sentence.",
 );
 
+/// The heading in Settings over the switches that let alo use pictures and
+/// keys, one per application (ADR 0143 Q11, `crate::PicturesAndKeys`).
+pub const PICTURES_AND_KEYS: Word = Word::saying(
+    "capability.pictures-and-keys.heading",
+    "Pictures and keys",
+)
+.noting(
+    "A heading in Settings, in sentence case. Under it is one switch for each application on this computer. \"Pictures\" are pictures of an application's window that alo, the assistant, takes so that it can see what is there; \"keys\" are the key presses and clicks alo then makes in that window.",
+);
+
+/// The first row under [`PICTURES_AND_KEYS`]: which applications it is for.
+pub const PICTURES_AND_KEYS_ARE_FOR: Word = Word::saying(
+    "capability.pictures-and-keys.what-it-is-for",
+    "For apps that tell alo nothing about their windows",
+)
+.noting(
+    "The name of a row in Settings, above the switches that let alo use pictures and keys. Most applications describe their buttons and fields to alo, the assistant, so it can press them by name. Some, such as games, do not; for those, alo can only look at a picture of the window and press keys or click where it sees something.",
+);
+
+/// The line under [`PICTURES_AND_KEYS_ARE_FOR`].
+pub const PICTURES_AND_KEYS_ARE: Word = Word::saying(
+    "capability.pictures-and-keys.what-it-is",
+    "Such as games. alo looks at a picture of that app's window and clicks or presses keys there. It never takes a picture of a window with a password field, and the indicator shows a picture leaving this computer",
+)
+.noting(
+    "Under the row \"For apps that tell alo nothing about their windows\" in Settings. alo is the assistant. \"The indicator\" is the mark at the edge of the screen that shows when something leaves this computer. A plain description, not a warning.",
+);
+
+/// One switch's name: this application, by the name the person reads.
+pub const LET_ALO_USE_PICTURES_AND_KEYS_IN: Word = Word::saying(
+    "capability.pictures-and-keys.in-this-app",
+    "Let alo use pictures and keys in {application}",
+)
+.noting(
+    "The name of one switch in Settings, under the heading \"Pictures and keys\". {application} is the name of an application on this computer, such as SuperTuxKart. Switched on, alo, the assistant, may look at pictures of that application's window and click or press keys in it. alo is never written with a capital letter.",
+);
+
+/// What letting alo use pictures and keys in an application costs: **ADR
+/// 0143's own words**, from the table of settings, kept as they were written.
+pub const WHAT_PICTURES_AND_KEYS_COST: Word = Word::saying(
+    "capability.pictures-and-keys.what-it-costs",
+    "alo will act on what it sees in pictures of this window, and may press the wrong thing",
+)
+.noting(
+    "Shown beside the switches that let alo use pictures and keys in an application, so the person switching one on knows what it costs: alo, the assistant, guesses from a picture where to click, and can be wrong. A plain statement, not a refusal, a scare or a recommendation. Keep it one sentence.",
+);
+
 /// **Refusal A** (the owner, 2026-11-10): at the default, an application that
 /// cannot open a separate copy of its own for alo — and the Settings choice
 /// that lets alo work in the person's own window instead, by its exact name and
@@ -1382,7 +1429,7 @@ pub const TEXT_HOLDS_ANOTHER_ALPHABET: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 121] = [
+pub const EVERY_WORD: [Word; 126] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -1459,6 +1506,11 @@ pub const EVERY_WORD: [Word; 121] = [
     MAY_WORK_IN_YOUR_WINDOW,
     MAY_WORK_IN_YOUR_WINDOW_IS,
     WHAT_WORKING_IN_YOUR_WINDOW_COSTS,
+    PICTURES_AND_KEYS,
+    PICTURES_AND_KEYS_ARE_FOR,
+    PICTURES_AND_KEYS_ARE,
+    LET_ALO_USE_PICTURES_AND_KEYS_IN,
+    WHAT_PICTURES_AND_KEYS_COST,
     NO_COPY_OF_ITS_OWN,
     DONE_WITHOUT_ASKING,
     DONE_WITHOUT_ASKING_AND_IT_CANNOT_BE_PUT_BACK,

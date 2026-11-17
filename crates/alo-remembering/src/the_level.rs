@@ -81,8 +81,25 @@
 //! the file is read strictly — after the format is checked on its own, so that
 //! a file from a later alo OS is still refused as *not for me* rather than as a
 //! complaint about a key that alo OS defines.
+//!
+//! # A list in the same file: pictures and keys
+//!
+//! *Added 2026-11-17, additively.* ADR 0143 Q11: the applications the person
+//! let alo look at and press keys in, each by identifier.
+//!
+//! ```toml
+//! format = 1
+//! pictures-and-keys-in = ["net.supertuxkart.SuperTuxKart"]
+//! ```
+//!
+//! **An empty list is an answer**: a person who switched the last one off. It
+//! is written as `[]` rather than left out, so a file holding only this key
+//! still says something. **A terminal, or an identifier nothing could be, is
+//! refused whole** ([`NotTheLevel::NotAnApplicationForPictures`]) rather than
+//! read around: dropping it would be reading a file somebody may have edited to
+//! say something else.
 
-use alo_capability::{AloInApplications, AloInTheTerminal, HowCodeRuns};
+use alo_capability::{AloInApplications, AloInTheTerminal, HowCodeRuns, PicturesAndKeys};
 use serde::{Deserialize, Serialize};
 
 /// Which shape of this file this alo OS writes and reads.
@@ -156,6 +173,17 @@ pub enum NotTheLevel {
         /// What it said.
         said: String,
     },
+    /// `pictures-and-keys-in` names a terminal, or an identifier nothing could
+    /// be.
+    ///
+    /// Refused whole, for [`Self::NoSuchLevel`]'s reason.
+    #[error(
+        "`{said}` is not an application alo may use pictures and keys in: it is a terminal, or not an application at all"
+    )]
+    NotAnApplicationForPictures {
+        /// What it said.
+        said: String,
+    },
     /// The level could not be written down.
     #[error("the level a person chose could not be written down: {why}")]
     NotWrittenDown {
@@ -185,6 +213,11 @@ struct Written {
     /// Where alo works in an application (ADR 0143 Q6), in one of two words.
     #[serde(rename = "in-applications", skip_serializing_if = "Option::is_none")]
     in_applications: Option<String>,
+    /// The applications alo may use pictures and keys in (ADR 0143 Q11), each
+    /// by identifier. Present and empty is a person who switched every one
+    /// off.
+    #[serde(rename = "pictures-and-keys-in", skip_serializing_if = "Option::is_none")]
+    pictures_and_keys_in: Option<Vec<String>>,
 }
 
 /// Only the format, read first and leniently, so that a file from a later alo
@@ -202,7 +235,7 @@ struct OnlyTheFormat {
 /// is a person who has not chosen a level; no `in-the-terminal` is the switch
 /// as a machine arrives, which is off. Which default an absence stands for is
 /// the reader's to say, at the one place each is read.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct WhatTheFileSays {
     /// The level, when one was chosen.
     pub chose: Option<HowCodeRuns>,
@@ -211,6 +244,9 @@ pub struct WhatTheFileSays {
     /// Where alo works in an application, when the person said (ADR 0143
     /// Q6). Absent is alo's own copy, as a machine arrives.
     pub in_applications: Option<AloInApplications>,
+    /// The applications alo may use pictures and keys in, when the person
+    /// said (ADR 0143 Q11). Absent is none, as a machine arrives.
+    pub pictures_and_keys_in: Option<PicturesAndKeys>,
 }
 
 /// What this text says.
@@ -237,6 +273,7 @@ pub fn read(text: &str) -> Result<WhatTheFileSays, NotTheLevel> {
     if written.chose.is_none()
         && written.in_the_terminal.is_none()
         && written.in_applications.is_none()
+        && written.pictures_and_keys_in.is_none()
     {
         return Err(NotTheLevel::SaysNothing);
     }
@@ -252,7 +289,31 @@ pub fn read(text: &str) -> Result<WhatTheFileSays, NotTheLevel> {
             .as_deref()
             .map(the_applications_answer_called)
             .transpose()?,
+        pictures_and_keys_in: written
+            .pictures_and_keys_in
+            .as_deref()
+            .map(the_applications_for_pictures_called)
+            .transpose()?,
     })
+}
+
+/// The applications `pictures-and-keys-in` names.
+///
+/// # Errors
+///
+/// [`NotTheLevel::NotAnApplicationForPictures`] for the first entry
+/// [`PicturesAndKeys::of`] would not keep — a terminal, or an identifier
+/// nothing could be — which refuses the whole file rather than dropping it.
+fn the_applications_for_pictures_called(said: &[String]) -> Result<PicturesAndKeys, NotTheLevel> {
+    if let Some(refused) = said
+        .iter()
+        .find(|one| PicturesAndKeys::of([one.as_str()]).applications().count() != 1)
+    {
+        return Err(NotTheLevel::NotAnApplicationForPictures {
+            said: refused.clone(),
+        });
+    }
+    Ok(PicturesAndKeys::of(said.iter().map(String::as_str)))
 }
 
 /// The word `in-applications` writes for alo's own copy only — the setting
@@ -362,6 +423,9 @@ pub fn written(says: WhatTheFileSays) -> Result<String, NotTheLevel> {
         in_applications: says
             .in_applications
             .map(|answer| the_applications_word_for(answer).to_owned()),
+        pictures_and_keys_in: says
+            .pictures_and_keys_in
+            .map(|on| on.applications().map(str::to_owned).collect()),
     };
     toml::to_string(&it).map_err(|why| NotTheLevel::NotWrittenDown {
         why: why.to_string(),
@@ -383,6 +447,9 @@ impl NotTheLevel {
             Self::NoSuchLevel { .. } => crate::words::LEVEL_NO_SUCH_LEVEL,
             Self::NotATerminalAnswer { .. } => crate::words::LEVEL_NOT_A_TERMINAL_ANSWER,
             Self::NotAnApplicationsAnswer { .. } => crate::words::LEVEL_NOT_AN_APPLICATIONS_ANSWER,
+            Self::NotAnApplicationForPictures { .. } => {
+                crate::words::LEVEL_NOT_AN_APPLICATION_FOR_PICTURES
+            }
             Self::NotWrittenDown { .. } => crate::words::LEVEL_NOT_WRITTEN_DOWN,
         }
     }
@@ -401,7 +468,8 @@ impl NotTheLevel {
         match self {
             Self::NoSuchLevel { said }
             | Self::NotATerminalAnswer { said }
-            | Self::NotAnApplicationsAnswer { said } => Some(("said", said.clone())),
+            | Self::NotAnApplicationsAnswer { said }
+            | Self::NotAnApplicationForPictures { said } => Some(("said", said.clone())),
             Self::NotTheShape { .. }
             | Self::AnotherFormat { .. }
             | Self::SaysNothing

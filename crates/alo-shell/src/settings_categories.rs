@@ -93,7 +93,9 @@ impl SettingsCategory {
     pub const fn of(section: SettingsSection) -> Self {
         match section {
             SettingsSection::Answering => Self::AloAndAi,
-            SettingsSection::Granted | SettingsSection::InApplications => Self::FoldersAloCanUse,
+            SettingsSection::Granted
+            | SettingsSection::InApplications
+            | SettingsSection::PicturesAndKeys => Self::FoldersAloCanUse,
             SettingsSection::HowCodeRuns => Self::RunningCode,
             SettingsSection::Terminal => Self::Terminal,
             SettingsSection::Appearance | SettingsSection::Dock => Self::Appearance,
@@ -245,6 +247,7 @@ mod tests {
             SettingsSection::HowCodeRuns,
             SettingsSection::Granted,
             SettingsSection::InApplications,
+            SettingsSection::PicturesAndKeys,
         ] {
             assert!(SettingsCategory::ALL.contains(&SettingsCategory::of(section)));
         }

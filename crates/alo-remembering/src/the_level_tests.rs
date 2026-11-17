@@ -11,6 +11,7 @@ fn every_level_goes_down_and_comes_back() {
             chose: Some(chose),
             in_the_terminal: None,
             in_applications: None,
+            pictures_and_keys_in: None,
         })
         .expect("a level writes");
         assert_eq!(
@@ -144,6 +145,7 @@ fn it_is_kept_in_words_a_person_can_read() {
         chose: Some(HowCodeRuns::AskingEachTime),
         in_the_terminal: None,
         in_applications: None,
+        pictures_and_keys_in: None,
     })
     .expect("it writes");
     assert!(
@@ -196,15 +198,17 @@ fn the_terminal_answer_goes_down_and_comes_back() {
                 chose,
                 in_the_terminal: Some(answer),
                 in_applications: None,
+                pictures_and_keys_in: None,
             };
-            let text = written(says).expect("it writes");
-            assert_eq!(read(&text), Ok(says), "{says:?} did not survive {text:?}");
+            let text = written(says.clone()).expect("it writes");
+            assert_eq!(read(&text), Ok(says.clone()), "{says:?} did not survive {text:?}");
         }
     }
     let on = written(WhatTheFileSays {
         chose: None,
         in_the_terminal: Some(AloInTheTerminal::ActsWithoutAsking),
         in_applications: None,
+        pictures_and_keys_in: None,
     })
     .expect("it writes");
     assert!(
@@ -293,6 +297,56 @@ fn where_alo_works_in_applications_reads_three_words_and_refuses_others() {
                 said: said.to_owned()
             }),
             "{said:?} was read as an answer for applications"
+        );
+    }
+}
+
+/// **The applications alo may use pictures and keys in survive the disk**, in
+/// identifier order, and **an empty list is still an answer**: a file holding
+/// only `pictures-and-keys-in = []` is a person who switched the last one off,
+/// not a file that says nothing.
+#[test]
+fn pictures_and_keys_go_down_and_come_back_and_an_empty_list_still_says_something() {
+    let on = alo_capability::PicturesAndKeys::of([
+        "org.mozilla.firefox",
+        "net.supertuxkart.SuperTuxKart",
+    ]);
+    let says = WhatTheFileSays {
+        pictures_and_keys_in: Some(on.clone()),
+        ..WhatTheFileSays::default()
+    };
+    let text = written(says.clone()).expect("it writes");
+    assert!(
+        text.contains(
+            "pictures-and-keys-in = [\"net.supertuxkart.SuperTuxKart\", \"org.mozilla.firefox\"]"
+        ),
+        "the list was written as {text:?}"
+    );
+    assert_eq!(read(&text), Ok(says));
+
+    let none = WhatTheFileSays {
+        pictures_and_keys_in: Some(alo_capability::PicturesAndKeys::default()),
+        ..WhatTheFileSays::default()
+    };
+    let text = written(none.clone()).expect("it writes");
+    assert!(text.contains("pictures-and-keys-in = []"), "{text:?}");
+    assert_eq!(read(&text), Ok(none));
+}
+
+/// **A terminal, or an identifier nothing could be, refuses the whole file**,
+/// naming what it said — never dropped and the rest read.
+#[test]
+fn a_terminal_or_nothing_in_the_list_refuses_the_whole_file() {
+    for said in ["app.devsuite.Ptyxis", "", " org.mozilla.firefox"] {
+        let text = format!(
+            "format = {THE_LEVEL_FORMAT}\nchose = \"{AT_FULL_TRUST}\"\npictures-and-keys-in = [\"net.supertuxkart.SuperTuxKart\", \"{said}\"]\n"
+        );
+        assert_eq!(
+            read(&text),
+            Err(NotTheLevel::NotAnApplicationForPictures {
+                said: said.to_owned()
+            }),
+            "{said:?} was read around"
         );
     }
 }

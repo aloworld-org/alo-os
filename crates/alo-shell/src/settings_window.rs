@@ -73,6 +73,7 @@ use crate::a_folder_is_picked_in_settings::{Folders, PickingRow};
 use crate::alo_in_applications_in_settings::AloInApplicationsHere;
 use crate::alo_in_the_terminal_in_settings::AloInTheTerminalHere;
 use crate::an_application_is_picked_in_settings::ApplicationRow;
+use crate::pictures_and_keys_in_settings::PicturesAndKeysHere;
 use crate::how_code_runs_in_settings::HowCodeRunsHere;
 use crate::settings_answering::{AnsweringSection, SettingsAnswered, SettingsChoice};
 use crate::settings_formats::FormatsSection;
@@ -128,6 +129,9 @@ pub enum SettingsSection {
     /// grants, because it is a question about what alo reaches in an
     /// application once it is let in.
     InApplications,
+    /// Whether alo may use pictures and keys in an application, one switch per
+    /// application (ADR 0143 Q11). On the same page, after where alo works.
+    PicturesAndKeys,
     /// Text size and the pointer's size.
     Accessibility,
 }
@@ -334,6 +338,10 @@ pub enum SettingsRow {
     /// (`alo_capability::words::NO_COPY_OF_ITS_OWN`) names the second by its
     /// exact words, and `crate::alo_in_applications_in_settings` keeps it.
     WhereAloWorks(alo_capability::AloInApplications),
+    /// The switch that lets alo use pictures and keys in this application, by
+    /// identifier: Enter turns it over, on in one press and off in one press
+    /// (ADR 0143 Q11). `crate::pictures_and_keys_in_settings` keeps it.
+    PicturesAndKeys(String),
     /// This installed application opens this kind of link: Enter chooses it,
     /// and it is written in the person's `what-opens-what.toml` under
     /// `[links]` (frame `25:28`).
@@ -385,6 +393,7 @@ impl SettingsRow {
             }
             Self::HowCodeRuns(_) => SettingsSection::HowCodeRuns,
             Self::WhereAloWorks(_) => SettingsSection::InApplications,
+            Self::PicturesAndKeys(_) => SettingsSection::PicturesAndKeys,
             Self::DefaultFor(..) => SettingsSection::DefaultApps,
             Self::SignInToGitHub | Self::SignOutOfGitHub => SettingsSection::Accounts,
             Self::ShellIntegration | Self::APlaceToReturnTo | Self::ActWithoutAsking => {
@@ -528,6 +537,9 @@ pub(crate) struct Open {
     /// Where alo works in an application, kept in the same file as how code
     /// runs.
     pub(crate) alo_in_applications: AloInApplicationsHere,
+    /// Which applications alo may use pictures and keys in, kept in the same
+    /// file as how code runs.
+    pub(crate) pictures_and_keys: PicturesAndKeysHere,
     /// Whether the sealed box can run programs on this computer yet, read at
     /// opening from the machine's mounts. **It changes nothing the person
     /// chose**: the sealed box stays a choice, and the default; this is only
@@ -624,6 +636,7 @@ impl SettingsWindow {
             how_code_runs: HowCodeRunsHere::at_sign_in(places.how_code_runs()),
             alo_in_the_terminal: AloInTheTerminalHere::at_sign_in(places.how_code_runs()),
             alo_in_applications: AloInApplicationsHere::at_sign_in(places.how_code_runs()),
+            pictures_and_keys: PicturesAndKeysHere::at_sign_in(places.how_code_runs()),
             // Mounts that cannot be read are not said to be a machine where it
             // cannot run: the line is for what was read.
             the_sealed_box_runs_here: match std::fs::read_to_string(places.mounts()) {
@@ -1241,6 +1254,15 @@ impl Open {
                 .into_iter()
                 .map(SettingsRow::WhereAloWorks),
         );
+        // **Then one switch per application this machine has**, a terminal
+        // never among them (ADR 0143 Q11): absent rather than empty where no
+        // application is known.
+        rows.extend(
+            self.granted
+                .the_applications_listed()
+                .iter()
+                .map(|listed| SettingsRow::PicturesAndKeys(listed.identifier().to_owned())),
+        );
         rows
     }
 
@@ -1783,6 +1805,13 @@ impl Open {
                 SettingsSection::InApplications,
                 self.alo_in_applications.picked(*answer),
             ),
+            // **Written before the switch moves**, for the level's reason: a
+            // switch that moved first would say alo cannot look at a window
+            // it can.
+            SettingsRow::PicturesAndKeys(application) => SettingsDid::Kept(
+                SettingsSection::PicturesAndKeys,
+                self.pictures_and_keys.pressed(application),
+            ),
             // **Kept before the ring moves**, through `alo_applications`'
             // keeper: the next link any application opens goes to this one.
             SettingsRow::DefaultFor(kind, identifier) => SettingsDid::Kept(
@@ -1839,6 +1868,7 @@ impl Open {
             | SettingsSection::Terminal
             | SettingsSection::HowCodeRuns
             | SettingsSection::InApplications
+            | SettingsSection::PicturesAndKeys
             | SettingsSection::Accessibility
             // **Nor for Accounts**: nothing of it is a file of alo's, and
             // signing out is the button beside it.
