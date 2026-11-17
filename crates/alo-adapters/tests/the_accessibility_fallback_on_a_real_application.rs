@@ -78,6 +78,7 @@ const PATIENCE: Duration = Duration::from_secs(40);
 /// the window draws itself.
 const SIGN_IN_FORM: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <interface>
+  <object class="GtkAdjustment" id="zoom"><property name="upper">200</property><property name="value">150</property></object>
   <object class="GtkWindow" id="window">
     <property name="title">Sign in to the fixture</property>
     <child>
@@ -94,6 +95,7 @@ const SIGN_IN_FORM: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
         <child><object class="GtkButton"><property name="visible">True</property><property name="label">Help</property></object></child>
         <child><object class="GtkButton"><property name="visible">True</property><property name="label">Help</property></object></child>
         <child><object class="GtkDrawingArea"><property name="visible">True</property></object></child>
+        <child><object class="GtkScale"><property name="visible">True</property><property name="adjustment">zoom</property></object></child>
       </object>
     </child>
   </object>
@@ -651,6 +653,14 @@ fn a_real_applications_password_field_is_never_read() {
         "the ordinary field was not read — so the test would prove nothing about the other"
     );
     assert!(shown.everything().any(|seen| seen.name() == "Account"));
+    // **A real slider's number is read through the tree's `Value`**: GTK's
+    // own scale, its adjustment at 150.
+    assert!(
+        shown
+            .everything()
+            .any(|seen| seen.role() == Role::Range && seen.value() == Some("150")),
+        "the slider's number was not read: {shown:?}"
+    );
     let described = format!("{shown:?}");
     assert!(
         !described.contains(SECRET),

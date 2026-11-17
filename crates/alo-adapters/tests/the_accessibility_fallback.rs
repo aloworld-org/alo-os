@@ -816,7 +816,13 @@ fn a_text_longer_than_is_read_at_once_says_it_was_cut_short() {
 }
 
 /// One thing read: its role, name, text, whether selected, and its number.
-type OneThingRead<'a> = (Role, &'a str, Option<&'a str>, Option<bool>, Option<&'a str>);
+type OneThingRead<'a> = (
+    Role,
+    &'a str,
+    Option<&'a str>,
+    Option<bool>,
+    Option<&'a str>,
+);
 
 /// **Drop-downs, list items and sliders are read for what they are**, with
 /// what a person sees of each: the choice a drop-down shows, which items and
@@ -897,6 +903,69 @@ fn drop_downs_list_items_and_sliders_are_read_for_what_they_are() {
             (Role::Item, "12 KB", Some("12 KB"), None, None),
             (Role::Range, "Zoom", None, None, Some("150")),
             (Role::Range, "Sending", None, None, Some("40.5")),
+        ]
+    );
+}
+
+/// One thing read: its role, name, limit, text and number.
+type OneThingLimited<'a> = (
+    Role,
+    &'a str,
+    Option<Limit>,
+    Option<&'a str>,
+    Option<&'a str>,
+);
+
+/// **What a drop-down or a slider with no name says decides whether it is
+/// shown**: a drop-down with neither a name nor a choice is a control alo can
+/// say nothing useful about, said as one with no name; one showing a choice is
+/// shown by it; a slider with no name is shown for its number, and one with
+/// neither is passed over as layout.
+#[test]
+fn a_nameless_drop_down_or_slider_is_shown_by_what_it_holds() {
+    let strings = in_english();
+    let tree = ATree::default().with(
+        ":1.7",
+        Some(MAIL),
+        vec![thing(roles::FRAME, "Letter").holding(vec![
+            thing(roles::COMBO_BOX, ""),
+            thing(roles::COMBO_BOX, "").saying("Arial"),
+            thing(roles::SLIDER, "").holding_the_value(3.0),
+            thing(roles::SLIDER, ""),
+            thing(roles::SLIDER, "Volume"),
+        ])],
+    );
+    let grants = granting(&[MAIL]);
+    let read = ReadingWindows::of(
+        Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
+        &Adapters::default(),
+        &grants,
+        &installed(),
+        &strings,
+    )
+    .unwrap()
+    .read(&tree, &strings)
+    .unwrap();
+    let seen: Vec<OneThingLimited<'_>> = read
+        .shown()
+        .everything()
+        .map(|seen| {
+            (
+                seen.role(),
+                seen.name(),
+                seen.limit(),
+                seen.text_to_read(),
+                seen.value(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        seen,
+        [
+            (Role::DropDown, "", Some(Limit::NoName), None, None),
+            (Role::DropDown, "", None, Some("Arial"), None),
+            (Role::Range, "", None, None, Some("3")),
+            (Role::Range, "Volume", None, None, None),
         ]
     );
 }

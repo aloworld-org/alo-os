@@ -148,4 +148,26 @@ mod tests {
             Some(true)
         );
     }
+
+    /// **Selected is said only of what can be selected**, and saying a state
+    /// twice keeps it: `selectable` and `and_selected` add, never toggle.
+    #[test]
+    fn selected_is_said_only_of_what_can_be_selected() {
+        let plain = States::showing_and_usable();
+        assert_eq!(plain.selected(), None);
+        assert_eq!(plain.and_selected().selected(), None);
+        assert_eq!(plain.selectable().selected(), Some(false));
+        assert_eq!(plain.selectable().selectable().selected(), Some(false));
+        assert_eq!(plain.selectable().and_selected().selected(), Some(true));
+        assert_eq!(
+            plain.selectable().and_selected().and_selected().selected(),
+            Some(true)
+        );
+        // Read from the tree's own two words: SELECTABLE and SELECTED are
+        // bits 22 and 23 of the first.
+        assert_eq!(
+            States::of_the_tree(&[(1 << 22) | (1 << 23), 0]).selected(),
+            Some(true)
+        );
+    }
 }

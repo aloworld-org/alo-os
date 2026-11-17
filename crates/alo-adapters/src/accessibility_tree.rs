@@ -164,3 +164,40 @@ pub trait AccessibilityTree {
         Ok(false)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A tree that answers only what every tree must.
+    struct OnlyWhatIsRequired;
+
+    impl AccessibilityTree for OnlyWhatIsRequired {
+        fn applications(&self) -> Result<Vec<Running>, TreeFault> {
+            Ok(Vec::new())
+        }
+        fn facts(&self, _: &NodeAt) -> Result<Facts, TreeFault> {
+            Err(TreeFault::Vanished)
+        }
+        fn text(&self, _: &NodeAt) -> Result<String, TreeFault> {
+            Ok(String::new())
+        }
+        fn actions(&self, _: &NodeAt) -> Result<Vec<String>, TreeFault> {
+            Ok(Vec::new())
+        }
+        fn act(&self, _: &NodeAt, _: usize) -> Result<bool, TreeFault> {
+            Ok(false)
+        }
+    }
+
+    /// **A tree that offers no numbers says none**, rather than inventing
+    /// one: a slider read from it holds no value.
+    #[test]
+    fn a_tree_that_offers_no_numbers_says_none() {
+        let at = NodeAt {
+            holder: ":1.7".to_owned(),
+            object: "/slider".to_owned(),
+        };
+        assert_eq!(OnlyWhatIsRequired.value(&at), Ok(None));
+    }
+}
