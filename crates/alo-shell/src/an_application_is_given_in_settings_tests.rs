@@ -592,19 +592,28 @@ fn the_rows_that_give_are_counted_from_the_top_whatever_is_installed() {
         "the old count still reaches the row, so it was not what failed"
     );
 
-    // **Nothing given**: from the top, down one.
+    // **Only what is given is above them.** This fixture's machine has given a
+    // folder to another agent already; the walk's has given nothing (its
+    // picture 71 says *Nothing is granted right now*). So the walk's counts are
+    // read here after this machine's own given rows.
+    let already = window
+        .rows_on_the_page(noon())
+        .iter()
+        .take_while(|row| matches!(row, SettingsRow::Granted(_)))
+        .count();
     assert_eq!(
-        from_the_top(&mut window, DOWN_TO_GIVE_AN_APPLICATION, &door),
+        from_the_top(&mut window, already + DOWN_TO_GIVE_AN_APPLICATION, &door),
         Some(SettingsRow::GrantAnApplication)
     );
-    // **One application given**: its row is first, and the folder's next.
+    // **One application given**: its row joins those above, and the folder's
+    // row is next.
     assert_eq!(
         given(&mut window, FIREFOX, HowLong::AnHour, &door),
         Some(SettingsDid::Gave(SettingsGave::ItWasGiven))
     );
     into_what_alo_can_use(&mut window, &door);
     assert_eq!(
-        from_the_top(&mut window, DOWN_TO_GIVE_A_FOLDER, &door),
+        from_the_top(&mut window, already + DOWN_TO_GIVE_A_FOLDER, &door),
         Some(SettingsRow::GrantAFolder)
     );
 }
