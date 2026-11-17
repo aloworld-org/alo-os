@@ -2,13 +2,13 @@
 //! (`picture-of`, `docs/contracts/application-door.md`).
 //!
 //! The door reads the one line and hands it on with its connection; the
-//! compositor takes the picture and answers through [`AskedToPicture::answered`].
+//! compositor takes the picture and answers through [`AskedToPicture::answered`](crate::a_picture_at_the_door::AskedToPicture::answered).
 //! The answer is the head line and, for a picture, exactly the PNG's bytes
 //! after it.
 //!
 //! **Sent on across turns, never waited for.** A PNG is larger than a socket
 //! holds, and the door never blocks the compositor's thread — the rule every
-//! act here keeps. So what does not fit is kept in a [`SendingAPicture`] and
+//! act here keeps. So what does not fit is kept in a [`SendingAPicture`](crate::a_picture_at_the_door::SendingAPicture) and
 //! the door sends on from it each time it is visited, as it reads a long text
 //! on across frames. A daemon that has gone, or a write that fails, ends it.
 

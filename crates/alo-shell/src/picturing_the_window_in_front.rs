@@ -112,11 +112,10 @@ pub(crate) fn a_png_of(wide: u32, tall: u32, bgr0: &[u8]) -> Option<Vec<u8>> {
         return None;
     }
     let rgb: Vec<u8> = bgr0
-        .chunks_exact(4)
-        .flat_map(|pixel| match *pixel {
-            [blue, green, red, _] => [red, green, blue],
-            _ => [0, 0, 0],
-        })
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .flat_map(|&[blue, green, red, _]| [red, green, blue])
         .collect();
     let mut png = Vec::new();
     image::codecs::png::PngEncoder::new(&mut png)
