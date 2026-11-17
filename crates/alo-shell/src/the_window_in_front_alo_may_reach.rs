@@ -39,7 +39,10 @@ impl Server {
         identifier: &str,
         may: &mut dyn MayTypeInto,
     ) -> Result<(WlSurface, Client), NotReached> {
-        let root = self.surfaces.keyboard_root().ok_or(NotReached::NotInFront)?;
+        let root = self
+            .surfaces
+            .keyboard_root()
+            .ok_or(NotReached::NotInFront)?;
         let app = AppId::named(identifier).map_err(|_| NotReached::NotInFront)?;
         let id = crate::window_number::the_window_id_of(&root);
         let theirs = self

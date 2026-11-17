@@ -63,7 +63,10 @@ fn a_picture_larger_than_the_socket_arrives_whole() {
     let read = sent_whole(sending, &mut daemon);
     let head = format!("{}\n", answer.written());
     assert_eq!(&read[..head.len()], head.as_bytes());
-    assert!(read[head.len()..] == png[..], "the picture did not arrive whole");
+    assert!(
+        read[head.len()..] == png[..],
+        "the picture did not arrive whole"
+    );
 }
 
 /// **A refusal is its one line and nothing after it**, whatever bytes were

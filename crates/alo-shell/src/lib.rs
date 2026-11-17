@@ -482,9 +482,13 @@ mod painted;
 use alo_drawing::painted_flat;
 use alo_drawing::painted_text;
 use alo_drawing::painted_text_wrapping;
+/// A picture asked for at the door, and its answer sent on across turns.
+pub mod a_picture_at_the_door;
 mod panel_cards;
 mod panel_raster;
 mod peeking_at_a_put_aside_window;
+/// One picture of the window in front, of that window alone (ADR 0147 §1).
+mod picturing_the_window_in_front;
 mod pointer;
 mod popup_grabs;
 mod popup_placement;
@@ -709,17 +713,13 @@ mod the_view_glides;
 mod the_view_travels_to_a_window;
 /// The compositor's answers to `front` and `alo-tree` at the door.
 mod the_window_before_this_terminal;
+/// The window in front, if alo may reach it for an application: asked by typing
+/// and by a picture alike.
+mod the_window_in_front_alo_may_reach;
 /// Every window on the Place being looked at, for a new one to be placed beside.
 mod the_windows_on_this_place;
 /// Typing into the window in front, as key presses, to that one client (ADR 0153).
 pub mod typing_into_the_window_in_front;
-/// One picture of the window in front, of that window alone (ADR 0147 §1).
-mod picturing_the_window_in_front;
-/// A picture asked for at the door, and its answer sent on across turns.
-pub mod a_picture_at_the_door;
-/// The window in front, if alo may reach it for an application: asked by typing
-/// and by a picture alike.
-mod the_window_in_front_alo_may_reach;
 pub use the_first_account::{ASecret, OnTheSheet, TheAccountSheet, TheAccountShown};
 mod alos_window_placed;
 mod alos_windows_panel;

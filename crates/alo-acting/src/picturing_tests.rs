@@ -71,7 +71,11 @@ fn every_answer_reads_back_as_written() {
         Pictured::NotAlosCopy,
         Pictured::CouldNotDraw,
     ] {
-        assert_eq!(Pictured::read(&answer.written()), Some(answer), "{answer:?}");
+        assert_eq!(
+            Pictured::read(&answer.written()),
+            Some(answer),
+            "{answer:?}"
+        );
     }
     assert_eq!(
         Pictured::Picture {
