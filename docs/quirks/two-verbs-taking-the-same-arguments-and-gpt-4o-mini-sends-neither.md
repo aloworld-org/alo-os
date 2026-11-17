@@ -19,8 +19,14 @@
   44046603843; the one other try opened the menu and then opened it again).
   That renaming the argument is what made the difference is **measured once**;
   that two calls of the same shape are what the model cannot tell apart **fits
-  and is not checked** — `type_text` and `type_without_saving` share their three
-  arguments and both took their roads 10 of 10 in the same week. When a new verb
+  and is not checked**.
+- **And again, the same day:** `accessible.type_without_saving`, taking
+  `type_text`'s three arguments exactly, took its road in **3 of 20** tries
+  asked to type into a search box (run 44177343080); the model sent
+  `type_text`. Telling `type_text` as the typing that saves, for a document in
+  an editor, raised it to **10 of 20** (run 44182231136), every miss still
+  `type_text`. Its field is now `field`, and what that did is in the pull
+  request that made it (#1346). When a new verb
   would take exactly the arguments another change takes, the every-try request
   for it is the check that says whether it can be chosen.
 - **Date:** 2026-11-17.

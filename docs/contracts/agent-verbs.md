@@ -759,13 +759,15 @@ that calls every row showing leaves `scroll_page` with nothing further to
 scroll to.
 ## Typing that saves nothing — added 2026-11-17, additively
 
-`accessible.type_without_saving` takes exactly `accessible.type_text`'s
-arguments (`application`, `name`, `text`) and every one of its checks and roads
-(ADR 0153): the whole text on the card, one field of that name, never a password
-field or a terminal, alo's own copy at the default, and the text read back
-after. **It never presses `Ctrl+S`**, which in a web page's search box or form
-saves the page. The person approves *type {text} into “{name}” in
-{application}*, and the card says *The text below is typed where the field's
+`accessible.type_without_saving` takes `accessible.type_text`'s arguments with
+the field named `field` rather than `name` (`application`, `field`, `text`), so
+the two calls differ in shape as well as in name
+(`docs/quirks/two-verbs-taking-the-same-arguments-and-gpt-4o-mini-sends-neither.md`),
+and every one of `type_text`'s checks and roads (ADR 0153): the whole text on
+the card, one field of that name, never a password field or a terminal, alo's
+own copy at the default, and the text read back after. **It never presses
+`Ctrl+S`**, which in a web page's search box or form saves the page. The person
+approves *type {text} into “{field}” in {application}*, and the card says *The text below is typed where the field's
 cursor is and read back. Nothing is saved.* A change, at both levels, like
 `type_text`.
 

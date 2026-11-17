@@ -239,7 +239,7 @@ adapters.fallback.type-without-saving.cannot-read-back	The text was typed into �
 adapters.fallback.type-without-saving.changes	The text below is typed where the field's cursor is and read back. Nothing is saved.
 adapters.fallback.type-without-saving.purpose	type a text into a field in an application's window — a search box, a form, an address, a message — and save nothing
 adapters.fallback.type-without-saving.read-back-differs	What “{name}” in {application} shows now is not exactly the text you approved. Look at the window, and undo with Ctrl+Z if you want it gone
-adapters.fallback.type-without-saving.sentence	type {text} into “{name}” in {application}
+adapters.fallback.type-without-saving.sentence	type {text} into “{field}” in {application}
 adapters.not-carried-out.did-not-answer	{application} did not answer in time, so whether it did what was approved is not known
 adapters.not-carried-out.does-not-offer	{application} does not offer what was approved, so nothing was done in it. This release of it may not be one this machine knows how to ask
 adapters.not-carried-out.not-an-adapters-verb	{verb} is not something an application on this machine was asked to do, so nothing was sent

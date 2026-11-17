@@ -132,6 +132,13 @@ pub const KIND: &str = "kind";
 /// The argument naming the control.
 pub const NAME: &str = "name";
 
+/// The argument naming the field `accessible.type_without_saving` types into.
+///
+/// **Not `name`** (2026-11-17), for [`THING`]'s reason: taking `type_text`'s
+/// three arguments exactly, `gpt-4o-mini` sent `type_text` in 10 of 20 tries
+/// asked to type into a search box, even told which of the two saves.
+pub const FIELD: &str = "field";
+
 /// The longest name a control is asked for by.
 pub const LONGEST_NAME: usize = 200;
 
@@ -372,7 +379,7 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
             Effect::Change,
             vec![
                 Arg::taking(APPLICATION, typing::TYPE_APPLICATION, Takes::Application),
-                Arg::taking(NAME, typing::TYPE_NAME, Takes::name(LONGEST_NAME)),
+                Arg::taking(FIELD, typing::TYPE_NAME, Takes::name(LONGEST_NAME)),
                 Arg::taking(TEXT, typing::TYPE_THE_TEXT, Takes::Text),
             ],
             Requires::grants_over([APPLICATION]),

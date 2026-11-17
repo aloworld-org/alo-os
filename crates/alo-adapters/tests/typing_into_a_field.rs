@@ -639,7 +639,7 @@ fn typing_without_saving_takes_the_same_text_and_says_nothing_is_saved() {
             alo_adapters::TYPE_WITHOUT_SAVING,
             &[
                 ("application", Given::text(EDITOR)),
-                ("name", Given::text("Search")),
+                ("field", Given::text("Search")),
                 ("text", Given::text("alo OS")),
             ],
         )
@@ -665,7 +665,7 @@ fn typing_without_saving(name: &str, text: &str) -> Typing {
             alo_adapters::TYPE_WITHOUT_SAVING,
             &[
                 ("application", Given::text(EDITOR)),
-                ("name", Given::text(name)),
+                ("field", Given::text(name)),
                 ("text", Given::text(text)),
             ],
         )

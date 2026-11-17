@@ -26,7 +26,7 @@ use alo_strings::{Filling, Strings, Word};
 use crate::accessibility_tree::{AccessibilityTree, NodeAt, TreeFault};
 use crate::adapters::Adapters;
 use crate::fallback_reach::reached;
-use crate::fallback_verbs::{NAME, TEXT, TYPE_TEXT, TYPE_WITHOUT_SAVING};
+use crate::fallback_verbs::{FIELD, NAME, TEXT, TYPE_TEXT, TYPE_WITHOUT_SAVING};
 use crate::fallback_words as fallback;
 use crate::places_for_text::{
     FOCUSED, TypingRefuses, holds, the_ones_meant, the_places_for_text, what_is_there,
@@ -87,7 +87,9 @@ impl Typing {
         };
         let reached = reached(authorised, verb, adapters, grants, installed, strings)?;
         let call = reached.authorised.call();
-        let name = match call.value(NAME) {
+        // **The field is `name` for `type_text` and `field` for typing that
+        // saves nothing** (`crate::fallback_verbs::FIELD`).
+        let name = match call.value(if saves { NAME } else { FIELD }) {
             Some(Value::Name(name)) => Some(name.clone()),
             _ => None,
         };

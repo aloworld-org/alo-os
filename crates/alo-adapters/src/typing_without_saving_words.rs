@@ -2,9 +2,10 @@
 //! (`accessible.type_without_saving`, 2026-11-17), where it differs from
 //! typing that saves (`crate::typing_words`, whose other sentences both share).
 //!
-//! In every sentence `{name}` is the field's name exactly as the application
-//! shows it and `{application}` is the application's identifier; neither is
-//! translated.
+//! In every sentence `{name}` — `{field}` in the sentence a person approves,
+//! which is filled from the call — is the field's name exactly as the
+//! application shows it and `{application}` is the application's identifier;
+//! neither is translated.
 
 use alo_strings::Word;
 
@@ -19,12 +20,12 @@ pub const UNSAVED_PURPOSE: Word = Word::saying(
 /// What a person approves. The text itself is shown whole beneath it.
 pub const UNSAVED_SENTENCE: Word = Word::saying(
     "adapters.fallback.type-without-saving.sentence",
-    "type {text} into “{name}” in {application}",
+    "type {text} into “{field}” in {application}",
 )
 .noting(
     "The sentence a person approves before anything is typed; the whole text is shown beneath it. \
-     Nothing is saved. {text} is already translated and says “the text below”; {name} and \
-     {application} are not translated.",
+     Nothing is saved. {text} is already translated and says “the text below”; {field} (the \
+     field's name) and {application} are not translated.",
 );
 
 /// What typing without saving changes, on the approval card.

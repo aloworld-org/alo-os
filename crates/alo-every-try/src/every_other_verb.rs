@@ -731,7 +731,7 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
                 )),
             )
             .expecting(fallback_verbs::APPLICATION, browser.as_str())
-            .expecting(NAME, SEARCH)
+            .expecting(fallback_verbs::FIELD, SEARCH)
             .expecting(fallback_verbs::TEXT, SEARCHED_FOR),
         ],
     )

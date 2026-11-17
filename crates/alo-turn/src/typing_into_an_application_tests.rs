@@ -385,9 +385,16 @@ fn typing_once_as(
         let mut turning =
             Turning::beginning(offering(&there), AGENT, hour(), &mut grants, &mut machine).unwrap();
         let grants = grants.with_the_terminal_as(terminal);
+        // **The field is `field` for typing that saves nothing**
+        // (`alo_adapters::fallback_verbs::FIELD`), `name` for `type_text`.
+        let the_field = if verb == alo_adapters::TYPE_WITHOUT_SAVING {
+            alo_adapters::fallback_verbs::FIELD
+        } else {
+            alo_adapters::fallback_verbs::NAME
+        };
         let given = [
             ("application", Given::text(application)),
-            ("name", Given::text("index.html")),
+            (the_field, Given::text("index.html")),
             ("text", Given::text(THE_TEXT)),
         ];
         match approve {
