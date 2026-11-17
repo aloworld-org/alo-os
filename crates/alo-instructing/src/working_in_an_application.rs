@@ -82,12 +82,27 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
     // the acts as a run of sentences around `type_text`, `gpt-4o-mini` sent
     // `type_text` with an empty text to scroll to a heading and to open a
     // file's menu, so each verb is now named beside the one act it does.
-    let mut acts = vec![format!(
-        "to put text into a field or a document, {TYPE_TEXT}, only ever with the text to type"
-    )];
+    //
+    // **Where typing that saves nothing is offered, `type_text` is told as the
+    // typing that saves** (2026-11-17): told "a field or a document", the model
+    // sent `type_text` into a web page's search box in 17 of 20 tries.
+    let mut acts = vec![if verbs.of(TYPE_WITHOUT_SAVING).is_some() {
+        format!(
+            "to put text into a document open in an editor and save it, {TYPE_TEXT}, only ever \
+             with the text to type"
+        )
+    } else {
+        format!(
+            "to put text into a field or a document, {TYPE_TEXT}, only ever with the text to type"
+        )
+    }];
+    // **A named control is pressed by its name, never reached by keys**: told
+    // keys and controls side by side, the model sent Tab or an arrow to reach
+    // the Reload button in 19 of 20 tries.
     if verbs.of(ACTIVATE_CONTROL).is_some() {
         acts.push(format!(
-            "to press a button or another control, {ACTIVATE_CONTROL}"
+            "to press a button or another control the window names, {ACTIVATE_CONTROL} with that \
+             name, never by sending keys to reach it"
         ));
     }
     if verbs.of(OPEN_MENU).is_some() {
@@ -128,12 +143,14 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
     // one act like the rest.
     if verbs.of(TYPE_WITHOUT_SAVING).is_some() {
         acts.push(format!(
-            "to type into a search box, a form, an address or a message, {TYPE_WITHOUT_SAVING},              which saves nothing, where {TYPE_TEXT} also saves and is for a file in an editor"
+            "to type into a field — a search box, a form, an address or a message — \
+             {TYPE_WITHOUT_SAVING}, which saves nothing"
         ));
     }
     if verbs.of(PRESS_KEY).is_some() {
         acts.push(format!(
-            "to press Enter, Escape, Tab or an arrow where the keyboard is, as a person would to              send a search, close a dialog or move between fields, {PRESS_KEY}"
+            "to press Enter, Escape, Tab or an arrow where the keyboard is, only when the person \
+             names that key, {PRESS_KEY}"
         ));
     }
     format!(
@@ -264,5 +281,35 @@ mod tests {
             "{told}"
         );
         assert!(told.contains("only what is on the screen"), "{told}");
+    }
+    /// **Where typing that saves nothing is offered, `type_text` is told as the
+    /// typing that saves**, a key only as one the person names, and a control
+    /// by its name rather than by keys — and no act runs words apart.
+    #[test]
+    fn typing_keys_and_controls_are_each_told_apart() {
+        let mut verbs = the_verbs();
+        for (name, effect) in [
+            (READ_WINDOW, Effect::Read),
+            (TYPE_TEXT, Effect::Change),
+            (ACTIVATE_CONTROL, Effect::Change),
+        ] {
+            verbs.declare(named(name, effect)).unwrap();
+        }
+        let before = working_in_an_application(&verbs);
+        assert!(before.contains("into a field or a document"), "{before}");
+        assert!(before.contains("never by sending keys"), "{before}");
+        verbs
+            .declare(named(TYPE_WITHOUT_SAVING, Effect::Change))
+            .unwrap();
+        verbs.declare(named(PRESS_KEY, Effect::Change)).unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(!told.contains("into a field or a document"), "{told}");
+        assert!(told.contains("open in an editor and save it"), "{told}");
+        assert!(told.contains("a search box"), "{told}");
+        assert!(
+            told.contains("only when the person names that key"),
+            "{told}"
+        );
+        assert!(!told.contains("  "), "two spaces run words apart: {told}");
     }
 }
