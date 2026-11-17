@@ -431,3 +431,66 @@ fn the_keyboards_outline_stays_on_the_row_it_marks() {
         );
     }
 }
+
+/// **A filled button's ring stands outside it, with a gap**, so a person
+/// using the keyboard can see which button Enter will press. The page's own
+/// actions — *Give alo a folder*, *Give alo an application* — are filled in
+/// the navy the ring is drawn in, so a ring on their edge was navy on navy and
+/// could not be seen: main's walk at b4b98a04 (run 43996140707, pictures 70
+/// and 71) shows the focused *Give alo an application* exactly as unfocused.
+/// The design's frames carry no focus state; this is
+/// `docs/design/the-first-start.md`'s *2px navy outer ring with a 4px gap*,
+/// which the task window's filled answers and the Dock already draw
+/// (`alo_dock::measures::THE_FOCUS_RING_STANDS_OFF`).
+#[test]
+fn a_filled_buttons_ring_stands_outside_it() {
+    let machine = a_persons_machine("a-filled-buttons-ring");
+    let mut window = machine.opened();
+    press(&mut window, SettingsKey::First);
+    press(&mut window, SettingsKey::Next);
+    press(&mut window, SettingsKey::NextSection);
+    press(&mut window, SettingsKey::First);
+    for _ in 0..64 {
+        if matches!(
+            window.focused(noon()),
+            Some(SettingsRow::GrantAFolder | SettingsRow::GrantAnApplication)
+        ) {
+            break;
+        }
+        press(&mut window, SettingsKey::Next);
+    }
+    assert!(
+        matches!(
+            window.focused(noon()),
+            Some(SettingsRow::GrantAFolder | SettingsRow::GrantAnApplication)
+        ),
+        "{:?}",
+        window.focused(noon())
+    );
+    let ink = SettingsPalette::of(light()).unwrap().ink;
+    for size in [(1440, 960), (1280, 800)] {
+        let drawn = drawn_at(&window, size, light());
+        let ring = drawn.focused.unwrap();
+        let mid_y = ring.loc.y + ring.size.h / 2;
+        let thick = i32::try_from(m::THE_FOCUS_RING).unwrap();
+        let off = i32::try_from(alo_dock::measures::THE_FOCUS_RING_STANDS_OFF).unwrap();
+        // Navy on the ring's own left edge,
+        assert_eq!(
+            &pixel(&drawn, ring.loc.x, mid_y)[..3],
+            &ink[..],
+            "{size:?}: no ring"
+        );
+        // then the page's ground in the gap,
+        assert_ne!(
+            &pixel(&drawn, ring.loc.x + thick + 1, mid_y)[..3],
+            &ink[..],
+            "{size:?}: no gap between the ring and the button"
+        );
+        // then the button itself, filled navy.
+        assert_eq!(
+            &pixel(&drawn, ring.loc.x + off + 2, mid_y)[..3],
+            &ink[..],
+            "{size:?}: the button is not where the ring stands off from"
+        );
+    }
+}
