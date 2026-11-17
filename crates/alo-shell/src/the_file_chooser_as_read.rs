@@ -190,7 +190,6 @@ impl ReadAloudTree {
 #[expect(
     clippy::unwrap_used,
     clippy::indexing_slicing,
-    clippy::panic,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 #[path = "the_file_chooser_as_read_tests.rs"]
