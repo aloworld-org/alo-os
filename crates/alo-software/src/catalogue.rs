@@ -85,6 +85,7 @@ use crate::installing::Wanted;
 use crate::installing_a_signed_release::{NotASignedRelease, SignedRelease};
 use crate::label::Label;
 use crate::maker::Maker;
+use crate::reach::Reach;
 use crate::shipped::{NotShipped, Shipped};
 use crate::source::SourceName;
 
@@ -238,6 +239,8 @@ pub struct Listed {
     early: bool,
     /// Its maker's signed release, when it is installed from one (ADR 0158).
     signed: Option<SignedRelease>,
+    /// What its makers ask for that reaches past its box.
+    reaches: Vec<Reach>,
 }
 
 impl Listed {
@@ -315,12 +318,29 @@ impl Listed {
         Label::EVERY
             .into_iter()
             .filter(|label| match label {
+                Label::RunsProgramsOutsideItsBox => {
+                    self.reaches.contains(&Reach::ProgramsOutsideItsBox)
+                }
+                // **Said only where the larger reach is not**: a program that
+                // runs outside its box can reach the files as well, and a row
+                // that said both would say the lesser twice.
+                Label::ReachesYourFiles => {
+                    self.reaches.contains(&Reach::YourFiles)
+                        && !self.reaches.contains(&Reach::ProgramsOutsideItsBox)
+                }
                 Label::NotOpenSource => !self.is_open_source(),
                 Label::NotVerified => !self.is_verified(),
                 Label::EarlyVersion => self.is_early(),
                 Label::NoAutomaticUpdates => self.signed_release().is_some(),
             })
             .collect()
+    }
+
+    /// What its makers ask for that reaches past its box, as its real metadata
+    /// says — empty only for an application that asks for nothing past it.
+    #[must_use]
+    pub fn reaches(&self) -> &[Reach] {
+        &self.reaches
     }
 
     /// Its maker's signed release, when it is installed from one rather than
@@ -340,6 +360,7 @@ impl Listed {
     #[must_use]
     pub fn wanted(&self) -> Wanted {
         Wanted::by_hand(self.application.clone(), self.source.as_str())
+            .reaching(self.reaches.clone())
     }
 }
 
@@ -457,6 +478,9 @@ struct Entry {
     verified: bool,
     /// Whether it is an early version.
     early: bool,
+    /// What its makers ask for that reaches past its box. Written on every
+    /// entry, an empty list included, so a forgotten one is a refused file.
+    reaches: Vec<Reach>,
     /// Where a maker's own signed bundle is, for an entry whose `source` is a
     /// maker (ADR 0158), and nothing for any other.
     #[serde(default)]
@@ -537,7 +561,7 @@ fn checked(entry: Entry) -> Result<Listed, NotCatalogued> {
                 sha256.as_deref().unwrap_or_default(),
             );
             match pinned {
-                Ok(release) => Some(release),
+                Ok(release) => Some(release.reaching(entry.reaches.clone())),
                 Err(why) => {
                     return Err(NotCatalogued::NotASignedRelease {
                         identifier: entry.identifier,
@@ -557,6 +581,7 @@ fn checked(entry: Entry) -> Result<Listed, NotCatalogued> {
         verified: entry.verified,
         early: entry.early,
         signed,
+        reaches: entry.reaches,
     })
 }
 

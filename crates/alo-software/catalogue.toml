@@ -113,6 +113,18 @@
 # members (WordCraft, GridCraft, DeckCraft, CadCraft, SoundCraft and others) are
 # left for a later decision.
 #
+# ## What each one can reach past its box
+#
+# `reaches` is what an application's makers ask for that goes past its box,
+# read on 2026-11-17 from the `permissions` in its real metadata — Flathub's
+# `/api/v2/summary/<identifier>`, and for a Craft application the manifest of its
+# bundle at the pinned tag — by the rule `alo_software::Reach::asked_for`
+# holds: `programs-outside-its-box` where it may talk to
+# `org.freedesktop.Flatpak`, and `your-files` where it may open the whole home,
+# the whole machine or one of the person's own folders. **None of the 62 from
+# Flathub arrives able to reach nothing**; the owner decided that day to list
+# them with a plain warning, and the market's row and the approval card say it.
+#
 # Each is installed the way a person installs one — from `source`, through the
 # rented tool, arriving granted nothing.
 
@@ -131,6 +143,7 @@ version = "3.2.8"
 licence = "GPL-3.0+ AND LGPL-3.0+"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "pictures"
@@ -141,6 +154,7 @@ version = "3.1.2"
 licence = "MIT"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "pictures"
@@ -150,6 +164,7 @@ version = "0.23.1"
 licence = "Apache-2.0"
 verified = true
 early = true
+reaches = ["programs-outside-its-box", "your-files"]
 bundle = "https://github.com/storytold/photocraft/releases/download/v0.23.1/photocraft-0.23.1-linux-x86_64.flatpak"
 sha256 = "5c9deb58f07bd54f323a5d985bed295b4c5b15789e02651e2f203d5e8ef211a5"
 
@@ -166,6 +181,7 @@ version = "5.3.4.1"
 licence = "GPL-3.0-only"
 verified = true
 early = false
+reaches = ["your-files"]
 
 # Draw something that has to stay sharp at any size — a logo, a sign, a
 # diagram, a cut file. Vectors are a different thing from pixels and no amount
@@ -179,6 +195,7 @@ version = "1.4.4"
 licence = "GPL-2.0-or-later"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "illustration"
@@ -188,6 +205,7 @@ version = "0.24.1"
 licence = "Apache-2.0"
 verified = true
 early = true
+reaches = ["programs-outside-its-box", "your-files"]
 bundle = "https://github.com/storytold/vectorcraft/releases/download/v0.24.1/vectorcraft-0.24.1-linux-x86_64.flatpak"
 sha256 = "98db44357f1eb9069325ef9c33c4db154bca80be6b91a340d343ab85a7940dce"
 
@@ -203,6 +221,7 @@ version = "5.6.2"
 licence = "GPL-3.0+"
 verified = false
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "photographs"
@@ -213,6 +232,7 @@ version = "9.1.0"
 licence = "GPL-2.0+"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "photographs"
@@ -223,6 +243,7 @@ version = "5.13"
 licence = "GPL-3.0+"
 verified = false
 early = false
+reaches = ["programs-outside-its-box", "your-files"]
 
 [[application]]
 category = "photographs"
@@ -232,6 +253,7 @@ version = "0.21.1"
 licence = "Apache-2.0"
 verified = true
 early = true
+reaches = ["programs-outside-its-box", "your-files"]
 bundle = "https://github.com/storytold/lightcraft/releases/download/v0.21.1/lightcraft-0.21.1-linux-x86_64.flatpak"
 sha256 = "3a9aeb896dfb7b8ba1f6c86e7733912fb7aedf29b1a99eee8fe95839951f769c"
 
@@ -247,6 +269,7 @@ version = "1.6.5"
 licence = "GPL-2.0+"
 verified = false
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "page-layout"
@@ -256,6 +279,7 @@ version = "0.20.1"
 licence = "Apache-2.0"
 verified = true
 early = true
+reaches = ["programs-outside-its-box", "your-files"]
 bundle = "https://github.com/storytold/designcraft/releases/download/v0.20.1/designcraft-0.20.1-linux-x86_64.flatpak"
 sha256 = "c628192174776fd4766ef342d5c4495e8787b53e26a4f0136c48bd46c13bada4"
 
@@ -270,6 +294,7 @@ version = "26.08.3"
 licence = "GPL-3.0-only"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "video"
@@ -280,6 +305,7 @@ version = "26.9.27"
 licence = "GPL-3.0-only"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "video"
@@ -290,6 +316,7 @@ version = "3.5.1"
 licence = "GPL-3.0-or-later"
 verified = false
 early = false
+reaches = ["programs-outside-its-box", "your-files"]
 
 [[application]]
 category = "video"
@@ -299,6 +326,7 @@ version = "0.20.1"
 licence = "Apache-2.0"
 verified = true
 early = true
+reaches = ["programs-outside-its-box", "your-files"]
 bundle = "https://github.com/storytold/filmcraft/releases/download/v0.20.1/filmcraft-0.20.1-linux-x86_64.flatpak"
 sha256 = "646ee627b39b93fe69c7ecb44725fc964fd43660ef8cf2884b3fb48e759ac0f8"
 
@@ -310,6 +338,7 @@ version = "0.24.1"
 licence = "Apache-2.0"
 verified = true
 early = true
+reaches = ["programs-outside-its-box", "your-files"]
 bundle = "https://github.com/storytold/effectcraft/releases/download/v0.24.1/effectcraft-0.24.1-linux-x86_64.flatpak"
 sha256 = "a2f7d1fe089a3e580ad4c84e1f8dd983e071e12e041122f25a820a51bfb31f0a"
 
@@ -324,6 +353,7 @@ version = "3.7.8"
 licence = "GPL-3.0-only"
 verified = false
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "audio"
@@ -334,6 +364,7 @@ version = "1.3.5"
 licence = "GPL-2.0 and CC-BY-3.0"
 verified = true
 early = false
+reaches = []
 
 # Write, calculate and present. **One category for three things**, the way
 # `shipped.toml` has two roles for one developer's file manager: these arrive as
@@ -350,6 +381,7 @@ version = "26.8.3.1"
 licence = "MPL-2.0"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "documents"
@@ -360,6 +392,7 @@ version = "10.0.0"
 licence = "AGPL-3.0-only"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "documents"
@@ -369,6 +402,7 @@ version = "0.21.1"
 licence = "Apache-2.0"
 verified = true
 early = true
+reaches = ["programs-outside-its-box", "your-files"]
 bundle = "https://github.com/storytold/pdfcraft/releases/download/v0.21.1/pdfcraft-0.21.1-linux-x86_64.flatpak"
 sha256 = "4f126ff718e851ba54ee0207c4b6ce9eebddfdd72d1124531d215cc0f8937daf"
 
@@ -383,6 +417,7 @@ version = "32.6.10"
 licence = "Apache-2.0"
 verified = false
 early = false
+reaches = ["your-files"]
 
 # Make something in three dimensions: Blender for what is rendered and
 # animated, FreeCAD for what is measured and made.
@@ -395,6 +430,7 @@ version = "5.3"
 licence = "GPL-3.0"
 verified = false
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "modelling"
@@ -405,6 +441,7 @@ version = "1.1.4"
 licence = "LGPL-2.1"
 verified = true
 early = false
+reaches = ["programs-outside-its-box", "your-files"]
 
 # Make music: a recording studio, a score, and two proprietary studios the
 # owner's decision lists rather than leaves out — each labelled.
@@ -417,6 +454,7 @@ version = "9.8.0"
 licence = "GPL-2.0+"
 verified = false
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "music-making"
@@ -427,6 +465,7 @@ version = "4.7.5"
 licence = "GPL-3.0-only"
 verified = false
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "music-making"
@@ -437,6 +476,7 @@ version = "6.1.7"
 licence = "LicenseRef-proprietary"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "music-making"
@@ -447,6 +487,7 @@ version = "7.85"
 licence = "LicenseRef-proprietary=https://www.reaper.fm/dist-agreement.php"
 verified = false
 early = false
+reaches = ["your-files"]
 
 # Record or stream the screen.
 [[application]]
@@ -458,6 +499,7 @@ version = "33.0.1"
 licence = "GPL-2.0-or-later"
 verified = true
 early = false
+reaches = ["programs-outside-its-box", "your-files"]
 
 [[application]]
 category = "screen-recording"
@@ -468,6 +510,7 @@ version = "2.3.2"
 licence = "GPL-3.0-or-later"
 verified = true
 early = false
+reaches = ["your-files"]
 
 # Write programs. The shipped code editor (`shipped.toml`) is the light one;
 # these are the larger ones.
@@ -480,6 +523,7 @@ version = "50.0"
 licence = "GPL-3.0+ and GPL-2.0+ and LGPL-3.0+ and LGPL-2.0+ and MIT"
 verified = true
 early = false
+reaches = ["programs-outside-its-box", "your-files"]
 
 [[application]]
 category = "code"
@@ -490,6 +534,7 @@ version = "26.08.3"
 licence = "LGPL-2.1+"
 verified = true
 early = false
+reaches = ["programs-outside-its-box", "your-files"]
 
 [[application]]
 category = "code"
@@ -500,6 +545,7 @@ version = "2026.3"
 licence = "Apache-2.0"
 verified = false
 early = false
+reaches = ["your-files"]
 
 # Write to other people. Signal and Element are open and not verified;
 # Discord and Slack are proprietary. Each says so on its row.
@@ -512,6 +558,7 @@ version = "8.35.0"
 licence = "AGPL-3.0-only"
 verified = false
 early = false
+reaches = []
 
 [[application]]
 category = "chat"
@@ -522,6 +569,7 @@ version = "1.12.35"
 licence = "AGPL-3.0-only OR GPL-3.0-only"
 verified = false
 early = false
+reaches = []
 
 [[application]]
 category = "chat"
@@ -532,6 +580,7 @@ version = "14.3"
 licence = "GPL-3.0+"
 verified = true
 early = false
+reaches = []
 
 [[application]]
 category = "chat"
@@ -542,6 +591,7 @@ version = "7.4.4"
 licence = "GPL-3.0"
 verified = true
 early = false
+reaches = []
 
 [[application]]
 category = "chat"
@@ -552,6 +602,7 @@ version = "1.0.169"
 licence = "LicenseRef-proprietary=https://discord.com/terms"
 verified = true
 early = false
+reaches = []
 
 [[application]]
 category = "chat"
@@ -562,6 +613,7 @@ version = "4.53.280"
 licence = "LicenseRef-proprietary=https://slack.com/terms-of-service/user"
 verified = false
 early = false
+reaches = ["your-files"]
 
 # Talk to other people, with or without video.
 [[application]]
@@ -573,6 +625,7 @@ version = "2026.10.0"
 licence = "Apache-2.0"
 verified = true
 early = false
+reaches = []
 
 [[application]]
 category = "calls"
@@ -583,6 +636,7 @@ version = "7.2.1.5760"
 licence = "LicenseRef-proprietary"
 verified = false
 early = false
+reaches = ["your-files"]
 
 # Send and receive email. `org.mozilla.thunderbird`, lower case, is the live
 # identifier; `org.mozilla.Thunderbird` is end-of-life on Flathub.
@@ -595,6 +649,7 @@ version = "160.0"
 licence = "MPL-2.0"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "email"
@@ -605,6 +660,7 @@ version = "3.62.1"
 licence = "GPL-2.0+ and GFDL-1.3"
 verified = true
 early = false
+reaches = []
 
 # Keep notes: typed, linked, or written by hand.
 [[application]]
@@ -616,6 +672,7 @@ version = "3.7.21"
 licence = "AGPL-3.0-or-later"
 verified = false
 early = false
+reaches = []
 
 [[application]]
 category = "notes"
@@ -626,6 +683,7 @@ version = "0.10.15"
 licence = "AGPL-3.0-or-later"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "notes"
@@ -636,6 +694,7 @@ version = "0.14.2"
 licence = "GPL-3.0-or-later"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "notes"
@@ -646,6 +705,7 @@ version = "1.3.8"
 licence = "GPL-2.0"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "notes"
@@ -656,6 +716,7 @@ version = "1.15.1"
 licence = "LicenseRef-proprietary=https://obsidian.md/eula"
 verified = true
 early = false
+reaches = ["your-files"]
 
 # Listen to music and radio.
 [[application]]
@@ -667,6 +728,7 @@ version = "2026.1"
 licence = "GPL-3.0-or-later"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "music"
@@ -677,6 +739,7 @@ version = "1.2.31"
 licence = "GPL-3.0+"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "music"
@@ -687,6 +750,7 @@ version = "5.1.0"
 licence = "GPL-3.0-or-later"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "music"
@@ -697,6 +761,7 @@ version = "1.2.95.453.g0eeebbed"
 licence = "LicenseRef-proprietary=https://www.spotify.com/us/legal/end-user-agreement/"
 verified = false
 early = false
+reaches = ["your-files"]
 
 # Read books and keep a shelf of them.
 [[application]]
@@ -708,6 +773,7 @@ version = "3.3.0"
 licence = "GPL-3.0-or-later"
 verified = true
 early = false
+reaches = []
 
 [[application]]
 category = "books"
@@ -718,6 +784,7 @@ version = "9.17.0"
 licence = "GPL-3.0"
 verified = false
 early = false
+reaches = ["your-files"]
 
 # Find a place and the way there.
 [[application]]
@@ -729,6 +796,7 @@ version = "51.2"
 licence = "GPL-2.0-or-later"
 verified = true
 early = false
+reaches = []
 
 # Play games, and keep the shops and launchers games come through.
 [[application]]
@@ -740,6 +808,7 @@ version = "1.0.0.87"
 licence = "LicenseRef-proprietary"
 verified = false
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "games"
@@ -750,6 +819,7 @@ version = "v2.22.4"
 licence = "GPL-3.0"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "games"
@@ -760,6 +830,7 @@ version = "0.5.23"
 licence = "GPL-3.0-or-later"
 verified = true
 early = false
+reaches = ["programs-outside-its-box", "your-files"]
 
 [[application]]
 category = "games"
@@ -770,6 +841,7 @@ version = "1.5"
 licence = "GPL-3.0+"
 verified = true
 early = false
+reaches = []
 
 [[application]]
 category = "games"
@@ -780,6 +852,7 @@ version = "1.22.2"
 licence = "GPL-3.0-or-later"
 verified = true
 early = false
+reaches = ["your-files"]
 
 # Keep passwords in one locked place.
 [[application]]
@@ -791,6 +864,7 @@ version = "2.8.0"
 licence = "GPL-3.0-or-later"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "passwords"
@@ -801,6 +875,7 @@ version = "14.0"
 licence = "GPL-3.0-only"
 verified = true
 early = false
+reaches = []
 
 [[application]]
 category = "passwords"
@@ -811,6 +886,7 @@ version = "2026.10.3"
 licence = "LicenseRef-proprietary=https://raw.githubusercontent.com/bitwarden/clients/refs/heads/main/LICENSE_BITWARDEN.txt"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "passwords"
@@ -821,6 +897,7 @@ version = "8.12.44"
 licence = "LicenseRef-proprietary=https://1password.com/legal/terms-of-service"
 verified = true
 early = false
+reaches = ["your-files"]
 
 # See and use another computer from this one.
 [[application]]
@@ -832,6 +909,7 @@ version = "1.4.43"
 licence = "GPL-2.0+"
 verified = true
 early = false
+reaches = ["programs-outside-its-box", "your-files"]
 
 [[application]]
 category = "remote-desktop"
@@ -842,6 +920,7 @@ version = "51.0"
 licence = "GPL-3.0-or-later"
 verified = true
 early = false
+reaches = []
 
 [[application]]
 category = "remote-desktop"
@@ -852,6 +931,7 @@ version = "1.5.3"
 licence = "AGPL-3.0-only"
 verified = true
 early = false
+reaches = ["your-files"]
 
 [[application]]
 category = "remote-desktop"
@@ -862,3 +942,4 @@ version = "8.0.4"
 licence = "LicenseRef-proprietary"
 verified = false
 early = false
+reaches = ["your-files"]

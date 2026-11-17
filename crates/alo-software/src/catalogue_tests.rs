@@ -507,6 +507,7 @@ fn the_catalogue_holds_no_words_a_person_would_read() {
                         | "early"
                         | "bundle"
                         | "sha256"
+                        | "reaches"
                 )
             ),
             "the catalogue holds {line:?}, which this reader does not know — and if it is \
@@ -515,7 +516,7 @@ fn the_catalogue_holds_no_words_a_person_would_read() {
         read += 1;
     }
     assert_eq!(
-        read, 498,
+        read, 567,
         "format, seven keys for each of sixty-two entries from Flathub, and nine for each of \
          seven from their maker's signed release"
     );
@@ -540,7 +541,11 @@ fn a_craft_application_is_read_as_its_makers_signed_release() {
         assert!(release.bundle().ends_with("-linux-x86_64.flatpak"));
         assert_eq!(
             one.labels(),
-            vec![Label::EarlyVersion, Label::NoAutomaticUpdates],
+            vec![
+                Label::RunsProgramsOutsideItsBox,
+                Label::EarlyVersion,
+                Label::NoAutomaticUpdates
+            ],
             "{}",
             one.application().identifier()
         );
@@ -608,4 +613,75 @@ fn a_signed_release_that_does_not_hold_is_refused() {
             identifier: "ai.storyteller.example".to_owned()
         }
     );
+}
+
+/// **What its makers ask for past its box is on its row, read from its real
+/// metadata** (the owner, 2026-11-17): OBS Studio can run programs outside its
+/// box, GIMP reaches the person's files, and an application asking for neither
+/// carries neither — the three cases a row can be in.
+#[test]
+fn what_an_application_reaches_past_its_box_is_on_its_row() {
+    let catalogue = Catalogue::decided().unwrap();
+    let labels_of = |identifier: &str| {
+        catalogue
+            .every()
+            .iter()
+            .find(|one| one.application().identifier() == identifier)
+            .unwrap()
+            .labels()
+    };
+    let obs = labels_of("com.obsproject.Studio");
+    assert!(obs.contains(&Label::RunsProgramsOutsideItsBox), "{obs:?}");
+    assert!(
+        !obs.contains(&Label::ReachesYourFiles),
+        "the larger reach is said, and the lesser not said twice: {obs:?}"
+    );
+    assert_eq!(labels_of("org.gimp.GIMP"), vec![Label::ReachesYourFiles]);
+    let quiet = catalogue
+        .every()
+        .iter()
+        .find(|one| one.reaches().is_empty())
+        .unwrap();
+    assert!(
+        !quiet
+            .labels()
+            .iter()
+            .any(|label| matches!(label, Label::RunsProgramsOutsideItsBox | Label::ReachesYourFiles)),
+        "{} asks for nothing past its box and is labelled as if it did",
+        quiet.application().identifier()
+    );
+}
+
+/// **An entry that does not say what it reaches is refused**, and one naming
+/// a reach this reader does not know — so a forgotten field is a refused file,
+/// never a row that says nothing about what it can do.
+#[test]
+fn an_entry_that_does_not_say_what_it_reaches_is_refused() {
+    let shipped = what_a_machine_ships();
+    let gimps = "early = false\nreaches = [\"your-files\"]\n";
+    assert!(THE_CATALOGUE.contains(gimps));
+    for instead in ["early = false\n", "early = false\nreaches = [\"the-camera\"]\n"] {
+        let text = replacing(gimps, instead);
+        assert!(
+            matches!(Catalogue::read(&text, &shipped), Err(NotCatalogued::NotRead { .. })),
+            "{instead:?} was read"
+        );
+    }
+}
+
+/// **Installed, an application that reaches past its box is not told it was
+/// given nothing**; one that asks for nothing past it, or one nothing here
+/// knows, keeps the ordinary sentence.
+#[test]
+fn what_arrives_with_access_past_its_box_is_not_told_it_was_given_nothing() {
+    use crate::installing::Installed;
+    let english = crate::testing::in_english();
+    let gimp = alo_applications::Application::identified("org.gimp.GIMP").unwrap();
+    let reaching = Installed::sandboxed(gimp.clone(), Some(vec![crate::Reach::YourFiles]));
+    let said = reaching.said(&english).into_text();
+    assert!(!said.contains("given nothing"), "{said}");
+    assert!(said.contains("more than its box"), "{said}");
+    for quiet in [Installed::sandboxed(gimp.clone(), Some(Vec::new())), Installed::sandboxed(gimp, None)] {
+        assert!(quiet.said(&english).into_text().contains("given nothing"));
+    }
 }

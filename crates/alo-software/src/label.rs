@@ -32,6 +32,11 @@ use crate::words::{self, Word};
 /// One thing the market says about an application beside its name.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Label {
+    /// It can start programs outside its box — so it can do anything the
+    /// person can. Said first, because it is the largest thing on a row.
+    RunsProgramsOutsideItsBox,
+    /// It can read and change the person's files without asking.
+    ReachesYourFiles,
     /// Its makers do not publish the code it is built from.
     NotOpenSource,
     /// It was not published at its source by the people who make it.
@@ -45,7 +50,9 @@ pub enum Label {
 
 impl Label {
     /// Every label, in the order a row shows them.
-    pub const EVERY: [Self; 4] = [
+    pub const EVERY: [Self; 6] = [
+        Self::RunsProgramsOutsideItsBox,
+        Self::ReachesYourFiles,
         Self::NotOpenSource,
         Self::NotVerified,
         Self::EarlyVersion,
@@ -56,6 +63,8 @@ impl Label {
     #[must_use]
     pub const fn word(self) -> Word {
         match self {
+            Self::RunsProgramsOutsideItsBox => words::RUNS_PROGRAMS_OUTSIDE_ITS_BOX,
+            Self::ReachesYourFiles => words::REACHES_YOUR_FILES,
             Self::NotOpenSource => words::NOT_OPEN_SOURCE,
             Self::NotVerified => words::NOT_VERIFIED_BY_ITS_MAKER,
             Self::EarlyVersion => words::EARLY_VERSION,
@@ -68,6 +77,8 @@ impl Label {
     #[must_use]
     pub const fn said_in_full(self) -> Word {
         match self {
+            Self::RunsProgramsOutsideItsBox => words::RUNS_PROGRAMS_OUTSIDE_ITS_BOX_IN_FULL,
+            Self::ReachesYourFiles => words::REACHES_YOUR_FILES_IN_FULL,
             Self::NotOpenSource => words::NOT_OPEN_SOURCE_IN_FULL,
             Self::NotVerified => words::NOT_VERIFIED_BY_ITS_MAKER_IN_FULL,
             Self::EarlyVersion => words::EARLY_VERSION_IN_FULL,
@@ -80,6 +91,8 @@ impl Label {
     #[must_use]
     pub const fn named(self) -> &'static str {
         match self {
+            Self::RunsProgramsOutsideItsBox => "runs_programs_outside_its_box",
+            Self::ReachesYourFiles => "reaches_your_files",
             Self::NotOpenSource => "not_open_source",
             Self::NotVerified => "not_verified",
             Self::EarlyVersion => "early_version",
@@ -106,7 +119,7 @@ mod tests {
                 seen.push(key);
             }
         }
-        assert_eq!(seen.len(), 12, "the loop read every label");
+        assert_eq!(seen.len(), 18, "the loop read every label");
     }
 
     /// **A label's short words say the fact in the owner's words**, in English

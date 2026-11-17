@@ -265,6 +265,21 @@ impl Call {
             .map(|key| strings.say(key, &Filling::nothing()))
     }
 
+    /// The same call, saying `instead` for what it leaves alone.
+    ///
+    /// **For a verb whose one sentence is not true of every call.** An
+    /// installation leaves the person's files alone unless the application's
+    /// makers ask for them, and the card a person answers must say which before
+    /// they approve (the owner, 2026-11-17). The verb keeps its own sentence for
+    /// every other call; the crate that knows the difference names the other.
+    #[must_use]
+    pub fn leaving_instead(self, instead: Key) -> Self {
+        Self {
+            leaves: Some(instead),
+            ..self
+        }
+    }
+
     /// **What this change leaves alone**, in the language the person reads.
     #[must_use]
     pub fn what_it_leaves(&self, strings: &Strings) -> Option<Said> {

@@ -64,7 +64,7 @@ impl TheMarketsWords {
     pub fn said(strings: &Strings) -> Self {
         Self {
             heading: say(strings, &words::THE_APPLICATIONS),
-            promise: say(strings, &words::EACH_ARRIVES_WITH_NOTHING),
+            promise: say(strings, &words::EACH_SAYS_WHAT_IT_REACHES),
             install: say(strings, &words::INSTALL_IT),
             installing: say(strings, &words::INSTALLING_IT),
             open: say(strings, &words::OPEN_IT),

@@ -2180,10 +2180,11 @@ software.category.pictures	Pictures
 software.category.remote-desktop	Another computer
 software.category.screen-recording	Screen recording
 software.category.video	Video
-software.each-arrives-with-nothing	Each one installs from the place it is published, and arrives able to reach nothing
+software.each-says-what-it-reaches	Each one installs from the place it is published, with what its makers ask for. Its row says if that reaches your files or runs programs outside its box
 software.install-it	Install
 software.installed	{application} is installed. It has been given nothing: it asks when it needs a file, the camera or anything else, and you answer
 software.installed-reaching-everything	{application} is installed, and you chose to let it reach your files and the network without asking you first. Anything else you install has to ask; this one does not
+software.installed-with-what-its-makers-ask	{application} is installed, with what its makers ask for: it can reach more than its box without asking you first. Applications says what
 software.installing-it	Installing…
 software.label.early-version	Early version
 software.label.early-version.in-full	Early version: it is new and still changing, so some of it may not work yet
@@ -2193,6 +2194,10 @@ software.label.not-open-source	Not open source
 software.label.not-open-source.in-full	Not open source: the people who make it do not publish the code it is built from, so nobody outside can check what it does
 software.label.not-verified	Not verified
 software.label.not-verified.in-full	Not verified: the people who make it did not publish it here themselves, so the place it comes from cannot confirm who did
+software.label.reaches-your-files	Reaches your files
+software.label.reaches-your-files.in-full	Reaches your files: its makers ask for it to read and change your files without asking you first
+software.label.runs-programs-outside-its-box	Runs programs outside its box
+software.label.runs-programs-outside-its-box.in-full	Runs programs outside its box: its makers ask for it to start programs on this computer outside the box applications are kept in, so it can do anything you can
 software.open-it	Open
 software.refused.already-installed	{application} is already installed on this machine, so it was not installed again. Updates for it are offered in Software
 software.refused.did-not-answer	The part of this machine that installs applications did not respond, so nothing was changed. Restarting this machine starts it again
@@ -2214,6 +2219,8 @@ software.updated	{application} is updated. Nothing else was closed or restarted
 software.verb.install-application.application	the application to install, by its identifier
 software.verb.install-application.changes	Downloads this application and installs it for everyone who uses this computer.
 software.verb.install-application.leaves	It is given no access to your files, and no other application is updated or removed.
+software.verb.install-application.leaves.reaching-your-files	Its makers ask for it to read and change your files without asking you first, and it will be able to. No other application is updated or removed.
+software.verb.install-application.leaves.running-programs-outside	Its makers ask for it to run programs outside its box, so it will be able to do anything you can on this computer. No other application is updated or removed.
 software.verb.install-application.purpose	install an application from a place this machine installs applications from
 software.verb.install-application.sentence	install {application} from {source}
 software.verb.install-application.source	the place to install it from, by the name this machine gives that place

@@ -160,6 +160,7 @@ pub mod label;
 pub mod maker;
 pub mod refusing;
 pub mod removing;
+pub mod reach;
 pub mod rented;
 pub mod road;
 pub mod role;
@@ -196,6 +197,7 @@ pub use label::Label;
 pub use maker::Maker;
 pub use refusing::NotDone;
 pub use removing::{Removed, remove};
+pub use reach::Reach;
 pub use rented::TheRentedTool;
 pub use road::{NoRoad, THE_UNIT, the_road_out, the_tool_for};
 pub use role::Role;
@@ -209,7 +211,7 @@ pub use tool::{Failed, Tool};
 pub use updating::{Offer, Updated, apply, applying, looking_for_updates, offered};
 pub use verbs::{
     Declaring, INSTALL_APPLICATION, NotALook, NotAnInstallation, WHAT_CAN_BE_INSTALLED, approved,
-    looked_at, software_verbs,
+    looked_at, software_verbs, what_installing_leaves,
 };
 pub use what_the_catalogue_holds::WhatTheCatalogueHolds;
 pub use whether_it_is_sandboxed::Sandboxing;

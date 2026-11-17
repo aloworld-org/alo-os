@@ -37,6 +37,7 @@ use crate::enabled::did_not_answer;
 use crate::fetching::{Fetcher, THE_LARGEST_FILE};
 use crate::installing::Installed;
 use crate::maker::Maker;
+use crate::reach::Reach;
 use crate::refusing::NotDone;
 use crate::shown::{Stopped, held_to};
 use crate::signature::Verifier;
@@ -57,6 +58,9 @@ pub struct SignedRelease {
     bundle: String,
     /// The bundle's SHA-256, in lower-case hexadecimal.
     sha256: String,
+    /// What its makers ask for that reaches past its box, where the catalogue
+    /// says.
+    reaches: Option<Vec<Reach>>,
 }
 
 /// Why a pinned release was not believed.
@@ -97,6 +101,7 @@ impl SignedRelease {
             maker,
             bundle: bundle.to_owned(),
             sha256: sha256.to_ascii_lowercase(),
+            reaches: None,
         })
     }
 
@@ -104,6 +109,16 @@ impl SignedRelease {
     #[must_use]
     pub const fn application(&self) -> &Application {
         &self.application
+    }
+
+    /// The same release, of an application whose makers ask for this much
+    /// past its box — what the person is told once it arrives.
+    #[must_use]
+    pub fn reaching(self, reaches: Vec<Reach>) -> Self {
+        Self {
+            reaches: Some(reaches),
+            ..self
+        }
     }
 
     /// Who made it.
@@ -196,7 +211,10 @@ pub fn install_a_signed_release(
         let _ = std::fs::remove_file(file);
     }
     answer?;
-    Ok(Installed::sandboxed(release.application().clone()))
+    Ok(Installed::sandboxed(
+        release.application().clone(),
+        release.reaches.clone(),
+    ))
 }
 
 /// The part of the road that leaves files behind, so the caller can remove
