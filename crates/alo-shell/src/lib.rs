@@ -175,6 +175,8 @@ mod ease_in_and_out;
 mod miniature_measures;
 /// The switches that let alo use pictures and keys in one application each.
 mod pictures_and_keys_in_settings;
+/// What reads the pictures alo takes of a window, chosen in Settings.
+mod who_reads_pictures_in_settings;
 /// Windows put aside are asked to draw again at a bounded rate.
 mod put_aside_windows_draw_again;
 #[cfg(test)]

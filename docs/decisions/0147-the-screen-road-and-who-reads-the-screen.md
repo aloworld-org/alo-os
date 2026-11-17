@@ -163,6 +163,28 @@ amendment pointing here, and `app-adapters.md` was edited in place:
   this product ships in. Which one is not decided here; it is named in the change
   that builds it, under *engines are configured, never patched*.
 
+## Amended 2026-11-17 — until the built-in reader exists, no one reads
+
+*The owner, 2026-11-17, relayed by the coordinator: "It will always depend on
+the user, if he wants the third party to read the screens pictures then he
+causes."* §4 stands: the person chooses who reads the screen. Two of its three
+readers are built — **the person's local model** and **a service the person
+names** — as a choice in Settings → What alo can use, under *Pictures and keys*.
+**§4's first reader, alo's own built-in offline recognition, is not built**, so
+the sentence *before anybody has chosen, alo's own built-in offline recognition
+is used* cannot be kept yet. Until the person chooses, **no one reads a
+picture**: alo takes none, and says it cannot see inside that application and
+where to choose. A reader that cannot read pictures — today's pinned local
+model reads text only — is refused in words, never guessed past. When the
+recogniser is built it becomes a fourth choice, and whether it then becomes the
+default is a decision for that change.
+
+**The provider's sentence is the first half of §4's.** §4 says *… sent to
+{provider} each time. Password fields are cut out first.* alo instead takes **no
+picture at all** of a window with a password field (the *Pictures and keys*
+switch says so), so the second sentence would describe something alo does not
+do, and is not said.
+
 ## What this does not decide
 
 The recognition engine itself; the Settings surface the three choices appear

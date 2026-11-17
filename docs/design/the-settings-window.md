@@ -398,6 +398,21 @@ design is silent, so it is built from the pieces it already has. **A departure,
 recorded here for the next person to take to the design.** The wording and a
 picture went to the coordinator before it landed.
 
+## Built and not drawn: who reads the pictures
+
+*ADR 0147 §4; the owner's answer of 2026-11-17.* Under **Pictures and keys**,
+wherever its switches are drawn, a section **Who reads the pictures**: a row of
+words saying something has to read a picture before alo can act, then one
+choice per reader, in the Running code page's choice rows (`550:874`) —
+**No one**, marked *Default* and chosen on a fresh machine; **Your model on this
+computer**, *Nothing is sent*; then each service the person added, **by its own
+name**, with the *What it risks* box holding ADR 0147 §4's sentence, *A picture
+of the window alo is reading is sent to Mistral each time*. A service chosen and
+since removed is still drawn, chosen, so the page never hides what the file
+says. ADR 0147's built-in reader is not built and is not drawn. The design is
+silent, so it is built from the pieces it already has. **A departure, recorded
+here for the next person to take to the design.**
+
 ## Giving alo an application, from the terminal's own picker
 
 *The owner's decision of 2026-11-15, relayed by the coordinator: **reuse the

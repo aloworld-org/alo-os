@@ -245,6 +245,36 @@ pictures-and-keys-in = ["net.supertuxkart.SuperTuxKart"]
 - *As of 2026-11-17 only Settings reads it*; the verb that takes a picture of
   one window is the next change, and reads it at each picture.
 
+## And who reads those pictures
+
+*Added 2026-11-17, additively; `format` stays `1`.* ADR 0147 §4 and the
+owner's answer of that day — *"It will always depend on the user, if he wants
+the third party to read the screens pictures then he causes"*: what reads a
+picture alo takes of a window is the person's choice. Kept here, under the same
+rules about who may have written it, so **an agent cannot choose a reader for
+itself** — least of all a service a picture would leave for.
+
+```toml
+format = 1
+pictures-read-by = "a-provider"
+pictures-read-by-provider = "Mistral"
+```
+
+| Key | Meaning |
+|---|---|
+| `pictures-read-by` | Optional. `no-one`: nothing reads pictures, so alo takes none and says it cannot see inside the application. `this-computer`: the person's own model on this computer; nothing is sent. `a-provider`: the service named beside it; **each picture is sent to it**. Any other word is refused, and the whole file with it. |
+| `pictures-read-by-provider` | Present beside `a-provider` and only there: the service's name, as the person added it, matched exactly. Missing beside `a-provider`, present beside either other word or alone, empty, or with space around it, and the whole file is refused. |
+
+- **Absent is no one**, which is how a machine arrives. ADR 0147 §4's built-in
+  reader is not built, so it has no word here yet.
+- **A reader that cannot read the file answers no one**
+  (`alo_capability::WhoReadsPictures::as_read`) — never a service.
+- **Each writer keeps the others' keys**, and choosing over a file that will not
+  read, or one another login could have written, is refused and writes nothing.
+  A file holding only these keys says something.
+- *As of 2026-11-17 only Settings reads it*; the verb that takes a picture reads
+  it at each picture, in the change that builds it.
+
 ## And whether alo may use a terminal
 
 *Added 2026-11-17, additively; `format` stays `1`.* ADR 0111: whether the

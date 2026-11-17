@@ -12,6 +12,7 @@ fn every_level_goes_down_and_comes_back() {
             in_the_terminal: None,
             in_applications: None,
             pictures_and_keys_in: None,
+            pictures_read_by: None,
             a_terminal: None,
         })
         .expect("a level writes");
@@ -147,6 +148,7 @@ fn it_is_kept_in_words_a_person_can_read() {
         in_the_terminal: None,
         in_applications: None,
         pictures_and_keys_in: None,
+        pictures_read_by: None,
         a_terminal: None,
     })
     .expect("it writes");
@@ -201,6 +203,7 @@ fn the_terminal_answer_goes_down_and_comes_back() {
                 in_the_terminal: Some(answer),
                 in_applications: None,
                 pictures_and_keys_in: None,
+                pictures_read_by: None,
                 a_terminal: None,
             };
             let text = written(says.clone()).expect("it writes");
@@ -216,6 +219,7 @@ fn the_terminal_answer_goes_down_and_comes_back() {
         in_the_terminal: Some(AloInTheTerminal::ActsWithoutAsking),
         in_applications: None,
         pictures_and_keys_in: None,
+        pictures_read_by: None,
         a_terminal: None,
     })
     .expect("it writes");

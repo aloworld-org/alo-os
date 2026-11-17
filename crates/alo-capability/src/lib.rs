@@ -212,6 +212,8 @@ pub mod the_whole_text;
 pub mod unseen;
 pub mod verb;
 pub mod verbs;
+/// What reads the pictures alo takes of a window (ADR 0147 §4).
+pub mod who_reads_pictures;
 /// What a command alo ran did.
 pub mod what_a_command_did;
 /// Whether a command alo ran sent anything off this computer, for the line
@@ -261,4 +263,5 @@ pub use verb::{Effect, Requires, Verb, VerbError};
 pub use verbs::{Verbs, VerbsError};
 pub use what_a_command_did::{ItDidNotStart, ItDidNotWork, WhatACommandDid};
 pub use what_a_command_sent::WhatItSent;
+pub use who_reads_pictures::WhoReadsPictures;
 pub use words::{EVERY_COUNTED, EVERY_WORD, WordsError, capability_words, declare_into};

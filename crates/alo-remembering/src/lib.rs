@@ -112,6 +112,8 @@ mod testing;
 mod the_level;
 #[cfg(unix)]
 mod whose;
+#[cfg(unix)]
+mod who_reads_pictures;
 pub mod words;
 mod written;
 
@@ -132,9 +134,11 @@ pub use pairings::{THE_PAIRINGS, pairings_kept, pairings_remembered};
 #[cfg(unix)]
 pub use pictures_and_keys::{pictures_and_keys_remembered, pictures_and_keys_switched};
 pub use refusing::NotRemembered;
+#[cfg(unix)]
+pub use who_reads_pictures::{who_reads_pictures_chosen, who_reads_pictures_remembered};
 pub use the_level::{
     ASKING_EACH_TIME, AT_FULL_TRUST, IN_A_SEALED_BOX, IN_ALOS_COPY, IN_ALOS_COPY_OR_THEIR_WINDOW,
-    IN_THEIR_WINDOW, NotTheLevel, THE_LEVEL_FORMAT, the_level_called, the_word_for,
+    IN_THEIR_WINDOW, NotTheLevel, READ_BY_A_PROVIDER, READ_BY_NO_ONE, READ_BY_THIS_COMPUTER, THE_LEVEL_FORMAT, the_level_called, the_word_for,
 };
 #[cfg(unix)]
 pub use whose::{
