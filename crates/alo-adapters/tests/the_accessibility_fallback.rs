@@ -907,6 +907,70 @@ fn nothing_is_guessed_when_the_control_is_not_the_only_one() {
     assert_eq!(tree.presses_asked() + big.presses_asked(), 0);
 }
 
+/// **A long list off the screen no longer stops a press.** A list view lists
+/// every row it holds, on the screen or not — Qt's does — so an archive of a
+/// few hundred files held more things than one walk reads, and then nothing in
+/// its window could be pressed: *too much to be sure*. What is counted against
+/// [`alo_adapters::walking::MOST_THINGS`] is what is **on the screen**, which is
+/// all a person could press; what is off it is still bounded, by
+/// [`alo_adapters::walking::MOST_ASKED`], and past that the window still says
+/// not all of it was read and a press is still refused.
+#[test]
+fn a_long_list_off_the_screen_does_not_stop_a_press() {
+    let strings = in_english();
+    let grants = granting(&[MAIL]);
+    let hidden = |count: usize| -> Vec<Thing> {
+        (0..count)
+            .map(|_| {
+                thing(roles::FILLER, "").in_states(States::showing_and_usable().hidden())
+            })
+            .collect()
+    };
+    let window = |rows: Vec<Thing>| {
+        ATree::default().with(
+            ":1.7",
+            Some(MAIL),
+            vec![thing(roles::FRAME, "Archive").holding(vec![
+                thing(roles::FILLER, "").holding(rows),
+                thing(roles::PUSH_BUTTON, "Extract").doing(&["click"]),
+            ])],
+        )
+    };
+    let press = |tree: &ATree| {
+        Activating::of(
+            approved(&pressing(MAIL, "button", "Extract"), &grants),
+            &Adapters::default(),
+            &grants,
+            &installed(),
+            &strings,
+        )
+        .unwrap()
+        .press(tree, WorkingFully::NothingMoreToTurnOn, &strings)
+    };
+    let read = |tree: &ATree| {
+        ReadingWindows::of(
+            Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
+            &Adapters::default(),
+            &grants,
+            &installed(),
+            &strings,
+        )
+        .unwrap()
+        .read(tree, &strings)
+        .unwrap()
+    };
+
+    let long = window(hidden(alo_adapters::walking::MOST_THINGS + 500));
+    assert!(!read(&long).shown().not_all_read());
+    assert!(press(&long).is_ok(), "rows off the screen stopped a press");
+    assert_eq!(long.presses_asked(), 1);
+
+    let endless = window(hidden(alo_adapters::walking::MOST_ASKED + 1));
+    assert!(read(&endless).shown().not_all_read());
+    assert!(press(&endless).is_err(), "a list past every bound was pressed in");
+    assert_eq!(endless.presses_asked(), 0);
+}
+
 /// **With no invocation the tree is never asked anything**, and neither is it
 /// asked while anything before it is refused: declaring the verbs, loading the
 /// adapters, proposing and approving, and every refusal of the grants, the
