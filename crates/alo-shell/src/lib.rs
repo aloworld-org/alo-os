@@ -339,6 +339,7 @@ mod the_github_sheet_on_the_server;
 /// The sheet going up when a command alo ran needed a GitHub sign-in.
 mod the_github_sheet_rises_by_itself;
 mod the_github_sheets_words;
+mod the_keyboard_goes_to_the_window_in_front;
 mod the_keyboard_on_the_docks_surfaces;
 /// The *Open with* sheet: an application asked for the person to choose what
 /// opens a link (frame `25:52`). Public for the one type the door hands it.

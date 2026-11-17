@@ -16,6 +16,7 @@ mod a_window_that_grows_is_placed_again;
 mod a_window_the_person_opened;
 mod a_window_travels_aside;
 mod alt_f4_at_alos_own_window;
+mod closing_a_task_window_hands_on_the_keyboard;
 mod cursor;
 mod cursor_shapes;
 mod direct_keyboard;

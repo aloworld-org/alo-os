@@ -34,8 +34,13 @@
 //! the owner, 2026-10-30. A task window holding the keyboard takes every key at
 //! the seat, and closing it hands the keyboard to **the task window now in
 //! front**, if one is open: task windows are drawn over the terminal and every
-//! application, so that is the window a person sees. With none left, it lets
-//! go, and the next key reaches the terminal or the application behind.
+//! application, so that is the window a person sees. With none left, the
+//! keyboard goes to the window the person sees in front: the terminal by being
+//! in front, or the application window in front — *"When alo's task window
+//! closes, the keyboard goes to the window the person sees in front. alo still
+//! never takes the keyboard while the person is working elsewhere"* (the owner,
+//! 2026-11-17; `crate::the_keyboard_goes_to_the_window_in_front`). Until that
+//! day it let go, and typing stayed wherever it had been before the task.
 //!
 //! **Only when the closed window held the keyboard.** A person typing in an
 //! application who clicks another task window's Close has not asked to type
