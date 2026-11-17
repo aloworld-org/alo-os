@@ -564,7 +564,12 @@ fn an_application_that_does_not_answer_is_run_and_not_seen() {
     let mut windows = windows_of(FILES);
     windows.counted.does_not_answer.set(true);
     let (did, record) = on_a_machine(&mut windows, the_files_are_granted, |turning, grants| {
-        approving(turning, grants, SELECT_ITEM, &selecting(FILES, "report.pdf"))
+        approving(
+            turning,
+            grants,
+            SELECT_ITEM,
+            &selecting(FILES, "report.pdf"),
+        )
     });
     let did = did.unwrap();
     let chosen = did.chosen().unwrap();
