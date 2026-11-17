@@ -380,7 +380,10 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(KIND, Pressable::Button.named())
             .expecting(NAME, RELOAD),
         ],
-    );
+    )
+    // **Reading the window again after acting is aside of the road**: the
+    // model checking what its act did is a read the machine answers.
+    .or_looking_at(the_window_read_again(&the_window, &browser));
     // **Scrolling, 2026-11-17**: to a thing the person names, and by a page.
     // Each may read the window first; neither needs to, since the request says
     // what to scroll to. **The window read is a page**, its top on the screen,
@@ -473,7 +476,8 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(NAME, ZOOM)
             .expecting(VALUE, ZOOMED.to_string()),
         ],
-    );
+    )
+    .or_looking_at(the_window_read_again(&the_viewers_window, &viewer));
     let papers = shipped
         .the(Role::DocumentViewer)
         .application()
@@ -517,7 +521,8 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(NAME, ZOOM)
             .expecting(OPTION, FIT_WIDTH),
         ],
-    );
+    )
+    .or_looking_at(the_window_read_again(&the_papers_window, &papers));
     let files = shipped
         .the(Role::FileManager)
         .application()
@@ -548,7 +553,8 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(fallback_verbs::APPLICATION, files.as_str())
             .expecting(NAME, REPORT),
         ],
-    );
+    )
+    .or_looking_at(the_window_read_again(&the_folders_window, &files));
     let opening = ARequest::asking(
         "open a file in the file manager",
         format!("Open {REPORT} in Dolphin."),
@@ -566,7 +572,8 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(fallback_verbs::APPLICATION, files.as_str())
             .expecting(NAME, REPORT),
         ],
-    );
+    )
+    .or_looking_at(the_window_read_again(&the_folders_window, &files));
     Ok(vec![
         listing,
         reading,
