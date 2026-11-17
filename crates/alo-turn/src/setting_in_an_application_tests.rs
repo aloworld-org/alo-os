@@ -320,7 +320,10 @@ fn at_ask_each_time_one_approval_moves_once() {
     });
     let did = did.unwrap();
     let set = did.set().expect("a slider was moved");
-    assert_eq!((set.application(), set.name(), set.value()), (MIXER, "Volume", 40));
+    assert_eq!(
+        (set.application(), set.name(), set.value()),
+        (MIXER, "Volume", 40)
+    );
     assert!(set.seen() && !set.unanswered());
     assert_eq!(counted.opened.get(), 1);
     assert_eq!(counted.moves.get(), 1, "one approval, one move");
@@ -384,7 +387,8 @@ fn a_revoked_grant_stops_the_move_before_the_tree() {
                 Grant::checked(AGENT, Reach::Application(MIXER.to_owned()), noon(), hour())
                     .unwrap(),
             );
-            let proposed = turning.proposing(SET_VALUE, &volume(MIXER, 40), grants, hour(), noon())?;
+            let proposed =
+                turning.proposing(SET_VALUE, &volume(MIXER, 40), grants, hour(), noon())?;
             assert!(grants.revoke(id));
             turning.approving(proposed, grants, noon())
         },
