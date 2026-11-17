@@ -71,7 +71,12 @@ fn the_line_names_neither_the_folder_nor_the_account() {
 #[test]
 fn only_a_publication_is_said_as_one() {
     assert!(is_one(alo_publishing::PUBLISH_TO_GITHUB_PAGES));
-    for other in ["read_file", "open_file_in_application", "install_application", ""] {
+    for other in [
+        "read_file",
+        "open_file_in_application",
+        "install_application",
+        "",
+    ] {
         assert!(!is_one(other), "{other}");
     }
 }
