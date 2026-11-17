@@ -708,7 +708,10 @@ fn what_an_entry_reaches_travels_with_its_installation() {
         .iter()
         .find(|one| one.application().identifier() == "org.gimp.GIMP")
         .unwrap();
-    assert_eq!(gimp.wanted().reaches(), Some(&[crate::Reach::YourFiles][..]));
+    assert_eq!(
+        gimp.wanted().reaches(),
+        Some(&[crate::Reach::YourFiles][..])
+    );
     let by_hand = crate::installing::Wanted::by_hand(gimp.application().clone(), "flathub");
     assert_eq!(by_hand.reaches(), None);
     let craft = catalogue

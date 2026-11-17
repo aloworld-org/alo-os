@@ -601,7 +601,8 @@ mod tests {
     fn a_call_can_leave_alone_in_its_own_words() {
         const CHANGES: Word = Word::saying("testing.call.changes", "Moves one file.");
         const LEAVES: Word = Word::saying("testing.call.leaves", "No other file is moved.");
-        const INSTEAD: Word = Word::saying("testing.call.instead", "Every file beside it goes too.");
+        const INSTEAD: Word =
+            Word::saying("testing.call.instead", "Every file beside it goes too.");
         let strings = translating(&[CHANGES, LEAVES, INSTEAD], &[]);
         let verb = crate::test_calls::move_file()
             .changing(CHANGES, Some(LEAVES))
@@ -615,7 +616,9 @@ mod tests {
             ordinary.what_it_leaves(&strings).unwrap().text(),
             "No other file is moved."
         );
-        let instead = Call::of(&verb, &given).unwrap().leaving_instead(INSTEAD.key());
+        let instead = Call::of(&verb, &given)
+            .unwrap()
+            .leaving_instead(INSTEAD.key());
         assert_eq!(
             instead.what_it_leaves(&strings).unwrap().text(),
             "Every file beside it goes too."
