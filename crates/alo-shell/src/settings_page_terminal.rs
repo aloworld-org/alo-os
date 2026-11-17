@@ -14,6 +14,10 @@
 //! file of alo's and not the person's startup file, so there is nothing of
 //! theirs to lose by taking it out. `crate::alo_in_the_terminal_in_settings`
 //! keeps it.
+//!
+//! **The fourth turns either way in one press too**: letting alo use a
+//! terminal — open one, read it and press its buttons, never type (ADR 0111;
+//! the owner, 2026-11-17). `crate::alo_uses_a_terminal_in_settings` keeps it.
 
 use alo_strings::Strings;
 
@@ -66,6 +70,7 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings) -> Vec<ABlock> {
         rows.push(drawn);
     }
     rows.push(acting_without_asking(open, strings));
+    rows.push(letting_alo_use_a_terminal(open, strings));
     blocks.push(ABlock::Section(ASection {
         heading: Some(said(strings, w::IN_THE_TERMINAL)),
         rows,
@@ -120,6 +125,30 @@ fn acting_without_asking(open: &Open, strings: &Strings) -> ARow {
             words: said(strings, cost),
         });
     }
+    drawn.at_its_end = Some(AnEnd::Words(switch_said(is, strings)));
+    drawn
+}
+
+/// The switch that lets alo use a terminal (ADR 0111), with what it costs
+/// beneath it, drawn as the switch above it is and for the same reason: the
+/// design has no frame for it, and this page's switch row and the *What it
+/// risks* box are the two pieces it already has.
+fn letting_alo_use_a_terminal(open: &Open, strings: &Strings) -> ARow {
+    let is = if open.alo_uses_a_terminal.is().may_open_one() {
+        SwitchIs::On
+    } else {
+        SwitchIs::Off
+    };
+    let mut drawn = ARow::named(
+        Some(SettingsRow::AloUsesATerminal),
+        TheKind::ASwitch(is),
+        said(strings, w::ALO_USES_A_TERMINAL),
+    );
+    drawn.lines.push(said(strings, w::ALO_USES_A_TERMINAL_IS));
+    drawn.risk = Some(ARisk {
+        heading: said(strings, w::WHAT_IT_RISKS),
+        words: said(strings, w::WHAT_A_TERMINAL_FOR_ALO_COSTS),
+    });
     drawn.at_its_end = Some(AnEnd::Words(switch_said(is, strings)));
     drawn
 }

@@ -90,12 +90,22 @@ impl Typing {
             );
             return Err(Refused::worded_elsewhere(call.clone(), said));
         };
-        Ok(Self {
+        let typing = Self {
             authorised: reached.authorised,
             application: reached.application,
             name,
             text,
-        })
+        };
+        // **A terminal application is never typed into, whatever the person
+        // allowed** (ADR 0111): letting alo use a terminal lets it open one,
+        // read it and press its buttons, and what is typed into one runs. Asked
+        // here, before any tree, as well as of the field's role, because a
+        // terminal whose tree does not describe it as one would otherwise reach
+        // the keyboard road.
+        if alo_capability::is_a_persons_own(&typing.application) {
+            return Err(typing.refused(words::A_TERMINAL, None, strings));
+        }
+        Ok(typing)
     }
 
     /// The application.

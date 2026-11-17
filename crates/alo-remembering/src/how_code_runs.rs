@@ -64,7 +64,7 @@
 
 use std::path::Path;
 
-use alo_capability::{AloInApplications, AloInTheTerminal, HowCodeRuns};
+use alo_capability::{ATerminalForTheAgent, AloInApplications, AloInTheTerminal, HowCodeRuns};
 
 use crate::believing::{read_believed, replaced_whole};
 use crate::refusing::NotRemembered;
@@ -210,6 +210,46 @@ pub fn alo_in_applications_kept(at: &Path, answer: AloInApplications) -> Result<
         at,
         WhatTheFileSays {
             in_applications: Some(answer),
+            ..before
+        },
+    )
+}
+
+/// What the person allowed their agent to do with a terminal, as kept at this
+/// path (ADR 0111, `alo-uses-a-terminal`).
+///
+/// **No file, and a file that says nothing about it, are
+/// [`ATerminalForTheAgent::NotAtAll`]**: off when a machine arrives, and the
+/// person's to turn on.
+///
+/// # Errors
+///
+/// Every refusal [`the_level_remembered`] makes, for the same file. **A reader
+/// that meets one must answer not at all**: that is the only answer that
+/// cannot be a file somebody else wrote letting alo into a terminal.
+pub fn alo_uses_a_terminal_remembered(at: &Path) -> Result<ATerminalForTheAgent, NotRemembered> {
+    Ok(what_is_kept(at)?
+        .and_then(|says| says.a_terminal)
+        .unwrap_or_default())
+}
+
+/// What the person allowed their agent to do with a terminal, written whole to
+/// this path, keeping every other answer.
+///
+/// # Errors
+///
+/// Every refusal [`the_level_remembered`] makes, when the file is there and
+/// would not read — **written over, it would lose a level the person chose** —
+/// and [`NotRemembered::NotWritten`] for a file that could not be written.
+pub fn alo_uses_a_terminal_kept(
+    at: &Path,
+    answer: ATerminalForTheAgent,
+) -> Result<(), NotRemembered> {
+    let before = what_is_kept(at)?.unwrap_or_default();
+    kept(
+        at,
+        WhatTheFileSays {
+            a_terminal: Some(answer),
             ..before
         },
     )
@@ -512,5 +552,85 @@ mod tests {
             alo_in_applications_remembered(&at),
             Err(NotRemembered::WritableByOthers { mode: 0o646, .. })
         ));
+    }
+
+    /// **alo may use a terminal only once the person says so** (ADR 0111):
+    /// no file, and a file saying nothing about it, are *not at all*; what
+    /// the person chose is found again by a second read; and writing it keeps
+    /// every other answer, as writing them keeps it.
+    #[test]
+    fn alo_uses_a_terminal_only_once_the_person_says_so_and_keeps_the_rest() {
+        let folder = a_folder_of_our_own("a-terminal-for-alo");
+        let at = folder.join("how-code-runs.toml");
+        assert_eq!(
+            alo_uses_a_terminal_remembered(&at).unwrap(),
+            ATerminalForTheAgent::NotAtAll,
+            "a machine nobody touched let alo use a terminal"
+        );
+        the_level_kept(&at, HowCodeRuns::AskingEachTime).unwrap();
+        alo_in_applications_kept(&at, AloInApplications::InTheirWindow).unwrap();
+        assert_eq!(
+            alo_uses_a_terminal_remembered(&at).unwrap(),
+            ATerminalForTheAgent::NotAtAll
+        );
+        alo_uses_a_terminal_kept(&at, ATerminalForTheAgent::MayOpenOne).unwrap();
+        assert_eq!(
+            alo_uses_a_terminal_remembered(&at).unwrap(),
+            ATerminalForTheAgent::MayOpenOne
+        );
+        assert!(
+            std::fs::read_to_string(&at)
+                .unwrap()
+                .contains("alo-uses-a-terminal = \"may-open-one\""),
+            "it is not written in the words the contract gives"
+        );
+        assert_eq!(
+            the_level_remembered(&at).unwrap(),
+            Some(HowCodeRuns::AskingEachTime),
+            "letting alo use a terminal forgot the level"
+        );
+        assert_eq!(
+            alo_in_applications_remembered(&at).unwrap(),
+            AloInApplications::InTheirWindow
+        );
+        the_level_kept(&at, HowCodeRuns::AtFullTrust).unwrap();
+        alo_in_the_terminal_kept(&at, AloInTheTerminal::ActsWithoutAsking).unwrap();
+        alo_in_applications_kept(&at, AloInApplications::InItsOwnCopy).unwrap();
+        assert_eq!(
+            alo_uses_a_terminal_remembered(&at).unwrap(),
+            ATerminalForTheAgent::MayOpenOne,
+            "writing another answer forgot the terminal"
+        );
+        alo_uses_a_terminal_kept(&at, ATerminalForTheAgent::NotAtAll).unwrap();
+        assert_eq!(
+            alo_uses_a_terminal_remembered(&at).unwrap(),
+            ATerminalForTheAgent::NotAtAll,
+            "switching it off did not"
+        );
+    }
+
+    /// **A file another login could write is refused, even saying *may open
+    /// one*** — so an agent cannot let itself into a terminal — and the switch
+    /// is never written over a file that would not read.
+    #[test]
+    fn a_terminal_answer_nobody_can_trust_is_refused_and_not_written_over() {
+        let folder = a_folder_of_our_own("a-terminal-for-alo-untrusted");
+        let at = folder.join("how-code-runs.toml");
+        alo_uses_a_terminal_kept(&at, ATerminalForTheAgent::MayOpenOne).unwrap();
+        std::fs::set_permissions(&at, std::fs::Permissions::from_mode(0o646)).unwrap();
+        assert!(matches!(
+            alo_uses_a_terminal_remembered(&at),
+            Err(NotRemembered::WritableByOthers { mode: 0o646, .. })
+        ));
+
+        let garbage = folder.join("garbage.toml");
+        std::fs::write(&garbage, "not the file [").unwrap();
+        std::fs::set_permissions(&garbage, std::fs::Permissions::from_mode(OURS_ALONE)).unwrap();
+        assert!(alo_uses_a_terminal_remembered(&garbage).is_err());
+        assert!(
+            alo_uses_a_terminal_kept(&garbage, ATerminalForTheAgent::MayOpenOne).is_err(),
+            "the switch was written over a file that would not read"
+        );
+        assert_eq!(std::fs::read_to_string(&garbage).unwrap(), "not the file [");
     }
 }

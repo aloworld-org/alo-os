@@ -106,7 +106,8 @@ fn every_sentence_says_what_follows_from_it() {
         // Ten since 2026-11-10: `in-applications` saying a word it does not
         // take is one more way the file did not read. Eleven since
         // 2026-11-17: `pictures-and-keys-in` naming a terminal is another.
-        (11, 2),
+        // Twelve the same day, for `alo-uses-a-terminal`.
+        (12, 2),
         "the split moved; the module header says which sentences are which"
     );
 }

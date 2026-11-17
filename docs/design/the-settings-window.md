@@ -351,6 +351,16 @@ The page's line under its heading, *Two things alo can do in your terminal*,
 reads *What alo can do in your terminal* for the same reason. **Departures, and
 recorded here for the next person to take to the design.**
 
+**A fourth switch, 2026-11-17: Let alo use a terminal** (ADR 0111; the owner,
+*"Both yes, within grants"*), under *Let alo act without asking* and built from
+the same two pieces: the switch row of `551:168`, with *alo can open a terminal,
+read what it shows and press its buttons when you ask. It never types into one…*
+under its name, and the *What it risks* box of `550:874` holding *alo will read
+everything the terminal shows, including any password or key a program printed
+there, and a shell is the whole machine by another road, so only you type into
+it* — ADR 0111's own sentence, drawn whichever way the switch is. A departure,
+like the third.
+
 ## Built and not drawn: where alo works in an application
 
 *The owner's answer A of 2026-11-10 (ADR 0143 Q6), decided after the frames

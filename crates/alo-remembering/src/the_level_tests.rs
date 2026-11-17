@@ -12,6 +12,7 @@ fn every_level_goes_down_and_comes_back() {
             in_the_terminal: None,
             in_applications: None,
             pictures_and_keys_in: None,
+            a_terminal: None,
         })
         .expect("a level writes");
         assert_eq!(
@@ -146,6 +147,7 @@ fn it_is_kept_in_words_a_person_can_read() {
         in_the_terminal: None,
         in_applications: None,
         pictures_and_keys_in: None,
+        a_terminal: None,
     })
     .expect("it writes");
     assert!(
@@ -199,6 +201,7 @@ fn the_terminal_answer_goes_down_and_comes_back() {
                 in_the_terminal: Some(answer),
                 in_applications: None,
                 pictures_and_keys_in: None,
+                a_terminal: None,
             };
             let text = written(says.clone()).expect("it writes");
             assert_eq!(
@@ -213,6 +216,7 @@ fn the_terminal_answer_goes_down_and_comes_back() {
         in_the_terminal: Some(AloInTheTerminal::ActsWithoutAsking),
         in_applications: None,
         pictures_and_keys_in: None,
+        a_terminal: None,
     })
     .expect("it writes");
     assert!(
@@ -351,6 +355,49 @@ fn a_terminal_or_nothing_in_the_list_refuses_the_whole_file() {
                 said: said.to_owned()
             }),
             "{said:?} was read around"
+        );
+    }
+}
+
+/// **Whether alo may use a terminal is read and written in its two words**
+/// (`not-at-all`, `may-open-one`), alone or beside a level, and any other word
+/// is refused whole rather than read as either.
+#[test]
+fn whether_alo_uses_a_terminal_reads_two_words_and_refuses_others() {
+    for (said, answer) in [
+        (NOT_AT_ALL, alo_capability::ATerminalForTheAgent::NotAtAll),
+        (
+            MAY_OPEN_ONE,
+            alo_capability::ATerminalForTheAgent::MayOpenOne,
+        ),
+    ] {
+        let text = format!("format = {THE_LEVEL_FORMAT}\nalo-uses-a-terminal = \"{said}\"\n");
+        let says = read(&text).expect("it reads");
+        assert_eq!(says.a_terminal, Some(answer));
+        assert_eq!(says.chose, None, "a level was invented");
+        assert!(
+            written(says)
+                .expect("it writes")
+                .contains(&format!("alo-uses-a-terminal = \"{said}\""))
+        );
+        let beside = WhatTheFileSays {
+            chose: Some(HowCodeRuns::AtFullTrust),
+            a_terminal: Some(answer),
+            ..WhatTheFileSays::default()
+        };
+        assert_eq!(
+            read(&written(beside.clone()).expect("it writes")),
+            Ok(beside)
+        );
+    }
+    for said in [AT_FULL_TRUST, "yes", "may-run-anything", "May-Open-One"] {
+        let text = format!("format = {THE_LEVEL_FORMAT}\nalo-uses-a-terminal = \"{said}\"\n");
+        assert_eq!(
+            read(&text),
+            Err(NotTheLevel::NotATerminalChoice {
+                said: said.to_owned()
+            }),
+            "{said:?} was read as whether alo may use a terminal"
         );
     }
 }

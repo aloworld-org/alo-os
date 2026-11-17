@@ -25,7 +25,7 @@
 use std::path::Path;
 use std::time::SystemTime;
 
-use alo_capability::{GrantId, Grants};
+use alo_capability::{ATerminalForTheAgent, GrantId, Grants};
 use alo_changing::{Changing, Door, Gone, Made, NotChanged, Row};
 use alo_granted::Listing;
 use alo_picking::{Applications, Granting};
@@ -37,7 +37,8 @@ use crate::the_application_sheet::{AnApplicationWanted, HowLongForAnApplication}
 /// on the desktop's log, for whoever reads it, never to the person.
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum NotGiven {
-    /// The application is not one alo may be given (a terminal, ADR 0043).
+    /// The application is not one alo may be given: a terminal, where the
+    /// person has not allowed their agent one (ADR 0111).
     #[error("it is not an application alo may be given")]
     ForbiddenToAlo,
     /// The grants file would not read.
@@ -58,19 +59,24 @@ fn the_grants_now(at: &Path, now: SystemTime) -> Result<Grants, NotGiven> {
 }
 
 /// **Give `agent` the application wanted, this long**, written to `at` and
-/// told to `daemon`.
+/// told to `daemon` — a terminal only where `terminal`, the person's choice as
+/// their file says it at the moment of the press, allows one (ADR 0111).
 pub(crate) fn alo_is_given(
     at: &Path,
     daemon: &dyn Door,
     agent: &str,
     wanted: &AnApplicationWanted,
     how_long: HowLongForAnApplication,
+    terminal: ATerminalForTheAgent,
     now: SystemTime,
 ) -> Result<GrantId, NotGiven> {
-    let chosen = Applications::of([(
-        wanted.identifier().to_owned(),
-        Some(wanted.called().to_owned()),
-    )])
+    let chosen = Applications::of_when(
+        [(
+            wanted.identifier().to_owned(),
+            Some(wanted.called().to_owned()),
+        )],
+        terminal,
+    )
     .pick(wanted.identifier())
     .map_err(|_| NotGiven::ForbiddenToAlo)?;
     let granting = match how_long {
@@ -78,7 +84,8 @@ pub(crate) fn alo_is_given(
             Granting::to_until_sign_out(agent)
         }
         HowLongForAnApplication::Remember => Granting::to_until_removed(agent),
-    };
+    }
+    .when_a_terminal_is(terminal);
     let mut grants = the_grants_now(at, now)?;
     match Changing::of(&mut grants, at, daemon)
         .granted(&granting, &chosen, now)
@@ -144,6 +151,66 @@ pub fn the_grants_for_the_session_go(places: &crate::SettingsPlaces) -> usize {
                  still stand: {why}"
             );
             0
+        }
+    }
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+mod tests {
+    use super::*;
+    use crate::the_tasks_a_person_opened::WhichTask;
+    use alo_capability::{Ask, Grantee};
+
+    /// A terminal a fresh machine can install.
+    const PTYXIS: &str = "app.devsuite.Ptyxis";
+
+    /// **The sheet gives alo a terminal only where the person allowed their
+    /// agent one** (ADR 0111): allowed, the grant is written and reaches the
+    /// terminal on a list carrying the choice; not allowed, nothing is written.
+    #[test]
+    fn a_terminal_is_given_on_the_sheet_only_where_the_person_allowed_it() {
+        let folder = tempfile::tempdir().expect("a temporary directory");
+        let at = folder.path().join("grants.toml");
+        let door = alo_changing::TheDaemonsDoor::at(&folder.path().join("nobody.sock"));
+        let wanted = AnApplicationWanted::by(WhichTask::numbered(0), PTYXIS, "Terminal");
+        let now = SystemTime::now();
+
+        let refused = alo_is_given(
+            &at,
+            &door,
+            "@files",
+            &wanted,
+            HowLongForAnApplication::Remember,
+            ATerminalForTheAgent::NotAtAll,
+            now,
+        );
+        assert!(
+            matches!(refused, Err(NotGiven::ForbiddenToAlo)),
+            "{refused:?}"
+        );
+        assert!(!at.exists(), "a refused terminal wrote the grants file");
+
+        for how_long in HowLongForAnApplication::ALL {
+            alo_is_given(
+                &at,
+                &door,
+                "@files",
+                &wanted,
+                how_long,
+                ATerminalForTheAgent::MayOpenOne,
+                now,
+            )
+            .expect("the person allowed a terminal and the sheet did not give it");
+            let kept = alo_remembering::remembered(&at, now).expect("the grants read back");
+            assert!(
+                kept.with_the_terminal_as(ATerminalForTheAgent::MayOpenOne)
+                    .permits(&Grantee::named("@files"), &Ask::application(PTYXIS), now),
+                "{how_long:?}: the terminal given is not reached"
+            );
         }
     }
 }

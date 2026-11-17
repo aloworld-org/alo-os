@@ -40,7 +40,7 @@
 
 use std::time::{Duration, SystemTime};
 
-use alo_capability::{Grant, GrantError, GrantId, Grants};
+use alo_capability::{ATerminalForTheAgent, Grant, GrantError, GrantId, Grants};
 
 use crate::picked::Chosen;
 
@@ -58,6 +58,9 @@ pub struct Granting {
     grantee: String,
     /// How long a grant made from a pick lasts.
     lasting: ForHowLong,
+    /// What the person allowed their agent to do with a terminal, as the
+    /// surface read it (ADR 0111) — not at all unless told.
+    terminal: ATerminalForTheAgent,
 }
 
 /// How long a grant made from a pick runs for.
@@ -88,6 +91,7 @@ impl Granting {
         Self {
             grantee: grantee.to_owned(),
             lasting: ForHowLong::Lasting(lasting),
+            terminal: ATerminalForTheAgent::NotAtAll,
         }
     }
 
@@ -97,6 +101,7 @@ impl Granting {
         Self {
             grantee: grantee.to_owned(),
             lasting: ForHowLong::UntilRemoved,
+            terminal: ATerminalForTheAgent::NotAtAll,
         }
     }
 
@@ -106,7 +111,19 @@ impl Granting {
         Self {
             grantee: grantee.to_owned(),
             lasting: ForHowLong::UntilSignOut,
+            terminal: ATerminalForTheAgent::NotAtAll,
         }
+    }
+
+    /// The same granting, told what the person allowed their agent to do with
+    /// a terminal (ADR 0111), so a terminal they allowed can be given.
+    ///
+    /// **Not told, it is [`ATerminalForTheAgent::NotAtAll`]**, and a terminal
+    /// is refused as it always was: a surface that has not read the person's
+    /// choice cannot give one.
+    #[must_use]
+    pub fn when_a_terminal_is(self, terminal: ATerminalForTheAgent) -> Self {
+        Self { terminal, ..self }
     }
 
     /// The agent a pick would be granted to.
@@ -146,23 +163,23 @@ impl Granting {
             Chosen::Application(picked) => (picked.reach(), None),
             Chosen::Nothing => return Ok(None),
         };
+        let grantee = alo_capability::Grantee::named(&self.grantee);
+        // **The person's terminal choice, as the surface read it** (ADR 0111):
+        // not at all unless told, so a terminal is refused as it always was.
+        let terminal = self.terminal;
         let grant = match self.lasting {
-            ForHowLong::Lasting(lasting) => Grant::checked(&self.grantee, reach, now, lasting)?,
+            ForHowLong::Lasting(lasting) => {
+                Grant::checked_for_when(&grantee, reach, now, lasting, terminal)?
+            }
             // **The same checks, and no length to get wrong.** Everything
             // else about the grant is held to exactly what a timed one is.
-            ForHowLong::UntilRemoved => Grant::checked_until_removed(
-                &alo_capability::Grantee::named(&self.grantee),
-                reach,
-                now,
-                alo_capability::ATerminalForTheAgent::NotAtAll,
-            )?,
+            ForHowLong::UntilRemoved => {
+                Grant::checked_until_removed(&grantee, reach, now, terminal)?
+            }
             // **The same checks again**, ending at sign-out.
-            ForHowLong::UntilSignOut => Grant::checked_until_sign_out(
-                &alo_capability::Grantee::named(&self.grantee),
-                reach,
-                now,
-                alo_capability::ATerminalForTheAgent::NotAtAll,
-            )?,
+            ForHowLong::UntilSignOut => {
+                Grant::checked_until_sign_out(&grantee, reach, now, terminal)?
+            }
         };
         // **Where the folder really is, recorded on the grant** — without it,
         // a folder reached through a link is refused by every file verb.

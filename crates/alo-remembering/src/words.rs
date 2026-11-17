@@ -207,6 +207,15 @@ pub const LEVEL_NOT_AN_APPLICATION_FOR_PICTURES: Word = Word::saying(
     "{path} and {said} are both taken from the file exactly as written and are never translated. Said of the line that lists the applications in which alo, the assistant, may look at pictures of a window and press keys. A terminal is never on that list. Nothing is guessed at; until the file is fixed, alo uses pictures and keys nowhere.",
 );
 
+/// `alo-uses-a-terminal` says a word that is neither of its two.
+pub const LEVEL_NOT_A_TERMINAL_CHOICE: Word = Word::saying(
+    "remembering.level.not-a-terminal-choice",
+    "{path} says {said} for whether alo may use a terminal, which is neither not-at-all nor may-open-one, so this machine does not know how you want code run, and alo uses no terminal",
+)
+.noting(
+    "{path} and {said} are both taken from the file exactly as written and are never translated, and neither are the two words not-at-all and may-open-one: they are what the file holds. Said of the line that decides whether alo may open a terminal, read what it shows and press its buttons. Nothing is guessed at; until it is fixed, alo uses no terminal at all.",
+);
+
 /// The file could not be written.
 pub const LEVEL_NOT_WRITTEN: Word = Word::saying(
     "remembering.level.not-written",
@@ -219,7 +228,7 @@ pub const LEVEL_NOT_WRITTEN: Word = Word::saying(
 );
 
 /// Every word this crate can say.
-pub const EVERY_WORD: [Word; 13] = [
+pub const EVERY_WORD: [Word; 14] = [
     LEVEL_A_LINK,
     LEVEL_NOT_READ,
     LEVEL_SOMEBODY_ELSES,
@@ -229,6 +238,7 @@ pub const EVERY_WORD: [Word; 13] = [
     LEVEL_NOT_A_TERMINAL_ANSWER,
     LEVEL_NOT_AN_APPLICATIONS_ANSWER,
     LEVEL_NOT_AN_APPLICATION_FOR_PICTURES,
+    LEVEL_NOT_A_TERMINAL_CHOICE,
     LEVEL_NOT_THE_SHAPE,
     LEVEL_FROM_A_NEWER_ALO_OS,
     LEVEL_NOT_WRITTEN_DOWN,

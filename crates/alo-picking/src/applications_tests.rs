@@ -13,7 +13,7 @@
 
 use std::time::{Duration, SystemTime};
 
-use alo_capability::{Ask, Grantee, Grants};
+use alo_capability::{ATerminalForTheAgent, Ask, Grantee, Grants};
 
 use super::*;
 use crate::testing::in_english;
@@ -215,6 +215,72 @@ fn a_revoked_application_grant_is_refused_at_once() {
     assert!(
         !reaches(&grants, CODIUM, noon()),
         "a revoked grant still reaches"
+    );
+}
+
+/// **Where the person allowed their agent a terminal, it is offered and can be
+/// given** (ADR 0111) — for every length a pick can last — and the grant
+/// reaches it only on a list that carries the choice; where they have not,
+/// it is neither offered nor given.
+#[test]
+fn a_terminal_is_offered_and_given_only_where_the_person_allowed_it() {
+    let allowed = Applications::of_when(
+        [
+            (FIREFOX.to_owned(), Some("Firefox".to_owned())),
+            (PTYXIS.to_owned(), Some("Terminal".to_owned())),
+        ],
+        ATerminalForTheAgent::MayOpenOne,
+    );
+    assert!(
+        allowed
+            .listed()
+            .iter()
+            .any(|listed| listed.identifier() == PTYXIS),
+        "the person allowed a terminal and it was not offered"
+    );
+    for granting in [
+        Granting::to(HERS, hour()),
+        Granting::to_until_removed(HERS),
+        Granting::to_until_sign_out(HERS),
+    ] {
+        let mut grants = Grants::default();
+        let chosen = allowed.pick(PTYXIS).unwrap();
+        let id = granting
+            .clone()
+            .when_a_terminal_is(ATerminalForTheAgent::MayOpenOne)
+            .of(&chosen, &mut grants, noon())
+            .unwrap();
+        assert!(id.is_some(), "{granting:?} gave nothing");
+        assert!(
+            reaches(
+                &grants.with_the_terminal_as(ATerminalForTheAgent::MayOpenOne),
+                PTYXIS,
+                noon()
+            ),
+            "{granting:?}: the terminal given is not reached while allowed"
+        );
+        assert!(
+            !reaches(&grants, PTYXIS, noon()),
+            "{granting:?}: the terminal is reached on a list that does not allow it"
+        );
+        let mut nothing = Grants::default();
+        assert!(
+            granting.of(&chosen, &mut nothing, noon()).is_err(),
+            "{granting:?}: a terminal was given by a granting not told the person allowed it"
+        );
+        assert!(nothing.is_empty());
+    }
+    let not_allowed = Applications::of_when(
+        [(PTYXIS.to_owned(), Some("Terminal".to_owned()))],
+        ATerminalForTheAgent::NotAtAll,
+    );
+    assert!(
+        not_allowed.listed().is_empty(),
+        "a terminal was offered where the person has not allowed one"
+    );
+    assert_eq!(
+        not_allowed.pick(PTYXIS),
+        Err(NotPicked::NotAnApplicationShown)
     );
 }
 

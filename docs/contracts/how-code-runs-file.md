@@ -245,6 +245,35 @@ pictures-and-keys-in = ["net.supertuxkart.SuperTuxKart"]
 - *As of 2026-11-17 only Settings reads it*; the verb that takes a picture of
   one window is the next change, and reads it at each picture.
 
+## And whether alo may use a terminal
+
+*Added 2026-11-17, additively; `format` stays `1`.* ADR 0111: whether the
+person's agent may use a terminal is the person's choice, off until they turn it
+on. The owner, 2026-11-17, of alo reading a terminal's text: *"Both yes, within
+grants."* Kept here, beside the level, under the same three rules about who may
+have written it — so an agent cannot let itself into a terminal.
+
+```toml
+format = 1
+alo-uses-a-terminal = "may-open-one"
+```
+
+| Key | Meaning |
+|---|---|
+| `alo-uses-a-terminal` | Optional. `not-at-all`: no terminal is reached by alo at any level. `may-open-one`: alo may open a terminal application and, under a grant over it — or at `at-full-trust` without one — read its window and press its controls by name. **Never type into it**: `accessible.type_text` refuses every terminal at both words. Any other word is refused, and the whole file with it. |
+
+- **Absent is `not-at-all`**, which is how a machine arrives.
+- **A reader that cannot read the file, or would not believe it, answers
+  `not-at-all`.** `alo-agentd` reads it at every read, proposal and approval
+  (`the_grants_as_the_level_is_now`), so switching it off takes effect at the
+  next question; the sheet alo asks for an application on reads it at the
+  press, and offers a terminal only under `may-open-one`.
+- **A grant over a terminal outlives the switch and reaches nothing without
+  it.** The grants file reads such a grant back rather than refusing the whole
+  file, and it permits nothing while this key says `not-at-all`.
+- **Each writer keeps the others' keys**; a file holding only this key reads as
+  exactly that.
+
 ## What the three protections do not depend on
 
 ADR 0064 keeps three things on at every level — the record, the snapshot taken

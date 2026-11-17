@@ -99,7 +99,9 @@
 //! read around: dropping it would be reading a file somebody may have edited to
 //! say something else.
 
-use alo_capability::{AloInApplications, AloInTheTerminal, HowCodeRuns, PicturesAndKeys};
+use alo_capability::{
+    ATerminalForTheAgent, AloInApplications, AloInTheTerminal, HowCodeRuns, PicturesAndKeys,
+};
 use serde::{Deserialize, Serialize};
 
 /// Which shape of this file this alo OS writes and reads.
@@ -184,6 +186,17 @@ pub enum NotTheLevel {
         /// What it said.
         said: String,
     },
+    /// `alo-uses-a-terminal` says a word that is neither of its two.
+    ///
+    /// Refused whole, for [`Self::NoSuchLevel`]'s reason: **a typo here must
+    /// never become a permission** to reach a terminal.
+    #[error(
+        "`{said}` is not an answer for whether alo may use a terminal: the two are `{NOT_AT_ALL}` and `{MAY_OPEN_ONE}`"
+    )]
+    NotATerminalChoice {
+        /// What it said.
+        said: String,
+    },
     /// The level could not be written down.
     #[error("the level a person chose could not be written down: {why}")]
     NotWrittenDown {
@@ -221,6 +234,12 @@ struct Written {
         skip_serializing_if = "Option::is_none"
     )]
     pictures_and_keys_in: Option<Vec<String>>,
+    /// Whether alo may use a terminal (ADR 0111), in one of two words.
+    #[serde(
+        rename = "alo-uses-a-terminal",
+        skip_serializing_if = "Option::is_none"
+    )]
+    a_terminal: Option<String>,
 }
 
 /// Only the format, read first and leniently, so that a file from a later alo
@@ -250,7 +269,18 @@ pub struct WhatTheFileSays {
     /// The applications alo may use pictures and keys in, when the person
     /// said (ADR 0143 Q11). Absent is none, as a machine arrives.
     pub pictures_and_keys_in: Option<PicturesAndKeys>,
+    /// What the person allowed their agent to do with a terminal, when they
+    /// said (ADR 0111). Absent is not at all, as a machine arrives.
+    pub a_terminal: Option<ATerminalForTheAgent>,
 }
+
+/// The word `alo-uses-a-terminal` writes for a terminal alo may not use — the
+/// switch off, and what a file without the key answers.
+pub const NOT_AT_ALL: &str = "not-at-all";
+
+/// The word `alo-uses-a-terminal` writes for a terminal alo may open, read and
+/// press controls in — never type into.
+pub const MAY_OPEN_ONE: &str = "may-open-one";
 
 /// What this text says.
 ///
@@ -277,6 +307,7 @@ pub fn read(text: &str) -> Result<WhatTheFileSays, NotTheLevel> {
         && written.in_the_terminal.is_none()
         && written.in_applications.is_none()
         && written.pictures_and_keys_in.is_none()
+        && written.a_terminal.is_none()
     {
         return Err(NotTheLevel::SaysNothing);
     }
@@ -297,7 +328,37 @@ pub fn read(text: &str) -> Result<WhatTheFileSays, NotTheLevel> {
             .as_deref()
             .map(the_applications_for_pictures_called)
             .transpose()?,
+        a_terminal: written
+            .a_terminal
+            .as_deref()
+            .map(the_terminal_choice_called)
+            .transpose()?,
     })
+}
+
+/// What the person allowed their agent to do with a terminal, as this word
+/// names it.
+///
+/// # Errors
+///
+/// [`NotTheLevel::NotATerminalChoice`] for anything but the two — matched
+/// exactly, so a typo is never a permission.
+fn the_terminal_choice_called(said: &str) -> Result<ATerminalForTheAgent, NotTheLevel> {
+    match said {
+        NOT_AT_ALL => Ok(ATerminalForTheAgent::NotAtAll),
+        MAY_OPEN_ONE => Ok(ATerminalForTheAgent::MayOpenOne),
+        _ => Err(NotTheLevel::NotATerminalChoice {
+            said: said.to_owned(),
+        }),
+    }
+}
+
+/// The word this file writes for what the person allowed with a terminal.
+const fn the_terminal_choice_word_for(answer: ATerminalForTheAgent) -> &'static str {
+    match answer {
+        ATerminalForTheAgent::NotAtAll => NOT_AT_ALL,
+        ATerminalForTheAgent::MayOpenOne => MAY_OPEN_ONE,
+    }
 }
 
 /// The applications `pictures-and-keys-in` names.
@@ -429,6 +490,9 @@ pub fn written(says: WhatTheFileSays) -> Result<String, NotTheLevel> {
         pictures_and_keys_in: says
             .pictures_and_keys_in
             .map(|on| on.applications().map(str::to_owned).collect()),
+        a_terminal: says
+            .a_terminal
+            .map(|answer| the_terminal_choice_word_for(answer).to_owned()),
     };
     toml::to_string(&it).map_err(|why| NotTheLevel::NotWrittenDown {
         why: why.to_string(),
@@ -453,6 +517,7 @@ impl NotTheLevel {
             Self::NotAnApplicationForPictures { .. } => {
                 crate::words::LEVEL_NOT_AN_APPLICATION_FOR_PICTURES
             }
+            Self::NotATerminalChoice { .. } => crate::words::LEVEL_NOT_A_TERMINAL_CHOICE,
             Self::NotWrittenDown { .. } => crate::words::LEVEL_NOT_WRITTEN_DOWN,
         }
     }
@@ -472,7 +537,8 @@ impl NotTheLevel {
             Self::NoSuchLevel { said }
             | Self::NotATerminalAnswer { said }
             | Self::NotAnApplicationsAnswer { said }
-            | Self::NotAnApplicationForPictures { said } => Some(("said", said.clone())),
+            | Self::NotAnApplicationForPictures { said }
+            | Self::NotATerminalChoice { said } => Some(("said", said.clone())),
             Self::NotTheShape { .. }
             | Self::AnotherFormat { .. }
             | Self::SaysNothing

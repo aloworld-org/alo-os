@@ -153,6 +153,8 @@ mod a_window_travels_aside;
 pub mod alo_in_a_window;
 mod alo_in_applications_in_settings;
 mod alo_in_the_terminal_in_settings;
+/// The switch that lets alo use a terminal (ADR 0111).
+mod alo_uses_a_terminal_in_settings;
 /// The teal edge and the band with Stop on a window alo is working in.
 pub mod alos_band_in_a_window;
 /// alo's words read for the emphasis a model marks in Markdown.

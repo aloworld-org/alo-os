@@ -112,11 +112,17 @@ pub const A_PASSWORD_FIELD: Word = Word::saying(
 
 /// A terminal.
 pub const A_TERMINAL: Word = Word::saying(
-    "adapters.fallback.type-text.terminal",
-    "“{name}” in {application} is a terminal, and typing there runs commands, which alo does \
-     only where you have let your agent use a terminal, so nothing was typed",
+    // A new key, 2026-11-17 (ADR 0068): the sentence under the old one said
+    // alo types into a terminal where the person let it use one, which is no
+    // longer true, so its translations could not stand.
+    "adapters.fallback.type-text.never-a-terminal",
+    "“{name}” in {application} is a terminal, and typing there runs commands, so alo never \
+     types into a terminal, even one you let it use, and nothing was typed",
 )
-.noting("Said when the place the person approved typing into is a terminal inside an application.");
+.noting(
+    "Said when the place the person approved typing into is a terminal, or inside one. Letting \
+     alo use a terminal in Settings lets it read the terminal and press its buttons, never type.",
+);
 
 /// The field does not have the keyboard.
 pub const NOT_IN_FRONT: Word = Word::saying(

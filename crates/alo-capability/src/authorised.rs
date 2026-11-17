@@ -55,7 +55,6 @@ use std::time::SystemTime;
 
 use alo_strings::{Filling, Said, Strings};
 
-use crate::a_terminal_for_the_agent::ATerminalForTheAgent;
 use crate::approvals::ProposalId;
 use crate::call::Call;
 use crate::grant::Grantee;
@@ -248,7 +247,10 @@ impl Authorised {
         grants: &Grants,
         now: SystemTime,
     ) -> Result<Self, Refused> {
-        match call.permitted_when(grants, &under, now, ATerminalForTheAgent::NotAtAll) {
+        // **The person's terminal choice as the list carries it** (ADR 0111,
+        // `crate::a_terminal_on_the_list`): not at all unless the service made
+        // this list for the moment with what the person's file says.
+        match call.permitted_when(grants, &under, now, grants.the_terminal()) {
             Ok(permission) => Ok(Self {
                 call,
                 under,

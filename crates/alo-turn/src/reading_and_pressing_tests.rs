@@ -10,7 +10,8 @@
 //!   tree is opened;
 //! - every read, every press and every refusal leaves exactly one entry;
 //! - a terminal the person has not allowed their agent is neither read nor
-//!   pressed, even at full access;
+//!   pressed, even at full access — and one they allowed is read and pressed
+//!   as any granted application is, and only while they allow it;
 //! - where a switch the person can turn on would help, the refusal names it.
 
 #![expect(
@@ -29,7 +30,7 @@ use alo_adapters::{
     WorkingFully,
 };
 use alo_applications::{Application, Installed};
-use alo_capability::{Given, Grant, Grantee, Grants, Reach};
+use alo_capability::{ATerminalForTheAgent, Given, Grant, Grantee, Grants, Reach};
 use alo_egress::Indicator;
 use alo_files::OnThisMachine;
 use alo_record::{Asking, Record};
@@ -523,6 +524,90 @@ fn a_terminal_nobody_allowed_is_never_read_or_pressed_even_at_full_access() {
     assert_eq!(counted.opened.get(), 0);
     assert_eq!(counted.presses.get(), 0);
     assert_eq!(entries(&record), 2);
+}
+
+/// A grant to the agent over the terminal for an hour from noon, made while
+/// the person allowed their agent one.
+fn the_terminal_is_granted(grants: &mut Grants) {
+    grants.grant(
+        Grant::checked_for_when(
+            &Grantee::named(AGENT),
+            Reach::Application(TERMINAL.to_owned()),
+            noon(),
+            hour(),
+            ATerminalForTheAgent::MayOpenOne,
+        )
+        .unwrap(),
+    );
+}
+
+/// **A terminal the person let their agent use is read at full access** (ADR
+/// 0111; the owner, 2026-11-17: *"Both yes, within grants"*): the tree is
+/// opened once, what the window shows comes back, and the read is written
+/// down — with no grant over the terminal, because full access is everything
+/// the person's account can reach.
+#[test]
+fn a_terminal_the_person_allowed_is_read_at_full_access() {
+    let mut windows = TheWindows::of(TERMINAL);
+    let counted = windows.counted.clone();
+    let (read, record) = on_a_machine(
+        &mut windows,
+        |_| {},
+        |turning, grants| {
+            let now = grants
+                .at_full_access_for(&Grantee::named(AGENT))
+                .with_the_terminal_as(ATerminalForTheAgent::MayOpenOne);
+            reading(turning, &now, TERMINAL)
+        },
+    );
+    let read = read.unwrap();
+    let showed = read.the_windows_showed().expect("the terminal was read");
+    assert!(showed.shown().shows_any_text(), "{showed:?}");
+    assert!(!format!("{showed:?}").contains(SECRET), "{showed:?}");
+    assert_eq!(counted.opened.get(), 1);
+    assert_eq!(counted.presses.get(), 0, "a read pressed something");
+    assert_eq!(entries(&record), 1);
+}
+
+/// **At *ask each time* it is read under a grant**, and the same grant permits
+/// nothing once the person switches the terminal off again: refused before any
+/// tree is opened, and the refusal written down.
+#[test]
+fn a_terminal_is_read_under_its_grant_only_while_the_person_allows_it() {
+    let mut windows = TheWindows::of(TERMINAL);
+    let counted = windows.counted.clone();
+    let ((allowed, switched_off), record) =
+        on_a_machine(&mut windows, the_terminal_is_granted, |turning, grants| {
+            let now = grants.with_the_terminal_as(ATerminalForTheAgent::MayOpenOne);
+            let allowed = reading(turning, &now, TERMINAL);
+            let switched_off = reading(turning, grants, TERMINAL);
+            (allowed, switched_off)
+        });
+    assert!(allowed.is_ok(), "the person allowed it: {allowed:?}");
+    assert!(
+        matches!(switched_off, Err(NotDone::Refused(_))),
+        "a terminal was read once the person switched it off: {switched_off:?}"
+    );
+    assert_eq!(counted.opened.get(), 1, "the refused read opened the tree");
+    assert_eq!(entries(&record), 2);
+}
+
+/// **A press in a terminal the person allowed waits for one approval and
+/// presses once** — the window's own controls by name, as in any granted
+/// application.
+#[test]
+fn a_press_in_a_terminal_the_person_allowed_waits_and_presses_once() {
+    let mut windows = TheWindows::of(TERMINAL);
+    let counted = windows.counted.clone();
+    let (did, record) = on_a_machine(&mut windows, the_terminal_is_granted, |turning, grants| {
+        let now = grants.with_the_terminal_as(ATerminalForTheAgent::MayOpenOne);
+        let id = proposing(turning, &now, TERMINAL)?;
+        assert_eq!(counted.opened.get(), 0, "a proposal opened the tree");
+        turning.approving(id, &now, noon())
+    });
+    assert!(did.unwrap().pressed().is_some());
+    assert_eq!(counted.presses.get(), 1, "one approval, one press");
+    assert_eq!(entries(&record), 1);
 }
 
 /// **A control that offers no press names *Let alo work fully inside apps like

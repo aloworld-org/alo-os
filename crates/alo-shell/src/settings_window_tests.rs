@@ -454,6 +454,7 @@ fn no_choice_the_old_window_offered_is_dropped() {
         before.push(SettingsRow::APlaceToReturnTo);
     }
     before.push(SettingsRow::ActWithoutAsking);
+    before.push(SettingsRow::AloUsesATerminal);
     before.extend(
         alo_capability::HowCodeRuns::ALL
             .into_iter()
@@ -1854,6 +1855,8 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
                 // **And the switch to act without asking**, kept in the same
                 // machine file as how code runs, so keepable here too.
                 | SettingsRow::ActWithoutAsking
+                // **And whether alo may use a terminal**, kept there too.
+                | SettingsRow::AloUsesATerminal
         )),
         "{rows:?}"
     );
@@ -1861,9 +1864,9 @@ fn a_session_with_no_folder_offers_nothing_it_could_not_keep() {
     // which a session with no folder cannot keep.
     assert_eq!(
         rows.len(),
-        11,
+        12,
         "one grant, one pairing, the record's row, the three answers for applications, the \
-         three levels, their page's row, the switch"
+         three levels, their page's row, the two switches"
     );
     assert_eq!(window.appearance(), Some(&Appearance::shipped()));
     assert_eq!(window.dock(), Some(&Dock::shipped()));
@@ -2603,6 +2606,53 @@ fn reading_what_answers_again_does_not_open_settings() {
     let mut window = SettingsWindow::closed();
     window.what_answers_is_read_again(&machine.places, noon());
     assert!(!window.is_open());
+}
+
+/// **Let alo use a terminal: on in one press, off again in one press**
+/// (ADR 0111), pressed as a person presses it in the window, each written to
+/// the person's file before the switch moves — and the level kept as it was.
+#[test]
+fn one_press_lets_alo_use_a_terminal_and_one_press_stops_it() {
+    use alo_capability::ATerminalForTheAgent;
+    let machine = a_persons_machine("alo-uses-a-terminal-pressed");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let at = machine.places.how_code_runs().to_owned();
+    alo_remembering::the_level_kept(&at, alo_capability::HowCodeRuns::AskingEachTime).unwrap();
+    let mut window = machine.opened();
+    assert_eq!(
+        alo_remembering::alo_uses_a_terminal_remembered(&at).unwrap(),
+        ATerminalForTheAgent::NotAtAll,
+        "the switch arrived on"
+    );
+    assert_eq!(
+        chosen(&mut window, &SettingsRow::AloUsesATerminal, &strings, &door),
+        Some(SettingsDid::Kept(
+            SettingsSection::Terminal,
+            SettingsKept::Written
+        ))
+    );
+    assert_eq!(
+        alo_remembering::alo_uses_a_terminal_remembered(&at).unwrap(),
+        ATerminalForTheAgent::MayOpenOne
+    );
+    assert_eq!(
+        window.pressed(key(SettingsKey::Choose), doors(&strings, &door)),
+        Some(SettingsDid::Kept(
+            SettingsSection::Terminal,
+            SettingsKept::Written
+        ))
+    );
+    assert_eq!(
+        alo_remembering::alo_uses_a_terminal_remembered(&at).unwrap(),
+        ATerminalForTheAgent::NotAtAll,
+        "one press from on did not turn it off"
+    );
+    assert_eq!(
+        alo_remembering::the_level_remembered(&at).unwrap(),
+        Some(alo_capability::HowCodeRuns::AskingEachTime),
+        "the switch changed how code runs"
+    );
 }
 
 /// **Let alo act without asking: on in one press, off again in one press**,
