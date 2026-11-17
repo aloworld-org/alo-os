@@ -454,9 +454,16 @@ fn nothing_in_the_portal_sets_an_association_or_picks_an_opener_itself() {
             // `alo_applications::keeping` is reached as `keeping::` however it
             // is imported; `alo_keeping::`, the retention rule the answers file
             // is shortened under, is another crate whose name ends the same.
-            let reached = code
-                .match_indices(word)
-                .any(|(at, _)| code.as_bytes().get(at.wrapping_sub(1)) != Some(&b'_'));
+            // **A name is a whole name**, so `FileChosen::` — the file
+            // chooser's record of what the person picked, which sets nothing —
+            // is not `Chosen::` (2026-11-17). A word beginning with `.` is a
+            // method, and follows a name by its nature.
+            let a_name = word.starts_with(|first: char| first.is_ascii_alphabetic());
+            let reached = code.match_indices(word).any(|(at, _)| {
+                code.as_bytes().get(at.wrapping_sub(1)).is_none_or(|before| {
+                    *before != b'_' && !(a_name && before.is_ascii_alphanumeric())
+                })
+            });
             assert!(!reached, "{} reaches for `{word}`", path.display());
         }
         read += 1;
