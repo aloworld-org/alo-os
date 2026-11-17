@@ -55,11 +55,18 @@ pub fn is_built_on_chromium(machines: &Path, persons: Option<&Path>, identifier:
     persons
         .into_iter()
         .chain(std::iter::once(machines))
-        .any(|installation| carries_chromiums_file(&the_packages_files(installation, identifier)))
+        .any(|installation| {
+            carries_chromiums_file_within(
+                &the_packages_files(installation, identifier),
+                MOST_ENTRIES,
+                DEEPEST,
+            )
+        })
 }
 
-/// Whether Chromium's own file is somewhere below `files`, within the bounds.
-fn carries_chromiums_file(files: &Path) -> bool {
+/// Whether Chromium's own file is somewhere below `files`, reading at most
+/// `most` entries and looking at most `deepest` folders down.
+fn carries_chromiums_file_within(files: &Path, most: usize, deepest: usize) -> bool {
     let mut waiting: Vec<(PathBuf, usize)> = vec![(files.to_path_buf(), 0)];
     let mut read = 0_usize;
     while let Some((folder, depth)) = waiting.pop() {
@@ -68,7 +75,7 @@ fn carries_chromiums_file(files: &Path) -> bool {
         };
         for entry in entries.flatten() {
             read += 1;
-            if read > MOST_ENTRIES {
+            if read > most {
                 return false;
             }
             // **The entry itself, never what a link points at.**
@@ -78,7 +85,7 @@ fn carries_chromiums_file(files: &Path) -> bool {
             if kind.is_file() && entry.file_name() == CHROMIUMS_OWN_FILE {
                 return true;
             }
-            if kind.is_dir() && depth + 1 < DEEPEST {
+            if kind.is_dir() && depth + 1 < deepest {
                 waiting.push((entry.path(), depth + 1));
             }
         }

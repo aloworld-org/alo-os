@@ -163,3 +163,25 @@ fn the_question_every_caller_asks_knows_a_browser_by_what_it_is_built_on() {
         "org.gnome.Loupe"
     ));
 }
+
+/// **The look stops where its bounds say, to the entry and to the folder.**
+/// One entry in each folder, so the order entries are read in is the only
+/// one there is: the package's files hold `a`, `a` holds `b`, and `b` holds
+/// Chromium's file — the third entry read, two folders down.
+#[test]
+fn the_look_stops_at_its_bounds_exactly() {
+    let files = files_of(&a_place("bounded"), "org.example.Bounded");
+    a_file(&files, "a/b/chrome_100_percent.pak");
+    assert!(
+        carries_chromiums_file_within(&files, 3, 3),
+        "found within both bounds"
+    );
+    assert!(
+        !carries_chromiums_file_within(&files, 2, 3),
+        "read past the most entries"
+    );
+    assert!(
+        !carries_chromiums_file_within(&files, 3, 2),
+        "looked deeper than the deepest folder"
+    );
+}
