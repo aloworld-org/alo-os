@@ -48,7 +48,7 @@ pub enum WentWrong {
         /// The verb.
         verb: String,
         /// The machine's refusal, as the model is shown it.
-        said: alo_strings::Said,
+        said: Box<alo_strings::Said>,
     },
     /// The arguments were accepted and one of them was not the value the road
     /// decides.

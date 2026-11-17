@@ -60,7 +60,7 @@ pub fn taking(
         WentWrong::RefusedBeforeAsking {
             step: at,
             verb: named.to_owned(),
-            said: why.said(strings),
+            said: Box::new(why.said(strings)),
         }
     })?;
     let call = verbs

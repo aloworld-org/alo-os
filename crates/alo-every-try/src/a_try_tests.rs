@@ -472,6 +472,10 @@ fn asking_each_time_takes_the_same_road_one_approval_per_change() {
 }
 
 /// The set's installing request: GIMP, by the identifier the catalogue gives.
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on a set that does not build is the failure being reported"
+)]
 fn installing_gimp() -> ARequest {
     crate::the_set()
         .expect("the set builds")
