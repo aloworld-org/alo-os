@@ -421,7 +421,7 @@ fn the_shipped_check_breaks_the_changed_code_and_fails_on_a_survivor() {
 fn what_the_rules_are_read_from_is_there() {
     let filter = the_gates_filter().unwrap_or_default();
     assert!(
-        left_out_of_the_gate(&filter).contains(&"alo-agentd".to_owned()),
+        left_out_of_the_gate(&filter).contains(&"alo-bounding".to_owned()),
         "the gate's filter was read as {filter:?}"
     );
     assert!(
@@ -486,7 +486,7 @@ fn a_diff_that_reaches_tests_or_the_wrong_tree_is_refused() {
         with(ONLY_RUST, "'*'"),
         with(THE_DIFF, "git diff origin/main --"),
         with("fetch-depth: 2", "fetch-depth: 1"),
-        with("':(exclude)crates/alo-agentd'\n", ""),
+        with("':(exclude)crates/alo-bounding'\n", ""),
     ] {
         assert!(refused(changed.as_deref()), "{changed:?}");
     }

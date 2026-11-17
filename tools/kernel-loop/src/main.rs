@@ -124,6 +124,7 @@ mod plan;
 mod publishing;
 mod recovering;
 mod repository;
+mod the_boundary_suite;
 mod what_it_printed;
 mod where_it_builds;
 mod who_owns;
@@ -178,6 +179,13 @@ enum Asked {
     /// [`every_gate`] says why, and what a green check hid until it did.
     Gates,
 
+    /// Print the nextest filter of the boundary suite, and do nothing else.
+    ///
+    /// For `boundary.yml`, which runs that suite after a merge: the filter is
+    /// [`the_boundary_suite::THE_BOUNDARY`], and a workflow that spelled it
+    /// again would be a copy nothing holds to the gate it complements.
+    BoundaryFilter,
+
     /// Put a parked task's work back in the tree, on top of today's `main`.
     ///
     /// `from` is the other checkout to bring the branch across from first, and
@@ -221,6 +229,7 @@ impl Asked {
             Some("publish") => Some(Self::Publish),
             Some("verify") => Some(Self::Verify),
             Some("gates") => Some(Self::Gates),
+            Some("boundary-filter") => Some(Self::BoundaryFilter),
             Some("next") => Some(Self::Next),
             Some("recover") => {
                 let branch = args.next()?;
@@ -252,6 +261,8 @@ fn main() -> ExitCode {
              \x20 alo-kernel-loop verify   run every gate and the waiting handoff's evidence\n\
              \x20 alo-kernel-loop gates    run every gate, each one whatever the one before it said,\n\
              \x20\x20\x20\x20\x20\x20\x20\x20\x20 and nothing else — for a caller with no handoff\n\
+             \x20 alo-kernel-loop boundary-filter\n\
+             \x20\x20\x20\x20\x20\x20\x20\x20\x20 print the filter of the tests that attach to the kernel\n\
              \x20 alo-kernel-loop next     print the task a loop would take, and do nothing — it\n\
              \x20\x20\x20\x20\x20\x20\x20\x20\x20 takes no lock, writes no journal line and starts no worker\n\
              \x20 alo-kernel-loop publish  gate, commit, integrate and push the waiting handoff\n\
@@ -281,6 +292,10 @@ fn main() -> ExitCode {
         Asked::Publish => publish(&at, &ours),
         Asked::Verify => verify(&at, &ours),
         Asked::Gates => every_gate::run(&at),
+        Asked::BoundaryFilter => {
+            println!("{}", the_boundary_suite::THE_BOUNDARY);
+            ExitCode::SUCCESS
+        }
         Asked::Next => next_only(&at),
         Asked::Recover { branch, from } => recover(&at, &ours, &branch, from.as_deref()),
         Asked::Status => {

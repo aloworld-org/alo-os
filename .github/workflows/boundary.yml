@@ -1,0 +1,196 @@
+# The boundary suite: the tests that attach a BPF programme to a kernel, run
+# after every merge to main.
+#
+# **What they prove.** That the kernel imposes what alo may reach, rather than
+# the daemon following a rule (ADR 0013): a turn cannot open a file it was not
+# granted, a question cannot leave by a road nobody showed, a turn whose
+# boundary is gone is refused. They are `alo-bounding`'s, `alo-boundaryd`'s,
+# `alo-running`'s one kernel test, and seven of `alo-agentd`'s.
+#
+# **Why not on every pull request.** Two reasons, both measured rather than
+# assumed. The suite is serial by nature, one attach at a time, each waiting
+# on the kernel (`.config/nextest.toml` has the figures), so it would hold
+# every lane's gate for twenty minutes or more. And a hosted runner's kernel
+# was started without `bpf` among its security modules, so an LSM programme
+# has nothing to attach to there; the first step below prints the list on
+# every run, so that sentence can be checked rather than believed.
+#
+# **How it runs here instead.** The runner has `/dev/kvm`, as `walk.yml`
+# found. So the runner's own kernel is booted again inside a virtual machine
+# by virtme-ng, with `bpf` added to its security modules on the kernel command
+# line, and the tests run in it as root, over the runner's own files. Nothing
+# about the kernel is changed but that one word, and nothing here is built or
+# published but test binaries.
+#
+# **Which tests.** Exactly `alo-kernel-loop boundary-filter`, which is
+# `tools/kernel-loop/src/the_boundary_suite.rs`. The merge gate runs exactly
+# the rest, and a test in that file fails when the two stop adding up to the
+# whole, or when a test in `alo-agentd` attaches without being listed.
+#
+# **When.** After each merge to main, by hand, and on a pull request that
+# changes this file, so a change to how the suite runs is watched running
+# before it lands. A failure is a failed check on the merged commit.
+
+name: Boundary
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - .github/workflows/boundary.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One run of main at a time; only the newest waits, and nothing running is
+# cancelled, so every run that starts also says how it ended.
+concurrency:
+  group: boundary-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  boundary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Say what this runner's kernel can attach
+        run: |
+          {
+            echo "Kernel: \`$(uname -r)\`."
+            echo "Security modules it started with: \`$(cat /sys/kernel/security/lsm 2>/dev/null || echo unreadable)\`."
+            echo "Built with BPF security modules: \`$(grep -h '^CONFIG_BPF_LSM' /boot/config-"$(uname -r)" 2>/dev/null || echo 'not said')\`."
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Give this job the processor's virtualisation
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+          if ! { [ -r /dev/kvm ] && [ -w /dev/kvm ]; }; then
+            echo "KVM: \`/dev/kvm\` is not usable by this job, so the boundary suite cannot run." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: The toolchains this repository pins
+        run: |
+          rustup toolchain install nightly-2026-06-01
+
+      # The same libraries the gate installs, because the boundary crates link
+      # the same workspace; and qemu and virtme-ng for the virtual machine.
+      - name: The libraries this workspace links, and the virtual machine
+        timeout-minutes: 10
+        run: |
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' \
+            | sudo tee /etc/apt/apt.conf.d/80-boundary-network > /dev/null
+          sudo apt-get update -q
+          sudo apt-get install --no-install-recommends --yes \
+            libwayland-dev libinput-dev libseat-dev libxkbcommon-dev \
+            libpixman-1-dev libegl1-mesa-dev libgbm-dev libudev-dev \
+            dbus-daemon dbus-x11 gnome-keyring \
+            qemu-system-x86 virtiofsd busybox-static python3-pip
+          if ! sudo apt-get install --no-install-recommends --yes virtme-ng; then
+            echo "virtme-ng is not packaged here; installing it from PyPI"
+            sudo pip3 install --break-system-packages virtme-ng
+          fi
+          vng --version
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target\ntools/kernel-loop -> target"
+          key: boundary
+
+      - name: The LLVM the BPF linker is built against
+        run: |
+          wget -qO /tmp/llvm.sh https://apt.llvm.org/llvm.sh
+          chmod +x /tmp/llvm.sh
+          sudo /tmp/llvm.sh 22
+          echo "/usr/lib/llvm-22/bin" >> "$GITHUB_PATH"
+          echo "LLVM_PREFIX=/usr/lib/llvm-22" >> "$GITHUB_ENV"
+
+      - name: The linker the BPF target needs
+        run: cargo +nightly-2026-06-01 install bpf-linker --locked
+
+      - name: The test runner the gates name
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+
+      - name: Which tests are the boundary suite
+        id: filter
+        run: |
+          cargo build --manifest-path tools/kernel-loop/Cargo.toml --locked
+          filter=$(./tools/kernel-loop/target/debug/alo-kernel-loop boundary-filter)
+          [ -n "$filter" ] || { echo "the supervisor printed no filter"; exit 1; }
+          echo "filter=$filter" >> "$GITHUB_OUTPUT"
+          echo "The boundary suite is \`$filter\`." | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Build the boundary suite
+        env:
+          FILTER: ${{ steps.filter.outputs.filter }}
+        run: |
+          cargo nextest run --profile boundary -E "$FILTER" --no-run
+          cargo nextest list --profile boundary -E "$FILTER" --message-format oneline > "$RUNNER_TEMP/listed.txt"
+          echo "$(wc -l < "$RUNNER_TEMP/listed.txt") tests are in the suite."
+
+      # The script the virtual machine runs. It writes its own exit code to a
+      # file, so the code read afterwards is the tests' and not the machine's.
+      - name: Run the boundary suite in a machine whose kernel has bpf started
+        env:
+          FILTER: ${{ steps.filter.outputs.filter }}
+        run: |
+          sudo cp "/boot/vmlinuz-$(uname -r)" "$RUNNER_TEMP/vmlinuz"
+          sudo chmod 644 "$RUNNER_TEMP/vmlinuz"
+          started=$(cat /sys/kernel/security/lsm)
+          case ",$started," in
+            *,bpf,*) modules="$started" ;;
+            *) modules="$started,bpf" ;;
+          esac
+          sudo chmod o+x "$HOME"
+          inside="$RUNNER_TEMP/inside.sh"
+          cat > "$inside" <<EOF
+          #!/bin/bash
+          set -u
+          echo 99 > "$RUNNER_TEMP/boundary.code"
+          mountpoint -q /sys/kernel/security || mount -t securityfs securityfs /sys/kernel/security
+          mountpoint -q /sys/fs/bpf || mount -t bpf bpf /sys/fs/bpf
+          mountpoint -q /sys/fs/cgroup || mount -t cgroup2 cgroup2 /sys/fs/cgroup
+          echo "inside: kernel \$(uname -r), security modules \$(cat /sys/kernel/security/lsm)"
+          ip link set lo up || true
+          export HOME="$HOME" PATH="$HOME/.cargo/bin:/usr/lib/llvm-22/bin:\$PATH"
+          export LLVM_PREFIX=/usr/lib/llvm-22 CARGO_TERM_COLOR=never
+          cd "$GITHUB_WORKSPACE"
+          code=0
+          dbus-run-session -- cargo nextest run --profile boundary -E "$FILTER" || code=\$?
+          echo "\$code" > "$RUNNER_TEMP/boundary.code"
+          EOF
+          chmod +x "$inside"
+          echo "Started with \`$started\`; the machine is started with \`lsm=$modules\`." | tee -a "$GITHUB_STEP_SUMMARY"
+          machine=0
+          vng --run "$RUNNER_TEMP/vmlinuz" --rw --user root \
+            --memory 12G --cpus "$(nproc)" \
+            --append "lsm=$modules" \
+            --exec "$inside" 2>&1 | tee "$RUNNER_TEMP/boundary.log" || machine=$?
+          code=$(cat "$RUNNER_TEMP/boundary.code" 2>/dev/null || echo "none")
+          echo "The machine exited $machine; the tests exited $code." | tee -a "$GITHUB_STEP_SUMMARY"
+          {
+            echo
+            echo '```'
+            grep -E '^ *(FAIL|TIMEOUT|SIGSEGV|SIGABRT) |^ *Summary|tests? run:|inside: ' "$RUNNER_TEMP/boundary.log" | head -60
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          [ "$code" = 0 ]
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: the-boundary-suite
+          path: |
+            ${{ runner.temp }}/boundary.log
+            ${{ runner.temp }}/listed.txt
+          retention-days: 7
+          if-no-files-found: warn
