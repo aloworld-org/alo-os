@@ -116,6 +116,19 @@ pub trait AccessibilityTree {
         Ok(Vec::new())
     }
 
+    /// The number one thing holds — AT-SPI's `Value`: where a slider is, how
+    /// far a progress bar has got — or [`None`] for a thing that holds none.
+    /// Asked only of a [`crate::Role::Range`]. **None by default**, which is
+    /// what a tree that offers no numbers says.
+    ///
+    /// # Errors
+    /// [`TreeFault`].
+    // The body is the answer itself and nothing else, so the mutation check
+    // has no other version of it to try: `Ok(None)` is what it would put here.
+    fn value(&self, _at: &NodeAt) -> Result<Option<f64>, TreeFault> {
+        Ok(None)
+    }
+
     /// Whether one thing takes text put into it through the tree — AT-SPI's
     /// `EditableText` (ADR 0153). **No by default**, which is what Chromium
     /// answers for every field it has; GTK answers yes.
@@ -150,5 +163,42 @@ pub trait AccessibilityTree {
     fn insert_text(&self, at: &NodeAt, position: usize, text: &str) -> Result<bool, TreeFault> {
         let _ = (at, position, text);
         Ok(false)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A tree that answers only what every tree must.
+    struct OnlyWhatIsRequired;
+
+    impl AccessibilityTree for OnlyWhatIsRequired {
+        fn applications(&self) -> Result<Vec<Running>, TreeFault> {
+            Ok(Vec::new())
+        }
+        fn facts(&self, _: &NodeAt) -> Result<Facts, TreeFault> {
+            Err(TreeFault::Vanished)
+        }
+        fn text(&self, _: &NodeAt) -> Result<String, TreeFault> {
+            Ok(String::new())
+        }
+        fn actions(&self, _: &NodeAt) -> Result<Vec<String>, TreeFault> {
+            Ok(Vec::new())
+        }
+        fn act(&self, _: &NodeAt, _: usize) -> Result<bool, TreeFault> {
+            Ok(false)
+        }
+    }
+
+    /// **A tree that offers no numbers says none**, rather than inventing
+    /// one: a slider read from it holds no value.
+    #[test]
+    fn a_tree_that_offers_no_numbers_says_none() {
+        let at = NodeAt {
+            holder: ":1.7".to_owned(),
+            object: "/slider".to_owned(),
+        };
+        assert_eq!(OnlyWhatIsRequired.value(&at), Ok(None));
     }
 }

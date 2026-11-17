@@ -514,3 +514,6 @@ mod the_application_sheet_drawn_frame_tests;
 
 #[path = "the_sheets_shadow_drawn_tests.rs"]
 mod the_sheets_shadow_drawn_tests;
+
+#[path = "pictures_and_keys_drawn_tests.rs"]
+mod pictures_and_keys_drawn_tests;

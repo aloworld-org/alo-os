@@ -53,6 +53,9 @@ pub enum Entry {
     Did(String),
     /// A check.
     Checked(Check),
+    /// An independent section begins, named; its checks are the ones after
+    /// it, up to the next section or the walk's end.
+    Section(String),
 }
 
 /// The whole account of one walk.
@@ -72,7 +75,42 @@ impl Report {
             .iter()
             .filter_map(|entry| match entry {
                 Entry::Checked(check) => Some(check),
-                Entry::Did(_) => None,
+                Entry::Did(_) | Entry::Section(_) => None,
+            })
+            .collect()
+    }
+
+    /// **Each independent section and its result**, in order: failed if any
+    /// of its checks failed, else not reached if any was not reached, else
+    /// passed if any passed, and skipped otherwise.
+    #[must_use]
+    pub fn sections(&self) -> Vec<(String, Verdict)> {
+        let mut sections: Vec<(String, Vec<Verdict>)> = Vec::new();
+        for entry in &self.entries {
+            match entry {
+                Entry::Section(name) => sections.push((name.clone(), Vec::new())),
+                Entry::Checked(check) => {
+                    if let Some((_, verdicts)) = sections.last_mut() {
+                        verdicts.push(check.verdict);
+                    }
+                }
+                Entry::Did(_) => {}
+            }
+        }
+        sections
+            .into_iter()
+            .map(|(name, verdicts)| {
+                let any = |verdict: Verdict| verdicts.contains(&verdict);
+                let verdict = if any(Verdict::Failed) {
+                    Verdict::Failed
+                } else if any(Verdict::NotReached) {
+                    Verdict::NotReached
+                } else if any(Verdict::Passed) {
+                    Verdict::Passed
+                } else {
+                    Verdict::Skipped
+                };
+                (name, verdict)
             })
             .collect()
     }
@@ -109,6 +147,7 @@ impl Report {
         for entry in &self.entries {
             let _ = match entry {
                 Entry::Did(what) => writeln!(text, "        {what}"),
+                Entry::Section(name) => writeln!(text, "-- the section {name}"),
                 Entry::Checked(check) => writeln!(
                     text,
                     "{:<11} {} — {}",
@@ -117,6 +156,9 @@ impl Report {
                     check.evidence
                 ),
             };
+        }
+        for (name, verdict) in self.sections() {
+            let _ = writeln!(text, "section {name}: {}", verdict.said());
         }
         let verdict = if self.passed() { "PASSED" } else { "FAILED" };
         let _ = writeln!(text, "the walk {verdict}: {}", self.tally());
@@ -128,10 +170,26 @@ impl Report {
     pub fn as_markdown(&self) -> String {
         let verdict = if self.passed() { "passed" } else { "failed" };
         let mut text = format!(
-            "### The walk `{}` {verdict}\n\n{}\n\n| | check | evidence |\n|---|---|---|\n",
+            "### The walk `{}` {verdict}\n\n{}\n\n",
             self.walk,
             self.tally()
         );
+        // **Each section's result first**, so a failure in one is read
+        // beside the sections that still ran.
+        let sections = self.sections();
+        if !sections.is_empty() {
+            text.push_str("| | section |\n|---|---|\n");
+            for (name, verdict) in sections {
+                let _ = writeln!(
+                    text,
+                    "| {} | {} |",
+                    verdict.said(),
+                    name.replace('|', "\\|")
+                );
+            }
+            text.push('\n');
+        }
+        text.push_str("| | check | evidence |\n|---|---|---|\n");
         for check in self.checks() {
             let _ = writeln!(
                 text,

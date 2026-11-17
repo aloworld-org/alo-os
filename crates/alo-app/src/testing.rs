@@ -113,6 +113,12 @@ pub mod roles {
     pub const PUSH_BUTTON: u32 = 43;
     /// A label.
     pub const LABEL: u32 = 29;
+    /// A drop-down.
+    pub const COMBO_BOX: u32 = 11;
+    /// A tab.
+    pub const PAGE_TAB: u32 = 37;
+    /// A slider.
+    pub const SLIDER: u32 = 51;
 }
 
 /// A tree with one application holding one window of buttons and a label.
@@ -124,6 +130,8 @@ pub struct ATree {
     facts: BTreeMap<NodeAt, Facts>,
     /// Each thing's actions.
     actions: BTreeMap<NodeAt, Vec<String>>,
+    /// The number each slider holds.
+    values: BTreeMap<NodeAt, f64>,
     /// How many presses were asked.
     pub pressed: RefCell<usize>,
 }
@@ -173,6 +181,41 @@ impl ATree {
 }
 
 impl ATree {
+    /// Every window also holding a drop-down named `Font`, a slider named
+    /// `Zoom` at 150, and a tab named `General` that is selected.
+    #[must_use]
+    pub fn and_a_drop_down_a_slider_and_a_tab(mut self) -> Self {
+        let windows: Vec<NodeAt> = self
+            .facts
+            .iter()
+            .filter(|(_, facts)| facts.role == roles::FRAME)
+            .map(|(at, _)| at.clone())
+            .collect();
+        for window in windows {
+            let at = |kind: &str| NodeAt {
+                holder: window.holder.clone(),
+                object: format!("{}/{kind}", window.object),
+            };
+            let (font, zoom, tab) = (at("font"), at("zoom"), at("tab"));
+            self.facts
+                .insert(font.clone(), facts(roles::COMBO_BOX, "Font", Vec::new()));
+            self.facts
+                .insert(zoom.clone(), facts(roles::SLIDER, "Zoom", Vec::new()));
+            let mut general = facts(roles::PAGE_TAB, "General", Vec::new());
+            general.states = States::showing_and_usable()
+                .selectable()
+                .and_selected()
+                .as_the_tree_says()
+                .to_vec();
+            self.facts.insert(tab.clone(), general);
+            self.values.insert(zoom.clone(), 150.0);
+            if let Some(facts) = self.facts.get_mut(&window) {
+                facts.children.extend([font, zoom, tab]);
+            }
+        }
+        self
+    }
+
     /// Every button offering only these actions instead of `click`.
     #[must_use]
     pub fn offering(mut self, actions: &[&str]) -> Self {
@@ -221,6 +264,10 @@ impl AccessibilityTree for ATree {
     fn act(&self, _: &NodeAt, _: usize) -> Result<bool, TreeFault> {
         *self.pressed.borrow_mut() += 1;
         Ok(true)
+    }
+
+    fn value(&self, at: &NodeAt) -> Result<Option<f64>, TreeFault> {
+        Ok(self.values.get(at).copied())
     }
 }
 

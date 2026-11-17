@@ -152,7 +152,7 @@ pub fn at_each_ask(walk: Walk) -> Walk {
         .look("settings-closed-on-ask-each-time", look)
         // **The grant**: What alo can use, Give alo an application,
         // VSCodium, a day.
-        .press(settings)
+        .press(settings.clone())
         .look("settings-for-the-application", look.at_most(minutes(1)))
         .press(home.clone())
         .press_times(&down, DOWN_TO_WHAT_ALO_CAN_USE)
@@ -178,6 +178,21 @@ pub fn at_each_ask(walk: Walk) -> Walk {
         // merge walk of this section (run 43955643824) gave VSCodium alone, and
         // the turn ended in words after one step, with no card. The picker
         // opens in the home folder, and its first row picks the folder it is in.
+        //
+        // **From Settings opened afresh**, as the application's row was: a
+        // button in the page draws no focus ring, so moving between two of
+        // them changes nothing on the screen (run 43996140707: pictures 76 and
+        // 77 are the same file). Settings opens on *alo and AI* with the ring
+        // on its side column (picture 69), and that ring leaving is the change
+        // the look on the row sees.
+        .press(esc.clone())
+        .look("settings-closed-before-the-folder", look)
+        .press(settings)
+        .look("settings-for-the-folder", look.at_most(minutes(1)))
+        .press(home.clone())
+        .press_times(&down, DOWN_TO_WHAT_ALO_CAN_USE)
+        .look("what-alo-can-use-for-the-folder", look)
+        .press(tab.clone())
         .press(end.clone())
         .press_times(&up, UP_TO_GIVE_A_FOLDER)
         .look("on-give-alo-a-folder", look)

@@ -97,6 +97,9 @@ pub use built_on_electron::{
     ELECTRON_BASE_APP, is_built_on_electron, is_drawn_by_chromium, is_drawn_by_chromium_under,
 };
 
+mod built_on_chromium;
+pub use built_on_chromium::{CHROMIUMS_OWN_FILE, is_built_on_chromium};
+
 mod what_they_may_reach;
 pub use what_they_may_reach::{TheirHome, WhatItMayReach, WhatTheyMayReach, what_they_may_reach};
 

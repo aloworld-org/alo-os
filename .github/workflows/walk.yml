@@ -16,8 +16,11 @@
 # person installs or that are called a candidate or a release. This one:
 #
 # - is built **from main**: from the commit that was merged when a merge
-#   starts it, and from main as it stands when a person does, whichever branch
-#   they start it on, because a walk here is a walk of what main is;
+#   starts it, and from main as it stands when a person does — **unless the
+#   person ticks the box to build it from the branch they started it on**:
+#   the walk image of a branch CLAUDE.md allows, so a branch is tried on a
+#   booted machine before it merges, and the summary names that branch and
+#   commit. A walk after a merge is always main's;
 # - is **never pushed, signed or published** — no registry is logged in to,
 #   and the image is removed from the runner once the disk is written;
 # - leaves the runner only as **pictures, a report and the serial log**, kept
@@ -53,6 +56,10 @@ on:
         description: "Then ask alo to do one thing in every application a fresh machine ships (needs the provider)"
         type: boolean
         default: false
+      image_from_this_branch:
+        description: "Build the image from the branch this walk is started on, not from main, to try it before it merges (never published)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -70,18 +77,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The image is always main's: the merged commit itself after a merge, so
-      # the check on that commit is about that commit, and main as it stands
-      # when a person starts it, whichever branch they start it on.
+      # The image is main's: the merged commit itself after a merge, so the
+      # check on that commit is about that commit, and main as it stands when a
+      # person starts it — or, when they tick the box, the commit of the branch
+      # they started it on, which the summary then names.
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'push' && github.sha || 'main' }}
+          ref: ${{ github.event_name == 'push' && github.sha || inputs.image_from_this_branch && github.sha || 'main' }}
           path: image-source
 
-      - name: Say which commit the image is built from
+      - name: Say which branch and commit the image is built from
         working-directory: image-source
+        env:
+          IMAGE_FROM: ${{ github.event_name != 'push' && inputs.image_from_this_branch && github.ref_name || 'main' }}
         run: |
-          echo "The walk image is built from main at \`$(git rev-parse HEAD)\`." | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "The walk image is built from \`$IMAGE_FROM\` at \`$(git rev-parse HEAD)\`." | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Build the walk harness
         run: cargo build --release --locked -p alo-walking
@@ -112,7 +122,7 @@ jobs:
           sudo apt-get install -y -q qemu-system-x86 qemu-utils ovmf
           qemu-system-x86_64 --version
 
-      - name: Build the walk image from main
+      - name: Build the walk image from main, or from the branch asked for
         working-directory: image-source
         run: |
           start=$(date +%s)

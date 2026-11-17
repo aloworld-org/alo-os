@@ -269,6 +269,71 @@ fn a_version_that_is_not_a_release_and_a_licence_that_is_not_one_are_refused() {
     );
 }
 
+/// **A release and a licence are taken as Flathub writes them**, and the
+/// licence is read rather than copied: proprietary terms come through as not
+/// open source, with the address of the terms kept as written.
+#[test]
+fn a_release_and_a_licence_as_flathub_writes_them_are_read() {
+    let shipped = what_a_machine_ships();
+    let text = with_one_more(
+        "audio",
+        "com.example.Player",
+        "1.2.95.453.g0eeebbed",
+        "LicenseRef-proprietary=https://example.org/terms",
+    );
+    let catalogue = Catalogue::read(&text, &shipped).unwrap();
+    let player = catalogue
+        .every()
+        .iter()
+        .find(|one| one.application().identifier() == "com.example.Player")
+        .unwrap();
+    assert_eq!(player.version(), "1.2.95.453.g0eeebbed");
+    assert_eq!(
+        player.licence(),
+        "LicenseRef-proprietary=https://example.org/terms"
+    );
+    assert!(!player.is_open_source());
+    let gimp = catalogue
+        .every()
+        .iter()
+        .find(|one| one.application().identifier() == "org.gimp.GIMP")
+        .unwrap();
+    assert!(gimp.is_open_source());
+}
+
+/// **What the looser rules still refuse, through the catalogue**: a reference
+/// to terms nobody here has read, an address that is not `https`, and a
+/// release that is a word.
+#[test]
+fn a_licence_reference_nobody_read_and_a_word_for_a_release_are_still_refused() {
+    let shipped = what_a_machine_ships();
+    for licence in [
+        "LicenseRef-Discord",
+        "LicenseRef-proprietary=http://example.org",
+        "MIT Apache-2.0",
+    ] {
+        let text = with_one_more("audio", "com.example.Player", "1.0", licence);
+        assert_eq!(
+            Catalogue::read(&text, &shipped).unwrap_err(),
+            NotCatalogued::NoLicence {
+                identifier: "com.example.Player".to_owned()
+            },
+            "{licence}"
+        );
+    }
+    for version in ["stable", "-1", "1 .2"] {
+        let text = with_one_more("audio", "com.example.Player", version, "MIT");
+        assert_eq!(
+            Catalogue::read(&text, &shipped).unwrap_err(),
+            NotCatalogued::NotAVersion {
+                identifier: "com.example.Player".to_owned(),
+                version: version.to_owned()
+            },
+            "{version}"
+        );
+    }
+}
+
 /// **Nothing in the catalogue is a proprietary licence**, and nothing is
 /// unstated. A list this product recommends is a list a person can keep using
 /// after we stop publishing it.

@@ -163,6 +163,8 @@ struct Thing {
     name: &'static str,
     states: States,
     text: Option<&'static str>,
+    /// The number it holds, for a slider or a meter.
+    value: Option<f64>,
     actions: &'static [&'static str],
     children: Vec<Thing>,
     /// Held on another connection: another program's.
@@ -176,6 +178,7 @@ fn thing(role: u32, name: &'static str) -> Thing {
         name,
         states: States::showing_and_usable(),
         text: None,
+        value: None,
         actions: &[],
         children: Vec::new(),
         elsewhere: false,
@@ -185,6 +188,10 @@ fn thing(role: u32, name: &'static str) -> Thing {
 impl Thing {
     fn saying(mut self, text: &'static str) -> Self {
         self.text = Some(text);
+        self
+    }
+    fn holding_the_value(mut self, value: f64) -> Self {
+        self.value = Some(value);
         self
     }
     fn doing(mut self, actions: &'static [&'static str]) -> Self {
@@ -208,13 +215,20 @@ impl Thing {
 /// `AtspiRole` numbers the tests write.
 mod roles {
     pub const CHECK_BOX: u32 = 7;
+    pub const COMBO_BOX: u32 = 11;
     pub const DRAWING_AREA: u32 = 18;
     pub const FILLER: u32 = 20;
     pub const FRAME: u32 = 23;
     pub const LABEL: u32 = 29;
+    pub const LIST: u32 = 31;
+    pub const LIST_ITEM: u32 = 32;
     pub const MENU: u32 = 33;
     pub const MENU_BAR: u32 = 34;
     pub const MENU_ITEM: u32 = 35;
+    pub const PAGE_TAB: u32 = 37;
+    pub const PROGRESS_BAR: u32 = 42;
+    pub const SLIDER: u32 = 51;
+    pub const TABLE_CELL: u32 = 56;
     pub const PASSWORD_TEXT: u32 = 40;
     pub const PUSH_BUTTON: u32 = 43;
     pub const TEXT: u32 = 61;
@@ -227,6 +241,7 @@ struct ATree {
     running: Vec<Running>,
     facts: BTreeMap<NodeAt, Facts>,
     texts: BTreeMap<NodeAt, String>,
+    values: BTreeMap<NodeAt, f64>,
     actions: BTreeMap<NodeAt, Vec<String>>,
     names: BTreeMap<String, NodeAt>,
     /// What pressing answers.
@@ -268,6 +283,9 @@ impl ATree {
         }
         if let Some(text) = thing.text {
             self.texts.insert(at.clone(), text.to_owned());
+        }
+        if let Some(value) = thing.value {
+            self.values.insert(at.clone(), value);
         }
         if !thing.actions.is_empty() {
             self.actions.insert(
@@ -338,6 +356,11 @@ impl AccessibilityTree for ATree {
     fn text(&self, at: &NodeAt) -> Result<String, TreeFault> {
         self.hear(Asked::Text(at.clone()))?;
         self.texts.get(at).cloned().ok_or(TreeFault::Vanished)
+    }
+
+    fn value(&self, at: &NodeAt) -> Result<Option<f64>, TreeFault> {
+        self.hear(Asked::Facts(at.clone()))?;
+        Ok(self.values.get(at).copied())
     }
 
     fn actions(&self, at: &NodeAt) -> Result<Vec<String>, TreeFault> {
@@ -793,6 +816,161 @@ fn a_text_longer_than_is_read_at_once_says_it_was_cut_short() {
     .unwrap()
     .press(&tree, WorkingFully::NothingMoreToTurnOn, &strings);
     assert!(pressed.is_ok(), "a cut text stopped a press");
+}
+
+/// One thing read: its role, name, text, whether selected, and its number.
+type OneThingRead<'a> = (
+    Role,
+    &'a str,
+    Option<&'a str>,
+    Option<bool>,
+    Option<&'a str>,
+);
+
+/// **Drop-downs, list items and sliders are read for what they are**, with
+/// what a person sees of each: the choice a drop-down shows, which items and
+/// tabs are selected, and the number a slider or a meter holds. Until
+/// 2026-11-17 all three were walked past as layout — a font box, a folder's
+/// files, a zoom slider — so alo could not say what was chosen, selected or
+/// set. A thing that cannot be selected says nothing about selection, and a
+/// thing with no number says no number.
+#[test]
+fn drop_downs_list_items_and_sliders_are_read_for_what_they_are() {
+    let strings = in_english();
+    let selectable = States::showing_and_usable().selectable();
+    let tree = ATree::default().with(
+        ":1.7",
+        Some(MAIL),
+        vec![thing(roles::FRAME, "Letter").holding(vec![
+            thing(roles::PAGE_TAB, "General")
+                .doing(&["click"])
+                .in_states(selectable.and_selected()),
+            thing(roles::PAGE_TAB, "Advanced")
+                .doing(&["click"])
+                .in_states(selectable),
+            thing(roles::COMBO_BOX, "Font").saying("Arial"),
+            thing(roles::LIST, "Attachments").holding(vec![
+                thing(roles::LIST_ITEM, "Report.pdf").in_states(selectable.and_selected()),
+                thing(roles::LIST_ITEM, "Notes.txt").in_states(selectable),
+                thing(roles::TABLE_CELL, "12 KB"),
+            ]),
+            thing(roles::SLIDER, "Zoom").holding_the_value(150.0),
+            thing(roles::PROGRESS_BAR, "Sending").holding_the_value(40.5),
+        ])],
+    );
+    let grants = granting(&[MAIL]);
+    let read = ReadingWindows::of(
+        Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
+        &Adapters::default(),
+        &grants,
+        &installed(),
+        &strings,
+    )
+    .unwrap()
+    .read(&tree, &strings)
+    .unwrap();
+    let seen: Vec<OneThingRead<'_>> = read
+        .shown()
+        .everything()
+        .map(|seen| {
+            (
+                seen.role(),
+                seen.name(),
+                seen.text_to_read(),
+                seen.is_selected(),
+                seen.value(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        seen,
+        [
+            (Role::Tab, "General", None, Some(true), None),
+            (Role::Tab, "Advanced", None, Some(false), None),
+            (Role::DropDown, "Font", Some("Arial"), None, None),
+            (Role::Part, "Attachments", None, None, None),
+            (
+                Role::Item,
+                "Report.pdf",
+                Some("Report.pdf"),
+                Some(true),
+                None
+            ),
+            (
+                Role::Item,
+                "Notes.txt",
+                Some("Notes.txt"),
+                Some(false),
+                None
+            ),
+            (Role::Item, "12 KB", Some("12 KB"), None, None),
+            (Role::Range, "Zoom", None, None, Some("150")),
+            (Role::Range, "Sending", None, None, Some("40.5")),
+        ]
+    );
+}
+
+/// One thing read: its role, name, limit, text and number.
+type OneThingLimited<'a> = (
+    Role,
+    &'a str,
+    Option<Limit>,
+    Option<&'a str>,
+    Option<&'a str>,
+);
+
+/// **What a drop-down or a slider with no name says decides whether it is
+/// shown**: a drop-down with neither a name nor a choice is a control alo can
+/// say nothing useful about, said as one with no name; one showing a choice is
+/// shown by it; a slider with no name is shown for its number, and one with
+/// neither is passed over as layout.
+#[test]
+fn a_nameless_drop_down_or_slider_is_shown_by_what_it_holds() {
+    let strings = in_english();
+    let tree = ATree::default().with(
+        ":1.7",
+        Some(MAIL),
+        vec![thing(roles::FRAME, "Letter").holding(vec![
+            thing(roles::COMBO_BOX, ""),
+            thing(roles::COMBO_BOX, "").saying("Arial"),
+            thing(roles::SLIDER, "").holding_the_value(3.0),
+            thing(roles::SLIDER, ""),
+            thing(roles::SLIDER, "Volume"),
+        ])],
+    );
+    let grants = granting(&[MAIL]);
+    let read = ReadingWindows::of(
+        Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
+        &Adapters::default(),
+        &grants,
+        &installed(),
+        &strings,
+    )
+    .unwrap()
+    .read(&tree, &strings)
+    .unwrap();
+    let seen: Vec<OneThingLimited<'_>> = read
+        .shown()
+        .everything()
+        .map(|seen| {
+            (
+                seen.role(),
+                seen.name(),
+                seen.limit(),
+                seen.text_to_read(),
+                seen.value(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        seen,
+        [
+            (Role::DropDown, "", Some(Limit::NoName), None, None),
+            (Role::DropDown, "", None, Some("Arial"), None),
+            (Role::Range, "", None, None, Some("3")),
+            (Role::Range, "Volume", None, None, None),
+        ]
+    );
 }
 
 // ---------------------------------------------------------------------------
