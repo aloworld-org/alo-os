@@ -338,6 +338,19 @@ pub enum Done {
         /// Whether what was scrolled to reads as on the screen afterwards.
         now_showing: bool,
     },
+    /// One thing's right-click menu was opened, or asked to be by an
+    /// application that did not answer (`accessible.open_menu`). Added
+    /// 2026-11-17, additively. **What the menu holds is not carried back**:
+    /// `accessible.read_window` reads it.
+    MenuOpened {
+        /// The application.
+        application: String,
+        /// The thing's name, as the application shows it.
+        name: String,
+        /// Whether the application did not answer, so whether the menu is open
+        /// is not known.
+        unanswered: bool,
+    },
 }
 
 /// One window an application showed, as it goes back to a client.
@@ -774,6 +787,17 @@ impl Done {
         }
     }
 
+    /// What opening a menu answered, as it goes on the wire — taking its parts,
+    /// for [`Done::of_a_press`]'s reason.
+    #[must_use]
+    pub fn of_a_menu(application: &str, name: &str, unanswered: bool) -> Self {
+        Self::MenuOpened {
+            application: application.to_owned(),
+            name: name.to_owned(),
+            unanswered,
+        }
+    }
+
     /// What one of the six file verbs answered, as it goes on the wire.
     #[must_use]
     pub fn of_a_file_verb(answer: &Answer) -> Self {
@@ -921,6 +945,9 @@ impl Done {
             // **An opening the application did not answer** may or may not
             // have happened.
             Self::ItemOpened { unanswered, .. } => *unanswered,
+            // **A menu the application did not answer about** may or may not
+            // be open, and that is what a shell puts a caveat beside.
+            Self::MenuOpened { unanswered, .. } => *unanswered,
             // **A publication leaves nothing out**: it names the folder and the
             // address, and what it cannot take back is said in its own line
             // ([`Done::put_back_can_recall_it`]), not as a caveat here.

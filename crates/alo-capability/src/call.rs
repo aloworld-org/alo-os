@@ -208,16 +208,24 @@ impl Call {
     pub fn of(verb: &Verb, given: &[(&str, Given)]) -> Result<Self, CallError> {
         let mut values = BTreeMap::new();
         for (name, value) in given {
-            let name = name.trim();
-            let arg = verb.arg(name).ok_or_else(|| CallError::NoSuchArgument {
-                verb: verb.name().to_owned(),
-                argument: name.to_owned(),
-                takes: verb
-                    .args()
-                    .iter()
-                    .map(|arg| arg.name().to_owned())
-                    .collect(),
-            })?;
+            let given = name.trim();
+            // **A deprecated name is read as the current one** (`Arg::formerly`),
+            // so the value is kept, and twice-given is judged, under the one
+            // name the verb now takes.
+            let arg = verb
+                .args()
+                .iter()
+                .find(|arg| arg.answers_to(given))
+                .ok_or_else(|| CallError::NoSuchArgument {
+                    verb: verb.name().to_owned(),
+                    argument: given.to_owned(),
+                    takes: verb
+                        .args()
+                        .iter()
+                        .map(|arg| arg.name().to_owned())
+                        .collect(),
+                })?;
+            let name = arg.name();
             let validated = arg.validate(value)?;
             // **The same value twice is one value**: a model held to a list of
             // arguments repeated `application` in every call of eight on the

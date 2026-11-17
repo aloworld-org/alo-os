@@ -1012,6 +1012,8 @@ mod tests {
             // And opening an item, added 2026-11-17 (the owner's "Yes but it
             // should be without okay on full access").
             "accessible.open_item",
+            // And one thing's right-click menu, added 2026-11-17.
+            "accessible.open_menu",
             // `alo-publishing`'s one, added 2026-11-13: Demo 2's second road.
             "publish_to_github_pages",
         ];

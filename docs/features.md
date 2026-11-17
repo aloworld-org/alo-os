@@ -1108,6 +1108,16 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   which of its rows are scrolled away is not measured
   ([`contracts/agent-verbs.md`](contracts/agent-verbs.md), *The scrolling
   verbs*).
+  **Opening a right-click menu is built, since 2026-11-17** (the owner,
+  approving five new ways for alo to use an application as a person does: *"Yes
+  do all"*): alo can open the menu a right-click would open on one thing it
+  names — a file in a list, say — by the application's own way of opening it
+  (`accessible.open_menu`), then read the menu and press an item in it as it
+  presses anything else. A change: approved each time at *ask each time*, at
+  once at full access, recorded. Never a password field, never by where
+  something is. Qt applications such as Dolphin offer this; *whether other
+  toolkits do is not measured, and it is not yet seen on a booted machine*
+  ([`contracts/agent-verbs.md`](contracts/agent-verbs.md), *The menu verb*).
   **Any installed application** — the owner, the same day: *"for alo driving
   applications it should be able to drive any application installed."* **Only
   the ones the person has let it use**: by default the person lets alo use

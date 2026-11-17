@@ -170,6 +170,7 @@ pub fn summary(tallied: &[Tallied], asked_of: &str) -> String {
     let mut looked: Vec<String> = Vec::new();
     let mut refused: Vec<String> = Vec::new();
     let mut skipped: Vec<String> = Vec::new();
+    let mut the_other_way: Vec<String> = Vec::new();
     for one in tallied {
         let passes_refused = one
             .tries
@@ -181,6 +182,17 @@ pub fn summary(tallied: &[Tallied], asked_of: &str) -> String {
                 "- {}: {passes_refused} of its passes {} refused first and went on",
                 one.request.named(),
                 if passes_refused == 1 { "was" } else { "were" }
+            ));
+        }
+        let passes_the_other_way = one
+            .tries
+            .iter()
+            .filter(|tried| tried.took_the_road() && tried.by_the_other_road())
+            .count();
+        if passes_the_other_way > 0 {
+            the_other_way.push(format!(
+                "- {}: {passes_the_other_way} of its passes took another road",
+                one.request.named()
             ));
         }
         let passes_that_looked = one
@@ -271,6 +283,19 @@ pub fn summary(tallied: &[Tallied], asked_of: &str) -> String {
     } else {
         said.push_str("Passes refused first:\n\n");
         said.push_str(&refused.join("\n"));
+        said.push('\n');
+    }
+    // **A pass by a request's other road is said**, so the longer way to the
+    // same place is counted rather than hidden among the passes.
+    said.push_str(
+        "\nA request may name other roads to the same place, which a try may take from where \
+         they part. ",
+    );
+    if the_other_way.is_empty() {
+        said.push_str("No pass took another road.\n");
+    } else {
+        said.push_str("Passes by another road:\n\n");
+        said.push_str(&the_other_way.join("\n"));
         said.push('\n');
     }
     for one in tallied {

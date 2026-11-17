@@ -388,6 +388,13 @@ window shows.
 `Sticky keys, slow keys, and keyboard-only operation of everything`. The verb
 asks the application to bring what is just past the screen onto it, a page at a
 time; the approval is what an agent needs, for the same reason.
+### accessible.open_menu
+
+**By hand:** a person right-clicks the thing, or selects it and presses the menu
+key — `Sticky keys, slow keys, and keyboard-only operation of everything`. The
+verb asks the application to open the same thing's menu through its own action
+for it; the approval is what an agent needs, because it is the agent choosing to
+open it.
 
 ### accessible.set_value
 

@@ -123,6 +123,10 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
             scrolled.a_page(),
             scrolled.now_showing(),
         ),
+        // A menu, 2026-11-17.
+        alo_turn::WhatAVerbDid::AMenuWasOpened(opened) => {
+            Done::of_a_menu(opened.application(), opened.name(), opened.unanswered())
+        }
     }
 }
 

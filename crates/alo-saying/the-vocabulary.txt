@@ -134,6 +134,19 @@ adapters.fallback.open-item.no-such-item	{application} shows no item named “{n
 adapters.fallback.open-item.purpose	open one item of a list in an application's window, as a double-click would, such as a file in a folder
 adapters.fallback.open-item.sentence	open “{name}” in {application}
 adapters.fallback.open-item.too-much-to-be-sure	{application} shows more than can be read at once, so whether “{name}” is the only one is not known, and nothing was opened
+adapters.fallback.open-menu.application	the application the thing is in
+adapters.fallback.open-menu.changes	Opens that one thing's own menu, by the application's own way of opening it, as a right-click would.
+adapters.fallback.open-menu.did-not-answer	alo asked {application} to open the menu of “{name}” and it did not answer, so whether the menu is open is not known. Read the window to see
+adapters.fallback.open-menu.did-not-open	{application} answered that it could not open the menu of “{name}”, so no menu was opened
+adapters.fallback.open-menu.leaves	No item of the menu is chosen, nothing is typed, and nothing is found by where it is on the screen.
+adapters.fallback.open-menu.more-than-one	{application} shows more than one “{name}” with a menu, so alo did not guess which, and no menu was opened
+adapters.fallback.open-menu.name	the name of the thing whose menu is opened, exactly as the application shows it
+adapters.fallback.open-menu.no-menu	“{name}” in {application} offers no menu alo can open, so no menu was opened. Right-click it yourself if it has one
+adapters.fallback.open-menu.nothing-named	{application} shows nothing named “{name}” now, so no menu was opened
+adapters.fallback.open-menu.password-field	“{name}” in {application} is a password field, and alo never acts on one, so no menu was opened
+adapters.fallback.open-menu.purpose	open the menu a right-click would open on one thing in an application's window, named as the application names it, so that one of its items can be chosen
+adapters.fallback.open-menu.sentence	open the right-click menu of “{thing}” in {application}
+adapters.fallback.open-menu.too-much	{application} shows more than alo can read at once, so alo could not be sure which “{name}” was meant, and no menu was opened
 adapters.fallback.read-window.application	the application whose windows to read
 adapters.fallback.read-window.by-hand	Look at the application's window, or have the screen reader read it aloud
 adapters.fallback.read-window.purpose	read what an application's windows show
@@ -153,7 +166,7 @@ adapters.fallback.scroll-to.name	the name of the thing to bring onto the screen,
 adapters.fallback.scroll-to.nothing-named	{application} has nothing named “{name}”, on the screen or off it, so nothing was scrolled
 adapters.fallback.scroll-to.password-field	“{name}” in {application} is a password field, and alo never acts on one, so nothing was scrolled
 adapters.fallback.scroll-to.purpose	scroll an application's window, as far as it takes, until one thing you can name — a heading, a file, a button — is on the screen, in one step
-adapters.fallback.scroll-to.sentence	scroll {application} until “{name}” is on the screen
+adapters.fallback.scroll-to.sentence	scroll {application} until “{to}” is on the screen
 adapters.fallback.scroll-to.too-much	{application} holds more than alo can read at once, so alo could not be sure which “{name}” was meant, and nothing was scrolled
 adapters.fallback.scroll.changes	Moves what one window of the application shows, as scrolling would, so that more of it can be read.
 adapters.fallback.scroll.did-not	{application} answered that it could not scroll there, so nothing was scrolled

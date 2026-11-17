@@ -489,6 +489,23 @@ fn check_args(args: &[Arg]) -> Result<(), VerbError> {
                 argument: arg.name().to_owned(),
             });
         }
+        // **A name it had before must mean only it**: not another argument's
+        // name, nor another's former name, and an identifier like any name.
+        if let Some(old) = arg.formerly() {
+            if !is_an_identifier(old) {
+                return Err(VerbError::ArgumentNotAnIdentifier {
+                    argument: old.to_owned(),
+                });
+            }
+            let elsewhere = args.iter().enumerate().any(|(other, earlier)| {
+                earlier.name() == old || (other != position && earlier.formerly() == Some(old))
+            });
+            if elsewhere {
+                return Err(VerbError::SameArgumentTwice {
+                    argument: old.to_owned(),
+                });
+            }
+        }
         check_takes(arg)?;
     }
     Ok(())
