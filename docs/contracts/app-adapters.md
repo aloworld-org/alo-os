@@ -179,7 +179,10 @@ building on the fallback, can rely on:
   part of a window another program shows are each said in words. *Edited
   2026-11-06 by ADR 0147:* **except a person's own `click` and `drag`**, given as
   proportions of the window and recorded as done by position — **never an
-  agent's**;
+  agent's**. *Edited 2026-11-17 by ADR 0147's amendment of that date (the owner:
+  "Allow clicking by position"):* **and alo's own click on the screen road**,
+  inside that one window, read again after, never in a terminal, across a
+  pairing or in a window with a password field. No adapter declares either;
 - **nothing is guessed.** A press is refused when no control of that kind and name
   is showing, when more than one is, when the window is too large to read whole,
   when the control is greyed out, and when it offers no way to be pressed from
