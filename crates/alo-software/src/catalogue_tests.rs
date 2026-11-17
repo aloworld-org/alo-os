@@ -64,10 +64,12 @@ fn an_entrys_labels_are_read_off_it() {
             Label::EarlyVersion
         ]
     );
-    assert_eq!(labels_of("org.gimp.GIMP"), Vec::<Label>::new());
+    // GIMP asks for the whole machine's files (Flathub, 2026-11-17), and
+    // darktable as well, and is not verified.
+    assert_eq!(labels_of("org.gimp.GIMP"), vec![Label::ReachesYourFiles]);
     assert_eq!(
         labels_of("org.darktable.Darktable"),
-        vec![Label::NotVerified]
+        vec![Label::ReachesYourFiles, Label::NotVerified]
     );
 }
 
@@ -568,7 +570,7 @@ fn a_signed_release_that_does_not_hold_is_refused() {
         format!(
             "{THE_CATALOGUE}\n[[application]]\ncategory = \"audio\"\nidentifier = \
              \"ai.storyteller.example\"\nsource = \"{source}\"\nversion = \"0.1.0\"\nlicence = \
-             \"Apache-2.0\"\nverified = true\nearly = true\n{rest}"
+             \"Apache-2.0\"\nverified = true\nearly = true\nreaches = []\n{rest}"
         )
     };
     let sum = "5c9deb58f07bd54f323a5d985bed295b4c5b15789e02651e2f203d5e8ef211a5";
