@@ -47,6 +47,13 @@ serde_json = { workspace = true }
 
 thiserror = { workspace = true }
 
+# A maker's signed release (ADR 0158): fetched over the machine's own road out,
+# hashed against the SHA-256 the catalogue pins, and its key's armour taken off
+# for the keyring gpgv is handed. All three are in the tree already.
+ureq = { workspace = true }
+sha2 = { workspace = true }
+base64 = "0.22"
+
 # The machine's own reader of desktop entries, for `alo-shipped-names`: the
 # names pinned in `the-shipped-names.txt` are read exactly as a booted machine
 # reads them. The walks in `tests/` read entries with it too.

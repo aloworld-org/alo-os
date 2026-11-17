@@ -194,6 +194,10 @@ impl Tool for TheRentedTool {
     fn remove(&self, application: &Application) -> Result<(), Failed> {
         self.act(&asked::remove(application))
     }
+
+    fn install_a_file(&self, _: &Application, file: &std::path::Path) -> Result<(), Failed> {
+        self.act(&asked::install_a_file(file))
+    }
 }
 
 #[cfg(test)]

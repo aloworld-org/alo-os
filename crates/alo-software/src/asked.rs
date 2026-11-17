@@ -60,6 +60,15 @@ pub fn install(source: &SourceName, application: &Application) -> Vec<String> {
     asked
 }
 
+/// Install an application from a file on this machine, for everyone who uses
+/// it — a maker's signed release, already checked (ADR 0158).
+#[must_use]
+pub fn install_a_file(file: &std::path::Path) -> Vec<String> {
+    let mut asked = owned(&["install", "--system", "--noninteractive", "--bundle", "--"]);
+    asked.push(file.display().to_string());
+    asked
+}
+
 /// Which installed applications this place has newer versions of.
 #[must_use]
 pub fn updates(source: &SourceName) -> Vec<String> {

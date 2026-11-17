@@ -23,6 +23,8 @@
 //! whoever is fixing the machine — and the person is told that nothing was
 //! changed, which is true, rather than what the tool said, which names it.
 
+use std::path::Path;
+
 use alo_applications::Application;
 
 use crate::refusing::NotDone;
@@ -126,4 +128,21 @@ pub trait Tool {
     /// # Errors
     /// [`Failed`], when it was not removed.
     fn remove(&self, application: &Application) -> Result<(), Failed>;
+
+    /// Install this application from a file already on this machine — a
+    /// maker's signed release, which `crate::installing_a_signed_release`
+    /// checked before handing it here (ADR 0158).
+    ///
+    /// **Refuses unless a tool says it can**, so a tool written before this
+    /// existed, and every stand-in a test writes, installs no file it was
+    /// never asked to know about.
+    ///
+    /// # Errors
+    /// [`Failed`], when it was not installed.
+    fn install_a_file(&self, application: &Application, file: &Path) -> Result<(), Failed> {
+        let _ = (application, file);
+        Err(Failed::DidNotAnswer {
+            said: "this tool does not install an application from a file".to_owned(),
+        })
+    }
 }
