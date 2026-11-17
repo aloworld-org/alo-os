@@ -68,7 +68,6 @@ impl Role {
             // with no name is the list a heading opens, and the walk passes it
             // as layout (`crate::walking`).
             8 | 33 | 35 | 45 => Self::MenuItem,
-            35 | 45 => Self::MenuItem,
             // PAGE_TAB
             37 => Self::Tab,
             // LINK
