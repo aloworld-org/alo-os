@@ -246,8 +246,23 @@ pub(crate) fn opening_a_file_in_an_application(
 /// Flatpak takes seconds.
 pub const IN_FRONT_WITHIN: Duration = Duration::from_secs(60);
 
-/// How long between two asks whether it is in front yet.
-const BETWEEN_ASKS: Duration = Duration::from_millis(250);
+/// The first wait between two asks whether it is in front yet.
+const THE_FIRST_WAIT: Duration = Duration::from_millis(250);
+
+/// The longest wait between two asks.
+const THE_LONGEST_WAIT: Duration = Duration::from_secs(2);
+
+/// **How long to wait after the `asks`-th ask, from one**: a quarter of a
+/// second, doubling, never more than two. A window that comes at once is
+/// noticed as quickly as before; one that takes ten seconds is asked about
+/// eight times rather than forty, each ask a line on the desktop's journal
+/// (run 44069105568: 59 lines in ten seconds while Loupe's window came).
+pub(crate) fn the_wait_after(asks: u32) -> Duration {
+    let doublings = asks.saturating_sub(1).min(8);
+    THE_FIRST_WAIT
+        .saturating_mul(1_u32 << doublings)
+        .min(THE_LONGEST_WAIT)
+}
 
 /// **Wait until the window the file opened in is the one alo may type into**,
 /// in front with the keyboard, for at most [`IN_FRONT_WITHIN`].
@@ -268,10 +283,12 @@ fn in_front_or_not_yet_there(
     let asked = alo_acting::ToType::Check {
         application: application.clone(),
     };
+    let mut asks: u32 = 0;
     while matches!(door.typing(&asked, ""), Ok(alo_acting::Typed::NotInFront))
         && Instant::now() < until
     {
-        std::thread::sleep(BETWEEN_ASKS);
+        asks = asks.saturating_add(1);
+        std::thread::sleep(the_wait_after(asks));
     }
 }
 
