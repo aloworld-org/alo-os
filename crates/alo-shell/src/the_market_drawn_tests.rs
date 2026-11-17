@@ -181,10 +181,8 @@ fn the_three_labels_reach_the_frame_a_display_is_handed() {
     .join("\n");
     let plain = Catalogue::read(&plain_text, &Shipped::decided().unwrap()).unwrap();
     assert!(
-        plain
-            .under(alo_software::Category::Audio)
-            .all(|one| one.labels().is_empty()),
-        "the premise: nothing on the Audio shelf has a label"
+        plain.every().iter().all(|one| one.labels().is_empty()),
+        "the premise: nothing in the plain catalogue has a label"
     );
     let unlabelled = handed(&WithTheMarket::open(plain));
     written(&unlabelled, "market-no-labels.png");
