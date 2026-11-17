@@ -37,7 +37,7 @@ fn a_catalogue_with_every_label() -> Catalogue {
     let text = format!(
         "{}\n[[application]]\ncategory = \"music-making\"\nidentifier = \
          \"ai.storyteller.soundcraft\"\nname = \"SoundCraft\"\nsource = \"flathub\"\nversion = \"0.20.1\"\nlicence = \
-         \"Apache-2.0\"\nverified = true\nearly = true\n",
+         \"Apache-2.0\"\nverified = true\nearly = true\nreaches = []\n",
         alo_software::catalogue::THE_CATALOGUE
     );
     Catalogue::read(&text, &Shipped::decided().unwrap()).unwrap()
@@ -164,7 +164,7 @@ fn the_three_labels_reach_the_frame_a_display_is_handed() {
     let plain_text: String = format!(
         "{}\n[[application]]\ncategory = \"music-making\"\nidentifier = \
          \"ai.storyteller.soundcraft\"\nname = \"SoundCraft\"\nsource = \"flathub\"\nversion = \"0.20.1\"\nlicence = \
-         \"Apache-2.0\"\nverified = true\nearly = false\n",
+         \"Apache-2.0\"\nverified = true\nearly = false\nreaches = []\n",
         alo_software::catalogue::THE_CATALOGUE
     )
     .lines()
@@ -178,6 +178,8 @@ fn the_three_labels_reach_the_frame_a_display_is_handed() {
             "early = false"
         } else if line == "source = \"storytold\"" {
             "source = \"flathub\""
+        } else if line.starts_with("reaches = ") {
+            "reaches = []"
         } else {
             line
         }
