@@ -188,7 +188,10 @@ fn every_application(walk: Walk) -> Walk {
     let walk = walk
         .press(Chord::key("esc"))
         .press(terminal.clone())
-        .look("every-app-the-terminal", look.at_most(minutes(1)))
+        // **The terminal may already be in front**, as VSCodium's section
+        // leaves it: so this look only waits for the screen to settle, and the
+        // files made, checked next, prove the terminal had the keys.
+        .look_as_it_settles("every-app-the-terminal", look.at_most(minutes(1)))
         .type_text(&making_the_files())
         .mark()
         .press(ret.clone())

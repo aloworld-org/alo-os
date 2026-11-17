@@ -722,6 +722,79 @@ fn what_cannot_be_read_is_said_in_words() {
     );
 }
 
+/// **A text longer than is read at once says it was cut short** — on the thing
+/// whose text it is, so an agent told what a document holds is never handed
+/// its beginning as though it were the whole. A text that fits is not marked,
+/// and the mark does not stop a press: what is cut is one text, not the window.
+#[test]
+fn a_text_longer_than_is_read_at_once_says_it_was_cut_short() {
+    let strings = in_english();
+    let longest = alo_adapters::walking::LONGEST_TEXT;
+    let long: &'static str = Box::leak("a".repeat(longest + 1).into_boxed_str());
+    let whole: &'static str = Box::leak("b".repeat(longest).into_boxed_str());
+    let tree = ATree::default().with(
+        ":1.7",
+        Some(MAIL),
+        vec![thing(roles::FRAME, "A long letter").holding(vec![
+            thing(roles::TEXT, "Letter").saying(long),
+            thing(roles::TEXT, "Reply").saying(whole),
+            thing(roles::PUSH_BUTTON, "Send").doing(&["click"]),
+        ])],
+    );
+    let grants = granting(&[MAIL]);
+    let read = ReadingWindows::of(
+        Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
+        &Adapters::default(),
+        &grants,
+        &installed(),
+        &strings,
+    )
+    .unwrap()
+    .read(&tree, &strings)
+    .unwrap();
+    let cut: Vec<(&str, bool, usize)> = read
+        .shown()
+        .everything()
+        .filter(|seen| seen.role() == Role::TextField)
+        .map(|seen| {
+            (
+                seen.name(),
+                seen.is_cut_short(),
+                seen.text_to_read().map_or(0, |text| text.chars().count()),
+            )
+        })
+        .collect();
+    assert_eq!(cut, [("Letter", true, longest), ("Reply", false, longest)]);
+    assert!(
+        !read.shown().not_all_read(),
+        "one cut text is not the window"
+    );
+    let said: Vec<String> = read
+        .shown()
+        .cut_short_said(&strings)
+        .into_iter()
+        .map(alo_strings::Said::into_text)
+        .collect();
+    assert_eq!(
+        said,
+        [
+            "org.example.Mail shows a text longer than is read at once, so only its first 4000 \
+             characters were read"
+        ]
+    );
+
+    let pressed = Activating::of(
+        approved(&pressing(MAIL, "button", "Send"), &grants),
+        &Adapters::default(),
+        &grants,
+        &installed(),
+        &strings,
+    )
+    .unwrap()
+    .press(&tree, WorkingFully::NothingMoreToTurnOn, &strings);
+    assert!(pressed.is_ok(), "a cut text stopped a press");
+}
+
 // ---------------------------------------------------------------------------
 // Pressing.
 // ---------------------------------------------------------------------------

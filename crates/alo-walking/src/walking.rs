@@ -133,7 +133,11 @@ impl Walking {
                 }
             }
             Step::TypeSecret(variable) => self.type_secret(machine, variable, secret, pace)?,
-            Step::Look { name, rule } => self.look(machine, name, *rule)?,
+            Step::Look {
+                name,
+                rule,
+                may_be_as_it_was,
+            } => self.look(machine, name, *rule, *may_be_as_it_was)?,
             Step::Wait(for_how_long) => {
                 machine.wait(*for_how_long);
                 self.did(
@@ -236,18 +240,24 @@ impl Walking {
         Ok(())
     }
 
-    /// Look, keep the picture, and fail if the screen did not change.
+    /// Look, keep the picture, and fail if the screen did not change — or,
+    /// for a look that may find the screen as it was, if it never settled.
     fn look(
         &mut self,
         machine: &mut impl Machine,
         name: &str,
         rule: Settling,
+        may_be_as_it_was: bool,
     ) -> Result<(), MachineError> {
         let before = self.before.take();
+        // **With no picture before to compare, the look only waits for the
+        // screen to settle**: the keys' effect may already be on it.
+        let before = before.filter(|_| !may_be_as_it_was);
         let looked = settling::look(machine, before.as_ref(), rule)?;
         let kept = machine.keep_picture(name)?;
         let verdict = match looked.seen {
             Seen::Unchanged => Verdict::Failed,
+            Seen::NeverSettled if may_be_as_it_was => Verdict::Failed,
             _ => Verdict::Passed,
         };
         self.checked(

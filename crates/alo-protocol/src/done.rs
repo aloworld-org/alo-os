@@ -311,6 +311,10 @@ pub struct OneThingShown {
     /// `no-name`, `not-described` or `shown-by-another-program`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cannot_be_read: Option<String>,
+    /// Whether what it shows was longer than is read at once, so `shows` holds
+    /// only its beginning. Absent when it was read whole.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub cut_short: bool,
 }
 
 /// One thing the record says was done to a file, as it goes back to a client.
@@ -791,6 +795,7 @@ impl OneThingShown {
                 }
                 .to_owned()
             }),
+            cut_short: seen.is_cut_short(),
         }
     }
 }

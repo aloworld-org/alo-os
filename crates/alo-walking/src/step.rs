@@ -44,12 +44,17 @@ pub enum Step {
     TypeSecret(&'static str),
     /// Wait for the screen to change from before the last keys and settle,
     /// and keep the picture under this name. A look whose screen did not
-    /// change fails.
+    /// change fails, unless it may be as it was.
     Look {
         /// The picture's name, which is also the check's.
         name: String,
         /// How it waits.
         rule: Settling,
+        /// **Whether the screen may already show what the keys ask for**, as
+        /// when they bring forward a window already in front. Such a look
+        /// only waits for the screen to settle, and fails if it never does;
+        /// what proves the keys did their work is a later check.
+        may_be_as_it_was: bool,
     },
     /// Wait.
     Wait(Duration),
@@ -238,6 +243,20 @@ impl Walk {
         self.then(Step::Look {
             name: name.to_owned(),
             rule,
+            may_be_as_it_was: false,
+        })
+    }
+
+    /// Then look, keep the picture as `name`, and pass once the screen
+    /// settles whether or not the keys changed it — for keys whose effect may
+    /// already be on the screen. What proves they did their work must be a
+    /// later check.
+    #[must_use]
+    pub fn look_as_it_settles(self, name: &str, rule: Settling) -> Self {
+        self.then(Step::Look {
+            name: name.to_owned(),
+            rule,
+            may_be_as_it_was: true,
         })
     }
 

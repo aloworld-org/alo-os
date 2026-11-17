@@ -107,6 +107,7 @@ adapters.fallback.read-window.application	the application whose windows to read
 adapters.fallback.read-window.by-hand	Look at the application's window, or have the screen reader read it aloud
 adapters.fallback.read-window.purpose	read what an application's windows show
 adapters.fallback.read-window.sentence	read what {application} shows in its windows
+adapters.fallback.text-cut-short	{application} shows a text longer than is read at once, so only its first {most} characters were read
 adapters.fallback.too-much-to-be-sure	{application} shows more than can be read at once, so whether its {kind} named “{name}” is the only one is not known, and nothing was pressed
 adapters.fallback.type-text.application	the application to type into
 adapters.fallback.type-text.by-hand	Click in the application's window and type it yourself

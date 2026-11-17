@@ -374,6 +374,20 @@ pub const NOT_ALL_READ: Word = Word::saying(
 )
 .noting("Said beside what was read. {application} is its identifier and is not translated.");
 
+/// A text longer than is read at once, said beside what was read.
+pub const TEXT_CUT_SHORT: Word = Word::saying(
+    "adapters.fallback.text-cut-short",
+    "{application} shows a text longer than is read at once, so only its first {most} \
+     characters were read",
+)
+.noting(
+    "Said beside what was read, once for each text cut short. {application} is its identifier \
+     and is not translated; {most} is a number.",
+);
+
+/// The placeholder for how many characters of one text are read.
+pub const MOST: &str = "most";
+
 /// A window that shows no text, said rather than answering nothing.
 ///
 /// **Under `alo-app`'s key**, because that crate published it first, for a
@@ -430,7 +444,7 @@ pub const PRESS_LEAVES: Word = Word::saying(
 .noting("Shown beside the sentence about what the press changes. Held to it by a test.");
 
 /// Every word the fallback declares.
-pub const EVERY_WORD: [Word; 41] = [
+pub const EVERY_WORD: [Word; 42] = [
     READ_PURPOSE,
     READ_APPLICATION,
     READ_SENTENCE,
@@ -468,6 +482,7 @@ pub const EVERY_WORD: [Word; 41] = [
     LIMIT_NOT_DESCRIBED,
     LIMIT_ANOTHER_PROGRAM,
     NOT_ALL_READ,
+    TEXT_CUT_SHORT,
     NOTHING_TO_READ,
     NOTHING_TO_READ_UNTIL_ALO_WORKS_FULLY,
     PRESS_CHANGES,
