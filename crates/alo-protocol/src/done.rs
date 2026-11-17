@@ -294,7 +294,11 @@ pub struct AWindowShowed {
 pub struct OneThingShown {
     /// What it is: one of the kinds a press takes (`button`, `check_box`,
     /// `radio_button`, `switch`, `menu_item`, `tab`, `link`), or `field`,
-    /// `password-field`, `text`, `document`, `image`, `window` or `drawn`.
+    /// `password-field`, `text`, `document`, `image`, `window` or `drawn` —
+    /// and since 2026-11-17, additively, `drop-down` (one choice of several,
+    /// shown closed, its choice in `shows`), `item` (one item of a list, a
+    /// table or a tree) and `slider` (a slider, or a progress bar or meter that
+    /// cannot be moved, its number in `value`).
     pub is: String,
     /// Its name, as the application shows it — empty for a thing with none.
     pub name: String,
@@ -311,6 +315,17 @@ pub struct OneThingShown {
     /// `no-name`, `not-described` or `shown-by-another-program`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cannot_be_read: Option<String>,
+    /// Whether what it shows was longer than is read at once, so `shows` holds
+    /// only its beginning. Absent when it was read whole.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub cut_short: bool,
+    /// Selected or not, for a thing that can be selected — a tab, an item.
+    /// Absent for one that cannot.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selected: Option<bool>,
+    /// The number a `slider` holds, as the application gives it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub value: Option<String>,
 }
 
 /// One thing the record says was done to a file, as it goes back to a client.
@@ -771,6 +786,9 @@ impl OneThingShown {
             (None, Role::Image) => "image",
             (None, Role::Window) => "window",
             (None, Role::Canvas) => "drawn",
+            (None, Role::DropDown) => "drop-down",
+            (None, Role::Item) => "item",
+            (None, Role::Range) => "slider",
             (None, _) => "text",
         };
         let shows = match seen.contents() {
@@ -791,6 +809,9 @@ impl OneThingShown {
                 }
                 .to_owned()
             }),
+            cut_short: seen.is_cut_short(),
+            selected: seen.is_selected(),
+            value: seen.value().map(ToOwned::to_owned),
         }
     }
 }

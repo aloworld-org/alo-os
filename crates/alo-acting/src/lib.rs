@@ -69,6 +69,7 @@ pub mod front;
 pub mod opening_a_file;
 pub mod opening_a_link;
 pub mod request;
+pub mod said_of_publishing;
 pub mod said_on_the_log;
 pub mod typing_into;
 pub mod working_in;

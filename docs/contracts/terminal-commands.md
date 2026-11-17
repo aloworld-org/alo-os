@@ -399,9 +399,10 @@ deprecation period, as `CLAUDE.md`'s *contracts outlive code* requires:
 - on a pipe, `list` gives one identifier per line; `show <application>` its
   declared abilities' names; `show <application> <ability>` that ability's
   arguments' names; `controls` one control per line as
-  `<kind>⇥<name>⇥<states>`, where `<kind>` is a kind `press` takes or `field` or
-  `password_field`, and `<states>` is any of `greyed-out`, `on` and `off`
-  separated by commas; `read` each piece of text a window shows — and where a
+  `<kind>⇥<name>⇥<states>`, where `<kind>` is a kind `press` takes or `field`,
+  `password_field`, `drop_down` or `slider` (the last two added 2026-11-17),
+  and `<states>` is any of `greyed-out`, `on`, `off`, `selected` and
+  `value=<number>` separated by commas; `read` each piece of text a window shows — and where a
   window shows none, nothing on the output and a sentence saying so on the
   error stream, naming the window (added 2026-11-12, additively: nothing that
   was printed before is printed differently); and an act
@@ -516,9 +517,12 @@ outside the application.
 **Menus are pressed the way a person opens them.** A menu's items are often in
 the tree only once the menu is open (unmeasured per toolkit), so
 `press menu "File"` then `press menu_item "Save As…"` is the honest road, and
-`controls` after the first press lists what opened. `menu`, `field`, `slider`,
-`drop_down` and `list` are not yet among the fallback's kinds; adding them is
-additive (answer 10).
+`controls` after the first press lists what opened. **Since 2026-11-17 a
+menu bar's heading is a `menu_item` a press opens**, and `controls` lists
+`drop_down` (its choice beside it) and `slider` (its number as
+`value=<number>`, a progress bar or meter among them), and marks a tab or item
+that is chosen `selected` — additively (answer 10). `field` is unchanged; `set`
+and `choose`, which act on a slider and a drop-down, are separate additions.
 
 **Where the tree runs out, the screen takes over, control by control.** A
 control the tree does not describe, a field the tree describes but will not

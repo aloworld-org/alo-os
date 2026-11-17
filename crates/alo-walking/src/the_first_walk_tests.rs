@@ -154,3 +154,36 @@ fn the_maximise_check_reads_from_alt_f3() {
         "the maximise check is skipped without a provider key"
     );
 }
+
+/// **The four sections alo is asked in are independent**: each starts from
+/// its own Escape and sets its own level and grants, so a failure in one does
+/// not stop the next — full-access VSCodium, every application, ask-each-time
+/// VSCodium and the Papers sheet, in that order, and none needs another.
+#[test]
+fn the_sections_alo_is_asked_in_are_independent() {
+    let sections: Vec<(String, Vec<String>)> = the_first_walk()
+        .steps()
+        .iter()
+        .filter_map(|step| match step {
+            Step::Section { name, needs } => Some((
+                name.clone(),
+                needs.iter().map(|it| (*it).to_owned()).collect(),
+            )),
+            _ => None,
+        })
+        .collect();
+    let names: Vec<&str> = sections.iter().map(|(name, _)| name.as_str()).collect();
+    assert_eq!(
+        names,
+        vec![
+            "VSCodium at full access",
+            "every application at full access",
+            "VSCodium at ask each time",
+            "the Papers sheet at ask each time",
+        ]
+    );
+    assert!(
+        sections.iter().all(|(_, needs)| needs.is_empty()),
+        "{sections:?}"
+    );
+}

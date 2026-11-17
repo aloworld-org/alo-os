@@ -54,6 +54,9 @@ const ACTION: &str = "org.a11y.atspi.Action";
 /// The interface through which text is put into a thing (ADR 0153).
 const EDITABLE_TEXT: &str = "org.a11y.atspi.EditableText";
 
+/// The interface a slider, a progress bar or a meter says its number through.
+const VALUE: &str = "org.a11y.atspi.Value";
+
 /// The accessibility tree of one session, for one turn.
 #[derive(Debug)]
 pub struct AccessibleSession {
@@ -242,6 +245,20 @@ impl AccessibilityTree for AccessibleSession {
         self.ask(at, ACTION, "DoAction", &(index,))
     }
 
+    fn value(&self, at: &NodeAt) -> Result<Option<f64>, TreeFault> {
+        let interfaces: Vec<String> = self.ask(at, ACCESSIBLE, "GetInterfaces", &())?;
+        if !offers(&interfaces, VALUE) {
+            return Ok(None);
+        }
+        let value: OwnedValue = self.ask(
+            at,
+            "org.freedesktop.DBus.Properties",
+            "Get",
+            &(VALUE, "CurrentValue"),
+        )?;
+        Ok(f64::try_from(value).ok().filter(|value| value.is_finite()))
+    }
+
     fn takes_text(&self, at: &NodeAt) -> Result<bool, TreeFault> {
         let interfaces: Vec<String> = self.ask(at, ACCESSIBLE, "GetInterfaces", &())?;
         Ok(interfaces
@@ -292,5 +309,28 @@ fn heard(why: &zbus::Error) -> TreeFault {
             TreeFault::DidNotAnswer
         }
         _ => TreeFault::NotThere,
+    }
+}
+
+/// Whether a thing whose interfaces are `interfaces` offers `interface`,
+/// matched exactly.
+fn offers(interfaces: &[String], interface: &str) -> bool {
+    interfaces.iter().any(|offered| offered == interface)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// **A number is asked only of a thing that offers one**, matched by the
+    /// interface's whole name — a slider says `Value`, a button does not.
+    #[test]
+    fn an_interface_is_offered_only_when_it_is_named_exactly() {
+        let slider = vec![ACCESSIBLE.to_owned(), VALUE.to_owned()];
+        let button = vec![ACCESSIBLE.to_owned(), ACTION.to_owned()];
+        assert!(offers(&slider, VALUE));
+        assert!(!offers(&button, VALUE));
+        assert!(!offers(&[format!("{VALUE}2")], VALUE));
+        assert!(!offers(&[], VALUE));
     }
 }

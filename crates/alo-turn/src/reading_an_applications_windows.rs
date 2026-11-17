@@ -39,7 +39,8 @@ pub struct TheWindowsShowed {
     /// What was read.
     shown: Arc<Shown>,
     /// What alo is told beside it, in the person's language: that not all of
-    /// it was read, and for a read that found no text, which switch is the
+    /// it was read, which texts were cut short, and for a read that found no
+    /// text, which switch is the
     /// likeliest reason.
     told: Vec<String>,
 }
@@ -126,6 +127,14 @@ pub(crate) fn reading_an_applications_windows(
         .map(alo_strings::Said::into_text)
         .into_iter()
         .collect();
+    // **A text cut short says so**, so alo never takes a document's beginning
+    // for the whole of it.
+    told.extend(
+        shown
+            .cut_short_said(strings)
+            .into_iter()
+            .map(alo_strings::Said::into_text),
+    );
     // **A read that found nothing says why**, window by window — never an
     // empty answer a model would take for an empty document — naming the one
     // switch that would help (`alo_adapters::nothing_to_read`).

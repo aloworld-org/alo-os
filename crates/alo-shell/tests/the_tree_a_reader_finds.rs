@@ -336,18 +336,30 @@ fn every_surface_is_read_back_as_alo_access_decided_it() {
                 alo_access::Role::RadioButton => Role::RadioButton,
                 alo_access::Role::Tab => Role::Tab,
                 alo_access::Role::Heading => Role::Label,
-                alo_access::Role::Slider => Role::Part,
-                // A list, a line of a list and a strip of state are laid out
-                // rather than read or pressed, and the agent's reader calls
-                // every one of those a part it walks through.
-                alo_access::Role::List
-                | alo_access::Role::ListItem
-                | alo_access::Role::StatusBar => Role::Part,
+                // **Since 2026-11-17 the agent's reader knows a slider and a
+                // line of a list for what they are** (`alo_adapters::Role`'s
+                // `Range` and `Item`). What the shell publishes is unchanged —
+                // `SLIDER` and `LIST_ITEM`, which a screen reader reads as
+                // before (`access_roles.rs`); only the agent's reading of them
+                // moved, so this follows it.
+                alo_access::Role::Slider => Role::Range,
+                alo_access::Role::ListItem => Role::Item,
+                // A list and a strip of state are laid out rather than read or
+                // pressed, and the agent's reader calls each a part it walks
+                // through.
+                alo_access::Role::List | alo_access::Role::StatusBar => Role::Part,
             };
             assert_eq!(
                 kind, expected,
                 "{name:?} is read as the wrong kind of thing"
             );
+            // **And a screen reader meets what it always met**: the published
+            // `ATSPI_ROLE_LIST_ITEM` (32) and `ATSPI_ROLE_SLIDER` (51).
+            match control.role {
+                alo_access::Role::ListItem => assert_eq!(*role, 32, "{name:?}"),
+                alo_access::Role::Slider => assert_eq!(*role, 51, "{name:?}"),
+                _ => {}
+            }
         }
     }
 }

@@ -27,7 +27,7 @@
 //! booted machine has shown. The closed list stays beside this, so an
 //! application installed some other way is still known by name.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::where_flatpak_exports::{THE_MACHINES_INSTALLATION, the_persons_installation};
 
@@ -42,14 +42,7 @@ pub const ELECTRON_BASE_APP: &str = "org.electronjs.Electron2.BaseApp";
 /// Electron**, because the switch is handed only to what is known to take it.
 #[must_use]
 pub fn is_built_on_electron(machines: &Path, persons: Option<&Path>, identifier: &str) -> bool {
-    // An identifier names a directory below, so one that could name another
-    // place is not looked for at all.
-    if identifier.is_empty()
-        || identifier.starts_with('.')
-        || !identifier
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
-    {
+    if !is_a_plain_identifier(identifier) {
         return false;
     }
     persons
@@ -57,24 +50,40 @@ pub fn is_built_on_electron(machines: &Path, persons: Option<&Path>, identifier:
         .chain(std::iter::once(machines))
         .find_map(|installation| {
             std::fs::read_to_string(
-                installation
-                    .join("app")
-                    .join(identifier)
-                    .join("current")
-                    .join("active")
-                    .join("files")
-                    .join("manifest.json"),
+                the_packages_files(installation, identifier).join("manifest.json"),
             )
             .ok()
         })
         .is_some_and(|manifest| says_its_base_is_electron(&manifest))
 }
 
+/// Whether `identifier` names one directory and nothing else: an identifier
+/// names a directory below an installation, so one that could name another
+/// place is not looked for at all.
+pub(crate) fn is_a_plain_identifier(identifier: &str) -> bool {
+    !identifier.is_empty()
+        && !identifier.starts_with('.')
+        && identifier
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
+}
+
+/// Where flatpak keeps the files of the package `identifier` in `installation`.
+pub(crate) fn the_packages_files(installation: &Path, identifier: &str) -> PathBuf {
+    installation
+        .join("app")
+        .join(identifier)
+        .join("current")
+        .join("active")
+        .join("files")
+}
+
 /// Whether the application with this identifier is drawn by Chromium **on
 /// this machine, for the person this process runs as**: on the closed list
-/// (`alo_launching::is_drawn_by_chromium`), or built on Electron by its own
-/// package, read from the machine's installation and the person's (`HOME`,
-/// `XDG_DATA_HOME`) now.
+/// (`alo_launching::is_drawn_by_chromium`), built on Electron by its own
+/// package's manifest, or carrying Chromium's own file
+/// (`crate::built_on_chromium`) — each read from the machine's installation
+/// and the person's (`HOME`, `XDG_DATA_HOME`) now.
 #[must_use]
 pub fn is_drawn_by_chromium(identifier: &str) -> bool {
     let home = std::env::var_os("HOME").map(std::path::PathBuf::from);
@@ -96,6 +105,7 @@ pub fn is_drawn_by_chromium_under(
 ) -> bool {
     alo_launching::is_drawn_by_chromium(identifier)
         || is_built_on_electron(machines, persons, identifier)
+        || crate::built_on_chromium::is_built_on_chromium(machines, persons, identifier)
 }
 
 /// Whether a manifest's `base` key holds exactly [`ELECTRON_BASE_APP`].

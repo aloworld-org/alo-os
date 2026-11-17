@@ -107,6 +107,7 @@ adapters.fallback.read-window.application	the application whose windows to read
 adapters.fallback.read-window.by-hand	Look at the application's window, or have the screen reader read it aloud
 adapters.fallback.read-window.purpose	read what an application's windows show
 adapters.fallback.read-window.sentence	read what {application} shows in its windows
+adapters.fallback.text-cut-short	{application} shows a text longer than is read at once, so only its first {most} characters were read
 adapters.fallback.too-much-to-be-sure	{application} shows more than can be read at once, so whether its {kind} named “{name}” is the only one is not known, and nothing was pressed
 adapters.fallback.type-text.application	the application to type into
 adapters.fallback.type-text.by-hand	Click in the application's window and type it yourself
@@ -225,8 +226,10 @@ app.road.tree.described	Its controls: controls, read and press, through the acce
 app.road.tree.not-here	Its controls: controls, read and press, through the accessibility tree — which this session does not have now, so they cannot be reached
 app.road.tree.not-open	Its controls: controls, read and press, through the accessibility tree. None of its windows is open now, so whether they describe themselves is not known until one is
 app.road.window	Its window: open, focus and close, carried out by the desktop
+app.role.drop-down	drop-down
 app.role.field	field
 app.role.password-field	password field
+app.role.range	slider or meter
 app.show.ability	{ability} — {said}
 app.show.alo	alo OS's own surfaces, reached through the accessibility tree only, with --in naming one: {list}
 app.show.argument	<{typed}> — {said}
@@ -236,10 +239,12 @@ app.show.in-words	What it does: {said}
 app.show.reads	It only reads, and changes nothing
 app.show.sends	This cannot be undone once it has been sent
 app.show.typed-as	Typed as: {said}
+app.state.at-value	at {value}
 app.state.greyed-out	greyed out
 app.state.holds	holds “{said}”
 app.state.off	off
 app.state.on	on
+app.state.selected	selected
 app.state.withheld	what it holds is never read
 app.typed.front-and-in	front already means one window, the one you were working in, so --in cannot be added to it
 app.typed.in-needs-a-window	--in takes the title of one window after it, so nothing was done
@@ -483,6 +488,11 @@ capability.in-applications.in-your-window-is	Any application can be used. While 
 capability.in-applications.no-copy-of-its-own.what-alo-can-use	alo cannot work in {application} safely at this setting, because it cannot open a separate copy of its own for alo. To let alo work in your own window instead, choose “alo may work in your own window” in Settings → What alo can use
 capability.in-applications.what-your-window-costs	alo will show that the application is sending, but cannot count what it sends, and works where your other tabs are
 capability.in-applications.what-your-window-costs-where-no-copy	Where an app has no copy of its own, alo works in your window: the indicator shows that it may send, but cannot count it
+capability.pictures-and-keys.heading	Pictures and keys
+capability.pictures-and-keys.in-this-app	Let alo use pictures and keys in {application}
+capability.pictures-and-keys.what-it-costs	alo will act on what it sees in pictures of this window, and may press the wrong thing
+capability.pictures-and-keys.what-it-is	Such as games. alo looks at a picture of that app's window and clicks or presses keys there. It never takes a picture of a window with a password field, and the indicator shows a picture leaving this computer
+capability.pictures-and-keys.what-it-is-for	For apps that tell alo nothing about their windows
 capability.proposal.no-end	a question has to lapse — choose how long this one stands for
 capability.proposal.no-time	say how long the question stands — one that lapses at once cannot be answered
 capability.proposal.read-does-not-wait	{verb} answers a question rather than changing anything — run it in the turn instead of asking about it
@@ -1948,6 +1958,7 @@ remembering.level.from-a-newer-alo-os	{path} was written by a newer alo OS than 
 remembering.level.no-such-level	{path} says {said}, which is not one of the three levels, so this machine does not know how you want code run
 remembering.level.not-a-terminal-answer	{path} says {said} for the terminal, which is neither asking-each-time nor at-full-trust, so this machine does not know how you want code run, and alo in the terminal asks first
 remembering.level.not-a-terminal-choice	{path} says {said} for whether alo may use a terminal, which is neither not-at-all nor may-open-one, so this machine does not know how you want code run, and alo uses no terminal
+remembering.level.not-an-application-for-pictures	{path} names {said} for pictures and keys, which is a terminal or not an application at all, so this machine does not know how you want code run, and alo uses pictures and keys in no application
 remembering.level.not-an-applications-answer	{path} says {said} for applications, which is neither in-alos-copy nor in-their-window, so this machine does not know how you want code run, and alo works only in its own copy of an application
 remembering.level.not-read	{path} could not be read, so this machine does not know how you want code run
 remembering.level.not-the-shape	{path} is not the shape this file takes, so this machine does not know how you want code run

@@ -16,6 +16,10 @@ impl States {
     const CHECKED: u32 = 4;
     /// `ATSPI_STATE_ENABLED`.
     const ENABLED: u32 = 8;
+    /// `ATSPI_STATE_SELECTABLE`.
+    const SELECTABLE: u32 = 22;
+    /// `ATSPI_STATE_SELECTED`.
+    const SELECTED: u32 = 23;
     /// `ATSPI_STATE_SENSITIVE`.
     const SENSITIVE: u32 = 24;
     /// `ATSPI_STATE_SHOWING`.
@@ -56,6 +60,18 @@ impl States {
         Self(self.0 | (1 << Self::CHECKED))
     }
 
+    /// These states, and one of a set that can be selected.
+    #[must_use]
+    pub const fn selectable(self) -> Self {
+        Self(self.0 | (1 << Self::SELECTABLE))
+    }
+
+    /// These states, and selected.
+    #[must_use]
+    pub const fn and_selected(self) -> Self {
+        Self(self.0 | (1 << Self::SELECTED))
+    }
+
     /// These states, greyed out.
     #[must_use]
     pub const fn greyed_out(self) -> Self {
@@ -83,6 +99,17 @@ impl States {
     #[must_use]
     pub const fn usable(self) -> bool {
         self.has(Self::ENABLED) && self.has(Self::SENSITIVE)
+    }
+
+    /// Selected or not, for a thing that can be selected — a tab, an item of a
+    /// list — and [`None`] for one that cannot.
+    #[must_use]
+    pub const fn selected(self) -> Option<bool> {
+        if self.has(Self::SELECTABLE) {
+            Some(self.has(Self::SELECTED))
+        } else {
+            None
+        }
     }
 
     /// On or off, for a thing that can be either; [`None`] for one that cannot.
@@ -118,6 +145,28 @@ mod tests {
         assert!(!States::showing_and_usable().hidden().showing());
         assert_eq!(
             States::showing_and_usable().and_checked().on(Role::Switch),
+            Some(true)
+        );
+    }
+
+    /// **Selected is said only of what can be selected**, and saying a state
+    /// twice keeps it: `selectable` and `and_selected` add, never toggle.
+    #[test]
+    fn selected_is_said_only_of_what_can_be_selected() {
+        let plain = States::showing_and_usable();
+        assert_eq!(plain.selected(), None);
+        assert_eq!(plain.and_selected().selected(), None);
+        assert_eq!(plain.selectable().selected(), Some(false));
+        assert_eq!(plain.selectable().selectable().selected(), Some(false));
+        assert_eq!(plain.selectable().and_selected().selected(), Some(true));
+        assert_eq!(
+            plain.selectable().and_selected().and_selected().selected(),
+            Some(true)
+        );
+        // Read from the tree's own two words: SELECTABLE and SELECTED are
+        // bits 22 and 23 of the first.
+        assert_eq!(
+            States::of_the_tree(&[(1 << 22) | (1 << 23), 0]).selected(),
             Some(true)
         );
     }

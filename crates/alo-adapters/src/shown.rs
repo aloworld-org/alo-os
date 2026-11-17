@@ -76,6 +76,14 @@ pub struct Seen {
     depth: usize,
     /// What could not be read about it.
     limit: Option<Limit>,
+    /// Whether its text was longer than is read at once, so only its beginning
+    /// is here.
+    cut_short: bool,
+    /// Selected or not, for a thing that can be selected.
+    selected: Option<bool>,
+    /// The number it holds, for a slider or a meter, as the application gives
+    /// it.
+    value: Option<String>,
 }
 
 impl Seen {
@@ -97,7 +105,40 @@ impl Seen {
             usable: true,
             depth,
             limit: None,
+            cut_short: false,
+            selected: None,
+            value: None,
         }
+    }
+
+    /// The same thing, selected or not.
+    #[must_use]
+    pub fn selected(mut self, selected: Option<bool>) -> Self {
+        self.selected = selected;
+        self
+    }
+
+    /// The same thing, holding this number — written as the shortest decimal
+    /// that is the number, and nothing for one that is not finite.
+    #[must_use]
+    pub fn valued(mut self, value: Option<f64>) -> Self {
+        self.value = value
+            .filter(|value| value.is_finite())
+            .map(|value| value.to_string());
+        self
+    }
+
+    /// Selected or not, for a thing that can be selected — a tab, an item of
+    /// a list — and [`None`] for one that cannot.
+    #[must_use]
+    pub fn is_selected(&self) -> Option<bool> {
+        self.selected
+    }
+
+    /// The number it holds, for a slider, a progress bar or a meter.
+    #[must_use]
+    pub fn value(&self) -> Option<&str> {
+        self.value.as_deref()
     }
 
     /// The same thing, on or off.
@@ -118,6 +159,13 @@ impl Seen {
     #[must_use]
     pub fn limited(mut self, limit: Limit) -> Self {
         self.limit = Some(limit);
+        self
+    }
+
+    /// The same thing, its text cut short at what is read at once.
+    #[must_use]
+    pub fn cut_short(mut self, cut_short: bool) -> Self {
+        self.cut_short = cut_short;
         self
     }
 
@@ -161,6 +209,15 @@ impl Seen {
     #[must_use]
     pub fn limit(&self) -> Option<Limit> {
         self.limit
+    }
+
+    /// **Whether its text was cut short**: longer than
+    /// [`crate::walking::LONGEST_TEXT`] characters, so what it holds is only the
+    /// beginning. Said on the thing rather than on the window, because one long
+    /// document is not a window too large to press in.
+    #[must_use]
+    pub fn is_cut_short(&self) -> bool {
+        self.cut_short
     }
 
     /// **The text it shows, as a reader reads it**: what it holds, or for
@@ -271,6 +328,22 @@ impl Shown {
                 &alo_strings::Filling::of(words::APPLICATION, self.application.clone()),
             )
         })
+    }
+
+    /// What the agent and a person are told about each text cut short
+    /// ([`Seen::is_cut_short`]): one sentence for each, in reading order.
+    #[must_use]
+    pub fn cut_short_said(&self, strings: &Strings) -> Vec<Said> {
+        self.everything()
+            .filter(|seen| seen.is_cut_short())
+            .map(|_| {
+                strings.say(
+                    &words::TEXT_CUT_SHORT.key(),
+                    &alo_strings::Filling::of(words::APPLICATION, self.application.clone())
+                        .and(words::MOST, crate::walking::LONGEST_TEXT.to_string()),
+                )
+            })
+            .collect()
     }
 }
 

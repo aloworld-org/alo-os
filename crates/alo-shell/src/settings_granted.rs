@@ -485,6 +485,13 @@ impl GrantedSection {
             .unwrap_or_else(|| identity.to_owned())
     }
 
+    /// The applications this machine has, by name, **a terminal never among
+    /// them** (`alo_picking::Applications::of`): what the switches for
+    /// pictures and keys are drawn for, one each.
+    pub(crate) fn the_applications_listed(&self) -> &[alo_picking::Listed] {
+        self.applications.listed()
+    }
+
     /// **What an application is shown as** in the list of what alo was given:
     /// the name it was listed under, and its identifier where it is not
     /// listed or gave none.

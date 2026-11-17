@@ -51,6 +51,12 @@ struct TheField {
     role: u32,
     states: u32,
     takes_text: bool,
+    /// Whether the field answers *yes* to text put in through the tree and
+    /// keeps none of it, as Firefox does.
+    ignores_what_is_put_in: bool,
+    /// Whether the field keeps what is put in through the tree, changed — an
+    /// editor that indents again.
+    rewrites_what_is_put_in: bool,
     /// What the field holds — shared with the door.
     text: Rc<RefCell<String>>,
     opened: Rc<Cell<usize>>,
@@ -62,6 +68,8 @@ impl TheField {
             role: 79,
             states: FOCUSED,
             takes_text: false,
+            ignores_what_is_put_in: false,
+            rewrites_what_is_put_in: false,
             text: Rc::new(RefCell::new(String::new())),
             opened: Rc::new(Cell::new(0)),
         }
@@ -125,6 +133,14 @@ impl AccessibilityTree for ATree {
     }
 
     fn insert_text(&self, _: &NodeAt, position: usize, text: &str) -> Result<bool, TreeFault> {
+        if self.0.ignores_what_is_put_in {
+            return Ok(true);
+        }
+        let text = if self.0.rewrites_what_is_put_in {
+            rewritten(text)
+        } else {
+            text.to_owned()
+        };
         let mut held = self.0.text.borrow_mut();
         let before: String = held.chars().take(position).collect();
         let after: String = held.chars().skip(position).collect();
@@ -624,4 +640,73 @@ fn a_file_is_opened_then_typed_into_then_saved_with_one_record_each() {
         2,
         "one record for the opening and one for the typing"
     );
+}
+
+/// **A field that says it took the text and kept none of it is typed by keys
+/// instead** — Firefox, on every field it has
+/// (`docs/quirks/chromium-offers-no-editable-text-and-firefox-ignores-it.md`).
+/// Only once the field reads back exactly as it was, so nothing is typed
+/// twice; and only where the field has the keyboard, as for any typing by
+/// keys. Then it reads back, and saves, as every typing does.
+#[test]
+fn a_field_that_ignores_what_is_put_in_is_typed_by_keys_instead() {
+    let mut field = TheField::an_editor();
+    field.takes_text = true;
+    field.ignores_what_is_put_in = true;
+    let text = field.text.clone();
+    let ran = typing_once(field, Typed::MayType, as_it_is, true);
+    let did = ran.answered.unwrap().expect("approved");
+    let typed = did.typed().expect("a text was typed");
+    assert!(typed.saved());
+    assert!(!typed.through_the_tree(), "said as typed through the tree");
+    assert_eq!(*text.borrow(), THE_TEXT, "typed twice, or not at all");
+    assert_eq!(
+        ran.asked,
+        [
+            format!("may-type-into {EDITOR}"),
+            format!("type-into {EDITOR} {}", THE_TEXT.len()),
+            format!("save-in {EDITOR}"),
+        ]
+    );
+    assert_eq!(ran.entries, 1);
+}
+
+/// **And without the keyboard it is refused**, with nothing typed and nothing
+/// saved: the keys would go wherever the keyboard is.
+#[test]
+fn a_field_that_ignores_what_is_put_in_and_has_no_keyboard_is_refused() {
+    let mut field = TheField::an_editor();
+    field.takes_text = true;
+    field.ignores_what_is_put_in = true;
+    field.states = EDITABLE;
+    let text = field.text.clone();
+    let ran = typing_once(field, Typed::MayType, as_it_is, true);
+    assert!(matches!(ran.answered, Err(NotDone::Refused(_))));
+    assert_eq!(ran.asked, [format!("may-type-into {EDITOR}")]);
+    assert!(text.borrow().is_empty());
+    assert_eq!(ran.entries, 1, "the refusal is written down");
+}
+
+/// **A field that kept the text changed is never typed again by keys**: it
+/// took something, so the keys would put the text in a second time. It is not
+/// saved, as any text that read back otherwise is not, and the typing is
+/// recorded as run.
+#[test]
+fn a_field_that_kept_the_text_changed_is_not_typed_again_by_keys() {
+    let mut field = TheField::an_editor();
+    field.takes_text = true;
+    field.rewrites_what_is_put_in = true;
+    let text = field.text.clone();
+    let ran = typing_once(field, Typed::MayType, as_it_is, true);
+    let did = ran.answered.unwrap().expect("approved");
+    let typed = did.typed().expect("a text was typed");
+    assert!(!typed.saved());
+    assert!(typed.through_the_tree());
+    assert_eq!(
+        ran.asked,
+        [format!("may-type-into {EDITOR}")],
+        "typed by keys too"
+    );
+    assert_eq!(*text.borrow(), rewritten(THE_TEXT));
+    assert_eq!(ran.entries, 1);
 }

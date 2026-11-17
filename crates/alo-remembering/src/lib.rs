@@ -104,6 +104,8 @@ mod named;
 mod names;
 #[cfg(unix)]
 mod pairings;
+#[cfg(unix)]
+mod pictures_and_keys;
 mod refusing;
 #[cfg(test)]
 mod testing;
@@ -127,6 +129,8 @@ pub use named::{LONGEST_NAME, MachineName, NotAName};
 pub use names::{MachineNames, NotNames, THE_NAMES_FORMAT};
 #[cfg(unix)]
 pub use pairings::{THE_PAIRINGS, pairings_kept, pairings_remembered};
+#[cfg(unix)]
+pub use pictures_and_keys::{pictures_and_keys_remembered, pictures_and_keys_switched};
 pub use refusing::NotRemembered;
 pub use the_level::{
     ASKING_EACH_TIME, AT_FULL_TRUST, IN_A_SEALED_BOX, IN_ALOS_COPY, IN_ALOS_COPY_OR_THEIR_WINDOW,

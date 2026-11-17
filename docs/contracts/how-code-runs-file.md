@@ -212,6 +212,39 @@ in-applications = "in-their-window"
   person who chose it and nothing else, and reads as exactly that; a file
   holding none of the three keys is still refused as saying nothing.
 
+## And which applications alo may use pictures and keys in
+
+*Added 2026-11-17, additively; `format` stays `1`.* ADR 0143 Q11 and the
+owner's *"Yes, build it"* of 2026-11-17: for an application that tells alo
+nothing about its window, such as a game, the person may let alo look at
+pictures of that window and click or press keys in it — off by default,
+switched on per application in Settings → What alo can use → *Pictures and
+keys*, with ADR 0143's risk said above the switches. Kept here, under the same
+three rules about who may have written it, so an agent cannot switch it on for
+itself.
+
+```toml
+format = 1
+pictures-and-keys-in = ["net.supertuxkart.SuperTuxKart"]
+```
+
+| Key | Meaning |
+|---|---|
+| `pictures-and-keys-in` | Optional. A list of application identifiers, matched exactly. `[]` is a person who switched every one off. An entry that is a terminal (`alo_capability::A_PERSONS_OWN`), empty, or has space around it is refused, and the whole file with it. |
+
+- **Absent is no application**, which is how a machine arrives.
+- **A reader that cannot read the file answers no application**
+  (`alo_capability::PicturesAndKeys::as_read`), and reads it at each act.
+- **A terminal is never allowed**, whatever the file says: ADR 0111 is the one
+  road to a terminal.
+- **Each writer keeps the others' keys.** Settings switches one application at a
+  time, reading the file at the press; over a file that will not read, or one
+  another login could have written, the switch is refused and nothing is
+  written. A file holding only this key, even as `[]`, says something and is
+  not refused as saying nothing.
+- *As of 2026-11-17 only Settings reads it*; the verb that takes a picture of
+  one window is the next change, and reads it at each picture.
+
 ## And whether alo may use a terminal
 
 *Added 2026-11-17, additively; `format` stays `1`.* ADR 0111: whether the
@@ -238,8 +271,8 @@ alo-uses-a-terminal = "may-open-one"
 - **A grant over a terminal outlives the switch and reaches nothing without
   it.** The grants file reads such a grant back rather than refusing the whole
   file, and it permits nothing while this key says `not-at-all`.
-- **Each writer keeps the others' keys**, as for the three above; a file
-  holding only this key reads as exactly that.
+- **Each writer keeps the others' keys**; a file holding only this key reads as
+  exactly that.
 
 ## What the three protections do not depend on
 

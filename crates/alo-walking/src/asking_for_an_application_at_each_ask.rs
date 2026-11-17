@@ -121,12 +121,15 @@ pub fn for_this_task(walk: Walk) -> Walk {
         // the walk gives the model its last words first.
         .wait(THE_TURN_ENDS)
         // **The task closes, and the grant goes with it.** Two presses, for
-        // this file's header's reason.
+        // this file's header's reason. The first must change the screen; the
+        // second may find nothing left to close — a finished task closes on
+        // the first and leaves Papers in front (run 43990841766, pictures 87
+        // and 88 the same file) — and the journal's line decides.
         .mark()
         .press(close.clone())
         .look("after-the-first-close", look)
         .press(close)
-        .look("after-the-second-close", look)
+        .look_as_it_settles("after-the-second-close", look)
         .expect_line_saying(
             "closing the task takes back the grant made for it",
             A_TASKS_GRANT_WENT,
