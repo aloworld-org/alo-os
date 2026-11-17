@@ -76,6 +76,9 @@ pub struct Seen {
     depth: usize,
     /// What could not be read about it.
     limit: Option<Limit>,
+    /// Whether its text was longer than is read at once, so only its beginning
+    /// is here.
+    cut_short: bool,
 }
 
 impl Seen {
@@ -97,6 +100,7 @@ impl Seen {
             usable: true,
             depth,
             limit: None,
+            cut_short: false,
         }
     }
 
@@ -118,6 +122,13 @@ impl Seen {
     #[must_use]
     pub fn limited(mut self, limit: Limit) -> Self {
         self.limit = Some(limit);
+        self
+    }
+
+    /// The same thing, its text cut short at what is read at once.
+    #[must_use]
+    pub fn cut_short(mut self, cut_short: bool) -> Self {
+        self.cut_short = cut_short;
         self
     }
 
@@ -161,6 +172,15 @@ impl Seen {
     #[must_use]
     pub fn limit(&self) -> Option<Limit> {
         self.limit
+    }
+
+    /// **Whether its text was cut short**: longer than
+    /// [`crate::walking::LONGEST_TEXT`] characters, so what it holds is only the
+    /// beginning. Said on the thing rather than on the window, because one long
+    /// document is not a window too large to press in.
+    #[must_use]
+    pub fn is_cut_short(&self) -> bool {
+        self.cut_short
     }
 
     /// **The text it shows, as a reader reads it**: what it holds, or for
@@ -271,6 +291,22 @@ impl Shown {
                 &alo_strings::Filling::of(words::APPLICATION, self.application.clone()),
             )
         })
+    }
+
+    /// What the agent and a person are told about each text cut short
+    /// ([`Seen::is_cut_short`]): one sentence for each, in reading order.
+    #[must_use]
+    pub fn cut_short_said(&self, strings: &Strings) -> Vec<Said> {
+        self.everything()
+            .filter(|seen| seen.is_cut_short())
+            .map(|_| {
+                strings.say(
+                    &words::TEXT_CUT_SHORT.key(),
+                    &alo_strings::Filling::of(words::APPLICATION, self.application.clone())
+                        .and(words::MOST, crate::walking::LONGEST_TEXT.to_string()),
+                )
+            })
+            .collect()
     }
 }
 

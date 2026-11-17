@@ -180,3 +180,53 @@ fn each_wait_is_one_minute_or_five() {
     assert_eq!(waits.first(), Some(&60), "the files are the person's");
     assert!(waits.contains(&300));
 }
+
+/// **The terminal at the section's start may already be in front.** The
+/// section follows VSCodium's, which ends with the person's terminal in front
+/// (`the-file-checked`), so Ctrl+Alt+T brings forward the terminal already
+/// there and the screen does not change: the walk of 2026-11-16 on `main` at
+/// a5f5ffb8 (run 43933773704) failed *unchanged after 60s* on pictures 63 and
+/// 64, the same terminal, pixel for pixel. So the look there only waits for
+/// the screen to settle, and what proves the terminal had the keys is the log
+/// line its typed command writes, checked next.
+///
+/// What would have to be true for this to pass while broken: Ctrl+Alt+T
+/// raising nothing and the keys going elsewhere — and then the files are not
+/// made and *the person made the three files* fails.
+#[test]
+fn the_terminal_at_the_start_may_already_be_in_front() {
+    let walk = at_full_access(Walk::named("every-application"));
+    let steps = walk.steps();
+    let Some(at) = steps.iter().position(
+        |step| matches!(step, Step::Look { name, .. } if name == "every-app-the-terminal"),
+    ) else {
+        panic!("no look at the terminal");
+    };
+    let Some(Step::Look {
+        may_be_as_it_was, ..
+    }) = steps.get(at)
+    else {
+        panic!("not a look");
+    };
+    assert!(
+        *may_be_as_it_was,
+        "the terminal is required to change the screen"
+    );
+    let after = steps.get(at..).unwrap_or_default();
+    let typed = after
+        .iter()
+        .position(|step| matches!(step, Step::Type(text) if *text == making_the_files()));
+    let checked = after.iter().position(
+        |step| matches!(step, Step::ExpectLine { phrase, .. } if phrase == THE_FILES_ARE_MADE),
+    );
+    assert!(
+        typed.is_some() && checked > typed,
+        "the files made are not checked after the line is typed"
+    );
+    // Every other look in the section still needs the screen to change.
+    let others = steps.iter().filter(|step| {
+        matches!(step, Step::Look { name, may_be_as_it_was: true, .. }
+            if name != "every-app-the-terminal")
+    });
+    assert_eq!(others.count(), 0);
+}

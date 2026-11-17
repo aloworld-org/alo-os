@@ -198,7 +198,7 @@ fn the_border_at_rest_and_while_sending_is_found() {
 }
 
 /// A picture the walk kept, read from `tests/fixtures`.
-fn a_kept_picture(name: &str) -> Frame {
+pub(crate) fn a_kept_picture(name: &str) -> Frame {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
         .join("fixtures")
