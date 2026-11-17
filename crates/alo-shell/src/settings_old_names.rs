@@ -70,6 +70,7 @@ impl SettingsRow {
             | Self::HowCodeRuns(_)
             | Self::WhereAloWorks(_)
             | Self::PicturesAndKeys(_)
+            | Self::WhoReadsPictures(_)
             | Self::DefaultFor(..)
             | Self::SignInToGitHub
             | Self::SignOutOfGitHub => None,

@@ -1137,6 +1137,17 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   rather than guessing — unless the person has switched on, for that
   application, alo acting on pictures of its window, told that *alo may press
   the wrong thing*. **Off by default.**
+  **The person also chooses what reads those pictures**, in Settings → What
+  alo can use, under *Pictures and keys*: **no one** (as a machine arrives:
+  alo takes no picture and says it cannot see inside the application, and
+  where to choose), **their model on this computer** (nothing is sent), or **a
+  service they added** in alo and AI — any service, by its own name, and with
+  none added a row that opens alo and AI to add one — told *"A picture of the window alo is reading is sent
+  to {provider} each time."* A reader that cannot read pictures is refused in
+  words. *The owner, 2026-11-17: "It will always depend on the user, if he
+  wants the third party to read the screens pictures then he causes"* (ADR
+  0147 §4). **alo's own built-in offline reader, which ADR 0147 names as the
+  first choice, is not built yet**, and is not offered until it is.
   **In the browser, by default alo reads only the window it opened** for the
   turn; a person may let it read every tab, told that this includes their mail
   and their bank. **What a driven application sends is on the indicator**: by

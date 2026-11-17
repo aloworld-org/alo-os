@@ -217,6 +217,8 @@ pub mod what_a_command_did;
 /// Whether a command alo ran sent anything off this computer, for the line
 /// afterwards (ADR 0110 §2).
 pub mod what_a_command_sent;
+/// What reads the pictures alo takes of a window (ADR 0147 §4).
+pub mod who_reads_pictures;
 /// A change carried out without the OK, because the person chose full access
 /// (ADR 0149).
 pub mod without_the_ok;
@@ -261,4 +263,5 @@ pub use verb::{Effect, Requires, Verb, VerbError};
 pub use verbs::{Verbs, VerbsError};
 pub use what_a_command_did::{ItDidNotStart, ItDidNotWork, WhatACommandDid};
 pub use what_a_command_sent::WhatItSent;
+pub use who_reads_pictures::WhoReadsPictures;
 pub use words::{EVERY_COUNTED, EVERY_WORD, WordsError, capability_words, declare_into};

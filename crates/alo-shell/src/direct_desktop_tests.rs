@@ -523,3 +523,6 @@ mod the_sheets_shadow_drawn_tests;
 
 #[path = "pictures_and_keys_drawn_tests.rs"]
 mod pictures_and_keys_drawn_tests;
+
+#[path = "who_reads_pictures_drawn_tests.rs"]
+mod who_reads_pictures_drawn_tests;

@@ -233,8 +233,88 @@ pub(crate) fn the_blocks(open: &Open, strings: &Strings, now: SystemTime) -> Vec
             rows,
             footnote: None,
         }));
+        blocks.push(ABlock::Section(ASection {
+            heading: Some(said(strings, alo_capability::words::WHO_READS_PICTURES)),
+            rows: who_reads_pictures(open, strings),
+            footnote: None,
+        }));
     }
     blocks
+}
+
+/// **Who reads the pictures** — ADR 0147 §4 and the owner's answer of
+/// 2026-11-17: no one as a machine arrives, the person's model on this
+/// computer, or a service they added, with what that costs beside the service.
+///
+/// **The design has no frame for it**, for the switches' reason. It is built
+/// from the Running code page's pieces (`550:874`): a row of words saying why
+/// there is a choice, then a choice per reader, and the *What it risks* box
+/// under each service, drawn whichever is chosen so it is read before choosing.
+/// `docs/design/the-settings-window.md` records the departure.
+///
+/// Drawn only beside the switches, which is why the caller decides: a choice of
+/// reader with nothing to read is a choice about nothing.
+fn who_reads_pictures(open: &Open, strings: &Strings) -> Vec<ARow> {
+    use alo_capability::WhoReadsPictures;
+    use alo_capability::words as cw;
+    let mut what = ARow::named(
+        None,
+        TheKind::Plain,
+        said(strings, cw::WHO_READS_PICTURES_FIRST),
+    );
+    what.lines.push(said(strings, cw::WHO_READS_PICTURES_IS));
+    let chosen = open.who_reads_pictures.is();
+    let mut rows = vec![what];
+    rows.extend(open.the_readers_offered().into_iter().map(|reader| {
+        let title = match (reader.the_word(), reader.the_provider()) {
+            (Some(word), _) => said(strings, word),
+            // **A service is drawn by its own name**, which is data and is
+            // never translated.
+            (None, Some(name)) => name.to_owned(),
+            (None, None) => String::new(),
+        };
+        let mut row = ARow::named(
+            Some(SettingsRow::WhoReadsPictures(reader.clone())),
+            TheKind::AChoice {
+                chosen: chosen == &reader,
+            },
+            title,
+        );
+        if reader == WhoReadsPictures::default() {
+            row.tag = Some(said(strings, w::DEFAULT));
+        }
+        row.lines.push(said(strings, reader.what_it_is()));
+        if let (Some(cost), Some(name)) = (reader.what_it_costs(), reader.the_provider()) {
+            row.risk = Some(ARisk {
+                heading: said(strings, w::WHAT_IT_RISKS),
+                words: strings
+                    .say(
+                        &cost.key(),
+                        &Filling::of(
+                            alo_capability::who_reads_pictures::THE_PROVIDER,
+                            name.to_owned(),
+                        ),
+                    )
+                    .into_text(),
+            });
+        }
+        row
+    }));
+    // **No outside service yet: how to add one**, opening the page where any
+    // service is added by its name and address — whatever service it is.
+    if open.answering.the_providers_added().is_empty() {
+        let mut add = ARow::named(
+            Some(SettingsRow::GoTo(
+                crate::settings_categories::SettingsCategory::AloAndAi,
+            )),
+            TheKind::AnOpeningRow,
+            said(strings, cw::ADD_A_SERVICE_TO_READ),
+        );
+        add.lead = Some(ASettingsIcon::Chat);
+        add.lines.push(said(strings, cw::ADD_A_SERVICE_TO_READ_IS));
+        rows.push(add);
+    }
+    rows
 }
 
 /// **Pictures and keys, one switch per application** — ADR 0143 Q11 and the

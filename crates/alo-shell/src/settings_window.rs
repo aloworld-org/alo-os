@@ -84,6 +84,7 @@ use crate::settings_kept::{KeptSection, SettingsKept};
 use crate::settings_shell_integration::TheShellIntegration;
 use crate::settings_time_zone::TimeZoneSection;
 use crate::the_zone_through_timedated::SetsTheZone;
+use crate::who_reads_pictures_in_settings::WhoReadsPicturesHere;
 use crate::{SettingsKey, SettingsPlaces};
 use alo_choosing::MayUseAnother;
 use alo_setting_up::Offered;
@@ -347,6 +348,10 @@ pub enum SettingsRow {
     /// identifier: Enter turns it over, on in one press and off in one press
     /// (ADR 0143 Q11). `crate::pictures_and_keys_in_settings` keeps it.
     PicturesAndKeys(String),
+    /// What reads the pictures alo takes of a window: no one, the person's
+    /// model on this computer, or a service they added (ADR 0147 §4). Enter
+    /// chooses it. `crate::who_reads_pictures_in_settings` keeps it.
+    WhoReadsPictures(alo_capability::WhoReadsPictures),
     /// This installed application opens this kind of link: Enter chooses it,
     /// and it is written in the person's `what-opens-what.toml` under
     /// `[links]` (frame `25:28`).
@@ -372,6 +377,10 @@ impl SettingsRow {
             Self::WrittenAs(_) => SettingsSection::Formats,
             Self::TimeZone(_) => SettingsSection::TimeZone,
             Self::Hiding(_) | Self::Edge(_) => SettingsSection::Dock,
+            // **A row that opens a page belongs to the page it is drawn on**:
+            // alo and AI is opened from under the readers of pictures, and
+            // Running code from the Terminal page.
+            Self::GoTo(SettingsCategory::AloAndAi) => SettingsSection::PicturesAndKeys,
             Self::GoTo(_) => SettingsSection::Terminal,
             Self::LightOrDark(_) | Self::WindowControls | Self::WhenThereIsNoRoom(_) => {
                 SettingsSection::Appearance
@@ -398,7 +407,9 @@ impl SettingsRow {
             }
             Self::HowCodeRuns(_) => SettingsSection::HowCodeRuns,
             Self::WhereAloWorks(_) => SettingsSection::InApplications,
-            Self::PicturesAndKeys(_) => SettingsSection::PicturesAndKeys,
+            Self::PicturesAndKeys(_) | Self::WhoReadsPictures(_) => {
+                SettingsSection::PicturesAndKeys
+            }
             Self::DefaultFor(..) => SettingsSection::DefaultApps,
             Self::SignInToGitHub | Self::SignOutOfGitHub => SettingsSection::Accounts,
             Self::ShellIntegration
@@ -549,6 +560,9 @@ pub(crate) struct Open {
     /// Which applications alo may use pictures and keys in, kept in the same
     /// file as how code runs.
     pub(crate) pictures_and_keys: PicturesAndKeysHere,
+    /// What reads the pictures alo takes, kept in the same file as how code
+    /// runs.
+    pub(crate) who_reads_pictures: WhoReadsPicturesHere,
     /// Whether the sealed box can run programs on this computer yet, read at
     /// opening from the machine's mounts. **It changes nothing the person
     /// chose**: the sealed box stays a choice, and the default; this is only
@@ -647,6 +661,7 @@ impl SettingsWindow {
             alo_uses_a_terminal: AloUsesATerminalHere::at_sign_in(places.how_code_runs()),
             alo_in_applications: AloInApplicationsHere::at_sign_in(places.how_code_runs()),
             pictures_and_keys: PicturesAndKeysHere::at_sign_in(places.how_code_runs()),
+            who_reads_pictures: WhoReadsPicturesHere::at_sign_in(places.how_code_runs()),
             // Mounts that cannot be read are not said to be a machine where it
             // cannot run: the line is for what was read.
             the_sealed_box_runs_here: match std::fs::read_to_string(places.mounts()) {
@@ -1274,7 +1289,40 @@ impl Open {
                 .iter()
                 .map(|listed| SettingsRow::PicturesAndKeys(listed.identifier().to_owned())),
         );
+        // **Then what reads those pictures**, wherever the switches are drawn:
+        // no one, this computer, and each service the person added.
+        if !self.granted.the_applications_listed().is_empty() {
+            rows.extend(
+                self.the_readers_offered()
+                    .into_iter()
+                    .map(SettingsRow::WhoReadsPictures),
+            );
+            // **With no outside service, the way to add one**, so a person who
+            // wants one is never left at a choice they cannot reach.
+            if self.answering.the_providers_added().is_empty() {
+                rows.push(SettingsRow::GoTo(SettingsCategory::AloAndAi));
+            }
+        }
         rows
+    }
+
+    /// **What may read the pictures alo takes, in the order they are drawn**:
+    /// no one and this computer always, then each service the person added by
+    /// its name — and a service chosen before and since removed, so the page
+    /// never hides what the file says.
+    pub(crate) fn the_readers_offered(&self) -> Vec<alo_capability::WhoReadsPictures> {
+        let mut offered = alo_capability::WhoReadsPictures::ALWAYS_OFFERED.to_vec();
+        offered.extend(
+            self.answering
+                .the_providers_added()
+                .iter()
+                .filter_map(|name| alo_capability::WhoReadsPictures::a_provider(name)),
+        );
+        let chosen = self.who_reads_pictures.is();
+        if !offered.contains(chosen) {
+            offered.push(chosen.clone());
+        }
+        offered
     }
 
     /// A key while a list is open: letters search, Backspace takes one back,
@@ -1829,6 +1877,12 @@ impl Open {
             SettingsRow::PicturesAndKeys(application) => SettingsDid::Kept(
                 SettingsSection::PicturesAndKeys,
                 self.pictures_and_keys.pressed(application),
+            ),
+            // **Written before the tick moves**, for the level's reason: a tick
+            // that moved first could say nothing leaves when a picture would.
+            SettingsRow::WhoReadsPictures(reader) => SettingsDid::Kept(
+                SettingsSection::PicturesAndKeys,
+                self.who_reads_pictures.picked(reader),
             ),
             // **Kept before the ring moves**, through `alo_applications`'
             // keeper: the next link any application opens goes to this one.

@@ -187,6 +187,8 @@ mod the_name_of_a_window_aside;
 pub mod the_window_alo_acts_in;
 /// The words typed into a window panel's field, and the caret among them.
 pub mod the_window_panels_field;
+/// What reads the pictures alo takes of a window, chosen in Settings.
+mod who_reads_pictures_in_settings;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
 mod a_reader_presses_in_settings;

@@ -984,6 +984,107 @@ pub const WHAT_PICTURES_AND_KEYS_COST: Word = Word::saying(
     "Shown beside the switches that let alo use pictures and keys in an application, so the person switching one on knows what it costs: alo, the assistant, guesses from a picture where to click, and can be wrong. A plain statement, not a refusal, a scare or a recommendation. Keep it one sentence.",
 );
 
+/// The heading in Settings over the choice of what reads the pictures alo takes
+/// of a window (ADR 0147 §4, `crate::WhoReadsPictures`).
+pub const WHO_READS_PICTURES: Word = Word::saying(
+    "capability.pictures-read-by.heading",
+    "Who reads the pictures",
+)
+.noting(
+    "A heading in Settings, in sentence case, under the switches \"Let alo use pictures and keys in …\". alo, the assistant, takes a picture of an application's window; something has to read that picture before alo can act in the window. Under this heading the person chooses what reads it: nothing, their own model on this computer, or an outside service they added.",
+);
+
+/// The first row under [`WHO_READS_PICTURES`]: why there is a choice at all.
+pub const WHO_READS_PICTURES_FIRST: Word = Word::saying(
+    "capability.pictures-read-by.what-it-is-for",
+    "Something has to read a picture before alo can act",
+)
+.noting(
+    "The name of a row in Settings, under the heading \"Who reads the pictures\". alo, the assistant, takes a picture of an application's window; before alo can click or press keys there, something has to read what the picture shows. alo is never written with a capital letter.",
+);
+
+/// The line under [`WHO_READS_PICTURES_FIRST`].
+pub const WHO_READS_PICTURES_IS: Word = Word::saying(
+    "capability.pictures-read-by.what-it-is",
+    "Until you choose, alo says it cannot see inside these apps",
+)
+.noting(
+    "Under the row \"Something has to read a picture before alo can act\" in Settings. alo is the assistant and is never written with a capital letter. \"These apps\" are the applications listed just above, which describe nothing about their windows. A plain description, not a warning.",
+);
+
+/// The choice nothing reads the pictures — how a machine arrives.
+pub const READ_BY_NO_ONE: Word = Word::saying("capability.pictures-read-by.no-one", "No one")
+    .noting(
+        "One choice under \"Who reads the pictures\" in Settings, and the one a computer starts with: nothing reads pictures of windows, so alo, the assistant, takes none.",
+    );
+
+/// The line under [`READ_BY_NO_ONE`].
+pub const READ_BY_NO_ONE_IS: Word = Word::saying(
+    "capability.pictures-read-by.no-one-is",
+    "alo takes no pictures, and says it cannot see inside these apps",
+)
+.noting(
+    "Under the choice \"No one\" in Settings, saying what it means. alo is the assistant and is never written with a capital letter.",
+);
+
+/// The choice the person's own model on this computer reads the pictures.
+pub const READ_BY_THIS_COMPUTER: Word = Word::saying(
+    "capability.pictures-read-by.this-computer",
+    "Your model on this computer",
+)
+.noting(
+    "One choice under \"Who reads the pictures\" in Settings: the AI model the person runs on their own computer reads pictures of windows, so nothing leaves the computer.",
+);
+
+/// The line under [`READ_BY_THIS_COMPUTER`]: ADR 0147 §4's sentence, with
+/// what happens when the model cannot read a picture.
+pub const READ_BY_THIS_COMPUTER_IS: Word = Word::saying(
+    "capability.pictures-read-by.this-computer-is",
+    "Reads the pictures with your model, on this computer. Nothing is sent. If your model cannot read pictures, alo says so",
+)
+.noting(
+    "Under the choice \"Your model on this computer\" in Settings. Some AI models read only text; with one of those, alo, the assistant, tells the person it cannot see the window rather than guessing. alo is never written with a capital letter.",
+);
+
+/// The line under one outside service the person added, drawn by its name.
+pub const READ_BY_A_PROVIDER_IS: Word = Word::saying(
+    "capability.pictures-read-by.a-provider-is",
+    "An outside service you added. If its model cannot read pictures, alo says so",
+)
+.noting(
+    "Under a choice in Settings named after an AI service the person added, such as Mistral. Choosing it means that service reads pictures of windows. alo is the assistant and is never written with a capital letter.",
+);
+
+/// The row under the readers when the person has added no outside service,
+/// which opens the page where one is added — so nobody is left with a choice
+/// they cannot reach.
+pub const ADD_A_SERVICE_TO_READ: Word = Word::saying(
+    "capability.pictures-read-by.add-a-service",
+    "Add a service in alo and AI",
+)
+.noting(
+    "The name of a row in Settings, under \"Who reads the pictures\", shown when the person has added no outside AI service. Pressing it opens the Settings page called \"alo and AI\": use exactly the translation that page's name has in the side column. alo is the assistant and is never written with a capital letter.",
+);
+
+/// The line under [`ADD_A_SERVICE_TO_READ`].
+pub const ADD_A_SERVICE_TO_READ_IS: Word = Word::saying(
+    "capability.pictures-read-by.add-a-service-is",
+    "To let an outside service read the pictures, add it there first. Any service you add is offered here by its own name",
+)
+.noting(
+    "Under the row \"Add a service in alo and AI\" in Settings. An outside service is an AI service on the internet, or one the person runs on their own server, that they add by its name and address. A plain description, not a warning.",
+);
+
+/// What choosing an outside service costs: **ADR 0147 §4's own sentence**,
+/// kept as it was written.
+pub const PICTURES_SENT_TO: Word = Word::saying(
+    "capability.pictures-read-by.sent-to",
+    "A picture of the window alo is reading is sent to {provider} each time",
+)
+.noting(
+    "Shown beside a choice in Settings that lets an outside AI service read pictures of windows. {provider} is the service's name, such as Mistral. Every time alo, the assistant, needs to see the window, a picture of it leaves this computer for that service. A plain statement, not a refusal, a scare or a recommendation. Keep it one sentence.",
+);
+
 /// **Refusal A** (the owner, 2026-11-10): at the default, an application that
 /// cannot open a separate copy of its own for alo — and the Settings choice
 /// that lets alo work in the person's own window instead, by its exact name and
@@ -1429,7 +1530,7 @@ pub const TEXT_HOLDS_ANOTHER_ALPHABET: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 126] = [
+pub const EVERY_WORD: [Word; 137] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -1511,6 +1612,17 @@ pub const EVERY_WORD: [Word; 126] = [
     PICTURES_AND_KEYS_ARE,
     LET_ALO_USE_PICTURES_AND_KEYS_IN,
     WHAT_PICTURES_AND_KEYS_COST,
+    WHO_READS_PICTURES,
+    WHO_READS_PICTURES_FIRST,
+    WHO_READS_PICTURES_IS,
+    READ_BY_NO_ONE,
+    READ_BY_NO_ONE_IS,
+    READ_BY_THIS_COMPUTER,
+    READ_BY_THIS_COMPUTER_IS,
+    READ_BY_A_PROVIDER_IS,
+    PICTURES_SENT_TO,
+    ADD_A_SERVICE_TO_READ,
+    ADD_A_SERVICE_TO_READ_IS,
     NO_COPY_OF_ITS_OWN,
     DONE_WITHOUT_ASKING,
     DONE_WITHOUT_ASKING_AND_IT_CANNOT_BE_PUT_BACK,
