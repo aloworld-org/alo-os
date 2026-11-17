@@ -645,10 +645,10 @@ fn what_an_application_reaches_past_its_box_is_on_its_row() {
         .find(|one| one.reaches().is_empty())
         .unwrap();
     assert!(
-        !quiet
-            .labels()
-            .iter()
-            .any(|label| matches!(label, Label::RunsProgramsOutsideItsBox | Label::ReachesYourFiles)),
+        !quiet.labels().iter().any(|label| matches!(
+            label,
+            Label::RunsProgramsOutsideItsBox | Label::ReachesYourFiles
+        )),
         "{} asks for nothing past its box and is labelled as if it did",
         quiet.application().identifier()
     );
@@ -662,10 +662,16 @@ fn an_entry_that_does_not_say_what_it_reaches_is_refused() {
     let shipped = what_a_machine_ships();
     let gimps = "early = false\nreaches = [\"your-files\"]\n";
     assert!(THE_CATALOGUE.contains(gimps));
-    for instead in ["early = false\n", "early = false\nreaches = [\"the-camera\"]\n"] {
+    for instead in [
+        "early = false\n",
+        "early = false\nreaches = [\"the-camera\"]\n",
+    ] {
         let text = replacing(gimps, instead);
         assert!(
-            matches!(Catalogue::read(&text, &shipped), Err(NotCatalogued::NotRead { .. })),
+            matches!(
+                Catalogue::read(&text, &shipped),
+                Err(NotCatalogued::NotRead { .. })
+            ),
             "{instead:?} was read"
         );
     }
@@ -683,7 +689,10 @@ fn what_arrives_with_access_past_its_box_is_not_told_it_was_given_nothing() {
     let said = reaching.said(&english).into_text();
     assert!(!said.contains("given nothing"), "{said}");
     assert!(said.contains("more than its box"), "{said}");
-    for quiet in [Installed::sandboxed(gimp.clone(), Some(Vec::new())), Installed::sandboxed(gimp, None)] {
+    for quiet in [
+        Installed::sandboxed(gimp.clone(), Some(Vec::new())),
+        Installed::sandboxed(gimp, None),
+    ] {
         assert!(quiet.said(&english).into_text().contains("given nothing"));
     }
 }

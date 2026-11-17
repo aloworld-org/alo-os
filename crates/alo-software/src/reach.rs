@@ -48,10 +48,9 @@ impl Reach {
     #[must_use]
     pub fn asked_for(filesystems: &[&str], talks_to: &[&str]) -> Vec<Self> {
         let mut reaches = Vec::new();
-        if talks_to
-            .iter()
-            .any(|name| *name == "org.freedesktop.Flatpak" || name.starts_with("org.freedesktop.Flatpak."))
-        {
+        if talks_to.iter().any(|name| {
+            *name == "org.freedesktop.Flatpak" || name.starts_with("org.freedesktop.Flatpak.")
+        }) {
             reaches.push(Self::ProgramsOutsideItsBox);
         }
         if filesystems.iter().any(|one| is_the_persons_files(one)) {
@@ -88,16 +87,34 @@ mod tests {
     #[test]
     fn what_real_applications_ask_for_is_read_as_they_ask_it() {
         let gimp = Reach::asked_for(
-            &["xdg-config/GIMP:create", "xdg-config/gtk-3.0:ro", "/tmp", "xdg-run/gvfsd", "host"],
-            &["com.canonical.AppMenu.Registrar", "org.gtk.vfs.*", "org.freedesktop.FileManager1"],
+            &[
+                "xdg-config/GIMP:create",
+                "xdg-config/gtk-3.0:ro",
+                "/tmp",
+                "xdg-run/gvfsd",
+                "host",
+            ],
+            &[
+                "com.canonical.AppMenu.Registrar",
+                "org.gtk.vfs.*",
+                "org.freedesktop.FileManager1",
+            ],
         );
         assert_eq!(gimp, vec![Reach::YourFiles]);
 
         let photocraft = Reach::asked_for(
-            &["xdg-data/ArtCraft/versions:ro", "~/.cups:ro", "xdg-pictures", "xdg-documents"],
+            &[
+                "xdg-data/ArtCraft/versions:ro",
+                "~/.cups:ro",
+                "xdg-pictures",
+                "xdg-documents",
+            ],
             &["org.freedesktop.Flatpak"],
         );
-        assert_eq!(photocraft, vec![Reach::ProgramsOutsideItsBox, Reach::YourFiles]);
+        assert_eq!(
+            photocraft,
+            vec![Reach::ProgramsOutsideItsBox, Reach::YourFiles]
+        );
     }
 
     /// **An application that asks for nothing past its box reaches nothing**,
@@ -108,13 +125,25 @@ mod tests {
         assert!(Reach::asked_for(&[], &[]).is_empty());
         assert!(
             Reach::asked_for(
-                &["xdg-config/GIMP:create", "~/.cups:ro", "xdg-run/gvfs", "/tmp", "xdg-data/x:ro"],
-                &["org.freedesktop.portal.Flatpak", "org.freedesktop.Notifications"],
+                &[
+                    "xdg-config/GIMP:create",
+                    "~/.cups:ro",
+                    "xdg-run/gvfs",
+                    "/tmp",
+                    "xdg-data/x:ro"
+                ],
+                &[
+                    "org.freedesktop.portal.Flatpak",
+                    "org.freedesktop.Notifications"
+                ],
             )
             .is_empty()
         );
         // A named folder of their own, read only, is still their files.
-        assert_eq!(Reach::asked_for(&["xdg-music:ro"], &[]), vec![Reach::YourFiles]);
+        assert_eq!(
+            Reach::asked_for(&["xdg-music:ro"], &[]),
+            vec![Reach::YourFiles]
+        );
         assert_eq!(Reach::asked_for(&["home:ro"], &[]), vec![Reach::YourFiles]);
         assert_eq!(
             Reach::asked_for(&["xdg-documents/Zoom:create"], &[]),

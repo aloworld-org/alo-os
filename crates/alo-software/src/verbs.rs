@@ -521,7 +521,7 @@ mod tests {
         );
     }
 
-/// An installation of `application` from Flathub, as an agent would ask.
+    /// An installation of `application` from Flathub, as an agent would ask.
     fn installing(application: &str) -> Call {
         software_verbs()
             .unwrap()
@@ -591,7 +591,10 @@ mod tests {
             what_the_catalogue_says_it_reaches("org.gimp.GIMP"),
             Some(vec![Reach::YourFiles])
         );
-        assert_eq!(what_the_catalogue_says_it_reaches("org.gnome.TextEditor"), None);
+        assert_eq!(
+            what_the_catalogue_says_it_reaches("org.gnome.TextEditor"),
+            None
+        );
         assert_eq!(call.verb(), INSTALL_APPLICATION);
     }
 

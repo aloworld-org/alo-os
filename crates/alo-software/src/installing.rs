@@ -176,7 +176,10 @@ impl Installed {
         // **And an application whose makers ask for more than its box is not
         // told it was given nothing** (the owner, 2026-11-17): it was given what
         // they asked for, and the market's row says what that reaches.
-        let reaches_past_its_box = self.reaches.as_ref().is_some_and(|reaches| !reaches.is_empty());
+        let reaches_past_its_box = self
+            .reaches
+            .as_ref()
+            .is_some_and(|reaches| !reaches.is_empty());
         let word = if self.sandboxing.is_worth_marking() {
             words::INSTALLED_UNSANDBOXED.key()
         } else if reaches_past_its_box {
