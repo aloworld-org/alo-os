@@ -190,6 +190,7 @@ impl TheDoorTheCompositorServes for ADoor {
                 Typed::Typed
             }
             ToType::Save { .. } => Typed::AskedToSave,
+            ToType::Key { .. } => Typed::PressedTheKey,
         })
     }
 
@@ -276,6 +277,53 @@ fn typing_once_in(
     rewriting: fn(&str) -> String,
     approve: bool,
 ) -> Ran {
+    let answering = if approve {
+        Answering::Approving
+    } else {
+        Answering::Declining
+    };
+    typing_once_as(TYPE_TEXT, application, terminal, field, whose, rewriting, answering)
+}
+
+/// How a typing is answered: approved or declined at *ask each time*, or run
+/// at full access with no card.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Answering {
+    Approving,
+    Declining,
+    AtFullAccess,
+}
+
+/// [`typing_once`], by either typing verb, answered either way.
+fn typing_once_by(
+    verb: &str,
+    field: TheField,
+    whose: Typed,
+    rewriting: fn(&str) -> String,
+    approve: Answering,
+) -> Ran {
+    typing_once_as(
+        verb,
+        EDITOR,
+        ATerminalForTheAgent::NotAtAll,
+        field,
+        whose,
+        rewriting,
+        approve,
+    )
+}
+
+/// The one body: `verb` into `application`, under `terminal`, answered as
+/// `approve`.
+fn typing_once_as(
+    verb: &str,
+    application: &str,
+    terminal: ATerminalForTheAgent,
+    field: TheField,
+    whose: Typed,
+    rewriting: fn(&str) -> String,
+    approve: Answering,
+) -> Ran {
     let strings = in_english();
     let tool = NoTool;
     let publisher = crate::testing::APublisher::that_publishes();
@@ -329,23 +377,40 @@ fn typing_once_in(
         let mut turning =
             Turning::beginning(offering(&there), AGENT, hour(), &mut grants, &mut machine).unwrap();
         let grants = grants.with_the_terminal_as(terminal);
-        let id = turning.proposing(
-            TYPE_TEXT,
-            &[
-                ("application", Given::text(application)),
-                ("name", Given::text("index.html")),
-                ("text", Given::text(THE_TEXT)),
-            ],
-            &grants,
-            hour(),
-            noon(),
-        );
-        assert_eq!(opened.get(), 0, "a proposal opened the tree");
-        assert!(asked.borrow().is_empty(), "a proposal asked the compositor");
-        match id {
-            Err(refused) => Err(refused),
-            Ok(id) if approve => turning.approving(id, &grants, noon()).map(Some),
-            Ok(id) => turning.declining(id, noon()).map(|()| None),
+        let given = [
+            ("application", Given::text(application)),
+            ("name", Given::text("index.html")),
+            ("text", Given::text(THE_TEXT)),
+        ];
+        match approve {
+            Answering::AtFullAccess => {
+                let at = grants.at_full_access_for(&alo_capability::Grantee::named(AGENT));
+                turning
+                    .changing(
+                        verb,
+                        &given,
+                        &at,
+                        hour(),
+                        &mut |_: &alo_strings::Said| None,
+                        noon(),
+                    )
+                    .map(|changed| match changed {
+                        crate::Changed::Done { did, .. } => Some(did),
+                        crate::Changed::Waiting(_) => None,
+                    })
+            }
+            Answering::Approving | Answering::Declining => {
+                let id = turning.proposing(verb, &given, &grants, hour(), noon());
+                assert_eq!(opened.get(), 0, "a proposal opened the tree");
+                assert!(asked.borrow().is_empty(), "a proposal asked the compositor");
+                match id {
+                    Err(refused) => Err(refused),
+                    Ok(id) if approve == Answering::Approving => {
+                        turning.approving(id, &grants, noon()).map(Some)
+                    }
+                    Ok(id) => turning.declining(id, noon()).map(|()| None),
+                }
+            }
         }
     };
     let entries = record.answering(&Asking::anything()).count();
@@ -373,6 +438,7 @@ fn one_approval_types_once_by_keys_reads_back_and_saves() {
     let did = ran.answered.unwrap().expect("approved");
     let typed = did.typed().expect("a text was typed");
     assert!(typed.saved());
+    assert!(typed.asked_to_save() && typed.read_back());
     assert!(!typed.through_the_tree());
     assert_eq!(typed.characters(), THE_TEXT.chars().count());
     assert_eq!(
@@ -709,4 +775,70 @@ fn a_field_that_kept_the_text_changed_is_not_typed_again_by_keys() {
     );
     assert_eq!(*text.borrow(), rewritten(THE_TEXT));
     assert_eq!(ran.entries, 1);
+}
+
+/// **Typing without saving types, reads back and never asks to save**, at
+/// both levels a person can choose (2026-11-17): the text goes in as
+/// `type-text` would put it, and no `save-in` ever reaches the compositor —
+/// which in a web page would save the page.
+#[test]
+fn typing_without_saving_reads_back_and_never_asks_to_save_at_either_level() {
+    for answering in [Answering::Approving, Answering::AtFullAccess] {
+        let ran = typing_once_by(
+            alo_adapters::TYPE_WITHOUT_SAVING,
+            TheField::an_editor(),
+            Typed::MayType,
+            as_it_is,
+            answering,
+        );
+        let did = ran.answered.unwrap().expect("carried out");
+        let typed = did.typed().expect("a text was typed");
+        assert!(!typed.asked_to_save(), "{answering:?}");
+        assert!(typed.read_back(), "{answering:?}");
+        assert!(!typed.saved(), "{answering:?}");
+        assert_eq!(
+            ran.asked,
+            [format!("type-into {EDITOR} {}", THE_TEXT.len())],
+            "{answering:?}"
+        );
+        assert_eq!(ran.entries, 1, "{answering:?}");
+    }
+}
+
+/// **A text that reads back differently is said, and still nothing is
+/// saved** — with no word about saving, since none was asked.
+#[test]
+fn typing_without_saving_says_a_text_that_reads_back_differently() {
+    let ran = typing_once_by(
+        alo_adapters::TYPE_WITHOUT_SAVING,
+        TheField::an_editor(),
+        Typed::MayType,
+        rewritten,
+        Answering::Approving,
+    );
+    let did = ran.answered.unwrap().expect("carried out");
+    let typed = did.typed().expect("a text was typed");
+    assert!(!typed.read_back() && !typed.saved());
+    assert!(ran.asked.iter().all(|line| !line.starts_with("save-in")));
+    assert_eq!(ran.entries, 1);
+}
+
+/// **The person's own window at the default refuses typing without saving
+/// too**, at both levels, with nothing typed and the refusal written down.
+#[test]
+fn typing_without_saving_into_the_persons_own_window_is_refused_at_either_level() {
+    for answering in [Answering::Approving, Answering::AtFullAccess] {
+        let ran = typing_once_by(
+            alo_adapters::TYPE_WITHOUT_SAVING,
+            TheField::an_editor(),
+            Typed::NotAlosCopy,
+            as_it_is,
+            answering,
+        );
+        assert!(
+            matches!(ran.answered, Err(NotDone::Refused(_))),
+            "{answering:?}"
+        );
+        assert_eq!(ran.entries, 1, "{answering:?}");
+    }
 }

@@ -62,6 +62,7 @@
 //! the first pass would tangle proving the road with deciding a layout.
 #![forbid(unsafe_code)]
 
+mod a_key;
 pub mod acting;
 pub mod alos_tree;
 pub mod answer;
@@ -97,6 +98,7 @@ pub use opening_a_link::{NotALinkToOpen, OPEN_LINK, ToOpenALink};
 pub use picturing::{NotToPicture, PICTURE_OF, Pictured, ToPicture};
 pub use request::{NotRead, Request};
 pub use typing_into::{
-    MAY_TYPE_INTO, NotToType, SAVE_IN, TYPE_INTO, ToType, Typed, the_first_untypable,
+    AKey, MAY_TYPE_INTO, NotToType, PRESS_IN, SAVE_IN, TYPE_INTO, ToType, Typed,
+    the_first_untypable,
 };
 pub use working_in::{NotToWorkIn, ToWorkIn, Where, Worked, Working};

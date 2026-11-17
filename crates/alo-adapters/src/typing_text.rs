@@ -26,12 +26,13 @@ use alo_strings::{Filling, Strings, Word};
 use crate::accessibility_tree::{AccessibilityTree, NodeAt, TreeFault};
 use crate::adapters::Adapters;
 use crate::fallback_reach::reached;
-use crate::fallback_verbs::{NAME, TEXT, TYPE_TEXT};
+use crate::fallback_verbs::{NAME, TEXT, TYPE_TEXT, TYPE_WITHOUT_SAVING};
 use crate::fallback_words as fallback;
 use crate::places_for_text::{
     FOCUSED, TypingRefuses, holds, the_ones_meant, the_places_for_text, what_is_there,
     why_typing_refuses,
 };
+use crate::typing_without_saving_words as unsaved;
 use crate::typing_words as words;
 
 /// The field the approved text goes into, found at the moment of typing.
@@ -58,6 +59,9 @@ pub struct Typing {
     name: String,
     /// The text, whole, as approved.
     text: String,
+    /// Whether the approval was to save after typing — `accessible.type_text`
+    /// — or not — `accessible.type_without_saving`.
+    saves: bool,
 }
 
 impl Typing {
@@ -73,7 +77,15 @@ impl Typing {
         installed: &Installed,
         strings: &Strings,
     ) -> Result<Self, Refused> {
-        let reached = reached(authorised, TYPE_TEXT, adapters, grants, installed, strings)?;
+        // **Which of the two typings this is** is the verb's, read off the
+        // authority itself: one that is neither is refused by `reached`.
+        let saves = authorised.verb() != TYPE_WITHOUT_SAVING;
+        let verb = if saves {
+            TYPE_TEXT
+        } else {
+            TYPE_WITHOUT_SAVING
+        };
+        let reached = reached(authorised, verb, adapters, grants, installed, strings)?;
         let call = reached.authorised.call();
         let name = match call.value(NAME) {
             Some(Value::Name(name)) => Some(name.clone()),
@@ -95,6 +107,7 @@ impl Typing {
             application: reached.application,
             name,
             text,
+            saves,
         };
         // **A terminal application is never typed into, whatever the person
         // allowed** (ADR 0111): letting alo use a terminal lets it open one,
@@ -106,6 +119,12 @@ impl Typing {
             return Err(typing.refused(words::A_TERMINAL, None, strings));
         }
         Ok(typing)
+    }
+
+    /// Whether the person approved saving after typing.
+    #[must_use]
+    pub const fn saves(&self) -> bool {
+        self.saves
     }
 
     /// The application.
@@ -238,8 +257,11 @@ impl Typing {
     ) -> Result<(), Refused> {
         match tree.text(&field.at) {
             Ok(shown) if shown.contains(&self.text) => Ok(()),
-            Ok(_) => Err(self.refused(words::READ_BACK_DIFFERS, None, strings)),
-            Err(_) => Err(self.refused(words::CANNOT_READ_BACK, None, strings)),
+            // Said without *so it was not saved* where nothing was to be saved.
+            Ok(_) if self.saves => Err(self.refused(words::READ_BACK_DIFFERS, None, strings)),
+            Ok(_) => Err(self.refused(unsaved::UNSAVED_READ_BACK_DIFFERS, None, strings)),
+            Err(_) if self.saves => Err(self.refused(words::CANNOT_READ_BACK, None, strings)),
+            Err(_) => Err(self.refused(unsaved::UNSAVED_CANNOT_READ_BACK, None, strings)),
         }
     }
 }

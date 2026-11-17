@@ -617,3 +617,113 @@ fn another_class_is_no_terminal_and_a_hidden_field_is_no_place() {
         None
     );
 }
+
+/// **Typing without saving** (2026-11-17) takes `type_text`'s arguments and
+/// checks, says on the card that nothing is saved, and is a typing that does
+/// not save; `type_text` is one that does.
+#[test]
+fn typing_without_saving_takes_the_same_text_and_says_nothing_is_saved() {
+    let verbs = fallback_verbs().unwrap();
+    let verb = verbs.of(alo_adapters::TYPE_WITHOUT_SAVING).unwrap();
+    assert_eq!(verb.effect(), Effect::Change);
+    assert_eq!(
+        verb.what_it_changes(),
+        Some(&alo_adapters::typing_without_saving_words::UNSAVED_CHANGES)
+    );
+    assert_eq!(
+        verb.what_it_leaves(),
+        Some(&alo_adapters::typing_words::TYPE_LEAVES)
+    );
+    let call = verbs
+        .call(
+            alo_adapters::TYPE_WITHOUT_SAVING,
+            &[
+                ("application", Given::text(EDITOR)),
+                ("name", Given::text("Search")),
+                ("text", Given::text("alo OS")),
+            ],
+        )
+        .unwrap();
+    let grants = granting(&[EDITOR]);
+    let unsaved = Typing::of(
+        approved(&call, &grants),
+        &Adapters::default(),
+        &grants,
+        &installed(),
+        &in_english(),
+    )
+    .unwrap();
+    assert!(!unsaved.saves());
+    assert!(typing("index.html", "x").saves());
+}
+
+/// A typing of `text` into `name` that saves nothing.
+fn typing_without_saving(name: &str, text: &str) -> Typing {
+    let call = fallback_verbs()
+        .unwrap()
+        .call(
+            alo_adapters::TYPE_WITHOUT_SAVING,
+            &[
+                ("application", Given::text(EDITOR)),
+                ("name", Given::text(name)),
+                ("text", Given::text(text)),
+            ],
+        )
+        .unwrap();
+    let grants = granting(&[EDITOR]);
+    Typing::of(
+        approved(&call, &grants),
+        &Adapters::default(),
+        &grants,
+        &installed(),
+        &in_english(),
+    )
+    .unwrap()
+}
+
+/// **Each typing's read-back says what became of it in its own words**: a
+/// typing that saves says it was not saved, and one that saves nothing never
+/// mentions saving — whether the text differs or cannot be read at all.
+#[test]
+fn each_typing_says_a_read_back_that_failed_in_its_own_words() {
+    let strings = in_english();
+    let filling =
+        alo_strings::Filling::of("application", EDITOR.to_owned()).and("name", "Search".to_owned());
+    let words = |word: alo_strings::Word| strings.say(&word.key(), &filling).text().to_owned();
+    let mut field = a(ENTRY, "Search", FOCUSED);
+    field.text = "something else";
+    let differs = ATree::of("Search - VSCodium", vec![field]);
+    let unreadable = ATree::of("Search - VSCodium", vec![a(ENTRY, "Search", FOCUSED)]);
+    unreadable.texts.borrow_mut().clear();
+    for (tree, saving, word) in [
+        (
+            &differs,
+            true,
+            alo_adapters::typing_words::READ_BACK_DIFFERS,
+        ),
+        (
+            &unreadable,
+            true,
+            alo_adapters::typing_words::CANNOT_READ_BACK,
+        ),
+        (
+            &differs,
+            false,
+            alo_adapters::typing_without_saving_words::UNSAVED_READ_BACK_DIFFERS,
+        ),
+        (
+            &unreadable,
+            false,
+            alo_adapters::typing_without_saving_words::UNSAVED_CANNOT_READ_BACK,
+        ),
+    ] {
+        let typing = if saving {
+            typing("Search", "alo OS")
+        } else {
+            typing_without_saving("Search", "alo OS")
+        };
+        let found = typing.the_field(tree, &strings).unwrap();
+        let refused = typing.read_back(tree, &found, &strings).unwrap_err();
+        assert_eq!(said(&refused), words(word), "saving: {saving}");
+    }
+}

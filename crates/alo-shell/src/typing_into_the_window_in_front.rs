@@ -40,7 +40,9 @@ use smithay::reexports::wayland_server::protocol::wl_keyboard::{
 use smithay::utils::SERIAL_COUNTER;
 
 use crate::Server;
-use crate::a_layout_for_a_text::{ALayout, CONTROL_KEY, the_layout_that_saves, the_layouts_for};
+use crate::a_layout_for_a_text::{
+    ALayout, CONTROL_KEY, the_layout_for_a_key, the_layout_that_saves, the_layouts_for,
+};
 
 /// Whether the process behind the window in front may be typed into, for this
 /// application — answered by whoever holds alo's copies and the person's
@@ -184,6 +186,9 @@ impl Server {
             },
             ToType::Save { .. } => (vec![the_layout_that_saves()], Typed::AskedToSave),
             ToType::Check { .. } => (Vec::new(), Typed::MayType),
+            // **One key of the closed list**, pressed once by the same road a
+            // text takes: to that one client, the person's layout back after.
+            ToType::Key { key, .. } => (vec![the_layout_for_a_key(*key)], Typed::PressedTheKey),
         };
         let Some(keyboard) = self.surfaces.keyboard.as_ref() else {
             return Typed::NoKeyboard;

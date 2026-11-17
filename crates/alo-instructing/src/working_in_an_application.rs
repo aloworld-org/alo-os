@@ -61,6 +61,12 @@ pub const SELECT_ITEM: &str = "accessible.select_item";
 /// (2026-11-17).
 pub const OPEN_ITEM: &str = "accessible.open_item";
 
+/// The verb that presses one key of a closed list (2026-11-17).
+pub const PRESS_KEY: &str = "accessible.press_key";
+
+/// The verb that types into a field and saves nothing (2026-11-17).
+pub const TYPE_WITHOUT_SAVING: &str = "accessible.type_without_saving";
+
 /// **The paragraph a model is told, for this registry** — empty when it does
 /// not declare both [`READ_WINDOW`] and [`TYPE_TEXT`].
 ///
@@ -116,6 +122,18 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
         acts.push(format!(
             "to open an item, such as a file in a folder, as a double-click would, {OPEN_ITEM} \
              with its name, only when the person asks to open it"
+        ));
+    }
+    // **A key, and typing that saves nothing** (2026-11-17), each beside its
+    // one act like the rest.
+    if verbs.of(TYPE_WITHOUT_SAVING).is_some() {
+        acts.push(format!(
+            "to type into a search box, a form, an address or a message, {TYPE_WITHOUT_SAVING},              which saves nothing, where {TYPE_TEXT} also saves and is for a file in an editor"
+        ));
+    }
+    if verbs.of(PRESS_KEY).is_some() {
+        acts.push(format!(
+            "to press Enter, Escape, Tab or an arrow where the keyboard is, as a person would to              send a search, close a dialog or move between fields, {PRESS_KEY}"
         ));
     }
     format!(
@@ -212,6 +230,20 @@ mod tests {
         verbs.declare(named(OPEN_MENU, Effect::Change)).unwrap();
         let told = working_in_an_application(&verbs);
         assert!(told.contains(OPEN_MENU), "{told}");
+        assert!(told.contains("Never send a run line"), "{told}");
+        assert!(!working_in_an_application(&verbs).contains(PRESS_KEY));
+
+        verbs.declare(named(PRESS_KEY, Effect::Change)).unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(told.contains(PRESS_KEY), "{told}");
+        assert!(told.contains("Never send a run line"), "{told}");
+        assert!(!told.contains(TYPE_WITHOUT_SAVING), "{told}");
+
+        verbs
+            .declare(named(TYPE_WITHOUT_SAVING, Effect::Change))
+            .unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(told.contains(TYPE_WITHOUT_SAVING), "{told}");
         assert!(told.contains("Never send a run line"), "{told}");
     }
 

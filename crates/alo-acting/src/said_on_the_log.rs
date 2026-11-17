@@ -37,6 +37,8 @@ pub fn alo_typed(asked: &ToType, answered: Typed) -> String {
         ToType::Text { bytes, .. } => ("text", *bytes),
         ToType::Save { .. } => ("save", 0),
         ToType::Check { .. } => ("check", 0),
+        // The key's name, never anything typed: the list is closed.
+        ToType::Key { key, .. } => (key.named(), 0),
     };
     format!(
         "{ALO_TYPED} {}: {what}, {bytes} bytes, and it was answered {}",

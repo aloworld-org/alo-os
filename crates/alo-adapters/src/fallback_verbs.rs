@@ -32,12 +32,15 @@ use alo_capability::{Arg, Effect, Requires, Takes, Verb, Verbs};
 use crate::choosing_words as choosing;
 use crate::fallback_words as words;
 use crate::menu_words as menu;
+use crate::keys_words as keys;
 use crate::not_loaded::NotLoaded;
 use crate::opening_words as opening;
 use crate::pressable::Pressable;
+use crate::pressing_a_key::the_keys_offered;
 use crate::scrolling::Toward;
 use crate::scrolling_words as scrolling;
 use crate::setting_words as setting;
+use crate::typing_without_saving_words as unsaved;
 use crate::typing_words as typing;
 
 /// The prefix both verbs are named under.
@@ -61,6 +64,16 @@ pub const SCROLL_PAGE: &str = "accessible.scroll_page";
 
 /// The argument naming which way a page is scrolled.
 pub const TOWARD: &str = "toward";
+/// The verb that presses one key of a closed list (2026-11-17).
+pub const PRESS_KEY: &str = "accessible.press_key";
+
+/// The argument naming the key.
+pub const KEY: &str = "key";
+
+/// The verb that types one approved text into one field and saves nothing
+/// (2026-11-17): a search box, a form, an address, where `Ctrl+S` would save
+/// the page instead.
+pub const TYPE_WITHOUT_SAVING: &str = "accessible.type_without_saving";
 
 /// The verb that moves a slider or a number box to a whole number
 /// (2026-11-17, the owner's "Yes do all").
@@ -331,6 +344,41 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
             menu::MENU_SENTENCE,
         )
         .and_then(|verb| verb.changing(menu::MENU_CHANGES, Some(menu::MENU_LEAVES))),
+    )?)?;
+    // **One key, 2026-11-17** (`crate::pressing_a_key`): a change, one of seven
+    // keys offered as a choice, so no combination or letter can arrive.
+    verbs.declare(checked(
+        PRESS_KEY,
+        Verb::checked(
+            PRESS_KEY,
+            keys::KEY_PURPOSE,
+            Effect::Change,
+            vec![
+                Arg::taking(APPLICATION, keys::KEY_APPLICATION, Takes::Application),
+                Arg::taking(KEY, keys::KEY_KEY, the_keys_offered()),
+            ],
+            Requires::grants_over([APPLICATION]),
+            keys::KEY_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(keys::KEY_CHANGES, Some(keys::KEY_LEAVES))),
+    )?)?;
+    // **Typing that saves nothing, 2026-11-17**: `accessible.type_text`'s
+    // arguments and checks, without its `Ctrl+S` (`crate::typing_text`).
+    verbs.declare(checked(
+        TYPE_WITHOUT_SAVING,
+        Verb::checked(
+            TYPE_WITHOUT_SAVING,
+            unsaved::UNSAVED_PURPOSE,
+            Effect::Change,
+            vec![
+                Arg::taking(APPLICATION, typing::TYPE_APPLICATION, Takes::Application),
+                Arg::taking(NAME, typing::TYPE_NAME, Takes::name(LONGEST_NAME)),
+                Arg::taking(TEXT, typing::TYPE_THE_TEXT, Takes::Text),
+            ],
+            Requires::grants_over([APPLICATION]),
+            unsaved::UNSAVED_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(unsaved::UNSAVED_CHANGES, Some(typing::TYPE_LEAVES))),
     )?)?;
     Ok(())
 }

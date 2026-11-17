@@ -63,11 +63,15 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
             pressed.name(),
             pressed.unanswered(),
         ),
-        WhatAVerbDid::TextWasTyped(typed) => Done::of_a_typing(
+        // A typing that saves nothing (2026-11-17) says so on the wire, so a
+        // client never reads it as a save that failed.
+        WhatAVerbDid::TextWasTyped(typed) => Done::of_either_typing(
             typed.application(),
             typed.name(),
             typed.characters(),
             typed.through_the_tree(),
+            typed.asked_to_save(),
+            typed.read_back(),
             typed.saved(),
         ),
         // A slider or a number box moved (2026-11-17).
@@ -128,6 +132,10 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
         // read by `accessible.read_window`, never carried here.
         WhatAVerbDid::AMenuWasOpened(opened) => {
             Done::of_a_menu(opened.application(), opened.name(), opened.unanswered())
+        }
+        // One key pressed in an application's window (2026-11-17).
+        WhatAVerbDid::AKeyWasPressed(pressed) => {
+            Done::of_a_key(pressed.application(), pressed.key().named())
         }
     }
 }

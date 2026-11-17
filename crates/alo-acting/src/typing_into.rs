@@ -11,7 +11,12 @@
 //! → save-in com.vscodium.codium
 //! ← asked-to-save
 //!   (or: not-in-front, not-alos-copy, no-keyboard)
+//! → press-in org.mozilla.firefox enter
+//! ← pressed-the-key
+//!   (or: not-in-front, not-alos-copy, no-keyboard)
 //! ```
+//!
+//! `press-in` (2026-11-17) presses one key of [`AKey`]'s closed list, once.
 //!
 //! **The length is said, not the end.** The text has no maximum (ADR 0001's
 //! amendment of 2026-11-13) and holds new lines, so it cannot be one line of
@@ -20,7 +25,11 @@
 
 use alo_applications::Application;
 
+pub use crate::a_key::AKey;
 use crate::request::Request;
+
+/// The word that presses one key in the window in front.
+pub const PRESS_IN: &str = "press-in";
 
 /// The word that begins typing a text.
 pub const TYPE_INTO: &str = "type-into";
@@ -53,6 +62,13 @@ pub enum ToType {
         /// The application whose window must have the keyboard.
         application: Application,
     },
+    /// Press one key of the closed list, once (2026-11-17).
+    Key {
+        /// The application whose window must have the keyboard.
+        application: Application,
+        /// The key.
+        key: AKey,
+    },
 }
 
 impl ToType {
@@ -62,7 +78,8 @@ impl ToType {
         match self {
             Self::Text { application, .. }
             | Self::Save { application }
-            | Self::Check { application } => application,
+            | Self::Check { application }
+            | Self::Key { application, .. } => application,
         }
     }
 
@@ -77,6 +94,9 @@ impl ToType {
             Self::Check { application } => {
                 format!("{MAY_TYPE_INTO} {}", application.identifier())
             }
+            Self::Key { application, key } => {
+                format!("{PRESS_IN} {} {}", application.identifier(), key.named())
+            }
         }
     }
 
@@ -87,7 +107,7 @@ impl ToType {
         let line = line.trim_end_matches(['\r', '\n']);
         let mut words = line.split(' ');
         let first = words.next()?;
-        if first != TYPE_INTO && first != SAVE_IN && first != MAY_TYPE_INTO {
+        if first != TYPE_INTO && first != SAVE_IN && first != MAY_TYPE_INTO && first != PRESS_IN {
             return None;
         }
         if line.len() > Request::THE_MOST {
@@ -99,6 +119,12 @@ impl ToType {
         let Ok(application) = Application::identified(named) else {
             return Some(Err(NotToType::NotOneApplication));
         };
+        if first == PRESS_IN {
+            return Some(match (words.next().and_then(AKey::called), words.next()) {
+                (Some(key), None) => Ok(Self::Key { application, key }),
+                _ => Err(NotToType::NotAKey),
+            });
+        }
         if first == SAVE_IN || first == MAY_TYPE_INTO {
             return Some(match (words.next(), first == SAVE_IN) {
                 (None, true) => Ok(Self::Save { application }),
@@ -132,6 +158,9 @@ pub enum NotToType {
     /// `type-into` did not say how many bytes follow, as a number above zero.
     #[error("type-into says how many bytes of text follow, as a number above zero")]
     NoLength,
+    /// `press-in` did not name exactly one key of the closed list.
+    #[error("press-in names exactly one key: enter, escape, tab, up, down, left or right")]
+    NotAKey,
 }
 
 /// What the door answers.
@@ -141,6 +170,8 @@ pub enum Typed {
     Typed,
     /// `Ctrl+S` was delivered to the window in front.
     AskedToSave,
+    /// The one key asked for was pressed in the window in front.
+    PressedTheKey,
     /// The window in front may be typed into; nothing was sent.
     MayType,
     /// The window that has the keyboard is not one of that application's, or
@@ -162,6 +193,7 @@ impl Typed {
         match self {
             Self::Typed => "typed".to_owned(),
             Self::AskedToSave => "asked-to-save".to_owned(),
+            Self::PressedTheKey => "pressed-the-key".to_owned(),
             Self::MayType => "may".to_owned(),
             Self::NotInFront => "not-in-front".to_owned(),
             Self::NotAlosCopy => "not-alos-copy".to_owned(),
@@ -179,6 +211,7 @@ impl Typed {
         Some(match line {
             "typed" => Self::Typed,
             "asked-to-save" => Self::AskedToSave,
+            "pressed-the-key" => Self::PressedTheKey,
             "may" => Self::MayType,
             "not-in-front" => Self::NotInFront,
             "not-alos-copy" => Self::NotAlosCopy,

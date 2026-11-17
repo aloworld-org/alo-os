@@ -428,6 +428,21 @@ operation of everything`. The verb opens the same item by its own *activate*, as
 a screen reader would; at *ask each time* the approval is what an agent needs,
 because it is the agent choosing what opens, and at full access the person has
 already chosen.
+### accessible.type_without_saving
+
+**By hand:** a person clicks in the field and types the text themselves, and
+saves nothing — `Sticky keys, slow keys, and keyboard-only operation of
+everything`. The verb types the same text into the same field by the same roads
+as the typing that saves, reads it back, and never presses Ctrl+S; the
+approval is what an agent needs, because it is the agent choosing what to type.
+
+### accessible.press_key
+
+**By hand:** a person presses the key — Enter, Escape, Tab or an arrow — in the
+window they are working in — `Sticky keys, slow keys, and keyboard-only
+operation of everything`. The verb presses the same one key once in the window
+that has the keyboard; the approval is what an agent needs, because it is the
+agent choosing to press it.
 
 ### set_the_scheme
 

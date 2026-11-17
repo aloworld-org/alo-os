@@ -72,6 +72,7 @@ use crate::opening_a_file_in_an_application::opening_a_file_in_an_application;
 use crate::opening_a_menu_in_an_application::opening_a_menu_in_an_application;
 use crate::opening_an_item_in_an_application::opening_an_item_in_an_application;
 use crate::pressing_a_control::pressing_a_control;
+use crate::pressing_a_key_in_an_application::pressing_a_key_in_an_application;
 use crate::publishing_a_folder::publishing_a_folder;
 use crate::reading_an_applications_windows::reading_an_applications_windows;
 use crate::refusing::NotDone;
@@ -190,7 +191,9 @@ fn carrying_it_out(
         let (entry, pressed) = pressing_a_control(machine, authorised, grants);
         return (entry, pressed.map(WhatAVerbDid::from));
     }
-    if authorised.verb() == alo_adapters::TYPE_TEXT {
+    if authorised.verb() == alo_adapters::TYPE_TEXT
+        || authorised.verb() == alo_adapters::TYPE_WITHOUT_SAVING
+    {
         let (entry, typed) = typing_into_an_application(machine, authorised, grants);
         return (entry, typed.map(WhatAVerbDid::from));
     }
@@ -224,6 +227,11 @@ fn carrying_it_out(
     if authorised.verb() == alo_adapters::OPEN_MENU {
         let (entry, opened) = opening_a_menu_in_an_application(machine, authorised, grants);
         return (entry, opened.map(WhatAVerbDid::from));
+    }
+    // **One key of a closed list** (2026-11-17), before the boundary for the same reason.
+    if authorised.verb() == alo_adapters::PRESS_KEY {
+        let (entry, pressed) = pressing_a_key_in_an_application(machine, authorised, grants);
+        return (entry, pressed.map(WhatAVerbDid::from));
     }
     // **Opening a file in an application, routed by name like the rest**
     // (2026-11-14). Before the boundary, for the accessibility verbs' reason:

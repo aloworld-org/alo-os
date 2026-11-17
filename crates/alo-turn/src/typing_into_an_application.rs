@@ -24,6 +24,10 @@
 //!    the field exactly. Then `Ctrl+S`; otherwise nothing is saved and the
 //!    person is told why.
 //!
+//! **`accessible.type_without_saving`** (2026-11-17) takes every step but the
+//! last: the same checks, the same roads and the same read-back, and never
+//! `Ctrl+S` — which in a web page's search box or form saves the page instead.
+//!
 //! **One approval types once.** Nothing here loops over texts or fields: the
 //! settings *each block on its own* and *everything for one request* (ADR 0143
 //! Q1) are not built, and this is ADR 0143's default.
@@ -67,6 +71,11 @@ pub struct ATextTyped {
     through_the_tree: bool,
     /// Whether it read back exactly and was saved.
     saved: bool,
+    /// Whether saving was approved — `accessible.type_text` — or not —
+    /// `accessible.type_without_saving` (2026-11-17).
+    asked_to_save: bool,
+    /// Whether it read back exactly.
+    read_back: bool,
 }
 
 impl ATextTyped {
@@ -99,6 +108,19 @@ impl ATextTyped {
     pub const fn saved(&self) -> bool {
         self.saved
     }
+
+    /// Whether saving was approved at all: `false` for
+    /// `accessible.type_without_saving`, which never saves.
+    #[must_use]
+    pub const fn asked_to_save(&self) -> bool {
+        self.asked_to_save
+    }
+
+    /// Whether it read back exactly.
+    #[must_use]
+    pub const fn read_back(&self) -> bool {
+        self.read_back
+    }
 }
 
 /// The words for what the compositor answered, when it was not a yes.
@@ -110,9 +132,11 @@ fn the_word_for(typed: Typed) -> (alo_strings::Word, Option<String>) {
             words::CANNOT_TYPE,
             Some(format!("U+{:04X}", u32::from(character))),
         ),
-        Typed::Typed | Typed::AskedToSave | Typed::MayType | Typed::NoKeyboard => {
-            (words::NO_KEYBOARD, None)
-        }
+        Typed::Typed
+        | Typed::AskedToSave
+        | Typed::MayType
+        | Typed::PressedTheKey
+        | Typed::NoKeyboard => (words::NO_KEYBOARD, None),
     }
 }
 
@@ -236,8 +260,12 @@ pub(crate) fn typing_into_an_application(
 
     // Step 5: read back, then save — or say why not.
     let read_back = read_back(&typing, tree.as_ref(), &field, strings);
+    let read_back_exactly = read_back.is_ok();
     let (saved, told) = match read_back {
         Err(refused) => (false, Some(refused.said(strings))),
+        // **Nothing to save** (`accessible.type_without_saving`): no
+        // `Ctrl+S`, which in a web page would save the page.
+        Ok(()) if !typing.saves() => (false, None),
         Ok(()) => {
             let saving = asking(&mut *door, ToType::Save { application }, "");
             if saving == Typed::AskedToSave {
@@ -258,6 +286,8 @@ pub(crate) fn typing_into_an_application(
         characters: typing.text().chars().count(),
         through_the_tree: !by_keys,
         saved,
+        asked_to_save: typing.saves(),
+        read_back: read_back_exactly,
     };
     let entry = Entry::ran(&typing.into_authorised(), strings);
     let entry = match told {
