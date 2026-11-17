@@ -1141,4 +1141,21 @@ mod tests {
             r#"{"scrolled":{"application":"org.gnome.Papers","to":"Chapter 3","a_page":false,"now_showing":true}}"#
         );
     }
+
+    /// **A move leaves something out when it did not read back, or the
+    /// application did not answer**, and only then (2026-11-17).
+    #[test]
+    fn a_move_leaves_something_out_unless_it_read_back_and_was_answered() {
+        let set = |seen, unanswered| {
+            Done::of_a_setting("org.example.Mixer", "Volume", 40, seen, unanswered)
+        };
+        assert!(!set(true, false).left_something_out());
+        assert!(set(false, false).left_something_out());
+        assert!(set(true, true).left_something_out());
+        assert!(set(false, true).left_something_out());
+        assert_eq!(
+            serde_json::to_string(&set(true, false)).unwrap(),
+            r#"{"set":{"application":"org.example.Mixer","name":"Volume","value":40,"seen":true,"unanswered":false}}"#
+        );
+    }
 }

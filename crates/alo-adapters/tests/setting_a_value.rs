@@ -259,8 +259,15 @@ fn the_verb_is_a_change_over_a_granted_application_with_a_bounded_number() {
 #[test]
 fn a_slider_is_moved_once_and_reads_back() {
     let tree = ATree::standard();
-    let set = setting("Volume", 40).set(&tree, &in_english()).unwrap();
+    let moving = setting("Volume", 40);
+    assert_eq!(moving.application(), MIXER);
+    let set = moving.set(&tree, &in_english()).unwrap();
     assert_eq!(*tree.moved.borrow(), [(at("/t/0"), 40.0)]);
+    assert_eq!(
+        (set.application(), set.name(), set.value()),
+        (MIXER, "Volume", 40)
+    );
+    assert_eq!(set.authorised().verb(), SET_VALUE);
     assert!(!set.unanswered());
     assert!(set.reads_back(&tree));
     assert!(set.said(true, &in_english()).is_none());

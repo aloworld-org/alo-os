@@ -118,9 +118,7 @@ pub mod words;
 
 #[cfg(target_os = "linux")]
 pub use accessibility_bus::AccessibleSession;
-pub use accessibility_tree::{
-    AccessibilityTree, Bounds, Edge, Facts, NodeAt, Running, TreeFault,
-};
+pub use accessibility_tree::{AccessibilityTree, Bounds, Edge, Facts, NodeAt, Running, TreeFault};
 pub use activating::{Activating, PRESSING, Pressed};
 pub use adapter::Adapter;
 pub use adapter_arg::{AdapterArg, Kind, Offer};
