@@ -159,7 +159,10 @@ mod tests {
         assert!(!working_in_an_application(&verbs).contains(SET_VALUE));
         verbs.declare(named(SET_VALUE, Effect::Change)).unwrap();
         let told = working_in_an_application(&verbs);
-        assert!(told.contains(SET_VALUE) && told.contains("never by typing"), "{told}");
+        assert!(
+            told.contains(SET_VALUE) && told.contains("never by typing"),
+            "{told}"
+        );
     }
 
     /// **Scrolling is told only where both scrolls are offered**, and then it
