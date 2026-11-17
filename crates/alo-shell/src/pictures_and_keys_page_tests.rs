@@ -41,7 +41,10 @@ fn every_application_but_a_terminal_has_a_switch_and_each_is_off() {
     window.the_applications_are(a_game_a_browser_and_a_terminal());
     let rows = the_pictures_rows(&window, &strings).expect("the section is drawn");
     let first = &rows[0];
-    assert_eq!(first.row, None, "the row that says what it is acts on nothing");
+    assert_eq!(
+        first.row, None,
+        "the row that says what it is acts on nothing"
+    );
     assert_eq!(
         first.risk.as_ref().map(|risk| risk.words.as_str()),
         Some(
@@ -58,7 +61,9 @@ fn every_application_but_a_terminal_has_a_switch_and_each_is_off() {
         [
             (
                 "Let alo use pictures and keys in Firefox",
-                Some(&SettingsRow::PicturesAndKeys("org.mozilla.firefox".to_owned())),
+                Some(&SettingsRow::PicturesAndKeys(
+                    "org.mozilla.firefox".to_owned()
+                )),
                 TheKind::ASwitch(crate::settings_page::SwitchIs::Off)
             ),
             (
@@ -72,6 +77,8 @@ fn every_application_but_a_terminal_has_a_switch_and_each_is_off() {
     );
     // **And the keyboard reaches each**, in the order they are drawn.
     let reachable: Vec<SettingsRow> = window
+        .open()
+        .unwrap()
         .rows_on(SettingsCategory::FoldersAloCanUse, noon())
         .into_iter()
         .filter(|row| matches!(row, SettingsRow::PicturesAndKeys(_)))
@@ -141,6 +148,8 @@ fn with_no_application_known_the_section_is_absent() {
     assert!(the_pictures_rows(&window, &strings).is_none());
     assert!(
         !window
+            .open()
+            .unwrap()
             .rows_on(SettingsCategory::FoldersAloCanUse, noon())
             .iter()
             .any(|row| matches!(row, SettingsRow::PicturesAndKeys(_)))
@@ -155,11 +164,72 @@ fn a_terminal_pressed_by_name_is_not_switched_on() {
     let mut window = machine.opened();
     window.the_applications_are(a_game_a_browser_and_a_terminal());
     let at = machine.places.how_code_runs().to_owned();
+    alo_remembering::the_level_kept(&at, alo_capability::HowCodeRuns::AskingEachTime).unwrap();
     let open = window.open.as_mut().unwrap();
-    let _ = open.pictures_and_keys.pressed("app.devsuite.Ptyxis");
+    assert_eq!(
+        open.pictures_and_keys.pressed("app.devsuite.Ptyxis"),
+        SettingsKept::Written
+    );
+    assert!(!open.pictures_and_keys.is_on_in("app.devsuite.Ptyxis"));
+    // **Read without a default**: a file the reader refused would also say no.
     assert!(
         !alo_remembering::pictures_and_keys_remembered(&at)
-            .unwrap_or_default()
+            .unwrap()
             .allows("app.devsuite.Ptyxis")
+    );
+    assert_eq!(
+        alo_remembering::the_level_remembered(&at).unwrap(),
+        Some(alo_capability::HowCodeRuns::AskingEachTime)
+    );
+}
+
+/// **No terminal has a row**, Konsole as well as the machine's own.
+#[test]
+fn no_terminal_has_a_switch() {
+    use alo_applications::Application;
+    let machine = a_persons_machine("pictures-terminals");
+    let strings = words();
+    let mut window = machine.opened();
+    let mut here = a_game_a_browser_and_a_terminal();
+    let mut all: Vec<Application> = here.installed.all().cloned().collect();
+    all.push(Application::called("org.kde.konsole", "Konsole").unwrap());
+    here.installed = alo_applications::Installed::holding(all);
+    window.the_applications_are(here);
+    let titles: Vec<String> = the_pictures_rows(&window, &strings).unwrap()[1..]
+        .iter()
+        .map(|row| row.title.clone())
+        .collect();
+    assert_eq!(
+        titles,
+        [
+            "Let alo use pictures and keys in Firefox",
+            "Let alo use pictures and keys in SuperTuxKart"
+        ]
+    );
+}
+
+/// **A switch drawn from a stale reading and the file agree after a press**:
+/// switched on in the file after Settings opened, one press leaves the two
+/// saying the same thing.
+#[test]
+fn after_a_press_the_drawn_switch_and_the_file_agree() {
+    let machine = a_persons_machine("pictures-stale");
+    let strings = words();
+    let door = CountingDoor::revoking();
+    let mut window = machine.opened();
+    window.the_applications_are(a_game_a_browser_and_a_terminal());
+    let at = machine.places.how_code_runs().to_owned();
+    alo_remembering::pictures_and_keys_switched(&at, "net.supertuxkart.SuperTuxKart", true)
+        .unwrap();
+    let game = SettingsRow::PicturesAndKeys("net.supertuxkart.SuperTuxKart".to_owned());
+    let _ = chosen(&mut window, &game, &strings, &door);
+    let in_the_file = alo_remembering::pictures_and_keys_remembered(&at)
+        .unwrap()
+        .allows("net.supertuxkart.SuperTuxKart");
+    let drawn = the_pictures_rows(&window, &strings).unwrap()[2].kind
+        == TheKind::ASwitch(crate::settings_page::SwitchIs::On);
+    assert_eq!(
+        drawn, in_the_file,
+        "the switch is drawn one way and kept the other"
     );
 }

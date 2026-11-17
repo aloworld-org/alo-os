@@ -201,7 +201,11 @@ fn the_terminal_answer_goes_down_and_comes_back() {
                 pictures_and_keys_in: None,
             };
             let text = written(says.clone()).expect("it writes");
-            assert_eq!(read(&text), Ok(says.clone()), "{says:?} did not survive {text:?}");
+            assert_eq!(
+                read(&text),
+                Ok(says.clone()),
+                "{says:?} did not survive {text:?}"
+            );
         }
     }
     let on = written(WhatTheFileSays {

@@ -483,6 +483,11 @@ capability.in-applications.in-your-window-is	Any application can be used. While 
 capability.in-applications.no-copy-of-its-own.what-alo-can-use	alo cannot work in {application} safely at this setting, because it cannot open a separate copy of its own for alo. To let alo work in your own window instead, choose “alo may work in your own window” in Settings → What alo can use
 capability.in-applications.what-your-window-costs	alo will show that the application is sending, but cannot count what it sends, and works where your other tabs are
 capability.in-applications.what-your-window-costs-where-no-copy	Where an app has no copy of its own, alo works in your window: the indicator shows that it may send, but cannot count it
+capability.pictures-and-keys.heading	Pictures and keys
+capability.pictures-and-keys.in-this-app	Let alo use pictures and keys in {application}
+capability.pictures-and-keys.what-it-costs	alo will act on what it sees in pictures of this window, and may press the wrong thing
+capability.pictures-and-keys.what-it-is	Such as games. alo looks at a picture of that app's window and clicks or presses keys there. It never takes a picture of a window with a password field, and the indicator shows a picture leaving this computer
+capability.pictures-and-keys.what-it-is-for	For apps that tell alo nothing about their windows
 capability.proposal.no-end	a question has to lapse — choose how long this one stands for
 capability.proposal.no-time	say how long the question stands — one that lapses at once cannot be answered
 capability.proposal.read-does-not-wait	{verb} answers a question rather than changing anything — run it in the turn instead of asking about it
@@ -1947,6 +1952,7 @@ remembering.level.a-link	{path} is a link to somewhere else, and this is read on
 remembering.level.from-a-newer-alo-os	{path} was written by a newer alo OS than this one, so this machine does not know how you want code run
 remembering.level.no-such-level	{path} says {said}, which is not one of the three levels, so this machine does not know how you want code run
 remembering.level.not-a-terminal-answer	{path} says {said} for the terminal, which is neither asking-each-time nor at-full-trust, so this machine does not know how you want code run, and alo in the terminal asks first
+remembering.level.not-an-application-for-pictures	{path} names {said} for pictures and keys, which is a terminal or not an application at all, so this machine does not know how you want code run, and alo uses pictures and keys in no application
 remembering.level.not-an-applications-answer	{path} says {said} for applications, which is neither in-alos-copy nor in-their-window, so this machine does not know how you want code run, and alo works only in its own copy of an application
 remembering.level.not-read	{path} could not be read, so this machine does not know how you want code run
 remembering.level.not-the-shape	{path} is not the shape this file takes, so this machine does not know how you want code run

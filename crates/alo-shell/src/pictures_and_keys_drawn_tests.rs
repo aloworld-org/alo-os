@@ -48,8 +48,15 @@ fn a_switch_for_pictures_and_keys_reaches_the_frame_a_display_is_handed() {
     written_where(&before, THE_FOLDER, "1-pictures-and-keys-off.png");
     press(&mut window, SettingsKey::Choose, &door);
     let after = handed(&window);
-    written_where(&after, THE_FOLDER, "2-pictures-and-keys-on-in-supertuxkart.png");
-    assert_ne!(before.0, after.0, "Enter on the switch did not reach the frame");
+    written_where(
+        &after,
+        THE_FOLDER,
+        "2-pictures-and-keys-on-in-supertuxkart.png",
+    );
+    assert_ne!(
+        before.0, after.0,
+        "Enter on the switch did not reach the frame"
+    );
     assert!(
         alo_remembering::pictures_and_keys_remembered(machine.places.how_code_runs())
             .unwrap()

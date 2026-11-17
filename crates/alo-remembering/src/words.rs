@@ -1,6 +1,6 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Ten of them, and all ten are about **one file**: the level a person chose
+//! Thirteen of them, and all thirteen are about **one file**: the level a person chose
 //! for running code, at `/var/lib/alo/how-code-runs.toml`. Nothing here says
 //! anything about the **grants** beside it, and that absence is the whole
 //! argument of this file.

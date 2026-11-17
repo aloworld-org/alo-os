@@ -64,8 +64,13 @@ impl PicturesAndKeys {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let _ = applications;
-        Self::default()
+        Self {
+            on_in: applications
+                .into_iter()
+                .map(Into::into)
+                .filter(|it| could_be_one(it))
+                .collect(),
+        }
     }
 
     /// Whether alo may use pictures and keys in this application.
@@ -74,22 +79,23 @@ impl PicturesAndKeys {
     /// this crate is matched. **A terminal never**, at any answer.
     #[must_use]
     pub fn allows(&self, application: &str) -> bool {
-        let _ = application;
-        true
+        could_be_one(application) && self.on_in.contains(application)
     }
 
     /// This answer with `application` switched on; unchanged for an
     /// identifier [`Self::of`] would not keep.
     #[must_use]
-    pub fn switched_on(self, application: &str) -> Self {
-        let _ = application;
+    pub fn switched_on(mut self, application: &str) -> Self {
+        if could_be_one(application) {
+            self.on_in.insert(application.to_owned());
+        }
         self
     }
 
     /// This answer with `application` switched off.
     #[must_use]
-    pub fn switched_off(self, application: &str) -> Self {
-        let _ = application;
+    pub fn switched_off(mut self, application: &str) -> Self {
+        self.on_in.remove(application);
         self
     }
 
@@ -113,6 +119,15 @@ impl PicturesAndKeys {
     pub const fn what_it_costs() -> Word {
         words::WHAT_PICTURES_AND_KEYS_COST
     }
+}
+
+/// Whether this identifier is one alo may be let use pictures and keys in:
+/// **not a terminal**, not empty, and with no space around it — which trimming
+/// would turn into a different application.
+fn could_be_one(identifier: &str) -> bool {
+    !identifier.is_empty()
+        && identifier.trim() == identifier
+        && !crate::is_a_persons_own(identifier)
 }
 
 #[cfg(test)]

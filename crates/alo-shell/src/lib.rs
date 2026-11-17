@@ -152,8 +152,6 @@ mod a_window_travels_aside;
 /// The window a person offered alo, and the window each task works in.
 pub mod alo_in_a_window;
 mod alo_in_applications_in_settings;
-/// The switches that let alo use pictures and keys in one application each.
-mod pictures_and_keys_in_settings;
 mod alo_in_the_terminal_in_settings;
 /// The teal edge and the band with Stop on a window alo is working in.
 pub mod alos_band_in_a_window;
@@ -173,6 +171,8 @@ mod each_window_with_its_edge;
 mod ease_in_and_out;
 /// The logical measures of a window's miniature in the right-hand panel.
 mod miniature_measures;
+/// The switches that let alo use pictures and keys in one application each.
+mod pictures_and_keys_in_settings;
 /// Windows put aside are asked to draw again at a bounded rate.
 mod put_aside_windows_draw_again;
 #[cfg(test)]

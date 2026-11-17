@@ -216,7 +216,10 @@ struct Written {
     /// The applications alo may use pictures and keys in (ADR 0143 Q11), each
     /// by identifier. Present and empty is a person who switched every one
     /// off.
-    #[serde(rename = "pictures-and-keys-in", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "pictures-and-keys-in",
+        skip_serializing_if = "Option::is_none"
+    )]
     pictures_and_keys_in: Option<Vec<String>>,
 }
 

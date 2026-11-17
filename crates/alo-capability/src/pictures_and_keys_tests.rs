@@ -77,3 +77,14 @@ fn what_it_costs_is_the_decisions_own_sentence() {
         "alo will act on what it sees in pictures of this window, and may press the wrong thing"
     );
 }
+
+/// **An application named twice is one application.**
+#[test]
+fn an_application_named_twice_is_kept_once() {
+    let listed = PicturesAndKeys::of([A_GAME, A_GAME]);
+    assert_eq!(listed.applications().collect::<Vec<_>>(), [A_GAME]);
+    let twice = PicturesAndKeys::default()
+        .switched_on(A_GAME)
+        .switched_on(A_GAME);
+    assert_eq!(twice.applications().count(), 1);
+}

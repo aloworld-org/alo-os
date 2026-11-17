@@ -136,3 +136,78 @@ fn switching_over_a_file_that_would_not_read_is_refused_and_writes_nothing() {
     assert!(pictures_and_keys_switched(&at, A_GAME, true).is_err());
     assert_eq!(std::fs::read_to_string(&at).unwrap(), broken);
 }
+
+/// **A file holding only pictures and keys is read by every other reader as
+/// their own default**, not refused.
+#[test]
+fn a_file_holding_only_pictures_reads_as_every_other_default() {
+    let folder = a_folder_of_our_own("pictures-only");
+    let at = folder.join("how-code-runs.toml");
+    pictures_and_keys_switched(&at, A_GAME, true).unwrap();
+    assert_eq!(the_level_remembered(&at).unwrap(), None);
+    assert_eq!(
+        alo_in_the_terminal_remembered(&at).unwrap(),
+        AloInTheTerminal::default()
+    );
+    assert_eq!(
+        alo_in_applications_remembered(&at).unwrap(),
+        AloInApplications::default()
+    );
+}
+
+/// **Switching off keeps the other three answers too**, not only switching on.
+#[test]
+fn switching_off_keeps_every_other_answer() {
+    let folder = a_folder_of_our_own("pictures-off-kept");
+    let at = folder.join("how-code-runs.toml");
+    pictures_and_keys_switched(&at, A_GAME, true).unwrap();
+    the_level_kept(&at, HowCodeRuns::InASealedBox).unwrap();
+    alo_in_the_terminal_kept(&at, AloInTheTerminal::ActsWithoutAsking).unwrap();
+    alo_in_applications_kept(&at, AloInApplications::InTheirWindow).unwrap();
+    pictures_and_keys_switched(&at, A_GAME, false).unwrap();
+    assert_eq!(
+        the_level_remembered(&at).unwrap(),
+        Some(HowCodeRuns::InASealedBox)
+    );
+    assert_eq!(
+        alo_in_the_terminal_remembered(&at).unwrap(),
+        AloInTheTerminal::ActsWithoutAsking
+    );
+    assert_eq!(
+        alo_in_applications_remembered(&at).unwrap(),
+        AloInApplications::InTheirWindow
+    );
+}
+
+/// **Switching over a file another login could write is refused, and its
+/// bytes are left as they were** — believing it to write over it would carry
+/// that login's answers into a file that is then the person's.
+#[test]
+fn switching_over_a_file_others_could_write_is_refused() {
+    let folder = a_folder_of_our_own("pictures-switch-untrusted");
+    let at = folder.join("how-code-runs.toml");
+    the_level_kept(&at, HowCodeRuns::AtFullTrust).unwrap();
+    std::fs::set_permissions(&at, std::fs::Permissions::from_mode(0o646)).unwrap();
+    let before = std::fs::read(&at).unwrap();
+    assert!(pictures_and_keys_switched(&at, A_GAME, true).is_err());
+    assert_eq!(std::fs::read(&at).unwrap(), before);
+}
+
+/// **Every terminal, asked for by name, leaves a file that still reads** with
+/// the level beside it — never one the reader then refuses whole.
+#[test]
+fn every_terminal_asked_for_leaves_a_file_that_reads() {
+    let folder = a_folder_of_our_own("pictures-every-terminal");
+    let at = folder.join("how-code-runs.toml");
+    the_level_kept(&at, HowCodeRuns::AskingEachTime).unwrap();
+    for terminal in alo_capability::A_PERSONS_OWN {
+        let after = pictures_and_keys_switched(&at, terminal, true).unwrap();
+        assert!(!after.allows(terminal));
+        let read = pictures_and_keys_remembered(&at).unwrap();
+        assert!(!read.allows(terminal), "{terminal} was written");
+    }
+    assert_eq!(
+        the_level_remembered(&at).unwrap(),
+        Some(HowCodeRuns::AskingEachTime)
+    );
+}
