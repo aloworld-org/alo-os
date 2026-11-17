@@ -32,7 +32,7 @@ fn with_one_more(category: &str, identifier: &str, version: &str, licence: &str)
     format!(
         "{THE_CATALOGUE}\n[[application]]\ncategory = \"{category}\"\nidentifier = \
          \"{identifier}\"\nname = \"An application\"\nsource = \"flathub\"\nversion = \"{version}\"\nlicence = \
-         \"{licence}\"\nverified = true\nearly = false\n"
+         \"{licence}\"\nverified = true\nearly = false\nreaches = []\n"
     )
 }
 
@@ -45,7 +45,7 @@ fn an_entrys_labels_are_read_off_it() {
     let text = format!(
         "{THE_CATALOGUE}\n[[application]]\ncategory = \"audio\"\nidentifier = \
          \"com.example.All\"\nname = \"All of them\"\nsource = \"flathub\"\nversion = \"1.0\"\nlicence = \
-         \"LicenseRef-proprietary\"\nverified = false\nearly = true\n"
+         \"LicenseRef-proprietary\"\nverified = false\nearly = true\nreaches = []\n"
     );
     let catalogue = Catalogue::read(&text, &shipped).unwrap();
     let labels_of = |identifier: &str| {
@@ -518,8 +518,8 @@ fn the_catalogue_holds_no_words_a_person_would_read() {
         read += 1;
     }
     assert_eq!(
-        read, 567,
-        "format, seven keys for each of sixty-two entries from Flathub, and nine for each of \
+        read, 636,
+        "format, nine keys for each of sixty-two entries from Flathub, and eleven for each of \
          seven from their maker's signed release"
     );
 }
@@ -569,7 +569,7 @@ fn a_signed_release_that_does_not_hold_is_refused() {
     let one_more = |source: &str, rest: &str| {
         format!(
             "{THE_CATALOGUE}\n[[application]]\ncategory = \"audio\"\nidentifier = \
-             \"ai.storyteller.example\"\nsource = \"{source}\"\nversion = \"0.1.0\"\nlicence = \
+             \"ai.storyteller.example\"\nname = \"An example\"\nsource = \"{source}\"\nversion = \"0.1.0\"\nlicence = \
              \"Apache-2.0\"\nverified = true\nearly = true\nreaches = []\n{rest}"
         )
     };

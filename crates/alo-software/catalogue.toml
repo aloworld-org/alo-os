@@ -159,6 +159,7 @@ reaches = ["your-files"]
 [[application]]
 category = "pictures"
 identifier = "ai.storyteller.photocraft"
+name = "PhotoCraft"
 source = "storytold"
 version = "0.23.1"
 licence = "Apache-2.0"
@@ -200,6 +201,7 @@ reaches = ["your-files"]
 [[application]]
 category = "illustration"
 identifier = "ai.storyteller.vectorcraft"
+name = "VectorCraft"
 source = "storytold"
 version = "0.24.1"
 licence = "Apache-2.0"
@@ -248,6 +250,7 @@ reaches = ["programs-outside-its-box", "your-files"]
 [[application]]
 category = "photographs"
 identifier = "ai.storyteller.lightcraft"
+name = "LightCraft"
 source = "storytold"
 version = "0.21.1"
 licence = "Apache-2.0"
@@ -274,6 +277,7 @@ reaches = ["your-files"]
 [[application]]
 category = "page-layout"
 identifier = "ai.storyteller.designcraft"
+name = "DesignCraft"
 source = "storytold"
 version = "0.20.1"
 licence = "Apache-2.0"
@@ -321,6 +325,7 @@ reaches = ["programs-outside-its-box", "your-files"]
 [[application]]
 category = "video"
 identifier = "ai.storyteller.filmcraft"
+name = "FilmCraft"
 source = "storytold"
 version = "0.20.1"
 licence = "Apache-2.0"
@@ -333,6 +338,7 @@ sha256 = "646ee627b39b93fe69c7ecb44725fc964fd43660ef8cf2884b3fb48e759ac0f8"
 [[application]]
 category = "video"
 identifier = "ai.storyteller.effectcraft"
+name = "EffectCraft"
 source = "storytold"
 version = "0.24.1"
 licence = "Apache-2.0"
@@ -397,6 +403,7 @@ reaches = ["your-files"]
 [[application]]
 category = "documents"
 identifier = "ai.storyteller.pdfcraft"
+name = "PdfCraft"
 source = "storytold"
 version = "0.21.1"
 licence = "Apache-2.0"
