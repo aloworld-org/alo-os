@@ -240,15 +240,11 @@ fn passes_the_machine_refused_first_are_counted_as_such() {
     )];
     let written = summary(&refused, "a test model");
     assert!(
-        written.contains(
-            "open an application by name: 1 of its passes was refused first and went on"
-        ),
+        written
+            .contains("open an application by name: 1 of its passes was refused first and went on"),
         "{written}"
     );
     let without = vec![Tallied::of(request, vec![the_road(), off_the_road()])];
     let written = summary(&without, "a test model");
-    assert!(
-        written.contains("No pass was refused first."),
-        "{written}"
-    );
+    assert!(written.contains("No pass was refused first."), "{written}");
 }

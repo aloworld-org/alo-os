@@ -57,10 +57,10 @@ pub fn taking(
     // what the machine accepts and no more.
     let given = machine.naming(verbs, named, &asked.given());
     let given = alo_turn::as_the_catalogue_names_it(named, given).map_err(|why| {
-        WentWrong::ArgumentsRefused {
+        WentWrong::RefusedBeforeAsking {
             step: at,
             verb: named.to_owned(),
-            why: why.said(strings).into_text(),
+            said: why.said(strings),
         }
     })?;
     let call = verbs

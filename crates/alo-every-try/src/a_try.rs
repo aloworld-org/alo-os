@@ -431,6 +431,13 @@ impl TheDoor for Recording<'_> {
                 Ok(self.as_the_level_answers(answered, &call))
             }
             Err(wrong) => {
+                // **As the machine answers a step it refuses before asking
+                // anybody**: with the refusal, which the model reads and may go
+                // on from — counted, so a pass that needed one is seen.
+                if let WentWrong::RefusedBeforeAsking { said, .. } = &wrong {
+                    self.refused_before_asking += 1;
+                    return Ok(ToAnAgent::refused(said));
+                }
                 // **As the machine answers a file named where there is none**:
                 // refused, with where one of that name is in the home itself
                 // (`alo_files::Touching::of_looking_in`), as often as it is

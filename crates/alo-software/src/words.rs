@@ -709,7 +709,7 @@ mod tests {
             assert!(word.note().is_some(), "{}", word.named());
             for gap in word.phrase().unwrap().source().gaps() {
                 assert!(
-                    [APPLICATION, SOURCE, KIND_OF_WORK].contains(&gap.as_str()),
+                    [APPLICATION, SOURCE, INSTEAD, KIND_OF_WORK].contains(&gap.as_str()),
                     "{} has a gap called {gap}",
                     word.named()
                 );

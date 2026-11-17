@@ -247,9 +247,19 @@ fn the_catalogue_as_installable() -> Option<Installed> {
 /// anything is proposed: there is no one identifier to put in the sentence the
 /// person would approve.
 ///
+/// **A guessed identifier is refused naming the catalogue's.** Where a dotted
+/// identifier the catalogue does not hold has a last part that exactly one
+/// application in the catalogue answers to (`org.gnome.GIMP`, whose `GIMP` is
+/// the catalogue's `org.gimp.GIMP`), it is refused before anything is
+/// proposed, and the refusal names the catalogue's identifier. It is still not
+/// rewritten: the model asks again by the identifier it was told, so what the
+/// person approves is what was asked for. Measured on 2026-11-16, gpt-4o-mini
+/// sent `org.gnome.GIMP` for *Install GIMP.* in about four tries of ten.
+///
 /// # Errors
-/// [`NotDone::CouldNotInstall`]: the place not offering what was named, or the
-/// name meaning more than one application.
+/// [`NotDone::CouldNotInstall`]: the place not offering what was named, the
+/// name meaning more than one application, or an identifier the catalogue
+/// does not hold whose last part is one it does.
 pub fn as_the_catalogue_names_it<'g>(
     verb: &str,
     given: Vec<(&'g str, Given)>,
@@ -299,6 +309,17 @@ pub(crate) fn as_these_name_it<'g>(
                 Some(AnsweringTo::Several(_) | AnsweringTo::Nothing) | None => {}
             }
             if said.contains('.') {
+                if let Some(instead) = installable
+                    .and_then(|installable| the_one_its_last_part_names(installable, said))
+                {
+                    return Err(NotDone::CouldNotInstall(
+                        alo_software::NotDone::NotHeldButThisIs {
+                            source: source.clone(),
+                            application: said.trim().to_owned(),
+                            instead,
+                        },
+                    ));
+                }
                 return Ok((argument, value));
             }
             Err(NotDone::CouldNotInstall(
@@ -309,6 +330,17 @@ pub(crate) fn as_these_name_it<'g>(
             ))
         })
         .collect()
+}
+
+/// **The identifier of the one application in `installable` that the last
+/// part of `identifier` answers to**, matched as a name is
+/// (`Installed::answering_to`) — or nothing, where none or several do.
+fn the_one_its_last_part_names(installable: &Installed, identifier: &str) -> Option<String> {
+    let last = identifier.trim().rsplit('.').next()?;
+    match installable.answering_to(last) {
+        AnsweringTo::One(application) => Some(application.identifier().to_owned()),
+        AnsweringTo::Several(_) | AnsweringTo::Nothing => None,
+    }
 }
 
 #[cfg(test)]
