@@ -96,6 +96,9 @@ pub fn looked(
     if let Some(said) = shown.not_all_read_said(strings) {
         machine.warned(said.text());
     }
+    for said in shown.cut_short_said(strings) {
+        machine.warned(said.text());
+    }
     Ended::Done
 }
 
