@@ -46,7 +46,11 @@
 //! Identifiers are matched exactly, as everywhere in this crate. The list is every
 //! terminal emulator found by identifier on the place a fresh machine installs
 //! from, on 2026-09-15, checked against that place's own catalogue — and **not a
-//! proof of completeness**. ADR 0043 says what is owed: deciding by what an
+//! proof of completeness**. *Widened on 2026-11-17* to every terminal in
+//! Flathub's own *TerminalEmulator* category (Rio, foot and Yakuake besides those
+//! already here), and GNOME's Console and Terminal, which come from the
+//! distribution rather than Flathub and were missing — so a grant, or a switch
+//! for pictures and keys, could have been offered over them. ADR 0043 says what is owed: deciding by what an
 //! application declares itself to be, which needs that declaration where a grant
 //! is made.
 
@@ -55,14 +59,19 @@
 /// Sorted, so a test can hold that nothing appears twice and a reader can find
 /// one. `alo-software`'s list of what a fresh machine ships is refused if its
 /// terminal is not here.
-pub const A_PERSONS_OWN: [&str; 7] = [
+pub const A_PERSONS_OWN: [&str; 12] = [
     "app.devsuite.Ptyxis",
     "com.raggesilver.BlackBox",
+    "com.rioterm.Rio",
     "dev.boxi.Boxi",
     "org.contourterminal.Contour",
+    "org.gnome.Console",
+    "org.gnome.Terminal",
     "org.kde.konsole",
     "org.kde.qmlkonsole",
+    "org.kde.yakuake",
     "org.wezfurlong.wezterm",
+    "page.codeberg.dnkl.foot",
 ];
 
 /// Whether this application identifier is a terminal, and so reachable by an
@@ -88,6 +97,24 @@ mod tests {
                 .zip(A_PERSONS_OWN.iter().skip(1))
                 .all(|(earlier, later)| earlier < later)
         );
+    }
+
+    /// **Every terminal found on 2026-11-17**: the ones in Flathub's own
+    /// *TerminalEmulator* category, and GNOME's two, which arrive from the
+    /// distribution rather than Flathub and are known by these desktop
+    /// identifiers. Before this list held them, a Settings switch or a grant
+    /// could be offered over GNOME Console.
+    #[test]
+    fn every_terminal_found_on_2026_11_17_is_a_persons_own() {
+        for terminal in [
+            "org.gnome.Console",
+            "org.gnome.Terminal",
+            "org.kde.yakuake",
+            "com.rioterm.Rio",
+            "page.codeberg.dnkl.foot",
+        ] {
+            assert!(is_a_persons_own(terminal), "{terminal} is not on the list");
+        }
     }
 
     #[test]
