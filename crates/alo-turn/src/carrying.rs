@@ -64,6 +64,7 @@ use crate::arriving::worded_here;
 use crate::asking_the_record::asking_the_record;
 use crate::bounding::Doing;
 use crate::choosing_in_an_application::choosing_in_an_application;
+use crate::choosing_on_the_file_chooser::choosing_on_the_file_chooser;
 use crate::installing_an_application::installing_an_application;
 use crate::looking_at_the_catalogue::looking_at_the_catalogue;
 use crate::machine::Machine;
@@ -223,6 +224,14 @@ fn carrying_it_out(
     // the path it carries is resolved and asked about by `alo_files::Touching`
     // inside the executor, and what opens it is the person's application under
     // their own session — no work of ours touches the disk.
+    // **Answering the file chooser, routed by name like the rest**
+    // (2026-11-17), before the boundary for the same reason: its folder is
+    // resolved and asked about by `alo_files::Touching` inside the executor,
+    // and no work of ours touches the disk.
+    if authorised.verb() == alo_applications::CHOOSE_ON_THE_FILE_CHOOSER {
+        let (entry, chosen) = choosing_on_the_file_chooser(machine, authorised, grants);
+        return (entry, chosen.map(WhatAVerbDid::from));
+    }
     if authorised.verb() == alo_applications::OPEN_FILE_IN_APPLICATION {
         let (entry, opened) = opening_a_file_in_an_application(machine, authorised, grants);
         return (entry, opened.map(WhatAVerbDid::from));

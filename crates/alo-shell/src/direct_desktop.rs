@@ -1572,6 +1572,11 @@ impl LoopInput for TheDesktopLane<'_> {
         self.file_chooser
             .asked(choosing_files, true, std::time::Instant::now(), &disk);
         self.file_chooser.waited(std::time::Instant::now(), &disk);
+        // **And alo's approved answers to it**, carried out as the person's
+        // own choice would be (`crate::alo_answers_the_file_chooser`).
+        let alos = self.door.alo_answers_the_file_chooser();
+        self.file_chooser
+            .alo_answered(alos, std::time::Instant::now(), &disk);
         // **And a sheet asking for an application that nobody answered in five
         // minutes** is *not now*, so a turn is never held for ever.
         server.the_application_sheet_waited(std::time::Instant::now());

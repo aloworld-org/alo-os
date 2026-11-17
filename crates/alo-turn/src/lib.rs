@@ -176,6 +176,7 @@ mod carrying;
 mod choosing_in_an_application;
 #[cfg(test)]
 mod choosing_in_an_application_tests;
+mod choosing_on_the_file_chooser;
 pub mod crossing;
 #[cfg(test)]
 mod down_the_corridor;
@@ -243,6 +244,7 @@ pub use arriving::Arriving;
 pub use became::Became;
 pub use bounding::{Bounding, Doing, Done};
 pub use choosing_in_an_application::AChoiceMade;
+pub use choosing_on_the_file_chooser::AFileChosen;
 pub use crossing::Departed;
 pub use how_an_application_starts::{NoRoad, SaysHowAnApplicationStarts, TheRoad};
 pub use kept::Kept;

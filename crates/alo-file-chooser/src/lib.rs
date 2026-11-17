@@ -74,6 +74,6 @@ pub mod on_this_disk;
 #[cfg(test)]
 mod testing;
 
-pub use chooser::{Chooser, Ending, How, Key, Note, Row, Where};
+pub use chooser::{Chooser, Ending, How, Key, NotBelieved, Note, Row, Where};
 pub use listing::{Folders, Kind, Listing, MOST_SHOWN, NotListed};
 pub use on_this_disk::OnThisDisk;

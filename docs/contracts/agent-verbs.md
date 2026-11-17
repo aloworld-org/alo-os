@@ -575,6 +575,45 @@ by `alo-applications` (`crate::opening_a_file`) and carried out by
   model they stay here. The titles of the application's other windows are never
   said.
 
+### `choose_on_the_file_chooser` — added 2026-11-17, additively
+
+*The coordinator's approval of 2026-11-17*, on the owner's decision that alo OS
+has its own file chooser and **alo may answer it only inside the folders the
+person granted: one card at *ask each time*, none at full access.** Declared by
+`alo-applications` (`crate::choosing_on_the_file_chooser`) and carried out by
+`alo-turn`'s `choosing_on_the_file_chooser`. Nothing above changed.
+
+| Verb | Effect | Arguments | Sentence |
+|---|---|---|---|
+| `choose_on_the_file_chooser` | change | `folder` (path), `name` (name) | choose {name} in {folder} on the file chooser |
+
+- **A folder and one name, not a path**, because a file chosen to save under
+  does not exist yet: the place is taken as `archive_folder`'s `into` and
+  `name` are.
+- **The grant is over the folder**, exactly as every file verb's is: a folder
+  under a granted one, or at full access any folder the person's account can
+  open (ADR 0149). **A file already there is asked about too**: where it
+  really leads must be granted, in the file verbs' own words, so a link out of
+  a granted folder is refused.
+- **It is carried out in this order, and every step that refuses is
+  recorded**: the folder, granted, resolved and its real place granted (the
+  file verbs' three questions); the file, where it is there, its real place
+  granted; then the compositor door's `alo-chooses-file` with the folder's
+  **real** path and the name ([`application-door.md`](application-door.md)).
+- **What the application is given is the portal's**: the sheet is answered
+  exactly as the person's own choice would answer it, and the portal records
+  and hands over that one file (`portals.md`, *file chooser and documents*).
+- **Refused, in words, with nothing chosen**: the folder not granted, not
+  there, or leading outside the grants; the file leading outside them; no file
+  chooser up (`no-sheet`); a file the sheet could not take — not there to
+  open, or a folder's name to save under (`not-believed`); no desktop; and a
+  request from a paired machine, refused by name before any grant is asked.
+- **The person's own use of the sheet is never narrowed by this.** The grants
+  decide only what alo may answer for them.
+- On the daemon's socket a done one is `reached` with `act` `alo-chooses-file`
+  and the application the file was chosen for
+  ([`daemon-protocol.md`](daemon-protocol.md)); the file is in the record.
+
 ### The identifier is approved; the name is only shown
 
 An application has two names: the identifier this machine knows it by

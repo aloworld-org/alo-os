@@ -110,6 +110,12 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
                 .types_into()
                 .map(|(name, window)| (name.to_owned(), window.to_owned())),
         ),
+        // A file chosen on the file chooser an application had up
+        // (2026-11-17). It crosses as an application act, the door's own word
+        // for it, naming whom it was chosen for; the file is in the record.
+        WhatAVerbDid::AFileWasChosen(chosen) => {
+            Done::of_an_application_act(alo_acting::ALO_CHOOSES_FILE, chosen.application())
+        }
         // A scroll in an application's window (2026-11-17): what was asked
         // and whether it now reads as on the screen — never what it shows.
         WhatAVerbDid::AWindowWasScrolled(scrolled) => Done::of_a_scroll(

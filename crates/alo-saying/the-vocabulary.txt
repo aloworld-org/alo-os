@@ -389,6 +389,8 @@ appearance.verb.set-the-scheme.purpose	choose light or dark, whatever the time i
 appearance.verb.set-the-scheme.scheme	which of the two to use
 appearance.verb.set-the-scheme.sentence	use the {scheme} appearance from now on, whatever the time is
 applications.called	{called} ({application})
+applications.chosen-on-the-file-chooser	{path} was chosen on the file chooser for {application}
+applications.could-not-answer-the-file-chooser	The desktop could not be asked, so {path} was not chosen on the file chooser
 applications.could-not-ask	this machine could not reach {application} — nothing was changed
 applications.could-not-start-with-it	{application} could not be started with {path} — nothing was opened
 applications.entry.no-identifier	an application with no identifier cannot be reached — an identifier is what a grant is made over and what a verb names
@@ -408,7 +410,9 @@ applications.links.no-mail-application-choice-gone	{chosen}, which you chose as 
 applications.links.no-web-browser	No web browser is installed on this machine, so the web link was not opened. Install one, and web links open in it
 applications.links.no-web-browser-choice-a-terminal	{chosen}, which you chose as your web browser, is a terminal, and a link is never handed to a terminal. No web browser is installed, so the web link was not opened
 applications.links.no-web-browser-choice-gone	{chosen}, which you chose as your web browser, is no longer installed, and no other web browser is, so the web link was not opened
+applications.no-file-chooser-up	No file chooser was open, so {path} was not chosen
 applications.no-window	{application} has no window open here — open it first, or name one that is open
+applications.not-a-file-to-choose	{path} is not a file the file chooser can be answered with
 applications.not-a-file-to-hand-over	{path} cannot be handed to an application from here, because its name is not text or is too long — nothing was opened
 applications.not-installed	nothing installed on this machine is {application} — install it, or name one that is here
 applications.nothing-starts-it	{application}'s entry gives this machine no way to start it — nothing was changed
@@ -424,10 +428,17 @@ applications.ours.settings	Settings
 applications.starts-from-its-command	{application} starts from the command its own entry names, never from one alo wrote
 applications.starts-over-the-bus	{application} starts by being asked over the session bus, as its entry says
 applications.takes-no-file	{application}'s entry gives this machine no way to hand it a file — nothing was opened
+applications.the-file-chooser-would-not-take-it	The file chooser could not take {path}: there is no such file to open, or a folder has that name
 applications.verb.arrange-application.argument.application	which application's window to move
 applications.verb.arrange-application.argument.where	where on the screen the window goes
 applications.verb.arrange-application.purpose	put an application's window somewhere on the screen
 applications.verb.arrange-application.sentence	put {application} {where}
+applications.verb.choose-on-the-file-chooser.argument.folder	the folder the file is in, or is saved in
+applications.verb.choose-on-the-file-chooser.argument.name	the file's name in that folder: the file to open, or the name to save under
+applications.verb.choose-on-the-file-chooser.changes	Answers the file chooser with this file, so the app that asked may open it, or save there.
+applications.verb.choose-on-the-file-chooser.leaves	No other file is given to the app, and nothing outside the folders you granted can be chosen.
+applications.verb.choose-on-the-file-chooser.purpose	answer the file chooser an application has up — the window asking which file to open, or where to save — with a file in a folder: the file to open, or the name to save under
+applications.verb.choose-on-the-file-chooser.sentence	choose {name} in {folder} on the file chooser
 applications.verb.close-application.argument.application	which application to ask to close
 applications.verb.close-application.changes	Asks each of its windows to close.
 applications.verb.close-application.leaves	Nothing is closed by force: the application decides, and other applications are not asked.

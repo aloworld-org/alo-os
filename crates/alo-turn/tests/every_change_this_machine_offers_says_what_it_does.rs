@@ -14,6 +14,7 @@
 //! | `accessible.type_text` | `crates/alo-adapters/tests/typing_into_a_field.rs` |
 //! | `publish_to_github_pages` | `crates/alo-publishing/tests/a_folder_published_through_real_git.rs` |
 //! | `open_file_in_application` | `crates/alo-turn/src/opening_a_file_in_an_application_tests.rs` |
+//! | `choose_on_the_file_chooser` | `crates/alo-turn/src/choosing_on_the_file_chooser_tests.rs` |
 //! | `accessible.scroll_to`, `accessible.scroll_page` | `crates/alo-adapters/tests/scrolling_in_a_window.rs` |
 //! | `accessible.set_value` | `crates/alo-adapters/tests/setting_a_value.rs` |
 //! | `accessible.choose_option`, `accessible.select_item` | `crates/alo-adapters/tests/choosing_in_a_window.rs` |
@@ -29,7 +30,7 @@
 )]
 
 /// The change verbs the table above names.
-const HELD: [&str; 17] = [
+const HELD: [&str; 18] = [
     "rename_file",
     "move_file",
     "archive_folder",
@@ -41,6 +42,7 @@ const HELD: [&str; 17] = [
     "accessible.type_text",
     "publish_to_github_pages",
     "open_file_in_application",
+    "choose_on_the_file_chooser",
     "accessible.scroll_to",
     "accessible.scroll_page",
     "accessible.set_value",

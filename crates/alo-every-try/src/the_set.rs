@@ -229,6 +229,8 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
 
     let mut requests = vec![writing, publishing, opening];
     requests.extend(crate::every_other_verb::every_other_verb(home, &shipped)?);
+    // **And answering the file chooser** (2026-11-17).
+    requests.push(crate::answering_the_file_chooser::answering_the_file_chooser(home, &shipped));
     let mut places: Vec<String> = shipped
         .every()
         .iter()

@@ -297,7 +297,7 @@ pub fn is_a_name(name: &str) -> bool {
 
 /// `text` with every byte outside the unreserved set — and `/`, where `slash`
 /// keeps it — written `%XX`.
-fn encoded(text: &str, slash: bool) -> String {
+pub(crate) fn encoded(text: &str, slash: bool) -> String {
     let mut out = String::with_capacity(text.len());
     for byte in text.bytes() {
         if byte.is_ascii_alphanumeric()
@@ -315,7 +315,7 @@ fn encoded(text: &str, slash: bool) -> String {
 /// `word` with every `%XX` read back — [`None`] for an empty word, a `%` not
 /// followed by two hexadecimal digits, a byte that should have been written
 /// `%XX` and was not, or bytes that are not text.
-fn decoded(word: &str) -> Option<String> {
+pub(crate) fn decoded(word: &str) -> Option<String> {
     if word.is_empty() {
         return None;
     }

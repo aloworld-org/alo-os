@@ -150,6 +150,8 @@ mod a_window_on_one_side;
 mod a_window_onto_a_list;
 mod a_window_raised;
 mod a_window_travels_aside;
+/// alo answering the file chooser with a file the person approved.
+pub mod alo_answers_the_file_chooser;
 /// The window a person offered alo, and the window each task works in.
 pub mod alo_in_a_window;
 mod alo_in_applications_in_settings;

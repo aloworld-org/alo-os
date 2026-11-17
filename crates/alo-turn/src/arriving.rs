@@ -252,6 +252,12 @@ impl<'a, 'm> Arriving<'a, 'm> {
         if verb == alo_applications::OPEN_FILE_IN_APPLICATION {
             return Err(self.turning.not_for_another_machine(verb, now));
         }
+        // **Nor does answering the file chooser** (2026-11-17): it hands an
+        // application on this person's screen one of their files, which a
+        // pairing made to share a model is not.
+        if verb == alo_applications::CHOOSE_ON_THE_FILE_CHOOSER {
+            return Err(self.turning.not_for_another_machine(verb, now));
+        }
         let call = self.turning.calling(verb, given, now)?;
         if let Some(said) = self.pairing_ended(pairings, now) {
             let why = ProposalError::NotGrantedElsewhere(said);

@@ -589,6 +589,10 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> Option<alo_pro
         // puts this person's file in front of them, and a pairing permits that
         // no more than it permits looking at their screen.
         alo_turn::WhatAVerbDid::AFileWasOpened(_) => return None,
+        // **Unreachable too, and nothing crosses**: answering the file chooser
+        // is refused by name from another machine (2026-11-17), as opening a
+        // file is.
+        alo_turn::WhatAVerbDid::AFileWasChosen(_) => return None,
         // A scroll is a change this machine's person approved here, as a press
         // is, so it crosses back as what was asked — never as what the window
         // shows now.

@@ -101,6 +101,11 @@ pub enum Note {
     ReplacesWhatIsThere,
 }
 
+/// alo's answer could not have been the sheet's: a file not there to open,
+/// or a folder's name to save under, or a folder that is not one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NotBelieved;
+
 /// How the sheet ended.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Ending {
@@ -331,6 +336,40 @@ impl Chooser {
         match self.how {
             How::Open => self.used(self.focus, folders),
             How::Save => self.saved(folders),
+        }
+    }
+
+    /// **alo answers the sheet with `name` in `folder`**, which the person
+    /// approved (`choose_on_the_file_chooser`): the file it ends with, or
+    /// [`NotBelieved`] when the sheet could not have been answered with it.
+    ///
+    /// Held to what a person's own answer could be — to open, a file that is
+    /// there; to save, a name in a folder that is there that no folder in it
+    /// has — and **nothing else**: which folders alo may reach is the turn's
+    /// question, asked against the grants before this is ever reached. A file
+    /// already there may be saved over, because the person approved that
+    /// sentence; the sheet's own second press is the person's way of saying so.
+    ///
+    /// # Errors
+    /// [`NotBelieved`], and the sheet is left as it was.
+    pub fn alo_chose(
+        &self,
+        folder: &Path,
+        name: &str,
+        folders: &dyn Folders,
+    ) -> Result<PathBuf, NotBelieved> {
+        if !alo_acting::is_a_name(name) || folders.listed(folder).is_err() {
+            return Err(NotBelieved);
+        }
+        let there = folders.holds(folder, name);
+        let could = match self.how {
+            How::Open => there == Some(Kind::File),
+            How::Save => there != Some(Kind::Folder),
+        };
+        if could {
+            Ok(folder.join(name))
+        } else {
+            Err(NotBelieved)
         }
     }
 

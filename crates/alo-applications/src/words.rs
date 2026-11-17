@@ -664,6 +664,82 @@ pub const OPEN_FILE_IN_APPLICATION_LEAVES: Word = Word::saying(
     "The file is not changed, and no other window is moved or closed.",
 )
 .noting("Shown beside OPEN_FILE_IN_APPLICATION_CHANGES. Held to it by a test.");
+/// `choose_on_the_file_chooser`'s purpose, as a model is offered it.
+pub const CHOOSE_ON_THE_FILE_CHOOSER: Word = Word::saying(
+    "applications.verb.choose-on-the-file-chooser.purpose",
+    "answer the file chooser an application has up — the window asking which file to open, or \
+     where to save — with a file in a folder: the file to open, or the name to save under",
+);
+/// **The sentence a person approves before alo answers the file chooser.**
+pub const CHOOSE_ON_THE_FILE_CHOOSER_SENTENCE: Word = Word::saying(
+    "applications.verb.choose-on-the-file-chooser.sentence",
+    "choose {name} in {folder} on the file chooser",
+)
+.noting(
+    "{name} is a file's name and {folder} a folder on this machine; neither is translated. The \
+     person approves this before alo answers the window an app opened to ask which file to open \
+     or where to save.",
+);
+/// `choose_on_the_file_chooser`'s folder.
+pub const CHOOSE_ON_THE_FILE_CHOOSER_FOLDER: Word = Word::saying(
+    "applications.verb.choose-on-the-file-chooser.argument.folder",
+    "the folder the file is in, or is saved in",
+);
+/// `choose_on_the_file_chooser`'s name.
+pub const CHOOSE_ON_THE_FILE_CHOOSER_NAME: Word = Word::saying(
+    "applications.verb.choose-on-the-file-chooser.argument.name",
+    "the file's name in that folder: the file to open, or the name to save under",
+);
+/// What `choose_on_the_file_chooser` changes.
+pub const CHOOSE_ON_THE_FILE_CHOOSER_CHANGES: Word = Word::saying(
+    "applications.verb.choose-on-the-file-chooser.changes",
+    "Answers the file chooser with this file, so the app that asked may open it, or save there.",
+)
+.noting(
+    "Shown on the card a person answers before alo answers a file chooser, beside a tick. 'This \
+     file' is the one in the sentence above. Held to it by a test.",
+);
+/// What `choose_on_the_file_chooser` leaves alone.
+pub const CHOOSE_ON_THE_FILE_CHOOSER_LEAVES: Word = Word::saying(
+    "applications.verb.choose-on-the-file-chooser.leaves",
+    "No other file is given to the app, and nothing outside the folders you granted can be \
+     chosen.",
+)
+.noting("Shown beside CHOOSE_ON_THE_FILE_CHOOSER_CHANGES. Held to it by a test.");
+/// The record of a file alo chose on the file chooser.
+pub const CHOSEN_ON_THE_FILE_CHOOSER: Word = Word::saying(
+    "applications.chosen-on-the-file-chooser",
+    "{path} was chosen on the file chooser for {application}",
+)
+.noting(
+    "Written in the record after alo answered the file chooser. {path} is the file and \
+     {application} the identifier of the app that asked; neither is translated.",
+);
+/// No file chooser was up.
+pub const NO_FILE_CHOOSER_UP: Word = Word::saying(
+    "applications.no-file-chooser-up",
+    "No file chooser was open, so {path} was not chosen",
+)
+.noting("{path} is the file alo was asked to choose; not translated.");
+/// The sheet would not take the file.
+pub const THE_FILE_CHOOSER_WOULD_NOT_TAKE_IT: Word = Word::saying(
+    "applications.the-file-chooser-would-not-take-it",
+    "The file chooser could not take {path}: there is no such file to open, or a folder has \
+     that name",
+)
+.noting("{path} is the file alo was asked to choose; not translated.");
+/// The folder and name are not one file a line can carry.
+pub const NOT_A_FILE_TO_CHOOSE: Word = Word::saying(
+    "applications.not-a-file-to-choose",
+    "{path} is not a file the file chooser can be answered with",
+)
+.noting("{path} is the file alo was asked to choose; not translated.");
+/// The desktop could not be asked.
+pub const COULD_NOT_ANSWER_THE_FILE_CHOOSER: Word = Word::saying(
+    "applications.could-not-answer-the-file-chooser",
+    "The desktop could not be asked, so {path} was not chosen on the file chooser",
+)
+.noting("{path} is the file alo was asked to choose; not translated.");
 /// The record of a file opened in alo's own copy.
 pub const OPENED_IN_ALOS_COPY: Word = Word::saying(
     "applications.opened-in-alos-copy",
@@ -723,7 +799,7 @@ pub const NOT_A_FILE_TO_HAND_OVER: Word = Word::saying(
 /// verbs, the arrangements one of them offers, what opens what, what is said
 /// about the person's own file of those choices, and opening a file in an
 /// application.
-pub const EVERY_WORD: [Word; 64] = [
+pub const EVERY_WORD: [Word; 75] = [
     NOT_INSTALLED,
     NO_WINDOW,
     IT_DID_NOT,
@@ -788,6 +864,17 @@ pub const EVERY_WORD: [Word; 64] = [
     TAKES_NO_FILE,
     COULD_NOT_START_WITH_IT,
     NOT_A_FILE_TO_HAND_OVER,
+    CHOOSE_ON_THE_FILE_CHOOSER,
+    CHOOSE_ON_THE_FILE_CHOOSER_SENTENCE,
+    CHOOSE_ON_THE_FILE_CHOOSER_FOLDER,
+    CHOOSE_ON_THE_FILE_CHOOSER_NAME,
+    CHOOSE_ON_THE_FILE_CHOOSER_CHANGES,
+    CHOOSE_ON_THE_FILE_CHOOSER_LEAVES,
+    CHOSEN_ON_THE_FILE_CHOOSER,
+    NO_FILE_CHOOSER_UP,
+    THE_FILE_CHOOSER_WOULD_NOT_TAKE_IT,
+    NOT_A_FILE_TO_CHOOSE,
+    COULD_NOT_ANSWER_THE_FILE_CHOOSER,
 ];
 
 /// Why this crate's own words could not be declared.

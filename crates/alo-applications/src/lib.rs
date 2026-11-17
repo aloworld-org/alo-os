@@ -89,6 +89,7 @@
 
 pub mod answering_to;
 pub mod application;
+pub mod choosing_on_the_file_chooser;
 pub mod chosen;
 pub mod declared;
 pub mod installed;
@@ -116,6 +117,9 @@ mod testing;
 
 pub use answering_to::AnsweringTo;
 pub use application::{Application, Called};
+pub use choosing_on_the_file_chooser::{
+    CHOOSE_ON_THE_FILE_CHOOSER, declare_choosing_on_the_file_chooser_into,
+};
 pub use chosen::Chosen;
 pub use declared::Declared;
 pub use installed::Installed;

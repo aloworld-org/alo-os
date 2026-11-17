@@ -73,6 +73,8 @@ on:
       - "crates/alo-turn/src/naming_an_application.rs"
       - "crates/alo-applications/src/verbs.rs"
       - "crates/alo-applications/src/opening_a_file.rs"
+      - "crates/alo-applications/src/choosing_on_the_file_chooser.rs"
+      - "crates/alo-every-try/src/answering_the_file_chooser.rs"
       - "crates/alo-applications/src/words.rs"
       - "crates/alo-record/src/verbs.rs"
       - "crates/alo-record/src/words.rs"
