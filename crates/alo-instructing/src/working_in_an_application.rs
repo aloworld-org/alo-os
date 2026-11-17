@@ -59,6 +59,14 @@ pub const SELECT_ITEM: &str = "accessible.select_item";
 /// (2026-11-17).
 pub const OPEN_ITEM: &str = "accessible.open_item";
 
+/// The verb that opens a path in an application the person names —
+/// `alo_applications::OPEN_FILE_IN_APPLICATION`. Named so that opening an item
+/// a window shows is told apart from it: asked to *open report.pdf in Dolphin*,
+/// a model sent this with a guessed path in every try (`alo-every-try` runs
+/// 44093922179 and 44145644681, 0 of 10 at both levels), where the file was in
+/// the window Dolphin showed.
+pub const OPEN_FILE_IN_APPLICATION: &str = "open_file_in_application";
+
 /// **The paragraph a model is told, for this registry** — empty when it does
 /// not declare both [`READ_WINDOW`] and [`TYPE_TEXT`].
 ///
@@ -106,9 +114,19 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
         String::new()
     };
     let opening = if verbs.of(OPEN_ITEM).is_some() {
+        let not_by_its_path = if verbs.of(OPEN_FILE_IN_APPLICATION).is_some() {
+            format!(
+                ", never with {OPEN_FILE_IN_APPLICATION}, which is for a path to open in an \
+                 application that does not show it"
+            )
+        } else {
+            String::new()
+        };
         format!(
-            " To open an item, such as a file in a folder, as a double-click would, send \
-             {OPEN_ITEM} with its name; only when the person asks to open it."
+            " When the person asks to open something in a window that lists it — a file in a \
+             file manager, an item of a list — read that window, then open it there as a \
+             double-click would with {OPEN_ITEM}, naming it as that answer showed \
+             it{not_by_its_path}; only when the person asks to open it."
         )
     } else {
         String::new()
@@ -221,5 +239,43 @@ mod tests {
             "{told}"
         );
         assert!(told.contains("only what is on the screen"), "{told}");
+    }
+
+    /// **Opening an item a window shows is told apart from opening a path**:
+    /// the model is told to open it where the window lists it, with
+    /// [`OPEN_ITEM`], and never with [`OPEN_FILE_IN_APPLICATION`] — which is
+    /// named only where the machine offers it, and the paragraph names no
+    /// opening at all without [`OPEN_ITEM`].
+    #[test]
+    fn an_item_a_window_shows_is_opened_there_and_not_by_its_path() {
+        let mut verbs = the_verbs();
+        verbs.declare(named(READ_WINDOW, Effect::Read)).unwrap();
+        verbs.declare(named(TYPE_TEXT, Effect::Change)).unwrap();
+        verbs
+            .declare(named(OPEN_FILE_IN_APPLICATION, Effect::Change))
+            .unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(!told.contains(OPEN_ITEM), "{told}");
+        assert!(!told.contains(OPEN_FILE_IN_APPLICATION), "{told}");
+
+        verbs.declare(named(OPEN_ITEM, Effect::Change)).unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(told.contains("file manager"), "{told}");
+        assert!(
+            told.contains(&format!("never with {OPEN_FILE_IN_APPLICATION}")),
+            "{told}"
+        );
+        let opening = told.find(OPEN_ITEM).unwrap();
+        let not_by_path = told.find(OPEN_FILE_IN_APPLICATION).unwrap();
+        assert!(opening < not_by_path, "{told}");
+
+        // Without the path verb, it is not named.
+        let mut without = the_verbs();
+        without.declare(named(READ_WINDOW, Effect::Read)).unwrap();
+        without.declare(named(TYPE_TEXT, Effect::Change)).unwrap();
+        without.declare(named(OPEN_ITEM, Effect::Change)).unwrap();
+        let told = working_in_an_application(&without);
+        assert!(told.contains(OPEN_ITEM), "{told}");
+        assert!(!told.contains(OPEN_FILE_IN_APPLICATION), "{told}");
     }
 }
