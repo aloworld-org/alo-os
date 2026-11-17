@@ -995,12 +995,21 @@ pub const WHO_READS_PICTURES: Word = Word::saying(
 );
 
 /// The first row under [`WHO_READS_PICTURES`]: why there is a choice at all.
-pub const WHO_READS_PICTURES_IS: Word = Word::saying(
-    "capability.pictures-read-by.what-it-is",
-    "Something has to read a picture of a window before alo can act there. Until you choose, alo says it cannot see inside these apps",
+pub const WHO_READS_PICTURES_FIRST: Word = Word::saying(
+    "capability.pictures-read-by.what-it-is-for",
+    "Something has to read a picture before alo can act",
 )
 .noting(
-    "Under the heading \"Who reads the pictures\" in Settings. alo is the assistant and is never written with a capital letter. \"These apps\" are the applications listed just above, which describe nothing about their windows. A plain description, not a warning.",
+    "The name of a row in Settings, under the heading \"Who reads the pictures\". alo, the assistant, takes a picture of an application's window; before alo can click or press keys there, something has to read what the picture shows. alo is never written with a capital letter.",
+);
+
+/// The line under [`WHO_READS_PICTURES_FIRST`].
+pub const WHO_READS_PICTURES_IS: Word = Word::saying(
+    "capability.pictures-read-by.what-it-is",
+    "Until you choose, alo says it cannot see inside these apps",
+)
+.noting(
+    "Under the row \"Something has to read a picture before alo can act\" in Settings. alo is the assistant and is never written with a capital letter. \"These apps\" are the applications listed just above, which describe nothing about their windows. A plain description, not a warning.",
 );
 
 /// The choice nothing reads the pictures — how a machine arrives.
@@ -1501,7 +1510,7 @@ pub const TEXT_HOLDS_ANOTHER_ALPHABET: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 134] = [
+pub const EVERY_WORD: [Word; 135] = [
     ANONYMOUS,
     NO_APPLICATION_NAMED,
     NOTHING_NAMED,
@@ -1584,6 +1593,7 @@ pub const EVERY_WORD: [Word; 134] = [
     LET_ALO_USE_PICTURES_AND_KEYS_IN,
     WHAT_PICTURES_AND_KEYS_COST,
     WHO_READS_PICTURES,
+    WHO_READS_PICTURES_FIRST,
     WHO_READS_PICTURES_IS,
     READ_BY_NO_ONE,
     READ_BY_NO_ONE_IS,

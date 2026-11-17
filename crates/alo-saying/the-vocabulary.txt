@@ -514,6 +514,15 @@ capability.pictures-and-keys.in-this-app	Let alo use pictures and keys in {appli
 capability.pictures-and-keys.what-it-costs	alo will act on what it sees in pictures of this window, and may press the wrong thing
 capability.pictures-and-keys.what-it-is	Such as games. alo looks at a picture of that app's window and clicks or presses keys there. It never takes a picture of a window with a password field, and the indicator shows a picture leaving this computer
 capability.pictures-and-keys.what-it-is-for	For apps that tell alo nothing about their windows
+capability.pictures-read-by.a-provider-is	An outside service you added. If its model cannot read pictures, alo says so
+capability.pictures-read-by.heading	Who reads the pictures
+capability.pictures-read-by.no-one	No one
+capability.pictures-read-by.no-one-is	alo takes no pictures, and says it cannot see inside these apps
+capability.pictures-read-by.sent-to	A picture of the window alo is reading is sent to {provider} each time
+capability.pictures-read-by.this-computer	Your model on this computer
+capability.pictures-read-by.this-computer-is	Reads the pictures with your model, on this computer. Nothing is sent. If your model cannot read pictures, alo says so
+capability.pictures-read-by.what-it-is	Until you choose, alo says it cannot see inside these apps
+capability.pictures-read-by.what-it-is-for	Something has to read a picture before alo can act
 capability.proposal.no-end	a question has to lapse — choose how long this one stands for
 capability.proposal.no-time	say how long the question stands — one that lapses at once cannot be answered
 capability.proposal.read-does-not-wait	{verb} answers a question rather than changing anything — run it in the turn instead of asking about it
@@ -1977,6 +1986,7 @@ recounting.outcome.workspace-opened	the person at this machine opened a workspac
 remembering.level.a-link	{path} is a link to somewhere else, and this is read only as a real file, so this machine does not know how you want code run
 remembering.level.from-a-newer-alo-os	{path} was written by a newer alo OS than this one, so this machine does not know how you want code run
 remembering.level.no-such-level	{path} says {said}, which is not one of the three levels, so this machine does not know how you want code run
+remembering.level.not-a-pictures-reader	{path} says {said} for who reads pictures, which is not no-one, this-computer, or a-provider with a service's name beside it, so this machine does not know how you want code run, and nothing reads pictures of a window
 remembering.level.not-a-terminal-answer	{path} says {said} for the terminal, which is neither asking-each-time nor at-full-trust, so this machine does not know how you want code run, and alo in the terminal asks first
 remembering.level.not-a-terminal-choice	{path} says {said} for whether alo may use a terminal, which is neither not-at-all nor may-open-one, so this machine does not know how you want code run, and alo uses no terminal
 remembering.level.not-an-application-for-pictures	{path} names {said} for pictures and keys, which is a terminal or not an application at all, so this machine does not know how you want code run, and alo uses pictures and keys in no application

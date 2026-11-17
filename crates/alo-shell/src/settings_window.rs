@@ -76,7 +76,6 @@ use crate::alo_uses_a_terminal_in_settings::AloUsesATerminalHere;
 use crate::an_application_is_picked_in_settings::ApplicationRow;
 use crate::how_code_runs_in_settings::HowCodeRunsHere;
 use crate::pictures_and_keys_in_settings::PicturesAndKeysHere;
-use crate::who_reads_pictures_in_settings::WhoReadsPicturesHere;
 use crate::settings_answering::{AnsweringSection, SettingsAnswered, SettingsChoice};
 use crate::settings_formats::FormatsSection;
 use crate::settings_granted::{GrantedSection, SettingsRevoked};
@@ -85,6 +84,7 @@ use crate::settings_kept::{KeptSection, SettingsKept};
 use crate::settings_shell_integration::TheShellIntegration;
 use crate::settings_time_zone::TimeZoneSection;
 use crate::the_zone_through_timedated::SetsTheZone;
+use crate::who_reads_pictures_in_settings::WhoReadsPicturesHere;
 use crate::{SettingsKey, SettingsPlaces};
 use alo_choosing::MayUseAnother;
 use alo_setting_up::Offered;
@@ -403,7 +403,9 @@ impl SettingsRow {
             }
             Self::HowCodeRuns(_) => SettingsSection::HowCodeRuns,
             Self::WhereAloWorks(_) => SettingsSection::InApplications,
-            Self::PicturesAndKeys(_) | Self::WhoReadsPictures(_) => SettingsSection::PicturesAndKeys,
+            Self::PicturesAndKeys(_) | Self::WhoReadsPictures(_) => {
+                SettingsSection::PicturesAndKeys
+            }
             Self::DefaultFor(..) => SettingsSection::DefaultApps,
             Self::SignInToGitHub | Self::SignOutOfGitHub => SettingsSection::Accounts,
             Self::ShellIntegration

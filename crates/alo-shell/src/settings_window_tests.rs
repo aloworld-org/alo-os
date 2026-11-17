@@ -360,6 +360,9 @@ fn every_setting_the_machine_has_is_in_one_window() {
             SettingsRow::WhereAloWorks(
                 alo_capability::AloInApplications::InItsOwnCopyOrTheirWindow
             ),
+            // No one reads the pictures alo would take, as a machine arrives
+            // (ADR 0147 §4, the owner's answer of 2026-11-17).
+            SettingsRow::WhoReadsPictures(alo_capability::WhoReadsPictures::NoOne),
             SettingsRow::LightOrDark(LightOrDark::of(Appearance::shipped().following())),
             SettingsRow::Accent(Appearance::shipped().accent()),
             // A new window with no room glides to empty space, as it ships.

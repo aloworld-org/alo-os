@@ -68,7 +68,8 @@ fn reachable(window: &SettingsWindow) -> Vec<SettingsRow> {
 
 /// **A fresh machine draws No one chosen and marked the default, then the
 /// model on this computer, then each service the person added, with what it
-/// costs beside the service alone** — and the keyboard reaches all three.
+/// costs beside each service alone** — and the keyboard reaches every one.
+/// The machine a test opens has one service of its own already, Harbour AI.
 #[test]
 fn a_fresh_machine_draws_no_one_chosen_and_each_service_with_its_sentence() {
     let machine = a_persons_machine("readers-page");
@@ -82,14 +83,17 @@ fn a_fresh_machine_draws_no_one_chosen_and_each_service_with_its_sentence() {
         "the row that says what it is acts on nothing"
     );
     let lantern = WhoReadsPictures::a_provider("Lantern").unwrap();
-    let drawn: Vec<(&str, Option<&SettingsRow>, TheKind, Option<&str>)> = rows[1..]
+    let harbour = WhoReadsPictures::a_provider(crate::settings_testing::PROVIDER).unwrap();
+    // **The tag is asked whether it is there**, because this test's strings
+    // say the Settings page's own words by their keys.
+    let drawn: Vec<(&str, Option<&SettingsRow>, TheKind, bool)> = rows[1..]
         .iter()
         .map(|row| {
             (
                 row.title.as_str(),
                 row.row.as_ref(),
                 row.kind,
-                row.tag.as_deref(),
+                row.tag.is_some(),
             )
         })
         .collect();
@@ -100,7 +104,7 @@ fn a_fresh_machine_draws_no_one_chosen_and_each_service_with_its_sentence() {
                 "No one",
                 Some(&SettingsRow::WhoReadsPictures(WhoReadsPictures::NoOne)),
                 TheKind::AChoice { chosen: true },
-                Some("Default")
+                true
             ),
             (
                 "Your model on this computer",
@@ -108,13 +112,19 @@ fn a_fresh_machine_draws_no_one_chosen_and_each_service_with_its_sentence() {
                     WhoReadsPictures::ThisComputer
                 )),
                 TheKind::AChoice { chosen: false },
-                None
+                false
+            ),
+            (
+                crate::settings_testing::PROVIDER,
+                Some(&SettingsRow::WhoReadsPictures(harbour.clone())),
+                TheKind::AChoice { chosen: false },
+                false
             ),
             (
                 "Lantern",
                 Some(&SettingsRow::WhoReadsPictures(lantern.clone())),
                 TheKind::AChoice { chosen: false },
-                None
+                false
             ),
         ]
     );
@@ -124,6 +134,10 @@ fn a_fresh_machine_draws_no_one_chosen_and_each_service_with_its_sentence() {
     );
     assert_eq!(
         rows[3].risk.as_ref().map(|risk| risk.words.as_str()),
+        Some("A picture of the window alo is reading is sent to Harbour AI each time")
+    );
+    assert_eq!(
+        rows[4].risk.as_ref().map(|risk| risk.words.as_str()),
         Some("A picture of the window alo is reading is sent to Lantern each time")
     );
     assert_eq!(
@@ -131,6 +145,7 @@ fn a_fresh_machine_draws_no_one_chosen_and_each_service_with_its_sentence() {
         [
             SettingsRow::WhoReadsPictures(WhoReadsPictures::NoOne),
             SettingsRow::WhoReadsPictures(WhoReadsPictures::ThisComputer),
+            SettingsRow::WhoReadsPictures(harbour),
             SettingsRow::WhoReadsPictures(lantern),
         ]
     );

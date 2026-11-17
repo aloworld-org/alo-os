@@ -65,7 +65,10 @@ fn a_file_that_will_not_read_is_no_one() {
     let read: Result<WhoReadsPictures, ()> = Err(());
     assert_eq!(WhoReadsPictures::as_read(read), WhoReadsPictures::NoOne);
     let read: Result<WhoReadsPictures, ()> = Ok(WhoReadsPictures::ThisComputer);
-    assert_eq!(WhoReadsPictures::as_read(read), WhoReadsPictures::ThisComputer);
+    assert_eq!(
+        WhoReadsPictures::as_read(read),
+        WhoReadsPictures::ThisComputer
+    );
 }
 
 /// **Each choice has its own name and line**, and the two named ones say
@@ -74,7 +77,10 @@ fn a_file_that_will_not_read_is_no_one() {
 #[test]
 fn each_choice_says_what_it_is_in_its_own_words() {
     let provider = WhoReadsPictures::a_provider("Mistral").unwrap();
-    assert_eq!(WhoReadsPictures::NoOne.the_word(), Some(words::READ_BY_NO_ONE));
+    assert_eq!(
+        WhoReadsPictures::NoOne.the_word(),
+        Some(words::READ_BY_NO_ONE)
+    );
     assert_eq!(
         WhoReadsPictures::ThisComputer.the_word(),
         Some(words::READ_BY_THIS_COMPUTER)

@@ -19,7 +19,9 @@ use std::path::Path;
 
 use alo_capability::WhoReadsPictures;
 
+use crate::how_code_runs::{kept, what_is_kept};
 use crate::refusing::NotRemembered;
+use crate::the_level::{NotTheLevel, WhatTheFileSays};
 
 /// What reads the pictures alo takes, as kept at this path.
 ///
@@ -31,8 +33,9 @@ use crate::refusing::NotRemembered;
 /// Every refusal [`crate::the_level_remembered`] makes, for the same file. **A
 /// reader that meets one must answer no one.**
 pub fn who_reads_pictures_remembered(at: &Path) -> Result<WhoReadsPictures, NotRemembered> {
-    let _ = at;
-    Ok(WhoReadsPictures::NoOne)
+    Ok(what_is_kept(at)?
+        .and_then(|says| says.pictures_read_by)
+        .unwrap_or_default())
 }
 
 /// The reader chosen, written whole to this path with every other answer in it
@@ -50,7 +53,24 @@ pub fn who_reads_pictures_chosen(
     at: &Path,
     chosen: WhoReadsPictures,
 ) -> Result<WhoReadsPictures, NotRemembered> {
-    let _ = at;
+    // **A service by a name nothing could be is never written**: the reader
+    // would refuse the whole file, level and all, the next time it looked.
+    if let WhoReadsPictures::AProvider(name) = &chosen
+        && WhoReadsPictures::a_provider(name).is_none()
+    {
+        return Err(NotRemembered::NotTheLevel {
+            at: at.to_owned(),
+            why: NotTheLevel::NotAPicturesReader { said: name.clone() },
+        });
+    }
+    let before = what_is_kept(at)?.unwrap_or_default();
+    kept(
+        at,
+        WhatTheFileSays {
+            pictures_read_by: Some(chosen.clone()),
+            ..before
+        },
+    )?;
     Ok(chosen)
 }
 
