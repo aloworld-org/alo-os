@@ -67,6 +67,10 @@ alo-approving = { path = "../alo-approving" }
 # 0108 gave it a door. The vocabulary is types and words, not the verb
 # declarations' authority, and nothing here reads a grant or a sentence.
 alo-acting = { path = "../alo-acting" }
+# The file chooser as a decision: the rows, each key, and when a name may be
+# saved. The sheet draws it and holds the portal's connection; it decides
+# nothing about what a person may reach.
+alo-file-chooser = { path = "../alo-file-chooser" }
 # The application identifier a verb is granted and approved against, which
 # `an_application_verb_is_carried_out` converts to the Dock's own `AppId` at
 # that one seam. **It was a dev-dependency until 2026-10-13**, under the

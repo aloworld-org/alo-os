@@ -332,6 +332,7 @@ fn the_tree_written(tree: &ReadAloudTree) -> String {
         )),
         TheSheet::Password(_)
         | TheSheet::OpenWith(_)
+        | TheSheet::FileChooser(_)
         | TheSheet::GitHub(_)
         | TheSheet::Application(_)
         | TheSheet::Settings => None,

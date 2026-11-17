@@ -131,6 +131,7 @@ members = [
   "crates/alo-reported",
   "crates/alo-overlay",
   "crates/alo-picking",
+  "crates/alo-file-chooser",
   "crates/alo-portals",
   "crates/alo-portald",
   "crates/alo-protocol",

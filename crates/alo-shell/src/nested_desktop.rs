@@ -475,6 +475,7 @@ impl DesktopPictures {
             open_with: None,
             github_sheet: None,
             application_sheet: None,
+            file_chooser: None,
             status: Some(&self.status),
             in_use: Some(&self.in_use),
             notifications: Some(&self.notifications),

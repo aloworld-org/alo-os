@@ -19,6 +19,8 @@ pub(crate) enum TheSheet {
     Password(u64),
     /// The *Open with* sheet, the one with this number.
     OpenWith(u64),
+    /// The file chooser, the one with this number (`crate::the_file_chooser`).
+    FileChooser(u64),
     /// The GitHub sign-in sheet, the one with this number
     /// (`crate::the_github_sheet`).
     GitHub(u64),

@@ -70,6 +70,14 @@ pub enum Pressed {
         /// What on it.
         on: OnTheOpenWithSheet,
     },
+    /// This on the file chooser numbered `sheet`, which only that sheet
+    /// answers (`crate::the_file_chooser`).
+    OnTheFileChooser {
+        /// The sheet it was heard on.
+        sheet: u64,
+        /// What on it.
+        on: crate::the_file_chooser::OnTheFileChooser,
+    },
     /// This button on the GitHub sign-in sheet numbered `sheet`, which only
     /// that sheet answers (`crate::the_github_sheet`).
     OnTheGitHubSheet {

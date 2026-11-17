@@ -991,6 +991,9 @@ impl crate::DirectSession {
                             open_with: crate::the_open_with_sheet::TheOpenWithSheet::none(),
                             open_with_drawn:
                                 crate::a_key_reaches_the_open_with_sheet::WhereTheSheetIs::default(),
+                            file_chooser: crate::the_file_chooser::TheFileChooser::none(),
+                            file_chooser_drawn:
+                                crate::a_key_reaches_the_file_chooser::WhereTheChooserIs::default(),
                             github_sheet_drawn:
                                 crate::a_key_reaches_the_github_sheet::WhereTheGitHubSheetIs::default(),
                             application_sheet_drawn:
@@ -1134,6 +1137,12 @@ struct TheDesktopLane<'a> {
     open_with: crate::the_open_with_sheet::TheOpenWithSheet,
     /// Where that sheet was last drawn, for a press to land on.
     open_with_drawn: crate::a_key_reaches_the_open_with_sheet::WhereTheSheetIs,
+    /// **An application asking the person to choose a file**: the file
+    /// chooser the portal is waiting on. While one is up every key and press
+    /// is its.
+    file_chooser: crate::the_file_chooser::TheFileChooser,
+    /// Where that sheet was last drawn, for a press to land on.
+    file_chooser_drawn: crate::a_key_reaches_the_file_chooser::WhereTheChooserIs,
     /// Where the GitHub sign-in sheet was last drawn, for a press to land on.
     /// The sheet itself is the server's (`crate::the_github_sheet`), because
     /// what GitHub answered reaches the server.
@@ -1222,6 +1231,8 @@ impl LoopInput for TheDesktopLane<'_> {
         let password_sheet = &mut self.password_sheet;
         let open_with = &mut self.open_with;
         let open_with_drawn = &self.open_with_drawn;
+        let file_chooser = &mut self.file_chooser;
+        let file_chooser_drawn = &self.file_chooser_drawn;
         let github_sheet_drawn = &self.github_sheet_drawn;
         let application_sheet_drawn = &self.application_sheet_drawn;
         self.input.owner.dispatch(
@@ -1246,6 +1257,17 @@ impl LoopInput for TheDesktopLane<'_> {
                     crate::a_key_reaches_the_password_sheet::a_key_reaches_the_password_sheet(
                         server,
                         password_sheet,
+                        update,
+                        extent,
+                    )
+                }
+                // **Then the file chooser**, which a portal is waiting on:
+                // every key and press is its while it is up.
+                else if file_chooser.is_up() {
+                    crate::a_key_reaches_the_file_chooser::a_key_reaches_the_file_chooser(
+                        server,
+                        file_chooser,
+                        file_chooser_drawn,
                         update,
                         extent,
                     )
@@ -1530,6 +1552,13 @@ impl LoopInput for TheDesktopLane<'_> {
         self.open_with
             .asked(choosing, true, std::time::Instant::now());
         self.open_with.waited(std::time::Instant::now());
+        // **And every file an application asked the person to choose**, shown
+        // one at a time on the file chooser, under the same rules.
+        let choosing_files = self.door.asked_for_files();
+        let disk = crate::the_file_chooser::THE_DISK;
+        self.file_chooser
+            .asked(choosing_files, true, std::time::Instant::now(), &disk);
+        self.file_chooser.waited(std::time::Instant::now(), &disk);
         // **And a sheet asking for an application that nobody answered in five
         // minutes** is *not now*, so a turn is never held for ever.
         server.the_application_sheet_waited(std::time::Instant::now());
@@ -1671,6 +1700,7 @@ impl LoopInput for TheDesktopLane<'_> {
         }
         let another_sheet_is_up = self.password_sheet.is_up()
             || self.open_with.is_up()
+            || self.file_chooser.is_up()
             || server.application_sheet.is_up();
         server.a_wanted_github_sign_in_goes_up(another_sheet_is_up, heard_at);
         for asked in server.the_github_asks_to_tell() {
@@ -2537,6 +2567,54 @@ impl LoopInput for TheDesktopLane<'_> {
                 open: Some(drawn.open),
             },
         );
+        // **The file chooser, while a portal is waiting on the person.** One
+        // this display cannot hold is answered *cannot show*.
+        let the_file_chooser = match self.file_chooser.shows() {
+            Some(shows) => {
+                let called = |identifier: &str| server.what_an_application_is_called(identifier);
+                // **Clear of the alo Bar as drawn on this display.**
+                let on = crate::where_a_sheet_sits::OnTheDisplay::with_the_bar_at(
+                    (size.w, size.h),
+                    pictures.desktop.dock.as_ref().map(|dock| dock.band),
+                );
+                match crate::the_file_chooser_drawn::drawn(
+                    shows,
+                    self.strings,
+                    self.labels,
+                    on,
+                    crate::SettingsLook {
+                        scheme: frame.look.scheme(),
+                        scale: frame.look.scale(),
+                        reading: frame.look.reading(),
+                        contrast: frame.look.contrast(),
+                        accent: frame.look.accent(),
+                    },
+                    crate::display_scale::DisplayScale::of_per_cent(frame.display_scale),
+                    &called,
+                ) {
+                    Ok(drawn) => Some(drawn),
+                    Err(why) => {
+                        eprintln!(
+                            "alo-shell: the file chooser could not be drawn on {named:?}, so \
+                             its question is answered cannot-show: {why}"
+                        );
+                        self.file_chooser
+                            .could_not_be_drawn(now, &crate::the_file_chooser::THE_DISK);
+                        None
+                    }
+                }
+            }
+            None => None,
+        };
+        self.file_chooser_drawn = the_file_chooser.as_ref().map_or_else(
+            crate::a_key_reaches_the_file_chooser::WhereTheChooserIs::default,
+            |drawn| crate::a_key_reaches_the_file_chooser::WhereTheChooserIs {
+                rows: drawn.rows.clone(),
+                name: drawn.name,
+                cancel: Some(drawn.cancel),
+                button: Some(drawn.button),
+            },
+        );
         // **The GitHub sign-in sheet, while a sign-in waits on the person or
         // has just worked** (`docs/design/github-sign-in.md`). One this
         // display cannot hold comes down and stops the sign-in, rather than
@@ -3275,6 +3353,9 @@ impl LoopInput for TheDesktopLane<'_> {
                 github_sheet: the_github_sheet.as_ref().map(|drawn| &drawn.washed),
                 // **And the sheet alo asks for an application on**, above it.
                 application_sheet: the_application_sheet.as_ref().map(|drawn| &drawn.washed),
+                // **And the file chooser**, above every sheet but the password
+                // sheet's question.
+                file_chooser: the_file_chooser.as_ref().map(|drawn| &drawn.washed),
                 // **Only on the display being worked on**, whose camera the
                 // window was drawn through when it was put aside.
                 travelling_aside: &travelling_aside,
@@ -3347,6 +3428,14 @@ impl LoopInput for TheDesktopLane<'_> {
                     // **The *Open with* sheet is this desktop's**, so a press
                     // on it is answered here, held to the sheet it was heard
                     // on; everything else goes through the server's door.
+                    crate::Pressed::OnTheFileChooser { sheet, on } => {
+                        let _ = self.file_chooser.a_reader_pressed(
+                            sheet,
+                            on,
+                            std::time::Instant::now(),
+                            &crate::the_file_chooser::THE_DISK,
+                        );
+                    }
                     crate::Pressed::OnTheOpenWithSheet { sheet, on } => {
                         let _ =
                             self.open_with
@@ -3377,6 +3466,7 @@ impl LoopInput for TheDesktopLane<'_> {
                 .with_the_github_sheet(self.strings, server.github_sheet.shows())
                 .with_the_application_sheet(self.strings, server.application_sheet.shows())
                 .with_the_open_with_sheet(self.strings, self.open_with.shows(), &called)
+                .with_the_file_chooser(self.strings, self.file_chooser.shows(), &called)
                 .with_the_password_sheet(self.strings, self.password_sheet.shows());
             let _ = reader.following(&tree);
         }
