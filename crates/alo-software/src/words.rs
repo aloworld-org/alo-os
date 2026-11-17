@@ -203,8 +203,8 @@ pub const NOT_OFFERED: Word = Word::saying(
 /// the identifier's last part answers to.
 pub const NOT_HELD_BUT_THIS_IS: Word = Word::saying(
     "software.refused.not-held-but-this-is",
-    "There is no {application} in what alo knows {source} offers, so nothing was proposed. The \
-     application it offers by that name is {instead}: ask for that one, or check the identifier",
+    "{application} is not in what alo knows {source} offers, but {instead} is, by that name. Name \
+     that one if it is the one meant",
 )
 .noting(
     "Said when an application to install was named by an identifier the catalogue does not \
