@@ -194,7 +194,10 @@ fn opening_an_application_may_read_its_window_after_and_must_still_answer() {
     assert_eq!(asides, [READ_WINDOW], "one read aside, of the window");
 
     let open = proposing(OPEN_APPLICATION, &[(APPLICATION, &browser)]);
-    let look = reading(READ_WINDOW, &[(alo_adapters::fallback_verbs::APPLICATION, &browser)]);
+    let look = reading(
+        READ_WINDOW,
+        &[(alo_adapters::fallback_verbs::APPLICATION, &browser)],
+    );
     let answer = answering("Firefox is open.");
     for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
         let try_these = |lines: &[String]| {
