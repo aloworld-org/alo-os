@@ -313,11 +313,17 @@ pub(crate) fn picture(
         } else {
             0
         };
-        let off = measure.px(i32::try_from(stands_off).unwrap_or(0));
-        let area = Rectangle::new(
-            (area.loc.x - off, area.loc.y - off).into(),
-            (area.size.w + 2 * off, area.size.h + 2 * off).into(),
-        );
+        // Only then: `Measure::px` never answers below one, so asking it for a
+        // stand-off of nought would grow every other ring by a pixel.
+        let area = if target.filled {
+            let off = measure.px(i32::try_from(stands_off).unwrap_or(0));
+            Rectangle::new(
+                (area.loc.x - off, area.loc.y - off).into(),
+                (area.size.w + 2 * off, area.size.h + 2 * off).into(),
+            )
+        } else {
+            area
+        };
         a_focus_ring(
             &mut canvas,
             area,
