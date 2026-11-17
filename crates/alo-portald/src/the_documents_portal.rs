@@ -104,7 +104,13 @@ fn held(path: &Path) -> Result<std::os::fd::OwnedFd, NotExported> {
 /// The mountpoint, as the portal says it: bytes ending in a zero.
 fn the_mountpoint(bus: &zbus::blocking::Connection) -> Result<PathBuf, NotExported> {
     let reply = bus
-        .call_method(Some(DOCUMENTS), ITS_OBJECT, Some(DOCUMENTS), "GetMountPoint", &())
+        .call_method(
+            Some(DOCUMENTS),
+            ITS_OBJECT,
+            Some(DOCUMENTS),
+            "GetMountPoint",
+            &(),
+        )
         .map_err(|_| NotExported::NoDocumentsPortal)?;
     let bytes: Vec<u8> = reply
         .body()
@@ -166,7 +172,13 @@ impl ExportsDocuments for TheDocumentsPortal {
                         ITS_OBJECT,
                         Some(DOCUMENTS),
                         "AddNamedFull",
-                        &(Fd::from(fd.as_fd()), named, flags, application, &permissions),
+                        &(
+                            Fd::from(fd.as_fd()),
+                            named,
+                            flags,
+                            application,
+                            &permissions,
+                        ),
                     )
                     .map_err(|_| NotExported::Refused)?;
                 let (id, _extra): (String, std::collections::HashMap<String, OwnedValue>) = reply
@@ -191,7 +203,10 @@ mod tests {
     fn where_an_exported_file_opens() {
         let mountpoint = Path::new("/run/user/1000/doc");
         let file = Path::new("/home/anna/the letter.txt");
-        assert_eq!(where_it_opens(mountpoint, "", file), Some(file.to_path_buf()));
+        assert_eq!(
+            where_it_opens(mountpoint, "", file),
+            Some(file.to_path_buf())
+        );
         assert_eq!(
             where_it_opens(mountpoint, "a1b2c3", file),
             Some(PathBuf::from("/run/user/1000/doc/a1b2c3/the letter.txt"))

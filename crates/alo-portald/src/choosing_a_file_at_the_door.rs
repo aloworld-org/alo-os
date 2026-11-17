@@ -103,10 +103,8 @@ mod tests {
         what: &str,
         word: &'static str,
     ) -> (PathBuf, std::thread::JoinHandle<String>) {
-        let folder = std::env::temp_dir().join(format!(
-            "alo-portald-files-{}-{what}",
-            std::process::id()
-        ));
+        let folder =
+            std::env::temp_dir().join(format!("alo-portald-files-{}-{what}", std::process::id()));
         let _ = std::fs::remove_dir_all(&folder);
         std::fs::create_dir_all(&folder).unwrap();
         let socket = folder.join("shell.sock");
@@ -132,7 +130,10 @@ mod tests {
             &ToChoose::Open,
             Some(Path::new("/home/anna")),
         );
-        assert_eq!(answer, FileSheetAnswer::Picked(PathBuf::from("/home/anna/a b.txt")));
+        assert_eq!(
+            answer,
+            FileSheetAnswer::Picked(PathBuf::from("/home/anna/a b.txt"))
+        );
         assert_eq!(
             hearing.join().unwrap(),
             "choose-file org.gnome.TextEditor open /home/anna\n"
@@ -174,7 +175,12 @@ mod tests {
             door.chosen("org.gnome.TextEditor", &ToChoose::Open, None),
             FileSheetAnswer::Cancelled
         );
-        assert!(hearing.join().unwrap().starts_with("choose-file org.gnome.TextEditor open /"));
+        assert!(
+            hearing
+                .join()
+                .unwrap()
+                .starts_with("choose-file org.gnome.TextEditor open /")
+        );
         let _ = std::fs::remove_dir_all(socket.parent().unwrap());
     }
 }

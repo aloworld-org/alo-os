@@ -182,10 +182,9 @@ mod the_file {
                 serde_json::to_value(why).unwrap().as_str().unwrap()
             ),
             KeptOutcome::FileChosen { saving, .. } => format!("file-chosen/{saving}"),
-            KeptOutcome::FileUnchosen { why } => format!(
-                "file-not-chosen/{}",
-                serde_json::to_string(why).unwrap()
-            ),
+            KeptOutcome::FileUnchosen { why } => {
+                format!("file-not-chosen/{}", serde_json::to_string(why).unwrap())
+            }
             KeptOutcome::NotALink { why } => format!(
                 "not-a-link/{}",
                 match why {

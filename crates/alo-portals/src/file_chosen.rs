@@ -182,7 +182,11 @@ impl FileUnchosen {
     /// What this says, in the language the person reads.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
-        said_as_unchosen(Filling::of("application", self.from.as_str()), self.why, strings)
+        said_as_unchosen(
+            Filling::of("application", self.from.as_str()),
+            self.why,
+            strings,
+        )
     }
 }
 

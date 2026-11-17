@@ -242,7 +242,10 @@ mod tests {
     #[test]
     fn where_a_save_starts() {
         let again = options(vec![
-            ("current_file", Value::from(b"/home/anna/notes.txt\0".to_vec())),
+            (
+                "current_file",
+                Value::from(b"/home/anna/notes.txt\0".to_vec()),
+            ),
             ("current_name", Value::from("ignored.txt")),
         ]);
         assert_eq!(
@@ -250,12 +253,18 @@ mod tests {
             (Some(PathBuf::from("/home/anna")), "notes.txt".to_owned())
         );
         let fresh = options(vec![
-            ("current_folder", Value::from(b"/home/anna/Letters\0".to_vec())),
+            (
+                "current_folder",
+                Value::from(b"/home/anna/Letters\0".to_vec()),
+            ),
             ("current_name", Value::from("to Rui.txt")),
         ]);
         assert_eq!(
             where_to_save(&fresh),
-            (Some(PathBuf::from("/home/anna/Letters")), "to Rui.txt".to_owned())
+            (
+                Some(PathBuf::from("/home/anna/Letters")),
+                "to Rui.txt".to_owned()
+            )
         );
         let nonsense = options(vec![
             ("current_folder", Value::from(b"../../etc\0".to_vec())),
@@ -268,9 +277,18 @@ mod tests {
     /// **`directory` is read as a flag**, and anything else as not set.
     #[test]
     fn a_flag_is_a_true_boolean() {
-        assert!(a_flag(&options(vec![("directory", Value::from(true))]), "directory"));
-        assert!(!a_flag(&options(vec![("directory", Value::from(false))]), "directory"));
-        assert!(!a_flag(&options(vec![("directory", Value::from("yes"))]), "directory"));
+        assert!(a_flag(
+            &options(vec![("directory", Value::from(true))]),
+            "directory"
+        ));
+        assert!(!a_flag(
+            &options(vec![("directory", Value::from(false))]),
+            "directory"
+        ));
+        assert!(!a_flag(
+            &options(vec![("directory", Value::from("yes"))]),
+            "directory"
+        ));
         assert!(!a_flag(&HashMap::new(), "directory"));
     }
 }

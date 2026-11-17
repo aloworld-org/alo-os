@@ -38,10 +38,9 @@ pub fn a_path_from(bytes: &[u8]) -> Option<PathBuf> {
     if text == "/" {
         return Some(PathBuf::from(text));
     }
-    let whole = text
-        .strip_prefix('/')?
-        .split('/')
-        .all(|name| !name.is_empty() && name != "." && name != ".." && !name.chars().any(char::is_control));
+    let whole = text.strip_prefix('/')?.split('/').all(|name| {
+        !name.is_empty() && name != "." && name != ".." && !name.chars().any(char::is_control)
+    });
     whole.then(|| PathBuf::from(text))
 }
 

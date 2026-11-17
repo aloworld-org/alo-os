@@ -460,9 +460,11 @@ fn nothing_in_the_portal_sets_an_association_or_picks_an_opener_itself() {
             // method, and follows a name by its nature.
             let a_name = word.starts_with(|first: char| first.is_ascii_alphabetic());
             let reached = code.match_indices(word).any(|(at, _)| {
-                code.as_bytes().get(at.wrapping_sub(1)).is_none_or(|before| {
-                    *before != b'_' && !(a_name && before.is_ascii_alphanumeric())
-                })
+                code.as_bytes()
+                    .get(at.wrapping_sub(1))
+                    .is_none_or(|before| {
+                        *before != b'_' && !(a_name && before.is_ascii_alphanumeric())
+                    })
             });
             assert!(!reached, "{} reaches for `{word}`", path.display());
         }

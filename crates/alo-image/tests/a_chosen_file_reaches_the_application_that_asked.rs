@@ -63,10 +63,9 @@ fn the_block() -> String {
 fn the_package_comes_from_the_pinned_base() {
     let block = the_block();
     assert!(
-        block
-            .lines()
-            .next()
-            .is_some_and(|first| first.split_whitespace().any(|word| word == "xdg-desktop-portal")),
+        block.lines().next().is_some_and(|first| first
+            .split_whitespace()
+            .any(|word| word == "xdg-desktop-portal")),
         "the block no longer asks dnf for xdg-desktop-portal: {block}"
     );
     assert!(

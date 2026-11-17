@@ -62,8 +62,13 @@ pub(crate) fn the_person_chooses(
             async move {
                 let deciding = backend.clone();
                 let (asked, (response, handed)) = blocking::unblock(move || {
-                    let answer =
-                        chosen_and_handed(&deciding, &asked, &application, &to, starting_in.as_deref());
+                    let answer = chosen_and_handed(
+                        &deciding,
+                        &asked,
+                        &application,
+                        &to,
+                        starting_in.as_deref(),
+                    );
                     (asked, answer)
                 })
                 .await;
@@ -151,9 +156,12 @@ pub(crate) fn chosen_and_handed(
 /// in a folder that is there, which is not a folder itself.
 pub(crate) fn could_be_chosen(picked: &Path, saving: bool) -> bool {
     let whole = picked.to_str().is_some_and(|text| text.starts_with('/'))
-        && picked
-            .components()
-            .all(|part| matches!(part, std::path::Component::RootDir | std::path::Component::Normal(_)))
+        && picked.components().all(|part| {
+            matches!(
+                part,
+                std::path::Component::RootDir | std::path::Component::Normal(_)
+            )
+        })
         && picked.file_name().is_some();
     if !whole {
         return false;
@@ -182,11 +190,20 @@ mod tests {
         std::fs::create_dir_all(at.join("Letters")).unwrap();
         std::fs::write(at.join("march.txt"), b"m").unwrap();
         assert!(could_be_chosen(&at.join("march.txt"), false));
-        assert!(!could_be_chosen(&at.join("Letters"), false), "a folder is not a file");
+        assert!(
+            !could_be_chosen(&at.join("Letters"), false),
+            "a folder is not a file"
+        );
         assert!(!could_be_chosen(&at.join("gone.txt"), false), "not there");
         assert!(could_be_chosen(&at.join("new.txt"), true));
-        assert!(could_be_chosen(&at.join("march.txt"), true), "saved over, after asking");
-        assert!(!could_be_chosen(&at.join("Letters"), true), "a folder is not saved over");
+        assert!(
+            could_be_chosen(&at.join("march.txt"), true),
+            "saved over, after asking"
+        );
+        assert!(
+            !could_be_chosen(&at.join("Letters"), true),
+            "a folder is not saved over"
+        );
         assert!(!could_be_chosen(&at.join("nowhere/new.txt"), true));
         assert!(!could_be_chosen(Path::new("relative.txt"), false));
         assert!(!could_be_chosen(&at.join("Letters/../march.txt"), false));

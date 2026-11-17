@@ -470,7 +470,9 @@ fn a_save_starts_where_it_was_asked_and_current_file_wins() {
     );
     assert_eq!(
         uris(&results),
-        Some(vec![file_uri(&PathBuf::from(DOCUMENTS).join("minutes.odt"))])
+        Some(vec![file_uri(
+            &PathBuf::from(DOCUMENTS).join("minutes.odt")
+        )])
     );
     match serving
         .exporter
@@ -519,9 +521,19 @@ fn nothing_chosen_exports_nothing_and_says_why() {
     for (what, chose, response, why) in [
         ("cancel", FileSheetAnswer::Cancelled, 1, NoFile::Cancelled),
         ("nobody", FileSheetAnswer::Unanswered, 2, NoFile::Unanswered),
-        ("no-sheet", FileSheetAnswer::CannotShow, 2, NoFile::CannotShow),
+        (
+            "no-sheet",
+            FileSheetAnswer::CannotShow,
+            2,
+            NoFile::CannotShow,
+        ),
         ("gone", FileSheetAnswer::NoDesktop, 2, NoFile::NoDesktop),
-        ("broken", FileSheetAnswer::CouldNotAsk, 2, NoFile::CouldNotAsk),
+        (
+            "broken",
+            FileSheetAnswer::CouldNotAsk,
+            2,
+            NoFile::CouldNotAsk,
+        ),
     ] {
         let serving = Serving::started(what, Some(chose));
         for method in ["OpenFile", "SaveFile"] {
@@ -560,7 +572,10 @@ fn a_choice_that_cannot_be_believed_exports_nothing() {
         ("SaveFile", files.join("photos")),
         ("SaveFile", files.join("nowhere").join("minutes.odt")),
         ("SaveFile", PathBuf::from("minutes.odt")),
-        ("SaveFile", files.join("photos").join("..").join("minutes.odt")),
+        (
+            "SaveFile",
+            files.join("photos").join("..").join("minutes.odt"),
+        ),
     ] {
         let lines = serving.everything().len();
         serving.the_person_answers(FileSheetAnswer::Picked(picked.clone()));
