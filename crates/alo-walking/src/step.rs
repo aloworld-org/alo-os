@@ -98,6 +98,17 @@ pub enum Step {
         /// How many steps after this one it covers.
         steps: usize,
     },
+    /// **An independent section begins here**, and runs to the next one or
+    /// to the walk's end. A failure inside it stops only it: the next section
+    /// starts again from its own first step, unless it needs a section that
+    /// failed, and the walk still fails. A failure before the first section
+    /// stops every section, since they all stand on what came before them.
+    Section {
+        /// The section's name, as the report says it.
+        name: String,
+        /// The earlier sections it cannot run without.
+        needs: Vec<&'static str>,
+    },
     /// Something about the pointer: move it, or check what is drawn.
     Pointer(Pointing),
     /// **alo's deep teal edge round a window** is on the screen (`drawn`),
@@ -357,6 +368,27 @@ impl Walk {
         self.steps.push(Step::OnlyWithFor {
             variable,
             steps: inside.len(),
+        });
+        self.steps.extend(inside);
+        self
+    }
+
+    /// **An independent section**, named, which needs the earlier sections in
+    /// `needs` and no others: a failure inside it does not stop the sections
+    /// after it. It must start from a state it makes itself — its own Escape,
+    /// its own level and grants — because the one before it may have stopped
+    /// anywhere.
+    #[must_use]
+    pub fn section(
+        mut self,
+        name: &str,
+        needs: &[&'static str],
+        section: impl FnOnce(Self) -> Self,
+    ) -> Self {
+        let inside = section(Self::named(&self.name)).steps;
+        self.steps.push(Step::Section {
+            name: name.to_owned(),
+            needs: needs.to_vec(),
         });
         self.steps.extend(inside);
         self
