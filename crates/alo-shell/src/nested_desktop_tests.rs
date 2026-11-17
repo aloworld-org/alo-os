@@ -391,6 +391,7 @@ fn the_frame_carries_the_market_a_person_opened() {
             at,
             showing,
             words: &the_markets_words,
+            artwork: &alo_dock::artwork::NOTHING,
         }),
         what_each_application_draws: &alo_dock::artwork::NOTHING,
         the_dock_has_open: &crate::what_the_dock_has_open::NOTHING,

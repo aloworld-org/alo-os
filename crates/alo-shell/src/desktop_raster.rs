@@ -504,6 +504,7 @@ pub(crate) fn picture(
             fonts,
             // **This display's scale**, the one it was placed at.
             crate::display_scale::DisplayScale::of_per_cent(display_scale),
+            open.artwork,
         )
     });
 

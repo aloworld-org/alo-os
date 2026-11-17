@@ -102,8 +102,39 @@ pub(crate) const INSIDE_A_CARD: u32 = 16;
 /// How wide and tall an artwork tile is.
 pub(crate) const A_TILE_IS: u32 = 36;
 
-/// How tall the line under the list is.
+/// How tall the line under the list is, at the least: one line of
+/// [`SMALL_TEXT`]. It is measured as it wraps, and takes more where it needs it.
 pub(crate) const THE_PROMISE_IS_TALL: u32 = 18;
+
+/// How far in from the window's left edge its title starts, as in
+/// `Canvas / Window title`.
+pub(crate) const THE_TITLE_IS_IN: u32 = 16;
+
+/// The padding either side of a chip's label (the design's chips: 12).
+pub(crate) const INSIDE_A_CHIP: u32 = 12;
+
+/// The padding either side of a button's word (*Install*: 14 in a 63-wide
+/// button).
+pub(crate) const INSIDE_A_BUTTON: u32 = 14;
+
+/// How tall an *Install* button is, and the licence beside it is centred on.
+pub(crate) const A_BUTTON_IS_TALL: u32 = 30;
+
+/// The title's text: size and line, in logical pixels.
+///
+/// **These three are read off the design's text boxes, not its type styles**
+/// (frame `514:30765`, read 2026-11-17): a name's box is 18 tall, every
+/// smaller line's 16. The sizes inside them are the ones that fill those
+/// boxes in Manrope; the type styles themselves were not readable through the
+/// connector, and this says so rather than presenting a guess as a token.
+pub(crate) const THE_TITLE_TEXT: (u32, u32) = (14, 20);
+
+/// An application's name: size and line.
+pub(crate) const A_NAME_TEXT: (u32, u32) = (13, 18);
+
+/// Every smaller line: a kind of work, a chip, a button, a licence, a label
+/// and the line under the list.
+pub(crate) const SMALL_TEXT: (u32, u32) = (12, 16);
 
 /// How wide one card is, from the window's width and the margins.
 ///

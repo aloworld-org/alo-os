@@ -51,11 +51,12 @@ use smithay::utils::{Physical, Rectangle};
 
 use crate::desktop_look::Measure;
 use crate::dock_surface::{APanelsShapes, AWell, a_panel};
+use crate::market_inking::{Size, ToWrite, a_picture_in, how_tall, how_wide, inked};
 use crate::market_measures as m;
 use crate::market_window::{Browsing, HowItIsGoing, MarketShows};
 use crate::painted::{Inked, Washed};
-use crate::painted_text::sentence;
 use crate::the_markets_words::TheMarketsWords;
+use alo_dock::artwork::TheArtwork;
 
 /// The window, rasterised.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -86,6 +87,9 @@ pub struct AMarketOnTheDisplay<'a> {
     pub showing: MarketShows<'a>,
     /// Its words, already said.
     pub words: &'a TheMarketsWords,
+    /// The pictures applications draw, by identifier — each catalogued
+    /// application's own, where this machine has it, and a letter where not.
+    pub artwork: &'a TheArtwork,
 }
 
 /// How this window is drawn at this moment.
@@ -131,36 +135,6 @@ struct Inks {
     cool: [u8; 3],
 }
 
-/// One block of words, where it goes and what it is drawn on.
-///
-/// **A named thing rather than a four-part tuple**, which is what clippy asked
-/// for and is right: the same four values are passed between three functions
-/// here, and `(Rectangle, String, [u8; 3], [u8; 3])` says nothing about which
-/// colour is the ground and which is the ink.
-struct ToWrite {
-    /// The band it is centred in.
-    at: Rectangle<i32, Physical>,
-    /// What it says, already said.
-    text: String,
-    /// What it sits on, so the letters blend into that and not into whatever
-    /// is behind the window.
-    ground: [u8; 3],
-    /// What it is written in.
-    ink: [u8; 3],
-}
-
-impl ToWrite {
-    /// One block, in the order a reader expects: where, what, on what, in what.
-    fn of(at: Rectangle<i32, Physical>, text: String, ground: [u8; 3], ink: [u8; 3]) -> Self {
-        Self {
-            at,
-            text,
-            ground,
-            ink,
-        }
-    }
-}
-
 /// A rectangle from a corner and a size, in whole pixels.
 fn box_at(x: i32, y: i32, wide: i32, tall: i32) -> Rectangle<i32, Physical> {
     Rectangle::new((x, y).into(), (wide.max(0), tall.max(0)).into())
@@ -180,6 +154,7 @@ pub(crate) fn picture(
     look: MarketLook,
     fonts: &mut FontSystem,
     scale: crate::display_scale::DisplayScale,
+    artwork: &TheArtwork,
 ) -> Option<MarketPicture> {
     let MarketShows::Browsing(browsing) = showing else {
         return None;
@@ -212,6 +187,26 @@ pub(crate) fn picture(
     let mut circles: Vec<Rectangle<i32, Physical>> = Vec::new();
     let mut marks: Vec<Rectangle<i32, Physical>> = Vec::new();
     let mut writing: Vec<ToWrite> = Vec::new();
+    let mut pictures: Vec<Inked> = Vec::new();
+
+    // --- the title ------------------------------------------------------------
+    //
+    // **The window's name, in its title bar**, where `Canvas / Window title`
+    // puts every window's: one margin in, in the middle of the bar's height.
+    writing.push(
+        ToWrite::of(
+            box_at(
+                at.loc.x + px(m::THE_TITLE_IS_IN),
+                at.loc.y,
+                (at.size.w - 2 * px(m::THE_TITLE_IS_IN)).max(1),
+                px(m::THE_TITLE_BAR_IS_TALL),
+            ),
+            words.heading.clone(),
+            surface,
+            ink,
+        )
+        .in_size(Size::Title),
+    );
 
     // --- the search field ----------------------------------------------------
     let search = box_at(left, down, body_wide, px(m::THE_SEARCH_IS_TALL));
@@ -236,14 +231,11 @@ pub(crate) fn picture(
             if label.is_empty() {
                 return None;
             }
-            let shaped = sentence(fonts, label, body_wide, measure.metrics(), cool, ink);
-            // **The ink's own width, not the box's.** `Shaped::width_of_box` is
-            // the width the text was *wrapped in*, which is the whole body here —
-            // sizing a chip by it made the first one 608 pixels wide, overflowed
-            // the row, and broke the loop before any chip was drawn at all. The
-            // window looked like it had no categories and the fault read as a
-            // missing draw call.
-            Some((kind, label, shaped.width + 2 * px(12)))
+            // **The ink's own width, not the box's**: the box is the width the
+            // text was *wrapped in*, which is the whole body here — sizing a
+            // chip by it made the first one 608 pixels wide and the row empty.
+            let wide = how_wide(fonts, label, Size::Small, measure, body_wide);
+            Some((kind, label, wide + 2 * px(m::INSIDE_A_CHIP)))
         })
         .collect();
     // **The row pans so the chosen kind is always on it.** Twenty-four kinds of
@@ -270,13 +262,13 @@ pub(crate) fn picture(
             // the primary-action treatment, so selection is carried by
             // contrast and not by hue alone.
             marks.push(chip);
-            writing.push(ToWrite::of(chip, (*label).to_owned(), ink, surface));
+            writing.push(ToWrite::of(chip, (*label).to_owned(), ink, surface).in_the_middle());
         } else {
             wells.push(AWell {
                 at: chip,
                 corner: m::A_CAPSULE,
             });
-            writing.push(ToWrite::of(chip, (*label).to_owned(), cool, second));
+            writing.push(ToWrite::of(chip, (*label).to_owned(), cool, second).in_the_middle());
         }
         along += wide + gap;
     }
@@ -285,7 +277,22 @@ pub(crate) fn picture(
     // --- the applications, two across ---------------------------------------
     let card_wide = px(m::a_card_is_wide());
     let card_tall = px(m::A_CARD_IS_TALL);
-    let bottom = at.loc.y + at.size.h - px(m::ABOVE) - px(m::THE_PROMISE_IS_TALL);
+    // **The line under the list is measured before anything is placed above
+    // it**, so it stays inside the window however it wraps: a person's larger
+    // text, a narrower display or a longer translation makes it two lines, and
+    // the list gives up the room rather than the line running off the window's
+    // edge (it did, on 2026-11-17, at 1280 by 720).
+    let promise_tall = how_tall(fonts, &words.promise, Size::Small, measure, body_wide)
+        .max(px(m::THE_PROMISE_IS_TALL));
+    let bottom = at.loc.y + at.size.h - px(m::ABOVE) - promise_tall;
+    // **Each control as wide as its widest word**, so no translation of
+    // *Installing…* reaches past the button's rounded ends.
+    let action_wide = [&words.install, &words.installing, &words.open]
+        .into_iter()
+        .map(|word| how_wide(fonts, word, Size::Small, measure, body_wide))
+        .max()
+        .unwrap_or(0)
+        + 2 * px(m::INSIDE_A_BUTTON);
     // **The list scrolls so the application the person is on is drawn.** A
     // window cut to the display's height — the whole catalogue is sixty-two
     // applications since 2026-11-17 — held only its first rows, and Down moved
@@ -336,16 +343,19 @@ pub(crate) fn picture(
             },
             words,
             measure,
+            action_wide,
+            artwork,
             &mut wells,
             &mut circles,
             &mut marks,
             &mut writing,
+            &mut pictures,
         );
     }
 
     // --- the promise under the list -----------------------------------------
     writing.push(ToWrite::of(
-        box_at(left, bottom, body_wide, px(m::THE_PROMISE_IS_TALL)),
+        box_at(left, bottom, body_wide, promise_tall),
         words.promise.clone(),
         surface,
         quiet,
@@ -370,41 +380,9 @@ pub(crate) fn picture(
         },
     )?;
 
-    // --- the words, last ------------------------------------------------------
-    let mut writing_out = Vec::with_capacity(writing.len());
-    for one in writing {
-        let area = one.at;
-        let shaped = sentence(
-            fonts,
-            &one.text,
-            area.size.w,
-            measure.metrics(),
-            one.ground,
-            one.ink,
-        );
-        // Centred in the band it was given, from its own measured height rather
-        // than from half a leading: the height depends on the font, the
-        // person's text size and how many lines it wrapped to.
-        let top = area.loc.y + (area.size.h - shaped.height).max(0) / 2;
-        let x = area.loc.x + (area.size.w - shaped.width_of_box).max(0) / 2;
-        let left_edge = if area.size.w > shaped.width_of_box * 2 {
-            area.loc.x
-        } else {
-            x
-        };
-        // `Shaped` already carries the box and its pixels; an `Inked` is that
-        // box placed. `painted_text::inked` is a different road -- it takes a
-        // `Buffer` and shapes it itself, which `sentence` has already done.
-        writing_out.push(Inked {
-            area: crate::painted::drawn_at(box_at(
-                left_edge,
-                top,
-                shaped.width_of_box,
-                shaped.height,
-            )),
-            pixels: shaped.pixels,
-        });
-    }
+    // --- the words and the pictures, last -----------------------------------
+    let mut writing_out = inked(fonts, writing, measure);
+    writing_out.append(&mut pictures);
 
     Some(MarketPicture {
         panel,
@@ -430,10 +408,13 @@ fn draw_one(
     colours: Inks,
     words: &TheMarketsWords,
     measure: Measure,
+    action_wide: i32,
+    artwork: &TheArtwork,
     wells: &mut Vec<AWell>,
     circles: &mut Vec<Rectangle<i32, Physical>>,
     marks: &mut Vec<Rectangle<i32, Physical>>,
     writing: &mut Vec<ToWrite>,
+    pictures: &mut Vec<Inked>,
 ) {
     let Inks {
         ink,
@@ -456,16 +437,36 @@ fn draw_one(
         corner: m::A_TILES_CORNER,
     });
     let _ = circles;
+    // **The application's own picture where this machine has it, and the
+    // first letter of its name where not** — the design's own tile, and the
+    // Dock's rule for an application it has no picture for.
+    let its_own = alo_dock::window::AppId::named(one.application().identifier())
+        .ok()
+        .and_then(|known_as| artwork.of(&known_as))
+        .and_then(|picture| a_picture_in(picture, tile, cool));
+    match its_own {
+        Some(drawn) => pictures.push(drawn),
+        None => writing.push(
+            ToWrite::of(tile, the_first_letter_of(one.name()), cool, ink)
+                .in_size(Size::Name)
+                .in_the_middle(),
+        ),
+    }
 
     // The name and the kind of work, beside the tile.
     let beside = tile.loc.x + tile_is + inside / 2;
     let text_wide = (card.loc.x + card.size.w - inside - beside).max(1);
-    writing.push(ToWrite::of(
-        box_at(beside, tile.loc.y, text_wide, tile_is / 2),
-        one.application().identifier().to_owned(),
-        cool,
-        ink,
-    ));
+    // **Its makers' name for it, never its identifier** (the owner,
+    // 2026-11-17).
+    writing.push(
+        ToWrite::of(
+            box_at(beside, tile.loc.y, text_wide, tile_is / 2),
+            one.name().to_owned(),
+            cool,
+            ink,
+        )
+        .in_size(Size::Name),
+    );
     // **What kind of work it is, under its name**, said from the vocabulary
     // rather than from `Category::named`, which is the data file's spelling and
     // is not translated.
@@ -477,7 +478,7 @@ fn draw_one(
     ));
 
     // What is to be done about it, along the bottom.
-    let foot_tall = measure.px(26);
+    let foot_tall = measure.px(i32::try_from(m::A_BUTTON_IS_TALL).unwrap_or(30));
     let foot_y = card.loc.y + card.size.h - inside - foot_tall;
 
     // **What a person should know before choosing it, in plain words**, on the
@@ -510,11 +511,10 @@ fn draw_one(
             at: licence,
             corner: m::A_CAPSULE,
         });
-        writing.push(ToWrite::of(licence, one.licence().to_owned(), cool, quiet));
+        writing.push(ToWrite::of(licence, one.licence().to_owned(), cool, quiet).in_the_middle());
     }
 
     // The action, which is a filled capsule for anything not already here.
-    let action_wide = measure.px(72);
     let action = box_at(
         card.loc.x + card.size.w - inside - action_wide,
         foot_y,
@@ -527,21 +527,22 @@ fn draw_one(
                 at: action,
                 corner: m::A_CAPSULE,
             });
-            writing.push(ToWrite::of(action, words.open.clone(), cool, quiet));
+            writing.push(ToWrite::of(action, words.open.clone(), cool, quiet).in_the_middle());
         }
         HowItIsGoing::Asked => {
             // **Not a progress figure.** How far it has got is the rented
             // tool's business; what a person needs is that it is going, and
             // the indicator says what is leaving while it does.
             marks.push(action);
-            writing.push(ToWrite::of(action, words.installing.clone(), ink, surface));
+            writing
+                .push(ToWrite::of(action, words.installing.clone(), ink, surface).in_the_middle());
         }
         HowItIsGoing::NotAsked | HowItIsGoing::Refused(_) => {
             // **A refusal still offers the control.** `MarketWindow` clears the
             // old reason on the next ask, so a row that was refused is a row a
             // person may try again rather than one that is spent.
             marks.push(action);
-            writing.push(ToWrite::of(action, words.install.clone(), ink, surface));
+            writing.push(ToWrite::of(action, words.install.clone(), ink, surface).in_the_middle());
         }
     }
 }
@@ -565,6 +566,15 @@ fn the_first_chip_drawn(widths: &[i32], chosen: usize, gap: i32, room: i32) -> u
         from += 1;
     }
     from
+}
+
+/// The first letter of a name, in capitals where the language has them — what
+/// a tile shows for an application this machine has no picture of.
+fn the_first_letter_of(name: &str) -> String {
+    name.chars()
+        .find(|c| c.is_alphanumeric())
+        .map(|first| first.to_uppercase().collect())
+        .unwrap_or_default()
 }
 
 #[cfg(test)]

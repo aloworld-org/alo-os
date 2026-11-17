@@ -50,15 +50,20 @@
 //! second road here, and nothing in this crate knows an application came from
 //! this list once it is installed.
 //!
-//! # No English, here or in the file
+//! # A name, and no other words
 //!
-//! No name, no summary, no description — not in the data and not in this type.
-//! What a person reads is their own language, and the name and summary of an
-//! application belong to its **source**, already translated by the people who
-//! publish it and fetched when a person browses. An English summary written
-//! into this repository would be a hardcoded string standing in twenty-four
-//! languages' way, and it would go stale the week the upstream reworded its
-//! own. What this list holds is only what the machine has to *decide* with.
+//! No summary and no description, in the data or in this type: what a person
+//! reads is their own language, a summary belongs to the application's
+//! **source**, already translated by the people who publish it, and an English
+//! one written here would stand in twenty-four languages' way and go stale the
+//! week the upstream reworded its own.
+//!
+//! **The name is the one exception, since 2026-11-17.** Until then this said
+//! *no name* too, and the market drew identifiers — `org.gimp.GIMP` where a
+//! person expects *GNU Image Manipulation Program*. The owner, shown that:
+//! *real application names, never identifiers.* A name is not a sentence to
+//! translate; it is the makers' own, so each entry carries the one its source
+//! publishes, read from Flathub's `name` the day it was written.
 //!
 //! The obligation that leaves for the screen, when it is built: a category is
 //! drawn through `crate::words` like every other string this crate shows, never
@@ -87,6 +92,11 @@ pub const THE_CATALOGUE: &str = include_str!("../catalogue.toml");
 /// Where the decided list is, from the repository's root — for anything that
 /// reads the file rather than this crate.
 pub const WHERE_IT_IS: &str = "crates/alo-software/catalogue.toml";
+
+/// The longest name an entry may have, in characters. The longest Flathub
+/// name in the catalogue on 2026-11-17 was 30 (*GNU Image Manipulation
+/// Program*); anything near this is a sentence, not a name.
+pub const THE_LONGEST_NAME: usize = 64;
 
 /// The only `format` this reader understands.
 pub const FORMAT: u32 = 1;
@@ -153,6 +163,14 @@ pub enum NotCatalogued {
         /// What it was listed at.
         version: String,
     },
+    /// A name that is empty, longer than a row holds, or more than one line.
+    #[error("{identifier} is called {name:?}, which is not a name a row can show")]
+    NotAName {
+        /// The application.
+        identifier: String,
+        /// What it was called.
+        name: String,
+    },
     /// No licence, or one that is not a licence expression.
     #[error("{identifier} names no licence it can be offered under")]
     NoLicence {
@@ -187,6 +205,8 @@ pub struct Listed {
     category: Category,
     /// The application, by its source's identifier.
     application: Application,
+    /// What its makers call it.
+    name: String,
     /// Where it is installed from.
     source: SourceName,
     /// The upstream release it was listed at.
@@ -210,6 +230,17 @@ impl Listed {
     #[must_use]
     pub const fn application(&self) -> &Application {
         &self.application
+    }
+
+    /// What its makers call it — **the name a person reads, never the
+    /// identifier** (the owner, 2026-11-17).
+    ///
+    /// As its source publishes it in its own default language: Flathub's
+    /// `name` for the entries from Flathub. A product's name is its makers'
+    /// and is not translated here.
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     /// Where it is installed from.
@@ -378,6 +409,8 @@ struct Entry {
     category: Category,
     /// The application's identifier at its source.
     identifier: String,
+    /// What its makers call it, as its source publishes it.
+    name: String,
     /// The place it is installed from.
     source: String,
     /// The upstream release it was listed at.
@@ -427,6 +460,17 @@ fn checked(entry: Entry) -> Result<Listed, NotCatalogued> {
             version: entry.version,
         });
     }
+    let name = entry.name.trim();
+    let is_a_name = !name.is_empty()
+        && name.chars().count() <= THE_LONGEST_NAME
+        && !name.chars().any(char::is_control);
+    if !is_a_name {
+        return Err(NotCatalogued::NotAName {
+            identifier: entry.identifier,
+            name: entry.name,
+        });
+    }
+    let name = name.to_owned();
     let Some(licence) = Licence::read(&entry.licence) else {
         return Err(NotCatalogued::NoLicence {
             identifier: entry.identifier,
@@ -440,6 +484,7 @@ fn checked(entry: Entry) -> Result<Listed, NotCatalogued> {
     Ok(Listed {
         category,
         application,
+        name,
         source,
         version: entry.version,
         licence,

@@ -143,6 +143,10 @@ pub struct WhereToLook {
     pub data_dirs: std::ffi::OsString,
     /// The mark that says the fresh machine's applications were walked.
     pub arrived: TheApplicationsArrived,
+    /// Where flatpak keeps each remote's own catalogue, pictures included —
+    /// `<installation>/appstream` — so the market can draw an application a
+    /// person has not installed with its own picture.
+    pub appstream: PathBuf,
     /// The languages the person reads, best first, as BCP 47 tags — what an
     /// entry's localised `GenericName` and `Keywords` are read in, so the alo
     /// Bar finds an application by what it is in their words. Empty reads the
@@ -185,6 +189,7 @@ impl WhereToLook {
             icons: alo_icons::where_icons_live(home, data_home, Some(&data_dirs)),
             data_dirs,
             arrived,
+            appstream: installation.join("appstream"),
             languages: Vec::new(),
         }
     }
@@ -224,8 +229,22 @@ pub fn what_is_offered(at: &WhereToLook, tool: &(impl Tool + ?Sized)) -> Offered
     // **The size asked for is `alo_dock::measures::ICON`**, the logical width
     // of the box the Dock draws an application into: the picture is scaled
     // where it is drawn, by the surface that knows which display it is on.
-    let (artwork, artwork_went) =
+    let (mut artwork, artwork_went) =
         the_artwork_each_application_has(&at.entries, &at.icons, alo_dock::measures::ICON);
+    // **And the market's**: each catalogued application's own picture from
+    // its source's catalogue on this disk, after the installed ones' so an
+    // installed application keeps the icon its entry names.
+    if let Ok(catalogue) = alo_software::Catalogue::decided() {
+        let directories = crate::the_artwork_the_catalogue_has::where_the_catalogues_pictures_are(
+            &at.appstream,
+            std::env::consts::ARCH,
+        );
+        crate::the_artwork_the_catalogue_has::the_artwork_the_catalogue_has(
+            &mut artwork,
+            &catalogue,
+            &directories,
+        );
+    }
     // **A second walk of the same directories**, because the artwork reader
     // keeps its own. They can disagree only if an entry changes between the two,
     // and the watcher then sees that change and reads again.
