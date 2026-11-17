@@ -5,7 +5,8 @@
 //!
 //! The portal asks through the door's `choose-file` act and holds the
 //! connection (`docs/contracts/application-door.md`); the door hands the
-//! connection here ([`AskedForAFile`]) and this answers it when the person has.
+//! connection here ([`crate::the_file_chooser::AskedForAFile`]) and this
+//! answers it when the person has.
 //! What the sheet knows and decides — the rows, each key, when a name may be
 //! saved — is `alo_file_chooser::Chooser`'s; this holds the sheets and their
 //! connections.
