@@ -98,6 +98,21 @@
 # *real application names, never identifiers.* A name is the makers' own and is
 # not translated here; everything else a person reads is in `crate::words`.
 #
+# ## From its maker's own signed release (ADR 0158)
+#
+# An entry whose `source` is a maker rather than a place — only `storytold`,
+# whose Craft applications the owner added on 2026-11-17 — names its `bundle`
+# (the maker's x86_64 `.flatpak` on GitHub releases) and that file's `sha256`,
+# read from GitHub's own digest of the asset on 2026-11-17 (PhotoCraft's also
+# checked against the maker's signed `SHA256SUMS.txt`). The file must hash to it
+# and its signature must be the maker's pinned key's, or nothing is installed.
+# `verified = true` because the makers published it themselves; `early = true`
+# because each is about seven weeks old at version 0.2x. Such an entry is also
+# labelled *no automatic updates*: a newer release reaches a machine when this
+# file pins it. The seven are the ones the owner named; the Craft line's younger
+# members (WordCraft, GridCraft, DeckCraft, CadCraft, SoundCraft and others) are
+# left for a later decision.
+#
 # Each is installed the way a person installs one — from `source`, through the
 # rented tool, arriving granted nothing.
 
@@ -127,6 +142,17 @@ licence = "MIT"
 verified = true
 early = false
 
+[[application]]
+category = "pictures"
+identifier = "ai.storyteller.photocraft"
+source = "storytold"
+version = "0.23.1"
+licence = "Apache-2.0"
+verified = true
+early = true
+bundle = "https://github.com/storytold/photocraft/releases/download/v0.23.1/photocraft-0.23.1-linux-x86_64.flatpak"
+sha256 = "5c9deb58f07bd54f323a5d985bed295b4c5b15789e02651e2f203d5e8ef211a5"
+
 # Make a picture that does not exist yet, with a brush. Chosen beside the
 # picture editor rather than instead of it because painting and correcting are
 # different work: a brush engine built for pressure and tilt is the whole
@@ -153,6 +179,17 @@ version = "1.4.4"
 licence = "GPL-2.0-or-later"
 verified = true
 early = false
+
+[[application]]
+category = "illustration"
+identifier = "ai.storyteller.vectorcraft"
+source = "storytold"
+version = "0.24.1"
+licence = "Apache-2.0"
+verified = true
+early = true
+bundle = "https://github.com/storytold/vectorcraft/releases/download/v0.24.1/vectorcraft-0.24.1-linux-x86_64.flatpak"
+sha256 = "98db44357f1eb9069325ef9c33c4db154bca80be6b91a340d343ab85a7940dce"
 
 # Develop what a camera recorded: a shoot of raw files, graded and exported
 # without altering the originals. The library-and-develop shape, which a
@@ -187,6 +224,17 @@ licence = "GPL-3.0+"
 verified = false
 early = false
 
+[[application]]
+category = "photographs"
+identifier = "ai.storyteller.lightcraft"
+source = "storytold"
+version = "0.21.1"
+licence = "Apache-2.0"
+verified = true
+early = true
+bundle = "https://github.com/storytold/lightcraft/releases/download/v0.21.1/lightcraft-0.21.1-linux-x86_64.flatpak"
+sha256 = "3a9aeb896dfb7b8ba1f6c86e7733912fb7aedf29b1a99eee8fe95839951f769c"
+
 # Arrange a page that will be printed: a leaflet, a booklet, a poster, with the
 # colour and bleed a printer asks for. A word processor laying out a page for
 # print is the commonest way a job comes back from the printer wrong.
@@ -199,6 +247,17 @@ version = "1.6.5"
 licence = "GPL-2.0+"
 verified = false
 early = false
+
+[[application]]
+category = "page-layout"
+identifier = "ai.storyteller.designcraft"
+source = "storytold"
+version = "0.20.1"
+licence = "Apache-2.0"
+verified = true
+early = true
+bundle = "https://github.com/storytold/designcraft/releases/download/v0.20.1/designcraft-0.20.1-linux-x86_64.flatpak"
+sha256 = "c628192174776fd4766ef342d5c4495e8787b53e26a4f0136c48bd46c13bada4"
 
 # Cut video: clips on a timeline, with sound, titles and an export that plays
 # somewhere else.
@@ -231,6 +290,28 @@ version = "3.5.1"
 licence = "GPL-3.0-or-later"
 verified = false
 early = false
+
+[[application]]
+category = "video"
+identifier = "ai.storyteller.filmcraft"
+source = "storytold"
+version = "0.20.1"
+licence = "Apache-2.0"
+verified = true
+early = true
+bundle = "https://github.com/storytold/filmcraft/releases/download/v0.20.1/filmcraft-0.20.1-linux-x86_64.flatpak"
+sha256 = "646ee627b39b93fe69c7ecb44725fc964fd43660ef8cf2884b3fb48e759ac0f8"
+
+[[application]]
+category = "video"
+identifier = "ai.storyteller.effectcraft"
+source = "storytold"
+version = "0.24.1"
+licence = "Apache-2.0"
+verified = true
+early = true
+bundle = "https://github.com/storytold/effectcraft/releases/download/v0.24.1/effectcraft-0.24.1-linux-x86_64.flatpak"
+sha256 = "a2f7d1fe089a3e580ad4c84e1f8dd983e071e12e041122f25a820a51bfb31f0a"
 
 # Record and edit sound: an interview, a voice-over, a podcast — trimmed,
 # levelled and exported.
@@ -279,6 +360,17 @@ version = "10.0.0"
 licence = "AGPL-3.0-only"
 verified = true
 early = false
+
+[[application]]
+category = "documents"
+identifier = "ai.storyteller.pdfcraft"
+source = "storytold"
+version = "0.21.1"
+licence = "Apache-2.0"
+verified = true
+early = true
+bundle = "https://github.com/storytold/pdfcraft/releases/download/v0.21.1/pdfcraft-0.21.1-linux-x86_64.flatpak"
+sha256 = "4f126ff718e851ba54ee0207c4b6ce9eebddfdd72d1124531d215cc0f8937daf"
 
 # Draw a diagram: boxes joined by lines, a flow, a plan. Not verified on
 # Flathub, which its row says.

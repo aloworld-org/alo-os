@@ -148,7 +148,7 @@ mod tests {
         assert!(!words.installing.is_empty());
         assert!(!words.open.is_empty());
         assert_eq!(words.kinds_of_work.len(), Category::EVERY.len() + 1);
-        assert_eq!(words.labels.len(), 3);
+        assert_eq!(words.labels.len(), Label::EVERY.len());
         for one in &words.labels {
             assert!(!one.is_empty());
         }
@@ -204,7 +204,7 @@ mod tests {
         }
         assert_eq!(
             read,
-            5 + Category::EVERY.len() + 1 + 3,
+            5 + Category::EVERY.len() + 1 + Label::EVERY.len(),
             "the loop read every word"
         );
     }

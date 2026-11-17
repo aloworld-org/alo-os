@@ -1116,7 +1116,7 @@ licence. The licence is there because it is the field somebody choosing between
 two of these actually weighs.
 
 **Since 2026-11-17 each entry may also carry `labels`** — `not_open_source`,
-`not_verified`, `early_version`, in that order — the same facts the market
+`not_verified`, `early_version`, `no_automatic_updates`, in that order — the same facts the market
 shows a person on that application's row (the owner's decision of that day).
 The field is **absent** when an application has none, so an answer about one
 with no label is written exactly as before; this is an additive change to the

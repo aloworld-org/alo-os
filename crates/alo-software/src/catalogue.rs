@@ -82,7 +82,9 @@ use serde::Deserialize;
 use crate::category::Category;
 use crate::fields::{Licence, is_a_release};
 use crate::installing::Wanted;
+use crate::installing_a_signed_release::{NotASignedRelease, SignedRelease};
 use crate::label::Label;
+use crate::maker::Maker;
 use crate::shipped::{NotShipped, Shipped};
 use crate::source::SourceName;
 
@@ -186,6 +188,23 @@ pub enum NotCatalogued {
         /// The application.
         identifier: String,
     },
+    /// An entry whose maker's signed release does not hold (ADR 0158): a maker
+    /// with no bundle or checksum, an address that is not the maker's, or a
+    /// checksum that is not one.
+    #[error("{identifier} is from its maker's signed release, which does not hold: {why}")]
+    NotASignedRelease {
+        /// The application.
+        identifier: String,
+        /// What was wrong with it.
+        why: NotASignedRelease,
+    },
+    /// A bundle or a checksum on an entry from a place set up in the rented
+    /// tool, where neither means anything.
+    #[error("{identifier} comes from a place, not a maker, so it may name no bundle or checksum")]
+    NotFromAMaker {
+        /// The application.
+        identifier: String,
+    },
     /// The shipped list this catalogue is checked against does not itself hold.
     ///
     /// Unreachable for the two decided lists as they are written — a test in
@@ -217,6 +236,8 @@ pub struct Listed {
     verified: bool,
     /// Whether it is an early version, still changing a great deal.
     early: bool,
+    /// Its maker's signed release, when it is installed from one (ADR 0158).
+    signed: Option<SignedRelease>,
 }
 
 impl Listed {
@@ -297,8 +318,21 @@ impl Listed {
                 Label::NotOpenSource => !self.is_open_source(),
                 Label::NotVerified => !self.is_verified(),
                 Label::EarlyVersion => self.is_early(),
+                Label::NoAutomaticUpdates => self.signed_release().is_some(),
             })
             .collect()
+    }
+
+    /// Its maker's signed release, when it is installed from one rather than
+    /// from a place set up in the rented tool (ADR 0158).
+    ///
+    /// **A caller that installs must ask this first**: [`Listed::wanted`] for
+    /// such an entry names the maker as the place, which the rented tool does
+    /// not know, so it is refused as a place this machine does not install
+    /// from rather than installed some other way.
+    #[must_use]
+    pub const fn signed_release(&self) -> Option<&SignedRelease> {
+        self.signed.as_ref()
     }
 
     /// The installation, as a person asks for any application: the same value,
@@ -423,6 +457,13 @@ struct Entry {
     verified: bool,
     /// Whether it is an early version.
     early: bool,
+    /// Where a maker's own signed bundle is, for an entry whose `source` is a
+    /// maker (ADR 0158), and nothing for any other.
+    #[serde(default)]
+    bundle: Option<String>,
+    /// The bundle's SHA-256, beside it.
+    #[serde(default)]
+    sha256: Option<String>,
 }
 
 /// The file, as it is written.
@@ -481,6 +522,31 @@ fn checked(entry: Entry) -> Result<Listed, NotCatalogued> {
             identifier: entry.identifier,
         });
     }
+    let signed = match (Maker::named(&entry.source), entry.bundle, entry.sha256) {
+        (None, None, None) => None,
+        (None, _, _) => {
+            return Err(NotCatalogued::NotFromAMaker {
+                identifier: entry.identifier,
+            });
+        }
+        (Some(_), bundle, sha256) => {
+            let pinned = SignedRelease::pinned(
+                application.clone(),
+                &entry.source,
+                bundle.as_deref().unwrap_or_default(),
+                sha256.as_deref().unwrap_or_default(),
+            );
+            match pinned {
+                Ok(release) => Some(release),
+                Err(why) => {
+                    return Err(NotCatalogued::NotASignedRelease {
+                        identifier: entry.identifier,
+                        why,
+                    });
+                }
+            }
+        }
+    };
     Ok(Listed {
         category,
         application,
@@ -490,6 +556,7 @@ fn checked(entry: Entry) -> Result<Listed, NotCatalogued> {
         licence,
         verified: entry.verified,
         early: entry.early,
+        signed,
     })
 }
 

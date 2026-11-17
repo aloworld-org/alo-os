@@ -377,7 +377,7 @@ pub const THE_NAMES: [Word; 5] = [
 ];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 57] = [
+pub const THE_SENTENCES: [Word; 59] = [
     READ_SENTENCE,
     INSTALLED,
     INSTALLED_UNSANDBOXED,
@@ -435,6 +435,8 @@ pub const THE_SENTENCES: [Word; 57] = [
     NOT_VERIFIED_BY_ITS_MAKER_IN_FULL,
     EARLY_VERSION,
     EARLY_VERSION_IN_FULL,
+    NO_AUTOMATIC_UPDATES,
+    NO_AUTOMATIC_UPDATES_IN_FULL,
 ];
 
 /// Every refusal, so that a test can hold each of them to saying what did not
@@ -705,14 +707,40 @@ pub const EARLY_VERSION_IN_FULL: Word = Word::saying(
     "What a screen reader says for the short label Early version, and what a person reads if they ask what it means.",
 );
 
+/// Beside an application installed from its maker's own signed release.
+pub const NO_AUTOMATIC_UPDATES: Word = Word::saying(
+    "software.label.no-automatic-updates",
+    "No automatic updates",
+)
+.noting(
+    "Shown beside an application in the list a person installs from, when it comes from its \
+         makers' own signed release rather than from the usual place. This computer does not \
+         offer its newer versions the way it does for other applications. A plain fact, not a \
+         warning. Short, because it sits on one line under the application's name.",
+);
+
+/// The same, in full, for a screen reader.
+pub const NO_AUTOMATIC_UPDATES_IN_FULL: Word = Word::saying(
+    "software.label.no-automatic-updates.in-full",
+    "No automatic updates: it comes from its makers' own release, and this computer does not \
+     offer its newer versions the way it does for your other applications",
+)
+.noting(
+    "What a screen reader says for the short label No automatic updates, and what a person reads \
+     if they ask what it means. It does not say the application can never be updated, only that \
+     this computer does not offer it.",
+);
+
 /// Every label's words, short then in full, in `crate::Label::EVERY`'s order.
-pub const EVERY_LABEL: [Word; 6] = [
+pub const EVERY_LABEL: [Word; 8] = [
     NOT_OPEN_SOURCE,
     NOT_OPEN_SOURCE_IN_FULL,
     NOT_VERIFIED_BY_ITS_MAKER,
     NOT_VERIFIED_BY_ITS_MAKER_IN_FULL,
     EARLY_VERSION,
     EARLY_VERSION_IN_FULL,
+    NO_AUTOMATIC_UPDATES,
+    NO_AUTOMATIC_UPDATES_IN_FULL,
 ];
 
 /// What `install_application` changes, under the action on the approval card.
@@ -736,7 +764,7 @@ pub const VERB_LEAVES: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 62] = [
+pub const EVERY_WORD: [Word; 64] = [
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
@@ -799,6 +827,8 @@ pub const EVERY_WORD: [Word; 62] = [
     NOT_VERIFIED_BY_ITS_MAKER_IN_FULL,
     EARLY_VERSION,
     EARLY_VERSION_IN_FULL,
+    NO_AUTOMATIC_UPDATES,
+    NO_AUTOMATIC_UPDATES_IN_FULL,
 ];
 
 /// Why this crate's own words could not be declared.

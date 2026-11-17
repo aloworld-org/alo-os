@@ -437,3 +437,49 @@ fn two_installations_each_take_off_their_own_line() {
     wanted.sort_unstable();
     assert_eq!(named, wanted);
 }
+
+/// A Craft application from the decided catalogue, which comes from its
+/// maker's signed release rather than from a place.
+fn a_craft_application(catalogue: &Catalogue) -> Listed {
+    catalogue
+        .every()
+        .iter()
+        .find(|one| one.signed_release().is_some())
+        .expect("the catalogue lists a signed release")
+        .clone()
+}
+
+/// **A maker's signed release goes by its own road, and its refusals come
+/// before anything leaves.** An organisation's rule that permits only Flathub
+/// keeps the maker out with the indicator quiet, and the tool is never asked to
+/// install it from a place it does not know.
+#[test]
+fn a_signed_release_kept_out_by_a_rule_leaves_the_indicator_quiet() {
+    let (telling, reached) = channel();
+    let tool = Arc::new(OnePlace::working().telling(telling));
+    let only_flathub = Bound::only(
+        [SourceName::checked("flathub").expect("a name")],
+        alo_software::SetBy::AnAdministrator,
+    );
+    let road = TheInstallingThatIsAsked::with(Arc::clone(&tool) as Arc<_>, only_flathub);
+    let catalogue = Catalogue::decided().expect("the catalogue this machine ships");
+    let craft = a_craft_application(&catalogue);
+    let mut indicator = Indicator::default();
+
+    let refused = road
+        .asked_for(&craft, &mut indicator, noon())
+        .expect_err("a maker outside the rule is refused");
+
+    assert!(indicator.is_quiet(), "{refused:?}");
+    assert!(
+        matches!(
+            refused,
+            Stopped::Refused(NotDone::OutsideTheBound { ref source, .. }) if source == "storytold"
+        ),
+        "{refused:?}"
+    );
+    assert!(
+        reached.try_recv().is_err(),
+        "the tool was asked to install a signed release from a place"
+    );
+}

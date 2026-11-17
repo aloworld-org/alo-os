@@ -2187,6 +2187,8 @@ software.installed-reaching-everything	{application} is installed, and you chose
 software.installing-it	Installing…
 software.label.early-version	Early version
 software.label.early-version.in-full	Early version: it is new and still changing, so some of it may not work yet
+software.label.no-automatic-updates	No automatic updates
+software.label.no-automatic-updates.in-full	No automatic updates: it comes from its makers' own release, and this computer does not offer its newer versions the way it does for your other applications
 software.label.not-open-source	Not open source
 software.label.not-open-source.in-full	Not open source: the people who make it do not publish the code it is built from, so nobody outside can check what it does
 software.label.not-verified	Not verified

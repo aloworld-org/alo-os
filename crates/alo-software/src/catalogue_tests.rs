@@ -12,6 +12,7 @@
 )]
 
 use super::*;
+use crate::installing_a_signed_release::NotASignedRelease;
 use crate::label::Label;
 use crate::role::Role;
 
@@ -129,7 +130,7 @@ fn an_entry_that_does_not_say_verified_or_early_is_refused() {
 #[test]
 fn the_decided_catalogue_holds() {
     let catalogue = Catalogue::decided().unwrap();
-    assert_eq!(catalogue.how_many(), 62);
+    assert_eq!(catalogue.how_many(), 69);
     for category in Category::EVERY {
         assert!(
             catalogue.under(category).next().is_some(),
@@ -498,6 +499,8 @@ fn the_catalogue_holds_no_words_a_person_would_read() {
                         | "licence"
                         | "verified"
                         | "early"
+                        | "bundle"
+                        | "sha256"
                 )
             ),
             "the catalogue holds {line:?}, which this reader does not know — and if it is \
@@ -506,7 +509,97 @@ fn the_catalogue_holds_no_words_a_person_would_read() {
         read += 1;
     }
     assert_eq!(
-        read, 497,
-        "format, and eight keys for each of sixty-two entries"
+        read, 498,
+        "format, seven keys for each of sixty-two entries from Flathub, and nine for each of \
+         seven from their maker's signed release"
+    );
+}
+
+/// **A Craft application is read as its maker's signed release**: early, with
+/// no automatic updates, published by its makers, and pinned to a bundle on
+/// their own release page with its checksum.
+#[test]
+fn a_craft_application_is_read_as_its_makers_signed_release() {
+    let catalogue = Catalogue::decided().unwrap();
+    let craft: Vec<&Listed> = catalogue
+        .every()
+        .iter()
+        .filter(|one| one.signed_release().is_some())
+        .collect();
+    assert_eq!(craft.len(), 7, "the seven the owner named");
+    for one in craft {
+        let release = one.signed_release().unwrap();
+        assert_eq!(release.maker().name(), "storytold");
+        assert_eq!(release.application(), one.application());
+        assert!(release.bundle().ends_with("-linux-x86_64.flatpak"));
+        assert_eq!(
+            one.labels(),
+            vec![Label::EarlyVersion, Label::NoAutomaticUpdates],
+            "{}",
+            one.application().identifier()
+        );
+    }
+    let gimp = catalogue
+        .every()
+        .iter()
+        .find(|one| one.application().identifier() == "org.gimp.GIMP")
+        .unwrap();
+    assert!(gimp.signed_release().is_none());
+}
+
+/// **What a signed release in the file may not be**: a maker with no bundle,
+/// a maker's bundle on somebody else's page, a checksum that is not one, and a
+/// bundle on an entry from a place.
+#[test]
+fn a_signed_release_that_does_not_hold_is_refused() {
+    let shipped = what_a_machine_ships();
+    let one_more = |source: &str, rest: &str| {
+        format!(
+            "{THE_CATALOGUE}\n[[application]]\ncategory = \"audio\"\nidentifier = \
+             \"ai.storyteller.example\"\nsource = \"{source}\"\nversion = \"0.1.0\"\nlicence = \
+             \"Apache-2.0\"\nverified = true\nearly = true\n{rest}"
+        )
+    };
+    let sum = "5c9deb58f07bd54f323a5d985bed295b4c5b15789e02651e2f203d5e8ef211a5";
+    let theirs = "https://github.com/storytold/x/releases/download/v1/x.flatpak";
+    let somebody_elses = "https://github.com/someone/x/releases/download/v1/x.flatpak";
+    for (text, why) in [
+        (one_more("storytold", ""), NotASignedRelease::NotTheMakers),
+        (
+            one_more("storytold", &format!("bundle = \"{theirs}\"\n")),
+            NotASignedRelease::NotAChecksum,
+        ),
+        (
+            one_more(
+                "storytold",
+                &format!("bundle = \"{somebody_elses}\"\nsha256 = \"{sum}\"\n"),
+            ),
+            NotASignedRelease::NotTheMakers,
+        ),
+        (
+            one_more(
+                "storytold",
+                &format!("bundle = \"{theirs}\"\nsha256 = \"not-a-sum\"\n"),
+            ),
+            NotASignedRelease::NotAChecksum,
+        ),
+    ] {
+        assert_eq!(
+            Catalogue::read(&text, &shipped).unwrap_err(),
+            NotCatalogued::NotASignedRelease {
+                identifier: "ai.storyteller.example".to_owned(),
+                why
+            }
+        );
+    }
+    let from_a_place = one_more(
+        "flathub",
+        &format!("bundle = \"{theirs}\"\nsha256 = \"{sum}\"\n"),
+    );
+    assert_eq!(
+        Catalogue::read(&from_a_place, &shipped).unwrap_err(),
+        NotCatalogued::NotFromAMaker {
+            identifier: "ai.storyteller.example".to_owned()
+        }
     );
 }

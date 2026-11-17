@@ -70,6 +70,15 @@
 //! the organisation's bound are `alo-software`'s, read fresh on every ask, so a
 //! rule changed between two asks takes effect on the second.
 //!
+//! # From a maker's own signed release
+//!
+//! An application the catalogue lists from its maker's signed release (ADR
+//! 0158) goes the same way, with `alo_software::installing_a_signed_release` as
+//! step 2 and `alo_software::install_a_signed_release` as step 4: the bundle and
+//! its signature are fetched into a folder of this installation's own, checked
+//! against the pinned checksum and the maker's pinned key, handed to the rented
+//! tool only if both hold, and the folder removed whatever the answer.
+//!
 //! **It words nothing.** Every refusal is an `alo_software::Stopped`, worded by
 //! the crate that made it, and the window renders it where a person reads.
 //! There is not a sentence in this file.
@@ -79,7 +88,10 @@ use std::sync::mpsc::{Receiver, Sender, channel};
 use std::time::SystemTime;
 
 use alo_egress::{Indicator, Underway};
-use alo_software::{Bound, Enabled, Installed, Listed, NotDone, Stopped, Tool, Wanted};
+use alo_software::{
+    Bound, Enabled, Installed, Listed, NotDone, SignedRelease, Stopped, TheNetwork,
+    TheRentedVerifier, Tool, Wanted,
+};
 
 /// What became of one installation a person asked for.
 ///
@@ -115,10 +127,26 @@ struct Finished {
 struct TheAuthority {
     /// The line this installation is on.
     underway: Underway,
-    /// The places this machine may install from, as they were read.
-    enabled: Enabled,
-    /// What is being installed.
-    wanted: Wanted,
+    /// Which road it takes.
+    how: How,
+}
+
+/// Where an installation comes from.
+enum How {
+    /// From a place set up in the rented tool.
+    FromAPlace {
+        /// The places this machine may install from, as they were read.
+        enabled: Enabled,
+        /// What is being installed.
+        wanted: Wanted,
+    },
+    /// From its maker's own signed release (ADR 0158).
+    FromItsMaker {
+        /// The pinned release.
+        release: SignedRelease,
+        /// The organisation's rule, asked again on the thread.
+        bound: Bound,
+    },
 }
 
 /// The road from *a person asked for this* to *it is here*.
@@ -180,9 +208,26 @@ impl TheInstallingThatIsAsked {
         // `Enabled::read` takes it by value: it is somebody else's rule and
         // reading the places under it consumes the statement of it, which is
         // `alo-software`'s shape and not something to work around here.
-        let enabled = Enabled::read(&*self.tool, self.bound.clone())?;
-        let wanted = listed.wanted();
-        let errand = alo_software::installing(&enabled, &wanted, &*self.tool)?;
+        let (errand, how) = if let Some(release) = listed.signed_release() {
+            let errand = alo_software::installing_a_signed_release(
+                &self.bound,
+                release,
+                std::env::consts::ARCH,
+                &*self.tool,
+            )?;
+            (
+                errand,
+                How::FromItsMaker {
+                    release: release.clone(),
+                    bound: self.bound.clone(),
+                },
+            )
+        } else {
+            let enabled = Enabled::read(&*self.tool, self.bound.clone())?;
+            let wanted = listed.wanted();
+            let errand = alo_software::installing(&enabled, &wanted, &*self.tool)?;
+            (errand, How::FromAPlace { enabled, wanted })
+        };
 
         // The thread, started **before** the line goes up and waiting for the
         // authority. See this module's header for what moving the authority in
@@ -198,15 +243,17 @@ impl TheInstallingThatIsAsked {
                 // **A sender dropped without sending means the line never went
                 // up**, so there is nothing to install and nothing to take
                 // off. Returning is the whole of the right behaviour.
-                let Ok(TheAuthority {
-                    underway,
-                    enabled,
-                    wanted,
-                }) = taking.recv()
-                else {
+                let Ok(TheAuthority { underway, how }) = taking.recv() else {
                     return;
                 };
-                let outcome = alo_software::install(&underway, &enabled, wanted, &*tool);
+                let outcome = match how {
+                    How::FromAPlace { enabled, wanted } => {
+                        alo_software::install(&underway, &enabled, wanted, &*tool)
+                    }
+                    How::FromItsMaker { release, bound } => {
+                        from_its_maker(&underway, &bound, &release, &*tool)
+                    }
+                };
                 drop(posting.send(Finished {
                     what: WhatBecameOfIt {
                         identifier: for_the_answer,
@@ -243,11 +290,7 @@ impl TheInstallingThatIsAsked {
         // have done by returning — and it returns only when the authority was
         // never sent. Nothing has fetched, so the line comes straight off
         // again and the person is told the machine could not.
-        if let Err(returned) = handing.send(TheAuthority {
-            underway,
-            enabled,
-            wanted,
-        }) {
+        if let Err(returned) = handing.send(TheAuthority { underway, how }) {
             let ended = indicator.ended_on_its_own(returned.0.underway);
             debug_assert!(
                 ended,
@@ -291,6 +334,56 @@ impl TheInstallingThatIsAsked {
         }
         came
     }
+}
+
+/// Fetch, check and install a maker's signed release, on the installing
+/// thread, in a folder of its own that is removed afterwards.
+fn from_its_maker(
+    underway: &Underway,
+    bound: &Bound,
+    release: &SignedRelease,
+    tool: &(dyn Tool + Send + Sync),
+) -> Result<Installed, Stopped> {
+    let network = TheNetwork::to(release.maker()).map_err(|why| {
+        Stopped::Refused(NotDone::DidNotAnswer {
+            said: format!("no way out to {}: {why}", release.maker().host()),
+        })
+    })?;
+    let folder = a_folder_of_its_own().map_err(|why| {
+        Stopped::Refused(NotDone::DidNotAnswer {
+            said: format!("no folder to fetch a signed release into: {why}"),
+        })
+    })?;
+    let outcome = alo_software::install_a_signed_release(
+        underway,
+        bound,
+        release,
+        std::env::consts::ARCH,
+        &network,
+        &TheRentedVerifier::on_this_machine(),
+        tool,
+        &folder,
+    );
+    // Emptied by `install_a_signed_release` on every answer; this takes the
+    // folder itself away.
+    let _ = std::fs::remove_dir_all(&folder);
+    outcome
+}
+
+/// A new folder for one installation's files, in the person's own runtime
+/// folder where there is one (it is theirs alone, and not a shared `/tmp`).
+fn a_folder_of_its_own() -> std::io::Result<std::path::PathBuf> {
+    let under = std::env::var_os("XDG_RUNTIME_DIR")
+        .map_or_else(std::env::temp_dir, std::path::PathBuf::from);
+    let moment = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .map_or(0, |since| since.as_nanos());
+    let folder = under.join(format!(
+        "alo-signed-release-{}-{moment}",
+        std::process::id()
+    ));
+    std::fs::create_dir(&folder)?;
+    Ok(folder)
 }
 
 #[cfg(test)]
