@@ -71,7 +71,8 @@ fn one_byte_changed_is_refused() {
     let (folder, keyring) = the_keyring();
     let changed = folder.path().join("SHA256SUMS.txt");
     let mut bytes = std::fs::read(fixture("SHA256SUMS.txt")).unwrap();
-    bytes[0] ^= 1;
+    let first = bytes.first_mut().unwrap();
+    *first ^= 1;
     std::fs::write(&changed, bytes).unwrap();
     let signer = TheRentedVerifier::on_this_machine()
         .signer(&changed, &fixture("SHA256SUMS.txt.asc"), &keyring)
