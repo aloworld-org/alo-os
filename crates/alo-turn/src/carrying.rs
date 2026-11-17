@@ -111,7 +111,7 @@ pub(crate) fn carrying_out(
     now: std::time::SystemTime,
 ) -> (Entry, Result<WhatAVerbDid, NotDone>) {
     let in_an_application = said_in_an_application::about(&authorised);
-    let a_publication = authorised.verb() == alo_publishing::PUBLISH_TO_GITHUB_PAGES;
+    let a_publication = said_of_a_publication::is_one(authorised.verb());
     let (entry, did) = carrying_it_out(machine, authorised, grants, origin, now);
     if let Some((verb, application)) = in_an_application {
         eprintln!(

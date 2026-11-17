@@ -3,7 +3,7 @@ use std::path::Path;
 use alo_acting::said_of_publishing::{Publishing, a_publication};
 use alo_publishing::{Account, NotPublished, Publication, Published};
 
-use super::{said, said_before_asking};
+use super::{is_one, said, said_before_asking};
 use crate::refusing::NotDone;
 use crate::what_a_verb_did::WhatAVerbDid;
 
@@ -64,4 +64,14 @@ fn the_line_names_neither_the_folder_nor_the_account() {
     let line = said(&published(false));
     assert!(!line.contains("anna"), "{line}");
     assert!(!line.contains("site"), "{line}");
+}
+
+/// **A publication is said, and no other verb is said as one**, so the
+/// journal's line follows the verb and nothing else.
+#[test]
+fn only_a_publication_is_said_as_one() {
+    assert!(is_one(alo_publishing::PUBLISH_TO_GITHUB_PAGES));
+    for other in ["read_file", "open_file_in_application", "install_application", ""] {
+        assert!(!is_one(other), "{other}");
+    }
 }

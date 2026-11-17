@@ -19,6 +19,13 @@ use alo_publishing::NotPublished;
 use crate::refusing::NotDone;
 use crate::what_a_verb_did::WhatAVerbDid;
 
+/// Whether `verb` is a publication, which is said on the journal whatever
+/// became of it.
+#[must_use]
+pub(crate) fn is_one(verb: &str) -> bool {
+    verb == alo_publishing::PUBLISH_TO_GITHUB_PAGES
+}
+
 /// The sentence for a publication that was carried out, or tried.
 #[must_use]
 pub(crate) fn said(did: &Result<WhatAVerbDid, NotDone>) -> String {
