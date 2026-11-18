@@ -87,3 +87,21 @@ fn private_native_approval_body_has_one_scoped_gate_and_no_secret_or_protocol_in
         if name == "VSCodium at full access"));
     Ok(())
 }
+
+#[test]
+fn a_failed_native_studio_turn_cannot_feed_a_later_model_request()
+-> Result<(), &'static str> {
+    let walk = the_first_walk();
+    for section in ["VSCodium at full access", "every application at full access",
+                    "VSCodium at ask each time"] {
+        let step = walk.steps().iter().find(|step| matches!(step,
+            Step::Section { name, .. } if name == section)).ok_or("missing later model section")?;
+        assert!(matches!(step, Step::Section { needs, .. }
+            if needs.contains(&"Studio native approval")),
+            "a failed Studio task may still own the daemon connection: {section}");
+    }
+    assert!(walk.steps().iter().any(|step| matches!(step,
+        Step::Section { name, needs } if name == "the Papers sheet at ask each time"
+            && needs.contains(&"VSCodium at ask each time"))));
+    Ok(())
+}
