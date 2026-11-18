@@ -819,7 +819,7 @@ compositor's `picture-of` (`application-door.md`), and read by
 
 | Arguments | The sentence a person approves |
 |---|---|
-| `application` (an application), `question` (text: what the picture is to answer, in the person's words, put to the reader with it) | *take a picture of the {application} window and have it read* |
+| `application` (an application), `question` (text: what the picture is to answer, in the person's words, put to the reader with it) | *take a picture of the {application} window and have it read, to answer: {question}* |
 
 - **A change.** At *ask each time* each picture waits for one approval and one
   approval takes one picture; at full access it is taken at once and recorded

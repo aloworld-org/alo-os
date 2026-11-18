@@ -37,7 +37,7 @@ pub const PICTURE_QUESTION: Word = Word::saying(
 /// What a person approves.
 pub const PICTURE_SENTENCE: Word = Word::saying(
     "adapters.fallback.picture-window.sentence",
-    "take a picture of the {application} window and have it read",
+    "take a picture of the {application} window and have it read, to answer: {question}",
 )
 .noting(
     "The sentence a person approves before alo takes one picture of an application's window. \
