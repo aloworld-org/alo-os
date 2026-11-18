@@ -33,6 +33,7 @@ use alo_software::{Installed, WhatTheCatalogueHolds};
 use crate::acting_on_an_application::Reached;
 use crate::choosing_in_an_application::AChoiceMade;
 use crate::choosing_on_the_file_chooser::AFileChosen;
+use crate::clicking_in_an_applications_window::AClickMade;
 use crate::opening_a_file_in_an_application::AFileOpened;
 use crate::opening_a_menu_in_an_application::AMenuOpened;
 use crate::opening_an_item_in_an_application::AnItemOpened;
@@ -123,6 +124,10 @@ pub enum WhatAVerbDid {
     /// the daemon has it read by whoever the person chose, and only those
     /// words go on. The picture itself never crosses to a client.
     APictureWasTaken(APictureTaken),
+    /// One click was made at a point of the window of an application that
+    /// describes nothing (`accessible.click_at`, ADR 0147 as amended
+    /// 2026-11-17), with the window pictured after it **not yet read**.
+    AClickWasMade(AClickMade),
 }
 
 impl WhatAVerbDid {
@@ -192,7 +197,8 @@ impl WhatAVerbDid {
             | Self::AnItemWasOpened(_)
             | Self::AMenuWasOpened(_)
             | Self::AKeyWasPressed(_)
-            | Self::APictureWasTaken(_) => None,
+            | Self::APictureWasTaken(_)
+            | Self::AClickWasMade(_) => None,
         }
     }
 
@@ -221,7 +227,8 @@ impl WhatAVerbDid {
             | Self::AnItemWasOpened(_)
             | Self::AMenuWasOpened(_)
             | Self::AKeyWasPressed(_)
-            | Self::APictureWasTaken(_) => None,
+            | Self::APictureWasTaken(_)
+            | Self::AClickWasMade(_) => None,
         }
     }
 
@@ -246,7 +253,8 @@ impl WhatAVerbDid {
             | Self::AnItemWasOpened(_)
             | Self::AMenuWasOpened(_)
             | Self::AKeyWasPressed(_)
-            | Self::APictureWasTaken(_) => None,
+            | Self::APictureWasTaken(_)
+            | Self::AClickWasMade(_) => None,
         }
     }
 
@@ -271,7 +279,8 @@ impl WhatAVerbDid {
             | Self::AnItemWasOpened(_)
             | Self::AMenuWasOpened(_)
             | Self::AKeyWasPressed(_)
-            | Self::APictureWasTaken(_) => None,
+            | Self::APictureWasTaken(_)
+            | Self::AClickWasMade(_) => None,
         }
     }
 
@@ -296,7 +305,8 @@ impl WhatAVerbDid {
             | Self::AnItemWasOpened(_)
             | Self::AMenuWasOpened(_)
             | Self::AKeyWasPressed(_)
-            | Self::APictureWasTaken(_) => None,
+            | Self::APictureWasTaken(_)
+            | Self::AClickWasMade(_) => None,
         }
     }
 
@@ -323,6 +333,15 @@ impl WhatAVerbDid {
     pub const fn menu_opened(&self) -> Option<&AMenuOpened> {
         match self {
             Self::AMenuWasOpened(opened) => Some(opened),
+            _ => None,
+        }
+    }
+
+    /// The click made, when one was.
+    #[must_use]
+    pub const fn click_made(&self) -> Option<&AClickMade> {
+        match self {
+            Self::AClickWasMade(made) => Some(made),
             _ => None,
         }
     }
@@ -384,7 +403,8 @@ impl WhatAVerbDid {
             | Self::AnItemWasOpened(_)
             | Self::AMenuWasOpened(_)
             | Self::AKeyWasPressed(_)
-            | Self::APictureWasTaken(_) => None,
+            | Self::APictureWasTaken(_)
+            | Self::AClickWasMade(_) => None,
         }
     }
 }
@@ -404,6 +424,12 @@ impl From<AWindowScrolled> for WhatAVerbDid {
 impl From<AMenuOpened> for WhatAVerbDid {
     fn from(opened: AMenuOpened) -> Self {
         Self::AMenuWasOpened(opened)
+    }
+}
+
+impl From<AClickMade> for WhatAVerbDid {
+    fn from(made: AClickMade) -> Self {
+        Self::AClickWasMade(made)
     }
 }
 

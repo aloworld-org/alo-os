@@ -83,6 +83,8 @@ pub mod bus_names;
 pub mod by_their_hand;
 pub mod choosing;
 pub mod choosing_words;
+pub mod click_words;
+pub mod clicking_at;
 pub mod delivering;
 pub mod driving;
 pub mod driving_by_hand;
@@ -141,12 +143,14 @@ pub use adapter_verb::{AdapterVerb, ONLY_ITS_APPLICATION, Reaches, Sends};
 pub use adapters::Adapters;
 pub use by_their_hand::{PressedByHand, Unpressed, press_by_hand, read_by_hand};
 pub use choosing::{Choosing, Chosen, ToChoose};
+pub use clicking_at::ClickingAt;
 pub use delivering::{Delivers, NotDelivered};
 pub use driving::{Driven, Driving};
 pub use driving_by_hand::{DrivenByHand, NotDrivenByHand, drive_by_hand};
 pub use fallback_verbs::{
-    ACTIVATE_CONTROL, CHOOSE_OPTION, OPEN_ITEM, OPEN_MENU, PICTURE_WINDOW, PRESS_KEY, READ_WINDOW,
-    SCROLL_PAGE, SCROLL_TO, SELECT_ITEM, SET_VALUE, TYPE_TEXT, TYPE_WITHOUT_SAVING, fallback_verbs,
+    ACTIVATE_CONTROL, CHOOSE_OPTION, CLICK_AT, OPEN_ITEM, OPEN_MENU, PICTURE_WINDOW, PRESS_KEY,
+    READ_WINDOW, SCROLL_PAGE, SCROLL_TO, SELECT_ITEM, SET_VALUE, TYPE_TEXT, TYPE_WITHOUT_SAVING,
+    fallback_verbs,
 };
 pub use invocation::{DBusMethod, Invocation, Part};
 pub use loading::{Loaded, load};

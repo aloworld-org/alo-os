@@ -619,6 +619,9 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> Option<alo_pro
         alo_turn::WhatAVerbDid::APictureWasTaken(taken) => {
             alo_protocol::Done::of_a_picture_not_read(taken.application(), taken.size())
         }
+        alo_turn::WhatAVerbDid::AClickWasMade(made) => {
+            alo_protocol::Done::of_a_click(made.application(), made.at(), made.changed(), None)
+        }
     })
 }
 

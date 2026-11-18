@@ -142,5 +142,8 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
         WhatAVerbDid::APictureWasTaken(taken) => {
             Done::of_a_picture_not_read(taken.application(), taken.size())
         }
+        WhatAVerbDid::AClickWasMade(made) => {
+            Done::of_a_click(made.application(), made.at(), made.changed(), None)
+        }
     }
 }

@@ -453,6 +453,16 @@ that application and chose who reads the pictures, and has it read in words;
 the approval is what an agent needs, because it is the agent choosing to look
 and, where the reader is a service, to send the picture to it.
 
+### accessible.click_at
+
+**By hand:** a person clicks where they want in the window, with the mouse or
+the keyboard's pointer keys — `Sticky keys, slow keys, and keyboard-only
+operation of everything`. The verb clicks once at one point of the window in
+front, given as how far across and down it is, only where the person switched
+*Pictures and keys* on for that application and chose who reads the pictures;
+the approval is what an agent needs, because it is the agent choosing where to
+click and it cannot know for certain what it pressed.
+
 ### set_the_scheme
 
 **By hand:** a person opens the appearance pane of `Settings, as one place` and

@@ -65,6 +65,7 @@ use crate::asking_the_record::asking_the_record;
 use crate::bounding::Doing;
 use crate::choosing_in_an_application::choosing_in_an_application;
 use crate::choosing_on_the_file_chooser::choosing_on_the_file_chooser;
+use crate::clicking_in_an_applications_window::clicking_in_an_applications_window;
 use crate::installing_an_application::installing_an_application;
 use crate::looking_at_the_catalogue::looking_at_the_catalogue;
 use crate::machine::Machine;
@@ -237,6 +238,13 @@ fn carrying_it_out(
     // **One picture of a window that describes nothing** (ADR 0147 §1),
     // before the boundary for the same reason; the only one of these told where
     // the call came from, because a picture is never taken across a pairing.
+    // **One click at one point, by proportions** (ADR 0147, amended
+    // 2026-11-17), before the boundary for the same reason, and told where the
+    // call came from for the picture's.
+    if authorised.verb() == alo_adapters::CLICK_AT {
+        let (entry, made) = clicking_in_an_applications_window(machine, authorised, grants, origin);
+        return (entry, made.map(WhatAVerbDid::from));
+    }
     if authorised.verb() == alo_adapters::PICTURE_WINDOW {
         let (entry, taken) = picturing_an_applications_window(machine, authorised, grants, origin);
         return (entry, taken.map(WhatAVerbDid::from));

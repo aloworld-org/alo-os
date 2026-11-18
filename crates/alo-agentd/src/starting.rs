@@ -616,6 +616,7 @@ mod tests {
             [
                 "accessible.activate_control",
                 "accessible.choose_option",
+                "accessible.click_at",
                 "accessible.open_item",
                 "accessible.open_menu",
                 "accessible.picture_window",

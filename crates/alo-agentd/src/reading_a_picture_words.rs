@@ -13,8 +13,8 @@ pub const WHAT_THE_READER_IS_ASKED: Word = Word::saying(
     "agentd.picture.what-the-reader-is-asked",
     "This is a picture of one window of the application {application}. Say what the window \
      shows: every piece of text in it, and every thing a person could press or choose, with what \
-     it says. For each, say where its centre is as two numbers from 0 to 1: how far across from \
-     the left edge, then how far down from the top edge. Say only what is in the picture, and say \
+     it says. For each, say where its centre is as two whole numbers from 0 to 100: how many per \
+     cent of the way across from the left edge, then down from the top edge. Say only what is in the picture, and say \
      so where something cannot be read.",
 )
 .noting(

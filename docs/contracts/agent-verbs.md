@@ -842,6 +842,36 @@ compositor's `picture-of` (`application-door.md`), and read by
   person's own model on this computer cannot be handed a picture yet, and is
   refused in words with nothing sent.
 
+## The click verb — added 2026-11-17, additively
+
+`accessible.click_at` clicks **once at one point of the window of an application
+that describes nothing**, at a place a picture of it showed — ADR 0147's
+amendment of 2026-11-17 (the owner: *"Allow clicking by position"*). Declared in
+`alo-adapters` (`fallback_verbs.rs`), checked by
+`crates/alo-adapters/src/clicking_at.rs`, carried out through a turn and the
+compositor's `click-at` (`application-door.md`). **Dragging stays the
+person's**: no verb holds a button.
+
+| Arguments | The sentence a person approves |
+|---|---|
+| `application` (an application), `across` and `down` (whole numbers, 0 to 100: per cent of the window from its left and top edges) | *click {across}% across and {down}% down the {application} window* |
+
+- **A change.** At *ask each time* each click waits for one approval and one
+  approval clicks once; at full access it clicks at once, and is recorded the
+  same way.
+- **The picture's rules, all of them**: *Pictures and keys* on for that
+  application and somebody chosen to read pictures, read at the moment; never a
+  window that describes itself (a control there is pressed by its name), never a
+  password field anywhere in the application's windows, never a terminal, never
+  across a pairing; only the window that holds the keyboard, alo's own copy at
+  the default; and nothing while the person holds a button down.
+- **Read again after.** The window is pictured before the click and after it.
+  Where the two are the same, or no picture after could be taken, the click is
+  recorded as having run with its outcome **not known**.
+- The answer is `clicked` on the wire: `application`, `across`, `down`,
+  `changed` (`false` is *not known*, never *nothing happened*), and `read` —
+  what the reader said the window shows after — or `not-read`.
+
 **`scroll_to`'s argument is `to`, and `name` is still accepted, deprecated**
 (since 2026-11-17). The verb landed taking `name`, which shaped it like
 `accessible.type_text` with one argument fewer, and a hosted model sent

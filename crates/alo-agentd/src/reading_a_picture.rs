@@ -49,8 +49,9 @@ const PROVIDER: &str = "provider";
 /// The name every sentence here fills with the application.
 const APPLICATION: &str = "application";
 
-/// What a client is told a picture verb did: the reader's words, or why there
-/// are none. [`None`] for every other verb, which is told as it always was.
+/// What a client is told a picture verb or a click did: the reader's words,
+/// or why there are none. [`None`] for every other verb, which is told as it
+/// always was.
 pub fn read_if_a_picture(
     did: &WhatAVerbDid,
     turning: &mut Turning<'_, '_>,
@@ -59,6 +60,19 @@ pub fn read_if_a_picture(
     strings: &Strings,
     now: SystemTime,
 ) -> Option<Done> {
+    // **A click is read again after** (ADR 0147, amended 2026-11-17): the
+    // window as pictured after it, put to the same reader the same way.
+    if let Some(made) = did.click_made() {
+        let read = made.after().map(|after| {
+            reading(after, turning, questions, road, strings, now).map_err(Said::into_text)
+        });
+        return Some(Done::of_a_click(
+            made.application(),
+            made.at(),
+            made.changed(),
+            read,
+        ));
+    }
     let taken = did.picture_taken()?;
     let read = reading(taken, turning, questions, road, strings, now).map_err(Said::into_text);
     Some(Done::of_a_picture(taken.application(), taken.size(), read))

@@ -68,6 +68,10 @@ pub const PRESS_KEY: &str = "accessible.press_key";
 /// it read in words (2026-11-17, ADR 0147 §1).
 pub const PICTURE_WINDOW: &str = "accessible.picture_window";
 
+/// The verb that clicks once at a point of such a window, in per cent of it
+/// (2026-11-17, the owner: "Allow clicking by position").
+pub const CLICK_AT: &str = "accessible.click_at";
+
 /// The verb that types into a field and saves nothing (2026-11-17).
 pub const TYPE_WITHOUT_SAVING: &str = "accessible.type_without_saving";
 
@@ -164,6 +168,14 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
             "when {READ_WINDOW} answered that a window shows no text and names nothing — a game, \
              a drawing canvas — {PICTURE_WINDOW} once, to have a picture of it read to you in \
              words, never for a window {READ_WINDOW} could read"
+        ));
+    }
+    // **A click by position only where a picture said where** (ADR 0147,
+    // amended 2026-11-17): a named control is still pressed by its name.
+    if verbs.of(PICTURE_WINDOW).is_some() && verbs.of(CLICK_AT).is_some() {
+        acts.push(format!(
+            "to press something in such a window, {CLICK_AT} once at the place its picture's \
+             words gave, as per cent across and down, never for a window that names its controls"
         ));
     }
     format!(
@@ -276,6 +288,10 @@ mod tests {
         let told = working_in_an_application(&verbs);
         assert!(told.contains(PICTURE_WINDOW), "{told}");
         assert!(told.contains("shows no text and names nothing"), "{told}");
+        assert!(!told.contains(CLICK_AT), "{told}");
+        verbs.declare(named(CLICK_AT, Effect::Change)).unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(told.contains(CLICK_AT), "{told}");
 
         verbs
             .declare(named(TYPE_WITHOUT_SAVING, Effect::Change))

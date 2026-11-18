@@ -380,6 +380,9 @@ pub enum Done {
     /// reader the person chose (`accessible.picture_window`). Added
     /// 2026-11-17, additively.
     PictureRead(APictureRead),
+    /// One click was made at a point of an application's window, given in per
+    /// cent of it (`accessible.click_at`). Added 2026-11-17, additively.
+    Clicked(AClickRead),
 }
 
 /// One picture alo took of an application's window, as it goes back to a
@@ -401,6 +404,32 @@ pub struct APictureRead {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub read: Option<String>,
     /// Why it was not read, in the person's words, where it was not.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub not_read: Option<String>,
+}
+
+/// One click alo made at a point of a window, as it goes back to a client
+/// (`accessible.click_at`, ADR 0147 as amended 2026-11-17). Added additively.
+///
+/// **What it did is said only as far as it can be known**: `changed` is
+/// whether the window's picture after differs from the one before, and
+/// `false` is *not known*, never *nothing happened*; `read` is what the reader
+/// the person chose said the window shows after it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct AClickRead {
+    /// The application.
+    pub application: String,
+    /// How far across the window, in per cent.
+    pub across: u8,
+    /// How far down the window, in per cent.
+    pub down: u8,
+    /// Whether the window visibly changed; `false` is *not known*.
+    pub changed: bool,
+    /// What the reader said the window shows after the click, where it read it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub read: Option<String>,
+    /// Why the window after was not read, where it was not.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub not_read: Option<String>,
 }
@@ -936,6 +965,31 @@ impl Done {
         })
     }
 
+    /// A click made at `at`, in per cent of `application`'s window, whether
+    /// it visibly changed, and what the reader said of the window after — `None`
+    /// where nothing on this side read it.
+    #[must_use]
+    pub fn of_a_click(
+        application: &str,
+        at: (u8, u8),
+        changed: bool,
+        read: Option<Result<String, String>>,
+    ) -> Self {
+        let (read, not_read) = match read {
+            Some(Ok(read)) => (Some(read), None),
+            Some(Err(why)) => (None, Some(why)),
+            None => (None, None),
+        };
+        Self::Clicked(AClickRead {
+            application: application.to_owned(),
+            across: at.0,
+            down: at.1,
+            changed,
+            read,
+            not_read,
+        })
+    }
+
     /// What one of the six file verbs answered, as it goes on the wire.
     #[must_use]
     pub fn of_a_file_verb(answer: &Answer) -> Self {
@@ -1090,6 +1144,8 @@ impl Done {
             Self::KeyPressed { .. } => false,
             // **A picture not read leaves out the one thing it was for.**
             Self::PictureRead(picture) => picture.read.is_none(),
+            // **A click whose outcome is not known leaves that out.**
+            Self::Clicked(click) => !click.changed || click.read.is_none(),
             // **A typing that saves nothing** leaves out only what did not read
             // back: nothing was to be saved.
             Self::TypedWithoutSaving { read_back, .. } => !*read_back,

@@ -1048,6 +1048,9 @@ mod tests {
             // And one picture of a window that describes nothing, added
             // 2026-11-17 (ADR 0147 §1), read by whoever the person chose.
             "accessible.picture_window",
+            // And one click at a point of such a window, by proportions of
+            // it, added 2026-11-17 (the owner: "Allow clicking by position").
+            "accessible.click_at",
             // `alo-publishing`'s one, added 2026-11-13: Demo 2's second road.
             "publish_to_github_pages",
         ];
