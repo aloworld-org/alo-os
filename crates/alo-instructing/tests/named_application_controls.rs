@@ -11,7 +11,7 @@
 )]
 
 use alo_capability::{Effect, Requires, Verb, Verbs};
-use alo_instructing::{the_products_words, Instructions};
+use alo_instructing::{Instructions, the_products_words};
 use alo_strings::Word;
 
 /// A separate paragraph makes actionable advice distinguishable from the catalogue.

@@ -60,6 +60,7 @@ pub mod answering_in;
 pub mod at_full_access;
 pub mod instructions;
 mod reading_application_status;
+mod using_named_application_controls;
 pub mod shown;
 pub mod the_applications_installed;
 pub mod the_conversation_on_the_wire;

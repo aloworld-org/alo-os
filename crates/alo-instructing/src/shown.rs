@@ -13,6 +13,7 @@ use alo_capability::Verbs;
 
 use crate::instructions::Instructions;
 use crate::reading_application_status::reading_application_status;
+use crate::using_named_application_controls::using_named_application_controls;
 use crate::the_conversation_so_far::TheConversationSoFar;
 use crate::the_window_offered::TheWindowOffered;
 use crate::verb_as_told::as_told;
@@ -105,6 +106,7 @@ pub fn the_products_words(instructions: Instructions, verbs: &Verbs) -> String {
     // they go — and only where the registry has them.
     text.push_str(&working_in_an_application(verbs));
     text.push_str(&reading_application_status(verbs));
+    text.push_str(&using_named_application_controls(verbs));
     text
 }
 
