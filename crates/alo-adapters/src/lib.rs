@@ -69,6 +69,7 @@
 
 #[cfg(target_os = "linux")]
 pub mod accessibility_bus;
+pub mod a_control_to_set;
 pub mod accessibility_tree;
 pub mod activating;
 pub mod adapter;
@@ -164,6 +165,7 @@ pub use role::Role;
 pub use scrolling::{Asked, Scrolled, Scrolling, Toward};
 #[cfg(target_os = "linux")]
 pub use session_bus::SessionBus;
+pub use a_control_to_set::not_there_to_set;
 pub use setting::{Set, Setting};
 pub use shown::{Contents, Limit, Seen, Shown, ShownWindow};
 pub use states::States;
