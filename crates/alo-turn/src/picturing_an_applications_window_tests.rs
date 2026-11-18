@@ -1024,6 +1024,15 @@ fn a_picture_asked_for_from_a_paired_machine_is_always_refused() {
         did.is_err(),
         "a paired machine was given a picture: {did:?}"
     );
+    // **And the refusal names the application asked for**, in the words the
+    // person reads.
+    if let Err(not_done) = &did {
+        let said = not_done.said(&in_english()).into_text();
+        assert!(
+            said.contains(GAME),
+            "the refusal does not name the game: {said}"
+        );
+    }
     assert!(
         asked.pictures.is_empty(),
         "the door was asked for a paired machine"
