@@ -154,6 +154,16 @@ class RecordDelta(unittest.TestCase):
         self.assert_summary(self.verify(checkpoint, approval=0),
                             expected_summary() | {'from_approval': 0, 'against': [0]})
 
+    def test_boolean_approvals_cannot_equal_the_real_numbers_zero_or_one(self):
+        for boolean, number in [(False, 0), (True, 1)]:
+            for invalid_api in [False, True]:
+                with self.subTest(boolean=boolean, invalid_api=invalid_api):
+                    self.path.write_bytes(HEADER)
+                    checkpoint = snapshot(self.path)
+                    self.append(ran(approval=number if invalid_api else boolean))
+                    self.refuses(lambda: self.verify(checkpoint,
+                                 approval=boolean if invalid_api else number))
+
     def test_read_and_inference_noise_do_not_supply_a_missing_change(self):
         checkpoint = snapshot(self.path)
         self.append(read_noise(), inference_noise())
@@ -421,7 +431,7 @@ class RecordDelta(unittest.TestCase):
         for full in [None, 0, 1, 'false']:
             with self.subTest(full=full):
                 self.refuses(lambda: self.verify(checkpoint, full=full))
-        for approval in [None, True, -1, 1.0, str(APPROVAL), 2 ** 64]:
+        for approval in [None, True, -1, float(APPROVAL), str(APPROVAL), 2 ** 64]:
             with self.subTest(approval=approval):
                 self.refuses(lambda: self.verify(checkpoint, approval=approval))
         self.refuses(lambda: self.verify(checkpoint, approval=APPROVAL, full=True))
