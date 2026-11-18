@@ -45,7 +45,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 19);
+    assert_eq!(THE_VERSION, 21);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -477,9 +477,9 @@ fn typing_in_vscodium_expects_the_field_the_window_shows() {
 /// Dolphin's window offered, and a path guessed where nothing is refused as
 /// the machine refuses it before asking — so a try that guesses, is refused,
 /// reads the window and opens the item takes the road, at both levels, and
-/// says it was refused first. Opening it by a path that IS there is not the
-/// road: nothing refuses that, so it is the wrong verb, as it would be on the
-/// machine.
+/// says it was refused first. Opening it by the path that is there, in the
+/// file manager, is the other road: the machine opens it as a double-click
+/// there would (the owner, 2026-11-17).
 #[test]
 fn opening_a_shown_file_goes_on_from_a_wrong_path_and_holds_the_verb() {
     use crate::a_try::{TheLevel, Went, one_try_at};
@@ -546,10 +546,22 @@ fn opening_a_shown_file_goes_on_from_a_wrong_path_and_holds_the_verb() {
                 .is_some_and(|second| second.contains("there is nothing at")),
             "{level:?}: the refusal is shown: {shown:?}"
         );
-        // **The refusal cases**: by a path that is there is the wrong verb,
-        // and guessing until the turn runs out is not the road.
+        // **By the path that is there is the other road** since the machine
+        // opens it as a double-click in the file manager would (2026-11-17),
+        // and so is guessing, being refused, and then naming it rightly.
         let (by_path, _) = try_these(&[by_its_real_path.clone(), answer.clone()]);
-        assert!(!by_path.took_the_road(), "{level:?}: {by_path:?}");
+        assert_eq!(by_path.went(), &Went::TheRoad, "{level:?}: {by_path:?}");
+        let (guessed_then_right, _) = try_these(&[
+            guessed.clone(),
+            by_its_real_path.clone(),
+            answer.clone(),
+        ]);
+        assert_eq!(
+            guessed_then_right.went(),
+            &Went::TheRoad,
+            "{level:?}: {guessed_then_right:?}"
+        );
+        // **The refusal case**: guessing and then answering is not the road.
         let (guessing, _) = try_these(&[guessed.clone(), answer.clone()]);
         assert!(!guessing.took_the_road(), "{level:?}: {guessing:?}");
     }
