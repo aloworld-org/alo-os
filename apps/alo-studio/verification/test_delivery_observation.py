@@ -6,6 +6,7 @@ import pathlib
 import select
 import subprocess
 import sys
+import time
 import unittest
 
 import dbus
@@ -219,6 +220,87 @@ class DeliveryEvidence(unittest.TestCase):
         self.interface().EnableMicrophone(timeout=3)
         with self.assertRaises(ValueError):
             observation.finish(enabled=True)
+
+    def test_a_silent_barrier_refuses_within_the_explicit_bound(self):
+        self.stop_service()
+        self.start_service('import time\n' + SERVICE.replace(
+            "return json.dumps({'actual_fixture_calls': self.calls})",
+            "time.sleep(3); return json.dumps({'actual_fixture_calls': self.calls})"))
+        observation = DeliveryObservation(timeout=0.15)
+        self.addCleanup(observation.close)
+        self.interface().EnableMicrophone(timeout=3)
+        started = time.monotonic()
+        with self.assertRaises(ValueError):
+            observation.finish(enabled=True)
+        self.assertLess(time.monotonic() - started, 1.5,
+                        'a silent application must not hold the controller indefinitely')
+
+    def test_timeout_requires_a_positive_finite_number_with_a_fixed_upper_bound(self):
+        for timeout in (None, True, False, '0.1', 0, -0.1, float('nan'),
+                        float('inf'), -float('inf'), 10.001):
+            with self.subTest(timeout=timeout):
+                with self.assertRaises(ValueError):
+                    observation = DeliveryObservation(timeout=timeout)
+                    observation.close()
+
+    def test_a_burst_cannot_drop_extra_deliveries_and_report_one(self):
+        observation = self.observe()
+        for _ in range(257):
+            self.interface().EnableMicrophone(timeout=3)
+        self.assertEqual(len(json.loads(str(self.interface().GetStatus(timeout=3)))['actual_fixture_calls']),
+                         257)
+        with self.assertRaises(ValueError):
+            observation.finish(enabled=True)
+
+    def test_overflowing_the_bounded_trace_cannot_certify_one_early_change(self):
+        # The private instrument has a fixed finite message budget. Even read
+        # noise must not silently overwrite/drop evidence and leave success.
+        observation = self.observe()
+        self.interface().EnableMicrophone(timeout=3)
+        for _ in range(4097):
+            self.interface().GetStatus(timeout=3)
+        with self.assertRaises(ValueError):
+            observation.finish(enabled=True)
+
+    def test_a_disconnected_private_bus_refuses_instead_of_certifying_cached_calls(self):
+        # A nested dbus-run-session owns this daemon. Never kill the test runner's bus.
+        import delivery_observation
+        module_dir = str(pathlib.Path(delivery_observation.__file__).parent)
+        script = f'''
+import os, signal, subprocess, sys, time
+sys.path.insert(0, {module_dir!r})
+import dbus
+from delivery_observation import DeliveryObservation
+service = subprocess.Popen([sys.executable, '-I', '-B', '-c', {SERVICE!r}],
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+try:
+    assert service.stdout.readline() == 'ready\\n'
+    bus = dbus.SessionBus(private=True)
+    observation = DeliveryObservation(timeout=0.2)
+    recorder = dbus.Interface(bus.get_object('org.aloworld.Studio', '/org/aloworld/Studio/Recorder', introspect=False),
+                              'org.aloworld.Studio.Recorder1')
+    recorder.EnableMicrophone(timeout=2)
+    driver = dbus.Interface(bus.get_object('org.freedesktop.DBus', '/org/freedesktop/DBus'), 'org.freedesktop.DBus')
+    daemon_pid = int(driver.GetConnectionUnixProcessID('org.freedesktop.DBus'))
+    os.kill(daemon_pid, signal.SIGTERM)
+    started = time.monotonic()
+    try:
+        observation.finish(enabled=True)
+    except ValueError:
+        assert time.monotonic() - started < 1.5
+        print('disconnection refused', flush=True)
+    else:
+        raise AssertionError('a lost monitor cannot certify delivery')
+    finally:
+        observation.close()
+finally:
+    service.terminate()
+    service.communicate(timeout=2)
+'''
+        completed = subprocess.run(['dbus-run-session', '--', sys.executable, '-I', '-B', '-c', script],
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=7)
+        self.assertEqual(completed.returncode, 0, completed.stderr[-4000:])
+        self.assertEqual(completed.stdout, 'disconnection refused\n')
 
 
 if __name__ == '__main__':
