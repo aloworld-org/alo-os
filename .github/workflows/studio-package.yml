@@ -3,6 +3,11 @@ on:
   pull_request:
     paths: ['apps/alo-studio/**', '.github/workflows/studio-package.yml']
   workflow_dispatch:
+    inputs:
+      with_private_reference:
+        description: "Also build the separate private recording reference; the normal package keeps verification disabled"
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -37,6 +42,13 @@ jobs:
           flatpak list --runtime --columns=application,branch,active:full > /tmp/studio-flatpak/sdk-versions.txt
           cd /tmp/studio-flatpak
           sha256sum alo-studio-0.1.0.flatpak source.txt features.txt sdk-versions.txt > checksums.txt
+      - name: Build the separate private recording reference
+        if: github.event_name == 'workflow_dispatch' && inputs.with_private_reference
+        run: |
+          dbus-run-session -- bash apps/alo-studio/verification/build-reference-flatpak.sh
+          cd /tmp/studio-flatpak
+          printf '%s\n' 'private reference only; verification enabled; never the normal application' > reference-features.txt
+          sha256sum studio-reference.flatpak source.txt reference-features.txt sdk-versions.txt > reference-checksums.txt
       - name: Verify signed installation and signature refusals
         shell: bash
         run: |
@@ -55,3 +67,15 @@ jobs:
             /tmp/studio-flatpak/repository-signing-verification.txt
           if-no-files-found: error
           retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch' && inputs.with_private_reference
+        with:
+          name: studio-private-reference
+          path: |
+            /tmp/studio-flatpak/studio-reference.flatpak
+            /tmp/studio-flatpak/source.txt
+            /tmp/studio-flatpak/reference-features.txt
+            /tmp/studio-flatpak/reference-checksums.txt
+            /tmp/studio-flatpak/sdk-versions.txt
+          if-no-files-found: error
+          retention-days: 7
