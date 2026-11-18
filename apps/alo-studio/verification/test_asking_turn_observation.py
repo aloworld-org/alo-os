@@ -39,6 +39,11 @@ SERVICE = 'org.freedesktop.systemd1.Service'
 def path(name):
     return '/org/freedesktop/systemd1/unit/' + ''.join(c if c.isascii() and c.isalnum() else '_%02x' % ord(c) for c in name)
 def typed(key, value):
+    if isinstance(value,dict) and '__wire__' in value:
+        constructors = {'u':dbus.UInt32,'t':dbus.UInt64,'x':dbus.Int64,
+                        'i':dbus.Int32,'b':dbus.Boolean,'d':dbus.Double,
+                        'au':lambda items:dbus.Array([dbus.UInt32(x) for x in items],signature='u')}
+        return constructors[value['__wire__']](value['value'])
     if key == 'InvocationID':
         return dbus.Array([dbus.Byte(x) for x in value], signature='y') if isinstance(value, list) else value
     if key in ('MainPID','ExecMainPID'):
@@ -84,9 +89,14 @@ class Manager(dbus.service.Object):
         super().__init__(owner, '/org/freedesktop/systemd1')
         self.units = {}
         self.subscribed = False
+        self.race = ''
     @dbus.service.method('org.freedesktop.systemd1.Manager', in_signature='', out_signature='')
     def Subscribe(self):
         self.subscribed = True
+        if self.race == 'subscribe':
+            self.race = ''
+            self.Add('alo-asking@11-1000-alo.service','{}')
+            self.Remove('alo-asking@11-1000-alo.service')
     @dbus.service.method('org.freedesktop.systemd1.Manager', in_signature='', out_signature='')
     def Unsubscribe(self):
         self.subscribed = False
@@ -94,8 +104,12 @@ class Manager(dbus.service.Object):
     def ListUnits(self):
         if not self.subscribed:
             raise dbus.exceptions.DBusException('must subscribe before snapshot')
-        return [(name,'fixture','loaded', entry.props[UNIT]['ActiveState'],entry.props[UNIT]['SubState'],
+        rows = [(name,'fixture','loaded', entry.props[UNIT]['ActiveState'],entry.props[UNIT]['SubState'],
                  '',path(name),dbus.UInt32(0),'','/') for name,entry in self.units.items()]
+        if self.race == 'list':
+            self.race = ''
+            self.Add('alo-asking@11-1000-alo.service','{}')
+        return rows
     @dbus.service.method('org.freedesktop.systemd1.Manager', in_signature='s', out_signature='o')
     def GetUnit(self, name):
         if str(name) not in self.units:
@@ -118,6 +132,22 @@ class Manager(dbus.service.Object):
         values = json.loads(str(changed))
         entry.props[str(interface)].update(values)
         entry.PropertiesChanged(interface,{k:typed(k,v) for k,v in values.items()},dbus.Array([],signature='s'))
+    @dbus.service.method('org.aloworld.Studio.LifecycleFixture', in_signature='ssss', out_signature='')
+    def Invalidate(self, name, interface, hidden, invalidated):
+        entry = self.units[str(name)]
+        values = json.loads(str(hidden))
+        for key in values.pop('__missing__',[]):
+            entry.props[str(interface)].pop(key,None)
+        entry.props[str(interface)].update(values)
+        entry.PropertiesChanged(interface,dbus.Dictionary({},signature='sv'),
+                                dbus.Array(json.loads(str(invalidated)),signature='s'))
+    @dbus.service.method('org.aloworld.Studio.LifecycleFixture', in_signature='s', out_signature='')
+    def Race(self, when):
+        self.race = str(when)
+    @dbus.service.method('org.aloworld.Studio.LifecycleFixture', in_signature='su', out_signature='')
+    def Flood(self, name, count):
+        for _ in range(int(count)):
+            self.units[str(name)].PropertiesChanged(SERVICE,{'Result':'success'},dbus.Array([],signature='s'))
     @dbus.service.method('org.aloworld.Studio.LifecycleFixture', in_signature='s', out_signature='')
     def Remove(self, name):
         name = str(name)
@@ -153,6 +183,7 @@ class AskingLifecycle(unittest.TestCase):
         self.assertTrue(ready, 'independent systemd-shaped fixture did not start')
         self.assertEqual(self.process.stdout.readline(), 'ready\n')
         self.bus = dbus.SessionBus(private=True)
+        self.bus.set_exit_on_disconnect(False)
         self.addCleanup(self.bus.close)
         self.control = dbus.Interface(self.bus.get_object('org.freedesktop.systemd1',
                                       '/org/freedesktop/systemd1'), 'org.aloworld.Studio.LifecycleFixture')
@@ -359,6 +390,96 @@ class AskingLifecycle(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     observer = AskingTurnObservation(bus_connection=self.bus,timeout=timeout)
                     observer.close()
+
+    def test_numeric_wire_types_cannot_be_coerced_into_pending_identity(self):
+        cases = [(SERVICE,'MainPID','t',2710198),(SERVICE,'MainPID','x',2710198),
+                 (SERVICE,'MainPID','d',2710198.0),(SERVICE,'ExecMainPID','t',2710198),
+                 (SERVICE,'ExecMainStartTimestampMonotonic','x',477946100265),
+                 (UNIT,'InvocationID','au',list(bytes.fromhex(INVOCATION)))]
+        for interface,field,wire,value in cases:
+            with self.subTest(interface=interface,field=field,wire=wire):
+                observer = self.observe()
+                self.add(overrides={interface:{field:{'__wire__':wire,'value':value}}})
+                with self.assertRaises(ValueError):
+                    observer.capture_pending()
+                observer.close()
+                self.control.Remove(NAME,timeout=2)
+
+    def test_numeric_wire_types_cannot_be_coerced_into_successful_exit_facts(self):
+        for field,wire,value in [('MainPID','b',False),('MainPID','t',0),
+                                 ('ExecMainPID','t',2710198),('ExecMainCode','u',1),
+                                 ('ExecMainStatus','b',False),('ExecMainStatus','t',0),
+                                 ('ExecMainExitTimestampMonotonic','x',477946805484)]:
+            with self.subTest(field=field,wire=wire):
+                observer, _ = self.pending()
+                self.end(**{field:{'__wire__':wire,'value':value}})
+                with self.assertRaises(ValueError):
+                    observer.finish()
+                observer.close()
+                self.control.Remove(NAME,timeout=2)
+
+    def test_role_and_executable_mutation_are_sticky_even_after_restoration(self):
+        for field,bad,good in [('User','alo','alo-agent'),('Group','alo','alo-agent'),
+                               ('ExecStart',[['/usr/bin/other',['/usr/bin/other']]],
+                                [['/usr/bin/alo-agent',['/usr/bin/alo-agent']]])]:
+            with self.subTest(field=field):
+                observer, _ = self.pending()
+                self.change(SERVICE,{field:bad})
+                self.change(SERVICE,{field:good})
+                self.end()
+                with self.assertRaises(ValueError):
+                    observer.finish()
+                observer.close()
+                self.control.Remove(NAME,timeout=2)
+
+    def test_benign_execstart_invalidation_matches_actual_systemd_exit_signals(self):
+        observer, _ = self.pending()
+        self.control.Invalidate(NAME,SERVICE,'{}','["ExecStart"]',timeout=2)
+        self.end()
+        self.control.Remove(NAME,timeout=2)
+        self.assertEqual(observer.finish()['exit_status'],0)
+
+    def test_invalidated_changed_or_missing_identity_cannot_reuse_cached_values(self):
+        for interface,field,hidden in [(SERVICE,'User',{'User':'alo'}),
+                                      (SERVICE,'Group',{'__missing__':['Group']}),
+                                      (UNIT,'InvocationID',{'InvocationID':[8]*16})]:
+            with self.subTest(interface=interface,field=field):
+                observer, _ = self.pending()
+                self.control.Invalidate(NAME,interface,json.dumps(hidden),json.dumps([field]),timeout=2)
+                self.end()
+                with self.assertRaises(ValueError):
+                    observer.finish()
+                observer.close()
+                self.control.Remove(NAME,timeout=2)
+
+    def test_closing_an_observer_does_not_close_the_injected_callers_bus(self):
+        observer = self.observe()
+        observer.close()
+        self.assertTrue(self.bus.get_is_connected())
+        self.add()
+        self.control.Remove(NAME,timeout=2)
+
+    def test_an_asking_unit_appearing_and_disappearing_during_subscribe_refuses(self):
+        self.control.Race('subscribe',timeout=2)
+        with self.assertRaises(ValueError):
+            observer = self.observe()
+            self.add()
+            observer.capture_pending()
+
+    def test_unit_appearance_before_an_empty_list_reply_cannot_be_a_fresh_request(self):
+        self.control.Race('list',timeout=2)
+        with self.assertRaises(ValueError):
+            observer = self.observe()
+            observer.capture_pending()
+
+    def test_signal_flood_exhaustion_cannot_drop_evidence_and_certify_exit(self):
+        observer, _ = self.pending()
+        self.control.Flood(NAME,dbus.UInt32(4097),timeout=3)
+        self.end()
+        started = time.monotonic()
+        with self.assertRaises(ValueError):
+            observer.finish()
+        self.assertLess(time.monotonic()-started,1.5)
 
 
 if __name__ == '__main__':
