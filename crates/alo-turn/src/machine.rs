@@ -87,8 +87,8 @@ use crate::shortening::{Shortened, Shortening};
 use crate::the_applications_here::TheApplicationsHere;
 use crate::the_door_the_compositor_serves::TheDoorTheCompositorServes;
 use crate::the_verbs_would_not_declare::TheVerbsWouldNotDeclare;
-use crate::what_a_file_opens_with::SaysWhatAFileOpensWith;
 use crate::the_windows_on_the_screen::TheWindowsOnTheScreen;
+use crate::what_a_file_opens_with::SaysWhatAFileOpensWith;
 
 /// The verbs, the words, the resolver, the boundary, the indicator and the
 /// record: one machine's, shared by every turn on it.

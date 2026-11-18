@@ -843,7 +843,11 @@ fn at_full_access_a_file_opened_in_a_file_manager_opens_where_a_double_click_wou
             &mut |_| None,
             noon(),
         )?;
-        let crate::Changed::Done { did, sentence: said } = changed else {
+        let crate::Changed::Done {
+            did,
+            sentence: said,
+        } = changed
+        else {
             panic!("a change at full access waited: {changed:?}");
         };
         *sentence.borrow_mut() = said.into_text();

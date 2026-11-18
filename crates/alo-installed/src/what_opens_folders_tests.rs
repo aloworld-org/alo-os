@@ -64,7 +64,10 @@ Type=Application
 Name=Something
 Categories=FileManager;
 ";
-    let place = a_place("category", &[("org.example.Something.desktop", only_a_category)]);
+    let place = a_place(
+        "category",
+        &[("org.example.Something.desktop", only_a_category)],
+    );
     assert!(what_opens_folders(std::slice::from_ref(&place)).is_empty());
 
     let theirs = a_place(
