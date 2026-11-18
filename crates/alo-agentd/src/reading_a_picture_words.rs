@@ -23,6 +23,18 @@ pub const WHAT_THE_READER_IS_ASKED: Word = Word::saying(
      {application} is the application's identifier and is not translated.",
 );
 
+/// What the reader is asked about the picture, where the call said what it
+/// is to answer.
+pub const WHAT_THE_READER_IS_ASKED_TO_ANSWER: Word = Word::saying(
+    "agentd.picture.what-the-reader-is-asked-to-answer",
+    "{asked} What is wanted from this picture: {question}",
+)
+.noting(
+    "Put to an AI model with a picture of a window. {asked} is the whole sentence \
+     agentd.picture.what-the-reader-is-asked, already translated; {question} is what the \
+     person wants to know, in their own words, and is not translated.",
+);
+
 /// The person's own model cannot be sent a picture yet.
 pub const NOT_TO_THIS_COMPUTER_YET: Word = Word::saying(
     "agentd.picture.not-to-this-computer-yet",
@@ -59,8 +71,9 @@ pub const THE_READER_HAS_NO_MODEL: Word = Word::saying(
 );
 
 /// Every word reading a picture declares.
-pub const EVERY_WORD: [Word; 4] = [
+pub const EVERY_WORD: [Word; 5] = [
     WHAT_THE_READER_IS_ASKED,
+    WHAT_THE_READER_IS_ASKED_TO_ANSWER,
     NOT_TO_THIS_COMPUTER_YET,
     THE_READER_IS_NOT_ADDED,
     THE_READER_HAS_NO_MODEL,

@@ -68,7 +68,7 @@ fn a_person_who_added_a_service(what: &str, endpoint: &str, models: &str) -> Que
 }
 
 fn the_picture() -> WhatAVerbDid {
-    WhatAVerbDid::from(APictureTaken::drawn(GAME, PNG, 1280, 800))
+    WhatAVerbDid::from(APictureTaken::drawn(GAME, PNG, 1280, 800).to_answer("Is a race on?"))
 }
 
 /// What the client is told, read under these choices.
@@ -110,6 +110,13 @@ fn a_service_chosen_by_name_is_sent_the_picture_and_its_words_go_on() {
     assert!(
         content[0]["text"].as_str().unwrap().contains(GAME),
         "the reader was not told which application: {sent}"
+    );
+    assert!(
+        content[0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("Is a race on?"),
+        "the reader was not told what the picture is to answer: {sent}"
     );
     assert_eq!(
         content[1]["image_url"]["url"].as_str().unwrap(),

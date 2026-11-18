@@ -76,6 +76,15 @@ pub const KEY: &str = "key";
 /// the screen road).
 pub const PICTURE_WINDOW: &str = "accessible.picture_window";
 
+/// The argument carrying what the picture is to answer, in the person's words.
+///
+/// **There for the reader, and for the shape** (2026-11-17): taking the
+/// application alone, `accessible.picture_window` had `focus_application`'s
+/// shape, and `gpt-4o-mini` sent `accessible.open_menu` naming the photo in 9
+/// of 10 tries and the verb as a command line in the tenth
+/// (`docs/quirks/two-verbs-taking-the-same-arguments-and-gpt-4o-mini-sends-neither.md`).
+pub const QUESTION: &str = "question";
+
 /// The verb that types one approved text into one field and saves nothing
 /// (2026-11-17): a search box, a form, an address, where `Ctrl+S` would save
 /// the page instead.
@@ -403,11 +412,14 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
             PICTURE_WINDOW,
             picture::PICTURE_PURPOSE,
             Effect::Change,
-            vec![Arg::taking(
-                APPLICATION,
-                picture::PICTURE_APPLICATION,
-                Takes::Application,
-            )],
+            vec![
+                Arg::taking(
+                    APPLICATION,
+                    picture::PICTURE_APPLICATION,
+                    Takes::Application,
+                ),
+                Arg::taking(QUESTION, picture::PICTURE_QUESTION, Takes::Text),
+            ],
             Requires::grants_over([APPLICATION]),
             picture::PICTURE_SENTENCE,
         )

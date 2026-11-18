@@ -163,7 +163,8 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
         acts.push(format!(
             "when {READ_WINDOW} answered that a window shows no text and names nothing and that \
              a picture of it can be read — a game, a photo, a drawing canvas — you have not seen \
-             that window: your next step is {PICTURE_WINDOW} for its application, once, even \
+             that window: your next step is {PICTURE_WINDOW} for its application, with what the person wants \
+             to know as its question, once, even \
              when the person only asked what it shows, and never an answer about it before the \
              picture is read; never {PICTURE_WINDOW} for a window {READ_WINDOW} could read"
         ));

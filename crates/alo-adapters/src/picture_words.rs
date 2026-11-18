@@ -27,6 +27,13 @@ pub const PICTURE_APPLICATION: Word = Word::saying(
 )
 .noting("Shown beside the application the agent names when it asks to take a picture.");
 
+/// What `question` is.
+pub const PICTURE_QUESTION: Word = Word::saying(
+    "adapters.fallback.picture-window.question",
+    "what the picture is to answer, in the person's own words",
+)
+.noting("Shown beside the question the agent gives when it asks for a picture of a window.");
+
 /// What a person approves.
 pub const PICTURE_SENTENCE: Word = Word::saying(
     "adapters.fallback.picture-window.sentence",
@@ -153,9 +160,10 @@ pub const ACROSS_A_PAIRING: Word = Word::saying(
 );
 
 /// Every word taking a picture declares.
-pub const EVERY_WORD: [Word; 14] = [
+pub const EVERY_WORD: [Word; 15] = [
     PICTURE_PURPOSE,
     PICTURE_APPLICATION,
+    PICTURE_QUESTION,
     PICTURE_SENTENCE,
     PICTURE_CHANGES,
     PICTURE_LEAVES,
