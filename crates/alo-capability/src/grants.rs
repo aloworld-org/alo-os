@@ -165,6 +165,7 @@ impl Grants {
             next: self.next,
             // A portal session remains bound to its one explicit choice.
             full_access: None,
+            terminal: ATerminalForTheAgent::NotAtAll,
             held: self
                 .held
                 .iter()

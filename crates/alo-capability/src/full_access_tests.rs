@@ -59,11 +59,14 @@ fn a_single_grant_view_remains_narrow_even_when_derived_from_full_access() {
     let grants = granting(&["/home/anna/Invoices", "/home/anna/Taxes"]);
     let invoice = Ask::path("/home/anna/Invoices/march.pdf");
     let chosen = grants.permitting(&files(), &invoice, noon()).unwrap();
-    let mut at = grants.at_full_access_for(&files());
+    let mut at = grants
+        .at_full_access_for(&files())
+        .with_the_terminal_as(crate::ATerminalForTheAgent::MayOpenOne);
     let limited = at.limited_to(chosen);
     assert!(limited.permits(&files(), &invoice, noon()));
     assert!(limited.permitted(&files(), &taxes(), noon()).is_err());
     assert_eq!(limited.full_access_for(), None);
+    assert_eq!(limited.the_terminal(), crate::ATerminalForTheAgent::NotAtAll);
     assert!(at.revoke(chosen));
     let revoked = at.limited_to(chosen);
     assert!(revoked.permitted(&files(), &invoice, noon()).is_err());
