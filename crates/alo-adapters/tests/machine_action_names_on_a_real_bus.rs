@@ -52,7 +52,11 @@ impl Node {
     #[zbus(property)]
     fn child_count(&self) -> i32 { i32::from(self.path != CONTROL) }
     fn get_children(&self) -> Vec<(String, OwnedObjectPath)> {
-        vec![(self.holder.clone(), OwnedObjectPath::try_from(ROOT).unwrap())]
+        match self.path {
+            ROOT => vec![(self.holder.clone(), OwnedObjectPath::try_from(WINDOW).unwrap())],
+            WINDOW => vec![(self.holder.clone(), OwnedObjectPath::try_from(CONTROL).unwrap())],
+            _ => Vec::new(),
+        }
     }
     fn get_child_at_index(&self, _index: i32) -> (String, OwnedObjectPath) {
         (self.holder.clone(), OwnedObjectPath::try_from(if self.path == ROOT { WINDOW } else { CONTROL }).unwrap())
@@ -62,6 +66,14 @@ impl Node {
     fn get_interfaces(&self) -> Vec<&str> { vec!["org.a11y.atspi.Accessible", "org.a11y.atspi.Action"] }
     fn get_attributes(&self) -> HashMap<&str, &str> {
         if self.path == WINDOW { HashMap::from([("alo-surface", "settings")]) } else { HashMap::new() }
+    }
+}
+
+struct RegistryRoot { holder: String }
+#[zbus::interface(name = "org.a11y.atspi.Accessible")]
+impl RegistryRoot {
+    fn get_children(&self) -> Vec<(String, OwnedObjectPath)> {
+        vec![(self.holder.clone(), OwnedObjectPath::try_from(ROOT).unwrap())]
     }
 }
 
@@ -88,12 +100,15 @@ impl Action {
     }
 }
 
-struct Fixture { _service: Connection, tree: AccessibleSession, holder: String, calls: Arc<Mutex<Vec<String>>> }
+struct Fixture { _registry: Connection, _service: Connection, tree: AccessibleSession,
+    holder: String, calls: Arc<Mutex<Vec<String>>> }
 impl Fixture {
     fn on(bus: &Bus, machine: &[&str], localized: &[&str], count: Count) -> Self {
-        let service = Builder::address(bus.address.as_str()).unwrap()
-            .name("org.a11y.atspi.Registry").unwrap().build().unwrap();
+        let service = Builder::address(bus.address.as_str()).unwrap().build().unwrap();
         let holder = service.unique_name().unwrap().to_string();
+        let registry = Builder::address(bus.address.as_str()).unwrap()
+            .name("org.a11y.atspi.Registry").unwrap()
+            .serve_at(ROOT, RegistryRoot { holder: holder.clone() }).unwrap().build().unwrap();
         for path in [ROOT, WINDOW, CONTROL] {
             service.object_server().at(path, Node { path, holder: holder.clone() }).unwrap();
         }
@@ -109,7 +124,7 @@ impl Fixture {
             Count::Boolean(n) => assert_eq!(bool::try_from(property).unwrap(), n),
         }
         let tree = AccessibleSession::at(&bus.address, Sandboxes::under(bus.directory.join("unused-proc"))).unwrap();
-        Self { _service: service, tree, holder, calls }
+        Self { _registry: registry, _service: service, tree, holder, calls }
     }
     fn node(&self) -> NodeAt { NodeAt { holder: self.holder.clone(), object: CONTROL.into() } }
     fn press(&self) -> Result<alo_adapters::PressedByHand, alo_adapters::Unpressed> {
