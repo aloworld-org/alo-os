@@ -45,3 +45,24 @@ The `verification-instruments` job in `.github/workflows/studio.yml` reruns
 these tests on pull requests, including real decoder and isolated GTK/AT-SPI
 fixtures. Synthetic test media and patched decoder observations in unit tests
 are never installed acceptance evidence.
+
+The separate `studio-agent-probe` binary in `alo-walking` prepares the installed
+permission check. It accepts no arguments and requires
+`STUDIO_PRIVATE_AGENT_WALK=1`. It reads its own Linux credentials, verifies the
+root-owned machine description, and opens the fixed agent socket once. The
+person controller must launch it as the image's agent with all capabilities
+and supplementary groups dropped and `NoNewPrivs` set. Running it as the person
+or root is an error.
+
+Its five stdout lines are `ask-before-grant`, `granted`, `revoked`, `full`, and
+`ask-again`. The controller must make and verify the corresponding native
+Settings choice before echoing that exact line to stdin. The probe neither
+grants access nor approves a change. It checks discovery and valid refused
+operations immediately after each boundary, retaining the same connection.
+Connection establishment, input acknowledgements and daemon responses share
+one five-minute deadline. Use fresh, exclusively owned controller pipes;
+arbitrary blocking output writers are outside this instrument's contract.
+
+The probe is not yet delivered or invoked by the installed walk. Its unit and
+local process tests do not establish installed permission acceptance. The
+separate native approval and execution-record check also remains required.

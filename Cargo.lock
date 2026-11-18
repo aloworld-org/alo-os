@@ -2243,6 +2243,7 @@ version = "0.0.1"
 dependencies = [
  "alo-acting",
  "alo-adapters",
+ "alo-agent",
  "alo-appearance",
  "alo-applications",
  "alo-capability",
@@ -2251,8 +2252,10 @@ dependencies = [
  "alo-protocol",
  "alo-software",
  "image",
+ "rustix 1.1.4",
  "serde_json",
  "thiserror 2.0.20",
+ "toml 0.9.12+spec-1.1.0",
 ]
 
 [[package]]

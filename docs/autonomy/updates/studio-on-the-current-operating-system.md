@@ -248,3 +248,34 @@ and warnings-denied documentation. Five deliberate faults (missing Escape,
 stale-log acceptance, a 20-minute preflight, missing Return and the wrong
 acknowledgement) each failed a regression test; the restored tests passed.
 These five mutation checks were performed once locally, not by the hosted job.
+
+## Matching package and private agent probe
+
+The corrected private source `83e0fa210c03a4d45c3b3eb00f35ecd41894779a`
+produced a successful package in run 44378112596. Installed KVM run 44380155898
+uses that exact source and package and is building its image. The source is
+frozen while that run is active. No resulting recording is available yet.
+
+The media-verification branch now includes the current parent and a separate
+fixed agent probe. Its independent tests were observed failing before each
+implementation. The probe checks actual Linux identity, trusted machine-file
+metadata and content, exact discovery, refusal, and state across five native
+permission boundaries on one connection. Initial connection establishment is
+bounded, and a cancellation watchdog closes that same connection at the shared
+deadline even when a daemon trickles an incomplete reply. It cannot select
+another socket, impersonate another identity, grant access or approve an act.
+
+All 37 focused Rust tests, formatting, strict all-target linting and
+warnings-denied documentation passed locally. This root-owned test lane
+actually exercised the root-file fixtures and root-process refusal; hosted
+ordinary-user tests explicitly skip fixture observations requiring root.
+Thirty-nine deliberate faults across the probe checks were each caught once
+locally, with the original sources restored. Normal repository tests rerun the
+regressions; those targeted mutation experiments are not a recurring hosted
+measurement. Independent read-only review found no remaining blocker within
+the implemented probe scope.
+
+The installed controller does not yet launch this probe or make its native
+Settings transitions. Actual approval, exactly-one execution, execution and
+refusal records, and installed permission withdrawal remain unverified. These
+local checks therefore do not complete the installed acceptance walk.
