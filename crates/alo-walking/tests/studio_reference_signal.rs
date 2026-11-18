@@ -6,7 +6,10 @@ mod signal;
 #[test]
 fn markers_repeat_an_irregular_seven_second_pattern() {
     for second in 0..21 {
-        assert_eq!(signal::marker_second(second), matches!(second % 7, 0 | 1 | 3 | 6));
+        assert_eq!(
+            signal::marker_second(second),
+            matches!(second % 7, 0 | 1 | 3 | 6)
+        );
     }
 }
 
@@ -15,7 +18,10 @@ fn visual_onsets_match_the_tone_and_remain_visible_for_half_a_second() {
     for second in 0..14 {
         let at = second * 1_000_000_000;
         assert_eq!(signal::lit_at(at), signal::marker_second(second));
-        assert_eq!(signal::lit_at(at + 499_999_999), signal::marker_second(second));
+        assert_eq!(
+            signal::lit_at(at + 499_999_999),
+            signal::marker_second(second)
+        );
         assert!(!signal::lit_at(at + 500_000_000));
     }
 }
