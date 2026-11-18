@@ -46,6 +46,7 @@ pub mod settling;
 pub mod steering;
 pub mod step;
 pub mod strokes;
+pub mod studio_walk_files;
 pub mod the_edge_seen;
 pub mod the_first_walk;
 pub mod the_log;

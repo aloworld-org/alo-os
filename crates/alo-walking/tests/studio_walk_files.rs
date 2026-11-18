@@ -1,12 +1,9 @@
 //! Only normal test packages go in; only generated recording evidence comes out.
 
-#[path = "../src/studio_walk_files.rs"]
-mod studio_walk_files;
-
 use std::io::{Cursor, Read, Write};
 use std::path::PathBuf;
 
-use studio_walk_files::Files;
+use alo_walking::studio_walk_files::Files;
 
 struct Connection {
     input: Cursor<Vec<u8>>,
@@ -72,13 +69,15 @@ fn a_normal_package_is_served_byte_for_byte() -> Result<(), Box<dyn std::error::
         b"normal package\0\xff",
     )?;
     let answer = fixture.request(b"GET /studio.flatpak HTTP/1.1\r\nHost: fixture\r\n\r\n")?;
-    let answer = answer.splitn(2, |byte| *byte == 0).collect::<Vec<_>>();
-    assert!(
-        answer
-            .first()
-            .is_some_and(|bytes| bytes.starts_with(b"HTTP/1.1 200"))
+    let body_at = answer
+        .windows(4)
+        .position(|bytes| bytes == b"\r\n\r\n")
+        .ok_or("the response has no header separator")?;
+    assert!(answer.starts_with(b"HTTP/1.1 200"));
+    assert_eq!(
+        answer.get(body_at + 4..),
+        Some(b"normal package\0\xff".as_slice())
     );
-    assert!(answer.last().is_some_and(|bytes| *bytes == b"\xff"));
     Ok(())
 }
 
