@@ -61,6 +61,28 @@ class Session:
     def event(self, kind, **facts):
         self.events.append(dict(kind=kind, observed_ns=time.monotonic_ns(), **facts))
 
+    def record_provenance(self, inputs):
+        """Name the installed commits and actual runtime in the saved report."""
+        try:
+            source = (inputs / 'source.txt').read_bytes()
+            features = (inputs / 'features.txt').read_bytes()
+        except OSError as error:
+            raise ValueError('the verified normal package records are missing') from error
+        require(re.fullmatch(rb'[0-9a-f]{40}\n', source), 'the input source revision is invalid')
+        require(features == b'normal; verification disabled\n',
+                'the installed walk requires the normal application package')
+        runtime = command('flatpak', 'info', '--user', '--show-runtime', STUDIO).strip()
+        require(re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_-]+/[A-Za-z0-9_.-]+', runtime),
+                'the installed runtime identity is invalid')
+        studio = command('flatpak', 'info', '--user', '--show-commit', STUDIO).strip()
+        reference = command('flatpak', 'info', '--user', '--show-commit', REFERENCE).strip()
+        runtime_commit = command('flatpak', 'info', '--show-commit', runtime).strip()
+        require(all(re.fullmatch('[0-9a-f]{64}', value) for value in (studio, reference, runtime_commit)),
+                'a deployed package has no complete OSTree commit identity')
+        self.event('installed-provenance', source=source[:-1].decode('ascii'),
+                   verification=False, studio_commit=studio, reference_commit=reference,
+                   runtime=runtime, runtime_commit=runtime_commit)
+
     def start(self):
         audio = subprocess.Popen([
             'pw-loopback', '--name', 'studio-verification-loop', '--channels', '1',
@@ -300,6 +322,7 @@ class Session:
 
     def run(self):
         try:
+            self.record_provenance(pathlib.Path.cwd())
             self.start()
             self.refused('Pause')
             self.refused('Start')
