@@ -276,9 +276,71 @@ class AuditInstalledWalk(unittest.TestCase):
                 self.assertEqual(report['status'], 'failed')
                 decoded.assert_not_called()
 
+    def test_nonfinite_or_non_json_region_inputs_return_safe_failed_reports(self):
+        invalid = [float('nan'), float('inf'), float('-inf'), b'not JSON', object(),
+                   {'screen': {'marker_region': [float('nan'), 0, 8, 16],
+                               'motion_region': [8, 0, 8, 16]}},
+                   {'screen': {'marker_region': [0, 0, 8, 16],
+                               'motion_region': [8, 0, 8, 16], 'unexpected': object()}}]
+        for regions in invalid:
+            with self.subTest(kind=type(regions).__name__):
+                # A decoder refusal must never be hidden by a second exception
+                # while serializing the invalid coordinates into its report.
+                with patch('audit_installed_walk.decode_media.decode',
+                           side_effect=ValueError('test-only invalid regions')):
+                    report = audit_installed_walk.audit(self.folder, expected_source=SOURCE, regions=regions)
+                bounded_claims(self, report)
+                self.assertEqual(report['status'], 'failed')
+                self.assertEqual(report['checks']['screen_decode']['status'], 'failed')
+
+    @unittest.skipUnless(shutil.which('ffmpeg') and shutil.which('ffprobe'), 'requires real FFmpeg tools')
+    def test_bad_coordinate_types_and_extra_region_values_cannot_be_success(self):
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-f', 'lavfi',
+                        '-i', 'testsrc2=size=16x16:rate=5:duration=1', '-c:v', 'libvpx',
+                        str(self.folder / 'screen.webm')], check=True, capture_output=True, timeout=30)
+        baseline = audit_installed_walk.audit(self.folder, expected_source=SOURCE, regions=copy.deepcopy(REGIONS))
+        self.assertEqual(baseline['checks']['screen_decode']['status'], 'passed', baseline)
+        invalid = [None, '0,0,8,16', [0, 0, 8], [False, 0, 8, 16],
+                   [0.5, 0, 8, 16], [0, 0, 8, float('inf')], [0, 0, 8, 16, 1]]
+        for rectangle in invalid:
+            with self.subTest(rectangle=rectangle):
+                regions = copy.deepcopy(REGIONS)
+                regions['screen']['marker_region'] = rectangle
+                # Use the real decoder here: it rejects malformed rectangle
+                # fields without the wrapper manufacturing a successful check.
+                report = audit_installed_walk.audit(self.folder, expected_source=SOURCE, regions=regions)
+                bounded_claims(self, report)
+                self.assertEqual(report['checks']['screen_decode']['status'], 'failed')
+                self.assertEqual(report['checks']['screen_recording']['status'], 'not_reached')
+                self.assertEqual(report['status'], 'failed')
+
 
 @unittest.skipUnless(shutil.which('ffmpeg') and shutil.which('ffprobe'), 'requires real FFmpeg tools')
 class AuditCli(unittest.TestCase):
+    def test_cli_nonfinite_or_malformed_regions_emit_failed_json_without_a_traceback(self):
+        with tempfile.TemporaryDirectory(prefix='studio-audit-invalid-region-test-') as directory:
+            folder = pathlib.Path(directory)
+            write_inputs(folder)
+            regions_file = folder / 'regions.json'
+            script = pathlib.Path(audit_installed_walk.__file__).resolve()
+            command = [sys.executable, '-I', str(script), str(folder), '--source', SOURCE,
+                       '--regions', str(regions_file)]
+            cases = ['NaN', 'Infinity', '-Infinity', '{truncated']
+            for value in ['NaN', 'Infinity', '-Infinity']:
+                cases.append('{"screen":{"marker_region":[' + value + ',0,8,16],'
+                             '"motion_region":[8,0,8,16]},"window":'
+                             '{"marker_region":[0,0,8,16],"motion_region":[8,0,8,16]}}')
+            for contents in cases:
+                with self.subTest(contents=contents):
+                    regions_file.write_text(contents)
+                    process = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                    self.assertEqual(process.returncode, 1, process.stderr + process.stdout)
+                    self.assertNotIn('Traceback', process.stderr)
+                    report = json.loads(process.stdout)
+                    bounded_claims(self, report)
+                    self.assertEqual(report['status'], 'failed')
+                    self.assertEqual(report['checks']['screen_decode']['status'], 'failed')
+
     def test_cli_decodes_closed_test_webms_and_prints_one_bounded_result_on_success_and_refusal(self):
         with tempfile.TemporaryDirectory(prefix='studio-audit-ffmpeg-test-only-') as directory:
             folder = pathlib.Path(directory)
