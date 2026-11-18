@@ -5,6 +5,8 @@ This tests the instrument, not an installed app. Guest acceptance is separate.
 
 import json
 import pathlib
+import os
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -223,6 +225,159 @@ class InstalledSession(unittest.TestCase):
                 flow.export(identifier, title)
             self.assertEqual(effects,
                              ['RenameRecording', 'ExportRecording', 'Cancel', 'ExportRecording', 'Save'])
+
+
+class AudioRestoration(unittest.TestCase):
+    """Only mocked orchestration: never launch audio, Flatpak or an installed VM."""
+
+    def fixture(self, folder, *, configured=False):
+        flow = object.__new__(Session)
+        flow.home = folder / 'home'
+        flow.folder = folder / 'logs'
+        flow.folder.mkdir()
+        flow.events, flow.children = [], []
+        flow.reference = None
+        flow.record_provenance = lambda *args: None
+        flow.wait = lambda *args, **kwargs: None
+        flow.refused = flow.start_reference = flow.stop_reference = lambda *args: None
+        flow.picker = lambda *args, **kwargs: None
+        flow.recording = lambda *args: None
+        flow.upload = lambda *args: None
+        trace = []
+        state_home = folder / 'selected-state-home'
+        state_home.mkdir()
+        default = dict(id=34, type='PipeWire:Interface:Metadata',
+                       props={'metadata.name': 'default'}, metadata=[
+                           dict(subject=0, key='default.audio.source',
+                                type='Spa:String:JSON', value={'name': 'automatic-source'}),
+                           dict(subject=0, key='default.configured.audio.sink',
+                                type='Spa:String:JSON', value={'name': 'chosen-speakers'}),
+                           dict(subject=0, key='default.configured.video.source',
+                                type='Spa:String:JSON', value={'name': 'chosen-camera'}),
+                       ])
+        if configured:
+            default['metadata'].append(dict(subject=0, key='default.configured.audio.source',
+                                             type='Spa:String:JSON', value={'name': 'old-source'}))
+        nodes = [default]
+
+        class Child:
+            def __init__(self):
+                self.returncode = None
+
+            def poll(self):
+                return self.returncode
+
+            def terminate(self):
+                self.returncode = 0
+
+            def wait(self, **kwargs):
+                return self.returncode
+
+        def popen(args, **kwargs):
+            trace.append(tuple(args))
+            if args[0] == 'pw-loopback':
+                nodes.append(dict(id=93, type='PipeWire:Interface:Node', info={'props': {
+                    'node.name': 'studio-verification-microphone', 'media.class': 'Audio/Source'}}))
+            return Child()
+
+        def command(*args):
+            trace.append(args)
+            if args == ('pw-dump',):
+                return json.dumps(nodes)
+            if args == ('wpctl', 'set-default', '93'):
+                default['metadata'].append(dict(subject=0, key='default.configured.audio.source',
+                    type='Spa:String:JSON', value={'name': 'studio-verification-microphone'}))
+                return ''
+            if args == ('wpctl', 'clear-default', '1'):
+                default['metadata'][:] = [v for v in default['metadata']
+                                           if v['key'] != 'default.configured.audio.source']
+                return ''
+            raise AssertionError(f'unexpected private instrument command: {args!r}')
+
+        return flow, trace, state_home, command, popen
+
+    def test_preconfigured_source_refuses_before_spawning_or_overriding_audio(self):
+        with tempfile.TemporaryDirectory() as directory:
+            flow, trace, state_home, command, popen = self.fixture(pathlib.Path(directory), configured=True)
+            with patch.dict(os.environ, XDG_STATE_HOME=str(state_home)), \
+                    patch('installed_session.command', command), \
+                    patch('installed_session.subprocess.Popen', popen):
+                with self.assertRaises(ValueError):
+                    flow.start()
+            self.assertFalse(any(args[0] in ('pw-loopback', 'wpctl') for args in trace))
+
+    def test_either_wireplumber_state_filename_with_source_history_refuses_before_spawn(self):
+        for filename in ['default-nodes', 'default-streams']:
+            with self.subTest(filename=filename), tempfile.TemporaryDirectory() as directory:
+                flow, trace, state_home, command, popen = self.fixture(pathlib.Path(directory))
+                state = state_home / 'wireplumber' / filename
+                state.parent.mkdir()
+                state.write_text(f'[{filename}]\ndefault.configured.audio.source.0=old-source\n')
+                with patch.dict(os.environ, XDG_STATE_HOME=str(state_home)), \
+                        patch('installed_session.command', command), \
+                        patch('installed_session.subprocess.Popen', popen):
+                    with self.assertRaises(ValueError):
+                        flow.start()
+                self.assertFalse(any(args[0] in ('pw-loopback', 'wpctl') for args in trace))
+
+    def test_source_only_clear_runs_after_success_or_failure_once_override_occurred(self):
+        for failure in [None, 'after-override', 'during-recording']:
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as directory:
+                flow, trace, state_home, command, popen = self.fixture(pathlib.Path(directory))
+
+                def fail(*args, **kwargs):
+                    raise ValueError('test-only person flow failure')
+
+                if failure == 'after-override':
+                    flow.wait = fail
+                elif failure == 'during-recording':
+                    flow.recording = fail
+                with patch.dict(os.environ, XDG_STATE_HOME=str(state_home)), \
+                        patch('installed_session.command', command), \
+                        patch('installed_session.subprocess.Popen', popen), \
+                        patch('installed_session.subprocess.run', return_value=subprocess.CompletedProcess([], 0)), \
+                        patch('installed_session.record_provenance', create=True):
+                    if failure:
+                        with self.assertRaisesRegex(ValueError, 'person flow failure'):
+                            flow.run()
+                    else:
+                        flow.run()
+                self.assertIn(('wpctl', 'set-default', '93'), trace)
+                self.assertEqual(trace.count(('wpctl', 'clear-default', '1')), 1)
+                self.assertLess(trace.index(('wpctl', 'set-default', '93')),
+                                trace.index(('wpctl', 'clear-default', '1')))
+                self.assertTrue(all(child.poll() is not None for child in flow.children))
+
+    def test_refusal_before_any_override_does_not_clear_an_existing_preference(self):
+        with tempfile.TemporaryDirectory() as directory:
+            flow, trace, state_home, command, popen = self.fixture(pathlib.Path(directory), configured=True)
+            with patch.dict(os.environ, XDG_STATE_HOME=str(state_home)), \
+                    patch('installed_session.command', command), \
+                    patch('installed_session.subprocess.Popen', popen), \
+                    patch('installed_session.subprocess.run', return_value=subprocess.CompletedProcess([], 0)), \
+                    patch('installed_session.record_provenance', create=True):
+                with self.assertRaises(ValueError):
+                    flow.run()
+            self.assertFalse(any(args[:2] == ('wpctl', 'clear-default') for args in trace))
+
+    def test_restore_refusal_fails_the_walk_and_still_stops_owned_children(self):
+        with tempfile.TemporaryDirectory() as directory:
+            flow, trace, state_home, command, popen = self.fixture(pathlib.Path(directory))
+
+            def clear_fails(*args):
+                if args == ('wpctl', 'clear-default', '1'):
+                    trace.append(args)
+                    raise RuntimeError('test-only audio restoration refusal')
+                return command(*args)
+
+            with patch.dict(os.environ, XDG_STATE_HOME=str(state_home)), \
+                    patch('installed_session.command', clear_fails), \
+                    patch('installed_session.subprocess.Popen', popen), \
+                    patch('installed_session.subprocess.run', return_value=subprocess.CompletedProcess([], 0)):
+                with self.assertRaisesRegex(RuntimeError, 'audio restoration refusal'):
+                    flow.run()
+            self.assertTrue(flow.children)
+            self.assertTrue(all(child.poll() is not None for child in flow.children))
 
 
 if __name__ == '__main__':
