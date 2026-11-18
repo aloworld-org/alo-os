@@ -260,6 +260,151 @@ mod tests {
     use crate::{TheLevel, one_try_at};
     use alo_instructing::WhatItMayReach;
 
+    /// Read only answers actually delivered in the model's accumulated
+    /// transcript, excluding protocol examples in its instructions. Expected
+    /// states below are independent literals, never calls to `status`.
+    fn transcript_answers(shown: &str) -> Vec<serde_json::Value> {
+        shown
+            .lines()
+            .filter_map(|line| line.strip_prefix("The answer: "))
+            .map(|line| serde_json::from_str(line).expect("actual transcript answer is JSON"))
+            .collect()
+    }
+
+    fn transcript_statuses(shown: &str) -> Vec<serde_json::Value> {
+        transcript_answers(shown).iter()
+            .filter_map(|answer| answer.pointer("/tells/did/application-controlled"))
+            .map(|controlled| {
+                assert_eq!(controlled["application"], "org.aloworld.Studio");
+                assert_eq!(controlled["action"], "studio.status");
+                assert_eq!(controlled["unanswered"], false);
+                serde_json::from_str(controlled["reply"].as_str()
+                    .expect("a status read must deliver genuine versioned status, not a null change acknowledgement"))
+                    .expect("Studio's status reply is JSON")
+            }).collect()
+    }
+
+    #[test]
+    fn the_model_receives_literal_versioned_paused_status_at_both_policies() {
+        let requests = the_requests();
+        let request = requests
+            .iter()
+            .find(|request| request.named() == "read Studio status")
+            .expect("the real-model status trial exists");
+        let expected = json!({
+            "version": 1, "phase": "paused", "source_kind": "screen",
+            "microphone_enabled": false, "microphone_active": false,
+            "quality": "full_hd", "countdown_seconds": 0, "elapsed_ms": 0,
+            "recording_id": null, "preview_ready": true, "export_pending": false,
+            "can_start": false, "can_pause": false, "can_resume": true,
+            "can_finish": true,
+        });
+        for level in [TheLevel::AskEachTime, TheLevel::FullAccess] {
+            let mut model = Writing::these(&[
+                reading("studio.status", &[]),
+                reading("studio.status", &[]),
+                answering("The recording is paused."),
+            ]);
+            let tried = one_try_at(
+                level,
+                request,
+                &WhatItMayReach::nothing().at_full_access(true),
+                &the_verbs(),
+                &the_words(),
+                &mut model,
+            );
+            assert!(tried.took_the_road(), "{level:?}: {tried:?}");
+            assert_eq!(
+                transcript_statuses(model.shown.get(1).expect("first read shown")),
+                vec![expected.clone()],
+                "{level:?}: first read"
+            );
+            assert_eq!(
+                transcript_statuses(model.shown.last().expect("repeated read shown")),
+                vec![expected.clone(), expected.clone()],
+                "{level:?}: repeated read"
+            );
+        }
+    }
+
+    #[test]
+    fn microphone_trials_deliver_a_real_option_transition_before_and_after_the_exact_action() {
+        // A disable trial starting already off would not establish disabling;
+        // likewise enabling must begin off. These expectations do not consult
+        // REQUESTS, ACTION_NAMES, or the status-answer helper under test.
+        for (name, action, enabled) in [
+            (
+                "disable the Studio microphone",
+                "studio.disable_microphone",
+                [true, false, false],
+            ),
+            (
+                "enable the Studio microphone",
+                "studio.enable_microphone",
+                [false, true, true],
+            ),
+        ] {
+            let requests = the_requests();
+            let request = requests
+                .iter()
+                .find(|request| request.named() == name)
+                .expect("the real-model microphone trial exists");
+            for level in [TheLevel::AskEachTime, TheLevel::FullAccess] {
+                let mut model = Writing::these(&[
+                    reading("studio.status", &[]),
+                    proposing(action, &[]),
+                    reading("studio.status", &[]),
+                    reading("studio.status", &[]),
+                    answering("Done."),
+                ]);
+                let tried = one_try_at(
+                    level,
+                    request,
+                    &WhatItMayReach::nothing().at_full_access(true),
+                    &the_verbs(),
+                    &the_words(),
+                    &mut model,
+                );
+                assert!(tried.took_the_road(), "{level:?}: {name}: {tried:?}");
+                let shown = model
+                    .shown
+                    .last()
+                    .expect("post-action statuses delivered to model");
+                let expected: Vec<_> = enabled
+                    .into_iter()
+                    .map(|microphone| {
+                        json!({
+                            "version": 1, "phase": "selected", "source_kind": "screen",
+                            "microphone_enabled": microphone, "microphone_active": false,
+                            "quality": "full_hd", "countdown_seconds": 0, "elapsed_ms": 0,
+                            "recording_id": null, "preview_ready": true, "export_pending": false,
+                            "can_start": true, "can_pause": false, "can_resume": false,
+                            "can_finish": false,
+                        })
+                    })
+                    .collect();
+                assert_eq!(transcript_statuses(shown), expected, "{level:?}: {name}");
+                let answers = transcript_answers(shown);
+                let path = match level {
+                    TheLevel::AskEachTime => "/tells/done/did/application-controlled",
+                    TheLevel::FullAccess => "/tells/done-without-asking/did/application-controlled",
+                };
+                let changes: Vec<_> = answers
+                    .iter()
+                    .filter_map(|answer| answer.pointer(path))
+                    .collect();
+                assert_eq!(
+                    changes,
+                    vec![&json!({
+                        "application": "org.aloworld.Studio", "action": action,
+                        "reply": null, "unanswered": false,
+                    })],
+                    "{level:?}: one exact action acknowledgement"
+                );
+            }
+        }
+    }
+
     /// Match the person's request to its semantic action independently of the
     /// declaration-order zip used to build the roads under test.
     #[test]
