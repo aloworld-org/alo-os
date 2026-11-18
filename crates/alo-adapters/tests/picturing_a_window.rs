@@ -82,7 +82,13 @@ fn installed() -> Installed {
 fn a_picture_call() -> Call {
     fallback_verbs::fallback_verbs()
         .unwrap()
-        .call(PICTURE_WINDOW, &[(APPLICATION, Given::text(GAME))])
+        .call(
+            PICTURE_WINDOW,
+            &[
+                (APPLICATION, Given::text(GAME)),
+                (fallback_verbs::QUESTION, Given::text("Is a race on?")),
+            ],
+        )
         .unwrap()
 }
 
@@ -248,14 +254,22 @@ fn the_verb_is_a_change_over_a_granted_application_taking_nothing_else() {
     assert_eq!(verb.effect(), Effect::Change);
     assert_eq!(verb.what_it_changes(), Some(&words::PICTURE_CHANGES));
     assert_eq!(verb.what_it_leaves(), Some(&words::PICTURE_LEAVES));
-    assert_eq!(verb.args().len(), 1);
-    assert!(matches!(verb.args()[0].takes(), Takes::Application));
+    assert_eq!(verb.args().len(), 2);
+    assert!(matches!(
+        verb.args().first().map(alo_capability::Arg::takes),
+        Some(Takes::Application)
+    ));
+    assert!(matches!(
+        verb.args().get(1).map(alo_capability::Arg::takes),
+        Some(Takes::Text)
+    ));
     assert!(
         verbs
             .call(
                 PICTURE_WINDOW,
                 &[
                     (APPLICATION, Given::text(GAME)),
+                    (fallback_verbs::QUESTION, Given::text("Is a race on?")),
                     ("region", Given::text("0,0,1,1")),
                 ],
             )

@@ -177,6 +177,7 @@ adapters.fallback.picture-window.not-in-front	No window of {application} has the
 adapters.fallback.picture-window.not-switched-on	alo cannot see inside {application}: it describes nothing alo can read, and pictures are off for it, so no picture was taken. To let alo use pictures of its window, switch on “Pictures and keys” for {application} in Settings → What alo can use
 adapters.fallback.picture-window.password-field	A window of {application} has a password field, and alo never takes a picture of one, so no picture was taken
 adapters.fallback.picture-window.purpose	take one picture of the window of an application that describes nothing alo can read, such as a game, and have it read in words by whoever the person chose to read pictures
+adapters.fallback.picture-window.question	what the picture is to answer, in the person's own words
 adapters.fallback.picture-window.sentence	take a picture of the {application} window and have it read
 adapters.fallback.press-key.application	the application whose window the key is pressed in
 adapters.fallback.press-key.changes	Presses that one key once in the application's window that has the keyboard, as a person pressing it would.

@@ -451,7 +451,13 @@ fn the_game_is_granted(grants: &mut Grants) {
 }
 
 fn the_game() -> Vec<(&'static str, Given)> {
-    vec![(APPLICATION, Given::text(GAME))]
+    vec![
+        (APPLICATION, Given::text(GAME)),
+        (
+            alo_adapters::fallback_verbs::QUESTION,
+            Given::text("Is a race on?"),
+        ),
+    ]
 }
 
 /// Propose a picture of the game, approve it, and answer what it did.

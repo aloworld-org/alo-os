@@ -52,6 +52,8 @@ pub struct APictureTaken {
     wide: u32,
     /// How tall, in pixels.
     tall: u32,
+    /// What the picture is to answer, where the call said.
+    question: Option<String>,
 }
 
 impl APictureTaken {
@@ -66,7 +68,21 @@ impl APictureTaken {
             png: Arc::from(png),
             wide,
             tall,
+            question: None,
         }
+    }
+
+    /// This picture, to answer `question`.
+    #[must_use]
+    pub fn to_answer(mut self, question: &str) -> Self {
+        self.question = Some(question.to_owned());
+        self
+    }
+
+    /// What the picture is to answer, where the call said.
+    #[must_use]
+    pub fn question(&self) -> Option<&str> {
+        self.question.as_deref()
     }
 
     /// The application.
@@ -178,11 +194,16 @@ pub(crate) fn picturing_an_applications_window(
             return refusing(picturing.refused(words::NO_PICTURE, strings));
         }
     };
+    let question = match call.value(alo_adapters::fallback_verbs::QUESTION) {
+        Some(Value::Text(question)) => Some(question.clone()),
+        _ => None,
+    };
     let taken = APictureTaken {
         application: picturing.application().to_owned(),
         png: Arc::from(png),
         wide,
         tall,
+        question,
     };
     (Entry::ran(&picturing.into_authorised(), strings), Ok(taken))
 }

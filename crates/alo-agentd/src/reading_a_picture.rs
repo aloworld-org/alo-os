@@ -122,9 +122,17 @@ fn reading(
         return Err(strings.say(&words::THE_READER_HAS_NO_MODEL.key(), &named));
     };
 
-    let asked = strings
-        .say(&words::WHAT_THE_READER_IS_ASKED.key(), &application)
-        .into_text();
+    let asked = strings.say(&words::WHAT_THE_READER_IS_ASKED.key(), &application);
+    let asked = match taken.question() {
+        Some(question) => strings.say(
+            &words::WHAT_THE_READER_IS_ASKED_TO_ANSWER.key(),
+            &Filling::nothing()
+                .and_said("asked", &asked)
+                .and("question", question.to_owned()),
+        ),
+        None => asked,
+    }
+    .into_text();
     let policy = questions.the_rule();
     let by_an_organisation = questions.by_an_organisation();
     let the_road_out = questions.road_out();
