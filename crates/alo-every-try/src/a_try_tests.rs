@@ -785,3 +785,266 @@ fn on_its_own_road_a_read_declared_aside_is_answered_aside() {
     assert_eq!(tried.looked_aside(), 1, "{tried:?}");
     assert!(!tried.by_the_other_road(), "{tried:?}");
 }
+
+/// Product-prompt and scripted-loop checks, not a claim about real-model choices.
+/// The real every-try cases and their required counts remain unchanged.
+mod completion_scope {
+    #![expect(
+        clippy::expect_used,
+        reason = "invalid declarations or missing genuine continuation evidence fail these tests"
+    )]
+
+    use alo_applications::verbs::{APPLICATION, CLOSE_APPLICATION, OPEN_APPLICATION};
+    use alo_capability::{Effect, Requires, Verb, Verbs};
+    use alo_instructing::WhatItMayReach;
+    use alo_protocol::Done;
+    use alo_strings::Word;
+    use serde_json::{Value, json};
+
+    use crate::a_road::{ARequest, Answered, Step};
+    use crate::a_try::{TheLevel, Tried, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, reading, the_verbs, the_words};
+    use crate::went_wrong::WentWrong;
+
+    const FIREFOX: &str = "org.mozilla.firefox";
+    const PAPERS: &str = "org.gnome.Papers";
+    const COMPARE: &str = "Compare the person's whole request with what came back.";
+    const COMPLETE: &str = "If the whole request is complete, send an answer line.";
+    const REMAINING: &str = "Otherwise, continue only the remaining requested steps.";
+    const READ_REMAINING: &str =
+        "Use a read line only for information needed by a remaining requested step";
+    const READ_APPLICATION: &str =
+        "for an application step, read only that application's information";
+    const CHANGE_REMAINING: &str =
+        "Use a propose line only for a requested change that has not been done yet.";
+
+    fn offered() -> Verbs {
+        // Keep the genuine registry, including every Studio declaration. Extra
+        // families make the completion rule independent of Studio's names.
+        let mut verbs = the_verbs();
+        for (name, effect, purpose) in [
+            (
+                "weave.status",
+                Effect::Read,
+                "read the loom's current state",
+            ),
+            ("weave.tension", Effect::Change, "change the loom's tension"),
+            (
+                "garden.status",
+                Effect::Read,
+                "read the garden's current state",
+            ),
+            (
+                "garden.water",
+                Effect::Change,
+                "water the selected garden bed",
+            ),
+        ] {
+            verbs
+                .declare(
+                    Verb::checked(
+                        name,
+                        Word::saying("test.completion.purpose", purpose),
+                        effect,
+                        vec![],
+                        Requires::nothing_because("synthetic declarations have no machine access"),
+                        Word::saying("test.completion.sentence", purpose),
+                    )
+                    .expect("valid synthetic declaration"),
+                )
+                .expect("distinct offered declaration");
+        }
+        verbs
+    }
+
+    fn drive(level: TheLevel, request: &ARequest, lines: &[String]) -> (Tried, Writing) {
+        let verbs = offered();
+        let mut model = Writing::these(lines);
+        let tried = one_try_at(
+            level,
+            request,
+            &WhatItMayReach::nothing().at_full_access(matches!(level, TheLevel::FullAccess)),
+            &verbs,
+            &the_words(),
+            &mut model,
+        );
+        for prompt in &model.shown {
+            for verb in verbs.all() {
+                assert!(
+                    prompt.contains(verb.name()),
+                    "offered verb disappeared: {}",
+                    verb.name()
+                );
+            }
+        }
+        (tried, model)
+    }
+
+    fn actual_close(level: TheLevel, next: String) -> (Tried, Writing) {
+        let set = crate::the_set().expect("the real fixed set builds");
+        let request = set
+            .requests()
+            .iter()
+            .find(|request| request.named() == "close an application")
+            .expect("the genuine close-Firefox fixture remains present");
+        assert_eq!(request.words(), "Close Firefox.");
+        drive(
+            level,
+            request,
+            &[
+                proposing(CLOSE_APPLICATION, &[(APPLICATION, FIREFOX)]),
+                next,
+            ],
+        )
+    }
+
+    fn last_reply_and_tail(prompt: &str) -> (Value, &str) {
+        let (_, rest) = prompt
+            .rsplit_once("\nThe answer: ")
+            .expect("an actual completed-step reply in the continued prompt");
+        let (wire, tail) = rest
+            .split_once('\n')
+            .expect("reply followed by central guidance");
+        (
+            serde_json::from_str(wire).expect("the genuine reply is JSON"),
+            tail.trim(),
+        )
+    }
+
+    #[test]
+    fn completion_scope_close_fixture_resumes_with_literal_completed_firefox_reply_at_both_policies()
+     {
+        for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+            let (tried, model) = actual_close(level, answering("I asked Firefox to close."));
+            assert_eq!(tried.went(), &Went::TheRoad, "{level:?}: {tried:?}");
+            assert_eq!(tried.chose(), [CLOSE_APPLICATION, "an answer in words"]);
+            assert_eq!(model.shown.len(), 2);
+            let prompt = model
+                .shown
+                .get(1)
+                .expect("actual post-completion model round");
+            let (reply, _) = last_reply_and_tail(prompt);
+            assert_eq!(reply.get("format"), Some(&json!(1)));
+            let completed = match level {
+                TheLevel::FullAccess => "/tells/done-without-asking",
+                TheLevel::AskEachTime => "/tells/done",
+            };
+            assert_eq!(
+                reply.pointer(&format!("{completed}/did")),
+                Some(&json!({"reached":{"act":"close","application":"org.mozilla.firefox"}})),
+                "independent literal expectation; no expected reply helper: {reply}"
+            );
+            let said = reply
+                .pointer(&format!("{completed}/said/text"))
+                .and_then(Value::as_str)
+                .expect("the actual completion sentence");
+            match level {
+                TheLevel::AskEachTime => {
+                    assert_eq!(said, "Done: ask org.mozilla.firefox to close.");
+                    assert!(reply.pointer("/tells/done-without-asking").is_none());
+                }
+                TheLevel::FullAccess => {
+                    assert!(said.starts_with("Done without asking you first"), "{said}");
+                    assert!(said.contains("ask org.mozilla.firefox to close"), "{said}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn completion_scope_central_tail_decides_whole_request_completion_before_any_remaining_work() {
+        for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+            let (_, model) = actual_close(level, answering("I asked Firefox to close."));
+            let (_, tail) = last_reply_and_tail(model.shown.get(1).expect("continued prompt"));
+            let compare = tail
+                .find(COMPARE)
+                .expect("central whole-request comparison");
+            let complete = tail
+                .find(COMPLETE)
+                .expect("completed request answers first");
+            let remaining = tail.find(REMAINING).expect("remaining work is conditional");
+            let read = tail
+                .find(READ_REMAINING)
+                .expect("reads belong to a remaining requested step");
+            let change = tail
+                .find(CHANGE_REMAINING)
+                .expect("changes belong to uncompleted requested work");
+            assert!(compare < complete && complete < remaining);
+            assert!(remaining < read && remaining < change);
+            assert!(tail.contains(READ_APPLICATION));
+            assert!(!tail.contains("a read line if you still need something"));
+        }
+    }
+
+    fn close_then_open() -> ARequest {
+        ARequest::asking(
+            "close Firefox then open Papers",
+            "Ask Firefox to close, then open Papers.",
+            vec![
+                Step::of(
+                    CLOSE_APPLICATION,
+                    Answered::With(Done::of_an_application_act("close", FIREFOX)),
+                )
+                .expecting(APPLICATION, FIREFOX),
+                Step::of(OPEN_APPLICATION, Answered::AnApplicationOpened)
+                    .expecting(APPLICATION, PAPERS),
+            ],
+        )
+    }
+
+    #[test]
+    fn completion_scope_a_completed_step_does_not_end_a_genuine_multistep_request() {
+        let close = proposing(CLOSE_APPLICATION, &[(APPLICATION, FIREFOX)]);
+        for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+            let (tried, model) = drive(
+                level,
+                &close_then_open(),
+                &[
+                    close.clone(),
+                    proposing(OPEN_APPLICATION, &[(APPLICATION, PAPERS)]),
+                    answering("I asked Firefox to close and opened Papers."),
+                ],
+            );
+            assert_eq!(tried.went(), &Went::TheRoad, "{level:?}: {tried:?}");
+            assert_eq!(
+                tried.chose(),
+                [CLOSE_APPLICATION, OPEN_APPLICATION, "an answer in words"]
+            );
+            assert_eq!(model.shown.len(), 3);
+            let completed = match level {
+                TheLevel::FullAccess => "/tells/done-without-asking/did/reached",
+                TheLevel::AskEachTime => "/tells/done/did/reached",
+            };
+            let (first, _) = last_reply_and_tail(model.shown.get(1).expect("after close"));
+            assert_eq!(
+                first.pointer(completed),
+                Some(&json!({"act":"close","application":"org.mozilla.firefox"}))
+            );
+            let (last, _) = last_reply_and_tail(model.shown.get(2).expect("after open"));
+            assert_eq!(
+                last.pointer(completed),
+                Some(&json!({"act":"open","application":"org.gnome.Papers"}))
+            );
+            let (short, _) = drive(
+                level,
+                &close_then_open(),
+                &[close.clone(), answering("Done.")],
+            );
+            assert!(matches!(
+                short.went(),
+                Went::WentWrong(WentWrong::StoppedShort { done: 1, of: 2, .. })
+            ));
+        }
+    }
+
+    #[test]
+    fn completion_scope_an_unrequested_status_after_close_still_fails_the_real_try() {
+        for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+            let (tried, _) = actual_close(level, reading("weave.status", &[]));
+            assert!(
+                matches!(tried.went(), Went::WentWrong(WentWrong::WentOn { asked }) if asked == "weave.status")
+            );
+            assert_eq!(tried.chose(), [CLOSE_APPLICATION, "weave.status"]);
+        }
+    }
+}
