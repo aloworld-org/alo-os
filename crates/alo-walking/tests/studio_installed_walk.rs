@@ -104,8 +104,8 @@ fn nested_scoped_environment_and_secret_reads_are_refused() {
 
 #[cfg(unix)]
 #[test]
-fn failures_at_each_person_command_are_reported_without_installing_or_recording_afterward(
-) -> Result<(), Box<dyn std::error::Error>> {
+fn failures_at_each_person_command_are_reported_without_installing_or_recording_afterward()
+-> Result<(), Box<dyn std::error::Error>> {
     use std::os::unix::fs::PermissionsExt as _;
 
     struct Temporary(std::path::PathBuf);
