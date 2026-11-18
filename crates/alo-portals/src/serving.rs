@@ -12,6 +12,7 @@
 //! | `org.freedesktop.portal.Settings` | what the person set for how the machine looks (`crate::settings_portal`) |
 //! | `org.freedesktop.portal.NetworkMonitor` | how far this machine reaches (`crate::network_monitor_portal`) |
 //! | `org.freedesktop.portal.FileChooser` | the person, on alo's own file chooser, and the documents portal to hand the file over (`crate::file_chooser_portal`) |
+//! | `org.freedesktop.portal.ScreenCast` | the person's source choice and its revocable capture session (`crate::screen_cast_portal`) |
 //!
 //! Every other portal is not registered, so the bus itself tells an application
 //! nothing answers it — [`crate::Portal::answered_on_the_bus`] is the list, and

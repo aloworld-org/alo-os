@@ -2,11 +2,9 @@
 //!
 //! # One value, and the order it makes impossible to get wrong
 //!
-//! All three doors — [`Changing::granted`], [`Changing::revoked`] and
-//! [`Changing::the_session_is_over`] — end in
-//! `Changing::kept_then_knocked`, and that private function is the only
-//! caller of [`crate::Knocking::knock`] in this crate. The knock is on the far side
-//! of `alo_remembering::kept`'s `?`, so a change that did not land on the
+//! Grant changes use [`alo_remembering::updated`] to edit the latest list while
+//! holding its file lock. The knock is on the far side of that call's `?`,
+//! so a change that did not land on the
 //! disk is a change no daemon hears about, and a knock can never overtake the
 //! write it announces. A test still measures it — a fake door that reads the
 //! file at the moment it is knocked on — because *held by shape* is an
@@ -23,8 +21,8 @@
 //!
 //! # Applied to a copy
 //!
-//! The change is made on a clone of the list, the clone is written, and only
-//! a clone the disk accepted replaces the list the caller holds. So
+//! The change is made on the latest list read under the file lock, and only
+//! a list the disk accepted replaces the list the caller holds. So
 //! [`crate::NotChanged`] leaves all three places a grant lives — the file,
 //! the memory of the surface, and the daemon — exactly as they were, and no
 //! two of them can disagree because a write failed between updates.
@@ -33,13 +31,10 @@
 //!
 //! `alo-remembering` replaces the file whole: a grant not in it is a grant
 //! revoked, which is what makes revocation-by-file possible at all. This
-//! value therefore has to be handed **the** list — the one read off the same
-//! file at sign-in through `alo_remembering::remembered`, held by the
-//! person's own session, one owner at a time — not a fresh `Grants` a surface
-//! made for itself, which would write its own emptiness over everything the
-//! person has granted. That is the same discipline the daemon's
-//! `rereading.rs` applies from the other direction, and the one owner is the
-//! same one `SHARED_MAIN.md` gives a working tree.
+//! value therefore edits the latest file, rather than replacing it with a
+//! surface's older view. A capture permission granted while Settings is open
+//! must survive another grant or revocation made there. The daemon's
+//! `rereading.rs` reads that same complete file from the other direction.
 
 use std::path::Path;
 use std::time::SystemTime;
@@ -194,10 +189,12 @@ impl<'a> Changing<'a> {
     /// [`NotChanged::NotKept`] when the file refuses the write, and the
     /// grants then **still stand**, on the disk and in the list.
     pub fn the_session_is_over(&mut self, now: SystemTime) -> Result<usize, NotChanged> {
-        let mut fresh = self.grants.clone();
-        let gone = fresh.the_session_is_over();
+        let (fresh, gone) = alo_remembering::updated(self.at, now, |grants| {
+            Ok::<_, NotChanged>(grants.the_session_is_over())
+        })?;
+        *self.grants = fresh;
         if gone > 0 {
-            self.kept_then_knocked(fresh, now)?;
+            self.daemon.knock();
         }
         Ok(gone)
     }

@@ -134,8 +134,8 @@ an independently hosted alo repository, not a Flathub submission. See the
 The versioned [automation interface](docs/automation.md) provides semantic
 recording actions and status for ask-alo and other agents. It shares the native
 lifecycle and preserves the person's system source picker and export chooser.
-In Settings, open **Access for alo**, choose **Give alo access to an
-application**, select **alo Studio**, and choose how long access lasts.
+In Settings, open **What alo can use**, choose **Give alo an application**,
+select **alo Studio**, and choose how long access lasts.
 **Take back** revokes that application's access immediately.
 
 ## Checks
