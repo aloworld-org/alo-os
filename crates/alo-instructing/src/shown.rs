@@ -146,9 +146,9 @@ mod tests {
                     Requires::nothing_because("this fixture reaches no machine"),
                     Word::saying("testing.fixture.read", "read the fixture status"),
                 )
-                .expect("the fixture declares"),
+                .unwrap(),
             )
-            .expect("the status is unique");
+            .unwrap();
         let told = the_products_words(Instructions::SHOWN_TO_A_TURN, &verbs);
         assert!(
             told.contains("Read the live status before answering"),
