@@ -147,7 +147,7 @@ adapters.fallback.open-menu.password-field	“{name}” in {application} is a pa
 adapters.fallback.open-menu.purpose	open the menu a right-click would open on one thing in an application's window, named as the application names it, so that one of its items can be chosen
 adapters.fallback.open-menu.sentence	open the right-click menu of “{thing}” in {application}
 adapters.fallback.open-menu.too-much	{application} shows more than alo can read at once, so alo could not be sure which “{name}” was meant, and no menu was opened
-adapters.fallback.picture-window.a-picture-can-be-read	Nothing in {application}'s windows can be read in words, and you let alo use pictures of it: to see what its window shows, alo takes a picture of it and has it read
+adapters.fallback.picture-window.a-picture-can-be-read	Nothing in {application}'s windows can be read in words, so what they show has not been seen yet. You let alo use pictures of it: the next step is a picture of its window, read in words
 adapters.fallback.picture-window.across-a-pairing	alo never takes a picture of a window on this computer for another computer, so no picture of {application} was taken
 adapters.fallback.picture-window.application	the application whose window is pictured
 adapters.fallback.picture-window.changes	Takes one picture of the application's window that has the keyboard, and has it read by whoever you chose under “Who reads the pictures” in Settings → What alo can use. If that is a service, the picture is sent to it.

@@ -901,6 +901,49 @@ fn answers_url(endpoint: &str) -> String {
 mod tests {
     use super::*;
 
+    /// **A question about a picture is sent with it**, as the convention's
+    /// content parts: the words, then the PNG as a data URL — and a question
+    /// with none is the plain message it always was.
+    #[test]
+    fn a_question_about_a_picture_carries_it_as_a_data_url() {
+        use base64::Engine as _;
+        let png: std::sync::Arc<[u8]> = std::sync::Arc::from(&b"\x89PNG-a-window"[..]);
+        let question = Question::asked("what does it show?", "a-model")
+            .unwrap()
+            .about_a_picture(std::sync::Arc::clone(&png));
+        assert_eq!(question.picture(), Some(&png[..]));
+        let sent = with_a_picture(&question, question.picture().unwrap());
+        assert_eq!(sent.get("model").and_then(|m| m.as_str()), Some("a-model"));
+        assert_eq!(
+            sent.get("stream").and_then(serde_json::Value::as_bool),
+            Some(false)
+        );
+        let parts = sent
+            .pointer("/messages/0/content")
+            .and_then(serde_json::Value::as_array)
+            .unwrap();
+        assert_eq!(parts.len(), 2);
+        assert_eq!(
+            parts
+                .first()
+                .and_then(|p| p.pointer("/text"))
+                .and_then(|t| t.as_str()),
+            Some("what does it show?")
+        );
+        let url = format!(
+            "data:image/png;base64,{}",
+            base64::engine::general_purpose::STANDARD.encode(&png[..])
+        );
+        assert_eq!(
+            parts
+                .get(1)
+                .and_then(|p| p.pointer("/image_url/url"))
+                .and_then(|u| u.as_str()),
+            Some(url.as_str())
+        );
+        assert_eq!(Question::asked("hello", "m").unwrap().picture(), None);
+    }
+
     /// Where a URL would connect, resolved the way a caller resolves it: before
     /// the request, and handed in rather than looked up inside (ADR 0020).
     fn resolved(url: &str) -> Vec<SocketAddr> {

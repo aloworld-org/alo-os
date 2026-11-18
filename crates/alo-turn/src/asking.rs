@@ -711,6 +711,67 @@ mod tests {
         assert_eq!(how_many(&record, Only::ByAnAgent), 1);
     }
 
+    /// **A picture goes with its question to a service asked the OpenAI way**,
+    /// in the same request: the reader is shown the window.
+    #[test]
+    fn a_picture_is_carried_to_a_service_with_its_question() {
+        let (url, server) = serving(AN_ANSWER, 200);
+        let service = a_service(&url);
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+
+        let answer = on_a_machine(&mut record, &mut indicator, |turning| {
+            turning.reading_a_picture(
+                SUBLET,
+                std::sync::Arc::from(&b"PNG-OF-A-WINDOW"[..]),
+                "a-model",
+                permitting(InferenceSource::ThisMachine),
+                &Answers::Service(Served::at(&service, None).unwrap()),
+                &Places::under(&SourcePolicy::Anywhere),
+                noon(),
+            )
+        });
+
+        assert!(answer.is_ok(), "{answer:?}");
+        let sent = server.join().unwrap();
+        assert!(sent.contains(SUBLET), "{sent}");
+        assert!(
+            sent.contains("image_url"),
+            "the picture was not sent: {sent}"
+        );
+    }
+
+    /// **A picture is never put to a road that cannot carry one**: the runtime
+    /// would answer the words about a window it never saw, so nothing is asked.
+    #[test]
+    fn a_picture_is_never_put_to_the_runtime() {
+        let runtime = Stub::answering("this should never be reached");
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+
+        let answer = on_a_machine(&mut record, &mut indicator, |turning| {
+            turning.reading_a_picture(
+                SUBLET,
+                std::sync::Arc::from(&b"PNG-OF-A-WINDOW"[..]),
+                "a-model",
+                permitting(InferenceSource::ThisMachine),
+                &Answers::Runtime(&runtime),
+                &Places::under(&SourcePolicy::Anywhere),
+                noon(),
+            )
+        });
+
+        assert!(
+            matches!(
+                answer,
+                Err(NoAnswer::Miswired(alo_asking::Miswired::NoRoomForAPicture))
+            ),
+            "{answer:?}"
+        );
+        assert_eq!(runtime.times_asked(), 0, "the runtime was asked");
+        assert!(indicator.is_quiet());
+    }
+
     /// **The rule in force refuses it, and the refusal is written down** — in
     /// the rule's own words, from the value the policy made, because
     /// `Entry::held_back` can be made from nothing else.
