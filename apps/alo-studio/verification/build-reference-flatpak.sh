@@ -15,6 +15,7 @@ cmp "$app_dir/verification/reference_signal.rs" "$work_dir/source/verification/r
 python3 -I "$app_dir/verification/make_reference_manifest.py" \
   "$work_dir/source/packaging/org.aloworld.Studio.json" \
   > "$work_dir/source/packaging/org.aloworld.Studio.Verification.json"
+cd "$work_dir/source"
 flatpak-builder --user --disable-rofiles-fuse --repo="$work_dir/reference-repo" \
   --force-clean "$work_dir/reference-build" \
   "$work_dir/source/packaging/org.aloworld.Studio.Verification.json"
