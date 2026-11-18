@@ -96,6 +96,14 @@ the native approval card, independently observed application state and delivery
 count, and the matching appended record. A direct agent proposal does not cause
 the shell to show a card without the task window's real reply path.
 
+`delivery_observation` prepares that separate delivery check on the person's
+session bus. It requires one changing method call, its matching successful
+reply, and an observed status-query barrier after the real agent turn ends.
+Owner changes, duplicate calls, error replies, disconnection, excessive traffic
+and missing replies refuse certification. `test_delivery_observation.py` uses
+an independent service on an isolated session bus; it does not run installed
+Studio. The installed controller does not yet call this observer.
+
 In a fresh profile with no audio devices, `pw-dump` can omit the empty default
 metadata store even while `pw-cli` lists it. Startup validates saved microphone
 history and any observed live preference before creating its owned fixture.
