@@ -540,6 +540,13 @@ pub fn a_proposal_answered(
                 after: steps,
             }));
         }
+        Ok(ToAnAgent::Capabilities { .. }) => {
+            return Err(Box::new(WhatHappened::TheMachineCouldNotBeAsked {
+                why: "a proposal received capability metadata instead of an approval or execution result"
+                    .to_owned(),
+                after: steps,
+            }));
+        }
         Err(not_answered) => return Err(Box::new(could_not_be_asked(not_answered, steps))),
     }
     Ok(steps)
