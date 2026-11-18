@@ -60,9 +60,14 @@ on:
         description: "Build the image from the branch this walk is started on, not from main, to try it before it merges (never published)"
         type: boolean
         default: false
+      private_studio_package_run:
+        description: "Private Studio recording check: successful manual package run from this exact commit, including its separate reference (requires branch image)"
+        type: string
+        default: ''
 
 permissions:
   contents: read
+  actions: read
 
 # One walk of main at a time; only the newest waits, and nothing running is
 # cancelled, so every walk that starts also finishes and says how it ended.
@@ -95,6 +100,42 @@ jobs:
 
       - name: Build the walk harness
         run: cargo build --release --locked -p alo-walking
+
+      - name: Check the exact private Studio package run
+        if: github.event_name == 'workflow_dispatch' && inputs.private_studio_package_run != ''
+        uses: actions/github-script@v7
+        env:
+          STUDIO_PACKAGE_RUN: ${{ inputs.private_studio_package_run }}
+          BRANCH_IMAGE: ${{ inputs.image_from_this_branch }}
+        with:
+          script: |
+            if (process.env.BRANCH_IMAGE !== 'true') throw new Error('Studio requires the matching private branch image');
+            if (!/^[1-9][0-9]*$/.test(process.env.STUDIO_PACKAGE_RUN)) throw new Error('Use an exact package run id');
+            const {data: run} = await github.rest.actions.getWorkflowRun({
+              ...context.repo, run_id: Number(process.env.STUDIO_PACKAGE_RUN)
+            });
+            if (run.head_sha !== context.sha || run.conclusion !== 'success' ||
+                run.event !== 'workflow_dispatch' || run.path !== '.github/workflows/studio-package.yml') {
+              throw new Error('Studio packages must come from a successful manual package run at this exact source');
+            }
+
+      - name: Receive the normal package and separate private reference
+        if: github.event_name == 'workflow_dispatch' && inputs.private_studio_package_run != ''
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.private_studio_package_run }}
+          pattern: studio-*
+          path: walk/studio-products
+
+      - name: Validate private package bytes and provenance
+        if: github.event_name == 'workflow_dispatch' && inputs.private_studio_package_run != ''
+        run: |
+          python3 -I apps/alo-studio/verification/prepare_installed_walk.py \
+            walk/studio-products/studio-flatpak walk/studio-products/studio-private-reference \
+            walk/studio-inputs "$GITHUB_SHA"
+          echo "Private Studio input checksums (normal verification features disabled):" >> "$GITHUB_STEP_SUMMARY"
+          cat walk/studio-inputs/checksums.txt >> "$GITHUB_STEP_SUMMARY"
 
       # Nothing is deleted to make room: measured on 2026-11-14, the runner had
       # 86 GB free before anything ran, and the image and the disk together
@@ -157,13 +198,24 @@ jobs:
           # A word of its own, because the walk redacts every variable it reads
           # from what it keeps: `yes` would be cut out of every log line.
           ALO_WALK_EVERY_APPLICATION: ${{ inputs.every_application && 'alo-walk-every-application' || '' }}
+          ALO_WALK_PRIVATE_STUDIO: ${{ github.event_name == 'workflow_dispatch' && inputs.private_studio_package_run != '' && 'alo-walk-private-studio' || '' }}
         run: |
+          if [ -n "$ALO_WALK_PRIVATE_STUDIO" ]; then
+            target/release/studio-walk-files --inputs walk/studio-inputs --evidence the-walk/studio > "$RUNNER_TEMP/studio-transfer.log" 2>&1 &
+            studio_transfer_pid=$!
+            trap 'kill "$studio_transfer_pid" 2>/dev/null || true' EXIT
+          fi
           target/release/alo-walk \
             --disk walk/alo.raw \
             --firmware /usr/share/OVMF/OVMF_CODE_4M.fd \
             --variables walk/vars.fd \
             --out the-walk \
             --scratch walk
+
+      - name: State the scope of private recording evidence
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.private_studio_package_run != ''
+        run: |
+          echo 'The private Studio section checks the installed person flow. Its media still requires decoded continuity, synchronization, source isolation and real-agent permission checks. A completed section alone is not recording acceptance.' >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         if: always()

@@ -152,6 +152,7 @@ pub fn the_first_walk() -> Walk {
         )
         .look("two-minutes-later", look);
     let walk = then_the_terminal_at_rest(walk);
+    let walk = crate::studio_installed_walk::then_installed_studio(walk);
     // **The pointer**, before anything that needs a provider: what a person
     // would notice about it, on the desktop and over applications alo did not
     // make (`crate::the_pointer_walk`).

@@ -178,12 +178,32 @@ fn it_runs_after_every_merge_to_main_and_by_hand() {
 #[test]
 fn studio_packages_require_an_explicit_branch_walk_and_validated_provenance() {
     let lines = said();
-    assert!(lines.iter().any(|line| line == "private_studio_package_run:"));
-    assert!(lines.iter().any(|line| line.contains("inputs.private_studio_package_run")
-        && line.contains("github.event_name == 'workflow_dispatch'")));
-    assert!(lines.iter().any(|line| line.contains("prepare_installed_walk.py")));
-    assert!(lines.iter().any(|line| line.contains("studio-walk-files") && line.contains("--inputs")));
-    assert!(lines.iter().any(|line| line.contains("ALO_WALK_PRIVATE_STUDIO:")));
+    assert!(
+        lines
+            .iter()
+            .any(|line| line == "private_studio_package_run:")
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.contains("inputs.private_studio_package_run")
+                && line.contains("github.event_name == 'workflow_dispatch'"))
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.contains("prepare_installed_walk.py"))
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.contains("studio-walk-files") && line.contains("--inputs"))
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.contains("ALO_WALK_PRIVATE_STUDIO:"))
+    );
 }
 
 /// **Walks of main do not pile up**: one runs and only the newest waits, and
