@@ -624,8 +624,7 @@ pub const CLOSE_APPLICATION_LEAVES: Word = Word::saying(
 /// What `open_file_in_application` does.
 pub const OPEN_FILE_IN_APPLICATION: Word = Word::saying(
     "applications.verb.open-file-in-application.purpose",
-    "open a file or folder, by its path, in an application the person names, such as a \
-     document in an editor; not for a file a window already shows, such as in a file manager",
+    "open a file or folder in an application the person names",
 );
 /// **The sentence a person approves before a file is opened in an
 /// application.**

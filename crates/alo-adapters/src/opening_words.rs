@@ -10,8 +10,8 @@ use alo_strings::Word;
 /// What `accessible.open_item` is for.
 pub const OPEN_PURPOSE: Word = Word::saying(
     "adapters.fallback.open-item.purpose",
-    "open one item an application's window shows, as a double-click would, such as a file a \
-     file manager shows: it opens in the application that file opens with",
+    "open one item of a list in an application's window, as a double-click would, such as a \
+     file in a folder",
 )
 .noting("What one thing the agent can do is for, shown where its list of abilities is.");
 
