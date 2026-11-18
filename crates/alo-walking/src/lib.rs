@@ -57,6 +57,7 @@ pub mod studio_agent_probe;
 mod studio_agent_sequence;
 mod studio_agent_stage;
 pub mod studio_installed_walk;
+mod studio_approved_walk;
 pub mod studio_walk_files;
 pub mod the_edge_seen;
 pub mod the_first_walk;

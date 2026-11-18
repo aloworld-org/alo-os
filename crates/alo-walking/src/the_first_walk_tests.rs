@@ -156,11 +156,9 @@ fn the_maximise_check_reads_from_alt_f3() {
     );
 }
 
-/// **The four sections alo is asked in**: each starts from its own Escape and
-/// sets its own level and grants, so a failure in one does not stop the next —
-/// full-access VSCodium, every application, ask-each-time VSCodium and the
-/// Papers sheet, in that order — **except the Papers sheet, which needs
-/// ask-each-time VSCodium.** A failure there leaves its turn waiting on a card,
+/// Studio cleanup runs even after an approval failure. Subsequent model
+/// requests require both Studio sections; Papers also needs ask-each-time
+/// VSCodium. A failure there leaves its turn waiting on a card,
 /// and `alo-agentd` serves one turn at a time (`serving.rs`: *a second agent
 /// arriving while a turn is under way is refused in words and closed*), so the
 /// Papers ask then fails on a broken pipe that says nothing about Papers (runs
@@ -184,6 +182,8 @@ fn the_sections_alo_is_asked_in_are_independent() {
     assert_eq!(
         names,
         vec![
+            "Studio native approval",
+            "Studio approval cleanup",
             "VSCodium at full access",
             "every application at full access",
             "VSCodium at ask each time",
@@ -195,8 +195,19 @@ fn the_sections_alo_is_asked_in_are_independent() {
         needs,
         vec![
             Vec::<String>::new(),
-            Vec::new(),
-            Vec::new(),
+            Vec::<String>::new(),
+            vec![
+                "Studio native approval".to_owned(),
+                "Studio approval cleanup".to_owned()
+            ],
+            vec![
+                "Studio native approval".to_owned(),
+                "Studio approval cleanup".to_owned()
+            ],
+            vec![
+                "Studio native approval".to_owned(),
+                "Studio approval cleanup".to_owned()
+            ],
             vec!["VSCodium at ask each time".to_owned()],
         ]
     );

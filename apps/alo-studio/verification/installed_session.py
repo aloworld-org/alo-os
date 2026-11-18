@@ -11,6 +11,7 @@ import os
 import pathlib
 import re
 import subprocess
+import sys
 import time
 import urllib.request
 
@@ -421,5 +422,16 @@ class Session:
             raise first
 
 
+def main(arguments):
+    """Select one fixed private flow; never interpret arbitrary operations."""
+    if not arguments:
+        Session().run()
+    elif arguments == ['--approvals']:
+        from approved_session import ApprovalSession
+        ApprovalSession().run()
+    else:
+        raise ValueError('The private session accepts only --approvals or no arguments')
+
+
 if __name__ == '__main__':
-    Session().run()
+    main(sys.argv[1:])

@@ -128,7 +128,16 @@ No message bodies or unrelated traffic are retained in the returned summary.
 
     def finish(self, *, enabled):
         """After actual turn completion, require one call and its observed barrier."""
-        if self.closed or self.finished or type(enabled) is not bool:
+        if type(enabled) is not bool:
+            raise ValueError('The requested microphone option must be boolean')
+        return self.complete('EnableMicrophone' if enabled else 'DisableMicrophone')
+
+    def finish_refused(self):
+        """After actual turn completion, require zero changing recorder calls."""
+        return self.complete(None)
+
+    def complete(self, method):
+        if self.closed or self.finished:
             raise ValueError('The delivery observation cannot certify this action')
         self.finished = True
         try:
@@ -154,11 +163,11 @@ No message bodies or unrelated traffic are retained in the returned summary.
                 if time.monotonic() >= deadline:
                     raise ValueError('The delivery observation read barrier timed out')
                 time.sleep(.01)
-            method = 'EnableMicrophone' if enabled else 'DisableMicrophone'
-            if (self.changes != [(method, '')] or len(self.successful_changes) != 1
+            expected = [] if method is None else [(method, '')]
+            if (self.changes != expected or len(self.successful_changes) != len(expected)
                     or self.change_keys != self.successful_changes):
-                raise ValueError('Expected exactly one delivery of the requested Studio change')
-            return dict(method=method, deliveries=1, barrier_observed=True, owner=self.owner)
+                raise ValueError('The recorder deliveries do not match the observed outcome')
+            return dict(method=method, deliveries=len(expected), barrier_observed=True, owner=self.owner)
         except dbus.DBusException as error:
             raise ValueError('The delivery observation lost its D-Bus evidence') from error
         finally:

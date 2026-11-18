@@ -416,11 +416,9 @@ startup timeout in the FIFO refusal test; that test passed independently in
 passed all 210 tests. These are local observations, not installed acceptance.
 The standing verification-instruments job discovers all these regressions.
 
-The new observers are not yet connected to the installed controller. Process
-exit is not model success, and a record alone is not one delivered action.
-The completion observer captures a pending Ask turn, not a fast Full turn.
-Native approval, policy withdrawal, actual app state, matching execution record
-and single delivery must still be exercised together after provider setup.
+The observers are now connected to a separate private approval entry, described
+below. Process exit is not model success, and a record alone is not one
+delivered action. Their combined installed result remains pending.
 ## Decide completion at the end of each continued prompt
 
 Real-model run 44389552194 at `11ee0062ad773aa36c18ed5f89f9d0a2f1ebf9c2`
@@ -454,3 +452,60 @@ native agent approvals remain separate acceptance requirements. Private child
 its signed-package run 44393682212 passed and exact-source installed walk
 44394653212 is running. Neither a package pass nor a local audio observation
 establishes installed video continuity or audio synchronization.
+
+## Native requests, withdrawal and failure cleanup
+
+The private archive now includes a fixed `--approvals` entry for the fresh
+installed person session. After provider setup, the host submits three real
+Ask alo microphone requests through the task window. It retains each native
+Ask card, reads back the exact pending sentence and number, then supplies the
+native Allow once keys. The withdrawal case revokes the grant in Settings
+while that same disable card is pending before using its Allow once control.
+The last disable request runs at Full access. No controller sends an approval
+on the daemon protocol or calls a changing recorder method.
+
+Each request joins actual asking-process exit, normal app state, the bounded
+execution-record append and recorder delivery. The withdrawn request requires
+a recorded refusal and zero changing deliveries. Refusal records do not carry
+approval IDs; the separate pending-card evidence is retained without inventing
+record correlation. The Full observer captures a fresh process through its
+typed startup transition and refuses a turn whose identity was missed.
+
+Cleanup has its own host section and still opens native Settings when the
+approval section fails. The controller waits long enough for the failed host
+phase to end, restores Full only after confirmed process exit, and otherwise
+withdraws its owned grant without increasing access. Unavailable Settings
+prevents native policy changes. Flatpak stop, owned launcher reaping and report
+delivery are attempted independently, retaining the first failure. Later
+model sections require both Studio sections. A write-only, bounded
+`approval-report.json` retains the observations.
+
+Independent regressions reproduced eight cleanup failures before correction;
+the complete private Python suite then passed 382 tests in 61.258 seconds.
+Independent final review passed 49 focused checks and caught nine additional
+cleanup/entry faults in temporary copies. These fixtures and fault experiments
+are local checks, not installed native-consent evidence. All 228 walking tests
+and the instruction/evaluation tests passed locally. Strict linting identified
+five missing private-item comments, which were added; lint and documentation
+checks still need to finish. Package and installed approval results must still
+accompany this change.
+
+The recording recovery source `ab49f785268934879e41a3dac1d2f906ef003146`
+passed its matching private package run 44406856402. Installed run 44407708282
+reached Studio Ready and read Settings, then failed pressing the Running code
+tab before recording (32 passed, one failed, 138 not reached). Its artifact
+digest is `7daab8a71d188d30ca80d37f0fd3db0422f04cb81e103b239105d9d850db7879`.
+The previous uppercase selector failure is corrected. The native action-name
+contract is now being investigated: GetActions returns localized names, while
+GetName supplies machine identifiers. Unrelated verification VMs remain running.
+No decoded continuity, synchronization or pause/resume acceptance has yet been
+established by these new runs.
+
+At integration source `0c6d1351150f95d7539285b085836a806d4fac2a`, repeated
+model run 44398134006 passed all 190 Studio cases and all ten close-application
+cases. The complete gate still failed generic slider, file, private-typing
+and chooser cases. Native/package/names/nine-gate/image jobs passed. Hosted
+mutation retry 44398133838 tried 182 of 1,285 faults within its hour: 106 caught,
+52 missed, 24 unviable and 1,103 untried. The mutation gate failed; package-level
+coverage gaps are being reviewed, and neither missed nor untried faults count
+as passed. The failed broad gates remain release blockers.

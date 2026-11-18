@@ -97,9 +97,9 @@ is deliberately a reader for the fresh walk's supported events, not a general
 record export. Its independent JSONL fixtures are synthetic test inputs.
 `test_record_delta.py` reruns with the verification instrument suite.
 
-The reader is not yet connected to the installed controller. A matching record
-alone proves neither native approval nor one D-Bus delivery. Installed approval
-acceptance still requires a genuine Ask alo request after provider setup,
+The private approval controller joins this reader with a genuine Ask alo
+request after provider setup. A matching record alone proves neither native
+approval nor one D-Bus delivery. Installed approval acceptance also requires
 the native approval card, independently observed application state and delivery
 count, and the matching appended record. A direct agent proposal does not cause
 the shell to show a card without the task window's real reply path.
@@ -110,7 +110,8 @@ reply, and an observed status-query barrier after the real agent turn ends.
 Owner changes, duplicate calls, error replies, disconnection, excessive traffic
 and missing replies refuse certification. `test_delivery_observation.py` uses
 an independent service on an isolated session bus; it does not run installed
-Studio. The installed controller does not yet call this observer.
+Studio. The private approval controller calls this observer after actual agent
+exit, including a zero-delivery barrier for the withdrawn change.
 
 The observer also refuses interface-omitted calls to the recorder object: D-Bus
 allows them, so monitoring only the declared interface could hide a duplicate
@@ -131,8 +132,8 @@ command/status tuples at exit. The observer tolerates those notifications but
 continues requiring the anchored process identity and explicit exit facts.
 `test_asking_turn_observation.py` uses a typed service on a private bus. A
 separate one-time WSL systemd observation established the notification order;
-neither is an installed Ask alo result. This observer is not yet wired into the
-controller. `capture_started` can also wait for a fresh Full turn to become
+neither is an installed Ask alo result. The private approval controller uses
+`capture_started` to wait for a fresh Full turn to become
 active, validating its identity through the startup transition. It refuses a
 turn that exits before the process identity was captured. `capture_pending`
 keeps its shorter three-second wait after a native approval card appears.
@@ -142,6 +143,25 @@ The expanded lifecycle suite has 40 passing private-bus tests. Six one-time
 startup faults were caught in temporary copies. Two startup-only identity
 faults initially survived; independent follow-up tests now catch both. These
 fault experiments are not recurring gates or installed evidence.
+
+The checksummed `studio-session` archive has sixteen fixed modules and a
+separate `--approvals` entry. It requires the disposable installed person
+session and owns a fresh normal Studio instance. The host submits three real
+Ask alo requests: enable with native Allow once, disable after withdrawing the
+grant while that same card is pending, and disable at Full access. The pending
+reader sends only a bounded Waiting query; native keys supply approval. The
+controller requires matching process exit, application state, appended record
+and recorder delivery for each request. A refusal record has no approval ID;
+the separately observed pending card is retained without inventing one.
+
+An independent cleanup section opens native Settings even after the approval
+section fails. It restores the initial policy only after observed agent exit;
+otherwise it withdraws its owned grant without increasing access. If Settings
+cannot be reached, it records that failure and still stops and reaps its owned
+application and attempts report delivery. Later model sections require both
+approval and cleanup to succeed. The bounded `approval-report.json` is a
+write-only retained output, never an executable input. These paths have local
+regression coverage; their first installed native-approval result is pending.
 
 In a fresh profile with no audio devices, `pw-dump` can omit the empty default
 metadata store even while `pw-cli` lists it. Startup validates saved microphone

@@ -218,6 +218,7 @@ fn forbidden_input_names_are_refused_even_when_real_files_exist_in_the_input_dir
         "studio-reference.flatpak",
         "screen.webm",
         "session-report.json",
+        "approval-report.json",
     ] {
         std::fs::write(
             fixture.root.join("inputs").join(name),
@@ -247,6 +248,7 @@ fn all_declared_recording_evidence_names_are_received_and_never_served_back()
         "window.json",
         "reference.json",
         "session-report.json",
+        "approval-report.json",
     ] {
         let request = format!("POST /{name} HTTP/1.1\r\nContent-Length: 4\r\n\r\ntest");
         assert!(

@@ -102,15 +102,8 @@ def verify_microphone_change(path, checkpoint, *, enabled, from_approval, full_a
             'The expected action and access policy must be booleans')
     require(from_approval is None if full_access else u64(from_approval),
             'The expected approval does not match the access policy')
-    require(isinstance(checkpoint, Checkpoint), 'A prior record checkpoint is required')
-    data, identity = read_record(path)
-    require(identity == checkpoint.identity and checkpoint.offset <= len(data)
-            and hashlib.sha256(data[:checkpoint.offset]).digest() == checkpoint.digest,
-            'The record was replaced, shortened or rewritten')
-    delta = data[checkpoint.offset:]
-    require(0 < len(delta) <= DELTA_LIMIT, 'The record append is empty or exceeds its bound')
+    appended = appended_entries(path, checkpoint)
     found = []
-    appended, _ = entries(delta, header=False, previous=checkpoint.last_moment)
     for entry in appended:
         run = entry['happened'].get('ran')
         if run is not None and run['what']['verb'].startswith('studio.') and run['what']['effect'] == 'change':
@@ -128,3 +121,40 @@ def verify_microphone_change(path, checkpoint, *, enabled, from_approval, full_a
             'The recorded grant evidence is missing or exceeds its summary bound')
     return dict(agent='alo', verb=verb, recorded_runs=1, from_approval=from_approval,
                 against=run['against'], at_full_access=full_access, by_full_access=full_access)
+
+
+def appended_entries(path, checkpoint):
+    """Read the same bounded, unchanged prefix for success and refusal evidence."""
+    require(isinstance(checkpoint, Checkpoint), 'A prior record checkpoint is required')
+    data, identity = read_record(path)
+    require(identity == checkpoint.identity and checkpoint.offset <= len(data)
+            and hashlib.sha256(data[:checkpoint.offset]).digest() == checkpoint.digest,
+            'The record was replaced, shortened or rewritten')
+    delta = data[checkpoint.offset:]
+    require(0 < len(delta) <= DELTA_LIMIT, 'The record append is empty or exceeds its bound')
+    appended, _ = entries(delta, header=False, previous=checkpoint.last_moment)
+    return appended
+
+
+def verify_microphone_refusal(path, checkpoint, *, enabled):
+    """Require one Ask-policy refusal at execution time and no Studio changes.
+
+    Stopped records carry no approval number. The controller retains the native
+    pending number separately; this summary does not invent that correlation.
+    """
+    require(type(enabled) is bool, 'The expected microphone option must be boolean')
+    found = []
+    appended = appended_entries(path, checkpoint)
+    for entry in appended:
+        tag, body = next(iter(entry['happened'].items()))
+        if tag in ('ran', 'stopped') and body['what']['verb'].startswith('studio.') and body['what']['effect'] == 'change':
+            require(tag == 'stopped', 'A Studio change ran during the refused request')
+            found.append((entry, body))
+    require(len(found) == 1, 'Expected exactly one recorded Studio refusal')
+    entry, stopped = found[0]
+    verb = 'studio.enable_microphone' if enabled else 'studio.disable_microphone'
+    require(stopped['agent'] == 'alo' and stopped['what']['verb'] == verb
+            and stopped['what']['arguments'] == {} and entry.get('at_full_access', False) is False
+            and isinstance(stopped['how'], dict) and set(stopped['how']) == {'at-the-moment'},
+            'The recorded refusal does not match the stale Ask-policy microphone change')
+    return dict(agent='alo', verb=verb, recorded_refusals=1, how='at-the-moment', at_full_access=False)

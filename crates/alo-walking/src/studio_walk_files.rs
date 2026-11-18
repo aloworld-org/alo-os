@@ -35,6 +35,7 @@ const OUTPUTS: &[&str] = &[
     "window.json",
     "reference.json",
     "session-report.json",
+    "approval-report.json",
 ];
 
 /// One private walk's immutable inputs and generated evidence directory.

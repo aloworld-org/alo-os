@@ -230,27 +230,36 @@ fn then_the_provider(walk: Walk) -> Walk {
         .look("the-provider-form-filled", look)
         .press(Chord::key("ret"))
         .look("the-provider-saved", look);
-    // **Four independent sections**, each starting from its own Escape and
-    // setting its own level and grants, so a failure in one does not hide the
-    // others: the walk still fails, and the report gives each its result.
-    // Only the last needs one before it, and names it in `needs`.
+    let walk = walk.section(
+        "Studio native approval",
+        &[],
+        crate::studio_approved_walk::after_provider,
+    );
+    let walk = walk.section(
+        "Studio approval cleanup",
+        &[],
+        crate::studio_approved_walk::cleanup,
+    );
+    // A failed Studio turn may still own the daemon connection. Cleanup must
+    // run independently, and later requests require both Studio sections.
+    let studio = &["Studio native approval", "Studio approval cleanup"];
     //
     // With a provider, alo can be asked: Demo 2's second road, at full access.
     let walk = walk.section(
         "VSCodium at full access",
-        &[],
+        studio,
         crate::writing_in_vscodium::at_full_access,
     );
     // And then every other application a fresh machine ships, where asked for.
     let walk = walk.section(
         "every application at full access",
-        &[],
+        studio,
         crate::in_every_shipped_application::at_full_access,
     );
     // And then at *ask each time*, approving each change on its card.
     let walk = walk.section(
         "VSCodium at ask each time",
-        &[],
+        studio,
         crate::writing_in_vscodium_at_each_ask::at_each_ask,
     );
     // And then alo asks for an application nobody gave it, on the sheet,
