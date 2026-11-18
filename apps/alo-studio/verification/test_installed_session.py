@@ -84,6 +84,114 @@ class InstalledSession(unittest.TestCase):
                 self.assertLess(flow.calls.index('Resume'), flow.calls.index('Finish'))
                 sleep.assert_any_call(5)
 
+    def test_five_second_wait_is_between_distinct_frozen_pause_snapshots(self):
+        for source, microphone in [('screen', False), ('window', True)]:
+            with self.subTest(source=source):
+                flow = RecordingFlow()
+                status = flow.status
+
+                def observe():
+                    state = status()
+                    flow.calls.append(('observed', state))
+                    return state
+
+                def sleep(seconds):
+                    self.assertEqual(flow.state['phase'], 'paused')
+                    flow.calls.append(('sleep', seconds))
+
+                flow.status = observe
+                with patch('installed_session.time.sleep', sleep):
+                    flow.recording(source, microphone)
+                calls = flow.calls
+                pause, resume = calls.index('Pause'), calls.index('Resume')
+                delay = calls.index(('sleep', 5))
+                self.assertLess(pause, delay)
+                self.assertLess(delay, resume)
+                before = [item[1] for item in calls[pause:delay]
+                          if isinstance(item, tuple) and item[0] == 'observed']
+                after = [item[1] for item in calls[delay:resume]
+                         if isinstance(item, tuple) and item[0] == 'observed']
+                self.assertTrue(before, 'pause must be observed before waiting')
+                self.assertTrue(after, 'pause must be observed again after waiting')
+                self.assertIsNot(before[-1], after[0])
+                for state in (before[-1], after[0]):
+                    self.assertEqual(state['phase'], 'paused')
+                    self.assertFalse(state['microphone_active'])
+                self.assertEqual(before[-1]['elapsed_ms'], after[0]['elapsed_ms'])
+                self.assertTrue(any(isinstance(item, tuple) and item[0] == 'active'
+                                    and item[1] > 0 for item in calls[resume + 1:calls.index('Finish')]))
+
+    def test_changed_pause_state_refuses_completion_for_either_source(self):
+        for source, microphone in [('screen', False), ('window', True)]:
+            for field, value in [('elapsed_ms', 999999), ('phase', 'recording'),
+                                 ('microphone_active', True)]:
+                with self.subTest(source=source, field=field):
+                    flow = RecordingFlow()
+
+                    def change_during_pause(seconds):
+                        self.assertEqual(seconds, 5)
+                        flow.state[field] = value
+
+                    with patch('installed_session.time.sleep', change_during_pause):
+                        with self.assertRaises(ValueError):
+                            flow.recording(source, microphone)
+                    self.assertNotIn('Resume', flow.calls)
+                    self.assertNotIn('Finish', flow.calls)
+                    self.assertNotIn('export', flow.calls)
+
+    def test_wrong_resume_phase_or_microphone_refuses_completion(self):
+        for source, microphone in [('screen', False), ('window', True)]:
+            for change in [dict(phase='paused'), dict(microphone_active=not microphone)]:
+                with self.subTest(source=source, change=change):
+                    flow = RecordingFlow()
+                    call = flow.call
+
+                    def wrong_resume(method, *args):
+                        call(method, *args)
+                        if method == 'Resume':
+                            flow.state.update(change)
+
+                    flow.call = wrong_resume
+                    with patch('installed_session.time.sleep'):
+                        with self.assertRaises(ValueError):
+                            flow.recording(source, microphone)
+                    self.assertNotIn('Finish', flow.calls)
+                    self.assertNotIn('export', flow.calls)
+
+    def test_export_refuses_a_copy_created_by_cancel_or_a_different_saved_copy(self):
+        for failure in ['cancel-created-copy', 'saved-different-bytes']:
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as folder:
+                home = pathlib.Path(folder)
+                identifier, title = '1-2-3', 'Demonstration'
+                (home / f'{identifier}.json').write_text(json.dumps({'title': title}))
+                (home / f'{identifier}.webm').write_bytes(b'test-only original')
+                flow = object.__new__(Session)
+                flow.home = flow.library = home
+                effects = []
+                flow.call = lambda method, *args: effects.append(method)
+                flow.wait = lambda predicate, **kwargs: None
+                flow.event = lambda *args, **kwargs: None
+
+                def command(*words):
+                    if words[-1] == 'read':
+                        return f'In {home}\n'
+                    if words[-1] == 'controls':
+                        return 'button\tSave\tready\nbutton\tCancel\tready\n'
+                    choice = words[-1]
+                    effects.append(choice)
+                    if choice == 'Save' or failure == 'cancel-created-copy':
+                        (home / f'{title}.webm').write_bytes(b'test-only wrong copy')
+                    return ''
+
+                with patch('installed_session.command', command):
+                    with self.assertRaises(ValueError):
+                        flow.export(identifier, title)
+                if failure == 'cancel-created-copy':
+                    self.assertEqual(effects, ['RenameRecording', 'ExportRecording', 'Cancel'])
+                else:
+                    self.assertEqual(effects, ['RenameRecording', 'ExportRecording', 'Cancel',
+                                               'ExportRecording', 'Save'])
+
     def test_export_cancellation_precedes_a_new_native_save_and_creates_no_copy(self):
         with tempfile.TemporaryDirectory(prefix='studio-session-test-') as folder:
             home = pathlib.Path(folder)
