@@ -218,6 +218,42 @@ class DecodeMedia(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.read(target)
 
+    def webm(self, *, live):
+        target = self.folder / ('streaming.webm' if live else 'finalized.webm')
+        arguments = ['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo',
+                     '-pixel_format', 'rgb24', '-video_size', '16x16', '-framerate', '5',
+                     '-i', str(self.raw), '-c:v', 'libvpx', '-threads', '1',
+                     '-deadline', 'realtime', '-cpu-used', '8', '-b:v', '256k',
+                     '-pix_fmt', 'yuv420p']
+        if live:
+            arguments += ['-live', '1']
+        subprocess.run([*arguments, str(target)], check=True, capture_output=True)
+        return target
+
+    def test_finalized_lightweight_webm_has_completion_facts_and_decodes(self):
+        target = self.webm(live=False)
+        facts = self.probe(target, '-show_format')
+        self.assertGreater(float(facts['format']['duration']), 0)
+        video, audio = self.read(target)
+        self.assertTrue(video['decoded_to_eos'])
+        self.assertEqual(len(video['frames']), 6)
+        self.assertEqual(audio['track_count'], 0)
+
+    def test_streaming_webm_cannot_claim_recording_completion_from_clean_early_frames(self):
+        # Live WebM intentionally omits finalized duration/index metadata even
+        # when its currently available frames all decode. EOF is not proof that
+        # a normally installed Studio recording finished its container.
+        target = self.webm(live=True)
+        facts = self.probe(target, '-show_format', '-show_streams')
+        self.assertNotIn('duration', facts['format'])
+        self.assertTrue(all('duration' not in stream for stream in facts['streams']))
+        frames = self.probe(target, '-select_streams', 'v:0', '-show_frames')['frames']
+        self.assertEqual(len(frames), 6)
+        subprocess.run(['ffmpeg', '-v', 'error', '-i', str(target), '-f', 'null', '-'],
+                       check=True, capture_output=True)
+        with self.assertRaises(ValueError):
+            self.read(target)
+
     def test_decoded_pictures_keep_real_pts_gap_and_observed_regions(self):
         video, audio = self.read(self.fixture(microphone=False))
         self.assertEqual(video['track_count'], 1)
