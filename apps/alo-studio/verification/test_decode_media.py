@@ -1,6 +1,7 @@
 """Exercise actual container decoding and preserve its discontinuities."""
 
 import json
+import math
 import pathlib
 import shutil
 import struct
@@ -8,6 +9,7 @@ import subprocess
 import tempfile
 import unittest
 import wave
+from fractions import Fraction
 
 from decode_media import decode
 
@@ -229,6 +231,97 @@ class DecodeMedia(unittest.TestCase):
             arguments += ['-live', '1']
         subprocess.run([*arguments, str(target)], check=True, capture_output=True)
         return target
+
+    def opus_webm(self, *, origin=2, gap=False):
+        """Closed test-only VP8/Opus using lightweight's real codec parameters."""
+        samples = 16000 + 37
+        with wave.open(str(self.sound), 'wb') as output:
+            output.setnchannels(1)
+            output.setsampwidth(2)
+            output.setframerate(16000)
+            output.writeframes(b''.join(struct.pack('<h', round(6000 * math.sin(2 * math.pi * 880 * n / 16000)))
+                                        for n in range(samples)))
+        target = self.folder / ('opus-gap.webm' if gap else f'opus-origin-{origin}.webm')
+        arguments = ['ffmpeg', '-v', 'error', '-y', '-itsoffset', str(origin),
+                     '-f', 'rawvideo', '-pixel_format', 'rgb24', '-video_size', '16x16',
+                     '-framerate', '5', '-i', str(self.raw), '-itsoffset', str(origin), '-i', str(self.sound)]
+        if gap:
+            # Make complete 60 ms input blocks and omit several, keeping their
+            # actual PTS. Do not use asetpts/aresample to close the removed span.
+            arguments += ['-af', f'asetnsamples=n=960:p=0,aselect=not(between(t\\,{origin + .36}\\,{origin + .54}))']
+        arguments += ['-c:v', 'libvpx', '-threads', '1', '-deadline', 'realtime',
+                      '-b:v', '256k', '-pix_fmt', 'yuv420p', '-c:a', 'libopus',
+                      '-b:a', '24k', '-frame_duration', '60', str(target)]
+        subprocess.run(arguments, check=True, capture_output=True)
+        return target
+
+    def compare_opus_observations_to_actual_decoding(self, target):
+        """Use FFprobe frames and independently decoded PCM as the oracles."""
+        facts = self.probe(target, '-show_format', '-show_streams', '-show_frames')
+        self.assertGreater(float(facts['format']['duration']), 0)
+        streams = facts['streams']
+        video_stream = next(row for row in streams if row['codec_type'] == 'video')
+        audio_stream = next(row for row in streams if row['codec_type'] == 'audio')
+        self.assertEqual(video_stream['codec_name'], 'vp8')
+        self.assertEqual(audio_stream['codec_name'], 'opus')
+        self.assertEqual(audio_stream['channels'], 1)
+        # Opus decode runs at 48 kHz despite the explicitly 16 kHz source.
+        rate = int(audio_stream['sample_rate'])
+        self.assertEqual(rate, 48000)
+        actual = [row for row in facts['frames'] if row['media_type'] == 'audio']
+        counts = [int(row['nb_samples']) for row in actual]
+        self.assertTrue(counts)
+        self.assertLess(counts[0], rate * 60 // 1000, 'Opus pre-skip must not become padding')
+        self.assertLess(counts[-1], rate * 60 // 1000, 'the discarded tail must not be restored')
+        raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', str(target), '-map', '0:a:0',
+                              '-c:a', 'pcm_s16le', '-f', 's16le', 'pipe:1'],
+                             check=True, capture_output=True).stdout
+        self.assertEqual(len(raw), sum(counts) * 2)
+        video, audio = self.read(target)
+        self.assertTrue(video['decoded_to_eos'])
+        self.assertTrue(audio['decoded_to_eos'])
+        self.assertEqual(audio['track_count'], 1)
+        video_pts = [round(int(row['pts']) * Fraction(video_stream['time_base']) * 1_000_000_000)
+                     for row in facts['frames'] if row['media_type'] == 'video']
+        self.assertEqual([row['pts_ns'] for row in video['frames']], video_pts)
+        starts = [round(int(row['pts']) * Fraction(audio_stream['time_base']) * 1_000_000_000)
+                  for row in actual]
+        durations = [round(Fraction(count * 1_000_000_000, rate)) for count in counts]
+        chunks = audio['chunks']
+        self.assertEqual(sum(row['duration_ns'] for row in chunks), sum(durations))
+        cursor = 0
+        for start, duration in zip(starts, durations):
+            self.assertEqual(chunks[cursor]['pts_ns'], start)
+            consumed = 0
+            while consumed < duration:
+                chunk = chunks[cursor]
+                self.assertEqual(chunk['pts_ns'], start + consumed)
+                self.assertGreater(chunk['duration_ns'], 0)
+                consumed += chunk['duration_ns']
+                cursor += 1
+            self.assertEqual(consumed, duration, 'chunks must conserve each actual decoded frame')
+        self.assertEqual(cursor, len(chunks))
+        self.assertEqual(chunks[-1]['pts_ns'] + chunks[-1]['duration_ns'], starts[-1] + durations[-1])
+        return starts, durations, chunks
+
+    def test_finalized_vp8_opus_preserves_preskip_partial_tail_and_nonzero_origin(self):
+        for origin in [0, 2]:
+            with self.subTest(origin=origin):
+                target = self.opus_webm(origin=origin)
+                starts, durations, chunks = self.compare_opus_observations_to_actual_decoding(target)
+                self.assertGreaterEqual(starts[0], origin * 1_000_000_000)
+                self.assertEqual(sum(durations), round(Fraction((16000 + 37) * 1_000_000_000, 16000)))
+                self.assertTrue(any(row['duration_ns'] < 10_000_000 for row in chunks))
+
+    def test_finalized_vp8_opus_keeps_a_real_audio_gap_instead_of_padding_or_rebasing(self):
+        target = self.opus_webm(gap=True)
+        starts, durations, chunks = self.compare_opus_observations_to_actual_decoding(target)
+        actual_gaps = [later - earlier - duration
+                       for earlier, duration, later in zip(starts, durations, starts[1:])]
+        observed_gaps = [later['pts_ns'] - earlier['pts_ns'] - earlier['duration_ns']
+                         for earlier, later in zip(chunks, chunks[1:])]
+        self.assertGreater(max(actual_gaps), 40_000_000, 'fixture must contain an unacceptable real gap')
+        self.assertEqual(max(observed_gaps), max(actual_gaps))
 
     def test_finalized_lightweight_webm_has_completion_facts_and_decodes(self):
         target = self.webm(live=False)
