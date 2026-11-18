@@ -444,6 +444,15 @@ operation of everything`. The verb presses the same one key once in the window
 that has the keyboard; the approval is what an agent needs, because it is the
 agent choosing to press it.
 
+### accessible.picture_window
+
+**By hand:** a person looks at the window, and takes a picture of it themselves
+when they want one — `Capture & export a window`. The verb takes one picture of
+the window in front, only where the person switched *Pictures and keys* on for
+that application and chose who reads the pictures, and has it read in words;
+the approval is what an agent needs, because it is the agent choosing to look
+and, where the reader is a service, to send the picture to it.
+
 ### set_the_scheme
 
 **By hand:** a person opens the appearance pane of `Settings, as one place` and

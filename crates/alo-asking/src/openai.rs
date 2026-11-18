@@ -528,19 +528,48 @@ fn putting(
     waiting: Duration,
     vouching: Option<Vouching<'_>>,
 ) -> Result<String, WentWrong> {
-    let sent = Sent {
-        model: question.of().to_owned(),
-        messages: vec![Message {
-            role: THE_PERSON.to_owned(),
-            content: question.text().to_owned(),
-        }],
-        stream: false,
-    };
     // Serialised here, compactly, so that the bytes a proof is made over are
     // the bytes on the wire; `send_json` would serialise again on its own
     // terms (`docs/quirks.md`, ureq 3.4.0).
-    let body = serde_json::to_vec(&sent).map_err(|_| WentWrong::NothingUsable)?;
+    let body = match question.picture() {
+        None => serde_json::to_vec(&Sent {
+            model: question.of().to_owned(),
+            messages: vec![Message {
+                role: THE_PERSON.to_owned(),
+                content: question.text().to_owned(),
+            }],
+            stream: false,
+        }),
+        Some(png) => serde_json::to_vec(&with_a_picture(question, png)),
+    }
+    .map_err(|_| WentWrong::NothingUsable)?;
     sending(endpoint, key, &body, waiting, to, through, vouching)
+}
+
+/// **A question about one picture, in the convention's own shape**: one
+/// message from the person whose content is the words, then the picture as a
+/// `data:` URL of its PNG (ADR 0147 §4).
+///
+/// Only ever sent, for [`HeldToAGrammar`]'s reason, and only by [`putting`]:
+/// a question held to a grammar or a schema is an agent's next request and
+/// never carries a picture.
+fn with_a_picture(question: &Question, png: &[u8]) -> serde_json::Value {
+    use base64::Engine as _;
+    let url = format!(
+        "data:image/png;base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(png)
+    );
+    serde_json::json!({
+        "model": question.of(),
+        "messages": [{
+            "role": THE_PERSON,
+            "content": [
+                {"type": "text", "text": question.text()},
+                {"type": "image_url", "image_url": {"url": url}},
+            ],
+        }],
+        "stream": false,
+    })
 }
 
 /// **Put the question, and hold every token of the answer to `grammar`.**

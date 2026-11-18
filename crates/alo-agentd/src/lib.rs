@@ -330,6 +330,8 @@ pub mod saying_it_was_done_without_asking;
 /// the desktop could use it without depending on this service.
 #[cfg(target_os = "linux")]
 pub use alo_interfaces::route_messages;
+pub mod reading_a_picture;
+pub mod reading_a_picture_words;
 #[cfg(target_os = "linux")]
 pub mod serving;
 #[cfg(target_os = "linux")]
@@ -368,6 +370,7 @@ mod the_proxy_on_the_road_a_question_takes;
 pub mod the_road_out;
 #[cfg(target_os = "linux")]
 pub mod the_runtime;
+pub mod the_screen_road_here;
 #[cfg(target_os = "linux")]
 pub mod told_of_a_move;
 #[cfg(target_os = "linux")]

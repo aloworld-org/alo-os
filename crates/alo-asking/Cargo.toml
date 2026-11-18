@@ -18,6 +18,9 @@ repository.workspace = true
 trust-a-test-authority = []
 
 [dependencies]
+# A picture of a window, put to a reader the person chose as the convention's
+# data URL (ADR 0147 §4): the PNG's bytes in base64, and nothing else of it.
+base64 = "0.22"
 # The place a question may go, and the failure it becomes when it does not
 # answer. This crate never decides where a question goes; it carries out a
 # decision `alo-answering` already made, and hands back the failure that crate

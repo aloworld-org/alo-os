@@ -106,6 +106,8 @@ pub mod nothing_to_read;
 pub mod opening;
 pub mod opening_a_menu;
 pub mod opening_words;
+pub mod picture_words;
+pub mod picturing_a_window;
 pub mod places_for_text;
 pub mod pressable;
 pub mod pressing_a_key;
@@ -143,8 +145,8 @@ pub use delivering::{Delivers, NotDelivered};
 pub use driving::{Driven, Driving};
 pub use driving_by_hand::{DrivenByHand, NotDrivenByHand, drive_by_hand};
 pub use fallback_verbs::{
-    ACTIVATE_CONTROL, CHOOSE_OPTION, OPEN_ITEM, OPEN_MENU, PRESS_KEY, READ_WINDOW, SCROLL_PAGE,
-    SCROLL_TO, SELECT_ITEM, SET_VALUE, TYPE_TEXT, TYPE_WITHOUT_SAVING, fallback_verbs,
+    ACTIVATE_CONTROL, CHOOSE_OPTION, OPEN_ITEM, OPEN_MENU, PICTURE_WINDOW, PRESS_KEY, READ_WINDOW,
+    SCROLL_PAGE, SCROLL_TO, SELECT_ITEM, SET_VALUE, TYPE_TEXT, TYPE_WITHOUT_SAVING, fallback_verbs,
 };
 pub use invocation::{DBusMethod, Invocation, Part};
 pub use loading::{Loaded, load};
@@ -159,6 +161,7 @@ pub use not_walked::NotWalked;
 pub use nothing_to_read::nothing_to_read;
 pub use opening::{Opened, Opening};
 pub use opening_a_menu::{MenuOpened, OpeningAMenu};
+pub use picturing_a_window::PicturingAWindow;
 pub use pressable::Pressable;
 pub use pressing_a_key::PressingAKey;
 pub use reading_windows::{ReadingWindows, WindowsRead};

@@ -64,6 +64,10 @@ pub const OPEN_ITEM: &str = "accessible.open_item";
 /// The verb that presses one key of a closed list (2026-11-17).
 pub const PRESS_KEY: &str = "accessible.press_key";
 
+/// The verb that takes one picture of a window that describes nothing and has
+/// it read in words (2026-11-17, ADR 0147 §1).
+pub const PICTURE_WINDOW: &str = "accessible.picture_window";
+
 /// The verb that types into a field and saves nothing (2026-11-17).
 pub const TYPE_WITHOUT_SAVING: &str = "accessible.type_without_saving";
 
@@ -151,6 +155,15 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
         acts.push(format!(
             "to press Enter, Escape, Tab or an arrow where the keyboard is, only when the person \
              names that key, {PRESS_KEY}"
+        ));
+    }
+    // **A picture is the last resort** (ADR 0147 §1): told only after the
+    // read, for a window whose answer names nothing to act on.
+    if verbs.of(PICTURE_WINDOW).is_some() {
+        acts.push(format!(
+            "when {READ_WINDOW} answered that a window shows no text and names nothing — a game, \
+             a drawing canvas — {PICTURE_WINDOW} once, to have a picture of it read to you in \
+             words, never for a window {READ_WINDOW} could read"
         ));
     }
     format!(
@@ -255,6 +268,14 @@ mod tests {
         assert!(told.contains(PRESS_KEY), "{told}");
         assert!(told.contains("Never send a run line"), "{told}");
         assert!(!told.contains(TYPE_WITHOUT_SAVING), "{told}");
+
+        assert!(!told.contains(PICTURE_WINDOW), "{told}");
+        verbs
+            .declare(named(PICTURE_WINDOW, Effect::Change))
+            .unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(told.contains(PICTURE_WINDOW), "{told}");
+        assert!(told.contains("shows no text and names nothing"), "{told}");
 
         verbs
             .declare(named(TYPE_WITHOUT_SAVING, Effect::Change))

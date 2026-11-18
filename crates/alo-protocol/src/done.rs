@@ -376,6 +376,33 @@ pub enum Done {
         /// Whether it read back exactly.
         read_back: bool,
     },
+    /// One picture of an application's window was taken and put to the
+    /// reader the person chose (`accessible.picture_window`). Added
+    /// 2026-11-17, additively.
+    PictureRead(APictureRead),
+}
+
+/// One picture alo took of an application's window, as it goes back to a
+/// client (`accessible.picture_window`, ADR 0147 §1). Added additively.
+///
+/// **The picture itself never crosses**: what crosses is the size it was and
+/// what the reader the person chose said it shows, in words — or, where it was
+/// not read, why not.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct APictureRead {
+    /// The application.
+    pub application: String,
+    /// How wide the picture was, in pixels.
+    pub wide: u32,
+    /// How tall the picture was, in pixels.
+    pub tall: u32,
+    /// What the reader said the window shows, where it read it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub read: Option<String>,
+    /// Why it was not read, in the person's words, where it was not.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub not_read: Option<String>,
 }
 
 /// One window an application showed, as it goes back to a client.
@@ -879,6 +906,36 @@ impl Done {
         }
     }
 
+    /// A picture taken of `application`'s window, `wide` by `tall`, and what
+    /// its reader said — `Ok` with its words, `Err` with why it was not read.
+    #[must_use]
+    pub fn of_a_picture(application: &str, size: (u32, u32), read: Result<String, String>) -> Self {
+        let (read, not_read) = match read {
+            Ok(read) => (Some(read), None),
+            Err(why) => (None, Some(why)),
+        };
+        Self::PictureRead(APictureRead {
+            application: application.to_owned(),
+            wide: size.0,
+            tall: size.1,
+            read,
+            not_read,
+        })
+    }
+
+    /// A picture taken and **not put to any reader** — neither words nor a
+    /// reason: what a client is told where nothing on this side read it.
+    #[must_use]
+    pub fn of_a_picture_not_read(application: &str, size: (u32, u32)) -> Self {
+        Self::PictureRead(APictureRead {
+            application: application.to_owned(),
+            wide: size.0,
+            tall: size.1,
+            read: None,
+            not_read: None,
+        })
+    }
+
     /// What one of the six file verbs answered, as it goes on the wire.
     #[must_use]
     pub fn of_a_file_verb(answer: &Answer) -> Self {
@@ -1031,6 +1088,8 @@ impl Done {
             Self::MenuOpened { unanswered, .. } => *unanswered,
             // **A key leaves nothing out**: it was pressed once, as approved.
             Self::KeyPressed { .. } => false,
+            // **A picture not read leaves out the one thing it was for.**
+            Self::PictureRead(picture) => picture.read.is_none(),
             // **A typing that saves nothing** leaves out only what did not read
             // back: nothing was to be saved.
             Self::TypedWithoutSaving { read_back, .. } => !*read_back,

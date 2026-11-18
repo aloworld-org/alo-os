@@ -35,6 +35,7 @@ use crate::keys_words as keys;
 use crate::menu_words as menu;
 use crate::not_loaded::NotLoaded;
 use crate::opening_words as opening;
+use crate::picture_words as picture;
 use crate::pressable::Pressable;
 use crate::pressing_a_key::the_keys_offered;
 use crate::scrolling::Toward;
@@ -69,6 +70,11 @@ pub const PRESS_KEY: &str = "accessible.press_key";
 
 /// The argument naming the key.
 pub const KEY: &str = "key";
+
+/// The verb that takes one picture of an application's window that describes
+/// nothing, and has it read in words by whoever the person chose (ADR 0147 §1,
+/// the screen road).
+pub const PICTURE_WINDOW: &str = "accessible.picture_window";
 
 /// The verb that types one approved text into one field and saves nothing
 /// (2026-11-17): a search box, a form, an address, where `Ctrl+S` would save
@@ -386,6 +392,26 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
             unsaved::UNSAVED_SENTENCE,
         )
         .and_then(|verb| verb.changing(unsaved::UNSAVED_CHANGES, Some(typing::TYPE_LEAVES))),
+    )?)?;
+    // **One picture of a window that describes nothing** (ADR 0147 §1,
+    // `crate::picturing_a_window`): a change, so it is one sentence and one OK
+    // at *ask each time*, and it takes the application and nothing else — no
+    // place, no region, no second window.
+    verbs.declare(checked(
+        PICTURE_WINDOW,
+        Verb::checked(
+            PICTURE_WINDOW,
+            picture::PICTURE_PURPOSE,
+            Effect::Change,
+            vec![Arg::taking(
+                APPLICATION,
+                picture::PICTURE_APPLICATION,
+                Takes::Application,
+            )],
+            Requires::grants_over([APPLICATION]),
+            picture::PICTURE_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(picture::PICTURE_CHANGES, Some(picture::PICTURE_LEAVES))),
     )?)?;
     Ok(())
 }

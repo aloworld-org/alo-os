@@ -431,7 +431,21 @@ fn what_this_machine_can_carry_out<'a>(
             None => machine,
         },
     )
+    // **And it reads the person's screen-road choices** from their own file,
+    // each time a picture is asked for (ADR 0147).
+    .map(|machine| machine.with_the_screen_road(the_screen_road()))
 }
+
+/// The person's screen-road choices on this machine: what a turn's machine
+/// reads before a picture is taken, and what its reader is chosen by after.
+pub(crate) fn the_screen_road() -> &'static dyn alo_turn::TheScreenRoadAsChosen {
+    &*THE_SCREEN_ROAD
+}
+
+/// The person's screen-road choices, kept where a machine keeps them: a path,
+/// read afresh on every picture.
+static THE_SCREEN_ROAD: std::sync::LazyLock<crate::the_screen_road_here::TheScreenRoadHere> =
+    std::sync::LazyLock::new(crate::the_screen_road_here::TheScreenRoadHere::on_this_machine);
 
 /// What the three application acts reach: the compositor's door, and what
 /// says how each application starts.
@@ -604,6 +618,7 @@ mod tests {
                 "accessible.choose_option",
                 "accessible.open_item",
                 "accessible.open_menu",
+                "accessible.picture_window",
                 "accessible.press_key",
                 "accessible.read_window",
                 "accessible.scroll_page",

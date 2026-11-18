@@ -147,6 +147,19 @@ adapters.fallback.open-menu.password-field	“{name}” in {application} is a pa
 adapters.fallback.open-menu.purpose	open the menu a right-click would open on one thing in an application's window, named as the application names it, so that one of its items can be chosen
 adapters.fallback.open-menu.sentence	open the right-click menu of “{thing}” in {application}
 adapters.fallback.open-menu.too-much	{application} shows more than alo can read at once, so alo could not be sure which “{name}” was meant, and no menu was opened
+adapters.fallback.picture-window.across-a-pairing	alo never takes a picture of a window on this computer for another computer, so no picture of {application} was taken
+adapters.fallback.picture-window.application	the application whose window is pictured
+adapters.fallback.picture-window.changes	Takes one picture of the application's window that has the keyboard, and has it read by whoever you chose under “Who reads the pictures” in Settings → What alo can use. If that is a service, the picture is sent to it.
+adapters.fallback.picture-window.describes-itself	{application} describes what its window shows, so alo reads its words instead and took no picture
+adapters.fallback.picture-window.leaves	No other window is in the picture, nothing is pressed or typed, the picture is not kept once it is read, and a window with a password field is never pictured.
+adapters.fallback.picture-window.no-one-reads	alo cannot see inside {application}: nobody has been chosen to read pictures of its window, so no picture was taken. To choose, open “Who reads the pictures” in Settings → What alo can use
+adapters.fallback.picture-window.no-picture	This machine could not take a picture of {application} just now, so none was taken
+adapters.fallback.picture-window.not-alos-copy	That {application} window is yours, not alo's own copy, so no picture was taken. To let alo work in your own windows, choose “alo may work in your own window” in Settings → What alo can use
+adapters.fallback.picture-window.not-in-front	No window of {application} has the keyboard, so no picture was taken. alo takes a picture only of the window in front: bring it forward first
+adapters.fallback.picture-window.not-switched-on	alo cannot see inside {application}: it describes nothing alo can read, and pictures are off for it, so no picture was taken. To let alo use pictures of its window, switch on “Pictures and keys” for {application} in Settings → What alo can use
+adapters.fallback.picture-window.password-field	A window of {application} has a password field, and alo never takes a picture of one, so no picture was taken
+adapters.fallback.picture-window.purpose	take one picture of the window of an application that describes nothing alo can read, such as a game, and have it read in words by whoever the person chose to read pictures
+adapters.fallback.picture-window.sentence	take a picture of the {application} window and have it read
 adapters.fallback.press-key.application	the application whose window the key is pressed in
 adapters.fallback.press-key.changes	Presses that one key once in the application's window that has the keyboard, as a person pressing it would.
 adapters.fallback.press-key.down	the down arrow
