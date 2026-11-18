@@ -320,6 +320,20 @@ class AudioRestoration(unittest.TestCase):
                         flow.start()
                 self.assertFalse(any(args[0] in ('pw-loopback', 'wpctl') for args in trace))
 
+    def test_empty_xdg_state_home_uses_the_home_default_before_overriding_audio(self):
+        for filename in ['default-nodes', 'default-streams']:
+            with self.subTest(filename=filename), tempfile.TemporaryDirectory() as directory:
+                flow, trace, _, command, popen = self.fixture(pathlib.Path(directory))
+                state = flow.home / '.local/state/wireplumber' / filename
+                state.parent.mkdir(parents=True)
+                state.write_text(f'[{filename}]\ndefault.configured.audio.source.0=old-source\n')
+                with patch.dict(os.environ, XDG_STATE_HOME=''), \
+                        patch('installed_session.command', command), \
+                        patch('installed_session.subprocess.Popen', popen):
+                    with self.assertRaises(ValueError):
+                        flow.start()
+                self.assertFalse(any(args[0] in ('pw-loopback', 'wpctl') for args in trace))
+
     def test_source_only_clear_runs_after_success_or_failure_once_override_occurred(self):
         for failure in [None, 'after-override', 'during-recording']:
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as directory:
@@ -378,6 +392,86 @@ class AudioRestoration(unittest.TestCase):
                     flow.run()
             self.assertTrue(flow.children)
             self.assertTrue(all(child.poll() is not None for child in flow.children))
+
+    def cleanup_fixture(self, *, child_error=None, clear_error=None):
+        flow = object.__new__(Session)
+        flow.audio_overridden = True
+        flow.event = lambda *args, **kwargs: None
+        trace = []
+
+        class Child:
+            def __init__(self, first):
+                self.first, self.stopped = first, False
+
+            def poll(self):
+                return None
+
+            def terminate(self):
+                trace.append(('terminate', self.first))
+                if self.first and child_error and child_error[0] == 'terminate':
+                    raise child_error[1]
+                self.stopped = True
+
+            def wait(self, **kwargs):
+                trace.append(('wait', self.first))
+                if self.first and child_error and child_error[0] == 'wait':
+                    raise child_error[1]
+                return 0
+
+        flow.children = [Child(True), Child(False)]
+
+        def command(*args):
+            trace.append(args)
+            if clear_error:
+                raise clear_error
+
+        return flow, trace, command
+
+    def test_one_flatpak_kill_timeout_still_attempts_every_other_owned_resource(self):
+        flow, trace, command = self.cleanup_fixture()
+        refusal = subprocess.TimeoutExpired(['flatpak', 'kill'], 10)
+
+        def kill(args, **kwargs):
+            trace.append(tuple(args))
+            if args[-1] == 'org.aloworld.Studio':
+                raise refusal
+            return subprocess.CompletedProcess(args, 0)
+
+        with patch('installed_session.subprocess.run', kill), \
+                patch('installed_session.command', command):
+            with self.assertRaises(subprocess.TimeoutExpired) as caught:
+                flow.cleanup()
+        self.assertIs(caught.exception, refusal)
+        self.assertIn(('flatpak', 'kill', 'org.aloworld.Studio'), trace)
+        self.assertIn(('flatpak', 'kill', 'org.aloworld.Studio.Verification'), trace)
+        self.assertEqual(trace.count(('wpctl', 'clear-default', '1')), 1)
+        self.assertTrue(all(child.stopped for child in flow.children))
+
+    def test_one_owned_child_cleanup_error_still_attempts_later_children(self):
+        for operation in ['terminate', 'wait']:
+            with self.subTest(operation=operation):
+                refusal = RuntimeError('test-only child cleanup refusal')
+                flow, trace, command = self.cleanup_fixture(child_error=(operation, refusal))
+                with patch('installed_session.subprocess.run', return_value=subprocess.CompletedProcess([], 0)), \
+                        patch('installed_session.command', command):
+                    with self.assertRaises(RuntimeError) as caught:
+                        flow.cleanup()
+                self.assertIs(caught.exception, refusal)
+                self.assertIn(('terminate', False), trace)
+                self.assertTrue(flow.children[1].stopped)
+                self.assertEqual(trace.count(('wpctl', 'clear-default', '1')), 1)
+
+    def test_original_source_clear_refusal_survives_a_later_child_cleanup_error(self):
+        original = RuntimeError('test-only original source-clear refusal')
+        later = RuntimeError('test-only later child refusal')
+        flow, trace, command = self.cleanup_fixture(child_error=('terminate', later), clear_error=original)
+        with patch('installed_session.subprocess.run', return_value=subprocess.CompletedProcess([], 0)), \
+                patch('installed_session.command', command):
+            with self.assertRaises(RuntimeError) as caught:
+                flow.cleanup()
+        self.assertIs(caught.exception, original)
+        self.assertIn(('terminate', False), trace)
+        self.assertTrue(flow.children[1].stopped)
 
 
 if __name__ == '__main__':

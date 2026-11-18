@@ -104,8 +104,8 @@ fn nested_scoped_environment_and_secret_reads_are_refused() {
 
 #[cfg(unix)]
 #[test]
-fn failures_at_each_person_command_are_reported_without_installing_or_recording_afterward()
--> Result<(), Box<dyn std::error::Error>> {
+fn failures_at_each_person_command_are_reported_without_installing_or_recording_afterward(
+) -> Result<(), Box<dyn std::error::Error>> {
     use std::os::unix::fs::PermissionsExt as _;
 
     struct Temporary(std::path::PathBuf);
@@ -123,7 +123,14 @@ fn failures_at_each_person_command_are_reported_without_installing_or_recording_
     };
     assert!(command.contains("set -eu;"));
     assert!(command.contains("sha256sum -c checksums.txt;"));
-    for failing in ["", "curl", "sha256sum", "flatpak", "python3"] {
+    for failing in [
+        "",
+        "curl",
+        "sha256sum",
+        "flatpak-studio",
+        "flatpak-fixture",
+        "python3",
+    ] {
         static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
         let root = Temporary(std::env::temp_dir().join(format!(
             "studio-person-command-{}-{}",
@@ -135,13 +142,34 @@ fn failures_at_each_person_command_are_reported_without_installing_or_recording_
         let work = root.0.join("work");
         std::fs::create_dir(&bin)?;
         std::fs::create_dir(&work)?;
-        for tool in ["curl", "sha256sum", "flatpak", "python3"] {
+        for tool in ["curl", "sha256sum", "python3"] {
             let script = format!(
                 "#!/bin/sh\nprintf '%s\\n' '{tool}' >> \"$STUDIO_FAKE_TRACE\"\n\
                  if [ \"$STUDIO_FAIL_AT\" = '{tool}' ]; then exit 17; fi\nexit 0\n"
             );
             std::fs::write(bin.join(tool), script)?;
         }
+        // Flatpak's local-bundle mode accepts one filename per invocation.
+        // A permissive success stub previously hid the real CLI refusal.
+        std::fs::write(
+            bin.join("flatpak"),
+            "#!/bin/sh\n\
+             bundles=0; package=''\n\
+             for argument; do\n\
+               case \"$argument\" in *.flatpak) bundles=$((bundles + 1)); package=$argument;; esac\n\
+             done\n\
+             if [ \"$bundles\" -ne 1 ]; then\n\
+               printf '%s\\n' flatpak-rejected >> \"$STUDIO_FAKE_TRACE\"; exit 23\n\
+             fi\n\
+             case \"$package\" in\n\
+               studio.flatpak) stage=flatpak-studio;;\n\
+               fixture.flatpak) stage=flatpak-fixture;;\n\
+               *) exit 24;;\n\
+             esac\n\
+             printf '%s\\n' \"$stage\" >> \"$STUDIO_FAKE_TRACE\"\n\
+             if [ \"$STUDIO_FAIL_AT\" = \"$stage\" ]; then exit 17; fi\n\
+             exit 0\n",
+        )?;
         std::fs::write(
             bin.join("mktemp"),
             "#!/bin/sh\nprintf '%s\\n' \"$STUDIO_FAKE_DIRECTORY\"\n",
@@ -177,7 +205,7 @@ fn failures_at_each_person_command_are_reported_without_installing_or_recording_
             vec!["curl"]
         } else {
             let mut calls = vec!["curl"; 7];
-            for tool in ["sha256sum", "flatpak", "python3"] {
+            for tool in ["sha256sum", "flatpak-studio", "flatpak-fixture", "python3"] {
                 calls.push(tool);
                 if tool == failing {
                     break;
