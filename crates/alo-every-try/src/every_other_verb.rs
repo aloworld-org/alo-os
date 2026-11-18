@@ -142,6 +142,23 @@ fn a_page_down(browser: &str) -> Step {
     .as_often_as_asked()
 }
 
+/// **The browser's window, read once it has opened** — a look the opening
+/// road may take aside, after the open: the machine answers a read of an
+/// application it has just opened, its window titled [`THE_BROWSERS_WINDOW`]
+/// with [`RELOAD`] on it, as the pressing road's window is.
+#[must_use]
+pub(crate) fn the_browser_read_once_open(browser: &str) -> Step {
+    let opened = Shown::of(
+        browser.to_owned(),
+        vec![ShownWindow::titled(
+            THE_BROWSERS_WINDOW.to_owned(),
+            vec![Seen::of(OnScreen::Button, RELOAD.to_owned(), None, 1)],
+        )],
+        false,
+    );
+    the_window_read_again(&opened, browser)
+}
+
 /// One thing in a folder, as the protocol carries it.
 fn a_file(name: &str, bytes: u64) -> Result<alo_protocol::Thing, NotTheSet> {
     serde_json::from_value(serde_json::json!({ "name": name, "kind": "file", "bytes": bytes }))

@@ -166,6 +166,66 @@ fn publishing_is_one_verb() {
     );
 }
 
+/// **A window read after an application opens is aside of the road**, at both
+/// levels: the try still has to open it and then answer. Opening it again
+/// after the read is not the road, and neither is the read alone.
+#[test]
+fn opening_an_application_may_read_its_window_after_and_must_still_answer() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, reading, the_words};
+    use alo_applications::verbs::{APPLICATION, OPEN_APPLICATION};
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "open an application by name")
+        .expect("the set has it");
+    let browser = request
+        .road()
+        .first()
+        .and_then(|open| {
+            open.expected()
+                .iter()
+                .find(|(arg, _)| *arg == APPLICATION)
+                .map(|(_, is)| is.clone())
+        })
+        .expect("the open names its application");
+    let asides: Vec<&str> = request.aside().iter().map(|aside| aside.verb()).collect();
+    assert_eq!(asides, [READ_WINDOW], "one read aside, of the window");
+
+    let open = proposing(OPEN_APPLICATION, &[(APPLICATION, &browser)]);
+    let look = reading(
+        READ_WINDOW,
+        &[(alo_adapters::fallback_verbs::APPLICATION, &browser)],
+    );
+    let answer = answering("Firefox is open.");
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let try_these = |lines: &[String]| {
+            one_try_at(
+                level,
+                request,
+                set.may_reach(),
+                &the_verbs(),
+                &the_words(),
+                &mut Writing::these(lines),
+            )
+        };
+        let looked = try_these(&[open.clone(), look.clone(), answer.clone()]);
+        assert_eq!(looked.went(), &Went::TheRoad, "{level:?}: {looked:?}");
+        assert_eq!(looked.looked_aside(), 1, "{level:?}");
+        let straight = try_these(&[open.clone(), answer.clone()]);
+        assert_eq!(straight.went(), &Went::TheRoad, "{level:?}: {straight:?}");
+        assert_eq!(straight.looked_aside(), 0, "{level:?}");
+        // **The refusals**: opening again after the read, and reading
+        // instead of opening, both leave the road.
+        let again = try_these(&[open.clone(), look.clone(), open.clone()]);
+        assert!(!again.took_the_road(), "{level:?}: {again:?}");
+        let only_looked = try_these(&[look.clone(), answer.clone()]);
+        assert!(!only_looked.took_the_road(), "{level:?}: {only_looked:?}");
+    }
+}
+
 #[test]
 fn opening_an_application_is_one_verb() {
     assert_eq!(

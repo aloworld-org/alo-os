@@ -68,12 +68,19 @@ const WHAT_NAMES_THE_PERSONS_PLACE: [&str; 4] =
 ///
 /// **Adding a row is a decision, not a formality.** Each is a place that becomes
 /// wrong on the day one process serves two people.
-const WHERE_THE_PERSON_IS_READ: [(&str, &str); 4] = [
+const WHERE_THE_PERSON_IS_READ: [(&str, &str); 5] = [
     (
         "running_a_command.rs",
         "where a command alo runs where no verb fits starts (ADR 0149): the person's \
          home, as the person this service runs as. Where it starts only; what it \
          reaches is the account's permissions either way",
+    ),
+    (
+        "running_a_publication.rs",
+        "where a publication's command starts, which is the command road's own \
+         answer above: the person's home, as the person this service runs as. It \
+         is made once for the life of the service, as a static the machine holds, \
+         so there is no caller to hand it in",
     ),
     (
         "settings.rs",
@@ -82,7 +89,9 @@ const WHERE_THE_PERSON_IS_READ: [(&str, &str); 4] = [
     (
         "starting.rs",
         "where applications are installed, which the desktop-entry specification \
-         answers with the environment itself",
+         answers with the environment itself; the person's home a turn looks in; \
+         and where the person's settings are, handed to the accessibility \
+         fallback so that it reads no environment of its own",
     ),
     (
         "the_bracket_this_turn_takes.rs",
