@@ -32,7 +32,9 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
+import record_delta
 from record_delta import snapshot, verify_microphone_change
 
 
@@ -388,7 +390,7 @@ class RecordDelta(unittest.TestCase):
                 '\nexcept (ValueError, OSError): print("refused")'
                 '\nelse: raise SystemExit("FIFO accepted")')
         completed = subprocess.run([sys.executable, '-I', '-B', '-c', code,
-                                    str(Path(__file__).parent), str(fifo)],
+                                    str(Path(record_delta.__file__).parent), str(fifo)],
                                    capture_output=True, text=True, timeout=2, check=False)
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertEqual(completed.stdout, 'refused\n')
@@ -435,6 +437,197 @@ class RecordDelta(unittest.TestCase):
             with self.subTest(approval=approval):
                 self.refuses(lambda: self.verify(checkpoint, approval=approval))
         self.refuses(lambda: self.verify(checkpoint, approval=APPROVAL, full=True))
+
+    def test_malformed_extra_studio_labels_cannot_hide_a_second_record(self):
+        # Verb::checked accepts lower-case ASCII identifiers, never these aliases.
+        for name in [' studio.enable_microphone', 'studio.enable_microphone ',
+                     'Studio.enable_microphone', 'studio\u200b.enable_microphone']:
+            with self.subTest(name=name):
+                self.path.write_bytes(HEADER)
+                checkpoint = snapshot(self.path)
+                extra = ran()
+                extra['happened']['ran']['what']['verb'] = name
+                self.append(ran(), extra)
+                self.refuses(lambda: self.verify(checkpoint))
+
+    def test_declared_studio_changes_mislabeled_as_reads_are_not_noise(self):
+        for name in ['studio.enable_microphone', 'studio.disable_microphone', 'studio.finish']:
+            with self.subTest(name=name):
+                self.path.write_bytes(HEADER)
+                checkpoint = snapshot(self.path)
+                extra = ran()
+                extra['happened']['ran']['what']['verb'] = name
+                extra['happened']['ran']['what']['effect'] = 'read'
+                self.append(ran(), extra)
+                self.refuses(lambda: self.verify(checkpoint))
+
+    def test_unrecognized_event_labels_cannot_silently_hide_a_run(self):
+        for tag in ['Ran', 'ran ', 'future-unread-event']:
+            with self.subTest(tag=tag):
+                self.path.write_bytes(HEADER)
+                checkpoint = snapshot(self.path)
+                extra = ran()
+                extra['happened'] = {tag: extra['happened']['ran']}
+                self.append(ran(), extra)
+                # Public readers report unread events; a certifier must refuse.
+                self.refuses(lambda: self.verify(checkpoint))
+
+    def test_numeric_overflow_is_nonfinite_even_without_nan_or_infinity_tokens(self):
+        for token in [b'1e999', b'-1e999']:
+            for location in ['head', 'baseline', 'delta']:
+                with self.subTest(token=token, location=location):
+                    self.path.write_bytes(HEADER)
+                    if location == 'head':
+                        self.path.write_bytes(b'{"format":1,"future":{"nested":[' + token + b']}}\n')
+                        self.refuses(lambda: snapshot(self.path))
+                    elif location == 'baseline':
+                        entry = inference_noise()
+                        entry['future'] = {'nested': [111]}
+                        with self.path.open('ab') as output:
+                            output.write(line(entry).replace(b'[111]', b'[' + token + b']'))
+                        self.refuses(lambda: snapshot(self.path))
+                    else:
+                        checkpoint = snapshot(self.path)
+                        entry = ran()
+                        entry['future'] = {'nested': [111]}
+                        with self.path.open('ab') as output:
+                            output.write(line(entry).replace(b'[111]', b'[' + token + b']'))
+                        self.refuses(lambda: self.verify(checkpoint))
+
+    def test_finite_additive_numbers_remain_valid_observations(self):
+        checkpoint = snapshot(self.path)
+        entry = ran()
+        entry['future'] = {'nested': [1e308, -1e308, 0.125]}
+        self.append(entry)
+        self.assert_summary(self.verify(checkpoint), expected_summary())
+
+    def test_malformed_inference_noise_is_not_silently_discarded(self):
+        for body in [{}, {'agent': 17}, {'agent': []}]:
+            for baseline in [False, True]:
+                with self.subTest(body=body, baseline=baseline):
+                    self.path.write_bytes(HEADER)
+                    extra = inference_noise()
+                    extra['happened']['answered-here'] = body
+                    if baseline:
+                        self.append(extra)
+                        self.refuses(lambda: snapshot(self.path))
+                    else:
+                        checkpoint = snapshot(self.path)
+                        self.append(ran(), extra)
+                        self.refuses(lambda: self.verify(checkpoint))
+
+    def test_read_noise_arguments_must_be_actual_written_argument_values(self):
+        for argument in [False, '/var/home/alo/notes.txt', {}, {'path': True},
+                         {'invented': 'text'}, {'count': True}, {'count': 2 ** 63},
+                         {'name': 'one', 'text': 'two'}]:
+            with self.subTest(argument=argument):
+                self.path.write_bytes(HEADER)
+                checkpoint = snapshot(self.path)
+                extra = read_noise()
+                extra['happened']['ran']['what'] = {
+                    'verb': 'read_file', 'effect': 'read',
+                    'sentence': 'read /var/home/alo/notes.txt', 'arguments': {'file': argument},
+                }
+                self.append(ran(), extra)
+                self.refuses(lambda: self.verify(checkpoint))
+
+    def test_actual_provider_inference_and_file_read_noise_remain_permitted(self):
+        checkpoint = snapshot(self.path)
+        provider = {
+            'at': {'secs_since_epoch': 1760000001, 'nanos_since_epoch': 12},
+            'happened': {'left': {'agent': 'alo', 'why': 'asking', 'destination': {
+                'provider': {'provider': 'test-only-provider', 'region': 'unknown'}}}},
+        }
+        read = read_noise()
+        read['happened']['ran']['what'] = {
+            'verb': 'read_file', 'effect': 'read',
+            'sentence': 'read /var/home/alo/notes.txt',
+            'arguments': {'file': {'path': '/var/home/alo/notes.txt'}},
+        }
+        self.append(provider, read, ran(), provider)
+        self.assert_summary(self.verify(checkpoint), expected_summary())
+
+    def test_known_retention_fields_cannot_be_ignored_when_malformed(self):
+        for under in [19, 'forever ', {}, {'for-days': 0}, {'for-days': True},
+                      {'for-days': 2 ** 32}]:
+            with self.subTest(under=under):
+                self.path.write_bytes(line({'format': 1, 'under': under,
+                    'since': {'secs_since_epoch': 1760000000, 'nanos_since_epoch': 0}}))
+                self.refuses(lambda: snapshot(self.path))
+
+    def test_history_cannot_deny_its_retention_boundary_or_append_order(self):
+        entry = ran()
+        self.path.write_bytes(line({'format': 1, 'under': 'forever',
+            'since': {'secs_since_epoch': 1760000002, 'nanos_since_epoch': 0}}) + line(entry))
+        with self.subTest(contradiction='before retention boundary'):
+            self.refuses(lambda: snapshot(self.path))
+        self.path.write_bytes(HEADER)
+        self.append(inference_noise())
+        checkpoint = snapshot(self.path)
+        entry['at']['secs_since_epoch'] -= 1
+        self.append(entry)
+        with self.subTest(contradiction='append predates checkpoint history'):
+            self.refuses(lambda: self.verify(checkpoint))
+        with self.subTest(contradiction='baseline order goes backwards'):
+            self.refuses(lambda: snapshot(self.path))
+
+    def test_entries_at_the_retention_boundary_and_equal_moments_are_valid(self):
+        moment = {'secs_since_epoch': 1760000001, 'nanos_since_epoch': 12}
+        self.path.write_bytes(line({'format': 1, 'under': 'forever', 'since': moment}))
+        self.append(inference_noise())
+        checkpoint = snapshot(self.path)
+        self.append(ran(), read_noise())
+        self.assert_summary(self.verify(checkpoint), expected_summary())
+
+    def test_real_file_changes_during_the_read_cannot_certify_stale_bytes(self):
+        # Wrap the actual regular-file read; metadata and contents are real.
+        # No success or refusal is fabricated by this instrumentation.
+        real_fdopen = os.fdopen
+        for change in ['append', 'rewrite', 'replace']:
+            for baseline in [False, True]:
+                with self.subTest(change=change, baseline=baseline):
+                    self.path.write_bytes(HEADER)
+                    self.append(inference_noise())
+                    checkpoint = snapshot(self.path)
+                    self.append(ran())
+                    mutated = []
+
+                    def mutate():
+                        mutated.append(True)
+                        if change == 'append':
+                            self.append(ran())
+                        elif change == 'rewrite':
+                            data = self.path.read_bytes()
+                            self.path.write_bytes(data.replace(b'1760000001', b'1760000000'))
+                        else:
+                            self.path.rename(self.directory / 'replaced.jsonl')
+                            self.path.write_bytes(HEADER + line(ran()))
+
+                    class Reading:
+                        def __init__(self, source):
+                            self.source = source
+
+                        def __enter__(self):
+                            self.source.__enter__()
+                            return self
+
+                        def __exit__(self, *args):
+                            return self.source.__exit__(*args)
+
+                        def fileno(self):
+                            return self.source.fileno()
+
+                        def read(self, *args):
+                            data = self.source.read(*args)
+                            mutate()
+                            return data
+
+                    def opened(*args, **kwargs):
+                        return Reading(real_fdopen(*args, **kwargs))
+
+                    with patch.object(record_delta.os, 'fdopen', side_effect=opened):
+                        self.refuses(lambda: snapshot(self.path) if baseline else self.verify(checkpoint))
+                    self.assertEqual(mutated, [True])
 
 
 if __name__ == '__main__':
