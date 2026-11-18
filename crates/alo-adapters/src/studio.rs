@@ -81,7 +81,7 @@ const TITLE_ARGS: &[AdapterArg] = &[AdapterArg {
 }];
 /// The purpose of the status read.
 const STATUS_PURPOSE: Word = Word::saying(
-    "adapters.studio.status.purpose",
+    "adapters.studio.status.live-state-purpose",
     "read whether alo Studio is recording, paused, ready or reviewing a saved video, and its current recording settings",
 )
 .noting("Read whether recording is ready, running, paused, saving or complete.");
@@ -99,8 +99,19 @@ const STATUS_BY_HAND: Word = Word::saying(
 .noting("How to inspect the recording without an agent.");
 
 /// Declare each fixed control with translated purpose, approval and effect words.
+/// A changed purpose gets its own new key without retiring neighboring claims.
+macro_rules! purpose_key {
+    ($key:literal) => {
+        concat!("adapters.studio.", $key, ".purpose")
+    };
+    ($key:literal, $purpose_key:literal) => {
+        $purpose_key
+    };
+}
+
+/// Declare each fixed control with translated purpose, approval and effect words.
 macro_rules! controls {
-    ($(($name:ident, $key:literal, $purpose:literal, $sentence:literal, $manual:literal, $changes:literal, $method:literal, $args:expr, $parameters:expr)),* $(,)?) => {
+    ($(($name:ident, $key:literal, $purpose:literal, $sentence:literal, $manual:literal, $changes:literal, $method:literal, $args:expr, $parameters:expr $(, $purpose_key:literal)?)),* $(,)?) => {
         /// Fully qualified action names, in declaration order, for discovery and checks.
         pub const ACTION_NAMES: &[&str] = &[
             "studio.status",
@@ -112,7 +123,7 @@ macro_rules! controls {
             KEEP_VIDEOS, QUALITY, RECORDING, TITLE, FULL_HD, HD, ORIGINAL, LIGHTWEIGHT,
             STATUS_PURPOSE, STATUS_SENTENCE, STATUS_BY_HAND,
             $(
-                Word::saying(concat!("adapters.studio.", $key, ".purpose"), $purpose).noting("What the recording control does."),
+                Word::saying(purpose_key!($key $(, $purpose_key)?), $purpose).noting("What the recording control does."),
                 Word::saying(concat!("adapters.studio.", $key, ".sentence"), $sentence).noting("The recording change the person approves."),
                 Word::saying(concat!("adapters.studio.", $key, ".by-hand"), $manual).noting("How the person does this in alo Studio without an agent."),
                 Word::saying(concat!("adapters.studio.", $key, ".changes"), $changes).noting("What accepting this recording change does."),
@@ -132,7 +143,7 @@ macro_rules! controls {
                 },
                 $(AdapterVerb {
                     name: stringify!($name),
-                    purpose: Word::saying(concat!("adapters.studio.", $key, ".purpose"), $purpose),
+                    purpose: Word::saying(purpose_key!($key $(, $purpose_key)?), $purpose),
                     effect: Effect::Change, sends: crate::adapter_verb::Sends::Never, args: $args, reaches: Reaches::OnlyItsApplication,
                     sentence: Word::saying(concat!("adapters.studio.", $key, ".sentence"), $sentence),
                     by_hand: Some(Word::saying(concat!("adapters.studio.", $key, ".by-hand"), $manual)),
@@ -160,14 +171,14 @@ controls! {
     (start, "start", "start the selected recording after its performance check and countdown", "start the selected recording in alo Studio", "In alo Studio, choose Start recording", "Begins the performance check and countdown for the selected source.", "Start", &[], &[]),
     (pause, "pause", "pause the current recording and microphone", "pause the recording in alo Studio", "In alo Studio's recording controls, choose Pause", "Pauses video and microphone capture.", "Pause", &[], &[]),
     (resume, "resume", "resume a paused recording and its chosen microphone", "resume the recording in alo Studio", "In alo Studio's recording controls, choose Resume", "Resumes video and the recording's chosen microphone.", "Resume", &[], &[]),
-    (finish, "finish", "stop recording, validate the saved video and open it for review in alo Studio", "finish the recording in alo Studio", "In alo Studio's recording controls, choose Stop recording", "Stops capture and begins finalizing the current recording.", "Finish", &[], &[]),
+    (finish, "finish", "stop recording, validate the saved video and open it for review in alo Studio", "finish the recording in alo Studio", "In alo Studio's recording controls, choose Stop recording", "Stops capture and begins finalizing the current recording.", "Finish", &[], &[], "adapters.studio.finish.saved-review-purpose"),
     (enable_microphone, "enable-microphone", "enable the microphone option for this recording", "enable the microphone for this alo Studio recording", "In alo Studio, turn on Record microphone", "Enables the microphone option; capture starts only when recording starts.", "EnableMicrophone", &[], &[]),
     (disable_microphone, "disable-microphone", "disable the microphone option before recording", "disable the microphone for this alo Studio recording", "In alo Studio, turn off Record microphone", "Disables the microphone option before recording starts.", "DisableMicrophone", &[], &[]),
     (set_quality, "set-quality", "choose recording quality before capture starts", "set alo Studio recording quality to {quality}", "In alo Studio, choose the named Quality option", "Changes the selected quality for a future recording.", "SetQuality", QUALITY_ARGS, &[Part::TextOf("quality")]),
-    (countdown_off, "countdown-off", "turn off the countdown setting for the next alo Studio recording", "turn off the countdown in alo Studio", "In alo Studio, choose Off under Countdown", "Selects no countdown before recording starts.", "SetCountdown", &[], &[Part::Number(0)]),
+    (countdown_off, "countdown-off", "turn off the countdown setting for the next alo Studio recording", "turn off the countdown in alo Studio", "In alo Studio, choose Off under Countdown", "Selects no countdown before recording starts.", "SetCountdown", &[], &[Part::Number(0)], "adapters.studio.countdown-off.next-recording-purpose"),
     (countdown_three, "countdown-three", "set a three-second (3 sec) countdown before the next recording starts in alo Studio", "set a three-second countdown in alo Studio", "In alo Studio, choose 3 sec under Countdown", "Selects a three-second countdown before recording starts.", "SetCountdown", &[], &[Part::Number(3)]),
     (countdown_five, "countdown-five", "set a five-second (5 sec) countdown before the next recording starts in alo Studio", "set a five-second countdown in alo Studio", "In alo Studio, choose 5 sec under Countdown", "Selects a five-second countdown before recording starts.", "SetCountdown", &[], &[Part::Number(5)]),
-    (cancel_countdown, "cancel-countdown", "cancel alo Studio's countdown that is currently running", "cancel alo Studio's recording countdown", "In alo Studio, choose Cancel during the countdown", "Cancels the countdown before recording begins.", "CancelCountdown", &[], &[]),
+    (cancel_countdown, "cancel-countdown", "cancel alo Studio's countdown that is currently running", "cancel alo Studio's recording countdown", "In alo Studio, choose Cancel during the countdown", "Cancels the countdown before recording begins.", "CancelCountdown", &[], &[], "adapters.studio.cancel-countdown.running-purpose"),
     (show_library, "show-library", "show the private recording library", "show alo Studio's recording library", "In alo Studio, choose Your recordings", "Closes any preview and opens the private recording library.", "ShowLibrary", &[], &[]),
     (review, "review", "review a completed recording by its library identifier", "review {recording} in alo Studio", "In alo Studio's library, open the saved recording", "Replaces any preview with the selected saved video.", "ReviewRecording", RECORDING_ARGS, &[Part::TextOf("recording")]),
     (rename, "rename", "rename the completed recording currently being reviewed in alo Studio's private library", "name the current alo Studio recording {title}", "In alo Studio's review, edit the recording title", "Changes the current recording's saved library name.", "RenameRecording", TITLE_ARGS, &[Part::TextOf("title")]),

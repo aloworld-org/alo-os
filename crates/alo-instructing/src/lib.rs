@@ -67,6 +67,7 @@ pub mod the_conversation_so_far;
 pub mod the_language_asked_in;
 pub mod the_persons_folders;
 pub mod the_window_offered;
+mod using_named_application_controls;
 pub mod verb_as_told;
 pub mod what_it_may_reach;
 pub mod working_in_an_application;

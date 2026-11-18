@@ -41,7 +41,10 @@ Independent request/action expectations also reject other valid Studio changes.
 The four affected Rust packages passed 766 tests locally, with four
 environment-dependent tests ignored; formatting, strict linting and
 warnings-denied documentation passed. These checks rerun in CI. The strengthened
-GUI recording check subsequently passed, as detailed below.
+GUI recording check subsequently passed recording, a five-second frozen paused
+timer, resume, finalization and library responsiveness. It runs again in the
+native Studio workflow, using development fixtures rather than installed OS
+consent or microphone inputs.
 
 The real-model trial at that earlier head failed despite five repetitions at
 each approval level: status, three/five-second countdown and finish requests
@@ -61,12 +64,38 @@ live state before answering a state question. Its regression was observed red,
 passed after the change and failed again when that rule was deliberately
 disconnected. The restored implementation passed. The affected four packages
 now pass 767 local tests, strict linting, formatting and warnings-denied docs.
-At `1306978f7`, the five-try model run still failed: status passed four of five
-at full access and all five when asking each time; enable-microphone and the
-five-second countdown each passed four of five at full access, while the
-three-second countdown passed two of five when asking each time. Other Studio
-controls passed all five in both modes. Generic failures also remained. These
-are measured choices, not installed execution, and do not pass law 9.
+At `1306978f7`, status passed four of five model tries at full access and all
+five when asking each time. Enable-microphone and five-second countdown each
+passed four of five at full access; three-second countdown passed two of five
+when asking each time. Other Studio controls passed all five in both modes.
+Generic failures also remained. These measured choices fail law 9 and do not
+establish installed execution.
+
+The next correction derives named-control advice from offered status reads and
+their exact application families, retaining each declaration's purpose and the
+generic fallback. Seven independent integration tests were observed failing
+before the correction and pass afterward. Independent code review found no
+blocker. Repeated model trials remain required.
+
+At `bc768f471`, the four affected Rust packages passed 774 local tests, with
+four environment-dependent tests ignored. Formatting, strict all-target
+linting and warnings-denied docs passed. Five deliberate faults in the new
+guidance (disconnected wiring, false status, mixed families, wrong effect and
+detached purposes) each failed the independent tests; the restored seven tests
+passed. These are targeted one-time mutation experiments, not a hosted
+`cargo-mutants` coverage result. The integration tests rerun in the normal gate.
+
+The hosted gate at `1306978f7` also caught eight purpose descriptions whose
+vocabulary snapshot had not been reconciled. Independent ADR 0068 review
+classified four as changed claims requiring new purpose keys and four as
+rewordings retaining their keys. The implementation now declares those choices;
+the official snapshot regeneration and all three vocabulary checks passed.
+Unchanged approval, manual-action and change-description keys remain intact.
+The two hosted gate failures were this snapshot check and the existing
+permissions-directory removal test; a corrected full gate still must pass.
+The hosted image check, optimized desktop checks and normal signed-package
+checks passed on that head. Native and mutation jobs timed out downloading
+dependencies before their tests. They supply no mutation coverage.
 
 The hosted mutation baseline also exposed an outdated Settings source check
 that expected the old third grant path. Settings now uses main's shared
@@ -78,14 +107,25 @@ Settings source file. All six source-only checks passed when compiled directly
 with Rust against the real shell source. Hosted Cargo/mutation validation still
 needs to pass; no hosted mutation coverage is claimed from a failed baseline.
 
-The private KVM image built and reached its OS boot walk. That walk did not
-install Studio or establish recording acceptance. The separate private reference
-window and real Pulse monitor first failed their local timing check; the
-subsequent reference-only result is recorded below.
+The private KVM image built and reached its OS boot walk. That walk does not
+install Studio or establish recording acceptance. A separate private reference
+window and real Pulse monitor subsequently passed one reference-only observation
+with 18 marker pairs, median absolute offset 114 ms and maximum 135 ms. Those
+are draw callbacks and actual monitor samples, not decoded Studio output or
+compositor presentation.
 The actual application handlers, native consent and byte-identical export,
 decoded video continuity, audio continuity and matched synchronization markers
 still need installed evidence. A build or unit test pass does not establish
-smooth video or audio synchronization.
+smooth video or audio synchronization. Private draft #1397 adds the controller
+and bounded artifact transfer. At frozen source
+`76f131ecea607e317fa141004655f0d224107a32`, manual package run 44320429214
+passed normal packaging, signature refusals and separate reference/controller
+packaging. Installed KVM walk 44322063965 was dispatched with that exact source
+and package run. Its installed recording verdict is pending. The private
+instrument workflow also passed its real decoder/native-control checks on that
+source; local validation recorded 143 Python and 30 focused Rust test passes.
+The person-side controller is not an agent tool and cannot establish the
+separate installed grant/discovery/approval/revocation acceptance.
 
 ## Private recording instruments
 
