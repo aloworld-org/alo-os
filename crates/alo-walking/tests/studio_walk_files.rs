@@ -82,6 +82,28 @@ fn a_normal_package_is_served_byte_for_byte() -> Result<(), Box<dyn std::error::
 }
 
 #[test]
+fn the_private_agent_probe_is_a_fixed_byte_exact_input_only()
+-> Result<(), Box<dyn std::error::Error>> {
+    let fixture = Fixture::new()?;
+    std::fs::write(
+        fixture.root.join("inputs/studio-agent-probe"),
+        b"private executable\0\xff",
+    )?;
+    let answer = fixture.request(b"GET /studio-agent-probe HTTP/1.1\r\nHost: fixture\r\n\r\n")?;
+    assert!(answer.starts_with(b"HTTP/1.1 200"));
+    assert!(answer.ends_with(b"private executable\0\xff"));
+    let denied =
+        fixture.request(b"POST /studio-agent-probe HTTP/1.1\r\nContent-Length: 4\r\n\r\nevil")?;
+    assert!(denied.starts_with(b"HTTP/1.1 404"));
+    assert_eq!(
+        std::fs::read(fixture.root.join("inputs/studio-agent-probe"))?,
+        b"private executable\0\xff"
+    );
+    assert!(!fixture.root.join("evidence/studio-agent-probe").exists());
+    Ok(())
+}
+
+#[test]
 fn unknown_inputs_and_traversal_never_serve_a_host_file() -> Result<(), Box<dyn std::error::Error>>
 {
     let fixture = Fixture::new()?;

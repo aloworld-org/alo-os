@@ -253,8 +253,11 @@ These five mutation checks were performed once locally, not by the hosted job.
 
 The corrected private source `83e0fa210c03a4d45c3b3eb00f35ecd41894779a`
 produced a successful package in run 44378112596. Installed KVM run 44380155898
-uses that exact source and package and is building its image. The source is
-frozen while that run is active. No resulting recording is available yet.
+used that exact source and package. It built and booted the image, accepted
+the terminal command, installed both packages and saved their exact deployment
+identities. The controller then exited 1 during startup, before its first
+recording/status event. The saved report contained only provenance, so the
+startup cause cannot be established from this run. No recording was produced.
 
 The media-verification branch now includes the current parent and a separate
 fixed agent probe. Its independent tests were observed failing before each
@@ -275,7 +278,34 @@ regressions; those targeted mutation experiments are not a recurring hosted
 measurement. Independent read-only review found no remaining blocker within
 the implemented probe scope.
 
-The installed controller does not yet launch this probe or make its native
-Settings transitions. Actual approval, exactly-one execution, execution and
-refusal records, and installed permission withdrawal remain unverified. These
-local checks therefore do not complete the installed acceptance walk.
+The controller now receives the same-source probe as a separate checksummed
+input. It requests native Settings, stages the executable in a fresh person-owned
+directory, authenticates the disposable account through sudo's input, and drops
+to the agent identity with no capabilities, supplementary groups or future
+privilege elevation before launching it. Native choices are read back before
+acknowledging the five boundaries. The child is reaped before restoring policy;
+an unreaped child prevents restoration of full trust. No public broker verb or
+normal application package gains this test instrument.
+
+Independent tests caught three cleanup gaps: a failed terminate or wait skipped
+the kill/reap attempt, and a failed selector close skipped native restoration.
+A further regression requires leaving the restrictive policy in place when
+the child still runs. Local tests exercise real pipes/files, native-control
+fixtures, refusal paths and independent cleanup; they do not certify sudo's
+descendant signal path on the installed image. Native Settings read/controls
+also cannot distinguish an external replacement folder with Studio's display
+name, so this instrument requires an exclusive fresh disposable profile.
+
+Startup and cleanup exceptions now enter the uploaded report with their stage,
+type and a bounded message. An early install/controller failure also fails the
+host's Settings wait immediately. Actual native approval, exactly-one execution,
+execution/refusal records and installed permission withdrawal remain unverified.
+These local checks do not complete installed recording acceptance.
+
+The integrated private instruments pass 200 Python tests, including real local
+process pipes, isolated GTK/AT-SPI fixtures and real decoder checks. The delivery
+changes pass 18 focused Rust tests, formatting and strict all-target linting.
+Twenty-eight deliberate faults in the new Python helpers and evidence paths,
+four delivery faults and eight workflow-ordering variations were caught; the
+original sources were restored. These are local instrument checks, not a claim
+that the installed recording or native permission flow passed.

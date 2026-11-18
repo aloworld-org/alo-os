@@ -63,6 +63,20 @@ Connection establishment, input acknowledgements and daemon responses share
 one five-minute deadline. Use fresh, exclusively owned controller pipes;
 arbitrary blocking output writers are outside this instrument's contract.
 
-The probe is not yet delivered or invoked by the installed walk. Its unit and
-local process tests do not establish installed permission acceptance. The
-separate native approval and execution-record check also remains required.
+The private workflow delivers that same-source binary as a separate checksummed
+input. The controller requests native Settings, authenticates the disposable
+person's sudo session, and launches one confined probe before recording. Native
+Settings grants Studio for an hour, withdraws it, and checks the policy changes
+on the same connection. Successful cleanup restores the initial policy. If an
+owned process cannot be reaped, restoring full trust is refused.
+
+Run this only in the fresh disposable profile with no other controller. Native
+read/controls cannot distinguish a concurrent replacement folder with the same
+display name as Studio. The helper refuses observable foreign or ambiguous
+state; it is not a general grant-management tool.
+
+Unit and local process tests do not establish installed permission acceptance
+or prove sudo's descendant shutdown on the image. Actual native permission,
+approval, exactly-once execution and execution-record checks remain required.
+The person-flow report retains bounded startup/cleanup failures even when no
+recording was created.

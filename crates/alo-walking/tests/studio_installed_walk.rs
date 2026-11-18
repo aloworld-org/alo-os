@@ -102,6 +102,33 @@ fn nested_scoped_environment_and_secret_reads_are_refused() {
     }
 }
 
+#[test]
+fn the_private_walk_receives_the_fixed_probe_and_opens_native_settings_only_when_requested()
+-> Result<(), &'static str> {
+    let walk = the_first_walk();
+    let steps = walk.steps();
+    let command = steps.iter().position(|step| {
+        matches!(step, Step::Type(text)
+        if text.contains("studio-agent-probe") && text.contains("sha256sum -c checksums.txt"))
+    });
+    let command = command.ok_or("missing verified private probe delivery")?;
+    let requested = steps.iter().position(|step| matches!(step, Step::ExpectLine {
+        phrase, and_says: Some(also), since: alo_walking::Since::Mark, within, a_retry_may_pass: false, ..
+    } if phrase == "Studio native permission settings" && also == "requested" && *within <= std::time::Duration::from_secs(1200)));
+    let requested = requested.ok_or("missing bounded fresh Settings request")?;
+    assert!(command < requested);
+    assert!(matches!(steps.get(requested + 1), Some(Step::Press(chord))
+        if *chord == alo_walking::Chord::with("meta_l", "i")));
+    assert!(
+        steps[requested + 2..]
+            .iter()
+            .any(|step| matches!(step, Step::ExpectLine {
+        phrase, and_says: Some(also), since: alo_walking::Since::Mark, ..
+    } if phrase == "Studio installed flow exit" && also == "exit 0"))
+    );
+    Ok(())
+}
+
 #[cfg(unix)]
 #[test]
 fn failures_at_each_person_command_are_reported_without_installing_or_recording_afterward()
@@ -176,7 +203,7 @@ fn failures_at_each_person_command_are_reported_without_installing_or_recording_
         )?;
         std::fs::write(
             bin.join("systemd-cat"),
-            "#!/bin/sh\n/bin/cat > \"$STUDIO_FAKE_JOURNAL\"\n",
+            "#!/bin/sh\n/bin/cat >> \"$STUDIO_FAKE_JOURNAL\"\n",
         )?;
         for entry in std::fs::read_dir(&bin)? {
             std::fs::set_permissions(entry?.path(), std::fs::Permissions::from_mode(0o755))?;
@@ -196,15 +223,20 @@ fn failures_at_each_person_command_are_reported_without_installing_or_recording_
             .output()?;
         assert!(result.status.success(), "fake terminal failed: {result:?}");
         let expected_exit = if failing.is_empty() { 0 } else { 17 };
+        let prefix = if failing.is_empty() {
+            ""
+        } else {
+            "Studio native permission settings failed\n"
+        };
         assert_eq!(
             std::fs::read_to_string(journal)?,
-            format!("Studio installed flow exit {expected_exit}\n"),
+            format!("{prefix}Studio installed flow exit {expected_exit}\n"),
             "failure at {failing}"
         );
         let expected_calls = if failing == "curl" {
             vec!["curl"]
         } else {
-            let mut calls = vec!["curl"; 7];
+            let mut calls = vec!["curl"; 8];
             for tool in ["sha256sum", "flatpak-studio", "flatpak-fixture", "python3"] {
                 calls.push(tool);
                 if tool == failing {

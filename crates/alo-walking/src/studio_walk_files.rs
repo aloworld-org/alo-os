@@ -23,6 +23,7 @@ const INPUTS: &[&str] = &[
     "features.txt",
     "checksums.txt",
     "studio-session",
+    "studio-agent-probe",
     "sdk-versions.txt",
 ];
 /// Only generated evidence is accepted, and it is never served back as input.
