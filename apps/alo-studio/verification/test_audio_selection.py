@@ -31,6 +31,11 @@ def automatic():
 
 
 class AudioSelection(unittest.TestCase):
+    def test_present_empty_default_store_is_a_valid_automatic_profile(self):
+        nodes = automatic()
+        nodes[0]['metadata'] = []
+        self.assertIsNone(require_automatic_source(nodes))
+
     def test_automatic_source_allows_unrelated_configured_sink_and_video(self):
         nodes = automatic()
         original = copy.deepcopy(nodes)
