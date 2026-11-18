@@ -236,3 +236,67 @@ fn status(phase: &str, action: &str, after: bool) -> Answered {
         unanswered: false,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testing::{Writing, answering, proposing, reading, the_verbs, the_words};
+    use crate::{TheLevel, one_try_at};
+    use alo_instructing::WhatItMayReach;
+
+    #[test]
+    fn every_studio_request_accepts_its_action_and_actual_status_reads_at_both_levels() {
+        for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+            for ((verb, fixture), request) in ACTION_NAMES.iter().zip(REQUESTS).zip(the_requests()) {
+                let mut lines = Vec::new();
+                if *verb != status_name() {
+                    lines.push(reading(status_name(), &[]));
+                    lines.push(proposing(verb, fixture.given));
+                }
+                lines.push(reading(status_name(), &[]));
+                lines.push(reading(status_name(), &[]));
+                lines.push(answering("Done."));
+                let mut model = Writing::these(&lines);
+                let tried = one_try_at(
+                    level, &request, &WhatItMayReach::nothing().at_full_access(true),
+                    &the_verbs(), &the_words(), &mut model,
+                );
+                assert!(tried.took_the_road(), "{level:?}: {verb}: {tried:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn a_status_read_before_a_change_describes_the_state_before_the_change() {
+        for ((verb, fixture), request) in ACTION_NAMES.iter().zip(REQUESTS).zip(the_requests()) {
+            if *verb == status_name() {
+                continue;
+            }
+            let mut model = Writing::these(&[
+                reading(status_name(), &[]), proposing(verb, fixture.given), answering("Done."),
+            ]);
+            let tried = one_try_at(
+                TheLevel::FullAccess, &request, &WhatItMayReach::nothing().at_full_access(true),
+                &the_verbs(), &the_words(), &mut model,
+            );
+            assert!(tried.took_the_road(), "{verb}: {tried:?}");
+            let Answered::With(done) = status(fixture.before, verb, false) else {
+                panic!("a status is a protocol reply");
+            };
+            let expected = alo_protocol::ToAnAgent::did(done).written().expect("the reply writes");
+            assert!(model.shown[1].contains(&expected), "{verb}: {}", model.shown[1]);
+        }
+    }
+
+    #[test]
+    fn status_alone_cannot_complete_a_requested_change() {
+        for request in the_requests().into_iter().skip(1) {
+            let mut model = Writing::these(&[reading(status_name(), &[]), answering("Done.")]);
+            let tried = one_try_at(
+                TheLevel::FullAccess, &request, &WhatItMayReach::nothing().at_full_access(true),
+                &the_verbs(), &the_words(), &mut model,
+            );
+            assert!(!tried.took_the_road(), "{}: {tried:?}", request.named());
+        }
+    }
+}
