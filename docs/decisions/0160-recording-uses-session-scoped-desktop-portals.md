@@ -1,4 +1,4 @@
-# 0150 — Recording uses session-scoped desktop portals
+# 0160 — Recording uses session-scoped desktop portals
 
 Date: 2026-11-04
 

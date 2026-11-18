@@ -110,7 +110,7 @@ dominated by Pixman drawing and memory copies. No diagnostic is active during
 the acceptance recordings.
 
 The next candidate owns the software render mapping through scanout and native
-capture, removing the remaining separate export copy. ADR 0150 is recorded
+capture, removing the remaining separate export copy. ADR 0160 is recorded
 before the narrow rented-binding extension. The published Smithay 0.7.0 package
 is preserved with its license and upstream SHA-256; one source file gains safe
 initialized allocation, target binding and byte views. A permanent integrity
@@ -207,7 +207,7 @@ one in-flight frame, with cancellable partial writes and bounded admission.
 
 The selected-node descriptor exposes the necessary PipeWire factories and the
 chosen node, including link permission; unrelated current and future objects
-remain hidden. ADR 0150 documents the narrow rented-binding additions. Native
+remain hidden. ADR 0160 documents the narrow rented-binding additions. Native
 window parenting uses XDG foreign v1 and verifies the actual focused parent.
 
 SaveFile uses the native GTK chooser and Documents portal. The exact selected
@@ -841,7 +841,7 @@ count advances from 667 to 762. The appsrc queue stays bounded at two frames.
 Thread inspection finds the publisher's streaming thread waiting on a condition.
 The sink signals that condition without the pool mutex, allowing a notification
 between dequeue and wait to be lost. A private timed-recheck trial keeps frames
-moving; ADR 0150 authorizes the narrowly checksummed build-copy patch. The
+moving; ADR 0160 authorizes the narrowly checksummed build-copy patch. The
 imported upstream source remains unchanged. Plugin version
 `1.4.90+ee2c6eb4.2770143f.wait1` adds a 100 ms predicate recheck.
 
@@ -1342,7 +1342,7 @@ The full `745b67e3` gate runs 12,715 tests: 12,711 pass, four fail and 61 are
 skipped. Besides the existing declared runner limitation, two failures expose
 the recording ADR's number colliding with main's new watching ADR; the third
 expects the cursor package's Cargo build to start its own image instruction.
-The recording decision and its citations move to ADR 0150, while watching
+The recording decision and its citations move to ADR 0160, while watching
 retains ADR 0146. The image keeps both the private plugin build and cursor
 generation, with Cargo in a separate `RUN` instruction. No executable capture
 logic, audit rule or runner exception changes. These integration corrections
@@ -1793,7 +1793,7 @@ normal desktop services restart, and no allocator setting is added to the OS.
 
 Integrating main `6d93b3b4` retains both the capture-protocol and pointer-setting
 dependencies and both capability amendments. Main has assigned ADR 0147 to the
-screen road, so the draft recording decision and its references become ADR 0150.
+screen road, so the draft recording decision and its references become ADR 0160.
 
 ### Installed pixel-run batching repeat and scratch-image follow-up
 
@@ -2542,7 +2542,7 @@ this does not prove zero total faults. These are manual diagnostic measurements,
 preserved in `diagnostic-compositor-process-execution-fixed` and
 `diagnostic-system-tool-spawn-faults`, not continuous performance checks.
 
-The next candidate removes the remaining software export copy. ADR 0150 records
+The next candidate removes the remaining software export copy. ADR 0160 records
 the rented-binding exception before implementation. The pinned Smithay 0.7.0
 package retains its upstream license and file hashes; the narrow
 `owned-pixman-mapping.patch` adds initialized owned-image allocation, render-target
@@ -2615,7 +2615,7 @@ artifacts remain preserved.
 ### Bounded audio recovery and signed repository preparation
 
 The 9 November follow-up merges main's full-access work and assigns recording
-ADR 0150; ADR 0149 now belongs to full access. Agent capability discovery uses
+ADR 0160; ADR 0149 now belongs to full access. Agent capability discovery uses
 the current permission level before constructing the offered controls. A
 regression covers Studio's 19 controls appearing at full access and disappearing
 when it is withdrawn, without contacting an application or mutating saved
