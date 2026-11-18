@@ -1,7 +1,7 @@
 """Native Settings orchestration against a stateful, test-only person UI.
 
 The command seam is command(*argv) -> str. It receives only the real
-alo-app/alo/--in/Settings controls, read and press forms. Piped controls have
+alo-app/alo/--in/settings controls, read and press forms. Piped controls have
 exactly three TSV columns, including an empty final flags column for buttons.
 Labels/roles are independently taken from settings_page_running.rs,
 settings_page_folders.rs, settings_as_read.rs, the_pickers_words.rs and the
@@ -20,7 +20,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from agent_settings import NativeSettings
 
 
-BASE = ('alo-app', 'alo', '--in', 'Settings')
+# Surface::Settings.on_the_wire() is "settings". The visible title "Settings"
+# is distinct: terminal-commands.md explicitly preserves the lowercase locator.
+BASE = ('alo-app', 'alo', '--in', 'settings')
 RUNNING = 'Running code'
 ACCESS = 'What alo can use'
 ASK = 'After showing you the command and waiting for you'
@@ -147,6 +149,13 @@ class Desktop:
 
 
 class AgentSettings(unittest.TestCase):
+    def test_the_published_surface_id_is_distinct_from_the_visible_window_title(self):
+        desktop = Desktop()
+        desktop.filter_read = lambda text: 'Settings\n' + text
+        NativeSettings(desktop).prepare()
+        self.assertEqual(desktop.commands[0],
+                         ('alo-app','alo','--in','settings','controls'))
+
     def prepared(self):
         desktop = Desktop()
         settings = NativeSettings(desktop)
