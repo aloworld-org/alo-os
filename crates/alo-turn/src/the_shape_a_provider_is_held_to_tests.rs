@@ -20,6 +20,27 @@ fn the_whole_machine() -> Verbs {
     the_verbs_a_whole_machine_offers().unwrap()
 }
 
+/// A model choosing a call at a provider sees the same purpose as the
+/// registry's prompt, including installed applications' semantic controls.
+#[test]
+fn each_call_carries_its_declared_purpose_in_the_provider_schema() {
+    let verbs = crate::machine::the_verbs_with_application_controls().unwrap();
+    let schema = the_envelope_naming_the_verbs(&verbs);
+    for verb in verbs.all() {
+        let door = match verb.effect() {
+            Effect::Read => "read",
+            Effect::Change => "propose",
+        };
+        let call = the_call_of(&schema, door, verb.name());
+        assert_eq!(
+            call.get("description").and_then(Value::as_str),
+            Some(verb.purpose_as_written()),
+            "{} has no purpose beside its callable shape",
+            verb.name(),
+        );
+    }
+}
+
 /// The calls a door admits, by verb name.
 fn the_calls_through<'v>(schema: &'v Value, door: &str) -> Vec<&'v Value> {
     let doors = schema
