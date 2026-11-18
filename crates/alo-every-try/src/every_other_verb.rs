@@ -634,7 +634,24 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(NAME, REPORT),
         ],
     )
-    .or_looking_at(the_window_read_again(&the_folders_window, &files));
+    .or_looking_at(the_window_read_again(&the_folders_window, &files))
+    // **As a person asks it, 2026-11-17**: with Dolphin's window offered beside
+    // the request, as *Help with this window* sends it (#1155), and on a
+    // machine where the file is in Downloads and every one of their folders
+    // is there — so a path guessed anywhere else is refused as the machine
+    // refuses it, and the try goes on. Asked without either, every try sent
+    // `open_file_in_application` with a path in Documents (runs 44093922179
+    // and 44145644681: 0 of 10 at both levels).
+    .offering(
+        alo_instructing::TheWindowOffered::of(downloads_named, &files)
+            .ok_or_else(|| NotTheSet::because("Dolphin's window has a title".to_owned()))?,
+    )
+    .where_there_is(
+        Folder::ALL
+            .iter()
+            .map(|folder| in_their(home, *folder))
+            .chain(std::iter::once(in_their(home, Folder::Downloads).join(REPORT))),
+    );
     // **A thing's own menu, 2026-11-17**: the person names the file, so reading
     // the window first is a look.
     let the_folder = Shown::of(
