@@ -415,8 +415,9 @@ const WORDING: [&str; 6] = [
 /// The grant-making words moved to
 /// [`PICKING`], which one file may use; everything left here still forbids
 /// this window inventing a grant, a revocation or a write of its own.
-const GRANTING: [&str; 9] = [
+const GRANTING: [&str; 10] = [
     ".grant(",
+    ".application_granted(",
     ".revoke(",
     "revoke_on",
     "revoke_pairing",
@@ -441,12 +442,7 @@ const GRANTING: [&str; 9] = [
 /// walking and makes no grant — `GiveItThisFolder` is handed back to the
 /// section — but nothing in *this* file is what says so, and that is a gap
 /// named here rather than left to be discovered.
-const PICKING: [&str; 4] = [
-    "Granting",
-    "alo_picking",
-    ".granted(",
-    ".application_granted(",
-];
+const PICKING: [&str; 3] = ["Granting", "alo_picking", ".granted("];
 
 /// Answering setup again, which is asked once.
 const RE_ASKING: [&str; 3] = ["SettingUp", ".answer(", ".setting_up("];
