@@ -216,6 +216,40 @@ fn two_arbitrary_application_families_keep_their_own_status_and_declared_purpose
 }
 
 #[test]
+/// Registry insertion order cannot hide changes declared before the status read.
+fn a_status_read_declared_last_still_guides_every_offered_change() {
+    let verbs = registry(&[
+        (
+            "weaver.tighten",
+            Effect::Change,
+            "tighten the selected thread",
+        ),
+        (
+            "weaver.release",
+            Effect::Change,
+            "release the selected thread",
+        ),
+        (
+            "weaver.status",
+            Effect::Read,
+            "read the current thread tension",
+        ),
+    ]);
+    let text = the_products_words(Instructions::SHOWN_TO_A_TURN, &verbs);
+    let named = guidance(&text);
+    has_choice_rule(named);
+    for verb in verbs.all() {
+        has_entry(named, verb.name(), verb.purpose_as_written());
+    }
+    for change in ["weaver.tighten", "weaver.release"] {
+        assert!(
+            named.find("weaver.status").unwrap() < named.find(change).unwrap(),
+            "live observation must still come before the change: {named}"
+        );
+    }
+}
+
+#[test]
 /// Removing a declaration removes both its catalogue entry and advice to use it.
 fn withdrawn_or_unoffered_controls_are_never_added_by_instruction_guidance() {
     let full = registry(&[
