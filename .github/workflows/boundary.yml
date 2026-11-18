@@ -63,6 +63,7 @@ jobs:
             echo "Kernel: \`$(uname -r)\`."
             echo "Security modules it started with: \`$(cat /sys/kernel/security/lsm 2>/dev/null || echo unreadable)\`."
             echo "Built with BPF security modules: \`$(grep -h '^CONFIG_BPF_LSM' /boot/config-"$(uname -r)" 2>/dev/null || echo 'not said')\`."
+            echo "btrfs: \`$(grep -h '^CONFIG_BTRFS_FS=' /boot/config-"$(uname -r)" 2>/dev/null || echo 'not said')\`; its types in the kernel's own type information: \`$(grep -qa btrfs_inode /sys/kernel/btf/vmlinux && echo named || echo absent)\`; a module's: \`$(ls /sys/kernel/btf/btrfs 2>/dev/null || echo none)\`."
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Give this job the processor's virtualisation
