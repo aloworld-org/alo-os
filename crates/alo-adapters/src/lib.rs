@@ -67,9 +67,9 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod a_control_to_set;
 #[cfg(target_os = "linux")]
 pub mod accessibility_bus;
-pub mod a_control_to_set;
 pub mod accessibility_tree;
 pub mod activating;
 pub mod adapter;
@@ -128,6 +128,7 @@ pub mod walking;
 mod whose_connection;
 pub mod words;
 
+pub use a_control_to_set::not_there_to_set;
 #[cfg(target_os = "linux")]
 pub use accessibility_bus::AccessibleSession;
 pub use accessibility_tree::{AccessibilityTree, Bounds, Edge, Facts, NodeAt, Running, TreeFault};
@@ -165,7 +166,6 @@ pub use role::Role;
 pub use scrolling::{Asked, Scrolled, Scrolling, Toward};
 #[cfg(target_os = "linux")]
 pub use session_bus::SessionBus;
-pub use a_control_to_set::not_there_to_set;
 pub use setting::{Set, Setting};
 pub use shown::{Contents, Limit, Seen, Shown, ShownWindow};
 pub use states::States;

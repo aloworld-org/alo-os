@@ -510,6 +510,20 @@ impl TheDoor for Recording<'_> {
                 if let Some(refused) = self.where_it_is(&wrong) {
                     return Ok(refused);
                 }
+                // **As the machine answers a slider the window does not show**:
+                // refused before the card, at both levels, and counted as such
+                // (`crate::no_such_control`).
+                if let Some(refused) = crate::no_such_control::no_such_control(
+                    step,
+                    &wrong,
+                    request,
+                    self.verbs,
+                    &self.machine,
+                    self.strings,
+                ) {
+                    self.refused_before_asking += 1;
+                    return Ok(refused);
+                }
                 self.wrong = Some(wrong);
                 Err(NotAnswered::NotReached {
                     why: THE_TRY_IS_OVER.to_owned(),

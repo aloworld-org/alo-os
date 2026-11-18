@@ -540,7 +540,13 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             )
             .expecting(fallback_verbs::APPLICATION, viewer.as_str())
             .expecting(NAME, ZOOM)
-            .expecting(VALUE, ZOOMED.to_string()),
+            .expecting(VALUE, ZOOMED.to_string())
+            // **The window shows one slider, `Zoom`**, so any other name is
+            // refused before the card as the machine refuses it, and the try
+            // goes on (2026-11-17). Held to the road without it, every try
+            // that named "Zoom slider" ended there: 0 and 1 of 10, run
+            // 44151740784.
+            .the_only_control_of_its_kind(),
         ],
     )
     .or_looking_at(the_window_read_again(&the_viewers_window, &viewer));
