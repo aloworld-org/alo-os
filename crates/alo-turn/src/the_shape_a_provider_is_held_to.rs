@@ -134,6 +134,7 @@ fn a_call_of(verb: &Verb) -> Value {
     }
     json!({
         "type": "object",
+        "description": verb.purpose_as_written(),
         "additionalProperties": false,
         "required": ["verb", "given"],
         "properties": {

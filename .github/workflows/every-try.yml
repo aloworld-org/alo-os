@@ -77,6 +77,7 @@ on:
       - "crates/alo-record/src/verbs.rs"
       - "crates/alo-record/src/words.rs"
       - "crates/alo-adapters/src/fallback_verbs.rs"
+      - "crates/alo-adapters/src/studio.rs"
       - "crates/alo-adapters/src/fallback_words.rs"
       - "crates/alo-adapters/src/typing_words.rs"
       - "crates/alo-adapters/src/scrolling_words.rs"

@@ -249,6 +249,11 @@ fn status(phase: &str, action: &str, after: bool) -> Answered {
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    clippy::panic,
+    reason = "in a test, an unexpected error is the failure being reported"
+)]
 mod tests {
     use super::*;
     use crate::testing::{Writing, answering, proposing, reading, the_verbs, the_words};
