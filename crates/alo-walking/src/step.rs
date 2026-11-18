@@ -73,6 +73,12 @@ pub enum Step {
         since: Since,
         /// The longest it waits.
         within: Duration,
+        /// **Whether a later line may pass it after a first that did not
+        /// hold**: then it passes after a retry, counted apart. False for every
+        /// check but those that ask for it, because a line check is otherwise
+        /// judged on its first line — a card with the wrong count fails rather
+        /// than being waited past.
+        a_retry_may_pass: bool,
     },
     /// The log says none of these phrases for a whole time.
     ExpectNoLine {
@@ -292,6 +298,7 @@ impl Walk {
             and_says: None,
             since,
             within,
+            a_retry_may_pass: false,
         })
     }
 
@@ -311,6 +318,31 @@ impl Walk {
             and_says: Some(and_says.to_owned()),
             since,
             within,
+            a_retry_may_pass: false,
+        })
+    }
+
+    /// Then expect a log line that also says something else — **or, where the
+    /// first such line does not, a later one that does**: then it passes after
+    /// a retry, counted apart, with both lines as its evidence. For an act alo
+    /// may try again within its turn, where the outcome is what is checked
+    /// (the coordinator's decision of 2026-11-17, run 44161055698).
+    #[must_use]
+    pub fn expect_line_saying_or_after_a_retry(
+        self,
+        check: &str,
+        phrase: &str,
+        and_says: &str,
+        since: Since,
+        within: Duration,
+    ) -> Self {
+        self.then(Step::ExpectLine {
+            check: check.to_owned(),
+            phrase: phrase.to_owned(),
+            and_says: Some(and_says.to_owned()),
+            since,
+            within,
+            a_retry_may_pass: true,
         })
     }
 
