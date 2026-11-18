@@ -54,7 +54,7 @@ class LaunchRefusals(unittest.TestCase):
                     patch('agent_session.subprocess.Popen') as launch:
                 with self.assertRaises(subprocess.CalledProcessError):
                     run_permission_check(root, absent, lambda *a, **k: None)
-        self.assertEqual(attempts, [('alo-app', 'alo', '--in', 'settings', 'controls')])
+            self.assertEqual(attempts, [('alo-app', 'alo', '--in', 'settings', 'controls')])
             self.assertEqual(calls, [['systemd-cat', '-t', 'studio-walk']])
             self.assertFalse(directory.exists())
             launch.assert_not_called()
