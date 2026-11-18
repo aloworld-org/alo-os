@@ -180,3 +180,37 @@ with the complete instruction/evaluation suite, formatting, strict linting and
 warnings-denied documentation. Three one-time scope removals were caught.
 The real-model requests, expected actions and repetition counts remain unchanged;
 the next real-model result must validate the new guidance.
+
+## Decide completion at the end of each continued prompt
+
+Real-model run 44389552194 at `11ee0062ad773aa36c18ed5f89f9d0a2f1ebf9c2`
+passed all 190 Studio tries but failed the complete gate. One Ask close-Firefox
+try appended `studio.status` after Firefox had been asked to close. Generic
+archive, scrolling, selection, file-opening, private-typing and chooser cases
+also failed. The native recording and desktop jobs, image check and nine hosted
+gates passed on that revision; hosted mutation coverage remains pending.
+
+The final continuation instruction now compares the whole request with the
+results and answers if it is complete before considering more work. Further
+reads must serve a remaining requested step; application reads stay within that
+step's application. Nonapplication reads remain available, and completed
+changes must not be proposed again. Independent tests capture the actual
+continued prompt through the agent loop at both approval policies, including
+their distinct completion reply forms. They preserve the genuine close-Firefox
+fixture, a two-step close/open request, early-answer refusal and rejection of an
+unrequested status read. The completion-priority test failed before the change.
+These are recurring prompt and scripted-loop checks; they do not prove what a
+real model will choose. The real-model cases, expected actions and repetition
+counts remain unchanged, and a new repeated-model result is still required.
+
+The local instruction, agent-loop and evaluation suites, formatting, strict
+linting and warnings-denied documentation passed. Nine one-time deliberate
+faults were caught, including removing completion or remaining-work scope,
+moving completion behind further reads, and allowing a completed change again.
+The tested production text was restored afterward. The pre-existing language
+test requiring local model weights remains ignored. Installed recording and
+native agent approvals remain separate acceptance requirements. Private child
+#1399 fixes an independently reproduced empty-audio-metadata startup refusal;
+its signed-package run 44393682212 passed and exact-source installed walk
+44394653212 is running. Neither a package pass nor a local audio observation
+establishes installed video continuity or audio synchronization.

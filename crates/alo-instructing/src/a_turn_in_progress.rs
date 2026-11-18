@@ -264,12 +264,23 @@ pub fn shown_in_progress(
 /// 44119951808), and *bring an application to the front* the same. The
 /// request is what the person asked for; what came back is what is left of
 /// it.
+///
+/// **Decide whether the whole request is complete before choosing more work.**
+/// The former first option, *a read line if you still need something*, did not
+/// tie another read to an unfinished requested step. Real-model run 44389552194
+/// still appended Studio status after Firefox had been asked to close,
+/// despite the earlier named-control guidance. This final instruction now puts
+/// completion first, while preserving reads and changes for remaining steps.
+/// Scripted continuation tests check this ordering and the actual replies at
+/// both approval policies; repeated real-model trials must check its effect.
 pub const WHAT_TO_SEND_NEXT: &str = "\
-Send the next line: a read line if you still need something; a propose line \
-only for something the request asks to be done that has not been done yet — a \
-change that came back done is finished, so never propose it again; or an answer \
-line once every change the request asks for came back done, or when the request \
-only asks to be told something and what came back tells it.";
+Compare the person's whole request with what came back. \
+If the whole request is complete, send an answer line. \
+Otherwise, continue only the remaining requested steps. \
+Use a read line only for information needed by a remaining requested step; \
+for an application step, read only that application's information. \
+Use a propose line only for a requested change that has not been done yet. \
+A change that came back done is finished, so never propose it again.";
 
 #[cfg(test)]
 #[expect(
