@@ -70,6 +70,8 @@ pub struct Step {
     answered: Answered,
     /// Whether this is a look the model may skip, or take more than once.
     look: bool,
+    /// Whether the model may take this step again, as often as it asks.
+    again: bool,
     /// Whether the window shows no other control of this kind, so a name the
     /// road does not expect names nothing there.
     the_only_one: bool,
