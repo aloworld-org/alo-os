@@ -90,6 +90,7 @@ class Manager(dbus.service.Object):
         self.units = {}
         self.subscribed = False
         self.race = ''
+        self.scheduled = set()
     @dbus.service.method('org.freedesktop.systemd1.Manager', in_signature='', out_signature='')
     def Subscribe(self):
         self.subscribed = True
@@ -144,6 +145,31 @@ class Manager(dbus.service.Object):
     @dbus.service.method('org.aloworld.Studio.LifecycleFixture', in_signature='s', out_signature='')
     def Race(self, when):
         self.race = str(when)
+    @dbus.service.method('org.aloworld.Studio.LifecycleFixture', in_signature='s', out_signature='')
+    def Later(self, actions):
+        for action in json.loads(str(actions)):
+            handle = {}
+            def perform(action=action,handle=handle):
+                self.scheduled.discard(handle['id'])
+                name = action.get('name','alo-asking@11-1000-alo.service')
+                if action['kind'] == 'add':
+                    self.Add(name,json.dumps(action.get('overrides',{})))
+                elif action['kind'] == 'change':
+                    self.Change(name,action['interface'],json.dumps(action['changed']))
+                elif action['kind'] == 'remove':
+                    self.Remove(name)
+                elif action['kind'] == 'owner':
+                    self.CycleOwner()
+                elif action['kind'] == 'flood':
+                    self.Flood(name,4097)
+                return False
+            handle['id'] = GLib.timeout_add(action['after_ms'],perform)
+            self.scheduled.add(handle['id'])
+    @dbus.service.method('org.aloworld.Studio.LifecycleFixture', in_signature='', out_signature='')
+    def CancelLater(self):
+        for source in self.scheduled:
+            GLib.source_remove(source)
+        self.scheduled.clear()
     @dbus.service.method('org.aloworld.Studio.LifecycleFixture', in_signature='su', out_signature='')
     def Flood(self, name, count):
         for _ in range(int(count)):
@@ -219,6 +245,28 @@ class AskingLifecycle(unittest.TestCase):
                     'ExecMainStartTimestampMonotonic':477946100265,
                     'ExecMainExitTimestampMonotonic':477946805484, **overrides})
         self.change(UNIT, {'ActiveState':'inactive','SubState':'dead'})
+
+    def later(self, *actions):
+        self.control.Later(json.dumps(actions),timeout=2)
+
+    def starting(self):
+        self.add(overrides={UNIT:{'ActiveState':'activating','SubState':'start'},
+                            SERVICE:{'MainPID':0,'ExecMainPID':0,
+                                     'ExecMainStartTimestampMonotonic':0}})
+
+    def active_later(self):
+        # Distinct, actual-format property messages expose a legitimate phase
+        # where the child PID is known but the service is still activating.
+        self.later({'after_ms':80,'kind':'change','interface':SERVICE,'changed':{
+                    'MainPID':2710198,'ExecMainPID':2710198,
+                    'ExecMainStartTimestampMonotonic':477946100265}},
+                   {'after_ms':120,'kind':'change','interface':UNIT,'changed':{
+                    'ActiveState':'active','SubState':'running'}})
+
+    def assert_identity(self, actual):
+        self.assertEqual(actual,{'unit':NAME,
+            'path':'/org/freedesktop/systemd1/unit/alo_2dasking_4011_2d1000_2dalo_2eservice',
+            'invocation_id':INVOCATION,'pid':2710198,'start_us':477946100265})
 
     def test_cached_real_exit_facts_survive_unit_garbage_collection(self):
         observer, identity = self.pending()
@@ -492,6 +540,93 @@ class AskingLifecycle(unittest.TestCase):
         with self.assertRaises(ValueError):
             observer.finish()
         self.assertLess(time.monotonic()-started,1.5)
+
+    def test_capture_started_waits_through_real_startup_states_then_uses_the_same_exit(self):
+        observer = self.observe(timeout=1)
+        self.starting()
+        self.active_later()
+        identity = observer.capture_started()
+        self.assert_identity(identity)
+        self.end()
+        self.control.Remove(NAME,timeout=2)
+        self.assertEqual(observer.finish(),{**identity,'result':'success','exit_code':1,
+                                          'exit_status':0,'exit_us':477946805484})
+
+    def test_capture_started_waits_the_configured_budget_for_person_input(self):
+        observer = self.observe(timeout=4.5)
+        self.later({'after_ms':3200,'kind':'add'})
+        self.assert_identity(observer.capture_started())
+
+    def test_capture_pending_keeps_its_shorter_three_second_limit(self):
+        observer = self.observe(timeout=4.5)
+        self.later({'after_ms':3200,'kind':'add'})
+        with self.assertRaises(ValueError):
+            observer.capture_pending()
+
+    def test_capture_started_without_a_fresh_unit_refuses_within_its_budget(self):
+        observer = self.observe(timeout=0.15)
+        started = time.monotonic()
+        with self.assertRaises(ValueError):
+            observer.capture_started()
+        self.assertLess(time.monotonic()-started,1.5)
+
+    def test_a_full_turn_that_ends_before_identity_capture_cannot_be_reconstructed(self):
+        for collected in (False,True):
+            with self.subTest(collected=collected):
+                observer = self.observe()
+                self.add()
+                self.end()
+                if collected:
+                    self.control.Remove(NAME,timeout=2)
+                with self.assertRaises(ValueError):
+                    observer.capture_started()
+                observer.close()
+                if not collected:
+                    self.control.Remove(NAME,timeout=2)
+
+    def test_capture_started_does_not_relax_role_command_or_wire_identity_checks(self):
+        for field,bad in [('User','alo'),('Group','alo'),
+                           ('ExecStart',[['/usr/bin/other',['/usr/bin/other']]]),
+                           ('ExecStart',[['/usr/bin/alo-agent',['/usr/bin/alo-agent','--as=alo']]]),
+                           ('MainPID',{'__wire__':'t','value':2710198})]:
+            with self.subTest(field=field):
+                observer = self.observe()
+                self.add(overrides={SERVICE:{field:bad}})
+                with self.assertRaises(ValueError):
+                    observer.capture_started()
+                observer.close()
+                self.control.Remove(NAME,timeout=2)
+
+    def test_capture_started_rejects_ambiguity_owner_loss_and_flood_during_startup(self):
+        for fault in ({'kind':'add','name':OTHER},{'kind':'owner'},{'kind':'flood'}):
+            with self.subTest(fault=fault):
+                observer = self.observe(timeout=1)
+                self.starting()
+                self.later({'after_ms':30,**fault})
+                self.active_later()
+                with self.assertRaises(ValueError):
+                    observer.capture_started()
+                observer.close()
+                self.control.CancelLater(timeout=2)
+                self.control.Remove(NAME,timeout=2)
+                if fault['kind']=='add':
+                    self.control.Remove(OTHER,timeout=2)
+
+    def test_started_capture_is_single_use_and_cannot_replace_pending_capture(self):
+        observer = self.observe()
+        self.add()
+        self.assert_identity(observer.capture_started())
+        for operation in (observer.capture_started,observer.capture_pending):
+            with self.assertRaises(ValueError):
+                operation()
+        observer.close()
+        with self.assertRaises(ValueError):
+            observer.capture_started()
+
+    def test_pending_capture_cannot_be_replaced_with_started_capture(self):
+        observer,_ = self.pending()
+        with self.assertRaises(ValueError):
+            observer.capture_started()
 
 
 if __name__ == '__main__':
