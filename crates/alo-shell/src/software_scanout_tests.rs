@@ -142,7 +142,7 @@ fn reusable_scratch_images_clear_old_pixels_and_preserve_published_snapshots()
         size,
         surface: None,
         solids: vec![Solid {
-            area: Rectangle::from_size(size.into()),
+            area: alo_drawing::area::Area::from_size(size.into()),
             colour: [70, 80, 90],
         }],
         inked: Vec::new(),

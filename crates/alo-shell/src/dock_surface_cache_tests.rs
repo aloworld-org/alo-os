@@ -149,7 +149,7 @@ fn cache_evicts_old_panels_and_refuses_to_retain_oversized_images() {
     };
     let _ = cache.draw(oversized, |_| {
         Some(Washed {
-            area: Rectangle::new((0, 0).into(), (1024, 4097).into()),
+            area: alo_drawing::area::Area::new((0, 0).into(), (1024, 4097).into()),
             pixels: vec![0; 1024 * 4097 * 4],
         })
     });

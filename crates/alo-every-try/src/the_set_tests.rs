@@ -103,6 +103,28 @@ fn every_verb_the_machine_offers_is_on_some_road() {
     assert!(missing.is_empty(), "no request asks for {missing:?}");
 }
 
+/// Studio's live controls must be tried too, rather than hidden by a core-only list.
+#[test]
+fn every_studio_control_has_a_fixed_request_for_the_real_model() {
+    let set = the_set().expect("the set builds");
+    let asked: Vec<&str> = set
+        .requests()
+        .iter()
+        .flat_map(|request| request.road().iter().map(Step::verb))
+        .collect();
+    let declared = alo_turn::the_verbs_with_application_controls()
+        .expect("the live application controls declare");
+    let missing: Vec<&str> = declared
+        .all()
+        .map(|verb| verb.name())
+        .filter(|name| name.starts_with("studio.") && !asked.contains(name))
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "no real-model request asks for {missing:?}"
+    );
+}
+
 /// **Every step's scripted answer is one the protocol writes**, so the model
 /// is never shown a line a machine could not send.
 #[test]
