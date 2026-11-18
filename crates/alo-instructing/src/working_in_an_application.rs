@@ -154,8 +154,7 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
         ));
     }
     format!(
-        "\n\nUse an application's named verb when its purpose answers the request. \
-         Otherwise, to work in its window, send {READ_WINDOW} first: its answer names \
+        "\n\nTo work in an application's window, send {READ_WINDOW} first: its answer names \
          the window's fields, documents and controls. Then act on one by its name exactly as \
          that answer showed it, with the one verb for that act: {}. Never send a run line that \
          types, clicks or presses keys (xdotool, ydotool, wtype or anything like them): \
@@ -213,11 +212,7 @@ mod tests {
         verbs.declare(named(READ_WINDOW, Effect::Read)).unwrap();
         verbs.declare(named(TYPE_TEXT, Effect::Change)).unwrap();
         let told = working_in_an_application(&verbs);
-        assert!(
-            told.contains("Use an application's named verb when its purpose answers the request"),
-            "{told}"
-        );
-        assert!(told.contains("Otherwise, to work in its window"), "{told}");
+        assert!(!told.contains("Use an application's named verb"), "{told}");
         let reading = told.find(READ_WINDOW).unwrap();
         let typing = told.find(TYPE_TEXT).unwrap();
         assert!(reading < typing, "{told}");

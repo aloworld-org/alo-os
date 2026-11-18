@@ -59,6 +59,7 @@ pub mod an_answer_about_the_verbs;
 pub mod answering_in;
 pub mod at_full_access;
 pub mod instructions;
+mod reading_application_status;
 pub mod shown;
 pub mod the_applications_installed;
 pub mod the_conversation_on_the_wire;
