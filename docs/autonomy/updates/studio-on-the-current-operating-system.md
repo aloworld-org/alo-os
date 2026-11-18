@@ -61,7 +61,12 @@ live state before answering a state question. Its regression was observed red,
 passed after the change and failed again when that rule was deliberately
 disconnected. The restored implementation passed. The affected four packages
 now pass 767 local tests, strict linting, formatting and warnings-denied docs.
-The next real-model repetitions remain required.
+At `1306978f7`, the five-try model run still failed: status passed four of five
+at full access and all five when asking each time; enable-microphone and the
+five-second countdown each passed four of five at full access, while the
+three-second countdown passed two of five when asking each time. Other Studio
+controls passed all five in both modes. Generic failures also remained. These
+are measured choices, not installed execution, and do not pass law 9.
 
 The hosted mutation baseline also exposed an outdated Settings source check
 that expected the old third grant path. Settings now uses main's shared
@@ -132,13 +137,41 @@ caught unfinished streaming WebM being accepted after its available frames
 decoded cleanly; the regression was observed red and the auditor now also
 requires finalized positive container duration. Seventeen decoder tests pass,
 alongside 34 observation-audit and 22 package-preparation tests. Synthetic media
-is test input only. Twelve deliberate faults in the auditor, decoder and artifact
-checks were caught once locally; this is targeted mutation evidence, not a hosted
-coverage result. The Rust walk/transfer/signal/workflow checks pass 25 tests,
+is test input only. Eighteen deliberate faults in the auditor, decoder, artifact
+and controller checks and six walk/provenance faults were caught once locally;
+this is targeted mutation evidence, not a hosted coverage result. The Rust
+walk/transfer/signal/workflow checks pass 30 tests,
 strict linting and warnings-denied docs. The receiver and archive are private
 test instruments. The installed screen/window recordings, decoded video/audio
 acceptance, actual native consent/export and real-agent permission walk remain
 unverified. Normal Studio continues to build with verification disabled.
+
+Independent pre-run review also caught the real Flatpak CLI refusing two local
+bundles in one install invocation, skipped cleanup after the first error, and
+empty XDG state paths bypassing preference history. Test-first corrections use
+two checked installs, attempt every owned resource before propagating cleanup
+failures, and restore automatic microphone selection only after a verified fresh
+profile was temporarily overridden. Both persisted WirePlumber state filenames
+are examined. An owned local PipeWire session confirmed source-only clearing
+preserves configured sink/video choices; it did not change an existing session.
+The complete private Python suite passed 139 tests with all five live native
+tests enabled before the final four cleanup regressions were added. The next
+complete run includes those regressions. CI now reruns this suite with actual
+decoder and native transports, explicit dependency preflight and no skip gate.
+
+Pre-run trace: `.github/workflows/walk.yml:104` validates the exact package run;
+`:134` calls `prepare_installed_walk.py:49`, which verifies both original
+inventories before creating fresh input copies. The scoped walk starts at
+`crates/alo-walking/src/the_first_walk.rs:155`; `studio_installed_walk.rs:22`
+checks guest bytes before the installs and controller, and `:29` waits for the
+actual journaled exit status. `installed_session.py` calls the app's real D-Bus
+interface, whose `apps/alo-studio/src/ui/control_bus.rs:11` registration reaches
+`control_actions.rs:35`. Native source/export consent is still operated by the
+person-side test. `crates/alo-walking/src/studio_walk_files.rs:95` accepts only
+closed evidence names. The host's `decode_media.py:99` and
+`recording_health.py:53` audit decoded observations; `reference_health.py` must
+separately pass before synchronization is certified. No guest run has yet
+completed this chain.
 
 The shared UI kit's application window, input, control and accessibility layers
 remain unfinished prerequisites. Studio's GTK interface is a development test

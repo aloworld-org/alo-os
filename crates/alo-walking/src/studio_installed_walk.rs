@@ -20,7 +20,8 @@ pub fn then_installed_studio(walk: Walk) -> Walk {
                 "for f in studio.flatpak fixture.flatpak studio-session source.txt features.txt sdk-versions.txt checksums.txt; ",
                 "do curl -fsS --max-time 120 http://10.0.2.2:8767/$f -o $f; done; ",
                 "sha256sum -c checksums.txt; ",
-                "flatpak install --user -y --noninteractive studio.flatpak fixture.flatpak; ",
+                "flatpak install --user -y --noninteractive studio.flatpak; ",
+                "flatpak install --user -y --noninteractive fixture.flatpak; ",
                 "STUDIO_PRIVATE_INSTALLED_WALK=1 python3 studio-session); ",
                 "r=$?; printf 'Studio installed flow exit %s\\n' \"$r\" | systemd-cat -t studio-walk"
             ))

@@ -86,7 +86,7 @@ class Session:
                    runtime=runtime, runtime_commit=runtime_commit)
 
     def start(self):
-        state_home = pathlib.Path(os.environ.get('XDG_STATE_HOME', self.home / '.local/state'))
+        state_home = pathlib.Path(os.environ.get('XDG_STATE_HOME') or self.home / '.local/state')
         history = []
         for name in ('default-nodes', 'default-streams'):
             path = state_home / 'wireplumber' / name
@@ -355,24 +355,35 @@ class Session:
 
     def cleanup(self):
         """Restore only our source override and stop owned children even on error."""
-        try:
-            for application in (STUDIO, REFERENCE):
-                subprocess.run(['flatpak', 'kill', application], capture_output=True, timeout=10)
-        finally:
+        errors = []
+        for application in (STUDIO, REFERENCE):
             try:
-                if getattr(self, 'audio_overridden', False):
-                    clear_reference_source(command)
-                    self.audio_overridden = False
-                    self.event('automatic-microphone-selection-restored')
-            finally:
-                for child in self.children:
-                    if child.poll() is None:
-                        child.terminate()
-                        try:
-                            child.wait(timeout=5)
-                        except subprocess.TimeoutExpired:
-                            child.kill()
-                            child.wait(timeout=5)
+                subprocess.run(['flatpak', 'kill', application], capture_output=True, timeout=10)
+            except Exception as error:
+                errors.append(error)
+        if getattr(self, 'audio_overridden', False):
+            try:
+                clear_reference_source(command)
+                self.audio_overridden = False
+                self.event('automatic-microphone-selection-restored')
+            except Exception as error:
+                errors.append(error)
+        for child in self.children:
+            try:
+                if child.poll() is None:
+                    child.terminate()
+                    try:
+                        child.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        child.kill()
+                        child.wait(timeout=5)
+            except Exception as error:
+                errors.append(error)
+        if errors:
+            first = errors[0]
+            for later in errors[1:]:
+                first.add_note(f'Additional private cleanup failure: {later}')
+            raise first
 
 
 if __name__ == '__main__':
