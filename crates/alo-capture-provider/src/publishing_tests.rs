@@ -43,7 +43,7 @@ fn only_the_named_registry_node_can_supply_the_media_identity() {
     let expected = Some(MediaNode { id: 42, serial: 71 });
     assert_eq!(
         selected_node(
-            ObjectType::Node,
+            &ObjectType::Node,
             42,
             Some("capture-7"),
             Some("71"),
@@ -53,13 +53,13 @@ fn only_the_named_registry_node_can_supply_the_media_identity() {
     );
     for kind in [ObjectType::Client, ObjectType::Port] {
         assert_eq!(
-            selected_node(kind, 42, Some("capture-7"), Some("71"), "capture-7"),
+            selected_node(&kind, 42, Some("capture-7"), Some("71"), "capture-7"),
             None
         );
     }
     for node_name in [None, Some("capture-70"), Some("other"), Some("")] {
         assert_eq!(
-            selected_node(ObjectType::Node, 42, node_name, Some("71"), "capture-7"),
+            selected_node(&ObjectType::Node, 42, node_name, Some("71"), "capture-7"),
             None
         );
     }
@@ -78,13 +78,13 @@ fn a_node_id_without_its_own_parseable_serial_cannot_satisfy_selection() {
         Some("18446744073709551616"),
     ] {
         assert_eq!(
-            selected_node(ObjectType::Node, 42, Some("capture-7"), serial, "capture-7"),
+            selected_node(&ObjectType::Node, 42, Some("capture-7"), serial, "capture-7"),
             None
         );
     }
     assert_eq!(
         selected_node(
-            ObjectType::Node,
+            &ObjectType::Node,
             6,
             Some("capture-7"),
             Some("0"),
@@ -94,7 +94,7 @@ fn a_node_id_without_its_own_parseable_serial_cannot_satisfy_selection() {
     );
     assert_eq!(
         selected_node(
-            ObjectType::Node,
+            &ObjectType::Node,
             9,
             Some("capture-7"),
             Some("18446744073709551615"),
