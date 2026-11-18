@@ -71,7 +71,13 @@ fn raster(inked: &[Inked]) -> Result<Option<Washed>, RenderError> {
         let Some(height) = old_bottom.max(bottom).checked_sub(top) else {
             return Ok(None);
         };
-        area = Area { loc: alo_drawing::area::Point { x: left, y: top }, size: alo_drawing::area::Size { w: width, h: height } };
+        area = Area {
+            loc: alo_drawing::area::Point { x: left, y: top },
+            size: alo_drawing::area::Size {
+                w: width,
+                h: height,
+            },
+        };
     }
     let (Ok(width), Ok(height)) = (usize::try_from(area.size.w), usize::try_from(area.size.h))
     else {

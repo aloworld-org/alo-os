@@ -1,7 +1,7 @@
 # Controlling alo Studio
 
-The person enables these controls in **Settings → Access for alo → Give alo
-access to an application**, selects **alo Studio**, and chooses an access
+The person enables these controls in **Settings → What alo can use → Give alo
+an application**, selects **alo Studio**, and chooses an access
 duration. At the default permission level, that application grant lets ask-alo
 read recording status and propose actions for the person's approval. **Take
 back** or expiry removes that grant's reach immediately.
@@ -71,9 +71,10 @@ changes follow the person's approval policy. The application interface is not
 a second consent mechanism and cannot select a hidden source or silently save
 outside the private library.
 
-Studio is the application connected to the live agent in this change. Other
-applications can use the OS's typed adapter framework, but each must declare
-its supported actions, connect its transport, and be included in the daemon's
-installed-controls list before Settings offers it. Merely installing an
-application does not claim that its controls are available. The same grant,
-approval, revocation and execution-record checks apply to every adapter.
+Studio's semantic actions connect to the live agent through its typed adapter.
+Other applications can declare their own supported actions and transport under
+the [OS adapter contract](../../../docs/contracts/app-adapters.md). The current
+OS also offers accessibility controls for applications without a dedicated
+adapter. Settings grants access to the application; a grant does not invent
+controls an application cannot expose. The same approval, revocation and
+execution-record checks apply to every road.

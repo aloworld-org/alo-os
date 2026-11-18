@@ -146,7 +146,6 @@ impl Backend {
                 },
             )
             .map_err(|_| NotServed::Unreachable)?
-
             .serve_at(
                 THE_PORTALS_OBJECT,
                 SecretPortal {
@@ -212,7 +211,7 @@ impl Backend {
                         async_io::Timer::after(std::time::Duration::from_millis(100)).await;
                     }
                 },
-                "alo-document-permissions",
+                "alo-capture-permissions",
             )
             .detach();
         let watching = std::thread::Builder::new()
@@ -250,15 +249,24 @@ impl Backend {
     }
 
     /// How links open on this desktop.
-    pub(crate) fn links(&self) -> &dyn OpensLinks { self.links.as_ref() }
+    pub(crate) fn links(&self) -> &dyn OpensLinks {
+        self.links.as_ref()
+    }
     /// Current native file chooser.
-    pub(crate) fn files(&self) -> &dyn ChoosesFiles { self.files.as_ref() }
+    pub(crate) fn files(&self) -> &dyn ChoosesFiles {
+        self.files.as_ref()
+    }
     /// Current Documents portal export.
-    pub(crate) fn documents(&self) -> &dyn ExportsDocuments { self.documents.as_ref() }
+    pub(crate) fn documents(&self) -> &dyn ExportsDocuments {
+        self.documents.as_ref()
+    }
     /// Admission and cancellation of capture choices.
-    pub(crate) fn native_requests(&self) -> &Arc<crate::dialog_request::NativeRequests> { &self.native_requests }
+    pub(crate) fn native_requests(&self) -> &Arc<crate::dialog_request::NativeRequests> {
+        &self.native_requests
+    }
     /// Bounded permission-scoped capture sessions.
-    pub(crate) fn capture_sessions(&self) -> &crate::capture_sessions::Sessions { &self.capture_sessions
+    pub(crate) fn capture_sessions(&self) -> &crate::capture_sessions::Sessions {
+        &self.capture_sessions
     }
 }
 

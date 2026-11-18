@@ -9,7 +9,7 @@ use super::*;
 /// An opaque test image, independent of any font or application.
 fn ink(at: (i32, i32), size: (i32, i32), colour: [u8; 3]) -> Inked {
     Inked {
-        area: Rectangle::new(at.into(), size.into()),
+        area: alo_drawing::area::Area::new(at.into(), size.into()),
         pixels: vec![colour; (size.0 * size.1).max(0) as usize],
     }
 }
@@ -22,7 +22,10 @@ fn sparse_gaps_remain_transparent_and_later_images_replace_earlier_ones()
         ink((4, 4), (3, 2), [90, 80, 70]),
     ];
     let result = raster(&images)?.ok_or("missing native raster")?;
-    assert_eq!(result.area, Rectangle::new((2, 3).into(), (5, 3).into()));
+    assert_eq!(
+        result.area,
+        alo_drawing::area::Area::new((2, 3).into(), (5, 3).into())
+    );
     assert_eq!(result.pixels.get(0..4), Some([10, 20, 30, 255].as_slice()));
     assert_eq!(result.pixels.get(12..16), Some([0, 0, 0, 0].as_slice()));
     let overlap = (5 + 2) * 4;
@@ -67,7 +70,7 @@ fn the_live_indicator_preserves_every_software_pixel_and_clips_at_the_output()
         size,
         rows: Vec::new(),
         solids: vec![Solid {
-            area: Rectangle::from_size(size.into()),
+            area: alo_drawing::area::Area::from_size(size.into()),
             colour: [19, 29, 39],
         }],
         inked: images.clone(),

@@ -32,8 +32,8 @@ fn a_proposal_answered_with_capabilities_stops_without_reporting_success() {
         Vec::new(),
     );
     assert!(matches!(
-        answer.as_deref(),
-        Err(WhatHappened::TheMachineCouldNotBeAsked { after, .. }) if after.is_empty()
+        answer.unwrap_err().as_ref(),
+        WhatHappened::TheMachineCouldNotBeAsked { after, .. } if after.is_empty()
     ));
 }
 

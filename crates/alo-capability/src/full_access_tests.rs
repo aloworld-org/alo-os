@@ -66,7 +66,10 @@ fn a_single_grant_view_remains_narrow_even_when_derived_from_full_access() {
     assert!(limited.permits(&files(), &invoice, noon()));
     assert!(limited.permitted(&files(), &taxes(), noon()).is_err());
     assert_eq!(limited.full_access_for(), None);
-    assert_eq!(limited.the_terminal(), crate::ATerminalForTheAgent::NotAtAll);
+    assert_eq!(
+        limited.the_terminal(),
+        crate::ATerminalForTheAgent::NotAtAll
+    );
     assert!(at.revoke(chosen));
     let revoked = at.limited_to(chosen);
     assert!(revoked.permitted(&files(), &invoice, noon()).is_err());

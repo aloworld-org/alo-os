@@ -75,6 +75,22 @@ fn another_verb_is_another_road() {
     );
 }
 
+#[test]
+fn discovery_is_not_a_recording_or_application_action() {
+    let result = taking(
+        &opening(),
+        1,
+        &alo_protocol::FromAnAgent::Capabilities,
+        &the_verbs(),
+        &the_machine(),
+        &the_words(),
+    );
+    assert!(matches!(
+        result,
+        Err(WentWrong::AnotherVerb { step: 1, .. })
+    ));
+}
+
 /// The machine reads an argument given twice with the same value as one
 /// value (#1268), so the check must too, or it fails a try the machine runs.
 #[test]

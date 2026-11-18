@@ -5,7 +5,7 @@ use super::*;
 /// Repeated colours separated on every row exercise disjoint clip regions.
 fn checkerboard(width: i32, height: i32) -> Inked {
     Inked {
-        area: Rectangle::new((2, 3).into(), (width, height).into()),
+        area: alo_drawing::area::Area::new((2, 3).into(), (width, height).into()),
         pixels: (0..height)
             .flat_map(|y| {
                 (0..width).map(move |x| {
@@ -81,14 +81,14 @@ fn the_software_renderer_preserves_pixels_and_overlapping_image_order()
     let size = (40, 40);
     let base = checkerboard(32, 32);
     let overlay = Inked {
-        area: Rectangle::new((7, 8).into(), (17, 9).into()),
+        area: alo_drawing::area::Area::new((7, 8).into(), (17, 9).into()),
         pixels: (0..17 * 9).map(|n| [n as u8, 80, 170]).collect(),
     };
     let screen = crate::sign_in_raster::SignInPicture {
         size,
         surface: None,
         solids: vec![super::super::Solid {
-            area: Rectangle::from_size(size.into()),
+            area: alo_drawing::area::Area::from_size(size.into()),
             colour: [0; 3],
         }],
         inked: vec![base.clone(), overlay.clone()],

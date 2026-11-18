@@ -25,6 +25,7 @@ for source in src/gst/*.c; do
   fi
 done
 "${CC:-cc}" -std=gnu11 -O2 -fPIC -shared -fvisibility=hidden \
+  -include spa/pod/iter.h \
   -fno-strict-aliasing -fno-strict-overflow -D_GNU_SOURCE \
   -fstack-protector-strong -D_FORTIFY_SOURCE=2 \
   -Wall -Wextra -Wno-unused-parameter -Wl,-z,relro,-z,now \

@@ -41,14 +41,8 @@ pub(crate) fn controlling(
         })
         .map(|_| machine.the_applications_installed_now())
         .unwrap_or_else(alo_applications::Installed::nothing);
-    let result = alo_adapters::Driving::of(
-        authorised,
-        adapters,
-        grants,
-        &current,
-        strings,
-    )
-    .and_then(|driving| driving.deliver(transport.unwrap_or(&Unavailable), strings));
+    let result = alo_adapters::Driving::of(authorised, adapters, grants, &current, strings)
+        .and_then(|driving| driving.deliver(transport.unwrap_or(&Unavailable), strings));
     match result {
         Ok(driven) => {
             let entry = Entry::ran(driven.authorised(), strings);

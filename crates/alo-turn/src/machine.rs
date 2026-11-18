@@ -341,9 +341,14 @@ pub fn the_verbs_with_application_controls() -> Result<Verbs, TheVerbsWouldNotDe
     let mut verbs = the_verbs_a_whole_machine_offers()?;
     let mut controls = alo_adapters::Adapters::default();
     controls
-        .add(alo_adapters::studio::loaded().map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?)
+        .add(
+            alo_adapters::studio::loaded()
+                .map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?,
+        )
         .map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?;
-    controls.declare_into(&mut verbs).map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?;
+    controls
+        .declare_into(&mut verbs)
+        .map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?;
     Ok(verbs)
 }
 
@@ -358,10 +363,15 @@ impl<'a> Machine<'a> {
     ) -> Result<Self, TheVerbsWouldNotDeclare> {
         let mut controls = alo_adapters::Adapters::default();
         controls
-            .add(alo_adapters::studio::loaded().map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?)
+            .add(
+                alo_adapters::studio::loaded()
+                    .map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?,
+            )
             .map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?;
         self.offered = Some(self.verbs.clone());
-        controls.declare_into(&mut self.verbs).map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?;
+        controls
+            .declare_into(&mut self.verbs)
+            .map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?;
         self.controls = controls;
         self.delivering_controls = Some(transport);
         Ok(self)
@@ -1061,13 +1071,13 @@ mod tests {
             .unwrap()
             .with_application_controls(&transport)
             .unwrap();
-            machine.installed.add(
-                alo_applications::Application::called(
+            machine.installed =
+                alo_applications::Installed::holding([alo_applications::Application::called(
                     alo_adapters::studio::APPLICATION,
                     "alo Studio",
                 )
-                .unwrap(),
-            );
+                .unwrap()])
+                .into();
             let mut grants = Grants::default();
             let mut turn = crate::Turning::beginning(
                 alo_context::Context::at_invocation(at),
