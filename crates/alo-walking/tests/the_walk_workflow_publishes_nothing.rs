@@ -183,6 +183,18 @@ fn studio_packages_require_an_explicit_branch_walk_and_validated_provenance() {
             .iter()
             .any(|line| line == "private_studio_package_run:")
     );
+    let input = lines
+        .iter()
+        .position(|line| line == "private_studio_package_run:")
+        .unwrap_or_else(|| panic!("no private package input"));
+    assert!(
+        lines
+            .iter()
+            .skip(input + 1)
+            .take(3)
+            .any(|line| line == "default: ''"),
+        "the private walk must be off unless a person supplies a run id"
+    );
     assert!(
         lines
             .iter()
@@ -203,6 +215,42 @@ fn studio_packages_require_an_explicit_branch_walk_and_validated_provenance() {
         lines
             .iter()
             .any(|line| line.contains("ALO_WALK_PRIVATE_STUDIO:"))
+    );
+    let start = lines
+        .iter()
+        .position(|line| line == "- name: Check the exact private Studio package run")
+        .unwrap_or_else(|| panic!("no private package provenance check"));
+    let guard: Vec<&str> = lines
+        .iter()
+        .skip(start + 1)
+        .take_while(|line| !line.starts_with("- name:") && !line.starts_with("- uses:"))
+        .map(String::as_str)
+        .collect();
+    let guard = guard.join("\n");
+    for required in [
+        "if: github.event_name == 'workflow_dispatch' && inputs.private_studio_package_run != ''",
+        "BRANCH_IMAGE: ${{ inputs.image_from_this_branch }}",
+        "if (process.env.BRANCH_IMAGE !== 'true') throw new Error(",
+        "run.head_sha !== context.sha",
+        "run.conclusion !== 'success'",
+        "run.event !== 'workflow_dispatch'",
+        "run.path !== '.github/workflows/studio-package.yml'",
+        "throw new Error('Studio packages must come from a successful manual package run at this exact source')",
+    ] {
+        assert!(
+            guard.contains(required),
+            "private run guard lost {required}: {guard}"
+        );
+    }
+    assert!(
+        lines
+            .iter()
+            .any(|line| line == "run-id: ${{ inputs.private_studio_package_run }}")
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|line| line == "walk/studio-inputs \"$GITHUB_SHA\"")
     );
 }
 

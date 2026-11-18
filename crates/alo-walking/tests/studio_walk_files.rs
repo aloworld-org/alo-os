@@ -151,6 +151,104 @@ fn inputs_cannot_be_replaced_and_arbitrary_outputs_are_refused()
 }
 
 #[test]
+fn disks_keys_packages_and_executable_fixtures_are_never_kept_as_evidence()
+-> Result<(), Box<dyn std::error::Error>> {
+    let fixture = Fixture::new()?;
+    for name in [
+        "alo.raw",
+        "alo.qcow2",
+        "vars.fd",
+        "disk.img",
+        "private.key",
+        "signing.pem",
+        "test-account.json",
+        "studio.flatpak",
+        "fixture.flatpak",
+        "studio-reference.flatpak",
+        "studio-session",
+        "checksums.txt",
+        "features.txt",
+        "sdk-versions.txt",
+        "source.txt",
+    ] {
+        let request = format!("POST /{name} HTTP/1.1\r\nContent-Length: 4\r\n\r\ntest");
+        assert!(
+            fixture
+                .request(request.as_bytes())?
+                .starts_with(b"HTTP/1.1 404"),
+            "{name}"
+        );
+    }
+    assert_eq!(std::fs::read_dir(fixture.root.join("evidence"))?.count(), 0);
+    Ok(())
+}
+
+#[test]
+fn forbidden_input_names_are_refused_even_when_real_files_exist_in_the_input_directory()
+-> Result<(), Box<dyn std::error::Error>> {
+    let fixture = Fixture::new()?;
+    for name in [
+        "alo.raw",
+        "alo.qcow2",
+        "private.key",
+        "signing.pem",
+        "test-account.json",
+        "studio-reference.flatpak",
+        "screen.webm",
+        "session-report.json",
+    ] {
+        std::fs::write(
+            fixture.root.join("inputs").join(name),
+            b"test-only forbidden payload",
+        )?;
+        let request = format!("GET /{name} HTTP/1.1\r\n\r\n");
+        let answer = fixture.request(request.as_bytes())?;
+        assert!(answer.starts_with(b"HTTP/1.1 404"), "{name}");
+        assert!(
+            !answer
+                .windows(27)
+                .any(|part| part == b"test-only forbidden payload")
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn all_declared_recording_evidence_names_are_received_and_never_served_back()
+-> Result<(), Box<dyn std::error::Error>> {
+    let fixture = Fixture::new()?;
+    for name in [
+        "screen.webm",
+        "window.webm",
+        "reference.webm",
+        "screen.json",
+        "window.json",
+        "reference.json",
+        "session-report.json",
+    ] {
+        let request = format!("POST /{name} HTTP/1.1\r\nContent-Length: 4\r\n\r\ntest");
+        assert!(
+            fixture
+                .request(request.as_bytes())?
+                .starts_with(b"HTTP/1.1 201"),
+            "{name}"
+        );
+        assert_eq!(
+            std::fs::read(fixture.root.join("evidence").join(name))?,
+            b"test"
+        );
+        let get = format!("GET /{name} HTTP/1.1\r\n\r\n");
+        assert!(
+            fixture
+                .request(get.as_bytes())?
+                .starts_with(b"HTTP/1.1 404"),
+            "{name}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn ambiguous_or_unbounded_bodies_are_refused_before_creating_evidence()
 -> Result<(), Box<dyn std::error::Error>> {
     let fixture = Fixture::new()?;
