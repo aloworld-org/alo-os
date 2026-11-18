@@ -291,7 +291,14 @@ pub fn until_stopped(
     // turn can read what an application shows and press a named control in it
     // (Demo 2, stage 4). Nothing is opened here: the first tree is opened by
     // the first read a person's request causes, and closed when it ends.
-    let mut the_persons_windows = ThePersonsWindows;
+    //
+    // Which switches the person turned on is read from their settings file at
+    // each act, so it is told here where that file is, from this session's
+    // environment, rather than reading the environment itself.
+    let mut the_persons_windows = ThePersonsWindows::for_a_session(
+        std::env::var_os(alo_choosing::CONFIG_HOME),
+        std::env::var_os(alo_choosing::HOME),
+    );
     let mut machine = what_this_machine_can_carry_out(
         strings,
         &installing_with,
@@ -575,7 +582,7 @@ mod tests {
             AtTheCompositorsDoor::beside(std::path::Path::new("/run/alo/0"));
         let starting = HowApplicationsStartHere::in_these(Vec::new());
         let installed = WhatIsInstalledHere::in_these(Vec::new());
-        let mut windows = ThePersonsWindows;
+        let mut windows = ThePersonsWindows::default();
         let mut indicator = alo_egress::Indicator::default();
         let mut record = Record::default();
         let mut bounding = crate::testing::NothingIsBounded;

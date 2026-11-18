@@ -47,7 +47,7 @@ use crate::a_road::{ARequest, Answered, Step};
 
 /// The version of the set. Up by one for every change to a request, a road or
 /// the machine.
-pub const THE_VERSION: u32 = 19;
+pub const THE_VERSION: u32 = 20;
 
 /// The person's home on the machine the walk boots: Fedora's atomic layout
 /// puts homes under `/var/home`, measured on 2026-11-10
@@ -209,7 +209,15 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
             Step::of(OPEN_APPLICATION, Answered::AnApplicationOpened)
                 .expecting(APPLICATION, browser.as_str()),
         ],
-    );
+    )
+    // **A window read after the open is aside of the road**, as after every
+    // other act in an application: the machine answers a read of what it has
+    // just opened, and the window paragraph tells a model to read before it
+    // works in a window. Measured 2026-11-17 (run 44123506406): every miss but
+    // one at both levels was that read.
+    .or_looking_at(crate::every_other_verb::the_browser_read_once_open(
+        &browser,
+    ));
 
     let folders: Vec<(&str, std::path::PathBuf)> = Folder::ALL
         .iter()

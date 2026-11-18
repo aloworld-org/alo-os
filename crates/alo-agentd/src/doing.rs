@@ -3194,7 +3194,8 @@ endpoint = \"https://{at}\"
             folder.join(alo_choosing::THE_SETTINGS),
             format!(
                 "format = 3\n\n[answers]\nprovider = {{ name = \"Here\", model = \"a-model\" \
-                 }}\n\n[[provider]]\nname = \"Here\"\nendpoint = \"http://127.0.0.1:{port}\"\n"
+                 }}\n\n[[provider]]\nname = \"Here\"\nendpoint = \"http://127.0.0.1:{port}\"\n\
+                 needs-a-key = false\n"
             ),
         )
         .unwrap();
@@ -3229,6 +3230,72 @@ endpoint = \"https://{at}\"
         assert!(
             heard.join().unwrap().contains("may the tenant sublet?"),
             "the service was not asked the question"
+        );
+    }
+
+    /// **A service on this machine that does need a key, on a machine with no
+    /// store to ask, is refused, and nothing reaches it.** The other side of the
+    /// test above: the same service, written without `needs-a-key = false`,
+    /// which the settings file reads as *needs one*. Being on this machine is no
+    /// reason to skip the key a person said it takes.
+    #[test]
+    fn a_service_here_that_needs_a_key_is_refused_when_no_key_can_be_kept() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        listener.set_nonblocking(true).unwrap();
+        let heard = std::thread::spawn(move || {
+            let until = std::time::Instant::now() + Duration::from_secs(2);
+            while std::time::Instant::now() < until {
+                if listener.accept().is_ok() {
+                    return true;
+                }
+                std::thread::sleep(Duration::from_millis(20));
+            }
+            false
+        });
+        let config = a_directory_of_our_own("agents-question-a-service-here-with-a-key");
+        let folder = config.join(alo_choosing::THE_FOLDER);
+        std::fs::create_dir_all(&folder).unwrap();
+        std::fs::write(
+            folder.join(alo_choosing::THE_SETTINGS),
+            format!(
+                "format = 3\n\n[answers]\nprovider = {{ name = \"Here\", model = \"a-model\" \
+                 }}\n\n[[provider]]\nname = \"Here\"\nendpoint = \"http://127.0.0.1:{port}\"\n"
+            ),
+        )
+        .unwrap();
+        let mut questions = Questions::of_a_session(
+            Some(config.into_os_string()),
+            None,
+            alo_models::Catalogue::built_in().unwrap(),
+            TheBound::ThePersons(SourcePolicy::ThisMachineOnly),
+            WhoseKeyring::Nobodys,
+        );
+
+        let mut record = Record::default();
+        let said = on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
+            put_to_a_model(
+                "may the tenant sublet?",
+                Answered::InWords,
+                turning,
+                &mut questions,
+                None,
+                strings,
+                noon(),
+            )
+        });
+
+        let refusal = said.refusal().unwrap();
+        assert_eq!(
+            refusal.text(),
+            crate::testing::in_english()
+                .say(&NO_KEYRING_FOR_A_PROVIDER.key(), &Filling::nothing())
+                .text(),
+            "the refusal was not the one for a machine with no store: {refusal:?}"
+        );
+        assert!(
+            !heard.join().unwrap(),
+            "a question was sent to a service whose key this machine cannot reach"
         );
     }
 }
