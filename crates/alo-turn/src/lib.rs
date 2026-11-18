@@ -236,6 +236,9 @@ pub mod went_wrong_looking;
 pub mod what_a_verb_did;
 mod while_alos_command_runs;
 mod whose_site_it_is;
+mod as_a_double_click_would;
+mod what_a_file_opens_with;
+pub use what_a_file_opens_with::{NothingOpensIt, SaysWhatAFileOpensWith};
 pub mod words;
 
 #[cfg(test)]

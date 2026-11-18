@@ -637,6 +637,20 @@ pub const OPEN_FILE_IN_APPLICATION_SENTENCE: Word = Word::saying(
      installed application; neither is translated. The person approves this before alo opens \
      the file there.",
 );
+/// **The sentence a person approves before a file is opened as a file
+/// manager would open it** — in the application its kind opens with, as a
+/// double-click there would (the owner, 2026-11-17).
+pub const OPEN_FILE_AS_A_FILE_MANAGER_WOULD: Word = Word::saying(
+    "applications.verb.open-file-in-application.as-a-file-manager-would",
+    "open {path} in {application}, as {file_manager} would",
+)
+.noting(
+    "{path} is a file on this machine, {application} the identifier of the installed \
+     application that kind of file opens with, and {file_manager} the identifier of the file \
+     manager the person named; none is translated. The person asked alo to open the file in a \
+     file manager, and this says it opens where a double-click in that file manager would open \
+     it. The person approves this before alo opens it.",
+);
 /// `open_file_in_application`'s application.
 pub const OPEN_FILE_IN_APPLICATION_APPLICATION: Word = Word::saying(
     "applications.verb.open-file-in-application.argument.application",
@@ -799,7 +813,7 @@ pub const NOT_A_FILE_TO_HAND_OVER: Word = Word::saying(
 /// verbs, the arrangements one of them offers, what opens what, what is said
 /// about the person's own file of those choices, and opening a file in an
 /// application.
-pub const EVERY_WORD: [Word; 75] = [
+pub const EVERY_WORD: [Word; 76] = [
     NOT_INSTALLED,
     NO_WINDOW,
     IT_DID_NOT,
@@ -854,6 +868,7 @@ pub const EVERY_WORD: [Word; 75] = [
     CLOSE_APPLICATION_LEAVES,
     OPEN_FILE_IN_APPLICATION,
     OPEN_FILE_IN_APPLICATION_SENTENCE,
+    OPEN_FILE_AS_A_FILE_MANAGER_WOULD,
     OPEN_FILE_IN_APPLICATION_APPLICATION,
     OPEN_FILE_IN_APPLICATION_PATH,
     OPEN_FILE_IN_APPLICATION_CHANGES,
