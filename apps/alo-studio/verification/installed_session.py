@@ -221,7 +221,10 @@ class Session:
         while True:
             read = command('alo-app', 'alo', 'read').splitlines()
             folders = [pathlib.Path(line[3:]).resolve() for line in read if line.startswith('In /')]
-            if len(folders) == 1 and 'Save' in read:
+            controls = command('alo-app', 'alo', 'controls').splitlines()
+            save = [line for line in controls if line.startswith('button\tSave\t')
+                    and 'greyed-out' not in line]
+            if len(folders) == 1 and len(save) == 1:
                 break
             require(time.monotonic() < deadline, 'the native Save a file sheet was not readable')
             time.sleep(.1)
@@ -291,8 +294,10 @@ class Session:
             self.start()
             self.refused('Pause')
             self.refused('Start')
+            self.start_reference()
             self.picker('screen', cancel=True)
             self.picker('window', cancel=True)
+            self.stop_reference()
             self.recording('screen', False)
             self.recording('window', True)
             self.event('person-recording-flow-completed', media_acceptance='requires host decoding',
