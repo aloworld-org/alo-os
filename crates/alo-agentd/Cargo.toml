@@ -15,7 +15,6 @@ repository.workspace = true
 # the person's password, and the record says so and what they did (ADR 0150).
 alo-administrator = { path = "../alo-administrator" }
 alo-record = { path = "../alo-record" }
-alo-adapters = { path = "../alo-adapters" }
 # The one rented thing here, and `unix.rs` is the only file that names it.
 # `UnixStream::peer_cred` and waiting on several descriptors at once are both
 # outside what std will do on a stable compiler, `CLAUDE.md` forbids unsafe, and
