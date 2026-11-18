@@ -38,6 +38,26 @@ def command(value):
         raise ValueError('The asking process is not the fixed alo agent command')
 
 
+def starting(name, path, properties):
+    """Only a typed, correctly configured activating service may keep waiting."""
+    unit, service = properties[UNIT], properties[SERVICE]
+    if unit.get('ActiveState') != 'activating' or unit.get('SubState') != 'start':
+        return False
+    try:
+        if (unit['Id'] != name or path != unit_path(name) or not asking(name)
+                or service['Type'] != 'exec' or service['User'] != 'alo-agent'
+                or service['Group'] != 'alo-agent'):
+            raise ValueError('The starting asking unit has the wrong identity')
+        command(service['ExecStart'])
+        invocation(unit['InvocationID'])
+        unsigned(service['MainPID'], dbus.UInt32)
+        unsigned(service['ExecMainPID'], dbus.UInt32)
+        unsigned(service['ExecMainStartTimestampMonotonic'], dbus.UInt64)
+        return True
+    except (KeyError, TypeError, IndexError) as error:
+        raise ValueError('The starting asking identity is incomplete') from error
+
+
 def pending(name, path, properties):
     unit, service = properties[UNIT], properties[SERVICE]
     try:

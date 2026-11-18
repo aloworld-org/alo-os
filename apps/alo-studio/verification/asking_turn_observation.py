@@ -12,7 +12,7 @@ import dbus
 from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import GLib
 
-from asking_turn_shape import UNIT, SERVICE, asking, unit_path, pending, unchanged, completed
+from asking_turn_shape import UNIT, SERVICE, asking, unit_path, pending, starting, unchanged, completed
 
 DBusGMainLoop(set_as_default=True)
 NAME = 'org.freedesktop.systemd1'
@@ -43,6 +43,7 @@ class AskingTurnObservation:
         self.count = 0
         self.selected = None
         self.identity = None
+        self.capturing = False
         self.properties = {UNIT: {}, SERVICE: {}}
         self.removed = False
         try:
@@ -138,21 +139,33 @@ class AskingTurnObservation:
 
     def capture_pending(self):
         """Capture only after the genuine request reaches its native approval card."""
-        if self.closed or self.finished or self.identity is not None:
+        return self.capture(min(self.timeout, 3), wait_for_start=False)
+
+    def capture_started(self):
+        """Wait for a fresh Full turn to start, before its process can disappear."""
+        return self.capture(self.timeout, wait_for_start=True)
+
+    def capture(self, budget, *, wait_for_start):
+        if self.closed or self.finished or self.capturing:
             raise ValueError('The asking observation cannot capture another turn')
+        self.capturing = True
         try:
-            deadline = time.monotonic() + min(self.timeout, 3)
-            while self.selected is None:
+            deadline = time.monotonic() + budget
+            while True:
                 self.pump()
                 if time.monotonic() >= deadline:
                     raise ValueError('No fresh asking turn reached the observation')
+                if self.selected is not None:
+                    name, path = self.selected
+                    for interface in (UNIT, SERVICE):
+                        self.properties[interface] = dict(self.call(path, PROPERTIES, 'GetAll', 's', (interface,)))
+                    if wait_for_start and starting(name, path, self.properties):
+                        time.sleep(.01)
+                        continue
+                    self.identity = pending(name, path, self.properties)
+                    self.pump()
+                    return dict(self.identity)
                 time.sleep(.01)
-            name, path = self.selected
-            for interface in (UNIT, SERVICE):
-                self.properties[interface] = dict(self.call(path, PROPERTIES, 'GetAll', 's', (interface,)))
-            self.identity = pending(name, path, self.properties)
-            self.pump()
-            return dict(self.identity)
         except dbus.DBusException as error:
             raise ValueError('The pending asking identity could not be read') from error
 

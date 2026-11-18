@@ -132,7 +132,16 @@ continues requiring the anchored process identity and explicit exit facts.
 `test_asking_turn_observation.py` uses a typed service on a private bus. A
 separate one-time WSL systemd observation established the notification order;
 neither is an installed Ask alo result. This observer is not yet wired into the
-controller and supports capturing a pending Ask turn, not a fast Full turn.
+controller. `capture_started` can also wait for a fresh Full turn to become
+active, validating its identity through the startup transition. It refuses a
+turn that exits before the process identity was captured. `capture_pending`
+keeps its shorter three-second wait after a native approval card appears.
+The two capture methods are single-use alternatives, not retries.
+
+The expanded lifecycle suite has 40 passing private-bus tests. Six one-time
+startup faults were caught in temporary copies. Two startup-only identity
+faults initially survived; independent follow-up tests now catch both. These
+fault experiments are not recurring gates or installed evidence.
 
 In a fresh profile with no audio devices, `pw-dump` can omit the empty default
 metadata store even while `pw-cli` lists it. Startup validates saved microphone
