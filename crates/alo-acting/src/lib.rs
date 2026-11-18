@@ -69,6 +69,7 @@ pub mod answer;
 pub mod answering_a_file_chooser;
 pub mod choosing_a_file;
 pub mod choosing_a_link;
+pub mod clicking;
 pub mod counting;
 pub mod front;
 pub mod opening_a_file;
@@ -91,6 +92,7 @@ pub use choosing_a_file::{
     is_a_name, is_a_whole_path,
 };
 pub use choosing_a_link::{CHOOSE_LINK, Chose, NotALinkToChoose, ToChooseALink};
+pub use clicking::{CLICK_AT, Clicked, NotToClick, ToClick};
 pub use counting::{Begun, Counted, NotACount, ToCount};
 pub use front::{InFront, is_front};
 pub use opening_a_file::{NotAFileToOpen, OPEN_FILE, Opened, ToOpenAFile};

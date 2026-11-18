@@ -39,6 +39,7 @@ use std::os::unix::net::{UnixListener, UnixStream};
 
 use alo_acting::{Answer, Request, ToCount, ToWorkIn};
 
+use crate::a_click_at_the_door::AskedToClick;
 use crate::a_file_alo_opens::AskedToOpenAFile;
 use crate::a_picture_at_the_door::{AskedToPicture, SendingAPicture};
 use crate::a_text_at_the_door::{AskedToType, ReadingText, SoFar};
@@ -141,6 +142,9 @@ pub struct TheApplicationDoor {
     picturing: Vec<AskedToPicture>,
     /// Answers with a picture in them, part-way sent.
     sending: Vec<SendingAPicture>,
+    /// Clicks alo asked for, for the compositor to carry out and answer
+    /// (`click-at`, ADR 0147 as amended 2026-11-17).
+    clicking: Vec<AskedToClick>,
 }
 
 impl TheApplicationDoor {
@@ -168,6 +172,7 @@ impl TheApplicationDoor {
             opening: Vec::new(),
             picturing: Vec::new(),
             sending: Vec::new(),
+            clicking: Vec::new(),
         })
     }
 
@@ -197,6 +202,7 @@ impl TheApplicationDoor {
             opening: Vec::new(),
             picturing: Vec::new(),
             sending: Vec::new(),
+            clicking: Vec::new(),
         }
     }
 
@@ -228,6 +234,12 @@ impl TheApplicationDoor {
     /// compositor to take and answer (`picture-of`).
     pub fn asked_to_picture(&mut self) -> Vec<AskedToPicture> {
         std::mem::take(&mut self.picturing)
+    }
+
+    /// Every click alo asked for since the last time this was asked, for the
+    /// compositor to carry out and answer (`click-at`).
+    pub fn asked_to_click(&mut self) -> Vec<AskedToClick> {
+        std::mem::take(&mut self.clicking)
     }
 
     /// Send an answer with a picture in it as far as the socket takes now, and
@@ -478,6 +490,19 @@ impl TheApplicationDoor {
                     }
                     // **A picture alo asked for** is handed on with its
                     // connection: the compositor takes it and answers.
+                    // **A click alo asked for**, handed on the same way: the
+                    // compositor carries it out in the frame and answers.
+                    match alo_acting::ToClick::read(&line) {
+                        Some(Ok(asked)) => {
+                            self.clicking.push(AskedToClick::of(asked, caller.talking));
+                            continue;
+                        }
+                        Some(Err(_)) => {
+                            drop(caller.talking);
+                            continue;
+                        }
+                        None => {}
+                    }
                     match alo_acting::ToPicture::read(&line) {
                         Some(Ok(asked)) => {
                             self.picturing
