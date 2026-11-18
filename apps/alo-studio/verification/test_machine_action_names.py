@@ -8,10 +8,13 @@ label may choose the action sent to a native consent control.
 import contextlib
 import json
 import os
+import pathlib
 import select
 import subprocess
 import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 
 import dbus
 
@@ -79,27 +82,50 @@ GLib.MainLoop().run()
 def fixture(*, machine, localized, count=None, wire='i'):
     config = dict(machine=machine, localized=localized,
                   count=len(machine) if count is None else count, wire=wire)
-    child = subprocess.Popen([sys.executable, '-I', '-B', '-c', SERVICE, json.dumps(config)],
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    tree = None
-    try:
-        if not select.select([child.stdout], [], [], 5)[0]:
-            raise AssertionError('private AT-SPI fixture did not become ready')
-        holder = child.stdout.readline().strip()
-        if not holder.startswith(':'):
-            raise AssertionError('private AT-SPI fixture exited before announcing its owner')
-        tree = AtspiTree()
-        tree.bus.set_exit_on_disconnect(False)
-        tree.session.set_exit_on_disconnect(False)
-        evidence = dbus.Interface(tree.bus.get_object(holder, '/fixture', introspect=False),
-                                  'org.example.ActionFixture')
-        yield tree, child.pid, (holder, '/org/a11y/atspi/accessible/control'), evidence
-    finally:
-        if tree is not None:
-            tree.bus.close()
-        if child.poll() is None:
-            child.terminate()
-        child.communicate(timeout=5)
+    with tempfile.TemporaryDirectory(prefix='studio-action-bus-') as folder:
+        place = pathlib.Path(folder)
+        description = place / 'bus.conf'
+        description.write_text(
+            f'<busconfig><type>session</type><listen>unix:path={place / "bus"}</listen>'
+            '<auth>EXTERNAL</auth><policy context="default">'
+            '<allow send_destination="*"/><allow receive_sender="*"/><allow own="*"/>'
+            '</policy></busconfig>')
+        daemon = subprocess.Popen(['dbus-daemon', f'--config-file={description}',
+                                   '--nofork', '--print-address'], stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE, text=True)
+        tree = session = child = None
+        try:
+            if not select.select([daemon.stdout], [], [], 5)[0]:
+                raise AssertionError('private action bus did not become ready')
+            address = daemon.stdout.readline().strip()
+            if not address.startswith('unix:'):
+                raise AssertionError('private action bus did not announce its socket')
+            child = subprocess.Popen([sys.executable, '-I', '-B', '-c', SERVICE, json.dumps(config)],
+                                     env=dict(os.environ, DBUS_SESSION_BUS_ADDRESS=address),
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            if not select.select([child.stdout], [], [], 5)[0]:
+                raise AssertionError('private AT-SPI fixture did not become ready')
+            holder = child.stdout.readline().strip()
+            if not holder.startswith(':'):
+                raise AssertionError('private AT-SPI fixture exited before announcing its owner')
+            session = dbus.bus.BusConnection(address)
+            session.set_exit_on_disconnect(False)
+            with patch('atspi_tree.dbus.SessionBus', return_value=session):
+                tree = AtspiTree()
+            tree.bus.set_exit_on_disconnect(False)
+            evidence = dbus.Interface(tree.bus.get_object(holder, '/fixture', introspect=False),
+                                      'org.example.ActionFixture')
+            yield tree, child.pid, (holder, '/org/a11y/atspi/accessible/control'), evidence
+        finally:
+            if tree is not None:
+                tree.bus.close()
+            if session is not None:
+                session.close()
+            for process in (child, daemon):
+                if process is not None:
+                    if process.poll() is None:
+                        process.terminate()
+                    process.communicate(timeout=5)
 
 
 @unittest.skipUnless(os.environ.get('STUDIO_PRIVATE_UI_SESSION') == '1',
