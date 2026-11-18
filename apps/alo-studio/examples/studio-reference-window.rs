@@ -23,14 +23,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     gst::init()?;
     gtk::glib::set_application_name("Studio verification window");
     let trace = Shared::default();
-    let clock = gst::SystemClock::obtain();
     let audio = pipeline(
         "audiotestsrc name=signal is-live=true samplesperbuffer=160 wave=silence ! \
          audio/x-raw,format=S16LE,rate=16000,channels=1 ! \
          pulsesink device=studio-verification-audio client-name=Studio-reference-signal \
          sync=true slave-method=resample buffer-time=200000 latency-time=10000",
     )?;
-    audio.use_clock(Some(&clock));
     audio
         .by_name("signal")
         .and_then(|source| source.static_pad("src"))
@@ -61,11 +59,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // This reads the real server monitor, not the samples passed to pulsesink.
     let monitor = pipeline(
-        "pulsesrc device=studio-verification-audio.monitor provide-clock=false \
+        "pulsesrc name=reference-input device=studio-verification-audio.monitor \
          client-name=Studio-reference-monitor buffer-time=2000000 latency-time=10000 ! \
          audioconvert ! audioresample ! audio/x-raw,format=S16LE,rate=16000,channels=1 ! \
          appsink name=monitor sync=false max-buffers=100 drop=false",
     )?;
+    monitor.set_state(gst::State::Paused)?;
+    let clock = monitor
+        .by_name("reference-input")
+        .and_then(|source| source.provide_clock())
+        .ok_or("the real monitor has no sample clock")?;
+    audio.use_clock(Some(&clock));
     monitor.use_clock(Some(&clock));
     let sink = monitor
         .by_name("monitor")
@@ -99,10 +103,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .application_id("org.aloworld.Studio.Verification")
         .build();
     let watches = [watch(&audio, &trace)?, watch(&monitor, &trace)?];
-    monitor.set_state(gst::State::Playing)?;
-    audio.set_state(gst::State::Playing)?;
     let playing = audio.clone();
+    let listening = monitor.clone();
     let shown = trace.clone();
+    let startup = trace.clone();
     application.connect_activate(move |application| {
         let area = gtk::DrawingArea::new();
         let drawing = playing.clone();
@@ -152,6 +156,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             gtk::glib::ControlFlow::Continue
         });
         window.present();
+        if let Err(error) = listening
+            .set_state(gst::State::Playing)
+            .and_then(|_| playing.set_state(gst::State::Playing))
+        {
+            if let Ok(mut shown) = startup.lock() {
+                shown.errors.push(error.to_string());
+            }
+            application.quit();
+        }
     });
     let quit = gtk::gio::SimpleAction::new("finish-reference", None);
     let weak_app = application.downgrade();

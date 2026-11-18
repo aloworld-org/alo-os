@@ -68,6 +68,8 @@ def inspect(trace):
     # be treated as missing markers, but a stopped path cannot be cropped away.
     starts = (draws[0]['clock_ns'], audio[0]['clock_ns'])
     ends = (draws[-1]['clock_ns'], audio[-1]['clock_ns'] + audio[-1]['duration_ns'])
+    if abs(starts[0] - starts[1]) > MAXIMUM_GAP:
+        raise ValueError('reference observation starts differ by more than 400 ms')
     if abs(ends[0] - ends[1]) > MAXIMUM_GAP:
         raise ValueError('reference observation endings differ by more than 400 ms')
     start, end = max(starts) + MAXIMUM_GAP, min(ends) - MAXIMUM_GAP
