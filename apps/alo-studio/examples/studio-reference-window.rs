@@ -62,7 +62,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // This reads the real server monitor, not the samples passed to pulsesink.
     let monitor = pipeline(
         "pulsesrc device=studio-verification-audio.monitor provide-clock=false \
-         client-name=Studio-reference-monitor buffer-time=200000 latency-time=10000 ! \
+         client-name=Studio-reference-monitor buffer-time=2000000 latency-time=10000 ! \
          audioconvert ! audioresample ! audio/x-raw,format=S16LE,rate=16000,channels=1 ! \
          appsink name=monitor sync=false max-buffers=100 drop=false",
     )?;
