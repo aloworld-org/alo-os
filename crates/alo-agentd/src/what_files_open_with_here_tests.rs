@@ -53,7 +53,15 @@ fn a_pdf_opens_with_what_declares_it_and_the_file_manager_opens_folders() {
             ("org.gnome.Papers.desktop", PAPERS),
         ],
     );
-    let files = a_place("files", &[("report.pdf", b"%PDF-1.7\n%\xe2\xe3\xcf\xd3\n")]);
+    // A small PDF with its end where it belongs, as `alo-opening`'s own tests
+    // make one: a PDF cut short is refused as damaged, which is right.
+    let files = a_place(
+        "files",
+        &[(
+            "report.pdf",
+            b"%PDF-1.7\n1 0 obj << /Type /Catalog >> endobj\ntrailer << >>\n%%EOF\n",
+        )],
+    );
     let words = the_words();
     let here = WhatFilesOpenWithHere::in_these(vec![entries], None, &words);
     assert!(here.opens_folders("org.kde.dolphin"));
@@ -84,11 +92,5 @@ fn what_nothing_opens_is_said_and_never_guessed() {
     assert!(program.is_err(), "a program named .pdf opened: {program:?}");
     let missing = here.opens_with(&files.join("not-there.pdf"));
     assert!(missing.is_err(), "{missing:?}");
-    assert!(
-        missing
-            .unwrap_err()
-            .said()
-            .text()
-            .contains("not-there.pdf")
-    );
+    assert!(missing.unwrap_err().said().text().contains("not-there.pdf"));
 }
