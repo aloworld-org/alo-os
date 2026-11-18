@@ -597,6 +597,32 @@ class AskingLifecycle(unittest.TestCase):
                 observer.close()
                 self.control.Remove(NAME,timeout=2)
 
+    def test_invalid_starting_identity_cannot_be_hidden_by_later_running_readback(self):
+        for interface,field,bad,good in [
+                (SERVICE,'User','alo','alo-agent'),
+                (SERVICE,'Group','alo','alo-agent'),
+                (SERVICE,'ExecStart',[['/usr/bin/other',['/usr/bin/other']]],
+                 [['/usr/bin/alo-agent',['/usr/bin/alo-agent']]]),
+                (SERVICE,'MainPID',{'__wire__':'t','value':0},0),
+                (UNIT,'InvocationID',[],list(bytes.fromhex(INVOCATION)))]:
+            with self.subTest(interface=interface,field=field):
+                observer = self.observe(timeout=1)
+                self.starting()
+                self.change(interface,{field:bad})
+                self.later({'after_ms':200,'kind':'change','interface':interface,'changed':{field:good}},
+                           {'after_ms':240,'kind':'change','interface':SERVICE,'changed':{
+                            'MainPID':2710198,'ExecMainPID':2710198,
+                            'ExecMainStartTimestampMonotonic':477946100265}},
+                           {'after_ms':260,'kind':'change','interface':UNIT,'changed':{
+                            'ActiveState':'active','SubState':'running'}})
+                try:
+                    with self.assertRaises(ValueError):
+                        observer.capture_started()
+                finally:
+                    observer.close()
+                    self.control.CancelLater(timeout=2)
+                    self.control.Remove(NAME,timeout=2)
+
     def test_capture_started_rejects_ambiguity_owner_loss_and_flood_during_startup(self):
         for fault in ({'kind':'add','name':OTHER},{'kind':'owner'},{'kind':'flood'}):
             with self.subTest(fault=fault):
