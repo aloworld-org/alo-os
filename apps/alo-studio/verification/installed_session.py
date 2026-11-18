@@ -17,7 +17,7 @@ import urllib.request
 import dbus
 
 from atspi_tree import AtspiTree
-from audio_selection import clear_reference_source, require_automatic_source
+from audio_selection import automatic_source_ready, clear_reference_source
 from native_controls import activate
 from agent_session import run_permission_check
 
@@ -94,7 +94,11 @@ class Session:
             require(not path.is_symlink(), 'the private profile must own its audio preference state')
             if path.exists():
                 history.append(path.read_text())
-        require_automatic_source(json.loads(command('pw-dump')), state='\n'.join(history))
+        history = '\n'.join(history)
+        # Empty metadata stores can be omitted from pw-dump. Validate existing
+        # preferences now, then require complete live readback after our node
+        # exists and before any explicit default-source selection.
+        automatic_source_ready(json.loads(command('pw-dump')), state=history)
         with (self.folder / 'virtual-audio.log').open('w') as output:
             audio = subprocess.Popen([
                 'pw-loopback', '--name', 'studio-verification-loop', '--channels', '1',
@@ -104,16 +108,17 @@ class Session:
         self.children.append(audio)
         deadline = time.monotonic() + 15
         while True:
+            require(audio.poll() is None and time.monotonic() < deadline,
+                    'the owned microphone and default metadata did not become available')
             nodes = json.loads(command('pw-dump'))
+            ready = automatic_source_ready(nodes, state=history)
             microphone = [node['id'] for node in nodes
                           if node.get('info', {}).get('props', {}).get('node.name')
                           == 'studio-verification-microphone']
-            if len(microphone) == 1:
+            if ready and len(microphone) == 1:
                 self.audio_overridden = True
                 command('wpctl', 'set-default', str(microphone[0]))
                 break
-            require(audio.poll() is None and time.monotonic() < deadline,
-                    'the owned virtual microphone did not become available')
             time.sleep(.1)
         with (self.folder / 'studio.log').open('w') as output:
             self.children.append(subprocess.Popen(

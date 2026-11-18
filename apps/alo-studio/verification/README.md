@@ -80,3 +80,12 @@ or prove sudo's descendant shutdown on the image. Actual native permission,
 approval, exactly-once execution and execution-record checks remain required.
 The person-flow report retains bounded startup/cleanup failures even when no
 recording was created.
+
+In a fresh profile with no audio devices, `pw-dump` can omit the empty default
+metadata store even while `pw-cli` lists it. Startup validates saved microphone
+history and any observed live preference before creating its owned fixture.
+It then waits within a bounded interval for complete default metadata before
+selecting that microphone or launching Studio. Only absence may retry;
+malformed metadata, duplicate stores and configured microphone preferences
+refuse immediately. The startup-order regressions rerun with the verification
+instrument suite. This check does not certify installed audio or media quality.
