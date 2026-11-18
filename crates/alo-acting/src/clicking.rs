@@ -40,7 +40,7 @@ impl ToClick {
 
     /// A click at this point, or [`None`] for a point outside the window.
     #[must_use]
-    pub const fn at(application: Application, across: u16, down: u16) -> Option<Self> {
+    pub fn at(application: Application, across: u16, down: u16) -> Option<Self> {
         if across > Self::THE_WHOLE || down > Self::THE_WHOLE {
             return None;
         }
