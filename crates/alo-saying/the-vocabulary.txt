@@ -178,7 +178,7 @@ adapters.fallback.picture-window.not-switched-on	alo cannot see inside {applicat
 adapters.fallback.picture-window.password-field	A window of {application} has a password field, and alo never takes a picture of one, so no picture was taken
 adapters.fallback.picture-window.purpose	take one picture of the window of an application that describes nothing alo can read, such as a game, and have it read in words by whoever the person chose to read pictures
 adapters.fallback.picture-window.question	what the picture is to answer, in the person's own words
-adapters.fallback.picture-window.sentence	take a picture of the {application} window and have it read
+adapters.fallback.picture-window.sentence	take a picture of the {application} window and have it read, to answer: {question}
 adapters.fallback.press-key.application	the application whose window the key is pressed in
 adapters.fallback.press-key.changes	Presses that one key once in the application's window that has the keyboard, as a person pressing it would.
 adapters.fallback.press-key.down	the down arrow
