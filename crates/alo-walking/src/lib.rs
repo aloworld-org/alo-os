@@ -46,6 +46,16 @@ pub mod settling;
 pub mod steering;
 pub mod step;
 pub mod strokes;
+mod studio_agent_connect;
+#[cfg(unix)]
+mod studio_agent_deadline;
+#[cfg(unix)]
+mod studio_agent_description;
+mod studio_agent_identity;
+pub mod studio_agent_launch;
+pub mod studio_agent_probe;
+mod studio_agent_sequence;
+mod studio_agent_stage;
 pub mod studio_installed_walk;
 pub mod studio_walk_files;
 pub mod the_edge_seen;

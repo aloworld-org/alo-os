@@ -19,6 +19,7 @@ import dbus
 from atspi_tree import AtspiTree
 from audio_selection import clear_reference_source, require_automatic_source
 from native_controls import activate
+from agent_session import run_permission_check
 
 STUDIO = 'org.aloworld.Studio'
 REFERENCE = 'org.aloworld.Studio.Verification'
@@ -331,23 +332,52 @@ class Session:
             reference = self.home / '.var/app' / REFERENCE / 'data/studio-walk/reference.json'
             self.upload('reference.json', reference)
 
+    def verify_agent_permissions(self):
+        """Permission reads/refusals must leave the launched recorder inactive."""
+        def ready():
+            state = self.status()
+            require(state['phase'] == 'ready' and not state['microphone_enabled']
+                    and not state['microphone_active'],
+                    'the private agent check requires an inactive ready recorder')
+        ready()
+        run_permission_check(pathlib.Path.cwd(), command, self.event)
+        ready()
+
     def run(self):
+        stage = 'provenance'
+        def failed(error):
+            self.event('person-flow-failed', stage=stage,
+                       error_type=type(error).__name__, message=str(error)[:2048])
         try:
             self.record_provenance(pathlib.Path.cwd())
+            stage = 'start'
             self.start()
+            stage = 'agent-permissions'
+            self.verify_agent_permissions()
+            stage = 'source-consent'
             self.refused('Pause')
             self.refused('Start')
             self.start_reference()
             self.picker('screen', cancel=True)
             self.picker('window', cancel=True)
             self.stop_reference()
+            stage = 'screen-recording'
             self.recording('screen', False)
+            stage = 'window-recording'
             self.recording('window', True)
             self.event('person-recording-flow-completed', media_acceptance='requires host decoding',
-                       agent_permissions='requires separate real-agent walk')
+                       agent_permissions='same-connection capability and refusal probe completed; '
+                                         'native approval and execution record checks remain separate')
+        except BaseException as error:
+            failed(error)
+            raise
         finally:
             try:
+                stage = 'cleanup'
                 self.cleanup()
+            except BaseException as error:
+                failed(error)
+                raise
             finally:
                 report = self.folder / 'session-report.json'
                 report.write_text(json.dumps({'version': 1, 'events': self.events}))

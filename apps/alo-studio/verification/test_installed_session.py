@@ -238,6 +238,7 @@ class AudioRestoration(unittest.TestCase):
         flow.events, flow.children = [], []
         flow.reference = None
         flow.record_provenance = lambda *args: None
+        flow.verify_agent_permissions = lambda: None
         flow.wait = lambda *args, **kwargs: None
         flow.refused = flow.start_reference = flow.stop_reference = lambda *args: None
         flow.picker = lambda *args, **kwargs: None

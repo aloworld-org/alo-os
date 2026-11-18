@@ -121,7 +121,15 @@ and bounded artifact transfer. At frozen source
 `76f131ecea607e317fa141004655f0d224107a32`, manual package run 44320429214
 passed normal packaging, signature refusals and separate reference/controller
 packaging. Installed KVM walk 44322063965 was dispatched with that exact source
-and package run. That run timed out before the installed flow reported completion. The private
+and package run. It later failed before installation: the terminal's Window
+actions band consumed the setup command. No Studio recording was returned.
+Private source `83e0fa210c03a4d45c3b3eb00f35ecd41894779a` corrects focus and
+requires a fresh command acknowledgement before installing. Its matching
+package run 44378112596 passed. Installed walk 44380155898 built and booted the
+matching image, accepted the terminal command and installed both packages, then
+failed during controller startup before recording. The saved report contains
+deployment provenance but no startup exception. Recording acceptance remains
+unverified. The private
 instrument workflow also passed its real decoder/native-control checks on that
 source; local validation recorded 143 Python and 30 focused Rust test passes.
 The person-side controller is not an agent tool and cannot establish the
@@ -248,3 +256,104 @@ and warnings-denied documentation. Five deliberate faults (missing Escape,
 stale-log acceptance, a 20-minute preflight, missing Return and the wrong
 acknowledgement) each failed a regression test; the restored tests passed.
 These five mutation checks were performed once locally, not by the hosted job.
+
+## Matching package and private agent probe
+
+The corrected private source `83e0fa210c03a4d45c3b3eb00f35ecd41894779a`
+produced a successful package in run 44378112596. Installed KVM run 44380155898
+used that exact source and package. It built and booted the image, accepted
+the terminal command, installed both packages and saved their exact deployment
+identities. The controller then exited 1 during startup, before its first
+recording/status event. The saved report contained only provenance, so the
+startup cause cannot be established from this run. No recording was produced.
+
+The media-verification branch now includes the current parent and a separate
+fixed agent probe. Its independent tests were observed failing before each
+implementation. The probe checks actual Linux identity, trusted machine-file
+metadata and content, exact discovery, refusal, and state across five native
+permission boundaries on one connection. Initial connection establishment is
+bounded, and a cancellation watchdog closes that same connection at the shared
+deadline even when a daemon trickles an incomplete reply. It cannot select
+another socket, impersonate another identity, grant access or approve an act.
+
+All 37 focused Rust tests, formatting, strict all-target linting and
+warnings-denied documentation passed locally. This root-owned test lane
+actually exercised the root-file fixtures and root-process refusal; hosted
+ordinary-user tests explicitly skip fixture observations requiring root.
+Thirty-nine deliberate faults across the probe checks were each caught once
+locally, with the original sources restored. Normal repository tests rerun the
+regressions; those targeted mutation experiments are not a recurring hosted
+measurement. Independent read-only review found no remaining blocker within
+the implemented probe scope.
+
+The controller now receives the same-source probe as a separate checksummed
+input. It requests native Settings, stages the executable in a fresh person-owned
+directory, authenticates the disposable account through sudo's input, and drops
+to the agent identity with no capabilities, supplementary groups or future
+privilege elevation before launching it. Native choices are read back before
+acknowledging the five boundaries. The child is reaped before restoring policy;
+an unreaped child prevents restoration of full trust. No public broker verb or
+normal application package gains this test instrument.
+
+Independent tests caught three cleanup gaps: a failed terminate or wait skipped
+the kill/reap attempt, and a failed selector close skipped native restoration.
+A further regression requires leaving the restrictive policy in place when
+the child still runs. Local tests exercise real pipes/files, native-control
+fixtures, refusal paths and independent cleanup; they do not certify sudo's
+descendant signal path on the installed image. Native Settings read/controls
+also cannot distinguish an external replacement folder with Studio's display
+name, so this instrument requires an exclusive fresh disposable profile.
+
+Startup and cleanup exceptions now enter the uploaded report with their stage,
+type and a bounded message. An early install/controller failure also fails the
+host's Settings wait immediately. Actual native approval, exactly-one execution,
+execution/refusal records and installed permission withdrawal remain unverified.
+These local checks do not complete installed recording acceptance.
+
+The integrated private instruments pass 200 Python tests, including real local
+process pipes, isolated GTK/AT-SPI fixtures and real decoder checks. The delivery
+changes pass 18 focused Rust tests, formatting and strict all-target linting.
+Twenty-eight deliberate faults in the new Python helpers and evidence paths,
+four delivery faults and eight workflow-ordering variations were caught; the
+original sources were restored. These are local instrument checks, not a claim
+that the installed recording or native permission flow passed.
+
+## Preserve the requested application and operation
+
+Real-model run 44378095749 at source `5ce2ca8a6` passed 189 of 190 Studio
+tries. One request for a five-second countdown proposed a quality change
+instead; an unrelated slider request also read Studio status. Both are genuine
+failures. Other generic application cases failed too, so the full repeated-model
+gate remains failed. The earlier 190-of-190 Studio result does not supersede
+these later observations.
+
+The generic application guidance now scopes a status read to the application
+the person requested, preserves fallback for applications with no offered
+status read, and keeps the requested operation unchanged after reading state.
+Independent instruction tests with two synthetic application families failed
+before the correction and passed afterward. All 210 local instruction and
+evaluation tests passed, alongside formatting, strict linting and documentation;
+the pre-existing weights-dependent language test remained ignored. Five
+one-time deliberate removals were caught by the independent regression tests.
+No model request, expected operation, repetition count or acceptance threshold
+was weakened. The unchanged repeated-model gate must still establish whether
+the correction improves actual choices.
+
+## Finish the requested operation without unrelated status reads
+
+At source `27f9a7d0f`, real-model run 44383621155 passed all 190 Studio tries.
+The overall gate still failed: Ask's fourth open-Firefox try called Studio status
+after the requested open completed. Existing generic file selection/opening,
+private typing and chooser cases also failed. This is not an all-model pass.
+The source's native capture job passed, including real framebuffer and pinned
+publisher record/pause/resume/decode checks; installed recording remains separate.
+
+The named-control guidance now says to answer when a generic application
+operation completes the person's whole request, without appending a named
+status read. Remaining requested steps still continue. Independent review
+caught and corrected an overbroad earlier wording before it was committed.
+The new instruction regression failed before both corrections, then passed
+with the complete instruction/evaluation suite, formatting, strict linting and
+warnings-denied documentation. Three one-time scope removals were caught.
+The real-model requests, expected actions and repetition counts remain unchanged;
+the next real-model result must validate the new guidance.

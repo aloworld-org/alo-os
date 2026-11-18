@@ -1,7 +1,8 @@
 //! Person-side installation and recording on an explicitly requested private VM.
 //!
 //! This command is typed into the person's terminal. It is not a broker verb,
-//! does not change agent grants, and does not claim decoded media acceptance.
+//! uses native Settings for private agent grants, and does not claim decoded
+//! media acceptance.
 
 use std::time::Duration;
 
@@ -29,15 +30,25 @@ pub fn then_installed_studio(walk: Walk) -> Walk {
             .mark()
             .type_text(concat!(
                 "(set -eu; d=$(mktemp -d); cd \"$d\"; ",
-                "for f in studio.flatpak fixture.flatpak studio-session source.txt features.txt sdk-versions.txt checksums.txt; ",
+                "for f in studio.flatpak fixture.flatpak studio-session studio-agent-probe source.txt features.txt sdk-versions.txt checksums.txt; ",
                 "do curl -fsS --max-time 120 http://10.0.2.2:8767/$f -o $f; done; ",
                 "sha256sum -c checksums.txt; ",
                 "flatpak install --user -y --noninteractive studio.flatpak; ",
                 "flatpak install --user -y --noninteractive fixture.flatpak; ",
                 "STUDIO_PRIVATE_INSTALLED_WALK=1 python3 studio-session); ",
-                "r=$?; printf 'Studio installed flow exit %s\\n' \"$r\" | systemd-cat -t studio-walk"
+                "r=$?; if [ \"$r\" -ne 0 ]; then ",
+                "printf 'Studio native permission settings failed\\n' | systemd-cat -t studio-walk; fi; ",
+                "printf 'Studio installed flow exit %s\\n' \"$r\" | systemd-cat -t studio-walk"
             ))
             .press(Chord::key("ret"))
+            .expect_line_saying(
+                "the private controller requests native Settings",
+                "Studio native permission settings",
+                "requested",
+                Since::Mark,
+                Duration::from_secs(20 * 60),
+            )
+            .press(Chord::with("meta_l", "i"))
             .expect_line_saying(
                 "the installed Studio person flow completes",
                 "Studio installed flow exit",

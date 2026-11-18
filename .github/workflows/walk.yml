@@ -134,6 +134,10 @@ jobs:
           python3 -I apps/alo-studio/verification/prepare_installed_walk.py \
             walk/studio-products/studio-flatpak walk/studio-products/studio-private-reference \
             walk/studio-inputs "$GITHUB_SHA"
+          # This probe was built with the walk harness from the same checked-out
+          # commit. It is a separate private input, never part of normal Studio.
+          install -m 0755 target/release/studio-agent-probe walk/studio-inputs/studio-agent-probe
+          (cd walk/studio-inputs && sha256sum studio-agent-probe >> checksums.txt)
           echo "Private Studio input checksums (normal verification features disabled):" >> "$GITHUB_STEP_SUMMARY"
           cat walk/studio-inputs/checksums.txt >> "$GITHUB_STEP_SUMMARY"
 

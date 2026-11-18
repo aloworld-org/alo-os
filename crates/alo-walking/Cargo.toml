@@ -16,6 +16,10 @@ publish = false
 name = "alo-walk"
 path = "src/bin/alo-walk.rs"
 
+[[bin]]
+name = "studio-agent-probe"
+path = "src/bin/studio-agent-probe.rs"
+
 [dependencies]
 # The sentences the desktop says on its log for alo's acts, and the door's own
 # words for what it answered — read by the walk from the same declarations the
@@ -29,11 +33,16 @@ alo-cursors = { path = "../alo-cursors" }
 # **Where the level and the grant are in Settings**, counted from the lists
 # Settings draws them from rather than from a number somebody counted once.
 alo-capability = { path = "../alo-capability" }
+# Private probe checks use the shipped declarations and actual protocol replies.
+alo-adapters = { path = "../alo-adapters" }
+alo-protocol = { path = "../alo-protocol" }
+alo-agent = { path = "../alo-agent" }
+toml = { workspace = true }
+rustix = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-alo-adapters = { path = "../alo-adapters" }
 alo-applications = { path = "../alo-applications" }
 # Reads the pictures a walk kept, in `tests/fixtures`, so a check is held to
 # the screen it was wrong about. The version the workspace already locks.
