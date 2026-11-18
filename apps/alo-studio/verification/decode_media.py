@@ -102,13 +102,17 @@ def decode(path, *, marker_region, motion_region):
     if not path.is_file() or path.is_symlink() or path.stat().st_size > DECODE_LIMIT:
         raise ValueError('a bounded regular recording file is required')
     try:
-        probe = json.loads(run(['ffprobe', '-v', 'warning', '-show_streams', '-show_frames',
+        probe = json.loads(run(['ffprobe', '-v', 'warning', '-show_format', '-show_streams', '-show_frames',
                                 '-of', 'json', str(path)]))
+        # A clean end of the available byte stream is not a finalized movie.
+        # Streaming WebM deliberately omits its completed container duration.
+        if Fraction(probe['format']['duration']) <= 0:
+            raise ValueError('the container has no finalized positive duration')
         streams = probe['streams']
         frames = probe['frames']
         videos = [row for row in streams if row['codec_type'] == 'video']
         audios = [row for row in streams if row['codec_type'] == 'audio']
-    except (KeyError, TypeError, json.JSONDecodeError) as error:
+    except (KeyError, TypeError, ValueError, ZeroDivisionError) as error:
         raise ValueError('invalid decoded container inventory') from error
     if len(videos) != 1 or len(audios) > 1 or len(streams) != len(videos) + len(audios):
         raise ValueError('unexpected recording tracks')
