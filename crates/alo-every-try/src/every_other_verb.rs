@@ -619,7 +619,7 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         vec![
             Step::of(
                 READ_WINDOW,
-                Answered::With(Done::of_a_window_read(&the_canvas, &[])),
+                Answered::With(Done::of_a_window_read(&the_canvas, &told_of_the_canvas)),
             )
             .expecting(fallback_verbs::APPLICATION, viewer.as_str()),
             Step::of(
