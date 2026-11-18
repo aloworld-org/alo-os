@@ -46,6 +46,20 @@ fn worker() -> Command {
     Command::new(env!("CARGO_BIN_EXE_alo-capture-provider"))
 }
 
+/// Reach the required-engine refusal if, and only if, argument validation passed.
+fn worker_without_plugins(registry: &Registry) -> Command {
+    let mut command = worker();
+    command
+        .env("ALO_CAPTURE_REQUIRE_PRIVATE_PLUGIN", "1")
+        .env("GST_PLUGIN_PATH", "")
+        .env("GST_PLUGIN_PATH_1_0", "")
+        .env("GST_PLUGIN_SYSTEM_PATH", "")
+        .env("GST_PLUGIN_SYSTEM_PATH_1_0", "")
+        .env("GST_REGISTRY", registry.0.join("registry.bin"))
+        .env("GST_REGISTRY_1_0", registry.0.join("registry.bin"));
+    command
+}
+
 /// Argument errors must exit unsuccessfully before announcing a capture node.
 #[test]
 fn missing_extra_and_invalid_fixed_arguments_refuse_in_the_actual_entry() {
@@ -79,27 +93,43 @@ fn missing_extra_and_invalid_fixed_arguments_refuse_in_the_actual_entry() {
     }
 }
 
+/// Each invalid identity and surplus argument must stop before inspecting media.
+#[test]
+fn invalid_node_application_and_extra_argument_stop_at_the_argument_gate() {
+    let registry = Registry::fresh();
+    let cases: &[&[&str]] = &[
+        &["1", "1", "capture/foreign", "org.aloworld.Studio"],
+        &["1", "1", "capture", "other/application"],
+        &["1", "1", "capture", "org.aloworld.Studio", "extra"],
+    ];
+    for arguments in cases {
+        let output = worker_without_plugins(&registry)
+            .args(*arguments)
+            .output()
+            .expect("run an invalid call with a distinct later engine refusal");
+        assert_eq!(output.status.code(), Some(1), "arguments: {arguments:?}");
+        assert!(output.stdout.is_empty(), "arguments: {arguments:?}");
+        assert_eq!(
+            String::from_utf8_lossy(&output.stderr).trim(),
+            "alo-capture-provider: invalid capture worker arguments",
+            "must refuse these arguments before the later engine check: {arguments:?}"
+        );
+    }
+}
+
 /// Empty plugin search paths must fail specifically at the required-engine gate.
 #[test]
 fn a_required_private_engine_is_checked_before_any_media_graph_or_fallback() {
     let registry = Registry::fresh();
-    let output = worker()
+    let output = worker_without_plugins(&registry)
         .args(["1", "1", "capture", "org.aloworld.Studio"])
-        .env("ALO_CAPTURE_REQUIRE_PRIVATE_PLUGIN", "1")
-        .env("GST_PLUGIN_PATH", "")
-        .env("GST_PLUGIN_PATH_1_0", "")
-        .env("GST_PLUGIN_SYSTEM_PATH", "")
-        .env("GST_PLUGIN_SYSTEM_PATH_1_0", "")
-        .env("GST_REGISTRY", registry.0.join("registry.bin"))
-        .env("GST_REGISTRY_1_0", registry.0.join("registry.bin"))
         .output()
         .expect("run with no discoverable media-engine plugins");
-    assert!(!output.status.success());
+    assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
-    assert!(
-        String::from_utf8_lossy(&output.stderr)
-            .contains("the required capture engine is unavailable"),
-        "must fail at the private-engine check, before constructing a fallback graph: {:?}",
-        output.stderr
+    assert_eq!(
+        String::from_utf8_lossy(&output.stderr).trim(),
+        "alo-capture-provider: the required capture engine is unavailable",
+        "valid arguments must reach the engine check before constructing a graph"
     );
 }
