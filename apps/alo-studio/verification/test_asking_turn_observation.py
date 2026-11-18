@@ -439,6 +439,18 @@ class AskingLifecycle(unittest.TestCase):
         self.control.Remove(NAME,timeout=2)
         self.assertEqual(observer.finish()['exit_status'],0)
 
+    def test_unrelated_invalidated_fields_in_actual_exit_signals_do_not_erase_exit(self):
+        observer, _ = self.pending()
+        commands = ['ExecCondition','ExecConditionEx','ExecStartPre','ExecStartPreEx',
+                    'ExecStart','ExecStartEx','ExecStartPost','ExecStartPostEx',
+                    'ExecReload','ExecReloadEx','ExecStop','ExecStopEx',
+                    'ExecStopPost','ExecStopPostEx']
+        self.control.Invalidate(NAME,SERVICE,'{}',json.dumps(commands),timeout=2)
+        self.control.Invalidate(NAME,UNIT,'{}','["Conditions","Asserts"]',timeout=2)
+        self.end()
+        self.control.Remove(NAME,timeout=2)
+        self.assertEqual(observer.finish()['exit_status'],0)
+
     def test_invalidated_changed_or_missing_identity_cannot_reuse_cached_values(self):
         for interface,field,hidden in [(SERVICE,'User',{'User':'alo'}),
                                       (SERVICE,'Group',{'__missing__':['Group']}),
