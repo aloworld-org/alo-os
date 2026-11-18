@@ -64,15 +64,17 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.with_private_reference
         run: |
           dbus-run-session -- bash apps/alo-studio/verification/build-reference-flatpak.sh
+          python3 -I apps/alo-studio/verification/make_session_archive.py /tmp/studio-flatpak/studio-session
           cd /tmp/studio-flatpak
           printf '%s\n' 'private reference only; verification enabled; never the normal application' > reference-features.txt
-          sha256sum studio-reference.flatpak source.txt reference-features.txt sdk-versions.txt > reference-checksums.txt
+          sha256sum studio-reference.flatpak studio-session source.txt reference-features.txt sdk-versions.txt > reference-checksums.txt
       - uses: actions/upload-artifact@v4
         if: github.event_name == 'workflow_dispatch' && inputs.with_private_reference
         with:
           name: studio-private-reference
           path: |
             /tmp/studio-flatpak/studio-reference.flatpak
+            /tmp/studio-flatpak/studio-session
             /tmp/studio-flatpak/source.txt
             /tmp/studio-flatpak/reference-features.txt
             /tmp/studio-flatpak/reference-checksums.txt
