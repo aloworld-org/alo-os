@@ -1,6 +1,7 @@
 """Person-side native permission choices for the disposable Studio walk."""
 
-BASE = ('alo-app', 'alo', '--in', 'Settings')
+# alo's own surfaces use the published identifier, not a visible window title.
+BASE = ('alo-app', 'alo', '--in', 'settings')
 RUNNING = 'Running code'
 ACCESS = 'What alo can use'
 ASK = 'After showing you the command and waiting for you'
