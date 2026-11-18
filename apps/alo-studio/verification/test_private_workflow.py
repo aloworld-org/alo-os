@@ -72,5 +72,57 @@ class PrivateWorkflow(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.require_private_instruments(broken)
 
+class PrivateProbeDelivery(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        root = pathlib.Path(__file__).resolve().parents[3]
+        cls.workflow = (root / '.github/workflows/walk.yml').read_text()
+
+    def require_verified_probe(self, workflow):
+        """The package validator must succeed before copying and hashing probe bytes."""
+        build = re.search(r'^      - name: Build the walk harness\n(.*?)(?=^      - |\Z)',
+                          workflow, re.M | re.S)
+        self.assertIsNotNone(build, 'the same-source harness/probe build is required')
+        self.assertEqual([line.strip() for line in build[1].splitlines()
+                          if line.strip() and not line.lstrip().startswith('#')],
+                         ['run: cargo build --release --locked -p alo-walking'])
+        step = re.search(r'^      - name: Validate private package bytes and provenance\n'
+                         r'(.*?)(?=^      - (?:name|uses):|\Z)', workflow, re.M | re.S)
+        self.assertIsNotNone(step, 'private input preparation must remain a separate step')
+        self.assertLess(build.end(), step.start())
+        lines = [line.strip() for line in step[1].splitlines()
+                 if line.strip() and not line.lstrip().startswith('#')]
+        self.assertEqual(lines[:7], [
+            "if: github.event_name == 'workflow_dispatch' && inputs.private_studio_package_run != ''",
+            'run: |',
+            'python3 -I apps/alo-studio/verification/prepare_installed_walk.py \\',
+            'walk/studio-products/studio-flatpak walk/studio-products/studio-private-reference \\',
+            'walk/studio-inputs "$GITHUB_SHA"',
+            'install -m 0755 target/release/studio-agent-probe walk/studio-inputs/studio-agent-probe',
+            '(cd walk/studio-inputs && sha256sum studio-agent-probe >> checksums.txt)',
+        ], 'validation, same-source copy and checksum append must execute in that order')
+
+    def test_private_probe_is_built_copied_and_added_after_package_validation(self):
+        self.require_verified_probe(self.workflow)
+
+    def test_missing_wrong_or_reordered_probe_delivery_is_detected(self):
+        copy = '          install -m 0755 target/release/studio-agent-probe walk/studio-inputs/studio-agent-probe\n'
+        hash_line = '          (cd walk/studio-inputs && sha256sum studio-agent-probe >> checksums.txt)\n'
+        mutations = [
+            (copy, ''), (hash_line, ''), (copy + hash_line, hash_line + copy),
+            (copy, copy.replace('target/release/', 'downloaded/')),
+            (hash_line, hash_line.replace('>>', '>')),
+            (hash_line, hash_line.replace('sha256sum studio-agent-probe', 'sha256sum studio-session')),
+            ('walk/studio-inputs "$GITHUB_SHA"', 'walk/studio-inputs "untrusted"'),
+            ('run: cargo build --release --locked -p alo-walking',
+             'run: cargo build --release --locked -p alo-walking --bin alo-walk'),
+        ]
+        for original, replacement in mutations:
+            with self.subTest(mutation=original):
+                self.assertIn(original, self.workflow)
+                with self.assertRaises(AssertionError):
+                    self.require_verified_probe(self.workflow.replace(original, replacement, 1))
+
+
 if __name__ == '__main__':
     unittest.main()
