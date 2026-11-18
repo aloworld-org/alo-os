@@ -162,14 +162,30 @@ class AudioStartupOrder(unittest.TestCase):
             self.assertIsNone(fixture.audio)
             fixture.assert_no_override_or_studio(self)
 
+    def test_malformed_persisted_history_refuses_before_fixture_even_when_metadata_is_absent(self):
+        for filename in ('default-nodes', 'default-streams'):
+            for initial in ([SETTINGS], [SETTINGS, DEFAULT]):
+                with self.subTest(filename=filename, default_present=DEFAULT in initial), \
+                        tempfile.TemporaryDirectory() as folder:
+                    fixture = Startup(pathlib.Path(folder), initial=initial)
+                    state = fixture.state_home / 'wireplumber' / filename
+                    state.parent.mkdir()
+                    state.write_text('[unfinished-section\n')
+                    with fixture.patched(), self.assertRaisesRegex(ValueError, 'malformed'):
+                        fixture.flow.run()
+                    self.assertIsNone(fixture.audio)
+                    fixture.assert_no_override_or_studio(self)
+
     def test_live_metadata_after_fixture_must_be_complete_unambiguous_and_unconfigured(self):
         malformed = copy.deepcopy(DEFAULT)
         malformed['metadata'] = [None]
         missing_entries = copy.deepcopy(DEFAULT)
         del missing_entries['metadata']
-        for after in ([SETTINGS, configured()], [SETTINGS, DEFAULT, DEFAULT],
-                      [SETTINGS, malformed], [SETTINGS, missing_entries]):
-            with self.subTest(after=after), tempfile.TemporaryDirectory() as folder:
+        for fault, after in [('configured', [SETTINGS, configured()]),
+                             ('duplicate', [SETTINGS, DEFAULT, DEFAULT]),
+                             ('malformed-entries', [SETTINGS, malformed]),
+                             ('missing-entries', [SETTINGS, missing_entries])]:
+            with self.subTest(fault=fault), tempfile.TemporaryDirectory() as folder:
                 fixture = Startup(pathlib.Path(folder), after=[after, [SETTINGS, DEFAULT]])
                 with fixture.patched(), self.assertRaises(ValueError):
                     fixture.flow.run()
@@ -178,6 +194,32 @@ class AudioStartupOrder(unittest.TestCase):
                 self.assertEqual(fixture.post_reads, 1,
                                  'only absent metadata may retry; an observed invalid store must refuse')
                 fixture.assert_no_override_or_studio(self)
+
+    def test_malformed_known_metadata_properties_are_not_treated_as_an_absent_store(self):
+        nested = dict(type='PipeWire:Interface:Metadata',
+                      info={'props': {'metadata.name': 'default'}}, metadata=[])
+        bad = [('nested-properties', nested),
+               ('missing-properties', dict(type='PipeWire:Interface:Metadata', metadata=[]))]
+        for props in (None, [], 'default', {}, {'metadata.name': None}, {'metadata.name': []}):
+            bad.append((f'bad-properties-{props!r}',
+                        dict(type='PipeWire:Interface:Metadata', props=props, metadata=[])))
+        for fault, node in bad:
+            for before_fixture in (True, False):
+                with self.subTest(fault=fault, before_fixture=before_fixture), \
+                        tempfile.TemporaryDirectory() as folder:
+                    fixture = Startup(pathlib.Path(folder),
+                                      initial=[SETTINGS, node] if before_fixture else [SETTINGS],
+                                      after=[[SETTINGS, node], [SETTINGS, DEFAULT]])
+                    with fixture.patched(), self.assertRaises(ValueError):
+                        fixture.flow.run()
+                    if before_fixture:
+                        self.assertIsNone(fixture.audio, 'malformed inventory refuses before any fixture')
+                    else:
+                        self.assertIsNotNone(fixture.audio)
+                        self.assertIsNotNone(fixture.audio.poll())
+                        self.assertEqual(fixture.post_reads, 1,
+                                         'a malformed observed store must not retry into a clean snapshot')
+                    fixture.assert_no_override_or_studio(self)
 
     def test_a_configured_source_appearing_after_an_initial_automatic_snapshot_is_never_overwritten(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -200,13 +242,16 @@ class AudioStartupOrder(unittest.TestCase):
             fixture.assert_no_override_or_studio(self)
 
     def test_fixture_exit_before_metadata_is_ready_refuses_without_an_override(self):
-        with tempfile.TemporaryDirectory() as folder:
-            fixture = Startup(pathlib.Path(folder), after=[[SETTINGS]], dies=True)
-            with fixture.patched(), self.assertRaises(ValueError):
-                fixture.flow.run()
-            self.assertIsNotNone(fixture.audio)
-            self.assertIsNotNone(fixture.audio.poll())
-            fixture.assert_no_override_or_studio(self)
+        for after in ([SETTINGS], [SETTINGS, DEFAULT]):
+            with self.subTest(default_present=DEFAULT in after), tempfile.TemporaryDirectory() as folder:
+                fixture = Startup(pathlib.Path(folder), after=[after], dies=True)
+                with fixture.patched(), self.assertRaises(ValueError):
+                    fixture.flow.run()
+                self.assertIsNotNone(fixture.audio)
+                self.assertIsNotNone(fixture.audio.poll())
+                self.assertEqual(fixture.post_reads, 0,
+                                 'a dead owned fixture must refuse even if metadata would look ready')
+                fixture.assert_no_override_or_studio(self)
 
 
 if __name__ == '__main__':
