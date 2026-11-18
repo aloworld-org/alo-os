@@ -14,11 +14,14 @@ is needed for these checks.
 
 The ordinary provider integration suite runs these assertions on every test
 run. The integration owner observed all eight provider tests pass, including
-the three actual-worker tests. Strict lint and documentation checks are pending.
-A prepared one-time experiment will require the old assertion to pass a broken
-guard, then the new assertion to reject that same fault and four further guard
-omissions/boolean changes. That experiment has not run yet. It restores and
-touches snapshot sources and rebuilds the passing baseline before release.
+the three actual-worker tests, with formatting, strict lint and warnings-denied
+documentation checks passing. In a one-time snapshot experiment, the old test
+genuinely ran and passed a broken `||` to `&&` guard. The new test failed that
+same fault because the worker reached the missing-engine refusal instead of
+the required argument refusal. All five tested faults were caught: the two
+original boolean changes and omission of each node, application and surplus
+argument check. Restored production and test sources were touched, then all
+three integration tests rebuilt and passed before the shared target was released.
 
 No production code changes. This coverage does not establish installed native
 consent, frame publication, decoded recording health, or closure of the broader
