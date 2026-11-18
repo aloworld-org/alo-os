@@ -437,9 +437,36 @@ pub struct Arg {
     purpose: Word,
     /// What it takes.
     takes: Takes,
+    /// **A name it was called before and still answers to**, deprecated
+    /// (2026-11-17): a call giving it is read as giving [`Arg::name`], and is
+    /// never offered — what a model or an adapter is shown names only the
+    /// current name. Contracts change additively, so a renamed argument keeps
+    /// its old name this way until a versioned break retires it.
+    formerly: Option<String>,
 }
 
 impl Arg {
+    /// The same argument, still answering to `old`, the name it had before
+    /// (deprecated). Shown nowhere; accepted in a call.
+    #[must_use]
+    pub fn formerly_called(mut self, old: &str) -> Self {
+        self.formerly = Some(old.trim().to_owned());
+        self
+    }
+
+    /// The deprecated name it still answers to, if it has one.
+    #[must_use]
+    pub fn formerly(&self) -> Option<&str> {
+        self.formerly.as_deref()
+    }
+
+    /// Whether a call naming `given` means this argument: its name, or the
+    /// name it had before.
+    #[must_use]
+    pub fn answers_to(&self, given: &str) -> bool {
+        self.name == given || self.formerly.as_deref() == Some(given)
+    }
+
     /// An argument of this name, for this purpose, taking this.
     #[must_use]
     pub fn taking(name: &str, purpose: Word, takes: Takes) -> Self {
@@ -447,6 +474,7 @@ impl Arg {
             name: name.trim().to_owned(),
             purpose,
             takes,
+            formerly: None,
         }
     }
 

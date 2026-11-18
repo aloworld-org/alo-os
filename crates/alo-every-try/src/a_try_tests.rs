@@ -261,6 +261,13 @@ fn a_look_may_be_skipped() {
         &[opening(), typing(), answering("It is written.")],
     );
     assert_eq!(tried.went(), &Went::TheRoad, "{tried:?}");
+    // And the skip is counted, so a summary can say how often it happened.
+    assert_eq!(tried.skipped_looks(), 1, "{tried:?}");
+    let looked = tried_on(
+        &writing_with_a_look(),
+        &[opening(), looking(), typing(), answering("It is written.")],
+    );
+    assert_eq!(looked.skipped_looks(), 0, "{looked:?}");
 }
 
 /// **A look may be taken twice**, and the road goes on after it.
@@ -556,4 +563,225 @@ fn a_guess_asked_for_again_never_takes_the_road() {
     );
     assert_eq!(straight.went(), &Went::TheRoad, "{straight:?}");
     assert_eq!(straight.refused_before_asking(), 0);
+}
+
+/// The window the other-road requests read.
+fn the_editors_window() -> Step {
+    Step::of(
+        READ_WINDOW,
+        Answered::AWindowShowing {
+            title: "hello.txt - VSCodium".to_owned(),
+            field: "hello.txt".to_owned(),
+        },
+    )
+    .expecting(APPLICATION, EDITOR)
+}
+
+/// A request whose road reads the window and types, and whose **other road**
+/// reads it, opens the file, and reads it again.
+fn with_another_road() -> ARequest {
+    ARequest::asking(
+        "with another road",
+        "the same words",
+        vec![
+            the_editors_window().a_look(),
+            Step::of(TYPE_TEXT, Answered::TypedAndSaved)
+                .expecting(APPLICATION, EDITOR)
+                .expecting(NAME, "hello.txt")
+                .expecting(TEXT, THE_TEXT),
+        ],
+    )
+    .or_by_another_road(vec![
+        the_editors_window().a_look(),
+        Step::of(OPEN_FILE_IN_APPLICATION, Answered::AFileOpened)
+            .expecting(APPLICATION, EDITOR)
+            .expecting(PATH, FILE),
+        the_editors_window(),
+    ])
+}
+
+/// **The other road is a pass, counted apart**; the road is a pass that did
+/// not take it.
+#[test]
+fn a_try_by_the_other_road_takes_the_road_and_says_which() {
+    let other = tried_on(
+        &with_another_road(),
+        &[looking(), opening(), looking(), answering("Opened.")],
+    );
+    assert!(other.took_the_road(), "{other:?}");
+    assert!(other.by_the_other_road(), "{other:?}");
+    let road = tried_on(
+        &with_another_road(),
+        &[looking(), typing(), answering("Typed.")],
+    );
+    assert!(road.took_the_road(), "{road:?}");
+    assert!(!road.by_the_other_road(), "{road:?}");
+}
+
+/// **The other road is held to its end**: a try that parts for it and answers
+/// before its last read stopped short of it.
+#[test]
+fn a_try_by_the_other_road_must_take_it_to_its_end() {
+    let short = tried_on(
+        &with_another_road(),
+        &[looking(), opening(), answering("Opened.")],
+    );
+    assert!(
+        matches!(
+            short.went(),
+            Went::WentWrong(WentWrong::StoppedShort { done: 2, of: 3, .. })
+        ),
+        "{short:?}"
+    );
+}
+
+/// **Without another road, the same steps leave the road** where they part.
+#[test]
+fn without_another_road_the_other_way_leaves_the_road() {
+    let request = ARequest::asking(
+        "with no other road",
+        "the same words",
+        with_another_road().road().to_vec(),
+    );
+    let tried = tried_on(
+        &request,
+        &[looking(), opening(), looking(), answering("Opened.")],
+    );
+    assert!(!tried.took_the_road(), "{tried:?}");
+    assert!(!tried.by_the_other_road(), "{tried:?}");
+}
+
+/// The set's request to scroll down until a heading shows.
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on a set that does not build is the failure being reported"
+)]
+fn scrolling_to_the_heading() -> ARequest {
+    crate::the_set()
+        .expect("the set builds")
+        .only("scroll to a named thing in an application")
+        .expect("it is in the set")
+        .requests()
+        .first()
+        .cloned()
+        .expect("it is in the set")
+}
+
+const BROWSER: &str = "org.mozilla.firefox";
+
+fn reading_the_browser() -> String {
+    reading(READ_WINDOW, &[(APPLICATION, BROWSER)])
+}
+
+fn a_page_down() -> String {
+    proposing(
+        alo_adapters::fallback_verbs::SCROLL_PAGE,
+        &[
+            (APPLICATION, BROWSER),
+            (alo_adapters::fallback_verbs::TOWARD, "down"),
+        ],
+    )
+}
+
+fn scrolling_to(to: &str) -> String {
+    proposing(
+        alo_adapters::fallback_verbs::SCROLL_TO,
+        &[
+            (APPLICATION, BROWSER),
+            (alo_adapters::fallback_verbs::TO, to),
+        ],
+    )
+}
+
+/// `lines` tried on the scrolling request at `level`.
+fn scrolled(level: super::TheLevel, lines: &[String]) -> super::Tried {
+    let mut model = Writing::these(lines);
+    super::one_try_at(
+        level,
+        &scrolling_to_the_heading(),
+        &WhatItMayReach::nothing().at_full_access(true),
+        &the_verbs(),
+        &the_words(),
+        &mut model,
+    )
+}
+
+/// **Pages down, as often as the model asks, and then the heading reached —
+/// read on the screen or scrolled to by name — is another road**, at both
+/// levels, one card a page at ask each time; one scroll to it is the road.
+#[test]
+fn pages_down_until_the_heading_shows_take_another_road_at_both_levels() {
+    let heading = crate::every_other_verb::FURTHER_DOWN;
+    for level in [super::TheLevel::FullAccess, super::TheLevel::AskEachTime] {
+        let by_name = [
+            reading_the_browser(),
+            a_page_down(),
+            a_page_down(),
+            scrolling_to(heading),
+            answering("It is on the screen."),
+        ];
+        let tried = scrolled(level, &by_name);
+        assert_eq!(tried.went(), &Went::TheRoad, "{level:?}: {tried:?}");
+        assert!(tried.by_the_other_road(), "{level:?}: {tried:?}");
+        assert_eq!(tried.asked(), by_name.len(), "{level:?}: {tried:?}");
+        let read = [
+            a_page_down(),
+            a_page_down(),
+            a_page_down(),
+            reading_the_browser(),
+            answering("It is on the screen."),
+        ];
+        let tried = scrolled(level, &read);
+        assert_eq!(tried.went(), &Went::TheRoad, "{level:?}: {tried:?}");
+        assert!(tried.by_the_other_road(), "{level:?}: {tried:?}");
+        let road = scrolled(
+            level,
+            &[scrolling_to(heading), answering("It is on the screen.")],
+        );
+        assert_eq!(road.went(), &Went::TheRoad, "{level:?}: {road:?}");
+        assert!(!road.by_the_other_road(), "{level:?}: {road:?}");
+    }
+}
+
+/// **The refusal cases**: pages down that never reach the heading stopped
+/// short, and a scroll to another name leaves every road.
+#[test]
+fn pages_down_that_never_reach_the_heading_are_not_a_pass() {
+    for level in [super::TheLevel::FullAccess, super::TheLevel::AskEachTime] {
+        let short = scrolled(
+            level,
+            &[a_page_down(), a_page_down(), answering("I scrolled down.")],
+        );
+        assert!(
+            matches!(
+                short.went(),
+                Went::WentWrong(WentWrong::StoppedShort { done: 2, of: 3, .. })
+            ),
+            "{level:?}: {short:?}"
+        );
+        let elsewhere = scrolled(
+            level,
+            &[
+                a_page_down(),
+                scrolling_to("Somewhere else"),
+                answering("Done."),
+            ],
+        );
+        assert!(!elsewhere.took_the_road(), "{level:?}: {elsewhere:?}");
+    }
+}
+
+/// **On a request's own road, a read declared aside is still answered aside**
+/// even where the road's next step is a look at the same verb, as before other
+/// roads existed: only the other road prefers its own next step.
+#[test]
+fn on_its_own_road_a_read_declared_aside_is_answered_aside() {
+    let request = writing_with_a_look().or_looking_at(the_editors_window());
+    let tried = tried_on(
+        &request,
+        &[opening(), looking(), typing(), answering("Typed.")],
+    );
+    assert!(tried.took_the_road(), "{tried:?}");
+    assert_eq!(tried.looked_aside(), 1, "{tried:?}");
+    assert!(!tried.by_the_other_road(), "{tried:?}");
 }

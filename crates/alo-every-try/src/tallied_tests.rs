@@ -217,6 +217,37 @@ fn only_passes_that_looked_aside_are_counted_as_such() {
     assert!(written.contains("No pass looked aside."), "{written}");
 }
 
+/// **A pass that went straight to the act is counted, of the passes**; one
+/// that skipped and still left the road is not a pass, and with none the
+/// summary says so.
+#[test]
+fn the_passes_that_skipped_a_look_are_counted() {
+    let request = the_set()
+        .expect("the set builds")
+        .only("press a button in an application")
+        .expect("it is in the set")
+        .requests()
+        .first()
+        .cloned()
+        .expect("one request");
+    let skipping = vec![Tallied::of(
+        request.clone(),
+        vec![
+            the_road().skipping_looks(1),
+            the_road(),
+            off_the_road().skipping_looks(1),
+        ],
+    )];
+    let written = summary(&skipping, "a test model");
+    assert!(
+        written.contains("press a button in an application: 1 of 2 passes"),
+        "{written}"
+    );
+    let without = vec![Tallied::of(request, vec![the_road()])];
+    let written = summary(&without, "a test model");
+    assert!(written.contains("No pass skipped a look."), "{written}");
+}
+
 /// **A pass the machine refused first is said**, so a pass that needed a
 /// refusal to find the road is not counted silently as a clean one; a try that
 /// was refused and still left the road is not a pass.
@@ -247,4 +278,28 @@ fn passes_the_machine_refused_first_are_counted_as_such() {
     let without = vec![Tallied::of(request, vec![the_road(), off_the_road()])];
     let written = summary(&without, "a test model");
     assert!(written.contains("No pass was refused first."), "{written}");
+}
+
+/// **A pass by the other road is said**, so the longer way is counted rather
+/// than hidden among the passes; a try that took it and still left the road
+/// is not counted as one.
+#[test]
+fn passes_by_the_other_road_are_counted_as_such() {
+    let other_way = vec![Tallied::of(
+        a_request(),
+        vec![
+            the_road().the_other_way(),
+            the_road(),
+            off_the_road().the_other_way(),
+        ],
+    )];
+    let written = summary(&other_way, "a test model");
+    assert!(
+        written.contains("- open it: 1 of its passes took another road"),
+        "{written}"
+    );
+    assert!(!written.contains("No pass took another road."), "{written}");
+    let without = vec![Tallied::of(a_request(), vec![the_road(), off_the_road()])];
+    let written = summary(&without, "a test model");
+    assert!(written.contains("No pass took another road."), "{written}");
 }

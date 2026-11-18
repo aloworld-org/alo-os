@@ -274,7 +274,7 @@ fn to_chapter_3(application: &str) -> (&'static str, Vec<(&'static str, Given)>)
         SCROLL_TO,
         vec![
             ("application", Given::text(application)),
-            ("name", Given::text("Chapter 3")),
+            ("to", Given::text("Chapter 3")),
         ],
     )
 }

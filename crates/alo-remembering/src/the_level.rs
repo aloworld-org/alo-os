@@ -98,9 +98,27 @@
 //! refused whole** ([`NotTheLevel::NotAnApplicationForPictures`]) rather than
 //! read around: dropping it would be reading a file somebody may have edited to
 //! say something else.
+//!
+//! # And who reads those pictures
+//!
+//! *Added 2026-11-17, additively.* ADR 0147 §4 and the owner's answer of that
+//! day: what reads a picture alo takes of a window, in one of three words, and
+//! the service's name beside the third and only there.
+//!
+//! ```toml
+//! format = 1
+//! pictures-read-by = "a-provider"
+//! pictures-read-by-provider = "Mistral"
+//! ```
+//!
+//! `no-one` and `this-computer` take no name. **A name where none belongs, no
+//! name where one does, a name nothing could be, or a word this does not know
+//! refuses the whole file** ([`NotTheLevel::NotAPicturesReader`]): a reader
+//! guessed from half of it could be a service a picture then leaves for.
 
 use alo_capability::{
     ATerminalForTheAgent, AloInApplications, AloInTheTerminal, HowCodeRuns, PicturesAndKeys,
+    WhoReadsPictures,
 };
 use serde::{Deserialize, Serialize};
 
@@ -186,6 +204,19 @@ pub enum NotTheLevel {
         /// What it said.
         said: String,
     },
+    /// `pictures-read-by` says a word that is none of its three, or
+    /// `pictures-read-by-provider` is missing where it belongs, present where
+    /// it does not, or a name nothing could be.
+    ///
+    /// Refused whole, for [`Self::NoSuchLevel`]'s reason: **a reader guessed
+    /// here could be a service a picture then leaves for.**
+    #[error(
+        "`{said}` is not who reads pictures: the three are `{READ_BY_NO_ONE}`, `{READ_BY_THIS_COMPUTER}` and `{READ_BY_A_PROVIDER}` with the service's name beside it"
+    )]
+    NotAPicturesReader {
+        /// What it said.
+        said: String,
+    },
     /// `alo-uses-a-terminal` says a word that is neither of its two.
     ///
     /// Refused whole, for [`Self::NoSuchLevel`]'s reason: **a typo here must
@@ -234,6 +265,17 @@ struct Written {
         skip_serializing_if = "Option::is_none"
     )]
     pictures_and_keys_in: Option<Vec<String>>,
+    /// What reads the pictures alo takes (ADR 0147 §4), in one of three
+    /// words.
+    #[serde(rename = "pictures-read-by", skip_serializing_if = "Option::is_none")]
+    pictures_read_by: Option<String>,
+    /// The service that reads them, by name — beside `a-provider` and only
+    /// there.
+    #[serde(
+        rename = "pictures-read-by-provider",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pictures_read_by_provider: Option<String>,
     /// Whether alo may use a terminal (ADR 0111), in one of two words.
     #[serde(
         rename = "alo-uses-a-terminal",
@@ -269,6 +311,9 @@ pub struct WhatTheFileSays {
     /// The applications alo may use pictures and keys in, when the person
     /// said (ADR 0143 Q11). Absent is none, as a machine arrives.
     pub pictures_and_keys_in: Option<PicturesAndKeys>,
+    /// What reads the pictures alo takes, when the person said (ADR 0147 §4).
+    /// Absent is no one, as a machine arrives.
+    pub pictures_read_by: Option<WhoReadsPictures>,
     /// What the person allowed their agent to do with a terminal, when they
     /// said (ADR 0111). Absent is not at all, as a machine arrives.
     pub a_terminal: Option<ATerminalForTheAgent>,
@@ -307,6 +352,8 @@ pub fn read(text: &str) -> Result<WhatTheFileSays, NotTheLevel> {
         && written.in_the_terminal.is_none()
         && written.in_applications.is_none()
         && written.pictures_and_keys_in.is_none()
+        && written.pictures_read_by.is_none()
+        && written.pictures_read_by_provider.is_none()
         && written.a_terminal.is_none()
     {
         return Err(NotTheLevel::SaysNothing);
@@ -328,6 +375,10 @@ pub fn read(text: &str) -> Result<WhatTheFileSays, NotTheLevel> {
             .as_deref()
             .map(the_applications_for_pictures_called)
             .transpose()?,
+        pictures_read_by: the_reader_called(
+            written.pictures_read_by.as_deref(),
+            written.pictures_read_by_provider.as_deref(),
+        )?,
         a_terminal: written
             .a_terminal
             .as_deref()
@@ -378,6 +429,54 @@ fn the_applications_for_pictures_called(said: &[String]) -> Result<PicturesAndKe
         });
     }
     Ok(PicturesAndKeys::of(said.iter().map(String::as_str)))
+}
+
+/// The word `pictures-read-by` writes for nothing reading pictures — how a
+/// machine arrives, which a file without the key also answers.
+pub const READ_BY_NO_ONE: &str = "no-one";
+
+/// The word `pictures-read-by` writes for the person's own model, on this
+/// computer.
+pub const READ_BY_THIS_COMPUTER: &str = "this-computer";
+
+/// The word `pictures-read-by` writes for an outside service, named by
+/// `pictures-read-by-provider`.
+pub const READ_BY_A_PROVIDER: &str = "a-provider";
+
+/// Who reads pictures, as these two keys say it: [`None`] where neither is
+/// there.
+///
+/// # Errors
+///
+/// [`NotTheLevel::NotAPicturesReader`] for a word that is none of the three,
+/// a name beside a word that takes none, no name beside `a-provider`, or a
+/// name nothing could be — each refusing the whole file.
+fn the_reader_called(
+    said: Option<&str>,
+    provider: Option<&str>,
+) -> Result<Option<WhoReadsPictures>, NotTheLevel> {
+    let refused = |said: &str| NotTheLevel::NotAPicturesReader {
+        said: said.to_owned(),
+    };
+    match (said, provider) {
+        (None, None) => Ok(None),
+        (Some(READ_BY_NO_ONE), None) => Ok(Some(WhoReadsPictures::NoOne)),
+        (Some(READ_BY_THIS_COMPUTER), None) => Ok(Some(WhoReadsPictures::ThisComputer)),
+        (Some(READ_BY_A_PROVIDER), Some(name)) => WhoReadsPictures::a_provider(name)
+            .map(Some)
+            .ok_or_else(|| refused(name)),
+        (Some(said), _) => Err(refused(said)),
+        (None, Some(name)) => Err(refused(name)),
+    }
+}
+
+/// The two keys this file writes for who reads pictures.
+fn the_reader_words_for(reader: &WhoReadsPictures) -> (String, Option<String>) {
+    match reader {
+        WhoReadsPictures::NoOne => (READ_BY_NO_ONE.to_owned(), None),
+        WhoReadsPictures::ThisComputer => (READ_BY_THIS_COMPUTER.to_owned(), None),
+        WhoReadsPictures::AProvider(name) => (READ_BY_A_PROVIDER.to_owned(), Some(name.clone())),
+    }
 }
 
 /// The word `in-applications` writes for alo's own copy only — the setting
@@ -478,6 +577,11 @@ pub const fn the_word_for(chose: HowCodeRuns) -> &'static str {
 /// [`NotTheLevel::NotWrittenDown`] if the file will not serialise, which is a
 /// bug in this crate rather than anything a person did.
 pub fn written(says: WhatTheFileSays) -> Result<String, NotTheLevel> {
+    let (pictures_read_by, pictures_read_by_provider) =
+        match says.pictures_read_by.as_ref().map(the_reader_words_for) {
+            Some((said, provider)) => (Some(said), provider),
+            None => (None, None),
+        };
     let it = Written {
         format: THE_LEVEL_FORMAT,
         chose: says.chose.map(|chose| the_word_for(chose).to_owned()),
@@ -490,6 +594,8 @@ pub fn written(says: WhatTheFileSays) -> Result<String, NotTheLevel> {
         pictures_and_keys_in: says
             .pictures_and_keys_in
             .map(|on| on.applications().map(str::to_owned).collect()),
+        pictures_read_by,
+        pictures_read_by_provider,
         a_terminal: says
             .a_terminal
             .map(|answer| the_terminal_choice_word_for(answer).to_owned()),
@@ -517,6 +623,7 @@ impl NotTheLevel {
             Self::NotAnApplicationForPictures { .. } => {
                 crate::words::LEVEL_NOT_AN_APPLICATION_FOR_PICTURES
             }
+            Self::NotAPicturesReader { .. } => crate::words::LEVEL_NOT_A_PICTURES_READER,
             Self::NotATerminalChoice { .. } => crate::words::LEVEL_NOT_A_TERMINAL_CHOICE,
             Self::NotWrittenDown { .. } => crate::words::LEVEL_NOT_WRITTEN_DOWN,
         }
@@ -538,6 +645,7 @@ impl NotTheLevel {
             | Self::NotATerminalAnswer { said }
             | Self::NotAnApplicationsAnswer { said }
             | Self::NotAnApplicationForPictures { said }
+            | Self::NotAPicturesReader { said }
             | Self::NotATerminalChoice { said } => Some(("said", said.clone())),
             Self::NotTheShape { .. }
             | Self::AnotherFormat { .. }

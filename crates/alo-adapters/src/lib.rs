@@ -89,8 +89,10 @@ pub mod fallback_verbs;
 pub mod fallback_words;
 pub mod file_address;
 pub mod invocation;
+pub mod keys_words;
 pub mod loading;
 pub mod mechanism;
+pub mod menu_words;
 pub mod message;
 pub mod not_chosen;
 pub mod not_loaded;
@@ -100,9 +102,11 @@ pub mod not_set;
 pub mod not_walked;
 pub mod nothing_to_read;
 pub mod opening;
+pub mod opening_a_menu;
 pub mod opening_words;
 pub mod places_for_text;
 pub mod pressable;
+pub mod pressing_a_key;
 pub mod reading_windows;
 pub mod role;
 pub mod scrolling;
@@ -115,6 +119,7 @@ pub mod shown;
 pub mod states;
 pub mod text_editor;
 pub mod typing_text;
+pub mod typing_without_saving_words;
 pub mod typing_words;
 pub mod verbs;
 pub mod walking;
@@ -136,8 +141,8 @@ pub use delivering::{Delivers, NotDelivered};
 pub use driving::{Driven, Driving};
 pub use driving_by_hand::{DrivenByHand, NotDrivenByHand, drive_by_hand};
 pub use fallback_verbs::{
-    ACTIVATE_CONTROL, CHOOSE_OPTION, OPEN_ITEM, READ_WINDOW, SCROLL_PAGE, SCROLL_TO, SELECT_ITEM,
-    SET_VALUE, TYPE_TEXT, fallback_verbs,
+    ACTIVATE_CONTROL, CHOOSE_OPTION, OPEN_ITEM, OPEN_MENU, PRESS_KEY, READ_WINDOW, SCROLL_PAGE,
+    SCROLL_TO, SELECT_ITEM, SET_VALUE, TYPE_TEXT, TYPE_WITHOUT_SAVING, fallback_verbs,
 };
 pub use invocation::{DBusMethod, Invocation, Part};
 pub use loading::{Loaded, load};
@@ -151,7 +156,9 @@ pub use not_set::NotSet;
 pub use not_walked::NotWalked;
 pub use nothing_to_read::nothing_to_read;
 pub use opening::{Opened, Opening};
+pub use opening_a_menu::{MenuOpened, OpeningAMenu};
 pub use pressable::Pressable;
+pub use pressing_a_key::PressingAKey;
 pub use reading_windows::{ReadingWindows, WindowsRead};
 pub use role::Role;
 pub use scrolling::{Asked, Scrolled, Scrolling, Toward};

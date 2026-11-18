@@ -138,6 +138,9 @@ pub fn declare_into(vocabulary: &mut Vocabulary) -> Result<(), WordsError> {
         .chain(crate::setting_words::EVERY_WORD.iter())
         .chain(crate::choosing_words::EVERY_WORD.iter())
         .chain(crate::opening_words::EVERY_WORD.iter())
+        .chain(crate::menu_words::EVERY_WORD.iter())
+        .chain(crate::keys_words::EVERY_WORD.iter())
+        .chain(crate::typing_without_saving_words::EVERY_WORD.iter())
     {
         vocabulary.says(word.phrase()?)?;
     }
@@ -164,6 +167,9 @@ mod tests {
             .chain(crate::setting_words::EVERY_WORD.iter())
             .chain(crate::choosing_words::EVERY_WORD.iter())
             .chain(crate::opening_words::EVERY_WORD.iter())
+            .chain(crate::menu_words::EVERY_WORD.iter())
+            .chain(crate::keys_words::EVERY_WORD.iter())
+            .chain(crate::typing_without_saving_words::EVERY_WORD.iter())
             .copied()
             .collect()
     }

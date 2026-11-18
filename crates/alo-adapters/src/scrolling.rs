@@ -32,7 +32,7 @@ use alo_strings::{Filling, Said, Strings, Word};
 use crate::accessibility_tree::{AccessibilityTree, Edge, NodeAt, TreeFault};
 use crate::adapters::Adapters;
 use crate::fallback_reach::reached;
-use crate::fallback_verbs::{NAME, SCROLL_PAGE, SCROLL_TO, TOWARD};
+use crate::fallback_verbs::{SCROLL_PAGE, SCROLL_TO, TO, TOWARD};
 use crate::fallback_words as fallback;
 use crate::not_walked::NotWalked;
 use crate::places_for_text::holds;
@@ -164,7 +164,7 @@ impl Scrolling {
         let reached = reached(authorised, verb, adapters, grants, installed, strings)?;
         let call = reached.authorised.call();
         let asked = if verb == SCROLL_TO {
-            match call.value(NAME) {
+            match call.value(TO) {
                 Some(Value::Name(name)) => Some(Asked::To(name.clone())),
                 _ => None,
             }

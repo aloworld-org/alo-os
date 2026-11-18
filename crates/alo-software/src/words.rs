@@ -377,7 +377,7 @@ pub const THE_NAMES: [Word; 5] = [
 ];
 
 /// Every word that is a line or a sentence of its own.
-pub const THE_SENTENCES: [Word; 57] = [
+pub const THE_SENTENCES: [Word; 71] = [
     READ_SENTENCE,
     INSTALLED,
     INSTALLED_UNSANDBOXED,
@@ -401,7 +401,19 @@ pub const THE_SENTENCES: [Word; 57] = [
     VERB_CHANGES,
     VERB_LEAVES,
     THE_APPLICATIONS,
-    EACH_ARRIVES_WITH_NOTHING,
+    EACH_SAYS_WHAT_IT_REACHES,
+    RUNS_PROGRAMS_OUTSIDE_ITS_BOX,
+    RUNS_PROGRAMS_OUTSIDE_ITS_BOX_IN_FULL,
+    REACHES_YOUR_FILES,
+    REACHES_YOUR_FILES_IN_FULL,
+    INSTALLED_WITH_WHAT_ITS_MAKERS_ASK,
+    VERB_LEAVES_REACHING_YOUR_FILES,
+    VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE,
+    VERB_LEAVES_USING_THE_INTERNET,
+    VERB_LEAVES_REACHING_YOUR_FILES_AND_THE_INTERNET,
+    VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_YOUR_FILES,
+    VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_THE_INTERNET,
+    VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_YOUR_FILES_AND_THE_INTERNET,
     INSTALL_IT,
     INSTALLING_IT,
     OPEN_IT,
@@ -435,6 +447,8 @@ pub const THE_SENTENCES: [Word; 57] = [
     NOT_VERIFIED_BY_ITS_MAKER_IN_FULL,
     EARLY_VERSION,
     EARLY_VERSION_IN_FULL,
+    NO_AUTOMATIC_UPDATES,
+    NO_AUTOMATIC_UPDATES_IN_FULL,
 ];
 
 /// Every refusal, so that a test can hold each of them to saying what did not
@@ -466,15 +480,131 @@ pub const THE_APPLICATIONS: Word = Word::saying("software.the-applications", "Ap
          names what the window holds rather than what it is for.",
     );
 
-/// The line under the list, which is the promise the list keeps.
-pub const EACH_ARRIVES_WITH_NOTHING: Word = Word::saying(
-    "software.each-arrives-with-nothing",
-    "Each one installs from the place it is published, and arrives able to reach nothing",
+/// The line under the list.
+///
+/// **Replaced *each one … arrives able to reach nothing* on 2026-11-17**,
+/// which was measured false for every application in the catalogue: each
+/// arrives with what its makers ask for, and nothing on this machine overrides
+/// that. This says what is true of all of them and leaves the rest to each row.
+pub const EACH_SAYS_WHAT_IT_REACHES: Word = Word::saying(
+    "software.each-says-what-it-reaches",
+    "Each one installs from the place it is published, with what its makers ask for. Its row says if that reaches your files or runs programs outside its box",
 )
 .noting(
-    "Stands under the list of applications a person can install. Two promises in one line: each \
-     application comes from somewhere this machine can name, and a new one can reach no file, \
-     camera, microphone or network until the person allows it.",
+    "Stands under the list of applications a person can install. Each application arrives with the access its makers ask for, which can include the network; the row of each one says when it can also reach the person's files without asking, or start programs outside the box applications are kept in. 'Its box' is the closed space an application runs in.",
+);
+
+/// Beside an application whose makers ask for it to start programs outside its
+/// box.
+pub const RUNS_PROGRAMS_OUTSIDE_ITS_BOX: Word = Word::saying(
+    "software.label.runs-programs-outside-its-box",
+    "Runs programs outside its box",
+)
+.noting(
+    "Shown beside an application in the list a person installs from, when its makers ask for it to start programs on this computer outside the closed box applications are kept in. Such an application can do anything the person can. A plain fact, not a warning to dismiss: the person may install it. Short, because it sits on one line under the application's name.",
+);
+
+/// The same, in full.
+pub const RUNS_PROGRAMS_OUTSIDE_ITS_BOX_IN_FULL: Word = Word::saying(
+    "software.label.runs-programs-outside-its-box.in-full",
+    "Runs programs outside its box: its makers ask for it to start programs on this computer outside the box applications are kept in, so it can do anything you can",
+)
+.noting(
+    "What a screen reader says for the short label Runs programs outside its box, and what a person reads if they ask what it means.",
+);
+
+/// Beside an application whose makers ask for it to open the person's files.
+pub const REACHES_YOUR_FILES: Word =
+    Word::saying("software.label.reaches-your-files", "Reaches your files").noting(
+        "Shown beside an application in the list a person installs from, when its makers ask for it to read and change the person's files without asking them first. A plain fact, not a warning to dismiss. Short, because it sits on one line under the application's name.",
+    );
+
+/// The same, in full.
+pub const REACHES_YOUR_FILES_IN_FULL: Word = Word::saying(
+    "software.label.reaches-your-files.in-full",
+    "Reaches your files: its makers ask for it to read and change your files without asking you first",
+)
+.noting(
+    "What a screen reader says for the short label Reaches your files, and what a person reads if they ask what it means.",
+);
+
+/// An application installed with access past its box, said once it arrives.
+pub const INSTALLED_WITH_WHAT_ITS_MAKERS_ASK: Word = Word::saying(
+    "software.installed-with-what-its-makers-ask",
+    "{application} is installed, with what its makers ask for: it can reach more than its box without asking you first. Applications says what",
+)
+.noting(
+    "Said once an application arrives whose makers ask for it to reach the person's files or start programs outside the closed box applications are kept in. It replaces the sentence that says an application has been given nothing, which is not true of this one. {application} is its identifier and is not translated; Applications is the name of the window that lists what can be installed.",
+);
+
+/// What installing leaves alone, for an application whose makers ask for it to
+/// reach the person's files.
+pub const VERB_LEAVES_REACHING_YOUR_FILES: Word = Word::saying(
+    "software.verb.install-application.leaves.reaching-your-files",
+    "Its makers ask for it to read and change your files without asking you first, and it will be able to. No other application is updated or removed.",
+)
+.noting(
+    "Shown on the card a person answers before alo installs an application, in place of the line that says it is given no access to their files, when its makers ask for exactly that. Said before the person approves, so they choose knowing it.",
+);
+
+/// What installing leaves alone, for an application whose makers ask for it to
+/// start programs outside its box.
+pub const VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE: Word = Word::saying(
+    "software.verb.install-application.leaves.running-programs-outside",
+    "Its makers ask for it to run programs outside its box, so it will be able to do anything you can on this computer. No other application is updated or removed.",
+)
+.noting(
+    "Shown on the card a person answers before alo installs an application, in place of the line that says it is given no access to their files, when its makers ask for it to start programs outside the closed box applications are kept in. Said before the person approves, so they choose knowing it.",
+);
+
+/// What installing leaves alone, for an application whose makers ask for it to
+/// use the internet.
+pub const VERB_LEAVES_USING_THE_INTERNET: Word = Word::saying(
+    "software.verb.install-application.leaves.using-the-internet",
+    "It is given no access to your files. Its makers ask for it to use the internet, and it will be able to. No other application is updated or removed.",
+)
+.noting(
+    "Shown on the card a person answers before alo installs an application, in place of the line that says it is given no access to their files. It names everything the application's makers ask for that reaches past the closed box applications are kept in, said before the person approves, so they choose knowing it.",
+);
+
+/// What installing leaves alone, for an application whose makers ask for it to
+/// read and change the person's files and use the internet.
+pub const VERB_LEAVES_REACHING_YOUR_FILES_AND_THE_INTERNET: Word = Word::saying(
+    "software.verb.install-application.leaves.reaching-your-files-and-the-internet",
+    "Its makers ask for it to read and change your files without asking you first, and to use the internet, and it will be able to do both. No other application is updated or removed.",
+)
+.noting(
+    "Shown on the card a person answers before alo installs an application, in place of the line that says it is given no access to their files. It names everything the application's makers ask for that reaches past the closed box applications are kept in, said before the person approves, so they choose knowing it.",
+);
+
+/// What installing leaves alone, for an application whose makers ask for it to
+/// start programs outside its box and read and change the person's files.
+pub const VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_YOUR_FILES: Word = Word::saying(
+    "software.verb.install-application.leaves.running-programs-outside-and-your-files",
+    "Its makers ask for it to run programs outside its box and to read and change your files without asking you first, so it will be able to do anything you can on this computer. No other application is updated or removed.",
+)
+.noting(
+    "Shown on the card a person answers before alo installs an application, in place of the line that says it is given no access to their files. It names everything the application's makers ask for that reaches past the closed box applications are kept in, said before the person approves, so they choose knowing it.",
+);
+
+/// What installing leaves alone, for an application whose makers ask for it to
+/// start programs outside its box and use the internet.
+pub const VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_THE_INTERNET: Word = Word::saying(
+    "software.verb.install-application.leaves.running-programs-outside-and-the-internet",
+    "Its makers ask for it to run programs outside its box and to use the internet, so it will be able to do anything you can on this computer. No other application is updated or removed.",
+)
+.noting(
+    "Shown on the card a person answers before alo installs an application, in place of the line that says it is given no access to their files. It names everything the application's makers ask for that reaches past the closed box applications are kept in, said before the person approves, so they choose knowing it.",
+);
+
+/// What installing leaves alone, for an application whose makers ask for it to
+/// start programs outside its box, read and change the person's files and use the internet.
+pub const VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_YOUR_FILES_AND_THE_INTERNET: Word = Word::saying(
+    "software.verb.install-application.leaves.running-programs-outside-your-files-and-the-internet",
+    "Its makers ask for it to run programs outside its box, to read and change your files without asking you first, and to use the internet, so it will be able to do anything you can on this computer. No other application is updated or removed.",
+)
+.noting(
+    "Shown on the card a person answers before alo installs an application, in place of the line that says it is given no access to their files. It names everything the application's makers ask for that reaches past the closed box applications are kept in, said before the person approves, so they choose knowing it.",
 );
 
 /// What a person presses to have an application installed.
@@ -705,14 +835,44 @@ pub const EARLY_VERSION_IN_FULL: Word = Word::saying(
     "What a screen reader says for the short label Early version, and what a person reads if they ask what it means.",
 );
 
+/// Beside an application installed from its maker's own signed release.
+pub const NO_AUTOMATIC_UPDATES: Word = Word::saying(
+    "software.label.no-automatic-updates",
+    "No automatic updates",
+)
+.noting(
+    "Shown beside an application in the list a person installs from, when it comes from its \
+         makers' own signed release rather than from the usual place. This computer does not \
+         offer its newer versions the way it does for other applications. A plain fact, not a \
+         warning. Short, because it sits on one line under the application's name.",
+);
+
+/// The same, in full, for a screen reader.
+pub const NO_AUTOMATIC_UPDATES_IN_FULL: Word = Word::saying(
+    "software.label.no-automatic-updates.in-full",
+    "No automatic updates: it comes from its makers' own release, and this computer does not \
+     offer its newer versions the way it does for your other applications",
+)
+.noting(
+    "What a screen reader says for the short label No automatic updates, and what a person reads \
+     if they ask what it means. It does not say the application can never be updated, only that \
+     this computer does not offer it.",
+);
+
 /// Every label's words, short then in full, in `crate::Label::EVERY`'s order.
-pub const EVERY_LABEL: [Word; 6] = [
+pub const EVERY_LABEL: [Word; 12] = [
+    RUNS_PROGRAMS_OUTSIDE_ITS_BOX,
+    RUNS_PROGRAMS_OUTSIDE_ITS_BOX_IN_FULL,
+    REACHES_YOUR_FILES,
+    REACHES_YOUR_FILES_IN_FULL,
     NOT_OPEN_SOURCE,
     NOT_OPEN_SOURCE_IN_FULL,
     NOT_VERIFIED_BY_ITS_MAKER,
     NOT_VERIFIED_BY_ITS_MAKER_IN_FULL,
     EARLY_VERSION,
     EARLY_VERSION_IN_FULL,
+    NO_AUTOMATIC_UPDATES,
+    NO_AUTOMATIC_UPDATES_IN_FULL,
 ];
 
 /// What `install_application` changes, under the action on the approval card.
@@ -736,7 +896,7 @@ pub const VERB_LEAVES: Word = Word::saying(
 );
 
 /// Every string this crate can say.
-pub const EVERY_WORD: [Word; 62] = [
+pub const EVERY_WORD: [Word; 76] = [
     VERB_PURPOSE,
     VERB_APPLICATION,
     VERB_SOURCE,
@@ -765,7 +925,19 @@ pub const EVERY_WORD: [Word; 62] = [
     VERB_CHANGES,
     VERB_LEAVES,
     THE_APPLICATIONS,
-    EACH_ARRIVES_WITH_NOTHING,
+    EACH_SAYS_WHAT_IT_REACHES,
+    RUNS_PROGRAMS_OUTSIDE_ITS_BOX,
+    RUNS_PROGRAMS_OUTSIDE_ITS_BOX_IN_FULL,
+    REACHES_YOUR_FILES,
+    REACHES_YOUR_FILES_IN_FULL,
+    INSTALLED_WITH_WHAT_ITS_MAKERS_ASK,
+    VERB_LEAVES_REACHING_YOUR_FILES,
+    VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE,
+    VERB_LEAVES_USING_THE_INTERNET,
+    VERB_LEAVES_REACHING_YOUR_FILES_AND_THE_INTERNET,
+    VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_YOUR_FILES,
+    VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_THE_INTERNET,
+    VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_YOUR_FILES_AND_THE_INTERNET,
     INSTALL_IT,
     INSTALLING_IT,
     OPEN_IT,
@@ -799,6 +971,8 @@ pub const EVERY_WORD: [Word; 62] = [
     NOT_VERIFIED_BY_ITS_MAKER_IN_FULL,
     EARLY_VERSION,
     EARLY_VERSION_IN_FULL,
+    NO_AUTOMATIC_UPDATES,
+    NO_AUTOMATIC_UPDATES_IN_FULL,
 ];
 
 /// Why this crate's own words could not be declared.

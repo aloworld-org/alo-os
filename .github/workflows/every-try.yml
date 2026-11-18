@@ -73,6 +73,8 @@ on:
       - "crates/alo-turn/src/naming_an_application.rs"
       - "crates/alo-applications/src/verbs.rs"
       - "crates/alo-applications/src/opening_a_file.rs"
+      - "crates/alo-applications/src/choosing_on_the_file_chooser.rs"
+      - "crates/alo-every-try/src/answering_the_file_chooser.rs"
       - "crates/alo-applications/src/words.rs"
       - "crates/alo-record/src/verbs.rs"
       - "crates/alo-record/src/words.rs"
@@ -83,6 +85,9 @@ on:
       - "crates/alo-adapters/src/setting_words.rs"
       - "crates/alo-adapters/src/choosing_words.rs"
       - "crates/alo-adapters/src/opening_words.rs"
+      - "crates/alo-adapters/src/menu_words.rs"
+      - "crates/alo-adapters/src/keys_words.rs"
+      - "crates/alo-adapters/src/typing_without_saving_words.rs"
       # How the machine finds the field a name means.
       - "crates/alo-adapters/src/places_for_text.rs"
       - "crates/alo-publishing/src/verbs.rs"

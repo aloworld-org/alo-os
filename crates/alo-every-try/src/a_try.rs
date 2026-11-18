@@ -14,7 +14,7 @@ use alo_instructing::{Instructions, TheConversationSoFar, WhatItMayReach};
 use alo_protocol::{FromAnAgent, ToAPerson, ToAnAgent};
 use alo_strings::Strings;
 
-use crate::a_road::ARequest;
+use crate::a_road::{ARequest, Step};
 use crate::as_the_machine_names::AsTheMachineNames;
 use crate::taking_a_step::taking;
 use crate::the_machine_answers::answering;
@@ -59,6 +59,10 @@ pub struct Tried {
     /// How many times the machine refused a step before asking the person,
     /// and the try went on from the refusal.
     refused_before_asking: usize,
+    /// How many looks of the road it skipped, going straight to the act.
+    skipped_looks: usize,
+    /// Whether it took the request's other road (`ARequest::or_by_another_road`).
+    by_the_other_road: bool,
 }
 
 /// **The most reads a try may take aside of its road** — a read the machine
@@ -72,6 +76,20 @@ impl Tried {
     #[must_use]
     pub const fn looked_aside(&self) -> usize {
         self.looked_aside
+    }
+
+    /// How many looks of its road this try skipped — a window it went
+    /// straight to acting in, without reading first.
+    #[must_use]
+    pub const fn skipped_looks(&self) -> usize {
+        self.skipped_looks
+    }
+
+    /// The same try, having skipped `looks` looks of its road.
+    #[must_use]
+    pub const fn skipping_looks(mut self, looks: usize) -> Self {
+        self.skipped_looks = looks;
+        self
     }
 
     /// How many times the machine refused a step of this try before asking
@@ -95,6 +113,19 @@ impl Tried {
         self
     }
 
+    /// Whether this try took its request's other road.
+    #[must_use]
+    pub const fn by_the_other_road(&self) -> bool {
+        self.by_the_other_road
+    }
+
+    /// The same try, having taken its request's other road.
+    #[must_use]
+    pub const fn the_other_way(mut self) -> Self {
+        self.by_the_other_road = true;
+        self
+    }
+
     /// A try that chose `chose`, ended as `went`, and asked the model `asked`
     /// times.
     #[must_use]
@@ -106,6 +137,8 @@ impl Tried {
             said_last: None,
             looked_aside: 0,
             refused_before_asking: 0,
+            skipped_looks: 0,
+            by_the_other_road: false,
         }
     }
 
@@ -202,6 +235,8 @@ pub fn one_try_at(
         said_last: None,
         looked_aside: 0,
         refused_before_asking: 0,
+        skipped_looks: 0,
+        on_the_other: None,
     };
     let mut after = Vec::new();
     let happened = loop {
@@ -228,8 +263,9 @@ pub fn one_try_at(
             None => break happened,
         }
     };
-    let of = request.road().len();
+    let of = door.the_road().len();
     let done = door.taken;
+    let by_the_other_road = door.on_the_other.is_some();
     let mut chose = door.chose;
     let went = if let Some(why) = door.unanswered {
         Went::NotAnswered(why)
@@ -290,6 +326,8 @@ pub fn one_try_at(
         said_last: door.said_last,
         looked_aside: door.looked_aside,
         refused_before_asking: door.refused_before_asking,
+        skipped_looks: door.skipped_looks,
+        by_the_other_road,
     }
 }
 
@@ -343,6 +381,11 @@ struct Recording<'a> {
     looked_aside: usize,
     /// How many steps the machine refused before asking anybody.
     refused_before_asking: usize,
+    /// How many looks of the road the try skipped.
+    skipped_looks: usize,
+    /// Which of the request's other roads the try is held to, from where it
+    /// parted from the road; [`None`] on the request's own road.
+    on_the_other: Option<usize>,
 }
 
 /// Why the loop is stopped once the road is left: the try is over.
@@ -368,15 +411,18 @@ impl TheDoor for Recording<'_> {
             FromAnAgent::Run { command } => format!("run: {command}"),
             other => other.verb().unwrap_or_default().to_owned(),
         });
-        let road = self.request.road();
+        let road = self.the_road();
         let asked = request.verb().unwrap_or_default().trim();
-        // **A look taken again** is answered again, and the road stays where
-        // it was.
+        // **A look taken again**, or a step the road lets a try take as often
+        // as it asks, is answered again — a change as the level answers one —
+        // and the road stays where it was.
         if let Some(looked) = self
             .taken
             .checked_sub(1)
             .and_then(|last| road.get(last))
-            .filter(|last| last.is_a_look() && last.verb() == asked)
+            .filter(|last| {
+                (last.is_a_look() || last.is_taken_as_often_as_asked()) && last.verb() == asked
+            })
         {
             return match taking(
                 looked,
@@ -386,7 +432,10 @@ impl TheDoor for Recording<'_> {
                 &self.machine,
                 self.strings,
             ) {
-                Ok(call) => Ok(answering(looked.answered(), &call, self.strings)),
+                Ok(call) => {
+                    let answered = answering(looked.answered(), &call, self.strings);
+                    Ok(self.as_the_level_answers(answered, &call))
+                }
                 Err(wrong) => {
                     self.wrong = Some(wrong);
                     Err(NotAnswered::NotReached {
@@ -402,11 +451,26 @@ impl TheDoor for Recording<'_> {
             .is_some_and(|next| next.is_a_look() && next.verb() != asked)
         {
             self.taken += 1;
+            self.skipped_looks += 1;
         }
+        // **The other road, from where the two part** (`ARequest::or_by_another_road`):
+        // a try that asks for the other road's next step where this road's
+        // next step is something else is held to the other road from here.
+        self.parting_for(asked);
+        let road = self.the_road();
         // **A read aside of the road**, which the request declares and the
         // machine would answer: answered, and the road stays where it was —
-        // at most `THE_MOST_LOOKS_ASIDE` a try.
-        if let Some(answer) = self.aside_of_the_road(request, asked) {
+        // at most `THE_MOST_LOOKS_ASIDE` a try. On the other road, never
+        // instead of its own next step when that is what was asked: its last
+        // read is what shows the person's thing reached.
+        let the_next_step_is_this = self.on_the_other.is_some()
+            && road
+                .get(self.taken)
+                .is_some_and(|next| next.verb() == asked);
+        if let Some(answer) = (!the_next_step_is_this)
+            .then(|| self.aside_of_the_road(request, asked))
+            .flatten()
+        {
             return Ok(answer);
         }
         let Some(step) = road.get(self.taken) else {
@@ -451,6 +515,50 @@ impl TheDoor for Recording<'_> {
                     why: THE_TRY_IS_OVER.to_owned(),
                 })
             }
+        }
+    }
+}
+
+impl<'a> Recording<'a> {
+    /// The road the try is held to now: the request's, or the other road it
+    /// took.
+    fn the_road(&self) -> &'a [Step] {
+        let request: &'a ARequest = self.request;
+        self.on_the_other
+            .and_then(|at| request.other_roads().get(at))
+            .map_or_else(|| request.road(), Vec::as_slice)
+    }
+
+    /// **Take another road here**, where the road the try is on does not go on
+    /// with `asked` and another road does — one whose steps up to here are,
+    /// verb for verb, the ones this road took. The first declared is taken
+    /// where two would do. The request's own road is never gone back to.
+    fn parting_for(&mut self, asked: &str) {
+        let road = self.the_road();
+        let goes_on = |road: &[Step]| {
+            road.get(self.taken)
+                .is_some_and(|next| next.verb() == asked)
+        };
+        if goes_on(road) {
+            return;
+        }
+        let shares = |other: &[Step]| {
+            road.get(..self.taken).is_some_and(|taken| {
+                other.get(..self.taken).is_some_and(|theirs| {
+                    taken
+                        .iter()
+                        .zip(theirs)
+                        .all(|(one, two)| one.verb() == two.verb())
+                })
+            })
+        };
+        if let Some(at) = self
+            .request
+            .other_roads()
+            .iter()
+            .position(|other| shares(other) && goes_on(other))
+        {
+            self.on_the_other = Some(at);
         }
     }
 }

@@ -56,6 +56,8 @@ pub struct TheMarketsWords {
     pub kinds_of_work: Vec<String>,
     /// What each label says on a row, in `Label::EVERY`'s order.
     pub labels: Vec<String>,
+    /// What each label says in full, for a reader, in the same order.
+    pub labels_in_full: Vec<String>,
 }
 
 impl TheMarketsWords {
@@ -64,7 +66,7 @@ impl TheMarketsWords {
     pub fn said(strings: &Strings) -> Self {
         Self {
             heading: say(strings, &words::THE_APPLICATIONS),
-            promise: say(strings, &words::EACH_ARRIVES_WITH_NOTHING),
+            promise: say(strings, &words::EACH_SAYS_WHAT_IT_REACHES),
             install: say(strings, &words::INSTALL_IT),
             installing: say(strings, &words::INSTALLING_IT),
             open: say(strings, &words::OPEN_IT),
@@ -76,6 +78,10 @@ impl TheMarketsWords {
                 .iter()
                 .map(|label| say(strings, &label.word()))
                 .collect(),
+            labels_in_full: Label::EVERY
+                .iter()
+                .map(|label| say(strings, &label.said_in_full()))
+                .collect(),
         }
     }
 
@@ -85,6 +91,20 @@ impl TheMarketsWords {
         let at = Label::EVERY.iter().position(|one| *one == label);
         at.and_then(|at| self.labels.get(at))
             .map_or("", String::as_str)
+    }
+
+    /// Each label a row carries, said in full — what a reader is told, because
+    /// a reader cannot glance back at the row to see what a short label meant.
+    #[must_use]
+    pub fn labels_of_in_full(&self, one: &Listed) -> Vec<String> {
+        one.labels()
+            .into_iter()
+            .filter_map(|label| {
+                let at = Label::EVERY.iter().position(|each| *each == label)?;
+                self.labels_in_full.get(at).cloned()
+            })
+            .filter(|said| !said.is_empty())
+            .collect()
     }
 
     /// Everything a row says beside an application's name, on one line, or
@@ -148,7 +168,7 @@ mod tests {
         assert!(!words.installing.is_empty());
         assert!(!words.open.is_empty());
         assert_eq!(words.kinds_of_work.len(), Category::EVERY.len() + 1);
-        assert_eq!(words.labels.len(), 3);
+        assert_eq!(words.labels.len(), Label::EVERY.len());
         for one in &words.labels {
             assert!(!one.is_empty());
         }
@@ -204,7 +224,7 @@ mod tests {
         }
         assert_eq!(
             read,
-            5 + Category::EVERY.len() + 1 + 3,
+            5 + Category::EVERY.len() + 1 + Label::EVERY.len(),
             "the loop read every word"
         );
     }

@@ -64,11 +64,13 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
             pressed.name(),
             pressed.unanswered(),
         ),
-        alo_turn::WhatAVerbDid::TextWasTyped(typed) => Done::of_a_typing(
+        alo_turn::WhatAVerbDid::TextWasTyped(typed) => Done::of_either_typing(
             typed.application(),
             typed.name(),
             typed.characters(),
             typed.through_the_tree(),
+            typed.asked_to_save(),
+            typed.read_back(),
             typed.saved(),
         ),
         alo_turn::WhatAVerbDid::AValueWasSet(set) => Done::of_a_setting(
@@ -97,6 +99,9 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
         alo_turn::WhatAVerbDid::AFileWasOpened(opened) => {
             Done::of_an_application_act("open-file", opened.application())
         }
+        alo_turn::WhatAVerbDid::AFileWasChosen(chosen) => {
+            Done::of_an_application_act("alo-chooses-file", chosen.application())
+        }
         // A scroll, 2026-11-17.
         alo_turn::WhatAVerbDid::AWindowWasScrolled(scrolled) => Done::of_a_scroll(
             scrolled.application(),
@@ -104,6 +109,14 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
             scrolled.a_page(),
             scrolled.now_showing(),
         ),
+        // A menu, 2026-11-17.
+        alo_turn::WhatAVerbDid::AMenuWasOpened(opened) => {
+            Done::of_a_menu(opened.application(), opened.name(), opened.unanswered())
+        }
+        // A key, 2026-11-17.
+        alo_turn::WhatAVerbDid::AKeyWasPressed(pressed) => {
+            Done::of_a_key(pressed.application(), pressed.key().named())
+        }
     }
 }
 

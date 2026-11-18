@@ -208,16 +208,24 @@ impl Call {
     pub fn of(verb: &Verb, given: &[(&str, Given)]) -> Result<Self, CallError> {
         let mut values = BTreeMap::new();
         for (name, value) in given {
-            let name = name.trim();
-            let arg = verb.arg(name).ok_or_else(|| CallError::NoSuchArgument {
-                verb: verb.name().to_owned(),
-                argument: name.to_owned(),
-                takes: verb
-                    .args()
-                    .iter()
-                    .map(|arg| arg.name().to_owned())
-                    .collect(),
-            })?;
+            let given = name.trim();
+            // **A deprecated name is read as the current one** (`Arg::formerly`),
+            // so the value is kept, and twice-given is judged, under the one
+            // name the verb now takes.
+            let arg = verb
+                .args()
+                .iter()
+                .find(|arg| arg.answers_to(given))
+                .ok_or_else(|| CallError::NoSuchArgument {
+                    verb: verb.name().to_owned(),
+                    argument: given.to_owned(),
+                    takes: verb
+                        .args()
+                        .iter()
+                        .map(|arg| arg.name().to_owned())
+                        .collect(),
+                })?;
+            let name = arg.name();
             let validated = arg.validate(value)?;
             // **The same value twice is one value**: a model held to a list of
             // arguments repeated `application` in every call of eight on the
@@ -263,6 +271,21 @@ impl Call {
         self.changes
             .as_ref()
             .map(|key| strings.say(key, &Filling::nothing()))
+    }
+
+    /// The same call, saying `instead` for what it leaves alone.
+    ///
+    /// **For a verb whose one sentence is not true of every call.** An
+    /// installation leaves the person's files alone unless the application's
+    /// makers ask for them, and the card a person answers must say which before
+    /// they approve (the owner, 2026-11-17). The verb keeps its own sentence for
+    /// every other call; the crate that knows the difference names the other.
+    #[must_use]
+    pub fn leaving_instead(self, instead: Key) -> Self {
+        Self {
+            leaves: Some(instead),
+            ..self
+        }
     }
 
     /// **What this change leaves alone**, in the language the person reads.
@@ -579,6 +602,36 @@ mod tests {
     use crate::testing::translating;
     use alo_strings::Word;
     use std::path::PathBuf;
+
+    /// **A call can say something else for what it leaves alone**, and only
+    /// that call: the verb's own line stands for every other.
+    #[test]
+    fn a_call_can_leave_alone_in_its_own_words() {
+        const CHANGES: Word = Word::saying("testing.call.changes", "Moves one file.");
+        const LEAVES: Word = Word::saying("testing.call.leaves", "No other file is moved.");
+        const INSTEAD: Word =
+            Word::saying("testing.call.instead", "Every file beside it goes too.");
+        let strings = translating(&[CHANGES, LEAVES, INSTEAD], &[]);
+        let verb = crate::test_calls::move_file()
+            .changing(CHANGES, Some(LEAVES))
+            .unwrap();
+        let given = [
+            ("file", Given::text("/home/anna/a.pdf")),
+            ("into", Given::text("/home/anna/Archive")),
+        ];
+        let ordinary = Call::of(&verb, &given).unwrap();
+        assert_eq!(
+            ordinary.what_it_leaves(&strings).unwrap().text(),
+            "No other file is moved."
+        );
+        let instead = Call::of(&verb, &given)
+            .unwrap()
+            .leaving_instead(INSTEAD.key());
+        assert_eq!(
+            instead.what_it_leaves(&strings).unwrap().text(),
+            "Every file beside it goes too."
+        );
+    }
 
     /// A call becomes a sentence and a set of questions for the grants, and
     /// nothing the model wrote appears in either.

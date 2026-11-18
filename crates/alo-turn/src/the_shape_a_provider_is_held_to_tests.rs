@@ -331,6 +331,18 @@ fn the_steering_names_the_verbs_the_machine_really_has() {
         alo_instructing::working_in_an_application::OPEN_ITEM,
         alo_adapters::OPEN_ITEM
     );
+    assert_eq!(
+        alo_instructing::working_in_an_application::OPEN_MENU,
+        alo_adapters::OPEN_MENU
+    );
+    assert_eq!(
+        alo_instructing::working_in_an_application::PRESS_KEY,
+        alo_adapters::PRESS_KEY
+    );
+    assert_eq!(
+        alo_instructing::working_in_an_application::TYPE_WITHOUT_SAVING,
+        alo_adapters::TYPE_WITHOUT_SAVING
+    );
     let verbs = the_whole_machine();
     let told = alo_instructing::working_in_an_application(&verbs);
     assert!(told.contains("Never send a run line"), "{told}");
@@ -338,6 +350,8 @@ fn the_steering_names_the_verbs_the_machine_really_has() {
     assert!(told.contains(alo_adapters::SCROLL_PAGE), "{told}");
     assert!(told.contains(alo_adapters::SET_VALUE), "{told}");
     assert!(told.contains(alo_adapters::CHOOSE_OPTION), "{told}");
+    assert!(told.contains(alo_adapters::OPEN_MENU), "{told}");
+    assert!(told.contains(alo_adapters::PRESS_KEY), "{told}");
     let words =
         alo_instructing::the_products_words(alo_instructing::Instructions::SHOWN_TO_A_TURN, &verbs);
     assert!(words.ends_with(&told), "{words}");

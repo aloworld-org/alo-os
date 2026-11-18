@@ -141,6 +141,19 @@ pub(crate) fn the_layout_that_saves() -> ALayout {
     }
 }
 
+/// The layout one key of alo's closed list is pressed through, once, with no
+/// Control held (2026-11-17).
+pub(crate) fn the_layout_for_a_key(key: alo_acting::AKey) -> ALayout {
+    let symbols = BTreeMap::from([(FIRST, key.symbol().to_owned())]);
+    ALayout {
+        keymap: written(&symbols),
+        presses: vec![Press {
+            key: FIRST - XKB_ABOVE_THE_KERNEL,
+            with_control: false,
+        }],
+    }
+}
+
 #[cfg(test)]
 #[path = "a_layout_for_a_text_tests.rs"]
 mod tests;

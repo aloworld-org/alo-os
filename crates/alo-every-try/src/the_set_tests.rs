@@ -13,7 +13,21 @@ use alo_publishing::PUBLISH_TO_GITHUB_PAGES;
 use alo_walking::writing_in_vscodium::{THE_FILE, THE_TEXT, VSCODIUM, the_ask};
 
 use super::{THE_HOME, THE_VERSION, the_set};
+use crate::a_road::{ARequest, Step};
 use crate::testing::the_verbs;
+
+/// A request's road and its other roads: every check of a road holds the
+/// others too.
+fn every_road_of(request: &ARequest) -> Vec<&[Step]> {
+    std::iter::once(request.road())
+        .chain(request.other_roads().iter().map(Vec::as_slice))
+        .collect()
+}
+
+/// Every step of every road.
+fn every_step_of(request: &ARequest) -> impl Iterator<Item = &Step> {
+    every_road_of(request).into_iter().flatten()
+}
 
 fn the_road_of(named: &str) -> Vec<&'static str> {
     let set = the_set().expect("the set builds");
@@ -31,7 +45,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 13);
+    assert_eq!(THE_VERSION, 17);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -62,6 +76,10 @@ fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
             "choose an option in a drop-down",
             "select a file in the file manager",
             "open a file in the file manager",
+            "open a thing's right-click menu in an application",
+            "press a key in an application",
+            "type into a search box without saving",
+            "answer the file chooser",
         ]
     );
 }
@@ -92,7 +110,7 @@ fn every_step_is_answered_in_a_line_the_protocol_writes() {
     let verbs = the_verbs();
     let words = crate::testing::the_words();
     for request in the_set().expect("the set builds").requests() {
-        for step in request.road() {
+        for step in every_step_of(request) {
             let declared = verbs
                 .of(step.verb())
                 .unwrap_or_else(|| panic!("{} is offered", step.verb()));
@@ -186,7 +204,7 @@ fn the_vscodium_request_is_the_walks_own() {
 fn every_verb_and_argument_the_set_expects_is_on_the_machines_list() {
     let verbs = the_verbs();
     for request in the_set().expect("the set builds").requests() {
-        for step in request.road() {
+        for step in every_step_of(request) {
             let verb = verbs
                 .of(step.verb())
                 .unwrap_or_else(|| panic!("{} is offered", step.verb()));
@@ -234,27 +252,65 @@ fn one_request_can_be_tried_alone_and_an_unknown_one_is_none() {
 fn every_look_is_a_read_and_not_last() {
     let verbs = the_verbs();
     for request in the_set().expect("the set builds").requests() {
-        let road = request.road();
-        for (at, step) in road.iter().enumerate() {
-            if !step.is_a_look() {
-                continue;
+        for road in every_road_of(request) {
+            for (at, step) in road.iter().enumerate() {
+                if !step.is_a_look() {
+                    continue;
+                }
+                let declared = verbs
+                    .of(step.verb())
+                    .unwrap_or_else(|| panic!("{} is offered", step.verb()));
+                assert_eq!(
+                    declared.effect(),
+                    alo_capability::Effect::Read,
+                    "{}: a look at {} is a read",
+                    request.named(),
+                    step.verb()
+                );
+                assert!(
+                    at + 1 < road.len(),
+                    "{}: a look is not last",
+                    request.named()
+                );
             }
-            let declared = verbs
-                .of(step.verb())
-                .unwrap_or_else(|| panic!("{} is offered", step.verb()));
-            assert_eq!(
-                declared.effect(),
-                alo_capability::Effect::Read,
-                "{}: a look at {} is a read",
-                request.named(),
-                step.verb()
-            );
-            assert!(
-                at + 1 < road.len(),
-                "{}: a look is not last",
-                request.named()
-            );
         }
+    }
+}
+
+/// **The scrolling request's other roads are pages down and then the heading
+/// on the screen** — read there, or scrolled to by name — parting from the
+/// road where the road scrolls to it.
+#[test]
+fn scrolling_down_until_a_heading_shows_may_go_a_page_at_a_time() {
+    use alo_adapters::fallback_verbs::{SCROLL_PAGE, SCROLL_TO};
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "scroll to a named thing in an application")
+        .expect("the set scrolls to a thing");
+    let verbs = |road: &[Step]| road.iter().map(Step::verb).collect::<Vec<_>>();
+    assert_eq!(verbs(request.road()), [READ_WINDOW, SCROLL_TO]);
+    let [read, named] = request.other_roads() else {
+        panic!("two other roads: {:?}", request.other_roads());
+    };
+    assert_eq!(verbs(read), [READ_WINDOW, SCROLL_PAGE, READ_WINDOW]);
+    assert_eq!(verbs(named), [READ_WINDOW, SCROLL_PAGE, SCROLL_TO]);
+    for other in [read, named] {
+        assert!(
+            other
+                .iter()
+                .any(|step| step.verb() == SCROLL_PAGE && step.is_taken_as_often_as_asked()),
+            "{other:?}"
+        );
+        assert!(
+            matches!(
+                other.last().map(Step::answered),
+                Some(crate::a_road::Answered::With(done))
+                    if format!("{done:?}").contains(crate::every_other_verb::FURTHER_DOWN)
+            ),
+            "{other:?}"
+        );
     }
 }
 

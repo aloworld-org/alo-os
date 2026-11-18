@@ -18,10 +18,11 @@
 use std::path::Path;
 use std::time::SystemTime;
 
-use alo_acting::Acting;
+use alo_acting::{AKey, Acting};
 use alo_adapters::fallback_verbs::{
-    self, ACTIVATE_CONTROL, CHOOSE_OPTION, KIND, NAME, OPEN_ITEM, OPTION, READ_WINDOW, SCROLL_PAGE,
-    SCROLL_TO, SELECT_ITEM, SET_VALUE, TOWARD, VALUE,
+    self, ACTIVATE_CONTROL, CHOOSE_OPTION, KEY, KIND, NAME, OPEN_ITEM, OPEN_MENU, OPTION,
+    PRESS_KEY, READ_WINDOW, SCROLL_PAGE, SCROLL_TO, SELECT_ITEM, SET_VALUE, TOWARD,
+    TYPE_WITHOUT_SAVING, VALUE,
 };
 use alo_adapters::scrolling::Toward;
 use alo_adapters::{Pressable, Role as OnScreen, Seen, Shown, ShownWindow};
@@ -88,6 +89,11 @@ pub const THE_PAGE: &str = "alo OS";
 
 /// The heading on the top of [`THE_PAGE`], which is on the screen.
 pub const ON_ITS_TOP: &str = "Getting started";
+/// The field the typing-without-saving request names.
+pub const SEARCH: &str = "Search";
+
+/// What the typing-without-saving request types.
+pub const SEARCHED_FOR: &str = "alo OS";
 
 /// The kind of work the catalogue request asks about, by a word with one
 /// meaning in the catalogue (`catalogue.toml`): painting is Painting, where
@@ -117,6 +123,18 @@ fn the_window_read_again(window: &Shown, browser: &str) -> Step {
         Answered::With(Done::of_a_window_read(window, &[])),
     )
     .expecting(fallback_verbs::APPLICATION, browser.to_owned())
+}
+
+/// A page down in the browser, as often as the model asks — each one a
+/// change, answered as the level answers it.
+fn a_page_down(browser: &str) -> Step {
+    Step::of(
+        SCROLL_PAGE,
+        Answered::With(Done::of_a_scroll(browser, Toward::Down.named(), true, true)),
+    )
+    .expecting(fallback_verbs::APPLICATION, browser.to_owned())
+    .expecting(TOWARD, Toward::Down.named())
+    .as_often_as_asked()
 }
 
 /// One thing in a folder, as the protocol carries it.
@@ -167,6 +185,11 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
     let report = downloads.join(REPORT);
     let browser = shipped
         .the(Role::WebBrowser)
+        .application()
+        .identifier()
+        .to_owned();
+    let files = shipped
+        .the(Role::FileManager)
         .application()
         .identifier()
         .to_owned();
@@ -380,7 +403,10 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(KIND, Pressable::Button.named())
             .expecting(NAME, RELOAD),
         ],
-    );
+    )
+    // **Reading the window again after acting is aside of the road**: the
+    // model checking what its act did is a read the machine answers.
+    .or_looking_at(the_window_read_again(&the_window, &browser));
     // **Scrolling, 2026-11-17**: to a thing the person names, and by a page.
     // Each may read the window first; neither needs to, since the request says
     // what to scroll to. **The window read is a page**, its top on the screen,
@@ -392,6 +418,18 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             vec![
                 Seen::of(OnScreen::Document, THE_PAGE.to_owned(), None, 1),
                 Seen::of(OnScreen::Label, ON_ITS_TOP.to_owned(), None, 2),
+            ],
+        )],
+        false,
+    );
+    // **The same page a page further down**, the heading now on the screen.
+    let the_page_further_down = Shown::of(
+        browser.clone(),
+        vec![ShownWindow::titled(
+            THE_BROWSERS_WINDOW.to_owned(),
+            vec![
+                Seen::of(OnScreen::Document, THE_PAGE.to_owned(), None, 1),
+                Seen::of(OnScreen::Label, FURTHER_DOWN.to_owned(), None, 2),
             ],
         )],
         false,
@@ -411,9 +449,40 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
                 Answered::With(Done::of_a_scroll(&browser, FURTHER_DOWN, false, true)),
             )
             .expecting(fallback_verbs::APPLICATION, browser.as_str())
-            .expecting(NAME, FURTHER_DOWN),
+            .expecting(fallback_verbs::TO, FURTHER_DOWN),
         ],
     )
+    // **Pages down, and then the heading on the screen, reach the same place**:
+    // "scroll down until" is how a page at a time is asked for, so these are
+    // other roads, counted apart, and the request's words are not changed to
+    // steer the model off them. A page down is answered without what it now
+    // shows, so the heading is reached either by reading the window, which
+    // shows it, or by scrolling to it by name.
+    .or_by_another_road(vec![
+        Step::of(
+            READ_WINDOW,
+            Answered::With(Done::of_a_window_read(&the_page, &[])),
+        )
+        .expecting(fallback_verbs::APPLICATION, browser.as_str())
+        .a_look(),
+        a_page_down(&browser),
+        the_window_read_again(&the_page_further_down, &browser),
+    ])
+    .or_by_another_road(vec![
+        Step::of(
+            READ_WINDOW,
+            Answered::With(Done::of_a_window_read(&the_page, &[])),
+        )
+        .expecting(fallback_verbs::APPLICATION, browser.as_str())
+        .a_look(),
+        a_page_down(&browser),
+        Step::of(
+            SCROLL_TO,
+            Answered::With(Done::of_a_scroll(&browser, FURTHER_DOWN, false, true)),
+        )
+        .expecting(fallback_verbs::APPLICATION, browser.as_str())
+        .expecting(fallback_verbs::TO, FURTHER_DOWN),
+    ])
     // **Reading the window again after is aside of the road**: the model is
     // told to, and the machine answers it.
     .or_looking_at(the_window_read_again(&the_page, &browser));
@@ -473,7 +542,8 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(NAME, ZOOM)
             .expecting(VALUE, ZOOMED.to_string()),
         ],
-    );
+    )
+    .or_looking_at(the_window_read_again(&the_viewers_window, &viewer));
     let papers = shipped
         .the(Role::DocumentViewer)
         .application()
@@ -517,12 +587,8 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(NAME, ZOOM)
             .expecting(OPTION, FIT_WIDTH),
         ],
-    );
-    let files = shipped
-        .the(Role::FileManager)
-        .application()
-        .identifier()
-        .to_owned();
+    )
+    .or_looking_at(the_window_read_again(&the_papers_window, &papers));
     let the_folders_window = Shown::of(
         files.clone(),
         vec![ShownWindow::titled(
@@ -548,7 +614,8 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(fallback_verbs::APPLICATION, files.as_str())
             .expecting(NAME, REPORT),
         ],
-    );
+    )
+    .or_looking_at(the_window_read_again(&the_folders_window, &files));
     let opening = ARequest::asking(
         "open a file in the file manager",
         format!("Open {REPORT} in Dolphin."),
@@ -566,6 +633,114 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(fallback_verbs::APPLICATION, files.as_str())
             .expecting(NAME, REPORT),
         ],
+    )
+    .or_looking_at(the_window_read_again(&the_folders_window, &files));
+    // **A thing's own menu, 2026-11-17**: the person names the file, so reading
+    // the window first is a look.
+    let the_folder = Shown::of(
+        files.clone(),
+        vec![ShownWindow::titled(
+            documents_named.to_owned(),
+            vec![Seen::of(OnScreen::Part, NOTES.to_owned(), None, 1)],
+        )],
+        false,
+    );
+    let a_menu = ARequest::asking(
+        "open a thing's right-click menu in an application",
+        format!("In Dolphin, open the right-click menu of {NOTES}."),
+        vec![
+            Step::of(
+                READ_WINDOW,
+                Answered::With(Done::of_a_window_read(&the_folder, &[])),
+            )
+            .expecting(fallback_verbs::APPLICATION, files.as_str())
+            .a_look(),
+            Step::of(
+                OPEN_MENU,
+                Answered::With(Done::of_a_menu(&files, NOTES, false)),
+            )
+            .expecting(fallback_verbs::APPLICATION, files.as_str())
+            .expecting(fallback_verbs::THING, NOTES),
+        ],
+    )
+    // **Reading the window again after is aside of the road**: the model is
+    // told to read the menu's items, and the machine answers it.
+    .or_looking_at(
+        Step::of(
+            READ_WINDOW,
+            Answered::With(Done::of_a_window_read(&the_folder, &[])),
+        )
+        .expecting(fallback_verbs::APPLICATION, files.as_str()),
+    );
+    // **A key, 2026-11-17**: the person names it, so reading first is a look.
+    let a_key = ARequest::asking(
+        "press a key in an application",
+        "Press Enter in Firefox.",
+        vec![
+            Step::of(
+                READ_WINDOW,
+                Answered::With(Done::of_a_window_read(&the_window, &[])),
+            )
+            .expecting(fallback_verbs::APPLICATION, browser.as_str())
+            .a_look(),
+            Step::of(
+                PRESS_KEY,
+                Answered::With(Done::of_a_key(&browser, AKey::Enter.named())),
+            )
+            .expecting(fallback_verbs::APPLICATION, browser.as_str())
+            .expecting(KEY, AKey::Enter.named()),
+        ],
+    )
+    // **Reading the window again after is aside of the road**: what a key did
+    // is seen by reading, and the machine answers it.
+    .or_looking_at(
+        Step::of(
+            READ_WINDOW,
+            Answered::With(Done::of_a_window_read(&the_window, &[])),
+        )
+        .expecting(fallback_verbs::APPLICATION, browser.as_str()),
+    );
+    // **Typing that saves nothing, 2026-11-17**: a web page's search box,
+    // where `type_text`'s `Ctrl+S` would save the page.
+    let the_search = Shown::of(
+        browser.clone(),
+        vec![ShownWindow::titled(
+            THE_BROWSERS_WINDOW.to_owned(),
+            vec![Seen::of(OnScreen::TextField, SEARCH.to_owned(), None, 1)],
+        )],
+        false,
+    );
+    let typing_without_saving = ARequest::asking(
+        "type into a search box without saving",
+        format!("In Firefox, type {SEARCHED_FOR} into the field called {SEARCH}."),
+        vec![
+            Step::of(
+                READ_WINDOW,
+                Answered::With(Done::of_a_window_read(&the_search, &[])),
+            )
+            .expecting(fallback_verbs::APPLICATION, browser.as_str())
+            .a_look(),
+            Step::of(
+                TYPE_WITHOUT_SAVING,
+                Answered::With(Done::of_a_typing_without_saving(
+                    &browser,
+                    SEARCH,
+                    SEARCHED_FOR.chars().count(),
+                    false,
+                    true,
+                )),
+            )
+            .expecting(fallback_verbs::APPLICATION, browser.as_str())
+            .expecting(fallback_verbs::FIELD, SEARCH)
+            .expecting(fallback_verbs::TEXT, SEARCHED_FOR),
+        ],
+    )
+    .or_looking_at(
+        Step::of(
+            READ_WINDOW,
+            Answered::With(Done::of_a_window_read(&the_search, &[])),
+        )
+        .expecting(fallback_verbs::APPLICATION, browser.as_str()),
     );
     Ok(vec![
         listing,
@@ -586,5 +761,8 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         choosing,
         selecting,
         opening,
+        a_menu,
+        a_key,
+        typing_without_saving,
     ])
 }

@@ -150,6 +150,8 @@ mod a_window_on_one_side;
 mod a_window_onto_a_list;
 mod a_window_raised;
 mod a_window_travels_aside;
+/// alo answering the file chooser with a file the person approved.
+pub mod alo_answers_the_file_chooser;
 /// The window a person offered alo, and the window each task works in.
 pub mod alo_in_a_window;
 mod alo_in_applications_in_settings;
@@ -187,6 +189,8 @@ mod the_name_of_a_window_aside;
 pub mod the_window_alo_acts_in;
 /// The words typed into a window panel's field, and the caret among them.
 pub mod the_window_panels_field;
+/// What reads the pictures alo takes of a window, chosen in Settings.
+mod who_reads_pictures_in_settings;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
 mod a_reader_presses;
 mod a_reader_presses_in_settings;
@@ -490,6 +494,7 @@ mod output_metadata;
 mod output_retirement;
 mod overview_sheet;
 mod painted;
+mod the_market_as_read;
 use alo_drawing::painted_flat;
 use alo_drawing::painted_text;
 use alo_drawing::painted_text_wrapping;

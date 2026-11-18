@@ -47,7 +47,7 @@ use crate::a_road::{ARequest, Answered, Step};
 
 /// The version of the set. Up by one for every change to a request, a road or
 /// the machine.
-pub const THE_VERSION: u32 = 13;
+pub const THE_VERSION: u32 = 17;
 
 /// The person's home on the machine the walk boots: Fedora's atomic layout
 /// puts homes under `/var/home`, measured on 2026-11-10
@@ -229,6 +229,8 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
 
     let mut requests = vec![writing, publishing, opening];
     requests.extend(crate::every_other_verb::every_other_verb(home, &shipped)?);
+    // **And answering the file chooser** (2026-11-17).
+    requests.push(crate::answering_the_file_chooser::answering_the_file_chooser(home, &shipped));
     let mut places: Vec<String> = shipped
         .every()
         .iter()

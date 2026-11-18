@@ -265,6 +265,18 @@ impl TheFileChooser {
         self.the_next_goes_up(now, folders);
     }
 
+    /// **The sheet is answered with `file`**, as the person's own choice
+    /// would answer it — what alo's approved answer comes to
+    /// (`crate::alo_answers_the_file_chooser`).
+    pub(crate) fn chosen_for_the_person(
+        &mut self,
+        file: std::path::PathBuf,
+        now: Instant,
+        folders: &dyn Folders,
+    ) {
+        self.ended(Some(Ending::Chosen(file)), now, folders);
+    }
+
     /// The sheet ended, when it did: answered, and the next goes up.
     fn ended(&mut self, ending: Option<Ending>, now: Instant, folders: &dyn Folders) {
         let Some(ending) = ending else {

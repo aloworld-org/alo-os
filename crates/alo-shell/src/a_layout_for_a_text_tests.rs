@@ -8,8 +8,8 @@
 use smithay::input::keyboard::xkb;
 
 use super::{
-    CONTROL_KEY, FIRST, KEYS_IN_A_LAYOUT, LAST, XKB_ABOVE_THE_KERNEL, the_layout_that_saves,
-    the_layouts_for,
+    CONTROL_KEY, FIRST, KEYS_IN_A_LAYOUT, LAST, XKB_ABOVE_THE_KERNEL, the_layout_for_a_key,
+    the_layout_that_saves, the_layouts_for,
 };
 
 /// The layout, compiled as a client compiles it.
@@ -109,4 +109,20 @@ fn saving_is_control_held_with_s() {
         "Control_L"
     );
     assert_ne!(keymap.mod_get_index(xkb::MOD_NAME_CTRL), xkb::MOD_INVALID);
+}
+
+#[test]
+fn each_key_of_the_closed_list_is_pressed_once_as_its_own_symbol_without_control() {
+    for key in alo_acting::AKey::ALL {
+        let layout = the_layout_for_a_key(key);
+        let keymap = compiled(&layout.keymap);
+        let state = xkb::State::new(&keymap);
+        assert_eq!(layout.presses.len(), 1, "{key:?}");
+        let press = layout.presses[0];
+        assert!(!press.with_control, "{key:?}");
+        assert_eq!(
+            xkb::keysym_get_name(state.key_get_one_sym((press.key + XKB_ABOVE_THE_KERNEL).into())),
+            key.symbol()
+        );
+    }
 }

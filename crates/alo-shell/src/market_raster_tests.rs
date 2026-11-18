@@ -450,9 +450,10 @@ fn a_label_is_written_on_its_row_and_a_row_without_one_has_nothing_there() {
         "Audacity's row has no label written on it"
     );
 
+    // Verified, and asking for nothing past its box: a row with no label.
     let verified = THE_CATALOGUE_AS_IT_IS.replace(
-        "\"GPL-3.0-only\"\nverified = false",
-        "\"GPL-3.0-only\"\nverified = true",
+        "\"GPL-3.0-only\"\nverified = false\nearly = false\nreaches = [\"your-files\", \"the-internet\"]",
+        "\"GPL-3.0-only\"\nverified = true\nearly = false\nreaches = []",
     );
     assert_ne!(
         verified, THE_CATALOGUE_AS_IT_IS,

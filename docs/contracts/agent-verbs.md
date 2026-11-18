@@ -575,6 +575,45 @@ by `alo-applications` (`crate::opening_a_file`) and carried out by
   model they stay here. The titles of the application's other windows are never
   said.
 
+### `choose_on_the_file_chooser` — added 2026-11-17, additively
+
+*The coordinator's approval of 2026-11-17*, on the owner's decision that alo OS
+has its own file chooser and **alo may answer it only inside the folders the
+person granted: one card at *ask each time*, none at full access.** Declared by
+`alo-applications` (`crate::choosing_on_the_file_chooser`) and carried out by
+`alo-turn`'s `choosing_on_the_file_chooser`. Nothing above changed.
+
+| Verb | Effect | Arguments | Sentence |
+|---|---|---|---|
+| `choose_on_the_file_chooser` | change | `folder` (path), `name` (name) | choose {name} in {folder} on the file chooser |
+
+- **A folder and one name, not a path**, because a file chosen to save under
+  does not exist yet: the place is taken as `archive_folder`'s `into` and
+  `name` are.
+- **The grant is over the folder**, exactly as every file verb's is: a folder
+  under a granted one, or at full access any folder the person's account can
+  open (ADR 0149). **A file already there is asked about too**: where it
+  really leads must be granted, in the file verbs' own words, so a link out of
+  a granted folder is refused.
+- **It is carried out in this order, and every step that refuses is
+  recorded**: the folder, granted, resolved and its real place granted (the
+  file verbs' three questions); the file, where it is there, its real place
+  granted; then the compositor door's `alo-chooses-file` with the folder's
+  **real** path and the name ([`application-door.md`](application-door.md)).
+- **What the application is given is the portal's**: the sheet is answered
+  exactly as the person's own choice would answer it, and the portal records
+  and hands over that one file (`portals.md`, *file chooser and documents*).
+- **Refused, in words, with nothing chosen**: the folder not granted, not
+  there, or leading outside the grants; the file leading outside them; no file
+  chooser up (`no-sheet`); a file the sheet could not take — not there to
+  open, or a folder's name to save under (`not-believed`); no desktop; and a
+  request from a paired machine, refused by name before any grant is asked.
+- **The person's own use of the sheet is never narrowed by this.** The grants
+  decide only what alo may answer for them.
+- On the daemon's socket a done one is `reached` with `act` `alo-chooses-file`
+  and the application the file was chosen for
+  ([`daemon-protocol.md`](daemon-protocol.md)); the file is in the record.
+
 ### The identifier is approved; the name is only shown
 
 An application has two names: the identifier this machine knows it by
@@ -685,7 +724,7 @@ carried out by `crates/alo-adapters/src/scrolling.rs` through a turn:
 
 | Verb | Arguments | The sentence a person approves |
 |---|---|---|
-| `accessible.scroll_to` | `application` (an application), `name` (a name, at most 200 characters) | *scroll {application} until “{name}” is on the screen* |
+| `accessible.scroll_to` | `application` (an application), `to` (a name, at most 200 characters; `name` still accepted, deprecated, see below) | *scroll {application} until “{to}” is on the screen* |
 | `accessible.scroll_page` | `application` (an application), `toward` (a choice: `down`, `up`) | *scroll {toward} by one page in {application}* |
 
 Both are **changes**: at *ask each time* each scroll waits for one approval and
@@ -696,7 +735,7 @@ application shows, as scrolling would, so that more of it can be read* and
 by where it is on the screen.*
 
 - **`scroll_to`** finds the one thing in the application's windows named
-  exactly `name` — on the screen or scrolled away, never one that is hidden —
+  exactly `to` — on the screen or scrolled away, never one that is hidden —
   and asks the application to scroll it onto the screen with its top against
   the top. None, or more than one, is refused rather than guessed; so is a
   window too large to be sure there is only one.
@@ -718,6 +757,94 @@ That list views describe their scrolled-away rows that way was found on
 2026-11-16 (#1337); that every toolkit does is **not measured**, and a toolkit
 that calls every row showing leaves `scroll_page` with nothing further to
 scroll to.
+## Typing that saves nothing — added 2026-11-17, additively
+
+`accessible.type_without_saving` takes `accessible.type_text`'s arguments with
+the field named `field` rather than `name` (`application`, `field`, `text`), so
+the two calls differ in shape as well as in name
+(`docs/quirks/two-verbs-taking-the-same-arguments-and-gpt-4o-mini-sends-neither.md`),
+and every one of `type_text`'s checks and roads (ADR 0153): the whole text on
+the card, one field of that name, never a password field or a terminal, alo's
+own copy at the default, and the text read back after. **It never presses
+`Ctrl+S`**, which in a web page's search box or form saves the page. The person
+approves *type {text} into “{field}” in {application}*, and the card says *The text below is typed where the field's
+cursor is and read back. Nothing is saved.* A change, at both levels, like
+`type_text`.
+
+On the wire it answers `typed-without-saving` (`application`, `name`,
+`characters`, `through_the_tree`, `read_back`); one that did not read back
+exactly leaves something out. `typed` keeps meaning a typing that was to be
+saved.
+
+## The key verb — added 2026-11-17, additively
+
+`accessible.press_key` presses **one key, once**, in the window of an
+application that has the keyboard: what a person does to send a search, close a
+dialog or move between fields. Declared in `alo-adapters` (`fallback_verbs.rs`),
+checked by `crates/alo-adapters/src/pressing_a_key.rs` and carried out through a
+turn and the compositor's `press-in` (`application-door.md`).
+
+| Arguments | The sentence a person approves |
+|---|---|
+| `application` (an application), `key` (a choice: `enter`, `escape`, `tab`, `up`, `down`, `left`, `right`) | *press {key} in {application}* |
+
+- **A change.** At *ask each time* each key waits for one approval and one
+  approval presses once; at full access it presses at once, once, and is
+  recorded the same way. The card says *Presses that one key once in the
+  application's window that has the keyboard, as a person pressing it would*
+  and *No other key is pressed, no other window is sent the key, and nothing is
+  pressed in a password field or a terminal.*
+- **A closed list.** No combination, no letter, no shortcut and no count can be
+  named; the names are the ones a person's own `alo-app … key` takes
+  (`terminal-commands.md`).
+- **Never a password field or a terminal.** Where the place with the keyboard in
+  that application is either, nothing is pressed. A terminal application is
+  reached only where the person allowed their agent one (ADR 0111).
+- **Only the window with the keyboard, and alo's own copy at the default** —
+  the compositor's rule for `type-into`, never moved to carry it out. Its
+  refusals (`not-in-front`, `not-alos-copy`, `no-keyboard`) are refusals here,
+  recorded, with nothing pressed.
+- The answer is `key-pressed` on the wire, with `application` and `key`.
+
+**`scroll_to`'s argument is `to`, and `name` is still accepted, deprecated**
+(since 2026-11-17). The verb landed taking `name`, which shaped it like
+`accessible.type_text` with one argument fewer, and a hosted model sent
+`type_text` with an empty text in its place
+(`docs/quirks/two-verbs-taking-the-same-arguments-and-gpt-4o-mini-sends-neither.md`).
+So `to` is what is offered and what the record keeps; a call giving `name` is
+read as giving `to`, and both with two different values is one argument given
+twice. `name` is never offered again, and it stops being accepted only in a
+versioned break (`alo_capability::Arg::formerly_called`).
+
+## The menu verb — added 2026-11-17, additively
+
+`accessible.open_menu` opens **one thing's own right-click menu** in an
+application's window — what a person right-clicks a file for, to rename, share
+or delete it. Declared in `alo-adapters` (`fallback_verbs.rs`) and carried out
+by `crates/alo-adapters/src/opening_a_menu.rs` through a turn.
+
+| Arguments | The sentence a person approves |
+|---|---|
+| `application` (an application), `thing` (a name, at most 200 characters) | *open the right-click menu of “{thing}” in {application}* |
+
+- **A change.** At *ask each time* it waits for one approval and one approval
+  opens once; at full access it opens at once, once, and is recorded the same
+  way. The card says *Opens that one thing's own menu, by the application's own
+  way of opening it, as a right-click would* and *No item of the menu is
+  chosen, nothing is typed, and nothing is found by where it is on the screen.*
+- **By the application's own action, never a click.** The thing must be on the
+  screen, named exactly `thing`, and the only one of that name whose application
+  offers an action that opens its menu. The action looked for is Qt's
+  `ShowMenu` (`opening_a_menu::MENU_ACTIONS`); **whether other toolkits offer
+  one, and under what name, is not measured**, and a thing with none is refused
+  in words.
+- **Never a password field.** A terminal is reached only where the person
+  allowed their agent one (ADR 0111).
+- The menu's items are then read with `accessible.read_window` and pressed with
+  `accessible.activate_control` (`menu_item`), as any menu is. The answer is
+  `menu-opened` on the wire, with `application`, `name` and `unanswered`; an
+  application that did not answer leaves something out, and is recorded as
+  having run, because it may have opened.
 
 ## The measurement verbs
 
@@ -1116,7 +1243,7 @@ licence. The licence is there because it is the field somebody choosing between
 two of these actually weighs.
 
 **Since 2026-11-17 each entry may also carry `labels`** — `not_open_source`,
-`not_verified`, `early_version`, in that order — the same facts the market
+`not_verified`, `early_version`, `no_automatic_updates`, in that order — the same facts the market
 shows a person on that application's row (the owner's decision of that day).
 The field is **absent** when an application has none, so an answer about one
 with no label is written exactly as before; this is an additive change to the
@@ -1296,7 +1423,7 @@ published*.
 | **Publishing** | Publish a granted folder to the person's own GitHub Pages site, with `git` and GitHub's own `gh` | `alo-agentd`, as the person, on the command road (ADR 0149) |
 | **Context** | The focused window, the selection, the open document | Offered at invocation only |
 | **Adapters** | An installed application's own verbs — `text_editor.open_document`, named under their adapter | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, not yet offered by a turn. See `app-adapters.md` |
-| **Accessibility fallback** | For a granted application with no adapter: read what its windows show (`accessible.read_window`, a read), press one control named by its kind and the name it shows (`accessible.activate_control`, a change), and — since 2026-11-13, ADR 0153 — type one approved text into one field named as the application shows it, and save it (`accessible.type_text`, a change taking the **text** kind; the approval shows the whole text; the text is read back and saved only if it matches; never a password field or a terminal; at the default only into alo's own copy of the application; one approval types one text, and the stricter and looser settings of ADR 0143 Q1 are not built); and — since 2026-11-17, additively — move one slider or number box to a whole number (`accessible.set_value`, a change taking `application`, `name` and `value`, a whole number; a number outside the range the control itself says is refused before anything moves, a progress bar or meter is refused, and the answer `set` says whether it read back as that number); and — since 2026-11-17, additively — choose one option of a drop-down (`accessible.choose_option`, a change taking `application`, `name` — the drop-down by the name it shows, or where it shows none the choice it shows — and `option`, exactly as the drop-down lists it) and select one item of a list without opening it (`accessible.select_item`, a change taking `application` and `name`). Both answer `chosen`: the application, the name, the option for a drop-down, `seen` (whether the window showed it chosen when alo looked again) and `unanswered`; a choice the application was asked to make is recorded as run whether or not it was seen. Opening one item, as a double-click would, is its own verb (`accessible.open_item`, a change taking `application` and `name`, answering `item-opened`; a card at *ask each time*, none at full access — the owner, 2026-11-17: *"Yes but it should be without okay on full access"*). **What the read names each thing** is one of the press kinds, `field`, `password-field`, `text`, `document`, `image`, `window` or `drawn`, and since 2026-11-17, additively, `drop-down` (its choice in `shows`), `item` (one item of a list, a table or a tree) and `slider` (a slider, progress bar or meter, its number in `value`), with `selected` on a tab or item that can be chosen. Since 2026-11-17 it also scrolls the window until one named thing is on the screen (`accessible.scroll_to`, a change) or by one page down or up (`accessible.scroll_page`, a change). Never a password field's contents, never a position | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, **offered by a turn since 2026-11-12**: the read answers inside the turn, the press waits for one approval. The tree is opened for one read or press and closed after it. A read never answers across a pairing. See `app-adapters.md` |
+| **Accessibility fallback** | For a granted application with no adapter: read what its windows show (`accessible.read_window`, a read), press one control named by its kind and the name it shows (`accessible.activate_control`, a change), and — since 2026-11-13, ADR 0153 — type one approved text into one field named as the application shows it, and save it (`accessible.type_text`, a change taking the **text** kind; the approval shows the whole text; the text is read back and saved only if it matches; never a password field or a terminal; at the default only into alo's own copy of the application; one approval types one text, and the stricter and looser settings of ADR 0143 Q1 are not built); and — since 2026-11-17, additively — move one slider or number box to a whole number (`accessible.set_value`, a change taking `application`, `name` and `value`, a whole number; a number outside the range the control itself says is refused before anything moves, a progress bar or meter is refused, and the answer `set` says whether it read back as that number); and — since 2026-11-17, additively — choose one option of a drop-down (`accessible.choose_option`, a change taking `application`, `name` — the drop-down by the name it shows, or where it shows none the choice it shows — and `option`, exactly as the drop-down lists it) and select one item of a list without opening it (`accessible.select_item`, a change taking `application` and `name`). Both answer `chosen`: the application, the name, the option for a drop-down, `seen` (whether the window showed it chosen when alo looked again) and `unanswered`; a choice the application was asked to make is recorded as run whether or not it was seen. Opening one item, as a double-click would, is its own verb (`accessible.open_item`, a change taking `application` and `name`, answering `item-opened`; a card at *ask each time*, none at full access — the owner, 2026-11-17: *"Yes but it should be without okay on full access"*). **What the read names each thing** is one of the press kinds, `field`, `password-field`, `text`, `document`, `image`, `window` or `drawn`, and since 2026-11-17, additively, `drop-down` (its choice in `shows`), `item` (one item of a list, a table or a tree) and `slider` (a slider, progress bar or meter, its number in `value`), with `selected` on a tab or item that can be chosen. Since 2026-11-17 it also scrolls the window until one named thing is on the screen (`accessible.scroll_to`, a change) or by one page down or up (`accessible.scroll_page`, a change). Since 2026-11-17 it also opens one thing's right-click menu by the application's own action (`accessible.open_menu`, a change). Since 2026-11-17 it also presses one key of a closed list (Enter, Escape, Tab, the arrows) in the window with the keyboard (`accessible.press_key`, a change). Never a password field's contents, never a position | `alo-agentd`, as the person; declared and carried out by `alo-adapters`, **offered by a turn since 2026-11-12**: the read answers inside the turn, the press waits for one approval. The tree is opened for one read or press and closed after it. A read never answers across a pairing. See `app-adapters.md` |
 | **Network** | Propose joining or forgetting a Wi-Fi network by the name it announces, or turning Wi-Fi on or off, saying what each does to the conversation | Carried out by the **privileged broker** (`alo-brokerd`), asked by `alo-changing-network`; declared, not yet offered by a turn |
 | **Printers** | Propose setting up, removing or choosing a printer, by the name it gave itself | Carried out by the **privileged broker** (`alo-brokerd`), asked by `alo-changing-printers`; declared, not yet offered by a turn |
 | **System** | Printers, network, updates, storage | The **privileged broker**, never the agent directly |

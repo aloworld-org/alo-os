@@ -158,6 +158,7 @@ pub mod installing;
 pub mod installing_a_signed_release;
 pub mod label;
 pub mod maker;
+pub mod reach;
 pub mod refusing;
 pub mod removing;
 pub mod rented;
@@ -194,6 +195,7 @@ pub use installing_a_signed_release::{
 };
 pub use label::Label;
 pub use maker::Maker;
+pub use reach::Reach;
 pub use refusing::NotDone;
 pub use removing::{Removed, remove};
 pub use rented::TheRentedTool;
@@ -209,7 +211,7 @@ pub use tool::{Failed, Tool};
 pub use updating::{Offer, Updated, apply, applying, looking_for_updates, offered};
 pub use verbs::{
     Declaring, INSTALL_APPLICATION, NotALook, NotAnInstallation, WHAT_CAN_BE_INSTALLED, approved,
-    looked_at, software_verbs,
+    looked_at, software_verbs, what_installing_leaves,
 };
 pub use what_the_catalogue_holds::WhatTheCatalogueHolds;
 pub use whether_it_is_sandboxed::Sandboxing;

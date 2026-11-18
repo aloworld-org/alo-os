@@ -63,11 +63,15 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
             pressed.name(),
             pressed.unanswered(),
         ),
-        WhatAVerbDid::TextWasTyped(typed) => Done::of_a_typing(
+        // A typing that saves nothing (2026-11-17) says so on the wire, so a
+        // client never reads it as a save that failed.
+        WhatAVerbDid::TextWasTyped(typed) => Done::of_either_typing(
             typed.application(),
             typed.name(),
             typed.characters(),
             typed.through_the_tree(),
+            typed.asked_to_save(),
+            typed.read_back(),
             typed.saved(),
         ),
         // A slider or a number box moved (2026-11-17).
@@ -110,6 +114,12 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
                 .types_into()
                 .map(|(name, window)| (name.to_owned(), window.to_owned())),
         ),
+        // A file chosen on the file chooser an application had up
+        // (2026-11-17). It crosses as an application act, the door's own word
+        // for it, naming whom it was chosen for; the file is in the record.
+        WhatAVerbDid::AFileWasChosen(chosen) => {
+            Done::of_an_application_act(alo_acting::ALO_CHOOSES_FILE, chosen.application())
+        }
         // A scroll in an application's window (2026-11-17): what was asked
         // and whether it now reads as on the screen — never what it shows.
         WhatAVerbDid::AWindowWasScrolled(scrolled) => Done::of_a_scroll(
@@ -118,5 +128,14 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
             scrolled.a_page(),
             scrolled.now_showing(),
         ),
+        // One thing's right-click menu opened (2026-11-17): what it holds is
+        // read by `accessible.read_window`, never carried here.
+        WhatAVerbDid::AMenuWasOpened(opened) => {
+            Done::of_a_menu(opened.application(), opened.name(), opened.unanswered())
+        }
+        // One key pressed in an application's window (2026-11-17).
+        WhatAVerbDid::AKeyWasPressed(pressed) => {
+            Done::of_a_key(pressed.application(), pressed.key().named())
+        }
     }
 }

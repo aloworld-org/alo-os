@@ -31,12 +31,16 @@ use alo_capability::{Arg, Effect, Requires, Takes, Verb, Verbs};
 
 use crate::choosing_words as choosing;
 use crate::fallback_words as words;
+use crate::keys_words as keys;
+use crate::menu_words as menu;
 use crate::not_loaded::NotLoaded;
 use crate::opening_words as opening;
 use crate::pressable::Pressable;
+use crate::pressing_a_key::the_keys_offered;
 use crate::scrolling::Toward;
 use crate::scrolling_words as scrolling;
 use crate::setting_words as setting;
+use crate::typing_without_saving_words as unsaved;
 use crate::typing_words as typing;
 
 /// The prefix both verbs are named under.
@@ -60,6 +64,16 @@ pub const SCROLL_PAGE: &str = "accessible.scroll_page";
 
 /// The argument naming which way a page is scrolled.
 pub const TOWARD: &str = "toward";
+/// The verb that presses one key of a closed list (2026-11-17).
+pub const PRESS_KEY: &str = "accessible.press_key";
+
+/// The argument naming the key.
+pub const KEY: &str = "key";
+
+/// The verb that types one approved text into one field and saves nothing
+/// (2026-11-17): a search box, a form, an address, where `Ctrl+S` would save
+/// the page instead.
+pub const TYPE_WITHOUT_SAVING: &str = "accessible.type_without_saving";
 
 /// The verb that moves a slider or a number box to a whole number
 /// (2026-11-17, the owner's "Yes do all").
@@ -72,6 +86,24 @@ pub const VALUE: &str = "value";
 /// own range is what decides at the moment of moving; this only keeps the
 /// number one a slider could hold.
 pub const LARGEST_VALUE: i64 = 1_000_000_000;
+/// The argument naming the thing scrolled to.
+///
+/// **Not `name`** (2026-11-17), for [`THING`]'s reason: taking `application`
+/// and `name` it was a call of `accessible.type_text`'s shape with one argument
+/// fewer, and `gpt-4o-mini` sent `type_text` with an empty text and the
+/// heading's name in 4 of 20 tries asked to scroll to it.
+pub const TO: &str = "to";
+
+/// The verb that opens one thing's right-click menu (2026-11-17).
+pub const OPEN_MENU: &str = "accessible.open_menu";
+
+/// The argument naming the thing whose menu is opened.
+///
+/// **Not `name`**, which `accessible.scroll_to` takes beside `application`
+/// and nothing else: told both, `gpt-4o-mini` sent `type_text` in every try
+/// asked to open a file's menu, so the two calls are kept apart in shape as
+/// well as in name.
+pub const THING: &str = "thing";
 
 /// The argument carrying the text, whole.
 pub const TEXT: &str = "text";
@@ -99,6 +131,13 @@ pub const KIND: &str = "kind";
 
 /// The argument naming the control.
 pub const NAME: &str = "name";
+
+/// The argument naming the field `accessible.type_without_saving` types into.
+///
+/// **Not `name`** (2026-11-17), for [`THING`]'s reason: taking `type_text`'s
+/// three arguments exactly, `gpt-4o-mini` sent `type_text` in 10 of 20 tries
+/// asked to type into a search box, even told which of the two saves.
+pub const FIELD: &str = "field";
 
 /// The longest name a control is asked for by.
 pub const LONGEST_NAME: usize = 200;
@@ -189,7 +228,10 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
                     scrolling::SCROLL_TO_APPLICATION,
                     Takes::Application,
                 ),
-                Arg::taking(NAME, scrolling::SCROLL_TO_NAME, Takes::name(LONGEST_NAME)),
+                // `name` until 2026-11-17, still accepted and deprecated: the
+                // verb had landed under it (`docs/contracts/agent-verbs.md`).
+                Arg::taking(TO, scrolling::SCROLL_TO_NAME, Takes::name(LONGEST_NAME))
+                    .formerly_called(NAME),
             ],
             Requires::grants_over([APPLICATION]),
             scrolling::SCROLL_TO_SENTENCE,
@@ -292,6 +334,58 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
             opening::OPEN_SENTENCE,
         )
         .and_then(|verb| verb.changing(opening::OPEN_CHANGES, Some(opening::OPEN_LEAVES))),
+    )?)?;
+    // **A thing's own menu, 2026-11-17** (`crate::opening_a_menu`): a change,
+    // by the application's own action, never by a click at a place.
+    verbs.declare(checked(
+        OPEN_MENU,
+        Verb::checked(
+            OPEN_MENU,
+            menu::MENU_PURPOSE,
+            Effect::Change,
+            vec![
+                Arg::taking(APPLICATION, menu::MENU_APPLICATION, Takes::Application),
+                Arg::taking(THING, menu::MENU_NAME, Takes::name(LONGEST_NAME)),
+            ],
+            Requires::grants_over([APPLICATION]),
+            menu::MENU_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(menu::MENU_CHANGES, Some(menu::MENU_LEAVES))),
+    )?)?;
+    // **One key, 2026-11-17** (`crate::pressing_a_key`): a change, one of seven
+    // keys offered as a choice, so no combination or letter can arrive.
+    verbs.declare(checked(
+        PRESS_KEY,
+        Verb::checked(
+            PRESS_KEY,
+            keys::KEY_PURPOSE,
+            Effect::Change,
+            vec![
+                Arg::taking(APPLICATION, keys::KEY_APPLICATION, Takes::Application),
+                Arg::taking(KEY, keys::KEY_KEY, the_keys_offered()),
+            ],
+            Requires::grants_over([APPLICATION]),
+            keys::KEY_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(keys::KEY_CHANGES, Some(keys::KEY_LEAVES))),
+    )?)?;
+    // **Typing that saves nothing, 2026-11-17**: `accessible.type_text`'s
+    // arguments and checks, without its `Ctrl+S` (`crate::typing_text`).
+    verbs.declare(checked(
+        TYPE_WITHOUT_SAVING,
+        Verb::checked(
+            TYPE_WITHOUT_SAVING,
+            unsaved::UNSAVED_PURPOSE,
+            Effect::Change,
+            vec![
+                Arg::taking(APPLICATION, typing::TYPE_APPLICATION, Takes::Application),
+                Arg::taking(FIELD, typing::TYPE_NAME, Takes::name(LONGEST_NAME)),
+                Arg::taking(TEXT, typing::TYPE_THE_TEXT, Takes::Text),
+            ],
+            Requires::grants_over([APPLICATION]),
+            unsaved::UNSAVED_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(unsaved::UNSAVED_CHANGES, Some(typing::TYPE_LEAVES))),
     )?)?;
     Ok(())
 }

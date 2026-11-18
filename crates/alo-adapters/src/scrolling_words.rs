@@ -32,10 +32,10 @@ pub const SCROLL_TO_NAME: Word = Word::saying(
 /// What a person approves before alo scrolls to a thing.
 pub const SCROLL_TO_SENTENCE: Word = Word::saying(
     "adapters.fallback.scroll-to.sentence",
-    "scroll {application} until “{name}” is on the screen",
+    "scroll {application} until “{to}” is on the screen",
 )
 .noting(
-    "The sentence a person approves before alo scrolls. {name} is the thing's name exactly as \
+    "The sentence a person approves before alo scrolls. {to} is the thing's name exactly as \
      the application shows it and is not translated. {application} is the application's \
      identifier and is not translated.",
 );

@@ -273,6 +273,42 @@ impl TheDoorTheCompositorServes for AtTheCompositorsDoor {
             why: format!("the compositor answered {heard:?}, which this machine does not know"),
         })
     }
+
+    fn answering_the_file_chooser(
+        &mut self,
+        asked: &alo_acting::ToAnswerAFileChooser,
+    ) -> Result<alo_acting::AnsweredTheChooser, NotAtTheDoor> {
+        let heard = self.one_line_and_its_answer(&asked.written())?;
+        // As for an act: an unknown word is never read as chosen.
+        alo_acting::AnsweredTheChooser::read(&heard).ok_or_else(|| NotAtTheDoor::NotAnswered {
+            why: format!("the compositor answered {heard:?}, which this machine does not know"),
+        })
+    }
+}
+
+impl AtTheCompositorsDoor {
+    /// Say `line` and read the one line answered.
+    fn one_line_and_its_answer(&self, line: &str) -> Result<String, NotAtTheDoor> {
+        let mut talking = self.knocking()?;
+        talking
+            .write_all(format!("{line}\n").as_bytes())
+            .and_then(|()| talking.flush())
+            .map_err(|why| NotAtTheDoor::NotAnswered {
+                why: why.to_string(),
+            })?;
+        let mut heard = String::new();
+        let read = BufReader::new(&talking)
+            .read_line(&mut heard)
+            .map_err(|why| NotAtTheDoor::NotAnswered {
+                why: why.to_string(),
+            })?;
+        if read == 0 {
+            return Err(NotAtTheDoor::NotAnswered {
+                why: "the compositor closed the connection without answering".to_owned(),
+            });
+        }
+        Ok(heard)
+    }
 }
 
 #[cfg(test)]

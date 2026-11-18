@@ -214,6 +214,21 @@ impl AnsweringSection {
             .find(|provider| provider.name == name)
     }
 
+    /// The services the person added, by the names they gave them, in the
+    /// order their settings keep them: none where those settings did not read.
+    pub(crate) fn the_providers_added(&self) -> Vec<String> {
+        let Some(Ok(choosing)) = &self.choosing else {
+            return Vec::new();
+        };
+        choosing
+            .settings()
+            .providers()
+            .configured
+            .iter()
+            .map(|provider| provider.name.clone())
+            .collect()
+    }
+
     /// Say `sentence` above the section, for a choice that changed nothing:
     /// a way with nothing under it, or something not on this computer yet.
     pub(crate) fn tell(&mut self, sentence: String) {

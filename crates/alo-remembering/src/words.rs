@@ -207,6 +207,15 @@ pub const LEVEL_NOT_AN_APPLICATION_FOR_PICTURES: Word = Word::saying(
     "{path} and {said} are both taken from the file exactly as written and are never translated. Said of the line that lists the applications in which alo, the assistant, may look at pictures of a window and press keys. A terminal is never on that list. Nothing is guessed at; until the file is fixed, alo uses pictures and keys nowhere.",
 );
 
+/// `pictures-read-by` and its service's name do not say a reader cleanly.
+pub const LEVEL_NOT_A_PICTURES_READER: Word = Word::saying(
+    "remembering.level.not-a-pictures-reader",
+    "{path} says {said} for who reads pictures, which is not no-one, this-computer, or a-provider with a service's name beside it, so this machine does not know how you want code run, and nothing reads pictures of a window",
+)
+.noting(
+    "{path} and {said} are both taken from the file exactly as written and are never translated, and neither are the three words no-one, this-computer and a-provider: they are what the file holds. Said of the line that decides what reads the pictures alo, the assistant, takes of a window: nothing, the person's own model on this computer, or an outside service. Nothing is guessed at; until it is fixed, nothing reads them and no picture is sent anywhere.",
+);
+
 /// `alo-uses-a-terminal` says a word that is neither of its two.
 pub const LEVEL_NOT_A_TERMINAL_CHOICE: Word = Word::saying(
     "remembering.level.not-a-terminal-choice",
@@ -228,7 +237,7 @@ pub const LEVEL_NOT_WRITTEN: Word = Word::saying(
 );
 
 /// Every word this crate can say.
-pub const EVERY_WORD: [Word; 14] = [
+pub const EVERY_WORD: [Word; 15] = [
     LEVEL_A_LINK,
     LEVEL_NOT_READ,
     LEVEL_SOMEBODY_ELSES,
@@ -238,6 +247,7 @@ pub const EVERY_WORD: [Word; 14] = [
     LEVEL_NOT_A_TERMINAL_ANSWER,
     LEVEL_NOT_AN_APPLICATIONS_ANSWER,
     LEVEL_NOT_AN_APPLICATION_FOR_PICTURES,
+    LEVEL_NOT_A_PICTURES_READER,
     LEVEL_NOT_A_TERMINAL_CHOICE,
     LEVEL_NOT_THE_SHAPE,
     LEVEL_FROM_A_NEWER_ALO_OS,

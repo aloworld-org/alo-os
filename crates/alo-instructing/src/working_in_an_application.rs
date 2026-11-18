@@ -45,6 +45,8 @@ pub const SCROLL_PAGE: &str = "accessible.scroll_page";
 
 /// The verb that scrolls one named thing onto the screen (2026-11-17).
 pub const SCROLL_TO: &str = "accessible.scroll_to";
+/// The verb that opens one thing's right-click menu (2026-11-17).
+pub const OPEN_MENU: &str = "accessible.open_menu";
 
 /// The verb that moves a slider or a number box (2026-11-17).
 pub const SET_VALUE: &str = "accessible.set_value";
@@ -59,6 +61,12 @@ pub const SELECT_ITEM: &str = "accessible.select_item";
 /// (2026-11-17).
 pub const OPEN_ITEM: &str = "accessible.open_item";
 
+/// The verb that presses one key of a closed list (2026-11-17).
+pub const PRESS_KEY: &str = "accessible.press_key";
+
+/// The verb that types into a field and saves nothing (2026-11-17).
+pub const TYPE_WITHOUT_SAVING: &str = "accessible.type_without_saving";
+
 /// **The paragraph a model is told, for this registry** — empty when it does
 /// not declare both [`READ_WINDOW`] and [`TYPE_TEXT`].
 ///
@@ -70,57 +78,89 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
     if verbs.of(READ_WINDOW).is_none() || verbs.of(TYPE_TEXT).is_none() {
         return String::new();
     }
-    let pressing = if verbs.of(ACTIVATE_CONTROL).is_some() {
-        format!(", or press one with {ACTIVATE_CONTROL}")
-    } else {
-        String::new()
-    };
-    let scrolling = if verbs.of(SCROLL_PAGE).is_some() && verbs.of(SCROLL_TO).is_some() {
+    // **One act, one verb**, each said with what it is for (2026-11-17): told
+    // the acts as a run of sentences around `type_text`, `gpt-4o-mini` sent
+    // `type_text` with an empty text to scroll to a heading and to open a
+    // file's menu, so each verb is now named beside the one act it does.
+    //
+    // **Where typing that saves nothing is offered, `type_text` is told as the
+    // typing that saves** (2026-11-17): told "a field or a document", the model
+    // sent `type_text` into a web page's search box in 17 of 20 tries.
+    let mut acts = vec![if verbs.of(TYPE_WITHOUT_SAVING).is_some() {
         format!(
-            " {READ_WINDOW} answers only what is on the screen. Whenever the thing to bring onto \
-             the screen has a name — a heading, a file, a button — send {SCROLL_TO} with that \
-             name, once, even when the person says \"scroll down until\" it shows: it scrolls as \
-             far as it takes. Send {SCROLL_PAGE} only to read on when nothing ahead has a name \
-             you know. Never type, and never send keys such as Page Down, to scroll or to find \
-             something: {TYPE_TEXT} never brings anything onto the screen, and it would type \
-             into the page and save it. Then send {READ_WINDOW} again."
+            "to put text into a document open in an editor and save it, {TYPE_TEXT}, only ever \
+             with the text to type"
         )
     } else {
-        String::new()
-    };
-    let setting = if verbs.of(SET_VALUE).is_some() {
         format!(
-            " Move a slider or a number box to a whole number with {SET_VALUE}, never by \
-             typing into it."
+            "to put text into a field or a document, {TYPE_TEXT}, only ever with the text to type"
         )
-    } else {
-        String::new()
-    };
-    let choosing = if verbs.of(CHOOSE_OPTION).is_some() && verbs.of(SELECT_ITEM).is_some() {
-        format!(
-            " Choose an option of a drop-down with {CHOOSE_OPTION}, naming the drop-down as \
-             that answer showed it and the option as the person said it; select an item of a \
-             list, such as a file, with {SELECT_ITEM}, which never opens it."
-        )
-    } else {
-        String::new()
-    };
-    let opening = if verbs.of(OPEN_ITEM).is_some() {
-        format!(
-            " To open an item, such as a file in a folder, as a double-click would, send \
-             {OPEN_ITEM} with its name; only when the person asks to open it."
-        )
-    } else {
-        String::new()
-    };
+    }];
+    // **A named control is pressed by its name, never reached by keys**: told
+    // keys and controls side by side, the model sent Tab or an arrow to reach
+    // the Reload button in 19 of 20 tries.
+    if verbs.of(ACTIVATE_CONTROL).is_some() {
+        acts.push(format!(
+            "to press a button or another control the window names, {ACTIVATE_CONTROL} with that \
+             name, never by sending keys to reach it"
+        ));
+    }
+    if verbs.of(OPEN_MENU).is_some() {
+        acts.push(format!(
+            "to open the menu a right-click opens on one thing, as for renaming or deleting a \
+             file in a list, {OPEN_MENU}, then {READ_WINDOW} again to see its items"
+        ));
+    }
+    if verbs.of(SCROLL_PAGE).is_some() && verbs.of(SCROLL_TO).is_some() {
+        acts.push(format!(
+            "to bring a thing with a name — a heading, a file, a button — onto the screen, \
+             {SCROLL_TO} with that name, once, even when the person says \"scroll down until\" \
+             it shows, since {READ_WINDOW} answers only what is on the screen; and {SCROLL_PAGE} \
+             only to read on when nothing ahead has a name you know; then {READ_WINDOW} again"
+        ));
+    }
+    if verbs.of(SET_VALUE).is_some() {
+        acts.push(format!(
+            "to move a slider or a number box to a whole number, {SET_VALUE}, never by typing into it"
+        ));
+    }
+    // **Choosing, as #1353 told it**, only where both choosing verbs are there.
+    if verbs.of(CHOOSE_OPTION).is_some() && verbs.of(SELECT_ITEM).is_some() {
+        acts.push(format!(
+            "to choose an option of a drop-down, {CHOOSE_OPTION}, naming the drop-down as that \
+             answer showed it and the option as the person said it; to select an item of a list, \
+             such as a file, {SELECT_ITEM}, which never opens it"
+        ));
+    }
+    // **Opening an item, as #1361 told it.**
+    if verbs.of(OPEN_ITEM).is_some() {
+        acts.push(format!(
+            "to open an item, such as a file in a folder, as a double-click would, {OPEN_ITEM} \
+             with its name, only when the person asks to open it"
+        ));
+    }
+    // **A key, and typing that saves nothing** (2026-11-17), each beside its
+    // one act like the rest.
+    if verbs.of(TYPE_WITHOUT_SAVING).is_some() {
+        acts.push(format!(
+            "to type into a field — a search box, a form, an address or a message — \
+             {TYPE_WITHOUT_SAVING}, which saves nothing"
+        ));
+    }
+    if verbs.of(PRESS_KEY).is_some() {
+        acts.push(format!(
+            "to press Enter, Escape, Tab or an arrow where the keyboard is, only when the person \
+             names that key, {PRESS_KEY}"
+        ));
+    }
     format!(
         "\n\nTo work in an application's window, send {READ_WINDOW} first: its answer names \
-         the window's fields, documents and controls. Then type into one with {TYPE_TEXT}, \
-         giving its name exactly as that answer showed it{pressing}.{scrolling}{setting}{choosing}{opening} Never \
-         send a run line \
-         that types, clicks or presses keys (xdotool, ydotool, wtype or anything like them): \
+         the window's fields, documents and controls. Then act on one by its name exactly as \
+         that answer showed it, with the one verb for that act: {}. Never send a run line that \
+         types, clicks or presses keys (xdotool, ydotool, wtype or anything like them): \
          {TYPE_TEXT} is how alo types into a window, and it shows the person the whole text \
-         before anything is typed."
+         before anything is typed.",
+        acts.join("; ")
     )
 }
 
@@ -202,6 +242,26 @@ mod tests {
             "{told}"
         );
         assert!(told.contains("never opens it"), "{told}");
+        assert!(!working_in_an_application(&verbs).contains(OPEN_MENU));
+
+        verbs.declare(named(OPEN_MENU, Effect::Change)).unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(told.contains(OPEN_MENU), "{told}");
+        assert!(told.contains("Never send a run line"), "{told}");
+        assert!(!working_in_an_application(&verbs).contains(PRESS_KEY));
+
+        verbs.declare(named(PRESS_KEY, Effect::Change)).unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(told.contains(PRESS_KEY), "{told}");
+        assert!(told.contains("Never send a run line"), "{told}");
+        assert!(!told.contains(TYPE_WITHOUT_SAVING), "{told}");
+
+        verbs
+            .declare(named(TYPE_WITHOUT_SAVING, Effect::Change))
+            .unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(told.contains(TYPE_WITHOUT_SAVING), "{told}");
+        assert!(told.contains("Never send a run line"), "{told}");
     }
 
     /// **Scrolling is told only where both scrolls are offered**, and then it
@@ -221,5 +281,35 @@ mod tests {
             "{told}"
         );
         assert!(told.contains("only what is on the screen"), "{told}");
+    }
+    /// **Where typing that saves nothing is offered, `type_text` is told as the
+    /// typing that saves**, a key only as one the person names, and a control
+    /// by its name rather than by keys — and no act runs words apart.
+    #[test]
+    fn typing_keys_and_controls_are_each_told_apart() {
+        let mut verbs = the_verbs();
+        for (name, effect) in [
+            (READ_WINDOW, Effect::Read),
+            (TYPE_TEXT, Effect::Change),
+            (ACTIVATE_CONTROL, Effect::Change),
+        ] {
+            verbs.declare(named(name, effect)).unwrap();
+        }
+        let before = working_in_an_application(&verbs);
+        assert!(before.contains("into a field or a document"), "{before}");
+        assert!(before.contains("never by sending keys"), "{before}");
+        verbs
+            .declare(named(TYPE_WITHOUT_SAVING, Effect::Change))
+            .unwrap();
+        verbs.declare(named(PRESS_KEY, Effect::Change)).unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(!told.contains("into a field or a document"), "{told}");
+        assert!(told.contains("open in an editor and save it"), "{told}");
+        assert!(told.contains("a search box"), "{told}");
+        assert!(
+            told.contains("only when the person names that key"),
+            "{told}"
+        );
+        assert!(!told.contains("  "), "two spaces run words apart: {told}");
     }
 }

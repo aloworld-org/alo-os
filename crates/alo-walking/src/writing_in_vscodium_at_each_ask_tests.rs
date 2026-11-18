@@ -323,3 +323,25 @@ fn the_second_card_is_read_from_a_mark_before_the_first_approval() {
         "the mark comes after the approval: {between:?}"
     );
 }
+
+/// **The typing card's picture is kept before its count is judged**, so a card
+/// with the wrong count still shows what alo would type. Main's walk at
+/// 313ca239 (run 44069105568) saw a typing card of 30 characters where the text
+/// is 29 (journal 1366.44 s), and kept no picture of it: the count check came
+/// first and stopped the section. Now any card being up is waited for, its
+/// picture kept, and only then is the count held to the text's.
+#[test]
+fn the_typing_cards_picture_is_kept_before_its_count_is_judged() {
+    let steps = the_first_walk().steps().to_vec();
+    let counted = the_card(&steps, THE_TEXT_AT_EACH_ASK.chars().count());
+    let looked = the_look(&steps, "the-card-shows-the-text");
+    let up = at(
+        &steps,
+        "waits for a typing card of any count",
+        |it| matches!(it, Step::ExpectLine { phrase, and_says: None, .. } if phrase == A_CARD_IS_UP),
+    );
+    assert!(
+        up < looked && looked < counted,
+        "card up at {up}, picture at {looked}, count at {counted}"
+    );
+}

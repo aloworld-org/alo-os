@@ -37,7 +37,7 @@ fn a_catalogue_with_every_label() -> Catalogue {
     let text = format!(
         "{}\n[[application]]\ncategory = \"music-making\"\nidentifier = \
          \"ai.storyteller.soundcraft\"\nname = \"SoundCraft\"\nsource = \"flathub\"\nversion = \"0.20.1\"\nlicence = \
-         \"Apache-2.0\"\nverified = true\nearly = true\n",
+         \"Apache-2.0\"\nverified = true\nearly = true\nreaches = []\n",
         alo_software::catalogue::THE_CATALOGUE
     );
     Catalogue::read(&text, &Shipped::decided().unwrap()).unwrap()
@@ -159,14 +159,16 @@ fn the_three_labels_reach_the_frame_a_display_is_handed() {
     let labelled = handed(&WithTheMarket::open(a_catalogue_with_every_label()));
     written(&labelled, "market-labels.png");
 
-    // Every entry made open, verified and not early, line by line.
+    // Every entry made open, verified, not early and from a place rather than
+    // a maker's signed release, line by line.
     let plain_text: String = format!(
         "{}\n[[application]]\ncategory = \"music-making\"\nidentifier = \
          \"ai.storyteller.soundcraft\"\nname = \"SoundCraft\"\nsource = \"flathub\"\nversion = \"0.20.1\"\nlicence = \
-         \"Apache-2.0\"\nverified = true\nearly = false\n",
+         \"Apache-2.0\"\nverified = true\nearly = false\nreaches = []\n",
         alo_software::catalogue::THE_CATALOGUE
     )
     .lines()
+    .filter(|line| !line.starts_with("bundle = ") && !line.starts_with("sha256 = "))
     .map(|line| {
         if line.starts_with("licence = \"LicenseRef-proprietary") {
             "licence = \"MIT\""
@@ -174,6 +176,10 @@ fn the_three_labels_reach_the_frame_a_display_is_handed() {
             "verified = true"
         } else if line == "early = true" {
             "early = false"
+        } else if line == "source = \"storytold\"" {
+            "source = \"flathub\""
+        } else if line.starts_with("reaches = ") {
+            "reaches = []"
         } else {
             line
         }

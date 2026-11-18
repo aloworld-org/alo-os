@@ -678,6 +678,22 @@ meaning.
   pictures and keys are switched on for the application, who reads the
   picture, and whether the window holds a password field, are the turn's.
 
+### One key — `press-in`, added 2026-11-17
+
+```
+→ press-in <application> <key>
+← pressed-the-key | not-in-front | not-alos-copy | no-keyboard
+```
+
+`<key>` is one of `enter`, `escape`, `tab`, `up`, `down`, `left` and `right`,
+exactly. Anything else, more than one key, or a missing key is a caller with a
+bug: the connection is closed with nothing written. The key is pressed and
+released once, through a layout holding only that key, by the same road and
+under the same three rules as `type-into`: only in the window that holds the
+keyboard, which must be `<application>`'s; alo's own copy where the setting
+asks for it; to that client alone, with the person's layout back after. No
+modifier is held.
+
 ## alo opening a file in an application — `open-file`, added 2026-11-14
 
 **What it gives a person:** *open hello.txt in VSCodium*, once they approved
@@ -721,6 +737,45 @@ list and the file's real place have all answered.
 - **Unmeasured on a booted machine.** The arguments that hand a file to a
   running copy are each application's own documentation, as alo's copy's
   arguments are (`alo_launching::alos_copy`).
+
+## alo answers the file chooser — `alo-chooses-file`, added 2026-11-17
+
+**What it gives a person:** *open notes.txt from my Documents* while an
+application's file chooser is up, after one OK on *choose notes.txt in
+/var/home/alo/Documents on the file chooser*, answers that sheet with that file,
+as the person's own press of *Open* would. `alo-agentd` writes it for an
+approved `choose_on_the_file_chooser` (`agent-verbs.md`), after the grants have
+answered for the folder and the file.
+
+```
+→ alo-chooses-file <folder> <name>
+← chosen <application> | no-sheet | not-believed
+```
+
+- **The words.** The act as a word of its own; the folder, a whole path
+  written as `choose-file`'s are — **the root, `/`, is a folder**; and one name,
+  percent-encoded and held to `choose-file`'s rule for a name. The line is at
+  most **4096 bytes**, the most the door reads of any line. A line whose first
+  word is `alo-chooses-file` and is not exactly this is closed with nothing
+  written.
+- **What the sheet believes** is a file that is there, to open — a hidden one
+  too, because the person named it in the sentence they approved — or, to save,
+  a name in a folder that is there and can be read, which no folder in it has.
+- **A file that is there is saved over without the sheet's second press.** The
+  person's own *Save* on a name that is taken asks again; alo's answer does
+  not, because the approval card was the person's yes to that sentence, and at
+  full access they chose to give that yes ahead. The replacing is the
+  application's.
+- `chosen <application>`: the file chooser up for that application was answered
+  with the file, **exactly as the person's own choice would be**. The portal
+  hears `chosen <path>` and records and hands the file over as for any choice.
+- `no-sheet`: no file chooser was up. Nothing happens.
+- `not-believed`: the sheet that is up could not have been answered with that
+  file — not there to open, a folder's name to save under, or a folder that is
+  not one. **The sheet stays up for the person**, as it was.
+- **The desktop judges no grant.** Which folders alo may answer with is the
+  turn's question, asked before this line is written; a rule here would narrow
+  the person's own use of the sheet.
 
 ## What is not here
 

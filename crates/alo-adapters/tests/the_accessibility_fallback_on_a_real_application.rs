@@ -930,7 +930,7 @@ fn a_real_application_is_asked_to_scroll_a_named_line_onto_the_screen_once() {
             alo_adapters::SCROLL_TO,
             &[
                 ("application", Given::text(FIXTURE)),
-                ("name", Given::text("Line 55")),
+                ("to", Given::text("Line 55")),
             ],
         )
         .unwrap();

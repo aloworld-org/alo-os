@@ -44,6 +44,7 @@
 //! | [`Request`], [`Answer`] | One line in, one line out |
 //! | [`NotRead`], [`NotActed`] | Why a line is not a request, and why a request did nothing |
 //! | [`ToOpenALink`] | The portal asking for an application to be started with a link a person followed |
+//! | [`ToAnswerAFileChooser`], [`AnsweredTheChooser`] | alo answering the file chooser that is up with a file the person approved, and what the desktop did |
 //! | [`ToChooseAFile`], [`ChoseAFile`] | The portal asking the person to choose a file to open, or a place to save one, and what they chose |
 //! | [`ToOpenAFile`], [`Opened`] | alo asking for a file to be opened in an application the person named, and where it opened |
 //! | [`said_on_the_log`] | The sentences the desktop writes on its log for those acts, which a walk reads |
@@ -61,9 +62,11 @@
 //! the first pass would tangle proving the road with deciding a layout.
 #![forbid(unsafe_code)]
 
+mod a_key;
 pub mod acting;
 pub mod alos_tree;
 pub mod answer;
+pub mod answering_a_file_chooser;
 pub mod choosing_a_file;
 pub mod choosing_a_link;
 pub mod counting;
@@ -80,6 +83,9 @@ pub mod working_in;
 pub use acting::Acting;
 pub use alos_tree::{WhereAlosTreeIs, is_alo_tree};
 pub use answer::{Answer, NotActed};
+pub use answering_a_file_chooser::{
+    ALO_CHOOSES_FILE, AnsweredTheChooser, NotAnAnswer, ToAnswerAFileChooser,
+};
 pub use choosing_a_file::{
     CHOOSE_FILE, ChoseAFile, NotAFileToChoose, THE_LONGEST_NAME, ToChoose, ToChooseAFile,
     is_a_name, is_a_whole_path,
@@ -92,6 +98,7 @@ pub use opening_a_link::{NotALinkToOpen, OPEN_LINK, ToOpenALink};
 pub use picturing::{NotToPicture, PICTURE_OF, Pictured, ToPicture};
 pub use request::{NotRead, Request};
 pub use typing_into::{
-    MAY_TYPE_INTO, NotToType, SAVE_IN, TYPE_INTO, ToType, Typed, the_first_untypable,
+    AKey, MAY_TYPE_INTO, NotToType, PRESS_IN, SAVE_IN, TYPE_INTO, ToType, Typed,
+    the_first_untypable,
 };
 pub use working_in::{NotToWorkIn, ToWorkIn, Where, Worked, Working};

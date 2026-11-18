@@ -29,7 +29,10 @@
 //! sentence as a compositor that answered `could-not-ask`, because from the
 //! person's side they are the same fact: nothing was changed.
 
-use alo_acting::{Answer, Opened, Pictured, Request, ToOpenAFile, ToPicture, ToType, Typed};
+use alo_acting::{
+    Answer, AnsweredTheChooser, Opened, Pictured, Request, ToAnswerAFileChooser, ToOpenAFile,
+    ToPicture, ToType, Typed,
+};
 
 /// Whatever can put one request to the compositor and read one answer.
 ///
@@ -71,6 +74,24 @@ pub trait TheDoorTheCompositorServes {
     /// # Errors
     /// [`NotAtTheDoor`], as for [`Self::asking`].
     fn opening_a_file(&mut self, asked: &ToOpenAFile) -> Result<Opened, NotAtTheDoor> {
+        let _ = asked;
+        Err(NotAtTheDoor::NoCompositor)
+    }
+
+    /// Put `alo-chooses-file` to the compositor — answer the file chooser
+    /// that is up with this file (`choose_on_the_file_chooser`, 2026-11-17) —
+    /// and wait for its answer: whom it was chosen for, no sheet, or a file
+    /// the sheet could not have been answered with.
+    ///
+    /// **No compositor by default**, as for [`Self::typing`], so a door that
+    /// does not know this act answers nothing.
+    ///
+    /// # Errors
+    /// [`NotAtTheDoor`], as for [`Self::asking`].
+    fn answering_the_file_chooser(
+        &mut self,
+        asked: &ToAnswerAFileChooser,
+    ) -> Result<AnsweredTheChooser, NotAtTheDoor> {
         let _ = asked;
         Err(NotAtTheDoor::NoCompositor)
     }

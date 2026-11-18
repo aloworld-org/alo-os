@@ -338,6 +338,44 @@ pub enum Done {
         /// Whether what was scrolled to reads as on the screen afterwards.
         now_showing: bool,
     },
+    /// One thing's right-click menu was opened, or asked to be by an
+    /// application that did not answer (`accessible.open_menu`). Added
+    /// 2026-11-17, additively. **What the menu holds is not carried back**:
+    /// `accessible.read_window` reads it.
+    MenuOpened {
+        /// The application.
+        application: String,
+        /// The thing's name, as the application shows it.
+        name: String,
+        /// Whether the application did not answer, so whether the menu is open
+        /// is not known.
+        unanswered: bool,
+    },
+    /// One key of the closed list was pressed once in an application's window
+    /// (`accessible.press_key`). Added 2026-11-17, additively.
+    KeyPressed {
+        /// The application.
+        application: String,
+        /// The key, as the verb names it: `enter`, `escape`, `tab`, `up`,
+        /// `down`, `left` or `right`.
+        key: String,
+    },
+    /// One approved text was typed into one field and nothing was saved
+    /// (`accessible.type_without_saving`). Added 2026-11-17, additively; the
+    /// text is not carried back, as for [`Done::Typed`].
+    TypedWithoutSaving {
+        /// The application.
+        application: String,
+        /// The field, by its name.
+        name: String,
+        /// How many characters were typed.
+        characters: usize,
+        /// Whether it went in through the accessibility tree rather than as
+        /// key presses.
+        through_the_tree: bool,
+        /// Whether it read back exactly.
+        read_back: bool,
+    },
 }
 
 /// One window an application showed, as it goes back to a client.
@@ -774,6 +812,73 @@ impl Done {
         }
     }
 
+    /// What opening a menu answered, as it goes on the wire — taking its parts,
+    /// for [`Done::of_a_press`]'s reason.
+    #[must_use]
+    pub fn of_a_menu(application: &str, name: &str, unanswered: bool) -> Self {
+        Self::MenuOpened {
+            application: application.to_owned(),
+            name: name.to_owned(),
+            unanswered,
+        }
+    }
+
+    /// What either typing answered, as it goes on the wire: [`Done::Typed`]
+    /// where saving was approved, [`Done::TypedWithoutSaving`] where it was
+    /// not — chosen here, once, so every road that carries a typing to a client
+    /// carries it the same way.
+    #[must_use]
+    pub fn of_either_typing(
+        application: &str,
+        name: &str,
+        characters: usize,
+        through_the_tree: bool,
+        asked_to_save: bool,
+        read_back: bool,
+        saved: bool,
+    ) -> Self {
+        if asked_to_save {
+            Self::of_a_typing(application, name, characters, through_the_tree, saved)
+        } else {
+            Self::of_a_typing_without_saving(
+                application,
+                name,
+                characters,
+                through_the_tree,
+                read_back,
+            )
+        }
+    }
+
+    /// What a typing that saves nothing answered, as it goes on the wire —
+    /// taking its parts, for [`Done::of_a_press`]'s reason.
+    #[must_use]
+    pub fn of_a_typing_without_saving(
+        application: &str,
+        name: &str,
+        characters: usize,
+        through_the_tree: bool,
+        read_back: bool,
+    ) -> Self {
+        Self::TypedWithoutSaving {
+            application: application.to_owned(),
+            name: name.to_owned(),
+            characters,
+            through_the_tree,
+            read_back,
+        }
+    }
+
+    /// What a key press answered, as it goes on the wire — taking its parts,
+    /// for [`Done::of_a_press`]'s reason.
+    #[must_use]
+    pub fn of_a_key(application: &str, key: &str) -> Self {
+        Self::KeyPressed {
+            application: application.to_owned(),
+            key: key.to_owned(),
+        }
+    }
+
     /// What one of the six file verbs answered, as it goes on the wire.
     #[must_use]
     pub fn of_a_file_verb(answer: &Answer) -> Self {
@@ -921,6 +1026,14 @@ impl Done {
             // **An opening the application did not answer** may or may not
             // have happened.
             Self::ItemOpened { unanswered, .. } => *unanswered,
+            // **A menu the application did not answer about** may or may not
+            // be open, and that is what a shell puts a caveat beside.
+            Self::MenuOpened { unanswered, .. } => *unanswered,
+            // **A key leaves nothing out**: it was pressed once, as approved.
+            Self::KeyPressed { .. } => false,
+            // **A typing that saves nothing** leaves out only what did not read
+            // back: nothing was to be saved.
+            Self::TypedWithoutSaving { read_back, .. } => !*read_back,
             // **A publication leaves nothing out**: it names the folder and the
             // address, and what it cannot take back is said in its own line
             // ([`Done::put_back_can_recall_it`]), not as a caveat here.
@@ -1271,5 +1384,53 @@ mod tests {
             wire.contains(r#""application":"org.kde.dolphin","name":"a.txt","unanswered":false"#),
             "{wire}"
         );
+    }
+
+    /// **Either typing crosses as what it was** (2026-11-17): one that was to
+    /// be saved is `typed`, and leaves something out when it was not saved;
+    /// one that saves nothing is `typed-without-saving`, and leaves something
+    /// out only when it did not read back.
+    #[test]
+    fn either_typing_crosses_as_what_it_was() {
+        let saved =
+            Done::of_either_typing("org.example.Editor", "Search", 6, false, true, true, true);
+        assert!(
+            matches!(saved, Done::Typed { saved: true, .. }),
+            "{saved:?}"
+        );
+        assert!(!saved.left_something_out());
+        let unsaved =
+            Done::of_either_typing("org.example.Editor", "Search", 6, false, false, true, false);
+        assert!(
+            matches!(
+                unsaved,
+                Done::TypedWithoutSaving {
+                    read_back: true,
+                    ..
+                }
+            ),
+            "{unsaved:?}"
+        );
+        assert!(!unsaved.left_something_out());
+        let differs = Done::of_either_typing(
+            "org.example.Editor",
+            "Search",
+            6,
+            false,
+            false,
+            false,
+            false,
+        );
+        assert!(differs.left_something_out());
+        assert_eq!(
+            serde_json::to_string(&unsaved).unwrap(),
+            r#"{"typed-without-saving":{"application":"org.example.Editor","name":"Search","characters":6,"through_the_tree":false,"read_back":true}}"#
+        );
+    }
+
+    /// **A key leaves nothing out**: it was pressed once, as approved.
+    #[test]
+    fn a_key_leaves_nothing_out() {
+        assert!(!Done::of_a_key("org.mozilla.firefox", "enter").left_something_out());
     }
 }

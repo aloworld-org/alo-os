@@ -35,6 +35,7 @@ use alo_egress::{Errand, OnItsOwn, Underway};
 use alo_strings::{Filling, Said, Strings};
 
 use crate::enabled::{Enabled, did_not_answer};
+use crate::reach::Reach;
 use crate::refusing::NotDone;
 use crate::shown::{Stopped, held_to};
 use crate::tool::Tool;
@@ -52,6 +53,9 @@ pub struct Wanted {
     source: String,
     /// Whether a person chose to do without the sandbox on this installation.
     sandboxing: Sandboxing,
+    /// What its makers ask for that reaches past its box, where the catalogue
+    /// says, and [`None`] where nothing here knows.
+    reaches: Option<Vec<Reach>>,
 }
 
 impl Wanted {
@@ -67,7 +71,24 @@ impl Wanted {
             application,
             source: source.trim().to_owned(),
             sandboxing: Sandboxing::Sandboxed,
+            reaches: None,
         }
+    }
+
+    /// The same installation, of an application whose makers ask for this
+    /// much past its box — the catalogue's reading of its real metadata.
+    #[must_use]
+    pub fn reaching(self, reaches: Vec<Reach>) -> Self {
+        Self {
+            reaches: Some(reaches),
+            ..self
+        }
+    }
+
+    /// What its makers ask for that reaches past its box, where known.
+    #[must_use]
+    pub fn reaches(&self) -> Option<&[Reach]> {
+        self.reaches.as_deref()
     }
 
     /// What a person asked for themselves, **deliberately without a sandbox**.
@@ -86,6 +107,7 @@ impl Wanted {
             application,
             source: source.trim().to_owned(),
             sandboxing: Sandboxing::Unsandboxed,
+            reaches: None,
         }
     }
 
@@ -116,14 +138,17 @@ pub struct Installed {
     /// How it was installed, kept so a surface is handed the fact rather than
     /// deriving it. See `crate::whether_it_is_sandboxed`.
     sandboxing: Sandboxing,
+    /// What its makers asked for that reaches past its box, where known.
+    reaches: Option<Vec<Reach>>,
 }
 
 impl Installed {
     /// An application installed sandboxed, by a road of this crate's own.
-    pub(crate) const fn sandboxed(application: Application) -> Self {
+    pub(crate) const fn sandboxed(application: Application, reaches: Option<Vec<Reach>>) -> Self {
         Self {
             application,
             sandboxing: Sandboxing::Sandboxed,
+            reaches,
         }
     }
 
@@ -148,8 +173,17 @@ impl Installed {
     /// is a lie.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
+        // **And an application whose makers ask for more than its box is not
+        // told it was given nothing** (the owner, 2026-11-17): it was given what
+        // they asked for, and the market's row says what that reaches.
+        let reaches_past_its_box = self
+            .reaches
+            .as_ref()
+            .is_some_and(|reaches| !reaches.is_empty());
         let word = if self.sandboxing.is_worth_marking() {
             words::INSTALLED_UNSANDBOXED.key()
+        } else if reaches_past_its_box {
+            words::INSTALLED_WITH_WHAT_ITS_MAKERS_ASK.key()
         } else {
             words::INSTALLED.key()
         };
@@ -198,6 +232,7 @@ pub fn install(
     Ok(Installed {
         application: wanted.application,
         sandboxing: wanted.sandboxing,
+        reaches: wanted.reaches,
     })
 }
 

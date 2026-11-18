@@ -71,11 +71,13 @@
 
 use alo_applications::Application;
 use alo_capability::{
-    Arg, Authorised, Effect, Offered, Requires, Takes, Value, Verb, VerbError, Verbs, VerbsError,
+    Arg, Authorised, Call, Effect, Offered, Requires, Takes, Value, Verb, VerbError, Verbs,
+    VerbsError,
 };
 
 use crate::category::Category;
 use crate::installing::Wanted;
+use crate::reach::Reach;
 use crate::source::SourceName;
 use crate::words;
 
@@ -289,7 +291,69 @@ pub fn approved(authorised: &Authorised) -> Result<Wanted, NotAnInstallation> {
         Application::identified(identifier).map_err(|_| NotAnInstallation::Malformed {
             argument: words::APPLICATION,
         })?;
-    Ok(Wanted::by_hand(application, source))
+    let wanted = Wanted::by_hand(application, source);
+    // **What its makers ask for, where the catalogue knows**, so the sentence a
+    // person reads once it arrives does not say it was given nothing.
+    Ok(match what_the_catalogue_says_it_reaches(identifier) {
+        Some(reaches) => wanted.reaching(reaches),
+        None => wanted,
+    })
+}
+
+/// What a catalogued application's makers ask for past its box, or [`None`]
+/// for one the catalogue does not list.
+fn what_the_catalogue_says_it_reaches(identifier: &str) -> Option<Vec<Reach>> {
+    let catalogue = crate::Catalogue::decided().ok()?;
+    catalogue
+        .every()
+        .iter()
+        .find(|one| one.application().identifier() == identifier)
+        .map(|one| one.reaches().to_vec())
+}
+
+/// **What the approval card says installing leaves alone, for this call**,
+/// where the verb's own line would not be true — [`None`] where it is.
+///
+/// The verb's line is *it is given no access to your files*. For an
+/// application the catalogue lists whose makers ask for its files, or for
+/// programs outside its box, that is false, and the owner decided on
+/// 2026-11-17 that the card says so in words **before** the person approves.
+/// **The line names everything it reaches**, the internet among them — the
+/// owner's answer the same day: the internet is not a label on a row, and is
+/// said here with the rest. One sentence for each set of reaches, so no
+/// language has to join sentences this crate wrote separately.
+/// An application the catalogue does not list keeps the verb's line: nothing
+/// here can read what its makers ask for before it is installed, which is said
+/// as a gap in the change's report rather than guessed here.
+#[must_use]
+pub fn what_installing_leaves(call: &Call) -> Option<alo_strings::Word> {
+    if call.verb() != INSTALL_APPLICATION {
+        return None;
+    }
+    let Some(Value::Application(identifier)) = call.value(words::APPLICATION) else {
+        return None;
+    };
+    the_line_for(&what_the_catalogue_says_it_reaches(identifier)?)
+}
+
+/// The card's line for an application that reaches `reaches`, naming each —
+/// [`None`] for one that reaches nothing past its box.
+fn the_line_for(reaches: &[Reach]) -> Option<alo_strings::Word> {
+    let programs = reaches.contains(&Reach::ProgramsOutsideItsBox);
+    let files = reaches.contains(&Reach::YourFiles);
+    let internet = reaches.contains(&Reach::TheInternet);
+    match (programs, files, internet) {
+        (false, false, false) => None,
+        (false, false, true) => Some(words::VERB_LEAVES_USING_THE_INTERNET),
+        (false, true, false) => Some(words::VERB_LEAVES_REACHING_YOUR_FILES),
+        (false, true, true) => Some(words::VERB_LEAVES_REACHING_YOUR_FILES_AND_THE_INTERNET),
+        (true, false, false) => Some(words::VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE),
+        (true, false, true) => Some(words::VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_THE_INTERNET),
+        (true, true, false) => Some(words::VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_AND_YOUR_FILES),
+        (true, true, true) => {
+            Some(words::VERB_LEAVES_RUNNING_PROGRAMS_OUTSIDE_YOUR_FILES_AND_THE_INTERNET)
+        }
+    }
 }
 
 /// The kind of work a person wants to look under, from the authority their
@@ -472,6 +536,140 @@ mod tests {
             call.sentence(&in_english()).text(),
             "install org.gnome.TextEditor from flathub"
         );
+    }
+
+    /// An installation of `application` from Flathub, as an agent would ask.
+    fn installing(application: &str) -> Call {
+        software_verbs()
+            .unwrap()
+            .call(
+                INSTALL_APPLICATION,
+                &[
+                    (words::APPLICATION, Given::text(application)),
+                    (words::SOURCE, Given::text("flathub")),
+                ],
+            )
+            .unwrap()
+    }
+
+    /// **The approval card says what an application's makers ask for past its
+    /// box, before the person approves** (the owner, 2026-11-17): OBS Studio
+    /// asks to run programs outside it, GIMP asks for the person's files, and
+    /// for each the card's line is not *it is given no access to your files*.
+    #[test]
+    fn the_card_says_what_installing_an_application_that_reaches_past_its_box_gives_it() {
+        let english = in_english();
+        let said = |application: &str| {
+            let call = installing(application);
+            let instead = what_installing_leaves(&call);
+            let call = match instead {
+                Some(word) => call.leaving_instead(word.key()),
+                None => call,
+            };
+            call.what_it_leaves(&english).unwrap().text().to_owned()
+        };
+        let obs = said("com.obsproject.Studio");
+        assert!(obs.contains("run programs outside its box"), "{obs}");
+        let gimp = said("org.gimp.GIMP");
+        assert!(gimp.contains("read and change your files"), "{gimp}");
+        for one in [&obs, &gimp] {
+            assert!(!one.contains("no access to your files"), "{one}");
+            assert!(one.contains("use the internet"), "{one}");
+        }
+        // RawTherapee asks for programs outside its box and the person's files,
+        // and not for the network.
+        let rawtherapee = said("com.rawtherapee.RawTherapee");
+        assert!(rawtherapee.contains("your files"), "{rawtherapee}");
+        assert!(!rawtherapee.contains("internet"), "{rawtherapee}");
+        // GNOME Connections asks for the network and nothing else.
+        let connections = said("org.gnome.Connections");
+        assert!(connections.contains("use the internet"), "{connections}");
+        assert!(
+            connections.contains("no access to your files"),
+            "{connections}"
+        );
+    }
+
+    /// **Every set of reaches has its own line, and each line names exactly
+    /// what is in the set** — files, programs outside the box and the
+    /// internet, each said where it is asked for and never where it is not.
+    #[test]
+    fn the_cards_line_names_each_reach_and_nothing_else() {
+        let english = in_english();
+        let every = [
+            Reach::ProgramsOutsideItsBox,
+            Reach::YourFiles,
+            Reach::TheInternet,
+        ];
+        let mut lines = std::collections::BTreeSet::new();
+        for set in 1_u8..8 {
+            let reaches: Vec<Reach> = every
+                .iter()
+                .enumerate()
+                .filter(|(at, _)| set & (1 << at) != 0)
+                .map(|(_, reach)| *reach)
+                .collect();
+            let word = the_line_for(&reaches).unwrap();
+            let line = english
+                .say(&word.key(), &alo_strings::Filling::nothing())
+                .into_text();
+            let says = |phrase: &str| line.contains(phrase);
+            assert_eq!(
+                says("run programs outside its box"),
+                reaches.contains(&Reach::ProgramsOutsideItsBox),
+                "{reaches:?}: {line}"
+            );
+            assert_eq!(
+                says("read and change your files"),
+                reaches.contains(&Reach::YourFiles),
+                "{reaches:?}: {line}"
+            );
+            assert_eq!(
+                says("use the internet"),
+                reaches.contains(&Reach::TheInternet),
+                "{reaches:?}: {line}"
+            );
+            assert!(lines.insert(line), "two sets share a line: {reaches:?}");
+        }
+        assert_eq!(the_line_for(&[]), None);
+    }
+
+    /// **And an application that asks for nothing past its box, or one the
+    /// catalogue does not list, keeps the verb's own line** — the case the
+    /// override must not reach.
+    #[test]
+    fn an_application_that_asks_for_nothing_past_its_box_keeps_the_verbs_line() {
+        let catalogue = crate::Catalogue::decided().unwrap();
+        let quiet = catalogue
+            .every()
+            .iter()
+            .find(|one| one.reaches().is_empty())
+            .unwrap()
+            .application()
+            .identifier()
+            .to_owned();
+        assert_eq!(what_installing_leaves(&installing(&quiet)), None, "{quiet}");
+        assert_eq!(
+            what_installing_leaves(&installing("org.gnome.TextEditor")),
+            None,
+            "an application the catalogue does not list"
+        );
+    }
+
+    /// **What an agent installs carries what its makers ask for**, so the
+    /// sentence once it arrives is not *it has been given nothing*.
+    #[test]
+    fn what_an_agent_installs_carries_what_the_catalogue_says_it_reaches() {
+        let call = installing("org.gimp.GIMP");
+        assert_eq!(
+            what_the_catalogue_says_it_reaches("org.gimp.GIMP"),
+            Some(vec![Reach::YourFiles, Reach::TheInternet])
+        );
+        assert_eq!(
+            what_the_catalogue_says_it_reaches("org.gnome.TextEditor"),
+            None
+        );
+        assert_eq!(call.verb(), INSTALL_APPLICATION);
     }
 
     /// **No verb updates, removes or lists anything**, so an agent can ask for

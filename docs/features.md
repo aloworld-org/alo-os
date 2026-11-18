@@ -983,9 +983,10 @@ each portal request is a grant in the sense of ADR 0001.
 
 - **Install applications**, sandboxed, from Flathub or a repository the organisation runs; update and remove them
 - **A decided list of what a person can install** — a curated catalogue, pinned and licence-recorded the way the fresh machine's own seven applications are, with an entry for each kind of work a person does: pictures, painting, illustration, photographs, page layout, video, audio and documents — and since 2026-11-17 every kind of application: diagrams, 3D models, making music, screen recording, code, chat, calls, email, notes, music, books, maps, games, passwords and remote desktop. A fresh machine can browse, read and look at a picture and cannot make one, which is the gap this closes. The list is data (`crates/alo-software/catalogue.toml`) and names no application a machine already ships, so a market screen cannot offer to install the browser a person is reading it in. *Asked for by the owner on 2026-10-16. The shape is what it is because of the candidate that prompted it: a Rust image editor with 65,000 stars that turned out to be sixteen days old, in early alpha, and published to no source a machine can install from — so an entry must name a source, a release and a licence, or it is refused.*
-  - **The market lists every kind of application, and says plainly what a person should know about one before choosing it.** *Decided by the owner on 2026-11-17:* (1) *"Every kind of app"* — the market is no longer only for making things; (2) *"Proprietary apps are listed, labelled 'not open source'"* in plain words on their row; (3) *"Flathub-unverified apps are listed, labelled 'not verified'"* — the maker did not publish it on Flathub themselves; (4) the Craft applications are *"added, labelled 'early version'"*, installed from their signed bundle on GitHub releases, with the signature and checksum verified before installing and a bad or missing signature refused. Each label is drawn on the row and has a sentence in full for a screen reader, and alo is told the same labels when it looks at what can be installed. A label states a fact and never asks twice or hides anything: the person chooses.
+  - **The market lists every kind of application, and says plainly what a person should know about one before choosing it.** *Decided by the owner on 2026-11-17:* (1) *"Every kind of app"* — the market is no longer only for making things; (2) *"Proprietary apps are listed, labelled 'not open source'"* in plain words on their row; (3) *"Flathub-unverified apps are listed, labelled 'not verified'"* — the maker did not publish it on Flathub themselves; (4) the Craft applications are *"added, labelled 'early version'"*, installed from their signed bundle on GitHub releases, with the signature and checksum verified before installing and a bad or missing signature refused (ADR 0158). Seven Craft applications are listed so (PhotoCraft, VectorCraft, LightCraft, DesignCraft, FilmCraft, EffectCraft, PdfCraft), and because one release is pinned by its checksum each is also labelled *no automatic updates*. Each label is drawn on the row and has a sentence in full for a screen reader, and alo is told the same labels when it looks at what can be installed. A label states a fact and never asks twice or hides anything: the person chooses. **What an application can reach past its box is said too** (the owner, 2026-11-17: *"list them with a plain warning"*): each entry records what its makers' real metadata asks for, and a row says *Runs programs outside its box* or *Reaches your files*; the approval card says it in words before the person approves, and no application that reaches past its box is told it *arrives able to reach nothing* or *has been given nothing*. Measured that day, none of the 62 from Flathub arrives able to reach nothing. **The internet is said on the approval card, not on a row** (the owner, 2026-11-17): the card names everything an application's makers ask for that reaches past its box — its files, programs outside its box and the internet — and a row stays unlabelled for the internet, because 63 of the 69 use it.
 - ★ **One list of what has been granted to what** — agents and applications in the same place, revoked the same way
 - Portals: file chooser and documents, open-with and default applications, notifications, print, screenshot, screen capture, camera, microphone, clipboard, trash, wallpaper, settings, inhibit (no sleep mid-presentation), network and power-profile monitors
+- **alo's own file chooser, the same for every application** — and **alo may answer it only inside the folders the person granted**: one card at *ask each time*, none at full access. The person's own use of it is never narrowed by alo's grants. *The owner, 2026-11-17: "Yes, build it"; the verb approved by the coordinator the same day (`choose_on_the_file_chooser`).*
 - **Secret storage** — one keyring behind the Secret portal, so applications stop inventing credential storage
 - **Session management**: log out, switch user, lock, and reopen what was open
 - **Corporate proxy support**, machine-wide and honoured by applications. A great many company networks have no other route out
@@ -1107,6 +1108,30 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   which of its rows are scrolled away is not measured
   ([`contracts/agent-verbs.md`](contracts/agent-verbs.md), *The scrolling
   verbs*).
+  **Opening a right-click menu is built, since 2026-11-17** (the owner,
+  approving five new ways for alo to use an application as a person does: *"Yes
+  do all"*): alo can open the menu a right-click would open on one thing it
+  names — a file in a list, say — by the application's own way of opening it
+  (`accessible.open_menu`), then read the menu and press an item in it as it
+  presses anything else. A change: approved each time at *ask each time*, at
+  once at full access, recorded. Never a password field, never by where
+  something is. Qt applications such as Dolphin offer this; *whether other
+  toolkits do is not measured, and it is not yet seen on a booted machine*
+  ([`contracts/agent-verbs.md`](contracts/agent-verbs.md), *The menu verb*).
+  **Pressing a key is built, since 2026-11-17** (the owner, approving five new
+  ways for alo to use an application as a person does: *"Yes do all"*): alo can
+  press one of Enter, Escape, Tab or an arrow in the window that has the
+  keyboard (`accessible.press_key`) — to send a search, close a dialog or move
+  between fields. One key per approval at *ask each time*; at full access at
+  once, recorded. Never in a password field or a terminal, never a combination
+  or a shortcut, and only in alo's own copy unless the person chose otherwise.
+  *Not yet seen on a booted machine*
+  ([`contracts/agent-verbs.md`](contracts/agent-verbs.md), *The key verb*).
+  **And typing that saves nothing, since the same day** (the same approval):
+  `accessible.type_without_saving` types into a search box, a form, an address
+  or a message exactly as `accessible.type_text` does — the whole text shown
+  first, read back after — and never presses `Ctrl+S`, which in a web page
+  opens *Save Page*. *Not yet seen on a booted machine.*
   **Any installed application** — the owner, the same day: *"for alo driving
   applications it should be able to drive any application installed."* **Only
   the ones the person has let it use**: by default the person lets alo use
@@ -1137,6 +1162,17 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   rather than guessing — unless the person has switched on, for that
   application, alo acting on pictures of its window, told that *alo may press
   the wrong thing*. **Off by default.**
+  **The person also chooses what reads those pictures**, in Settings → What
+  alo can use, under *Pictures and keys*: **no one** (as a machine arrives:
+  alo takes no picture and says it cannot see inside the application, and
+  where to choose), **their model on this computer** (nothing is sent), or **a
+  service they added** in alo and AI — any service, by its own name, and with
+  none added a row that opens alo and AI to add one — told *"A picture of the window alo is reading is sent
+  to {provider} each time."* A reader that cannot read pictures is refused in
+  words. *The owner, 2026-11-17: "It will always depend on the user, if he
+  wants the third party to read the screens pictures then he causes"* (ADR
+  0147 §4). **alo's own built-in offline reader, which ADR 0147 names as the
+  first choice, is not built yet**, and is not offered until it is.
   **In the browser, by default alo reads only the window it opened** for the
   turn; a person may let it read every tab, told that this includes their mail
   and their bank. **What a driven application sends is on the indicator**: by
