@@ -197,3 +197,7 @@ fn identify(name: &str, ended: &AtomicBool) -> io::Result<MediaNode> {
 fn failed(why: impl std::fmt::Display) -> io::Error {
     io::Error::other(why.to_string())
 }
+
+#[cfg(test)]
+#[path = "publishing_tests.rs"]
+mod tests;
