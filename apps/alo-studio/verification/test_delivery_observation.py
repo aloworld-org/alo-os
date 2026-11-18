@@ -53,8 +53,8 @@ class DeliveryEvidence(unittest.TestCase):
         self.addCleanup(self.stop_service)
         self.start_service()
 
-    def start_service(self):
-        self.service = subprocess.Popen([sys.executable, '-I', '-B', '-c', SERVICE],
+    def start_service(self, source=SERVICE):
+        self.service = subprocess.Popen([sys.executable, '-I', '-B', '-c', source],
                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         ready, _, _ = select.select([self.service.stdout], [], [], 5)
         self.assertTrue(ready, 'the independent D-Bus fixture did not start')
@@ -163,6 +163,62 @@ class DeliveryEvidence(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     observation.finish(enabled=enabled)
                 observation.close()
+
+    def test_an_actual_method_error_is_not_successful_delivery(self):
+        self.stop_service()
+        self.start_service(SERVICE.replace("self.calls.append('enable')",
+                                           "raise dbus.exceptions.DBusException('fixture refusal', name='org.aloworld.Studio.Refused')"))
+        observation = self.observe()
+        with self.assertRaises(dbus.DBusException):
+            self.interface().EnableMicrophone(timeout=3)
+        with self.assertRaises(ValueError):
+            observation.finish(enabled=True)
+
+    def test_a_no_reply_request_cannot_certify_a_successful_reply(self):
+        observation = self.observe()
+        request = dbus.lowlevel.MethodCallMessage('org.aloworld.Studio',
+                                                  '/org/aloworld/Studio/Recorder',
+                                                  'org.aloworld.Studio.Recorder1',
+                                                  'EnableMicrophone')
+        request.set_no_reply(True)
+        self.bus.send_message(request)
+        self.bus.flush()
+        self.assertEqual(json.loads(str(self.interface().GetStatus(timeout=3)))['actual_fixture_calls'],
+                         ['enable'])
+        with self.assertRaises(ValueError):
+            observation.finish(enabled=True)
+
+    def test_a_signature_error_cannot_be_hidden_beside_one_valid_delivery(self):
+        observation = self.observe()
+        self.interface().EnableMicrophone(timeout=3)
+        with self.assertRaises(dbus.DBusException):
+            self.interface().EnableMicrophone(dbus.String('not an offered argument'), timeout=3)
+        self.assertEqual(json.loads(str(self.interface().GetStatus(timeout=3)))['actual_fixture_calls'],
+                         ['enable'])
+        with self.assertRaises(ValueError):
+            observation.finish(enabled=True)
+
+    def test_wrong_object_or_interface_calls_do_not_substitute_for_delivery(self):
+        for path, interface in [('/org/aloworld/Studio/Other', 'org.aloworld.Studio.Recorder1'),
+                                ('/org/aloworld/Studio/Recorder', 'org.aloworld.Studio.Other')]:
+            with self.subTest(path=path, interface=interface):
+                observation = self.observe()
+                other = dbus.Interface(self.bus.get_object('org.aloworld.Studio', path, introspect=False),
+                                       interface)
+                with self.assertRaises(dbus.DBusException):
+                    other.EnableMicrophone(timeout=3)
+                with self.assertRaises(ValueError):
+                    observation.finish(enabled=True)
+                observation.close()
+
+    def test_a_failed_status_barrier_cannot_certify_a_successful_change(self):
+        self.stop_service()
+        self.start_service(SERVICE.replace("return json.dumps({'actual_fixture_calls': self.calls})",
+                                           "raise dbus.exceptions.DBusException('fixture status refusal', name='org.aloworld.Studio.Refused')"))
+        observation = self.observe()
+        self.interface().EnableMicrophone(timeout=3)
+        with self.assertRaises(ValueError):
+            observation.finish(enabled=True)
 
 
 if __name__ == '__main__':
