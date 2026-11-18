@@ -172,7 +172,8 @@ impl WhatAVerbDid {
     pub const fn published(&self) -> Option<&Published> {
         match self {
             Self::AFolderWasPublished(published) => Some(published),
-            Self::ToFiles(_)
+            Self::ApplicationControlled(_)
+            | Self::ToFiles(_)
             | Self::AnApplicationInstalled(_)
             | Self::AnApplicationWasReached(_)
             | Self::WhatCanBeInstalled(_)

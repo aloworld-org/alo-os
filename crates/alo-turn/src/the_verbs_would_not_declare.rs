@@ -29,7 +29,7 @@
 pub enum TheVerbsWouldNotDeclare {
     /// Application controls whose declarations did not satisfy the contract.
     #[error("the application controls could not be declared: {0}")]
-    TheApplicationControls(#[from] alo_adapters::NotLoaded),
+    TheApplicationControls(#[source] alo_adapters::NotLoaded),
     /// `alo-files`' six.
     #[error("the file verbs could not be declared: {0}")]
     TheFileVerbs(#[from] alo_files::Declaring),

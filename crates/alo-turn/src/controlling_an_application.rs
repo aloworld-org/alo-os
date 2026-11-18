@@ -39,18 +39,13 @@ pub(crate) fn controlling(
                 at,
             )
         })
-        .and_then(|_| {
-            machine
-                .how_applications_start()?
-                .applications_installed_now()
-        });
+        .map(|_| machine.the_applications_installed_now())
+        .unwrap_or_else(alo_applications::Installed::nothing);
     let result = alo_adapters::Driving::of(
         authorised,
         adapters,
         grants,
-        current
-            .as_ref()
-            .unwrap_or(machine.the_applications_installed()),
+        &current,
         strings,
     )
     .and_then(|driving| driving.deliver(transport.unwrap_or(&Unavailable), strings));

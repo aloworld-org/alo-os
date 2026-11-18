@@ -340,8 +340,10 @@ pub fn the_verbs_a_whole_machine_offers() -> Result<Verbs, TheVerbsWouldNotDecla
 pub fn the_verbs_with_application_controls() -> Result<Verbs, TheVerbsWouldNotDeclare> {
     let mut verbs = the_verbs_a_whole_machine_offers()?;
     let mut controls = alo_adapters::Adapters::default();
-    controls.add(alo_adapters::studio::loaded()?)?;
-    controls.declare_into(&mut verbs)?;
+    controls
+        .add(alo_adapters::studio::loaded().map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?)
+        .map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?;
+    controls.declare_into(&mut verbs).map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?;
     Ok(verbs)
 }
 
@@ -355,9 +357,11 @@ impl<'a> Machine<'a> {
         transport: &'a dyn alo_adapters::Delivers,
     ) -> Result<Self, TheVerbsWouldNotDeclare> {
         let mut controls = alo_adapters::Adapters::default();
-        controls.add(alo_adapters::studio::loaded()?)?;
+        controls
+            .add(alo_adapters::studio::loaded().map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?)
+            .map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?;
         self.offered = Some(self.verbs.clone());
-        controls.declare_into(&mut self.verbs)?;
+        controls.declare_into(&mut self.verbs).map_err(TheVerbsWouldNotDeclare::TheApplicationControls)?;
         self.controls = controls;
         self.delivering_controls = Some(transport);
         Ok(self)
@@ -581,6 +585,9 @@ impl<'a> Machine<'a> {
         alo_publishing::verbs::declare_into(&mut verbs)?;
         Ok(Self {
             verbs,
+            controls: alo_adapters::Adapters::default(),
+            delivering_controls: None,
+            offered: None,
             strings,
             resolving,
             the_persons_home: None,
