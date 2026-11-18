@@ -80,7 +80,10 @@ fn what_is_there_and_what_names_no_path_are_left_to_the_road() {
         None,
         "the folder that holds it is there"
     );
-    let no_path = read(&proposing(OPEN_APPLICATION, &[(APPLICATION, "org.kde.dolphin")]));
+    let no_path = read(&proposing(
+        OPEN_APPLICATION,
+        &[(APPLICATION, "org.kde.dolphin")],
+    ));
     assert_eq!(
         nothing_is_at(&there(), &no_path, &verbs, &machine, &words),
         None,

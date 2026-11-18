@@ -650,7 +650,9 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         Folder::ALL
             .iter()
             .map(|folder| in_their(home, *folder))
-            .chain(std::iter::once(in_their(home, Folder::Downloads).join(REPORT))),
+            .chain(std::iter::once(
+                in_their(home, Folder::Downloads).join(REPORT),
+            )),
     );
     // **A thing's own menu, 2026-11-17**: the person names the file, so reading
     // the window first is a look.
