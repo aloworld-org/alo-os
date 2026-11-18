@@ -27,7 +27,7 @@ def activate(tree, process, matches):
         if not {8, 24, 25}.issubset(facts['states']) or not matches(facts['name']):
             continue
         actions = [index for index, name in enumerate(facts['actions'])
-                   if name in {'click', 'press', 'activate', 'toggle', 'select'}]
+                   if name.casefold() in {'click', 'press', 'activate', 'toggle', 'select'}]
         if actions:
             candidates.append((node, actions[0]))
     if len(candidates) != 1:
@@ -38,7 +38,7 @@ def activate(tree, process, matches):
     current = tree.facts(node)
     if (not {8, 24, 25}.issubset(current['states']) or not matches(current['name'])
             or index >= len(current['actions'])
-            or current['actions'][index] not in {'click', 'press', 'activate', 'toggle', 'select'}):
+            or current['actions'][index].casefold() not in {'click', 'press', 'activate', 'toggle', 'select'}):
         raise ValueError('the native control changed before activation')
     if tree.action(node, index) is not True:
         raise ValueError('the native control refused activation')

@@ -35,6 +35,12 @@ class NativeControls(unittest.TestCase):
         activate(tree, 42, lambda name: name == 'Share')
         self.assertEqual(tree.sent, [(target, 0)])
 
+    def test_native_action_names_may_be_capitalized(self):
+        target = (':1.4', '/dialog/share')
+        tree = Tree({target: control(actions=('Click',))})
+        activate(tree, 42, lambda name: name == 'Share')
+        self.assertEqual(tree.sent, [(target, 0)])
+
     def test_another_application_with_the_same_label_is_never_activated(self):
         tree = Tree({(':1.9', '/other'): control()})
         with self.assertRaises(ValueError):

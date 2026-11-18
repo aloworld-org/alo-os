@@ -33,7 +33,8 @@ class LiveNativeTree(unittest.TestCase):
         tree = AtspiTree()
         with tempfile.TemporaryDirectory(prefix='studio-atspi-test-') as folder:
             result = pathlib.Path(folder) / 'chosen'
-            environment = dict(os.environ, GTK_MODULES='atk-bridge', NO_AT_BRIDGE='0')
+            environment = dict(os.environ, GTK_MODULES='atk-bridge', NO_AT_BRIDGE='0',
+                               GDK_BACKEND='x11')
             process = subprocess.Popen(['python3', '-I', '-c', FIXTURE, str(result)],
                                        env=environment, stdout=subprocess.DEVNULL)
             try:
@@ -44,6 +45,16 @@ class LiveNativeTree(unittest.TestCase):
                         break
                     except ValueError:
                         if process.poll() is not None or time.monotonic() >= deadline:
+                            pending = list(tree.roots())
+                            seen = set()
+                            while pending and len(seen) < 32:
+                                node = pending.pop()
+                                if node in seen or tree.owner(node[0]) != process.pid:
+                                    continue
+                                seen.add(node)
+                                facts = tree.facts(node)
+                                print('PRIVATE_FIXTURE_NODE', node, facts)
+                                pending.extend(facts['children'])
                             raise
                         time.sleep(.1)
                 process.wait(timeout=5)
