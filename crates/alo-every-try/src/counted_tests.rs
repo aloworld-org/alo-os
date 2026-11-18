@@ -2,6 +2,12 @@
 //! model chooses is held to **its own** requests passing at least 9 of 10
 //! tries; other requests' slips are reported and do not count.
 
+#![expect(
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    reason = "in a test, a panic on an unexpected Err or index is the failure being reported"
+)]
+
 use super::{Counted, THE_TRIES_ITS_OWN_TAKES, counted, summary_counting};
 use crate::a_road::ARequest;
 use crate::a_try::{Tried, Went};
@@ -225,4 +231,70 @@ fn the_summary_names_what_was_counted_and_what_was_not() {
         "{nothing}"
     );
     assert!(!nothing.contains("did not pass"), "{nothing}");
+}
+
+/// **Its own are tried `tries` times and every other `others` times**, its own
+/// first; with no tries for the others, they are not tried at all.
+#[test]
+fn its_own_are_tried_ten_times_and_the_others_fewer() {
+    use crate::testing::{Writing, answering, proposing, running, the_verbs, the_words};
+    use alo_applications::verbs::{APPLICATION, OPEN_APPLICATION};
+
+    let set = crate::the_set::the_set()
+        .expect("the set builds")
+        .retaining(|request| {
+            ["open an application by name", "close an application"].contains(&request.named())
+        });
+    let mine = [ItsOwn::because(
+        "open an application by name",
+        WhyItsOwn::ItsRoadChanged,
+    )];
+    let opening = || {
+        vec![
+            proposing(OPEN_APPLICATION, &[(APPLICATION, "org.mozilla.firefox")]),
+            answering("Firefox is open."),
+        ]
+    };
+    let mut lines: Vec<String> = (0..2).flat_map(|_| opening()).collect();
+    lines.push(running("pkill firefox"));
+    let mut model = Writing::these(&lines);
+    let tallied = super::tallying_its_own(
+        crate::a_try::TheLevel::FullAccess,
+        &set,
+        &mine,
+        (2, 1),
+        &the_verbs(),
+        &the_words(),
+        &mut model,
+        &mut |_, _, _| {},
+    );
+    let named: Vec<(&str, usize)> = tallied
+        .iter()
+        .map(|one| (one.request().named(), one.tries().len()))
+        .collect();
+    assert_eq!(
+        named,
+        [
+            ("open an application by name", 2),
+            ("close an application", 1)
+        ]
+    );
+    assert_eq!(
+        tallied[0].on_the_road(),
+        2,
+        "its own were asked its own lines"
+    );
+
+    let mut model = Writing::these(&(0..2).flat_map(|_| opening()).collect::<Vec<_>>());
+    let only_its_own = super::tallying_its_own(
+        crate::a_try::TheLevel::FullAccess,
+        &set,
+        &mine,
+        (2, 0),
+        &the_verbs(),
+        &the_words(),
+        &mut model,
+        &mut |_, _, _| {},
+    );
+    assert_eq!(only_its_own.len(), 1, "no tries for the others tries none");
 }

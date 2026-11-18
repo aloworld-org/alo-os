@@ -95,6 +95,22 @@ pub fn its_own(before: &Declared, after: &Declared) -> Vec<ItsOwn> {
         .collect()
 }
 
+/// The requests a change owns against `before`, the base's declaration as
+/// its file holds it, with this code's `set` and `verbs` as the change.
+///
+/// # Errors
+/// Why the base's declaration does not read, or the change's would not
+/// build.
+pub fn its_own_against(
+    before: &str,
+    set: &crate::the_set::TheSet,
+    verbs: &alo_capability::Verbs,
+) -> Result<Vec<ItsOwn>, String> {
+    let before = Declared::read(before).map_err(|why| why.to_string())?;
+    let after = Declared::of(set, verbs).map_err(|why| why.to_string())?;
+    Ok(its_own(&before, &after))
+}
+
 #[cfg(test)]
 #[path = "its_own_tests.rs"]
 mod tests;

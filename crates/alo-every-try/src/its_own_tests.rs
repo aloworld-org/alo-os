@@ -203,3 +203,36 @@ fn two_changed_verbs_own_every_request_asking_for_either() {
     );
     assert_eq!(named(&its_own(&base, &after)), ["one", "three"]);
 }
+
+/// **Against the base's file as the workflow hands it over**: the committed
+/// declaration owns nothing, one request's line changed owns that request, and
+/// a file that does not read is refused rather than read as owning nothing.
+#[test]
+fn against_the_bases_file_as_written() {
+    let set = the_set().expect("the set builds");
+    let verbs = the_verbs();
+    let committed = crate::the_declaration::AS_COMMITTED;
+    assert!(
+        super::its_own_against(committed, &set, &verbs)
+            .expect("the committed file reads")
+            .is_empty()
+    );
+    let changed: String = committed
+        .lines()
+        .map(|line| {
+            if line.starts_with("request\tlist a folder\t") {
+                line.replacen(
+                    "request\tlist a folder\t",
+                    "request\tlist a folder\tchanged",
+                    1,
+                )
+            } else {
+                line.to_owned()
+            }
+        })
+        .map(|line| line + "\n")
+        .collect();
+    let own = super::its_own_against(&changed, &set, &verbs).expect("it reads");
+    assert_eq!(named(&own), ["list a folder"]);
+    assert!(super::its_own_against("nonsense\n", &set, &verbs).is_err());
+}

@@ -2,9 +2,14 @@
 //! least nine in every ten tries on the road — the owner's rule of
 //! 2026-11-17. Every other request tried is reported and not counted.
 
-use crate::a_try::{Tried, Went};
+use alo_capability::Verbs;
+use alo_strings::Strings;
+
+use crate::a_road::ARequest;
+use crate::a_try::{TheLevel, TheModel, Tried, Went};
 use crate::its_own::ItsOwn;
-use crate::tallied::Tallied;
+use crate::tallied::{Tallied, tallying_at};
+use crate::the_set::TheSet;
 
 /// How many times a change's own request is tried, at each level.
 pub const THE_TRIES_ITS_OWN_TAKES: usize = 10;
@@ -144,6 +149,48 @@ pub fn summary_counting(tallied: &[Tallied], own: &[ItsOwn], asked_of: &str) -> 
     );
     said.push_str(&crate::tallied::the_requests_tried(tallied));
     said
+}
+
+/// **Try a change's own and then every other request**: each of `own` in
+/// `set` `tries.0` times, then every other `tries.1` times — none when that
+/// is zero — its own first, saying each try through `told`.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the same arguments as `tallying_at`, with which requests are its own"
+)]
+pub fn tallying_its_own(
+    level: TheLevel,
+    set: &TheSet,
+    own: &[ItsOwn],
+    tries: (usize, usize),
+    verbs: &Verbs,
+    strings: &Strings,
+    model: &mut dyn TheModel,
+    told: &mut dyn FnMut(&ARequest, usize, &Tried),
+) -> Vec<Tallied> {
+    let is_its_own = |request: &ARequest| own.iter().any(|one| one.named() == request.named());
+    let (its, others) = tries;
+    let mut tallied = tallying_at(
+        level,
+        &set.clone().retaining(is_its_own),
+        its,
+        verbs,
+        strings,
+        model,
+        told,
+    );
+    if others > 0 {
+        tallied.extend(tallying_at(
+            level,
+            &set.clone().retaining(|request| !is_its_own(request)),
+            others,
+            verbs,
+            strings,
+            model,
+            told,
+        ));
+    }
+    tallied
 }
 
 #[cfg(test)]

@@ -14,7 +14,7 @@
 //! ALO_EVERY_TRY_OTHER_TRIES=3                     # with BEFORE: tries of every other request
 //!   alo-every-try
 //!
-//! alo-every-try declare                           # write what-the-model-is-offered.txt again
+//! alo-every-try declare [to]                      # write what-the-model-is-offered.txt again, or to `to`
 //! ```
 //!
 //! **The whole set**, without `ALO_EVERY_TRY_BEFORE`: exits 0 when every try
@@ -37,8 +37,9 @@ use std::io::Write as _;
 use std::process::ExitCode;
 
 use alo_capability::Verbs;
+use alo_every_try::counted::tallying_its_own;
 use alo_every_try::counted::{counted, summary_counting};
-use alo_every_try::its_own::{ItsOwn, its_own};
+use alo_every_try::its_own::{ItsOwn, its_own_against};
 use alo_every_try::the_declaration::{Declared, THE_FILE};
 use alo_every_try::{
     ARequest, AtAProvider, TheLevel, TheSet, Tried, Verdict, Went, summary, tallying_at, the_set,
@@ -67,8 +68,9 @@ fn a_count(name: &str, otherwise: &str) -> Result<usize, String> {
 }
 
 fn main() -> ExitCode {
-    if std::env::args().nth(1).as_deref() == Some("declare") {
-        return match declaring() {
+    let mut arguments = std::env::args().skip(1);
+    if arguments.next().as_deref() == Some("declare") {
+        return match declaring(arguments.next()) {
             Ok(to) => {
                 println!("What the model is offered was written to {to}.");
                 ExitCode::SUCCESS
@@ -88,13 +90,13 @@ fn main() -> ExitCode {
     }
 }
 
-/// Write the declaration of what the code offers the model to this crate's
-/// committed file, answering with where.
-fn declaring() -> Result<String, String> {
+/// Write the declaration of what the code offers the model to `to`, or to
+/// this crate's committed file, answering with where.
+fn declaring(to: Option<String>) -> Result<String, String> {
     let set = the_set().map_err(|why| why.to_string())?;
     let verbs = alo_turn::the_verbs_a_whole_machine_offers().map_err(|why| why.to_string())?;
     let declared = Declared::of(&set, &verbs).map_err(|why| why.to_string())?;
-    let to = format!("{}/{THE_FILE}", env!("CARGO_MANIFEST_DIR"));
+    let to = to.unwrap_or_else(|| format!("{}/{THE_FILE}", env!("CARGO_MANIFEST_DIR")));
     std::fs::write(&to, declared.written()).map_err(|why| format!("{to}: {why}"))?;
     Ok(to)
 }
@@ -124,9 +126,7 @@ fn what_it_owns(set: &TheSet, verbs: &Verbs) -> Result<Option<Vec<ItsOwn>>, Stri
     }
     let text = std::fs::read_to_string(&before)
         .map_err(|why| format!("the base's declaration {before} could not be read: {why}"))?;
-    let before = Declared::read(&text).map_err(|why| why.to_string())?;
-    let after = Declared::of(set, verbs).map_err(|why| why.to_string())?;
-    Ok(Some(its_own(&before, &after)))
+    its_own_against(&text, set, verbs).map(Some)
 }
 
 /// Say one try as it ends.
@@ -168,15 +168,6 @@ fn running() -> Result<u8, String> {
         return Ok(counted(&[], own).exit_code());
     }
 
-    let key = std::env::var(THE_KEY)
-        .ok()
-        .filter(|key| !key.trim().is_empty())
-        .ok_or(format!(
-            "{THE_KEY} is not set, so the model cannot be asked"
-        ))?;
-    let key = Secret::typed(key.trim())
-        .map_err(|_| format!("{THE_KEY} is not a key that can be sent"))?;
-
     let only = said("ALO_EVERY_TRY_ONLY", "");
     if !only.is_empty() {
         if own.is_some() {
@@ -189,6 +180,16 @@ fn running() -> Result<u8, String> {
             .only(&only)
             .ok_or(format!("the set has no request called `{only}`"))?;
     }
+    let others = a_count("ALO_EVERY_TRY_OTHER_TRIES", "3")?;
+
+    let key = std::env::var(THE_KEY)
+        .ok()
+        .filter(|key| !key.trim().is_empty())
+        .ok_or(format!(
+            "{THE_KEY} is not set, so the model cannot be asked"
+        ))?;
+    let key = Secret::typed(key.trim())
+        .map_err(|_| format!("{THE_KEY} is not a key that can be sent"))?;
     let strings =
         alo_every_try::words_for_the_answers::the_words().map_err(|why| why.to_string())?;
     let provider = Provider::checked(
@@ -234,29 +235,16 @@ fn running() -> Result<u8, String> {
             (summary(&tallied, &asked_of), verdict(&tallied).exit_code())
         }
         Some(own) => {
-            let is_its_own =
-                |request: &ARequest| own.iter().any(|one| one.named() == request.named());
-            let others = a_count("ALO_EVERY_TRY_OTHER_TRIES", "3")?;
-            let mut tallied = tallying_at(
+            let tallied = tallying_its_own(
                 level,
-                &set.clone().retaining(is_its_own),
-                tries,
+                &set,
+                own,
+                (tries, others),
                 &verbs,
                 &strings,
                 &mut asking,
                 &mut telling,
             );
-            if others > 0 {
-                tallied.extend(tallying_at(
-                    level,
-                    &set.retaining(|request| !is_its_own(request)),
-                    others,
-                    &verbs,
-                    &strings,
-                    &mut asking,
-                    &mut telling,
-                ));
-            }
             (
                 summary_counting(&tallied, own, &asked_of),
                 counted(&tallied, own).exit_code(),
