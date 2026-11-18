@@ -97,7 +97,7 @@ fn only_the_fully_dropped_agent_identity_is_confined() {
             }
         }
     }
-    for field in ["CapEff", "CapPrm", "CapAmb", "CapBnd"] {
+    for field in ["CapInh", "CapEff", "CapPrm", "CapAmb", "CapBnd"] {
         for nonzero in ["0000000000000001", "0000000080000000", "ffffffffffffffff"] {
             let changed = CONFINED.replace(
                 &format!("{field}:\t0000000000000000"),
@@ -122,6 +122,7 @@ fn missing_duplicate_and_malformed_credential_fields_fail_closed() {
     for field in [
         "Uid",
         "Gid",
+        "CapInh",
         "CapEff",
         "CapPrm",
         "CapAmb",
@@ -165,6 +166,18 @@ fn missing_duplicate_and_malformed_credential_fields_fail_closed() {
         }
     }
     assert!(require_confinement("").is_err());
+}
+
+#[test]
+fn proc_status_has_a_hard_sixty_four_kibibyte_bound() {
+    let prefix = format!("{CONFINED}Padding:\t");
+    let at_limit = format!("{prefix}{}\n", "x".repeat(65_536 - prefix.len() - 1));
+    assert_eq!(at_limit.len(), 65_536);
+    assert!(require_confinement(&at_limit).is_ok());
+    assert!(
+        require_confinement(&format!("{at_limit}\n")).is_err(),
+        "valid credentials cannot excuse an oversized observation"
+    );
 }
 
 #[test]
