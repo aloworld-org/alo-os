@@ -29,13 +29,14 @@ alo-cursors = { path = "../alo-cursors" }
 # **Where the level and the grant are in Settings**, counted from the lists
 # Settings draws them from rather than from a number somebody counted once.
 alo-capability = { path = "../alo-capability" }
+# Private probe checks use the shipped declarations and actual protocol replies.
+alo-adapters = { path = "../alo-adapters" }
+alo-protocol = { path = "../alo-protocol" }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-alo-adapters = { path = "../alo-adapters" }
 alo-applications = { path = "../alo-applications" }
-alo-protocol = { path = "../alo-protocol" }
 # Reads the pictures a walk kept, in `tests/fixtures`, so a check is held to
 # the screen it was wrong about. The version the workspace already locks.
 image = { version = "=0.25.10", default-features = false, features = ["png"] }

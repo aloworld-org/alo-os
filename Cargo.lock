@@ -2248,6 +2248,7 @@ dependencies = [
  "alo-capability",
  "alo-cursors",
  "alo-picking",
+ "alo-protocol",
  "alo-software",
  "image",
  "serde_json",
