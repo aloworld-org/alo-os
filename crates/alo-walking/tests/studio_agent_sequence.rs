@@ -283,7 +283,9 @@ fn allowed_status_must_establish_ready_and_disabled_inactive_microphone_before_c
             ("microphone_active", json!(null)),
         ] {
             let mut changed = ready();
-            changed[field] = bad;
+            *changed
+                .get_mut(field)
+                .expect("ready status contains the tested field") = bad;
             assert_refuses_at(at, status(changed));
         }
         for wrong in [

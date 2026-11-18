@@ -10,6 +10,7 @@ use alo_adapters::studio::STUDIO;
 use alo_protocol::ToAnAgent;
 
 pub use crate::studio_agent_identity::require_confinement;
+pub use crate::studio_agent_sequence::run;
 
 /// The five boundaries observed while the person changes native Settings.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

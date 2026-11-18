@@ -48,6 +48,7 @@ pub mod step;
 pub mod strokes;
 mod studio_agent_identity;
 pub mod studio_agent_probe;
+mod studio_agent_sequence;
 pub mod studio_installed_walk;
 pub mod studio_walk_files;
 pub mod the_edge_seen;
