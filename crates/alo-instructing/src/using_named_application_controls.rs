@@ -20,7 +20,9 @@ pub(crate) fn using_named_application_controls(verbs: &Verbs) -> String {
          After reading status, keep the requested operation and leave unrelated settings unchanged. \
          Prefer the matching named control over a file action, an accessibility gesture, \
          or another setting. Match the requested operation to the declared purpose below. \
-         Use the generic application guidance when no offered named control matches.\n",
+         Use the generic application guidance when no offered named control matches. \
+         After a generic application operation completes the person's whole request, answer the person; \
+         do not append a named status read. If requested steps remain, continue those steps.\n",
     );
     for status in statuses {
         let Some(family) = status.name().strip_suffix(".status") else {

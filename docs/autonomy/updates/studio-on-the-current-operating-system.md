@@ -125,8 +125,11 @@ and package run. It later failed before installation: the terminal's Window
 actions band consumed the setup command. No Studio recording was returned.
 Private source `83e0fa210c03a4d45c3b3eb00f35ecd41894779a` corrects focus and
 requires a fresh command acknowledgement before installing. Its matching
-package run 44378112596 passed; installed walk 44380155898 is building the
-matching image. Recording acceptance remains unverified. The private
+package run 44378112596 passed. Installed walk 44380155898 built and booted the
+matching image, accepted the terminal command and installed both packages, then
+failed during controller startup before recording. The saved report contains
+deployment provenance but no startup exception. Recording acceptance remains
+unverified. The private
 instrument workflow also passed its real decoder/native-control checks on that
 source; local validation recorded 143 Python and 30 focused Rust test passes.
 The person-side controller is not an agent tool and cannot establish the
@@ -158,3 +161,22 @@ one-time deliberate removals were caught by the independent regression tests.
 No model request, expected operation, repetition count or acceptance threshold
 was weakened. The unchanged repeated-model gate must still establish whether
 the correction improves actual choices.
+
+## Finish the requested operation without unrelated status reads
+
+At source `27f9a7d0f`, real-model run 44383621155 passed all 190 Studio tries.
+The overall gate still failed: Ask's fourth open-Firefox try called Studio status
+after the requested open completed. Existing generic file selection/opening,
+private typing and chooser cases also failed. This is not an all-model pass.
+The source's native capture job passed, including real framebuffer and pinned
+publisher record/pause/resume/decode checks; installed recording remains separate.
+
+The named-control guidance now says to answer when a generic application
+operation completes the person's whole request, without appending a named
+status read. Remaining requested steps still continue. Independent review
+caught and corrected an overbroad earlier wording before it was committed.
+The new instruction regression failed before both corrections, then passed
+with the complete instruction/evaluation suite, formatting, strict linting and
+warnings-denied documentation. Three one-time scope removals were caught.
+The real-model requests, expected actions and repetition counts remain unchanged;
+the next real-model result must validate the new guidance.

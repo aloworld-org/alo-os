@@ -176,3 +176,15 @@ fn scope_guidance_preserves_live_registry_purposes_and_unrelated_generic_operati
         "generic guidance must not invent Studio controls"
     );
 }
+
+#[test]
+fn a_completed_generic_application_operation_does_not_start_a_named_status_read() {
+    let verbs = offered();
+    for instructions in Instructions::ALL {
+        let text = the_products_words(instructions, &verbs);
+        let (_, named) = advice(&text);
+        assert!(named.contains("After a generic application operation completes the person's whole request, answer the person"));
+        assert!(named.contains("do not append a named status read"));
+        assert!(named.contains("If requested steps remain, continue those steps"));
+    }
+}
