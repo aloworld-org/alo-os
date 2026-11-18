@@ -84,7 +84,7 @@ fn private_native_approval_body_has_one_scoped_gate_and_no_secret_or_protocol_in
         }
     }
     assert!(matches!(steps.get(section + 2 + count), Some(Step::Section { name, .. })
-        if name == "VSCodium at full access"));
+        if name == "Studio approval cleanup"));
     Ok(())
 }
 
@@ -97,11 +97,41 @@ fn a_failed_native_studio_turn_cannot_feed_a_later_model_request()
         let step = walk.steps().iter().find(|step| matches!(step,
             Step::Section { name, .. } if name == section)).ok_or("missing later model section")?;
         assert!(matches!(step, Step::Section { needs, .. }
-            if needs.contains(&"Studio native approval")),
+            if needs.contains(&"Studio native approval") && needs.contains(&"Studio approval cleanup")),
             "a failed Studio task may still own the daemon connection: {section}");
     }
     assert!(walk.steps().iter().any(|step| matches!(step,
         Step::Section { name, needs } if name == "the Papers sheet at ask each time"
             && needs.contains(&"VSCodium at ask each time"))));
+    Ok(())
+}
+
+#[test]
+fn native_cleanup_remains_reachable_after_approval_failure_and_requires_fresh_settings_input()
+-> Result<(), &'static str> {
+    let walk = the_first_walk();
+    let steps = walk.steps();
+    let section = position(steps, |step| matches!(step, Step::Section { name, .. }
+        if name == "Studio approval cleanup"))?;
+    assert!(matches!(steps.get(section), Some(Step::Section { needs, .. }) if needs.is_empty()),
+        "restoration must still run when approval failed");
+    let Some(Step::OnlyWithFor { variable: "ALO_WALK_PRIVATE_STUDIO", steps: count }) =
+        steps.get(section + 1) else { return Err("cleanup needs the same explicit private opt-in") };
+    let body = steps.get(section + 2..section + 2 + count).ok_or("invalid cleanup gate")?;
+    assert!(!body.iter().any(|step| matches!(step,
+        Step::OnlyWith(_) | Step::OnlyWithFor { .. } | Step::TypeSecret(_))));
+    let requested = position(body, |step| matches!(step, Step::ExpectLine {
+        phrase, since: Since::Mark, a_retry_may_pass: false, ..
+    } if phrase == "Studio approval restore settings requested"))?;
+    assert!(matches!(body.get(requested + 1), Some(Step::Press(settings))
+        if *settings == Chord::with("meta_l", "i")));
+    let finished = position(body, |step| matches!(step, Step::ExpectLine {
+        phrase, and_says: Some(says), since: Since::Mark, a_retry_may_pass: false, ..
+    } if phrase == "Studio approved flow exit" && says == "exit 0"))?;
+    assert!(requested < finished);
+    assert!(body.get(finished + 1..).is_some_and(|after| after.iter().any(|step|
+        matches!(step, Step::Look { name, .. } if name == "studio-approval-completed"))));
+    assert!(matches!(steps.get(section + 2 + count), Some(Step::Section { name, .. })
+        if name == "VSCodium at full access"));
     Ok(())
 }
