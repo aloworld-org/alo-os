@@ -230,3 +230,20 @@ fn the_terminal_at_the_start_may_already_be_in_front() {
     });
     assert_eq!(others.count(), 0);
 }
+
+/// **Text Editor's typing may pass after a retry**: main's walk at 71932e07
+/// (run 44161055698) saw the first `accessible.type_text` not done and the
+/// second done and saved, and the text was in the file. The check passes on
+/// the outcome, counted apart, with the failed try in its evidence.
+#[test]
+fn text_editors_typing_may_pass_after_a_retry() {
+    let walk = at_full_access(Walk::named("w"));
+    let allowed = walk.steps().iter().any(|step| {
+        matches!(step, Step::ExpectLine { check, a_retry_may_pass: true, .. }
+            if check == "alo types the text into Text Editor and saves it")
+    });
+    assert!(
+        allowed,
+        "the Text Editor typing check does not allow a retry"
+    );
+}

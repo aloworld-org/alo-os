@@ -473,6 +473,88 @@ fn typing_in_vscodium_expects_the_field_the_window_shows() {
     );
 }
 
+/// **Opening a file the file manager shows, as a person asks it**: with
+/// Dolphin's window offered, and a path guessed where nothing is refused as
+/// the machine refuses it before asking — so a try that guesses, is refused,
+/// reads the window and opens the item takes the road, at both levels, and
+/// says it was refused first. Opening it by a path that IS there is not the
+/// road: nothing refuses that, so it is the wrong verb, as it would be on the
+/// machine.
+#[test]
+fn opening_a_shown_file_goes_on_from_a_wrong_path_and_holds_the_verb() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, reading, the_words};
+    use alo_adapters::fallback_verbs::{APPLICATION as IN, NAME, OPEN_ITEM};
+    use alo_applications::opening_a_file::PATH;
+    use alo_applications::verbs::APPLICATION;
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "open a file in the file manager")
+        .expect("the set has it");
+    let window = request.window().expect("Dolphin's window is offered");
+    let dolphin = window.application().to_owned();
+    assert_eq!(window.title(), "Downloads");
+    let there = format!("{THE_HOME}/Downloads/report.pdf");
+    assert!(
+        request
+            .there()
+            .iter()
+            .any(|at| at.display().to_string() == there),
+        "{:?}",
+        request.there()
+    );
+
+    let guessed = proposing(
+        OPEN_FILE_IN_APPLICATION,
+        &[
+            (APPLICATION, &dolphin),
+            (PATH, &format!("{THE_HOME}/Documents/report.pdf")),
+        ],
+    );
+    let by_its_real_path = proposing(
+        OPEN_FILE_IN_APPLICATION,
+        &[(APPLICATION, &dolphin), (PATH, &there)],
+    );
+    let look = reading(READ_WINDOW, &[(IN, &dolphin)]);
+    let open = proposing(OPEN_ITEM, &[(IN, &dolphin), (NAME, "report.pdf")]);
+    let answer = answering("report.pdf is open.");
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let try_these = |lines: &[String]| {
+            let mut model = Writing::these(lines);
+            let tried = one_try_at(
+                level,
+                request,
+                set.may_reach(),
+                &the_verbs(),
+                &the_words(),
+                &mut model,
+            );
+            (tried, model.shown)
+        };
+        let (went_on, shown) =
+            try_these(&[guessed.clone(), look.clone(), open.clone(), answer.clone()]);
+        assert_eq!(went_on.went(), &Went::TheRoad, "{level:?}: {went_on:?}");
+        assert_eq!(went_on.refused_before_asking(), 1, "{level:?}");
+        let first = shown.first().expect("the model was asked");
+        assert!(first.contains(&window.told()), "{level:?}: {first}");
+        assert!(
+            shown
+                .get(1)
+                .is_some_and(|second| second.contains("there is nothing at")),
+            "{level:?}: the refusal is shown: {shown:?}"
+        );
+        // **The refusal cases**: by a path that is there is the wrong verb,
+        // and guessing until the turn runs out is not the road.
+        let (by_path, _) = try_these(&[by_its_real_path.clone(), answer.clone()]);
+        assert!(!by_path.took_the_road(), "{level:?}: {by_path:?}");
+        let (guessing, _) = try_these(&[guessed.clone(), answer.clone()]);
+        assert!(!guessing.took_the_road(), "{level:?}: {guessing:?}");
+    }
+}
+
 /// **A slider named as the request says it, not as the window shows it, is
 /// refused before the card**, as the machine now refuses it at both levels, in
 /// the move's own words — and a try that names it again as the window shows it

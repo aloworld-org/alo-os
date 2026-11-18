@@ -242,7 +242,7 @@ pub fn one_try_at(
     let happened = loop {
         let happened = driving_on(
             &TheConversationSoFar::nothing(),
-            None,
+            request.window(),
             request.words(),
             verbs,
             may_reach,
@@ -516,6 +516,19 @@ impl TheDoor for Recording<'_> {
                 if let Some(refused) = crate::no_such_control::no_such_control(
                     step,
                     &wrong,
+                    request,
+                    self.verbs,
+                    &self.machine,
+                    self.strings,
+                ) {
+                    self.refused_before_asking += 1;
+                    return Ok(refused);
+                }
+                // **As the machine answers a path where nothing is**, where the
+                // request says what is there: refused before anybody is asked,
+                // and counted as such (`crate::nothing_is_there`).
+                if let Some(refused) = crate::nothing_is_there::nothing_is_at(
+                    self.request.there(),
                     request,
                     self.verbs,
                     &self.machine,
