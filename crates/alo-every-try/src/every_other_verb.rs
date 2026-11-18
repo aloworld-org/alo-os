@@ -641,10 +641,7 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
                 READ_WINDOW,
                 Answered::With(Done::of_a_window_read(&the_canvas, &told_of_the_canvas)),
             )
-            .expecting(fallback_verbs::APPLICATION, viewer.as_str())
-            // **A look**: the picture verb asks the tree itself, so a
-            // picture asked for first is refused where the window can be read.
-            .a_look(),
+            .expecting(fallback_verbs::APPLICATION, viewer.as_str()),
             Step::of(
                 PICTURE_WINDOW,
                 Answered::With(Done::of_a_picture(
