@@ -181,15 +181,26 @@ pub(crate) fn the_requests() -> Vec<ARequest> {
                 action = action.expecting(argument, value);
             }
             let road = if verb == status_name() {
-                vec![action]
+                vec![action.as_often_as_asked()]
             } else {
                 vec![
                     Step::of(status_name(), status(request.before, verb, false)).a_look(),
                     action,
                 ]
             };
-            ARequest::asking(request.name, request.words, road)
-                .or_looking_at(Step::of(status_name(), status(request.after, verb, true)))
+            // A post-action read is a longer road to the same result. A look
+            // aside would answer at any point, including before the action,
+            // and would show the model a future state that has not happened.
+            let mut checking_afterwards = road.clone();
+            checking_afterwards.push(
+                Step::of(status_name(), status(request.after, verb, true)).as_often_as_asked(),
+            );
+            let asked = ARequest::asking(request.name, request.words, road);
+            if verb == status_name() {
+                asked
+            } else {
+                asked.or_by_another_road(checking_afterwards)
+            }
         })
         .collect()
 }
@@ -247,7 +258,8 @@ mod tests {
     #[test]
     fn every_studio_request_accepts_its_action_and_actual_status_reads_at_both_levels() {
         for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
-            for ((verb, fixture), request) in ACTION_NAMES.iter().zip(REQUESTS).zip(the_requests()) {
+            for ((verb, fixture), request) in ACTION_NAMES.iter().zip(REQUESTS).zip(the_requests())
+            {
                 let mut lines = Vec::new();
                 if *verb != status_name() {
                     lines.push(reading(status_name(), &[]));
@@ -258,8 +270,12 @@ mod tests {
                 lines.push(answering("Done."));
                 let mut model = Writing::these(&lines);
                 let tried = one_try_at(
-                    level, &request, &WhatItMayReach::nothing().at_full_access(true),
-                    &the_verbs(), &the_words(), &mut model,
+                    level,
+                    &request,
+                    &WhatItMayReach::nothing().at_full_access(true),
+                    &the_verbs(),
+                    &the_words(),
+                    &mut model,
                 );
                 assert!(tried.took_the_road(), "{level:?}: {verb}: {tried:?}");
             }
@@ -273,18 +289,30 @@ mod tests {
                 continue;
             }
             let mut model = Writing::these(&[
-                reading(status_name(), &[]), proposing(verb, fixture.given), answering("Done."),
+                reading(status_name(), &[]),
+                proposing(verb, fixture.given),
+                answering("Done."),
             ]);
             let tried = one_try_at(
-                TheLevel::FullAccess, &request, &WhatItMayReach::nothing().at_full_access(true),
-                &the_verbs(), &the_words(), &mut model,
+                TheLevel::FullAccess,
+                &request,
+                &WhatItMayReach::nothing().at_full_access(true),
+                &the_verbs(),
+                &the_words(),
+                &mut model,
             );
             assert!(tried.took_the_road(), "{verb}: {tried:?}");
             let Answered::With(done) = status(fixture.before, verb, false) else {
                 panic!("a status is a protocol reply");
             };
-            let expected = alo_protocol::ToAnAgent::did(done).written().expect("the reply writes");
-            assert!(model.shown[1].contains(&expected), "{verb}: {}", model.shown[1]);
+            let expected = alo_protocol::ToAnAgent::did(done)
+                .written()
+                .expect("the reply writes");
+            assert!(
+                model.shown[1].contains(&expected),
+                "{verb}: {}",
+                model.shown[1]
+            );
         }
     }
 
@@ -293,8 +321,12 @@ mod tests {
         for request in the_requests().into_iter().skip(1) {
             let mut model = Writing::these(&[reading(status_name(), &[]), answering("Done.")]);
             let tried = one_try_at(
-                TheLevel::FullAccess, &request, &WhatItMayReach::nothing().at_full_access(true),
-                &the_verbs(), &the_words(), &mut model,
+                TheLevel::FullAccess,
+                &request,
+                &WhatItMayReach::nothing().at_full_access(true),
+                &the_verbs(),
+                &the_words(),
+                &mut model,
             );
             assert!(!tried.took_the_road(), "{}: {tried:?}", request.named());
         }
