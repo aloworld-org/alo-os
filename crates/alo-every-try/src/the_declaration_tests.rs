@@ -77,8 +77,9 @@ fn a_request_is_declared_with_every_verb_its_roads_ask_for() {
             .unwrap_or_else(|| panic!("{named} is declared"))
     };
     assert_eq!(
-        find("open an application by name").asks_for(),
-        [OPEN_APPLICATION.to_owned()]
+        find("open an application by name").asks_for().first(),
+        Some(&OPEN_APPLICATION.to_owned()),
+        "its road's verb comes first"
     );
     assert!(
         find("write in VSCodium")

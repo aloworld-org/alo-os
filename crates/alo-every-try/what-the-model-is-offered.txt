@@ -36,7 +36,7 @@ verb	what_can_be_installed	8a809f6c3b6c1c40
 verb	what_touched_this_file	c05f793e1b3ad6c3
 request	write in VSCodium	a6568300a2c6eb0c	open_file_in_application,accessible.read_window,accessible.type_text,read_file
 request	publish to GitHub Pages	72c0d16b9762dc24	publish_to_github_pages
-request	open an application by name	fc0f16ba65ac2068	open_application
+request	open an application by name	58c95e6822ca9c05	open_application,accessible.read_window
 request	list a folder	a10d7e0163b43f88	list_folder
 request	read a file	78d789b77df9dc2c	read_file
 request	find files by name	8d2b5c91380e53df	find_in_folder
