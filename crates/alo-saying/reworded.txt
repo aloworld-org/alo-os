@@ -94,3 +94,19 @@ key: adapters.fallback.scroll-to.sentence
 now: scroll {application} until “{to}” is on the screen
 why: only the placeholder was renamed, from {name} to {to}, to follow the argument it is filled from; what fills it is the same name of the same thing, so a correct translation of the old English, with the placeholder renamed, is a correct translation of this one.
 
+key: adapters.studio.countdown-three.purpose
+now: set a three-second (3 sec) countdown before the next recording starts in alo Studio
+why: this still selects the same three-second countdown before capture; the numeric label and application name clarify that existing duration choice. It neither starts recording nor changes a different setting, so a correct translation of the old duration-selection claim remains correct.
+
+key: adapters.studio.countdown-five.purpose
+now: set a five-second (5 sec) countdown before the next recording starts in alo Studio
+why: this still selects the same five-second countdown before capture; the numeric label and application name clarify that existing duration choice. It neither starts recording nor changes a different setting, so a correct translation of the old duration-selection claim remains correct.
+
+key: adapters.studio.rename.purpose
+now: rename the completed recording currently being reviewed in alo Studio's private library
+why: naming and renaming refer to the same completed recording already being reviewed. Naming the private library and application makes that existing subject explicit; a correct translation still describes giving that reviewed recording its name.
+
+key: adapters.studio.export.purpose
+now: open Save a copy in alo Studio so the person can choose where to export the reviewed recording
+why: the person still chooses where to save a copy of the reviewed recording. The wording names the existing Save a copy surface without granting or selecting a destination, so a correct translation of the old destination-choice claim remains correct.
+
