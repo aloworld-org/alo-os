@@ -125,6 +125,26 @@ mod tests {
     use super::*;
     use crate::testing::{a_verb_of_somebody_elses, the_verbs};
 
+    /// Available operations do not report an application's live state.
+    #[test]
+    fn an_application_status_read_is_required_before_a_live_status_answer() {
+        use alo_capability::{Effect, Requires, Verb};
+        use alo_strings::Word;
+        let mut verbs = the_verbs();
+        verbs.declare(Verb::checked(
+            "fixture.status",
+            Word::saying("testing.fixture.status", "read the fixture's current status"),
+            Effect::Read,
+            vec![],
+            Requires::nothing_because("this fixture reaches no machine"),
+            Word::saying("testing.fixture.read", "read the fixture status"),
+        ).expect("the fixture declares")).expect("the status is unique");
+        let told = the_products_words(Instructions::SHOWN_TO_A_TURN, &verbs);
+        assert!(told.contains("Read the live status before answering"), "{told}");
+        assert!(told.contains("a verb's description is not a live report"), "{told}");
+        assert!(told.contains("fixture.status"), "{told}");
+    }
+
     /// **A model is told what a verb is for in the verb's own words.** Two
     /// descriptions of one verb are two things that can disagree, and the one
     /// the model saw would be the one nobody maintains.
