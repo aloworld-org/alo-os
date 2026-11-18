@@ -11,10 +11,15 @@ use crate::a_road::{ARequest, Answered, Step};
 
 /// One request's starting and resulting phase, and any exact argument it needs.
 struct RecordingRequest {
+    /// The stable request name printed in the model report.
     name: &'static str,
+    /// What the person asks, without naming the protocol action.
     words: &'static str,
+    /// What a status read shows before the requested action.
     before: &'static str,
+    /// What a status read shows once the scripted action has completed.
     after: &'static str,
+    /// Argument names and values this particular request decides.
     given: &'static [(&'static str, &'static str)],
 }
 
