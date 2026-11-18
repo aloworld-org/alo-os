@@ -118,6 +118,33 @@ class ApprovalCleanup(unittest.TestCase):
 
 
 class ApprovalBounds(unittest.TestCase):
+    def test_native_withdrawal_rereads_the_exact_disable_card_on_both_sides(self):
+        runtime = approved_runtime.ApprovalRuntime(Mock(), Mock())
+        card = {'number': 0, 'sentence': 'disable the microphone for this alo Studio recording'}
+        for before, after in (({**card, 'sentence': 'enable the microphone for this alo Studio recording'}, card),
+                              (card, {**card, 'sentence': 'enable the microphone for this alo Studio recording'})):
+            with self.subTest(before=before, after=after), \
+                    patch.object(runtime, 'wait_settings'), \
+                    patch.object(runtime, 'pending', side_effect=[before, after]) as pending, \
+                    patch.object(runtime, 'say') as say:
+                runtime.settings.reset_mock()
+                with self.assertRaises(ValueError):
+                    runtime.withdraw(card)
+                self.assertTrue(all(call.args == (False,) for call in pending.call_args_list))
+                self.assertEqual(runtime.settings.boundary.called, before == card)
+                say.assert_not_called()
+
+    def test_delivery_failure_while_waiting_cannot_release_a_pending_card(self):
+        runtime = approved_runtime.ApprovalRuntime(Mock(), Mock())
+        asking, delivery = Mock(), Mock()
+        delivery.pump.side_effect = ValueError('delivery owner lost')
+        with patch.object(runtime, 'pending') as pending:
+            with self.assertRaisesRegex(ValueError, '^delivery owner lost$'):
+                runtime.wait_pending(True, asking, delivery)
+        asking.pump.assert_called_once()
+        delivery.pump.assert_called_once()
+        pending.assert_not_called()
+
     def test_settings_wait_refuses_after_its_absolute_deadline(self):
         runtime = approved_runtime.ApprovalRuntime(Mock(), Mock())
         missing = subprocess.CalledProcessError(1, ['alo-app'])
