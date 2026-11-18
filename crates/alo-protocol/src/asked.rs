@@ -60,6 +60,8 @@ use crate::github_sign_in::OnTheWire;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
 pub(crate) enum Asked {
+    /// Read-only discovery for an invoked agent.
+    Capabilities {},
     /// A read, which answers inside the turn.
     Read {
         /// The name of the verb, as it was asked for.

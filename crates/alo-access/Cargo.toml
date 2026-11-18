@@ -15,7 +15,8 @@ repository.workspace = true
 alo-appearance = { path = "../alo-appearance" }
 # The chords the shell ships, so that a keyboard road can be held against them:
 # every action that has a chord must also have a Tab stop.
-alo-approving = { path = "../alo-approving" }
+# The published approval labels, without a dependency on the executor.
+alo-capability = { path = "../alo-capability" }
 alo-shortcuts = { path = "../alo-shortcuts" }
 # How the attributes a surface of alo's own tree carries are spelt — the
 # surface's typed name, a setting's old name, and the key for one no page draws
@@ -38,6 +39,8 @@ toml = { workspace = true }
 workspace = true
 
 [dev-dependencies]
+# Verify that the spoken labels equal the approval surface's public aliases.
+alo-approving = { path = "../alo-approving" }
 # The scheme a palette is asked for, in a test that reads one.
 alo-appearance = { path = "../alo-appearance" }
 # The walk with the screen off asks a question in Greek and is answered in

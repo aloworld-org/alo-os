@@ -46,6 +46,12 @@
 mod readings;
 
 #[cfg(target_os = "linux")]
+mod media_activity;
+
+#[cfg(target_os = "linux")]
+mod status_readings;
+
+#[cfg(target_os = "linux")]
 mod this_machines_own_addresses;
 
 #[cfg(target_os = "linux")]
@@ -352,6 +358,10 @@ mod running {
 
     /// Everything on this person's desktop, as the crates that own each said it.
     struct ThisPersonsDesktop {
+        /// The media server's current uses, or an explicit unavailable reading.
+        media_activity: crate::media_activity::MediaActivity,
+        /// Hardware readings arrive independently of input and frame delivery.
+        status_readings: crate::status_readings::StatusReadings,
         /// Where this person's canvas layout is kept, if they have a folder.
         ///
         /// **[`None`] is a real session and not a fault.** A login with no home
@@ -542,7 +552,7 @@ mod running {
         /// from their folder at sign-in and replaced when they choose a region
         /// in Settings (`the_formats_are_now`).
         formats: alo_shell::TheirFormats,
-        /// When the readings were last taken.
+        /// When the local status clock was last formatted.
         read_at: std::time::Instant,
         /// What the seat had made of this person's input when it was last said
         /// out loud.
@@ -619,6 +629,7 @@ mod running {
             // their own `settings.toml`.
             let reading = the_languages_they_read();
             let formats = their_formats_at_sign_in(reading.first().map(alo_strings::Language::tag));
+            let status_reading_started = std::time::Instant::now();
             let (readings, missing) = crate::readings::taken(&at, &formats)?;
             eprintln!(
                 "alo-desktop: the status area's readings — {}",
@@ -807,6 +818,10 @@ mod running {
             }
             Ok(Self {
                 layout_at,
+                media_activity: crate::media_activity::MediaActivity::new(),
+                status_readings: crate::status_readings::StatusReadings::new(
+                    status_reading_started,
+                ),
                 shortcuts_at,
                 dock_at,
                 window_controls,
@@ -1282,10 +1297,8 @@ mod running {
         /// to have worked the moment it is made.
         fn the_formats_are_now(&mut self, formats: &alo_shell::TheirFormats) {
             self.formats = formats.clone();
-            if let Ok(at) = crate::readings::At::now()
-                && let Ok((readings, _)) = crate::readings::taken(&at, &self.formats)
-            {
-                self.status = readings;
+            if let Some(clock) = self.formats.time_of(std::time::SystemTime::now()) {
+                self.status.set_clock(clock);
             }
         }
 
@@ -1776,14 +1789,11 @@ mod running {
             Some(&mut self.put_aside)
         }
 
-        /// Take the four again, if it is time to.
-        ///
-        /// A refusal does not clear what was there: a media server that did not
-        /// answer this second is not a reason to take the volume off a person's
-        /// screen, and the reading it replaces is a second old. What a failure
-        /// does change is the next successful reading, which is the truth
-        /// arriving late rather than an absence arriving early.
+        /// Poll hardware without waiting, and refresh the local clock each second.
         fn refreshed(&mut self) {
+            self.media_activity.refresh();
+            self.status_readings
+                .refresh(&mut self.status, &self.formats);
             // **What is leaving is shown on every frame, before the throttle.**
             // The readings below are a clock and four numbers and are worth
             // taking a few times a second; a line on the egress indicator is
@@ -1809,11 +1819,8 @@ mod running {
                 return;
             }
             self.read_at = std::time::Instant::now();
-            let Ok(at) = crate::readings::At::now() else {
-                return;
-            };
-            if let Ok((readings, _)) = crate::readings::taken(&at, &self.formats) {
-                self.status = readings;
+            if let Some(clock) = self.formats.time_of(std::time::SystemTime::now()) {
+                self.status.set_clock(clock);
             }
         }
 
@@ -1923,13 +1930,8 @@ mod running {
                 egress: &self.egress,
                 running: &self.running,
                 filling: &self.filling,
-                // **Nothing is watching or listening, and that is read rather
-                // than assumed** — `alo_in_use::InUse::read_from` asks the
-                // machine's media server, and nothing on a machine with no
-                // applications on it yet has a camera or a microphone open.
-                // Asking the server for real belongs with the other readings
-                // this binary hands over, task 15 of the shell plan.
-                in_use: &[],
+                in_use: self.media_activity.lines(),
+                in_use_problem: self.media_activity.problem(),
                 // **Nothing has sent one**, which is different from holding
                 // them: `alo_notifying::arrives` is where a notification
                 // becomes one to show, and nothing on this machine calls it

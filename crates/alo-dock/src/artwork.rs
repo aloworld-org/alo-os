@@ -38,7 +38,10 @@
 //! [`APicture::down`] are carried so the drawing can place it honestly rather
 //! than assume.
 
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
+
+#[path = "scaled_artwork.rs"]
+mod scaled;
 
 use crate::AppId;
 
@@ -48,14 +51,15 @@ use crate::AppId;
 /// is what the shell's own raster works in, so it is what crosses this
 /// boundary — converting here would put a second opinion about pixel order in
 /// a crate that draws nothing.
+/// Clones share immutable storage; no method exposes mutable pixels.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct APicture {
     /// How many pixels wide it is.
     across: u32,
     /// How many pixels tall it is.
     down: u32,
-    /// Its pixels, four bytes each, in rows from the top.
-    pixels: Vec<u8>,
+    /// Immutable pixels shared by clones; replacement has a fresh identity.
+    pixels: Arc<[u8]>,
 }
 
 /// Why a run of bytes is not a picture.
@@ -97,7 +101,7 @@ impl APicture {
         Ok(Self {
             across,
             down,
-            pixels,
+            pixels: pixels.into(),
         })
     }
 
@@ -140,11 +144,18 @@ impl APicture {
     ///
     /// A destination pixel with no opacity under it keeps no colour, because
     /// there is no colour there to keep.
+    /// Unchanged artwork reuses bounded variants on the drawing thread; an
+    /// oversized variant is drawn normally without being retained.
     #[must_use]
     pub fn scaled_to(&self, across: u32, down: u32) -> Self {
         if across == 0 || down == 0 || (across == self.across && down == self.down) {
             return self.clone();
         }
+        scaled::picture(self, across, down)
+    }
+
+    /// Alpha-aware arithmetic shared by cache misses and pixel regressions.
+    fn scale_uncached(&self, across: u32, down: u32) -> Self {
         let mut out = vec![0_u8; across as usize * down as usize * 4];
         for row in 0..down {
             // The source rows this destination row covers, at least one.
@@ -206,7 +217,7 @@ impl APicture {
         Self {
             across,
             down,
-            pixels: out,
+            pixels: out.into(),
         }
     }
 }

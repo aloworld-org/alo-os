@@ -93,13 +93,21 @@ impl ThisMachine {
     /// point of the trait this implements.
     #[must_use]
     pub fn reading(grants: impl Into<PathBuf>, theirs: impl Into<PathBuf>) -> Self {
+        let home = std::env::var_os("HOME");
+        let data_home = std::env::var_os("XDG_DATA_HOME");
+        let data_dirs = alo_installed::with_what_flatpak_exports(
+            Path::new(alo_installed::THE_MACHINES_INSTALLATION),
+            home.as_deref().map(Path::new),
+            data_home.as_deref(),
+            std::env::var_os("XDG_DATA_DIRS").as_deref(),
+        );
         Self::reading_entries_in(
             grants,
             theirs,
             alo_installed::where_entries_live(
-                std::env::var_os("HOME").as_deref().map(Path::new),
-                std::env::var_os("XDG_DATA_HOME").as_deref(),
-                std::env::var_os("XDG_DATA_DIRS").as_deref(),
+                home.as_deref().map(Path::new),
+                data_home.as_deref(),
+                Some(&data_dirs),
             ),
         )
     }
@@ -138,6 +146,44 @@ impl ThisMachine {
 }
 
 impl TheMachine for ThisMachine {
+    fn begin_capture_sessions(&self) -> bool {
+        let now = SystemTime::now();
+        alo_remembering::updated(&self.grants, now, |grants| {
+            let abandoned: Vec<_> = grants
+                .active_at(now)
+                .filter(|held| {
+                    held.grant.grantee.is_an_application()
+                        && matches!(
+                            &held.grant.reach,
+                            alo_capability::Reach::Facility(
+                                alo_capability::Facility::ScreenContinuously
+                            )
+                        )
+                })
+                .map(|held| held.id)
+                .collect();
+            for id in abandoned {
+                grants.revoke(id);
+            }
+            Ok::<_, alo_remembering::NotRemembered>(())
+        })
+        .map_err(|why| {
+            eprintln!("alo-portald: recording permissions could not be recovered: {why}")
+        })
+        .is_ok()
+    }
+    fn strings(&self) -> Option<alo_strings::Strings> {
+        let vocabulary = alo_saying::everything_this_machine_can_say().ok()?;
+        let loaded = alo_saying::Loaded::at(vocabulary, alo_saying::the_translations());
+        for line in loaded.damage().lines() {
+            eprintln!("Portal language bundle: {line}");
+        }
+        let mut strings = loaded.into_strings();
+        let settings =
+            alo_choosing::Settings::at(&self.theirs.join(alo_choosing::THE_SETTINGS)).ok()?;
+        strings.prefers(settings.languages());
+        Some(strings)
+    }
     /// The grants as they are now, or [`None`] when the file cannot be read.
     ///
     /// A file that is not there is **not** an empty list of grants: a machine
@@ -148,6 +194,38 @@ impl TheMachine for ThisMachine {
     /// changed.
     fn grants(&self) -> Option<alo_capability::Grants> {
         alo_remembering::remembered(&self.grants, SystemTime::now()).ok()
+    }
+
+    fn grant_choice(
+        &self,
+        application: &str,
+        reach: alo_capability::Reach,
+    ) -> Option<(alo_capability::Grants, alo_capability::GrantId)> {
+        let now = SystemTime::now();
+        let grant = alo_capability::Grant::checked_until_removed(
+            &alo_capability::Applicant::named(application).grantee(),
+            reach,
+            now,
+            alo_capability::ATerminalForTheAgent::NotAtAll,
+        )
+        .ok()?;
+        alo_remembering::updated(&self.grants, now, |grants| {
+            Ok::<_, alo_remembering::NotRemembered>(grants.grant(grant))
+        })
+        .map_err(|why| eprintln!("alo-portald: the selected permission could not be kept: {why}"))
+        .ok()
+    }
+
+    fn revoke_choice(&self, id: alo_capability::GrantId) -> bool {
+        alo_remembering::updated(&self.grants, SystemTime::now(), |grants| {
+            Ok::<_, alo_remembering::NotRemembered>(grants.revoke(id))
+        })
+        .map_err(|why| eprintln!("alo-portald: the ended permission could not be removed: {why}"))
+        .is_ok()
+    }
+
+    fn document_permissions_file(&self) -> Option<std::path::PathBuf> {
+        Some(self.grants.with_extension("documents.json"))
     }
 
     /// What is installed, what each declares it opens, and what the person
@@ -279,6 +357,54 @@ fn the_local_hour_and_minute() -> Option<(u8, u8)> {
 )]
 mod tests {
     use super::*;
+
+    /// Recovery removes only session-scoped application screen grants.
+    #[test]
+    fn abandoned_recording_grants_do_not_survive_a_frontend_restart() {
+        use alo_capability::{Applicant, Facility, Grant, Grantee, Grants, Reach};
+        let folder = tempfile::tempdir().unwrap();
+        let path = folder.path().join("grants.toml");
+        let now = SystemTime::now();
+        let mut grants = Grants::default();
+        let capture = grants.grant(
+            Grant::checked_until_removed(
+                &Applicant::named("org.aloworld.Studio").grantee(),
+                Reach::Facility(Facility::ScreenContinuously),
+                now,
+                alo_capability::ATerminalForTheAgent::NotAtAll,
+            )
+            .unwrap(),
+        );
+        let agent = grants.grant(
+            Grant::checked_until_removed(
+                &Grantee::named("assistant"),
+                Reach::Folder(folder.path().to_path_buf()),
+                now,
+                alo_capability::ATerminalForTheAgent::NotAtAll,
+            )
+            .unwrap(),
+        );
+        let file = grants.grant(
+            Grant::checked_until_removed(
+                &Applicant::named("org.aloworld.Studio").grantee(),
+                Reach::File(folder.path().join("demo.webm")),
+                now,
+                alo_capability::ATerminalForTheAgent::NotAtAll,
+            )
+            .unwrap(),
+        );
+        alo_remembering::kept(&path, &grants, now).unwrap();
+        let machine = ThisMachine::reading(&path, folder.path());
+        assert!(machine.begin_capture_sessions());
+        let remaining: Vec<_> = machine
+            .grants()
+            .unwrap()
+            .active_at(now)
+            .map(|held| held.id)
+            .collect();
+        assert!(!remaining.contains(&capture));
+        assert_eq!(remaining, [agent, file]);
+    }
 
     /// **A machine reads nothing when it is made**, which is what makes a
     /// revocation felt at the next request rather than at the next restart.

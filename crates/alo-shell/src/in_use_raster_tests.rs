@@ -71,6 +71,30 @@ fn a_machine_watching_nothing_draws_no_indicator() {
     assert!(quiet.rows.is_empty());
 }
 
+#[test]
+fn a_failed_reading_draws_its_translated_explanation_instead_of_silence() {
+    let strings = words();
+    let problem = alo_in_use::NotHeard::NoAnswer {
+        said: "the media server disconnected".into(),
+    };
+    let mut labels = WindowControlLabels::new().unwrap();
+    let picture = picture_with_problem(
+        (&[], Some(&problem)),
+        &strings,
+        &Dock::shipped(),
+        &mut labels,
+        TheRoom::with_nothing_put_aside((1920, 1080)),
+        light(),
+    )
+    .unwrap();
+    assert_eq!(picture.rows.len(), 1);
+    assert_eq!(
+        picture.rows.first().unwrap().sentence,
+        problem.said(&strings).text()
+    );
+    assert!(!picture.inked.is_empty());
+}
+
 /// **The order is the screen, then the camera, then the microphone** — whatever
 /// order the uses arrive in.
 ///

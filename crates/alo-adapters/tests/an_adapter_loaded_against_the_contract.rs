@@ -595,10 +595,13 @@ fn the_reference_adapter_is_for_an_application_a_fresh_machine_ships() {
     assert_eq!(TEXT_EDITOR.mechanism, Mechanism::DBus);
 
     let adapters = shipped_adapters().unwrap();
-    assert_eq!(adapters.all().count(), 1);
+    assert!(
+        adapters
+            .all()
+            .any(|adapter| adapter.application == editor.application().identifier())
+    );
     let mut verbs = Verbs::default();
     adapters.declare_into(&mut verbs).unwrap();
-    assert_eq!(verbs.len(), TEXT_EDITOR.verbs.len());
     for verb in TEXT_EDITOR.verbs {
         assert!(verbs.of(&TEXT_EDITOR.verb_named(verb)).is_some());
         assert!(verb.by_hand.is_some());

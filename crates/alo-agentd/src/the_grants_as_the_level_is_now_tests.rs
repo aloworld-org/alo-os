@@ -194,6 +194,77 @@ fn a_bracket() -> TheTurnsBracket {
     TheTurnsBracket::none_yet(None, std::time::SystemTime::UNIX_EPOCH, 0, 0)
 }
 
+/// Discovery uses the same current level as execution and contacts no app.
+#[test]
+fn studio_discovery_follows_full_access_and_its_immediate_withdrawal() {
+    struct Transport(std::cell::Cell<usize>);
+    impl alo_adapters::Delivers for Transport {
+        fn deliver(&self, _: &alo_adapters::Message) -> Result<(), alo_adapters::NotDelivered> {
+            self.0.set(self.0.get() + 1);
+            Ok(())
+        }
+    }
+    let elsewhere = Elsewhere::with_the_level("studio-discovery-level", None);
+    let strings = in_english();
+    let transport = Transport(std::cell::Cell::new(0));
+    let mut record = Record::default();
+    let mut indicator = Indicator::default();
+    let mut bounding = NothingIsBounded;
+    let mut machine = Machine::carrying_out_file_verbs(
+        &strings,
+        &OnThisMachine,
+        &mut bounding,
+        &mut indicator,
+        &mut record,
+    )
+    .unwrap()
+    .with_application_controls(&transport)
+    .unwrap();
+    let mut grants = Grants::default();
+    let mut turning = Turning::beginning(
+        alo_context::Context::at_invocation(noon()),
+        THE_AGENT,
+        hour(),
+        &mut grants,
+        &mut machine,
+    )
+    .unwrap();
+    for level in [
+        HowCodeRuns::InASealedBox,
+        HowCodeRuns::AtFullTrust,
+        HowCodeRuns::AskingEachTime,
+    ] {
+        elsewhere.choosing(level);
+        let answer = the_agent_asked(
+            &a_message(r#"{"capabilities":{}}"#),
+            &mut turning,
+            &grants,
+            &strings,
+            &elsewhere.here(),
+        );
+        let ToAnAgent::Capabilities { verbs } = answer else {
+            unreachable!("discovery did not answer with capabilities");
+        };
+        let studio = verbs
+            .iter()
+            .filter(|verb| verb.starts_with("studio."))
+            .count();
+        assert_eq!(
+            studio,
+            if level == HowCodeRuns::AtFullTrust {
+                19
+            } else {
+                0
+            }
+        );
+        assert_eq!(transport.0.get(), 0, "discovery contacted an application");
+        assert!(
+            !grants.has_full_access(&Grantee::named(THE_AGENT)),
+            "discovery changed stored grants"
+        );
+    }
+}
+
 /// The number a change waits under, from what the agent was told.
 fn the_number(said: &ToAnAgent) -> u64 {
     match said {

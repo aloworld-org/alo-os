@@ -23,7 +23,16 @@ impl InUsePicture {
     }
 
     /// Draw the rows' shapes, then their words.
-    pub(crate) fn paint(&self, frame: &mut impl Frame) -> Result<(), RenderError> {
-        crate::painted::paint(frame, &self.solids, &self.inked)
+    pub(crate) fn paint<F: Frame>(
+        &self,
+        frame: &mut F,
+        ink: Option<&crate::native_inked::Uploaded<F::TextureId>>,
+    ) -> Result<(), RenderError> {
+        crate::painted::paint(frame, &self.solids, &[])?;
+        if let Some((texture, area)) = ink {
+            crate::painted::wash(frame, texture, *area)
+        } else {
+            crate::painted::paint(frame, &[], &self.inked)
+        }
     }
 }

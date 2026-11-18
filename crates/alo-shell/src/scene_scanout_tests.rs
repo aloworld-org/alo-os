@@ -57,8 +57,6 @@ fn prepared_scene_activation_preserves_pixels_until_ordered_retirement()
             "unmap",
             "framebuffer",
             "blob",
-            "map",
-            "unmap",
             "test",
             "enable",
             "disable",
@@ -95,12 +93,11 @@ fn prepared_scene_refusals_never_return_ownership_and_retain_cleanup()
             &["destroy blob", "destroy framebuffer", "destroy buffer"],
             0,
         );
-        // Only the second mapping is an upload: fail it separately from initialization.
-        device.failures.push(if stage == "upload" {
-            "upload map"
-        } else {
-            stage
-        });
+        // The sole mapping uploads before framebuffer registration. A failed
+        // upload therefore owns only the dumb buffer, never a framebuffer/blob.
+        device
+            .failures
+            .push(if stage == "upload" { "map" } else { stage });
         let error = activate(
             (pixels((1280, 720))?, vec![]),
             device,
@@ -113,7 +110,7 @@ fn prepared_scene_refusals_never_return_ownership_and_retain_cleanup()
             error.cleanup.len(),
             match stage {
                 "buffer" => 0,
-                "framebuffer" => 1,
+                "framebuffer" | "upload" => 1,
                 "blob" => 2,
                 _ => 3,
             }

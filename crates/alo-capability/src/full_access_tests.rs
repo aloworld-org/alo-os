@@ -53,6 +53,23 @@ fn a_grant_that_covers_it_is_still_named_at_full_access() {
     assert_eq!(Permitted::ByAGrant(id).grant(), Some(id));
 }
 
+/// A session bound to one choice cannot inherit account-wide agent access.
+#[test]
+fn a_single_grant_view_remains_narrow_even_when_derived_from_full_access() {
+    let grants = granting(&["/home/anna/Invoices", "/home/anna/Taxes"]);
+    let invoice = Ask::path("/home/anna/Invoices/march.pdf");
+    let chosen = grants.permitting(&files(), &invoice, noon()).unwrap();
+    let mut at = grants.at_full_access_for(&files());
+    let limited = at.limited_to(chosen);
+    assert!(limited.permits(&files(), &invoice, noon()));
+    assert!(limited.permitted(&files(), &taxes(), noon()).is_err());
+    assert_eq!(limited.full_access_for(), None);
+    assert!(at.revoke(chosen));
+    let revoked = at.limited_to(chosen);
+    assert!(revoked.permitted(&files(), &invoice, noon()).is_err());
+    assert_eq!(revoked.full_access_for(), None);
+}
+
 /// **The kept list never carries it**: the copy is for one moment, the list it
 /// was made from is unchanged, and nothing written down reads back at full
 /// access.

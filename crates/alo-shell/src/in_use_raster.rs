@@ -110,6 +110,7 @@ fn palette(scheme: Scheme, contrast: Contrast) -> Palette {
 /// when nothing is put aside. The corner stops before it — see
 /// `crate::egress_status_place` for the owner's ruling it applies and for why it is
 /// a parameter rather than something a caller remembers to do.
+#[cfg(test)]
 pub(crate) fn picture(
     lines: &[Line],
     strings: &Strings,
@@ -118,6 +119,19 @@ pub(crate) fn picture(
     room: TheRoom,
     look: InUseLook,
 ) -> Result<InUsePicture, RenderError> {
+    picture_with_problem((lines, None), strings, dock, labels, room, look)
+}
+
+/// Failed readings remain visible and never masquerade as an empty graph.
+pub(crate) fn picture_with_problem(
+    activity: (&[Line], Option<&alo_in_use::NotHeard>),
+    strings: &Strings,
+    dock: &Dock,
+    labels: &mut WindowControlLabels,
+    room: TheRoom,
+    look: InUseLook,
+) -> Result<InUsePicture, RenderError> {
+    let (lines, problem) = activity;
     let size = room.size;
     let mut picture = InUsePicture {
         size,
@@ -125,7 +139,7 @@ pub(crate) fn picture(
         solids: Vec::new(),
         inked: Vec::new(),
     };
-    if lines.is_empty() {
+    if lines.is_empty() && problem.is_none() {
         return Ok(picture);
     }
     let (width, height) = size;
@@ -150,15 +164,21 @@ pub(crate) fn picture(
 
     let gap = measure.px(4);
     let fonts = &mut labels.fonts;
-    let shaped: Vec<(Laid, &Line)> = ordered
+    let mut shaped: Vec<(Laid, Option<&Line>)> = ordered
         .into_iter()
         .map(|line| {
             (
                 Laid::of(fonts, line.said(strings).text(), place, measure, palette),
-                line,
+                Some(line),
             )
         })
         .collect();
+    if let Some(problem) = problem {
+        shaped.push((
+            Laid::of(fonts, problem.said(strings).text(), place, measure, palette),
+            None,
+        ));
+    }
 
     let mut at_y = place.stacked;
     let mut used = 0;
@@ -189,9 +209,6 @@ pub(crate) fn picture(
             }
         };
         used += laid.height + gap;
-        let colours = MarkColours::of(line.colour(), look.scheme, look.contrast);
-        let dot = line.the_agents_dot();
-        let which = line.mark();
         let drawn = laid.place(
             (left.max(0), top.clamp(0, (height - 1).max(0))),
             size,
@@ -199,6 +216,12 @@ pub(crate) fn picture(
             palette,
             look.reading,
             |at| {
+                let Some(line) = line else {
+                    return Vec::new();
+                };
+                let colours = MarkColours::of(line.colour(), look.scheme, look.contrast);
+                let dot = line.the_agents_dot();
+                let which = line.mark();
                 let mut solids = mark(at, which, colours);
                 if dot {
                     solids.extend(the_agents_dot(at, colours, measure));

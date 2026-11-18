@@ -1,0 +1,21 @@
+<node>
+  <interface name="org.aloworld.Studio.Recorder1">
+    <method name="GetStatus"><arg name="status" type="s" direction="out"/></method>
+    <method name="NewRecording"/>
+    <method name="ChooseScreen"/>
+    <method name="ChooseWindow"/>
+    <method name="Start"/>
+    <method name="Pause"/>
+    <method name="Resume"/>
+    <method name="Finish"/>
+    <method name="EnableMicrophone"/>
+    <method name="DisableMicrophone"/>
+    <method name="SetQuality"><arg name="quality" type="s" direction="in"/></method>
+    <method name="SetCountdown"><arg name="seconds" type="x" direction="in"/></method>
+    <method name="CancelCountdown"/>
+    <method name="ShowLibrary"/>
+    <method name="ReviewRecording"><arg name="recording" type="s" direction="in"/></method>
+    <method name="RenameRecording"><arg name="title" type="s" direction="in"/></method>
+    <method name="ExportRecording"/>
+  </interface>
+</node>

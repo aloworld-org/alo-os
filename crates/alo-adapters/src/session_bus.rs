@@ -27,6 +27,21 @@ use crate::message::{Argument, Message};
 /// person is told something rather than left looking at nothing.
 pub const HOW_LONG: Duration = Duration::from_secs(20);
 
+/// Connect only when a granted and validated control is delivered.
+/// Constructing the daemon contacts no application or session bus.
+#[derive(Debug)]
+pub struct ApplicationSession;
+
+impl Delivers for ApplicationSession {
+    fn deliver(&self, message: &Message) -> Result<(), NotDelivered> {
+        SessionBus::this_persons()?.deliver(message)
+    }
+
+    fn read_text(&self, message: &Message) -> Result<String, NotDelivered> {
+        SessionBus::this_persons()?.read_text(message)
+    }
+}
+
 /// A session bus messages are sent on.
 #[derive(Debug)]
 pub struct SessionBus {
@@ -81,6 +96,45 @@ impl Delivers for SessionBus {
             )
         };
         answered.map(|_| ()).map_err(|why| heard(&why))
+    }
+
+    fn read_text(&self, message: &Message) -> Result<String, NotDelivered> {
+        // Pin the current owner: a read never activates a closed application or
+        // reaches a replacement process if this one disappears in between.
+        let daemon = zbus::blocking::fdo::DBusProxy::new(&self.connection)
+            .map_err(|_| NotDelivered::NotThere)?;
+        let name = zbus::names::BusName::try_from(message.destination())
+            .map_err(|_| NotDelivered::NotThere)?;
+        let owner = daemon
+            .get_name_owner(name)
+            .map_err(|_| NotDelivered::NotThere)?;
+        let answered = if message.arguments().is_empty() {
+            self.connection.call_method(
+                Some(owner.as_str()),
+                message.object(),
+                Some(message.interface()),
+                message.method(),
+                &(),
+            )
+        } else {
+            let body = body_of(message.arguments()).ok_or(NotDelivered::DoesNotOffer)?;
+            self.connection.call_method(
+                Some(owner.as_str()),
+                message.object(),
+                Some(message.interface()),
+                message.method(),
+                &body,
+            )
+        }
+        .map_err(|why| heard(&why))?;
+        let text: String = answered
+            .body()
+            .deserialize()
+            .map_err(|_| NotDelivered::DoesNotOffer)?;
+        if text.len() > 8192 {
+            return Err(NotDelivered::Refused);
+        }
+        Ok(text)
     }
 }
 

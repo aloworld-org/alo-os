@@ -1,0 +1,132 @@
+name: alo Studio
+on:
+  pull_request:
+    paths: ['apps/alo-studio/**', 'crates/alo-dock/**', 'crates/alo-shell/**', 'crates/alo-desktop/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/smithay/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
+  push:
+    branches: [main]
+    paths: ['apps/alo-studio/**', 'crates/alo-dock/**', 'crates/alo-shell/**', 'crates/alo-desktop/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/smithay/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: studio-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  desktop:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CARGO_INCREMENTAL: 0
+      CARGO_BUILD_JOBS: 2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Native desktop libraries
+        timeout-minutes: 8
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libwayland-dev libinput-dev libseat-dev libxkbcommon-dev libpixman-1-dev libegl1-mesa-dev libgbm-dev libudev-dev libpipewire-0.3-dev libspa-0.2-dev libclang-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev dbus-x11 dbus-daemon gnome-keyring at-spi2-core libgtk-3-bin
+      - name: Rust toolchain
+        run: rustup toolchain install 1.97.0 --profile minimal --component clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: studio-desktop
+      - name: Optimized desktop regressions
+        run: |
+          cargo +1.97.0 test --locked --release -p alo-desktop -- --test-threads=1
+          cargo +1.97.0 test --locked --release -p alo-dock --lib artwork::
+          cargo +1.97.0 test --locked --release -p alo-media-server --lib reaching::
+          cargo +1.97.0 test --locked --release -p alo-shell --lib readback::
+          cargo +1.97.0 test --locked --release -p alo-shell --lib software_scanout::
+          cargo +1.97.0 test --locked --release -p alo-shell --lib capture_transport::
+          cargo +1.97.0 test --locked --release -p alo-shell --lib capture_delivery::
+          cargo +1.97.0 test --locked --release -p alo-shell --lib capture_authority::
+          cargo +1.97.0 test --locked --release -p alo-shell --lib settings_window::
+          cargo +1.97.0 test --locked --release -p alo-shell --lib dock_surface
+          cargo +1.97.0 test --locked --release -p alo-shell --lib text_glyph_cache::
+          cargo +1.97.0 test --locked --release -p alo-shell --lib painted_text::
+          cargo +1.97.0 test --locked --release -p alo-shell --lib painted::
+          cargo +1.97.0 test --locked --release -p alo-shell --lib painted_text::sentence_cache::
+          cargo +1.97.0 test --locked --release -p alo-shell --lib native_inked::
+          cargo +1.97.0 test --locked --release -p alo-shell --lib retained_dumb_buffer::
+          cargo +1.97.0 test --locked --release -p alo-shell --lib display_resources::
+          cargo +1.97.0 test --locked --release -p alo-shell --test desktop_source
+          cargo +1.97.0 test --locked --release -p alo-shell --test software_renderer_binding
+      - name: Strict desktop and shell checks
+        run: |
+          cargo +1.97.0 clippy --locked --release -p alo-desktop --all-targets -- -D warnings
+          cargo +1.97.0 clippy --locked --release -p alo-dock --all-targets -- -D warnings
+          cargo +1.97.0 clippy --locked --release -p alo-shell --lib -- -D warnings
+      - name: Kernel boundary build tools for the agent service
+        run: |
+          # Match the image builder's LLVM, linker and kernel toolchain pins.
+          wget -qO /tmp/studio-llvm.sh https://apt.llvm.org/llvm.sh
+          chmod +x /tmp/studio-llvm.sh
+          sudo /tmp/studio-llvm.sh 22
+          sudo apt-get install -y --no-install-recommends llvm-22-dev libpolly-22-dev zlib1g-dev libzstd-dev
+          echo "/usr/lib/llvm-22/bin" >> "$GITHUB_PATH"
+          echo "LLVM_PREFIX=/usr/lib/llvm-22" >> "$GITHUB_ENV"
+          rustup toolchain install nightly-2026-06-01 --profile minimal --component rust-src
+          LLVM_PREFIX=/usr/lib/llvm-22 PATH="/usr/lib/llvm-22/bin:$PATH" cargo +1.97.0 install bpf-linker --version 0.11.0 --locked --no-default-features --features llvm-22
+      - name: Build the desktop and services for installed recording verification
+        run: |
+          # Retain function names for profiling the optimized VM binary.
+          # This adds no instrumentation and leaves dependency profiles alone.
+          cargo +1.97.0 rustc --locked --release -p alo-desktop -- -C strip=debuginfo
+          cargo +1.97.0 build --locked --release -p alo-agentd -p alo-agent -p alo-portald -p alo-capture-provider -p alo-capture-remote
+          mkdir -p desktop-verification
+          for program in alo-desktop alo-agentd alo-agent alo-portald alo-capture-provider alo-capture-remote; do
+            cp "target/release/$program" "desktop-verification/$program"
+          done
+          git rev-parse HEAD > desktop-verification/source.txt
+          cd desktop-verification
+          sha256sum alo-desktop alo-agentd alo-agent alo-portald alo-capture-provider alo-capture-remote > sha256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: studio-desktop
+          path: desktop-verification/
+          if-no-files-found: error
+          retention-days: 7
+  native:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Native libraries and test display
+        timeout-minutes: 8
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libgtk-4-dev libgtk-4-media-gstreamer at-spi2-core libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libpipewire-0.3-dev libspa-0.2-dev libclang-dev gstreamer1.0-tools gstreamer1.0-gl gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-pipewire gstreamer1.0-pulseaudio pipewire pipewire-bin pipewire-pulse pulseaudio-utils wireplumber xvfb xdotool dbus-x11 appstream-util desktop-file-utils gdb
+      - name: Rust toolchain
+        run: rustup toolchain install 1.97.0 --profile minimal --component rustfmt --component clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/alo-studio
+      - name: Format
+        working-directory: apps/alo-studio
+        run: cargo +1.97.0 fmt --all --check
+      - name: Clippy
+        working-directory: apps/alo-studio
+        run: cargo +1.97.0 clippy --locked --all-targets --features verification -- -D warnings
+      - name: Lifecycle and storage refusal tests
+        working-directory: apps/alo-studio
+        run: cargo +1.97.0 test --locked
+      - name: Build the real app and framebuffer recording probe
+        working-directory: apps/alo-studio
+        run: |
+          cargo +1.97.0 build --locked
+          cargo +1.97.0 build --locked --features verification --examples
+          cargo +1.97.0 build --locked --features verification
+      - name: Record, pause, finalize, and decode a real framebuffer
+        run: bash apps/alo-studio/packaging/verify-native.sh
+      - name: Build the native capture publisher and permission-scoped remote
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/apps/alo-studio/target
+        run: cargo +1.97.0 build --locked -p alo-capture-provider -p alo-capture-remote
+      - name: Build the capture plugin against the image's pinned base
+        run: |
+          base=$(sed -n 's/^ARG THE_BASE=//p' image/Containerfile)
+          [[ "$base" == *@sha256:* ]]
+          docker build --build-arg "THE_BASE=$base" -f engines/pipewire-gstreamer/verification.Containerfile -t studio-capture-verification .
+      - name: Record, pause, resume and decode through the pinned native publisher
+        run: docker run --rm --network=none -v "$PWD:/source:ro" studio-capture-verification

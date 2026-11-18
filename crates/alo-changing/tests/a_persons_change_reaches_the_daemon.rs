@@ -207,6 +207,39 @@ fn a_revocation_made_through_it_is_off_the_disk_before_its_knock() {
     assert!(!may_reach(&grants, &invoice));
 }
 
+#[test]
+fn revoking_from_an_older_settings_view_preserves_a_new_application_permission() {
+    use alo_capability::{Applicant, Facility, Grant, Reach};
+    let folder = a_folder_of_our_own("stale-settings-view");
+    let (_, picked) = invoices_picked_in(&folder);
+    let at = folder.join("grants.toml");
+    let door = AtTheDoor::watching(&at);
+    let mut grants = Grants::default();
+    Changing::of(&mut grants, &at, &door)
+        .granted(&for_an_hour(), &picked, noon())
+        .unwrap();
+    let old_row = the_row(&grants);
+    let application = Applicant::named("org.aloworld.Studio");
+    alo_remembering::updated(&at, noon(), |latest| {
+        let grant = Grant::checked_for(
+            &application.grantee(),
+            Reach::Facility(Facility::ScreenContinuously),
+            noon(),
+            hour(),
+        )
+        .unwrap();
+        Ok::<_, alo_remembering::NotRemembered>(latest.grant(grant))
+    })
+    .unwrap();
+    Changing::of(&mut grants, &at, &door)
+        .revoked(&Row::Grant(old_row), noon())
+        .unwrap();
+    let saved = alo_remembering::remembered(&at, noon()).unwrap();
+    assert_eq!(saved.len(), 1);
+    assert!(saved.allows_anything(&application, noon()));
+    assert!(grants.allows_anything(&application, noon()));
+}
+
 /// **Over a real socket, the knock is the empty one and the grant is already
 /// readable when it arrives.** The far side is a thread standing where
 /// `alo-agentd` stands: it reads one line, holds it to being

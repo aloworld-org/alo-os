@@ -27,6 +27,12 @@ use alo_turn::WhatAVerbDid;
 /// What a verb did, as the wire carries it.
 pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
     match did {
+        WhatAVerbDid::ApplicationControlled(done) => Done::ApplicationControlled {
+            application: done.application.clone(),
+            action: done.action.clone(),
+            reply: done.reply.clone(),
+            unanswered: done.unanswered,
+        },
         WhatAVerbDid::ToFiles(answer) => Done::of_a_file_verb(answer),
         WhatAVerbDid::AnApplicationInstalled(installed) => Done::of_an_installation(installed),
         // The third family, arriving exactly where this file's header said it

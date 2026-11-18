@@ -110,6 +110,12 @@ impl StatusItems {
         &self.clock
     }
 
+    /// Update the locally formatted time without repeating hardware queries.
+    /// Battery, network and volume retain their independently measured values.
+    pub fn set_clock(&mut self, clock: String) {
+        self.clock = clock;
+    }
+
     /// The battery, or [`None`] where the machine has none.
     pub fn battery(&self) -> Option<&Reading> {
         self.battery.as_ref()

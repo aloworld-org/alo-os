@@ -217,6 +217,111 @@ fn approved(call: &Call, grants: &Grants, at: SystemTime) -> Authorised {
         .unwrap()
 }
 
+/// The recording-interface fixture on the private session bus.
+struct RecordingControls {
+    /// The status currently returned by the fixture.
+    status: Arc<Mutex<String>>,
+    /// The literal countdown requests received over D-Bus.
+    countdowns: Arc<Mutex<Vec<i64>>>,
+}
+
+#[zbus::interface(name = "org.aloworld.Studio.Recorder1")]
+impl RecordingControls {
+    /// Return the actual fixture status as a string.
+    fn get_status(&self) -> String {
+        self.status.lock().unwrap().clone()
+    }
+
+    /// Record the fixed numeric argument actually delivered.
+    fn set_countdown(&self, seconds: i64) {
+        self.countdowns.lock().unwrap().push(seconds);
+    }
+}
+
+#[test]
+fn studio_reads_actual_bounded_status_and_sends_only_the_approved_fixed_countdown() {
+    let bus = ABusOfOurOwn::started("studio-controls");
+    let status = Arc::new(Mutex::new("{\"phase\":\"selected\"}".to_owned()));
+    let countdowns = Arc::new(Mutex::new(Vec::new()));
+    let service = zbus::blocking::connection::Builder::address(bus.address.as_str())
+        .unwrap()
+        .name(alo_adapters::studio::APPLICATION)
+        .unwrap()
+        .serve_at(
+            "/org/aloworld/Studio/Recorder",
+            RecordingControls {
+                status: status.clone(),
+                countdowns: countdowns.clone(),
+            },
+        )
+        .unwrap()
+        .build()
+        .unwrap();
+    let transport = SessionBus::at(&bus.address).unwrap();
+    let strings = in_english();
+    let at = noon();
+    let adapters = shipped_adapters().unwrap();
+    let verbs = adapter_verbs().unwrap();
+    let installed =
+        Installed::holding([
+            Application::called(alo_adapters::studio::APPLICATION, "alo Studio").unwrap(),
+        ]);
+    let mut grants = Grants::default();
+    let permission = grants.grant(
+        Grant::checked(
+            "@alo",
+            Reach::Application(alo_adapters::studio::APPLICATION.to_owned()),
+            at,
+            hour(),
+        )
+        .unwrap(),
+    );
+    let read = || {
+        let call = verbs.call("studio.status", &[]).unwrap();
+        Authorised::read(&call, &agent(), &grants, at).unwrap()
+    };
+    let answer = Driving::of(read(), &adapters, &grants, &installed, &strings)
+        .unwrap()
+        .deliver(&transport, &strings)
+        .unwrap();
+    assert_eq!(answer.reply(), Some("{\"phase\":\"selected\"}"));
+    assert!(!answer.unanswered());
+    let call = verbs.call("studio.countdown_three", &[]).unwrap();
+    assert!(call.what_it_changes(&strings).is_some());
+    let authorised = approved(&call, &grants, at);
+    assert!(countdowns.lock().unwrap().is_empty());
+    Driving::of(authorised, &adapters, &grants, &installed, &strings)
+        .unwrap()
+        .deliver(&transport, &strings)
+        .unwrap();
+    assert_eq!(*countdowns.lock().unwrap(), [3]);
+    *status.lock().unwrap() = "x".repeat(8193);
+    assert!(
+        Driving::of(read(), &adapters, &grants, &installed, &strings)
+            .unwrap()
+            .deliver(&transport, &strings)
+            .is_err()
+    );
+    // Drop can leave asynchronous bus work owning the connection temporarily.
+    // Confirm that the name is released before testing an unavailable app.
+    assert!(
+        service
+            .release_name(alo_adapters::studio::APPLICATION)
+            .unwrap()
+    );
+    service.close().unwrap();
+    assert!(
+        Driving::of(read(), &adapters, &grants, &installed, &strings)
+            .unwrap()
+            .deliver(&transport, &strings)
+            .is_err()
+    );
+    assert!(grants.revoke(permission));
+    let call = verbs.call("studio.status", &[]).unwrap();
+    let authority = Authorised::read(&call, &agent(), &grants, at).unwrap();
+    assert!(Driving::of(authority, &adapters, &grants, &installed, &strings).is_err());
+}
+
 /// **The text editor receives what a person approved, once, over a real bus**:
 /// the document's file address for *open*, and the action written into the
 /// adapter for *new window* — and both are recorded as run.

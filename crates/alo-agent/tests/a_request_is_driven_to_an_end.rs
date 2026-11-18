@@ -569,6 +569,7 @@ fn every_request_it_makes_is_one_an_agent_may_make() {
         // here, which is where a widening of the agent's half gets noticed.
         // The fourth, `Run`, arrived with ADR 0149 and is not a verb.
         match request {
+            FromAnAgent::Capabilities => {}
             FromAnAgent::Read { .. }
             | FromAnAgent::Propose { .. }
             | FromAnAgent::Ask { .. }

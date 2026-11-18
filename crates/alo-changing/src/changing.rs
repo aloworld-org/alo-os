@@ -75,6 +75,26 @@ pub struct Changing<'a> {
 }
 
 impl<'a> Changing<'a> {
+    /// Persist the application permission a person selected in Settings.
+    /// The checked grant's exact reach and expiry are preserved; the daemon is
+    /// notified only after the latest complete file has been updated.
+    ///
+    /// # Errors
+    /// [`NotChanged`] if the latest grants file cannot be read or replaced.
+    pub fn application_granted(
+        &mut self,
+        grant: alo_capability::Grant,
+        now: SystemTime,
+    ) -> Result<Made, NotChanged> {
+        let (fresh, id) = alo_remembering::updated(self.at, now, |grants| {
+            Ok::<_, NotChanged>(grants.grant(grant))
+        })?;
+        *self.grants = fresh;
+        Ok(Made::Granted {
+            id,
+            stood: self.daemon.knock(),
+        })
+    }
     /// The person's list, the file it came from, and the daemon's door.
     pub fn of(grants: &'a mut Grants, at: &'a Path, daemon: &'a dyn Door) -> Self {
         Self { grants, at, daemon }
@@ -107,11 +127,20 @@ impl<'a> Changing<'a> {
         chosen: &Chosen,
         now: SystemTime,
     ) -> Result<Made, NotChanged> {
-        let mut fresh = self.grants.clone();
-        let Some(id) = granting.of(chosen, &mut fresh, now)? else {
+        if granting
+            .of(chosen, &mut self.grants.clone(), now)?
+            .is_none()
+        {
+            return Ok(Made::Nothing);
+        }
+        let (fresh, id) = alo_remembering::updated(self.at, now, |grants| {
+            granting.of(chosen, grants, now).map_err(NotChanged::from)
+        })?;
+        *self.grants = fresh;
+        let Some(id) = id else {
             return Ok(Made::Nothing);
         };
-        let stood = self.kept_then_knocked(fresh, now)?;
+        let stood = self.daemon.knock();
         Ok(Made::Granted { id, stood })
     }
 
@@ -175,11 +204,14 @@ impl<'a> Changing<'a> {
 
     /// A grant's revocation: a copy, the disk, then the knock.
     fn grant_revoked(&mut self, row: &Seen, now: SystemTime) -> Result<Gone, NotChanged> {
-        let mut fresh = self.grants.clone();
-        match row.revoke(&mut fresh) {
+        let (fresh, revoked) = alo_remembering::updated(self.at, now, |grants| {
+            Ok::<_, NotChanged>(row.revoke(grants))
+        })?;
+        *self.grants = fresh;
+        match revoked {
             Revoked::AlreadyGone => Ok(Gone::AlreadyGone),
             Revoked::Now => {
-                let stood = self.kept_then_knocked(fresh, now)?;
+                let stood = self.daemon.knock();
                 Ok(Gone::Revoked { stood })
             }
         }
@@ -199,16 +231,5 @@ impl<'a> Changing<'a> {
             Unpaired::NobodyThere => Err(NotChanged::NobodyKeepsPairings),
             Unpaired::NotAnswered => Err(NotChanged::PairingNotAnswered),
         }
-    }
-
-    /// The one road from a changed copy to a changed machine: the file first,
-    /// whole; the caller's list second; the knock last.
-    ///
-    /// The only caller of [`crate::Knocking::knock`] in this crate — the order this
-    /// module's header argues is held here, in one place, behind a `?`.
-    fn kept_then_knocked(&mut self, fresh: Grants, now: SystemTime) -> Result<Stood, NotChanged> {
-        alo_remembering::kept(self.at, &fresh, now)?;
-        *self.grants = fresh;
-        Ok(self.daemon.knock())
     }
 }

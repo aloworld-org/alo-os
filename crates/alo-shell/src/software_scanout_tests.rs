@@ -16,6 +16,10 @@ use crate::direct_target::ScenePainter;
 use crate::painted::{Inked, Solid};
 use crate::scene_native::NativeScene;
 use crate::sign_in_raster::SignInPicture;
+use smithay::utils::Rectangle;
+
+#[path = "software_mapped_tests.rs"]
+mod mapped;
 
 /// One frame carrying just this scene and nothing else of the shell's.
 fn only(scene: NativeScene<'_>) -> crate::scene_native::NativeLayers<'_> {
@@ -102,6 +106,94 @@ fn the_sign_in_screen_is_drawn_into_the_bytes_a_display_would_scan_out() {
         [20, 30, 40],
         "the ink ran below the area it was given"
     );
+}
+
+#[test]
+fn reusable_scratch_images_clear_old_pixels_and_preserve_published_snapshots()
+-> Result<(), Box<dyn std::error::Error>> {
+    let size = (8, 4);
+    let mut painter = SoftwarePainter::new()?;
+    assert!(
+        painter.frames.is_none(),
+        "other callers keep immediate retirement"
+    );
+    painter = painter.with_reusable_frames();
+    let draw = |painter: &mut SoftwarePainter, screen: &SignInPicture| {
+        painter.paint(
+            extent(size),
+            &[],
+            &[],
+            &Cursor::Default,
+            only(NativeScene::SignIn(screen)),
+            alo_canvas::Camera::new(),
+        )
+    };
+    let (first, _) = draw(&mut painter, &a_screen(size))?;
+    let saved = first.pixels().to_vec();
+    let pool = painter.frames.as_mut().ok_or("reuse is disabled")?;
+    let scratch = pool
+        .take(size)
+        .ok_or("the painted image was not retained")?;
+    let identity = scratch.as_ptr();
+    pool.put(scratch);
+
+    assert!(draw(&mut painter, &a_screen((7, 4))).is_err());
+    let next = SignInPicture {
+        size,
+        surface: None,
+        solids: vec![Solid {
+            area: Rectangle::from_size(size.into()),
+            colour: [70, 80, 90],
+        }],
+        inked: Vec::new(),
+        controls: Vec::new(),
+    };
+    let (second, _) = draw(&mut painter, &next)?;
+    assert_eq!(first.pixels(), saved);
+    for pixel in second.pixels().as_chunks::<4>().0 {
+        assert_eq!(pixel, &[90, 80, 70, 0]);
+    }
+    let scratch = painter
+        .frames
+        .as_mut()
+        .and_then(|pool| pool.take(size))
+        .ok_or("the scratch image was lost after refusal")?;
+    assert_eq!(scratch.as_ptr(), identity);
+    Ok(())
+}
+
+#[test]
+fn completed_frame_bytes_are_reused_without_changing_a_live_snapshot()
+-> Result<(), Box<dyn std::error::Error>> {
+    let size = (8, 4);
+    let mut painter = SoftwarePainter::new()?.with_reusable_frames();
+    let screen = a_screen(size);
+    let draw = |painter: &mut SoftwarePainter| {
+        painter.paint(
+            extent(size),
+            &[],
+            &[],
+            &Cursor::Default,
+            only(NativeScene::SignIn(&screen)),
+            alo_canvas::Camera::new(),
+        )
+    };
+    let (first, _) = draw(&mut painter)?;
+    let first_storage = first.pixels().as_ptr();
+    drop(first);
+    let (second, _) = draw(&mut painter)?;
+    assert_eq!(second.pixels().as_ptr(), first_storage);
+    let snapshot = second.shared();
+    let saved = snapshot.as_slice().to_vec();
+    drop(second);
+    let (third, _) = draw(&mut painter)?;
+    let released_storage = third.pixels().as_ptr();
+    assert_ne!(released_storage, snapshot.as_ptr());
+    drop(third);
+    let (fourth, _) = draw(&mut painter)?;
+    assert_eq!(fourth.pixels().as_ptr(), released_storage);
+    assert_eq!(snapshot.as_slice(), saved);
+    Ok(())
 }
 
 #[test]

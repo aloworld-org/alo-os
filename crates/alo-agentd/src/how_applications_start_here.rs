@@ -38,6 +38,10 @@ impl HowApplicationsStartHere {
 }
 
 impl SaysHowAnApplicationStarts for HowApplicationsStartHere {
+    fn applications_installed_now(&self) -> Option<alo_applications::Installed> {
+        Some(alo_installed::read(&self.entries))
+    }
+
     fn how_it_starts(&self, identifier: &str) -> Result<TheRoad, NoRoad> {
         let location =
             alo_launching::where_the_entry_is(identifier, &self.entries).ok_or(NoRoad::NoEntry)?;

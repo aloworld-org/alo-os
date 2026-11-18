@@ -113,8 +113,12 @@ impl Asked {
         self.application.as_deref()
     }
 
-    /// Where its response goes — returned at once by a request whose answer
-    /// waits on the person (`crate::open_uri_portal`'s `ask`).
+    /// The bus owner authenticated when this request arrived.
+    pub(crate) fn sender(&self) -> &OwnedUniqueName {
+        &self.sender
+    }
+
+    /// The predictable handle whose lifetime belongs to this request.
     pub(crate) fn handle(&self) -> &OwnedObjectPath {
         &self.handle
     }
@@ -164,13 +168,9 @@ impl Asked {
             .await
     }
 
-    /// Send `response` with `results` — the file chooser's `uris`, the one
-    /// answer here that carries anything back — and give back the handle.
-    ///
-    /// # Errors
-    /// Whatever the bus says when the response cannot be sent.
+    /// Send selected results only after the answer has been recorded.
     pub(crate) async fn responded_with(
-        self,
+        &self,
         connection: &zbus::Connection,
         response: u32,
         results: HashMap<String, OwnedValue>,
@@ -184,6 +184,6 @@ impl Asked {
                 &(response, results),
             )
             .await?;
-        Ok(self.handle)
+        Ok(self.handle.clone())
     }
 }

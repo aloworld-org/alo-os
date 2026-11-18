@@ -86,8 +86,37 @@ pub fn remembered(at: &Path, now: SystemTime) -> Result<Grants, NotRemembered> {
 /// folder that is not there, which is refused rather than made — and everything
 /// [`crate::written`] refuses about the grants themselves.
 pub fn kept(at: &Path, grants: &Grants, now: SystemTime) -> Result<(), NotRemembered> {
+    let _lock = crate::believing::locked_for(at)?;
     let text = crate::written(grants, now)?;
     replaced_whole(at, &text)
+}
+
+/// Apply one change to the latest grants while holding the writer lock.
+///
+/// The caller's older view is never written back over somebody else's change.
+/// An absent grants file is the first empty list; every other read failure is
+/// refused. A failed edit writes nothing. An unchanged list needs no replacement.
+///
+/// # Errors
+/// The edit's own error, or a read, lock, or replacement failure converted into it.
+pub fn updated<T, E: From<NotRemembered>>(
+    at: &Path,
+    now: SystemTime,
+    edit: impl FnOnce(&mut Grants) -> Result<T, E>,
+) -> Result<(Grants, T), E> {
+    let _lock = crate::believing::locked_for(at)?;
+    let mut grants = match remembered(at, now) {
+        Ok(grants) => grants,
+        Err(NotRemembered::NotThere { .. }) => Grants::default(),
+        Err(why) => return Err(why.into()),
+    };
+    let before = grants.clone();
+    let result = edit(&mut grants)?;
+    if grants != before {
+        let text = crate::written(&grants, now)?;
+        replaced_whole(at, &text)?;
+    }
+    Ok((grants, result))
 }
 
 #[cfg(test)]
@@ -102,6 +131,59 @@ mod tests {
     use alo_capability::{Ask, Grantee};
     use std::os::unix::fs::PermissionsExt;
     use std::path::PathBuf;
+
+    #[test]
+    fn simultaneous_permission_changes_keep_each_others_grants() {
+        use alo_capability::{Grant, Reach};
+        use std::sync::{Arc, Barrier};
+        let folder = a_folder_of_our_own("concurrent-updates");
+        let at = folder.join("grants.toml");
+        let ready = Arc::new(Barrier::new(4));
+        let workers: Vec<_> = (0..4)
+            .map(|worker| {
+                let at = at.clone();
+                let ready = ready.clone();
+                std::thread::spawn(move || {
+                    ready.wait();
+                    for index in 0..8 {
+                        updated(&at, noon(), |grants| {
+                            let reach = Reach::File(format!("/permission-{worker}-{index}").into());
+                            let grant = Grant::checked(HERS, reach, noon(), an_hour()).unwrap();
+                            Ok::<_, NotRemembered>(grants.grant(grant))
+                        })
+                        .unwrap();
+                    }
+                })
+            })
+            .collect();
+        for worker in workers {
+            worker.join().unwrap();
+        }
+        let grants = remembered(&at, noon()).unwrap();
+        assert_eq!(grants.len(), 32);
+        let ids: std::collections::BTreeSet<_> =
+            grants.active_at(noon()).map(|held| held.id).collect();
+        assert_eq!(ids.len(), 32);
+        let _cleared = std::fs::remove_dir_all(folder);
+    }
+
+    #[test]
+    fn an_edit_that_refuses_leaves_the_previous_file_intact() {
+        let folder = a_folder_of_our_own("refused-update");
+        let at = folder.join("grants.toml");
+        kept(&at, &granted_in("/Invoices"), noon()).unwrap();
+        let before = std::fs::read(&at).unwrap();
+        let result = updated(&at, noon(), |grants| {
+            grants.revoke_everything_for(&Grantee::named(HERS));
+            Err::<(), _>(NotRemembered::NotWritten {
+                at: at.clone(),
+                why: "permission cancelled".into(),
+            })
+        });
+        assert!(result.is_err());
+        assert_eq!(std::fs::read(&at).unwrap(), before);
+        let _cleared = std::fs::remove_dir_all(folder);
+    }
 
     /// A machine's grants, kept on the disk in this folder.
     fn grants_kept_in(folder: &Path) -> PathBuf {

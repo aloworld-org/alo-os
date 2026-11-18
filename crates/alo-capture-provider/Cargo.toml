@@ -1,0 +1,17 @@
+[package]
+name = "alo-capture-provider"
+version = "0.1.0"
+description = "Publish a permission-scoped compositor frame stream through the rented media engine."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+alo-capture-protocol = { path = "../alo-capture-protocol" }
+pipewire = { version = "=0.10.0", path = "../../engines/pipewire", features = ["v0_3_65"] }
+gst = { package = "gstreamer", version = "0.24", features = ["v1_22"] }
+gst-app = { package = "gstreamer-app", version = "0.24", features = ["v1_22"] }
+
+[lints]
+workspace = true

@@ -1,0 +1,28 @@
+{
+  "id": "org.aloworld.Studio",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "49",
+  "sdk": "org.gnome.Sdk",
+  "sdk-extensions": ["org.freedesktop.Sdk.Extension.rust-stable"],
+  "command": "alo-studio",
+  "finish-args": ["--share=ipc", "--socket=wayland", "--socket=fallback-x11", "--socket=pulseaudio", "--device=dri"],
+  "build-options": {
+    "append-path": "/usr/lib/sdk/rust-stable/bin",
+    "env": {"CARGO_HOME": "/run/build/alo-studio/cargo", "CARGO_INCREMENTAL": "0"}
+  },
+  "modules": [
+    {
+      "name": "alo-studio",
+      "buildsystem": "simple",
+      "build-commands": [
+        "cargo build --release --locked --offline",
+        "install -Dm755 target/release/alo-studio /app/bin/alo-studio",
+        "install -Dm644 data/org.aloworld.Studio.desktop /app/share/applications/org.aloworld.Studio.desktop",
+        "install -Dm644 data/org.aloworld.Studio.metainfo.xml /app/share/metainfo/org.aloworld.Studio.metainfo.xml",
+        "install -Dm644 LICENSE /app/share/licenses/org.aloworld.Studio/LICENSE",
+        "install -Dm644 data/org.aloworld.Studio.svg /app/share/icons/hicolor/scalable/apps/org.aloworld.Studio.svg"
+      ],
+      "sources": [{"type": "dir", "path": "..", "skip": ["target", "repo", "build", ".flatpak-builder"]}]
+    }
+  ]
+}

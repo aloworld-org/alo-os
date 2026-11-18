@@ -29,6 +29,7 @@
 //! the client calls itself — adds it with [`ATool::also`], where it is visible.
 
 use std::ffi::OsStr;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 /// Where a machine's own programs are, for a cleared environment.
@@ -96,7 +97,18 @@ impl ATool {
     /// with.
     #[must_use]
     pub fn started_where(&self, listening: Option<impl AsRef<OsStr>>) -> Command {
-        let mut command = Command::new(&self.program);
+        // A changed PATH with a bare executable forces Rust's fork/exec path.
+        // Resolve only within the same fixed system PATH before spawning, so a
+        // graph request need not write-protect the compositor's frame buffers.
+        let search_path = self
+            .also
+            .iter()
+            .rev()
+            .find(|(name, _)| name == "PATH")
+            .map_or(OsStr::new(WHERE_ITS_PROGRAMS_ARE), |(_, value)| {
+                value.as_os_str()
+            });
+        let mut command = Command::new(system_program(&self.program, search_path));
         command
             .args(&self.arguments)
             .env_clear()
@@ -123,6 +135,19 @@ impl ATool {
     pub fn started_here(&self) -> Command {
         self.started_where(std::env::var_os(WHERE_THE_SERVER_IS))
     }
+}
+
+/// Preserve explicit paths and search only the environment this tool receives.
+/// Missing programs keep the ordinary command's existing not-found behavior.
+fn system_program(program: &str, search_path: &OsStr) -> PathBuf {
+    let path = Path::new(program);
+    if path.components().count() > 1 || path.is_absolute() {
+        return path.to_owned();
+    }
+    std::env::split_paths(search_path)
+        .map(|directory| directory.join(path))
+        .find(|candidate| candidate.is_file())
+        .unwrap_or_else(|| path.to_owned())
 }
 
 #[cfg(test)]
@@ -164,7 +189,10 @@ mod tests {
             5,
             "the tool was given something these rules do not name: {given:?}"
         );
-        assert_eq!(started.get_program(), "pw-dump");
+        assert_eq!(
+            Path::new(started.get_program()).file_name(),
+            Some(OsStr::new("pw-dump"))
+        );
     }
 
     /// **Something the caller does not have is not passed as nothing.**
@@ -177,6 +205,39 @@ mod tests {
             !started
                 .get_envs()
                 .any(|(named, _)| named == OsStr::new("PIPEWIRE_PROPS"))
+        );
+    }
+
+    /// A system tool remains reachable after PATH is cleared for its child.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn a_known_system_tool_is_started_by_its_absolute_path() {
+        let mut command = ATool::named("true").started_where(None::<&str>);
+        let program = Path::new(command.get_program());
+        assert!(program.is_absolute());
+        assert!(matches!(
+            program.to_str(),
+            Some("/usr/bin/true" | "/bin/true")
+        ));
+        command.env("PATH", "/missing-system-programs");
+        assert!(command.status().is_ok_and(|status| status.success()));
+    }
+
+    /// Explicit tools and a missing program preserve their existing outcomes.
+    #[test]
+    fn explicit_and_missing_tool_names_are_preserved() {
+        for program in ["/missing-tools/probe", "./probe", "alo-missing-media-tool"] {
+            let command = ATool::named(program).started_where(None::<&str>);
+            assert_eq!(command.get_program(), OsStr::new(program));
+        }
+        let mut command = ATool::named("true")
+            .also("PATH", Some("/missing-system-programs"))
+            .started_where(None::<&str>);
+        assert_eq!(command.get_program(), OsStr::new("true"));
+        assert!(
+            command
+                .status()
+                .is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound)
         );
     }
 }

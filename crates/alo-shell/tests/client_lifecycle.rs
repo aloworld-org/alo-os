@@ -49,6 +49,7 @@ mod the_world_is_a_step_out;
 mod typing_into_the_window_in_front;
 mod what_an_application_verb_says_it_does;
 mod window_activation;
+mod window_capture_frames;
 mod window_close;
 mod window_controls;
 mod window_maximize;
