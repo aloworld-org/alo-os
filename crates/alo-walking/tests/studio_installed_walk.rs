@@ -1,5 +1,10 @@
 //! The private installed recording flow is reachable only on an explicit walk.
 
+#![expect(
+    clippy::indexing_slicing,
+    reason = "an invalid section boundary must fail the walk specification test"
+)]
+
 use alo_walking::step::Step;
 use alo_walking::the_first_walk;
 
@@ -45,9 +50,16 @@ fn private_studio_steps_are_scoped_after_the_terminal_and_before_the_pointer() {
 fn private_installed_flow_never_reads_a_provider_key_or_grants_an_agent_execution() {
     let walk = the_first_walk();
     let steps = walk.steps();
-    assert!(steps.iter().any(|step| matches!(step, Step::OnlyWithFor {
-        variable: "ALO_WALK_PRIVATE_STUDIO", ..
-    })), "the private section must exist before its boundary can be checked");
+    assert!(
+        steps.iter().any(|step| matches!(
+            step,
+            Step::OnlyWithFor {
+                variable: "ALO_WALK_PRIVATE_STUDIO",
+                ..
+            }
+        )),
+        "the private section must exist before its boundary can be checked"
+    );
     for (at, step) in steps.iter().enumerate() {
         if let Step::OnlyWithFor {
             variable: "ALO_WALK_PRIVATE_STUDIO",
