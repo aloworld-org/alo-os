@@ -315,6 +315,64 @@ finally:
         self.assertEqual(completed.returncode, 0, completed.stderr[-4000:])
         self.assertEqual(completed.stdout, 'disconnection refused\n')
 
+    def test_refused_completion_requires_zero_deliveries_and_a_real_read_barrier(self):
+        self.interface().EnableMicrophone(timeout=3)  # Outside this observed window.
+        observation = self.observe()
+        self.interface().GetStatus(timeout=3)
+        summary = observation.finish_refused()
+        self.assertEqual(summary,{'method':None,'deliveries':0,'barrier_observed':True,
+            'owner':str(self.bus.get_name_owner('org.aloworld.Studio'))})
+        self.assertEqual(set(summary),{'method','deliveries','barrier_observed','owner'})
+
+    def test_refused_completion_cannot_hide_any_actual_recorder_change(self):
+        for method in ('EnableMicrophone','DisableMicrophone','Finish'):
+            with self.subTest(method=method):
+                observation = self.observe()
+                getattr(self.interface(),method)(timeout=3)
+                with self.assertRaises(ValueError):
+                    observation.finish_refused()
+                observation.close()
+
+    def test_even_an_application_error_is_too_late_to_prove_broker_withdrawal(self):
+        self.stop_service()
+        self.start_service(SERVICE.replace("self.calls.append('disable')",
+            "raise dbus.exceptions.DBusException('fixture refusal', name='org.aloworld.Studio.Refused')"))
+        observation = self.observe()
+        with self.assertRaises(dbus.DBusException):
+            self.interface().DisableMicrophone(timeout=3)
+        with self.assertRaises(ValueError):
+            observation.finish_refused()
+
+    def test_refused_completion_rejects_owner_replacement(self):
+        observation = self.observe()
+        self.stop_service()
+        self.start_service()
+        with self.assertRaises(ValueError):
+            observation.finish_refused()
+
+    def test_refused_completion_cannot_infer_success_from_a_silent_barrier(self):
+        self.stop_service()
+        self.start_service('import time\n'+SERVICE.replace(
+            "return json.dumps({'actual_fixture_calls': self.calls})",
+            "time.sleep(3); return json.dumps({'actual_fixture_calls': self.calls})"))
+        observation = DeliveryObservation(timeout=0.15)
+        self.addCleanup(observation.close)
+        started = time.monotonic()
+        with self.assertRaises(ValueError):
+            observation.finish_refused()
+        self.assertLess(time.monotonic()-started,1.5)
+
+    def test_refused_completion_is_single_use_across_both_finish_apis(self):
+        observation = self.observe()
+        observation.finish_refused()
+        self.interface().EnableMicrophone(timeout=3)
+        for operation in (observation.finish_refused,lambda:observation.finish(enabled=True)):
+            with self.assertRaises(ValueError):
+                operation()
+        observation.close()
+        with self.assertRaises(ValueError):
+            observation.finish_refused()
+
 
 if __name__ == '__main__':
     unittest.main()
