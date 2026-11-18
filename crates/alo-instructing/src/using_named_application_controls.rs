@@ -14,7 +14,10 @@ pub(crate) fn using_named_application_controls(verbs: &Verbs) -> String {
     }
     let mut text = String::from(
         "\n\nNamed application controls:\n\
+         Match the requested application and operation to a declared purpose before reading status. \
+         Use a status read only for the application in the person's request. \
          Read the live status before choosing a change in one of these applications. \
+         After reading status, keep the requested operation and leave unrelated settings unchanged. \
          Prefer the matching named control over a file action, an accessibility gesture, \
          or another setting. Match the requested operation to the declared purpose below. \
          Use the generic application guidance when no offered named control matches.\n",

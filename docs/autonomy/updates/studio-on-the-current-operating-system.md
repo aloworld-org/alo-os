@@ -121,7 +121,12 @@ and bounded artifact transfer. At frozen source
 `76f131ecea607e317fa141004655f0d224107a32`, manual package run 44320429214
 passed normal packaging, signature refusals and separate reference/controller
 packaging. Installed KVM walk 44322063965 was dispatched with that exact source
-and package run. Its installed recording verdict is pending. The private
+and package run. It later failed before installation: the terminal's Window
+actions band consumed the setup command. No Studio recording was returned.
+Private source `83e0fa210c03a4d45c3b3eb00f35ecd41894779a` corrects focus and
+requires a fresh command acknowledgement before installing. Its matching
+package run 44378112596 passed; installed walk 44380155898 is building the
+matching image. Recording acceptance remains unverified. The private
 instrument workflow also passed its real decoder/native-control checks on that
 source; local validation recorded 143 Python and 30 focused Rust test passes.
 The person-side controller is not an agent tool and cannot establish the
@@ -132,3 +137,24 @@ remain unfinished prerequisites. Studio's GTK interface is a development test
 surface. Neither the shared-kit migration nor public market availability is
 complete. Local signed-repository verification remains the authorized
 distribution scope. No unrelated verification VM is to be paused.
+
+## Preserve the requested application and operation
+
+Real-model run 44378095749 at source `5ce2ca8a6` passed 189 of 190 Studio
+tries. One request for a five-second countdown proposed a quality change
+instead; an unrelated slider request also read Studio status. Both are genuine
+failures. Other generic application cases failed too, so the full repeated-model
+gate remains failed. The earlier 190-of-190 Studio result does not supersede
+these later observations.
+
+The generic application guidance now scopes a status read to the application
+the person requested, preserves fallback for applications with no offered
+status read, and keeps the requested operation unchanged after reading state.
+Independent instruction tests with two synthetic application families failed
+before the correction and passed afterward. All 210 local instruction and
+evaluation tests passed, alongside formatting, strict linting and documentation;
+the pre-existing weights-dependent language test remained ignored. Five
+one-time deliberate removals were caught by the independent regression tests.
+No model request, expected operation, repetition count or acceptance threshold
+was weakened. The unchanged repeated-model gate must still establish whether
+the correction improves actual choices.

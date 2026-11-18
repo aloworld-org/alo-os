@@ -16,7 +16,9 @@ pub(crate) fn reading_application_status(verbs: &Verbs) -> String {
         "\n\nRead the live status before answering a question about an application's current \
          state, using its status read: {}. Remember that a verb's description is not a live \
          report, even when it lists the state the person asks about. Send the matching status \
-         read, then answer from its reply.",
+         read, then answer from its reply. \
+         Use a status read only for the application in the person's request. \
+         If that application has no offered status read, use the generic application guidance.",
         reads.join(", ")
     )
 }
