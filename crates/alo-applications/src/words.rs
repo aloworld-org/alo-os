@@ -623,11 +623,8 @@ pub const CLOSE_APPLICATION_LEAVES: Word = Word::saying(
 
 /// What `open_file_in_application` does.
 pub const OPEN_FILE_IN_APPLICATION: Word = Word::saying(
-    // A new key (ADR 0068): the old English did not say it is for a path and
-    // not for a file a window shows, so a translation of it would not either.
-    "applications.verb.open-file-in-application.purpose-by-its-path",
-    "open a file or folder, by its path, in an application the person names, such as a \
-     document in an editor; not for a file a window already shows, such as in a file manager",
+    "applications.verb.open-file-in-application.purpose",
+    "open a file or folder in an application the person names",
 );
 /// **The sentence a person approves before a file is opened in an
 /// application.**

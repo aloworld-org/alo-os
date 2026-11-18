@@ -61,13 +61,6 @@ pub const SELECT_ITEM: &str = "accessible.select_item";
 /// (2026-11-17).
 pub const OPEN_ITEM: &str = "accessible.open_item";
 
-/// The verb that opens a path in an application the person names —
-/// `alo_applications::OPEN_FILE_IN_APPLICATION`. Named so that opening an item
-/// a window shows is told apart from it: asked to *open report.pdf in Dolphin*
-/// with Dolphin's window offered, a model sent this with the file's path in
-/// every try (`alo-every-try` run 44229459255, 0 of 10 at both levels).
-pub const OPEN_FILE_IN_APPLICATION: &str = "open_file_in_application";
-
 /// The verb that presses one key of a closed list (2026-11-17).
 pub const PRESS_KEY: &str = "accessible.press_key";
 
@@ -141,20 +134,9 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
     }
     // **Opening an item, as #1361 told it.**
     if verbs.of(OPEN_ITEM).is_some() {
-        // **And not by its path**, where the machine offers that too: a file a
-        // window lists is opened there, as a double-click would.
-        let not_by_its_path = if verbs.of(OPEN_FILE_IN_APPLICATION).is_some() {
-            format!(
-                ", never {OPEN_FILE_IN_APPLICATION}, which is for a path to open in an application \
-                 that does not show it"
-            )
-        } else {
-            String::new()
-        };
         acts.push(format!(
-            "to open an item a window lists, such as a file in a file manager, as a double-click \
-             would, {OPEN_ITEM} with its name{not_by_its_path}, only when the person asks to open \
-             it"
+            "to open an item, such as a file in a folder, as a double-click would, {OPEN_ITEM} \
+             with its name, only when the person asks to open it"
         ));
     }
     // **A key, and typing that saves nothing** (2026-11-17), each beside its
@@ -329,43 +311,5 @@ mod tests {
             "{told}"
         );
         assert!(!told.contains("  "), "two spaces run words apart: {told}");
-    }
-
-    /// **Opening an item a window lists is told apart from opening a path**:
-    /// with [`OPEN_ITEM`], never [`OPEN_FILE_IN_APPLICATION`] — which is named
-    /// only where the machine offers it, and nothing about opening is said
-    /// without [`OPEN_ITEM`].
-    #[test]
-    fn an_item_a_window_lists_is_opened_there_and_not_by_its_path() {
-        let mut verbs = the_verbs();
-        verbs.declare(named(READ_WINDOW, Effect::Read)).unwrap();
-        verbs.declare(named(TYPE_TEXT, Effect::Change)).unwrap();
-        verbs
-            .declare(named(OPEN_FILE_IN_APPLICATION, Effect::Change))
-            .unwrap();
-        let told = working_in_an_application(&verbs);
-        assert!(!told.contains(OPEN_ITEM), "{told}");
-        assert!(!told.contains(OPEN_FILE_IN_APPLICATION), "{told}");
-
-        verbs.declare(named(OPEN_ITEM, Effect::Change)).unwrap();
-        let told = working_in_an_application(&verbs);
-        assert!(told.contains("file manager"), "{told}");
-        assert!(
-            told.contains(&format!("never {OPEN_FILE_IN_APPLICATION}")),
-            "{told}"
-        );
-        assert!(!told.contains("  "), "two spaces run words apart: {told}");
-
-        let mut without = the_verbs();
-        for (name, effect) in [
-            (READ_WINDOW, Effect::Read),
-            (TYPE_TEXT, Effect::Change),
-            (OPEN_ITEM, Effect::Change),
-        ] {
-            without.declare(named(name, effect)).unwrap();
-        }
-        let told = working_in_an_application(&without);
-        assert!(told.contains(OPEN_ITEM), "{told}");
-        assert!(!told.contains(OPEN_FILE_IN_APPLICATION), "{told}");
     }
 }

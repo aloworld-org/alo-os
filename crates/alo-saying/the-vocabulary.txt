@@ -131,7 +131,7 @@ adapters.fallback.open-item.leaves	No other item is opened, nothing is typed, no
 adapters.fallback.open-item.more-than-one	{application} shows more than one “{name}”, so alo did not guess which, and nothing was opened
 adapters.fallback.open-item.name	the item, by the name or the words it shows
 adapters.fallback.open-item.no-such-item	{application} shows no item named “{name}” now, so nothing was opened
-adapters.fallback.open-item.purpose-of-a-shown-item	open one item an application's window shows, as a double-click would, such as a file a file manager shows: it opens in the application that file opens with
+adapters.fallback.open-item.purpose	open one item of a list in an application's window, as a double-click would, such as a file in a folder
 adapters.fallback.open-item.sentence	open “{name}” in {application}
 adapters.fallback.open-item.too-much-to-be-sure	{application} shows more than can be read at once, so whether “{name}” is the only one is not known, and nothing was opened
 adapters.fallback.open-menu.application	the application the thing is in
@@ -494,7 +494,7 @@ applications.verb.open-file-in-application.argument.application	which applicatio
 applications.verb.open-file-in-application.argument.path	the file or folder to open
 applications.verb.open-file-in-application.changes	Opens it in alo's own copy of the application, or in your own window if you chose that in Settings.
 applications.verb.open-file-in-application.leaves	The file is not changed, and no other window is moved or closed.
-applications.verb.open-file-in-application.purpose-by-its-path	open a file or folder, by its path, in an application the person names, such as a document in an editor; not for a file a window already shows, such as in a file manager
+applications.verb.open-file-in-application.purpose	open a file or folder in an application the person names
 applications.verb.open-file-in-application.sentence	open {path} in {application}
 applications.where.left-half	on the left half of the screen
 applications.where.right-half	on the right half of the screen
