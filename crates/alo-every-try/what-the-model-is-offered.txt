@@ -34,28 +34,28 @@ verb	read_file	b463794346301948
 verb	rename_file	f1d04ddeae487769
 verb	what_can_be_installed	8a809f6c3b6c1c40
 verb	what_touched_this_file	c05f793e1b3ad6c3
-request	write in VSCodium	a6568300a2c6eb0c	open_file_in_application,accessible.read_window,accessible.type_text,read_file
-request	publish to GitHub Pages	72c0d16b9762dc24	publish_to_github_pages
-request	open an application by name	58c95e6822ca9c05	open_application,accessible.read_window
-request	list a folder	a10d7e0163b43f88	list_folder
-request	read a file	78d789b77df9dc2c	read_file
-request	find files by name	8d2b5c91380e53df	find_in_folder
-request	rename a file	e72c794264480a78	rename_file
-request	move a file	af16e3c5d702d3d0	move_file
-request	archive a folder	665d62100abbf4d0	archive_folder
-request	see what can be installed	681e09beb986a348	what_can_be_installed
-request	install an application	750e4fc13895ba74	what_can_be_installed,install_application
-request	bring an application to the front	5f8667f78b53305f	focus_application
-request	close an application	aeb8b5455f509ec4	close_application
-request	ask the record about a file	616bfbf62c601df8	what_touched_this_file
-request	press a button in an application	6781e626201f528f	accessible.read_window,accessible.activate_control
-request	scroll to a named thing in an application	9ed7615aba816c43	accessible.read_window,accessible.scroll_to,accessible.scroll_page
-request	scroll a page in an application	2b34b41a753eae11	accessible.read_window,accessible.scroll_page
-request	move a slider in an application	cbcf1ecae4736b44	accessible.read_window,accessible.set_value
-request	choose an option in a drop-down	d32a5a4b2ba64cfe	accessible.read_window,accessible.choose_option
-request	select a file in the file manager	da1b9175203055e2	accessible.read_window,accessible.select_item
-request	open a file in the file manager	3935d6cd84a36122	accessible.read_window,accessible.open_item
-request	open a thing's right-click menu in an application	2893934895ef5495	accessible.read_window,accessible.open_menu
-request	press a key in an application	a13be3f72b16a695	accessible.read_window,accessible.press_key
-request	type into a search box without saving	144ca47bfed260e4	accessible.read_window,accessible.type_without_saving
-request	answer the file chooser	3eb4ca1f11d1efb8	choose_on_the_file_chooser
+request	write in VSCodium	b2031a6f40be65c5	open_file_in_application,accessible.read_window,accessible.type_text,read_file
+request	publish to GitHub Pages	03cb3a93dfa4ec05	publish_to_github_pages
+request	open an application by name	4dc1bdcdb829ea25	open_application,accessible.read_window
+request	list a folder	4ebbeda4268ccfd9	list_folder
+request	read a file	ad81ee77388a1c7e	read_file
+request	find files by name	dac8a06d8f7fb9bb	find_in_folder
+request	rename a file	48fea9cc6fe1cbf1	rename_file
+request	move a file	d2f7ce1494743e75	move_file
+request	archive a folder	42fa6f32aef2dc95	archive_folder
+request	see what can be installed	502910e66e12f714	what_can_be_installed
+request	install an application	734b36b5afe67ab2	what_can_be_installed,install_application
+request	bring an application to the front	22258b068aab34cc	focus_application
+request	close an application	279b12377047e418	close_application
+request	ask the record about a file	42779e4dcfac64de	what_touched_this_file
+request	press a button in an application	d99c257e567f8daf	accessible.read_window,accessible.activate_control
+request	scroll to a named thing in an application	4a8f9c3376e439a7	accessible.read_window,accessible.scroll_to,accessible.scroll_page
+request	scroll a page in an application	8b2828522d7c3523	accessible.read_window,accessible.scroll_page
+request	move a slider in an application	e3d382bc6f0f7100	accessible.read_window,accessible.set_value
+request	choose an option in a drop-down	64fc9c494c80d229	accessible.read_window,accessible.choose_option
+request	select a file in the file manager	c90e14493cbe016e	accessible.read_window,accessible.select_item
+request	open a file in the file manager	1c33b31ecebad9ea	accessible.read_window,accessible.open_item
+request	open a thing's right-click menu in an application	3b3bb5944f51fe6e	accessible.read_window,accessible.open_menu
+request	press a key in an application	ef215d182a090bb0	accessible.read_window,accessible.press_key
+request	type into a search box without saving	28dcac787f14ca20	accessible.read_window,accessible.type_without_saving
+request	answer the file chooser	fd77e838c675441d	choose_on_the_file_chooser
