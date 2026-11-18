@@ -45,7 +45,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 19);
+    assert_eq!(THE_VERSION, 20);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -552,5 +552,77 @@ fn opening_a_shown_file_goes_on_from_a_wrong_path_and_holds_the_verb() {
         assert!(!by_path.took_the_road(), "{level:?}: {by_path:?}");
         let (guessing, _) = try_these(&[guessed.clone(), answer.clone()]);
         assert!(!guessing.took_the_road(), "{level:?}: {guessing:?}");
+    }
+}
+
+/// **A slider named as the request says it, not as the window shows it, is
+/// refused before the card**, as the machine now refuses it at both levels, in
+/// the move's own words — and a try that names it again as the window shows it
+/// takes the road, said to have been refused first. Naming it wrongly until the
+/// end is not the road.
+#[test]
+fn a_slider_named_wrongly_is_refused_before_the_card_and_the_try_goes_on() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, the_words};
+    use alo_adapters::fallback_verbs::{APPLICATION, NAME, SET_VALUE, VALUE};
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "move a slider in an application")
+        .expect("the set has it");
+    let moving = request
+        .road()
+        .iter()
+        .find(|step| step.verb() == SET_VALUE)
+        .expect("the road moves the slider");
+    assert!(moving.is_the_only_control_of_its_kind());
+    let expected = |argument: &str| {
+        moving
+            .expected()
+            .iter()
+            .find(|(arg, _)| *arg == argument)
+            .map(|(_, is)| is.clone())
+            .expect("the road names it")
+    };
+    let (viewer, zoom, to) = (expected(APPLICATION), expected(NAME), expected(VALUE));
+    let wrongly = format!("{zoom} slider");
+    let as_said = proposing(
+        SET_VALUE,
+        &[(APPLICATION, &viewer), (NAME, &wrongly), (VALUE, &to)],
+    )
+    .replace(&format!("\"{to}\""), &to);
+    let as_shown = proposing(
+        SET_VALUE,
+        &[(APPLICATION, &viewer), (NAME, &zoom), (VALUE, &to)],
+    )
+    .replace(&format!("\"{to}\""), &to);
+    let answer = answering("The zoom is at 200.");
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let try_these = |lines: &[String]| {
+            let mut model = Writing::these(lines);
+            let tried = one_try_at(
+                level,
+                request,
+                set.may_reach(),
+                &the_verbs(),
+                &the_words(),
+                &mut model,
+            );
+            (tried, model.shown)
+        };
+        let (went_on, shown) = try_these(&[as_said.clone(), as_shown.clone(), answer.clone()]);
+        assert_eq!(went_on.went(), &Went::TheRoad, "{level:?}: {went_on:?}");
+        assert_eq!(went_on.refused_before_asking(), 1, "{level:?}");
+        let refusal = format!("shows no slider or number box named “{wrongly}” now");
+        assert!(
+            shown.get(1).is_some_and(|second| second.contains(&refusal)),
+            "{level:?}: the refusal is shown: {shown:?}"
+        );
+        // **The refusal case**: naming it wrongly and then answering is not
+        // the road.
+        let (stopped, _) = try_these(&[as_said.clone(), answer.clone()]);
+        assert!(!stopped.took_the_road(), "{level:?}: {stopped:?}");
     }
 }

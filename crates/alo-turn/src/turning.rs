@@ -96,6 +96,7 @@ use crate::became::Became;
 use crate::carrying::carrying_out;
 use crate::machine::Machine;
 use crate::refusing::NotDone;
+use crate::the_control_to_set_is_there::the_control_to_set_is_there;
 use crate::the_sentence_is_about_something::the_sentence_is_about_something;
 use crate::what_a_verb_did::WhatAVerbDid;
 
@@ -348,6 +349,12 @@ impl<'a, 'm> Turning<'a, 'm> {
         if let Err(refused) =
             the_sentence_is_about_something(&call, self.machine.resolving(), self.machine.strings())
         {
+            return self.stopped_under(refused, grants, now);
+        }
+        // **And that the slider it moves is there** — read once, after the
+        // grants above allowed the application, so no card asks a person to
+        // approve a move that cannot happen (`the_control_to_set_is_there`).
+        if let Err(refused) = the_control_to_set_is_there(&call, self.machine) {
             return self.stopped_under(refused, grants, now);
         }
         let id = self.approvals.propose(proposal);

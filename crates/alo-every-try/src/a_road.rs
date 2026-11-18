@@ -75,6 +75,9 @@ pub struct Step {
     look: bool,
     /// Whether the model may take this step again, as often as it asks.
     again: bool,
+    /// Whether the window shows no other control of this kind, so a name the
+    /// road does not expect names nothing there.
+    the_only_one: bool,
 }
 
 impl Step {
@@ -88,7 +91,24 @@ impl Step {
             answered,
             look: false,
             again: false,
+            the_only_one: false,
         }
+    }
+
+    /// **And the window shows no other control of its kind**: a name other
+    /// than the one expected names nothing there, so the machine refuses it
+    /// before anybody is asked, in the move's own words, and the try goes on
+    /// from the refusal (`crate::no_such_control`).
+    #[must_use]
+    pub const fn the_only_control_of_its_kind(mut self) -> Self {
+        self.the_only_one = true;
+        self
+    }
+
+    /// Whether another name names nothing in the window.
+    #[must_use]
+    pub const fn is_the_only_control_of_its_kind(&self) -> bool {
+        self.the_only_one
     }
 
     /// **And the model may take it again**, as often as it asks, without the

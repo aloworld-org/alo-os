@@ -65,6 +65,8 @@ struct Counted {
     looks: Rc<Cell<usize>>,
     /// Whether the application does not answer the move.
     does_not_answer: Rc<Cell<bool>>,
+    /// Whether the tree cannot be opened at all.
+    unreadable: Rc<Cell<bool>>,
 }
 
 fn at(object: &str) -> NodeAt {
@@ -155,6 +157,9 @@ struct TheWindows {
 impl TheWindowsOnTheScreen for TheWindows {
     fn opening(&mut self) -> Result<Box<dyn AccessibilityTree>, TreeFault> {
         self.counted.opened.set(self.counted.opened.get() + 1);
+        if self.counted.unreadable.get() {
+            return Err(TreeFault::NotThere);
+        }
         Ok(Box::new(OneWindow {
             application: self.application,
             counted: self.counted.clone(),
@@ -315,7 +320,10 @@ fn at_ask_each_time_one_approval_moves_once() {
     let counted = windows.counted.clone();
     let (did, record) = on_a_machine(&mut windows, the_mixer_is_granted, |turning, grants| {
         let id = turning.proposing(SET_VALUE, &volume(MIXER, 40), grants, hour(), noon())?;
-        assert_eq!(counted.opened.get(), 0, "a proposal opened the tree");
+        // **The card is asked only once the slider is seen to be there**
+        // (2026-11-17): one read of the window, and nothing moved by it.
+        assert_eq!(counted.opened.get(), 1, "the proposal read the window once");
+        assert_eq!(counted.moves.get(), 0, "a proposal moved something");
         turning.approving(id, grants, noon())
     });
     let did = did.unwrap();
@@ -325,9 +333,114 @@ fn at_ask_each_time_one_approval_moves_once() {
         (MIXER, "Volume", 40)
     );
     assert!(set.seen() && !set.unanswered());
-    assert_eq!(counted.opened.get(), 1);
+    assert_eq!(counted.opened.get(), 2);
     assert_eq!(counted.moves.get(), 1, "one approval, one move");
     assert_eq!(entries(&record), 1);
+}
+
+/// The arguments for moving a control the window does not show by that
+/// name: *Volume slider*, where the window says *Volume* — as a model reads
+/// it off "set the Volume slider to 40".
+fn volume_slider(application: &str, value: i64) -> Vec<(&'static str, Given)> {
+    vec![
+        ("application", Given::text(application)),
+        ("name", Given::text("Volume slider")),
+        ("value", Given::number(value)),
+    ]
+}
+
+/// **A slider the window does not show is refused before the card**, at ask
+/// each time, in the words the move itself would have said — so a person is
+/// never asked to approve a move that cannot happen. Nothing waits, nothing
+/// moves, and the refusal is recorded.
+#[test]
+fn a_slider_the_window_does_not_show_is_refused_before_the_card() {
+    let mut windows = windows_of(MIXER);
+    let counted = windows.counted.clone();
+    let ((proposed, waiting), record) =
+        on_a_machine(&mut windows, the_mixer_is_granted, |turning, grants| {
+            let proposed =
+                turning.proposing(SET_VALUE, &volume_slider(MIXER, 40), grants, hour(), noon());
+            (proposed, turning.waiting_at(noon()).count())
+        });
+    let Err(NotDone::Refused(refused)) = proposed else {
+        panic!("a slider the window does not show was proposed: {proposed:?}");
+    };
+    assert_eq!(
+        refused.said(&in_english()).text(),
+        "org.example.Mixer shows no slider or number box named “Volume slider” now, so nothing \
+         was moved"
+    );
+    assert_eq!(waiting, 0, "a card was left for a move that cannot happen");
+    assert_eq!(counted.moves.get(), 0);
+    assert_eq!(entries(&record), 1, "the refusal is recorded");
+}
+
+/// **And at full access, in the same words**, with nothing moved and the
+/// refusal recorded.
+#[test]
+fn a_slider_the_window_does_not_show_is_refused_at_full_access_in_the_same_words() {
+    let mut windows = windows_of(MIXER);
+    let counted = windows.counted.clone();
+    let (changed, record) = on_a_machine(
+        &mut windows,
+        |_| {},
+        |turning, grants| {
+            let at_full_access = grants.at_full_access_for(&Grantee::named(AGENT));
+            turning.changing(
+                SET_VALUE,
+                &volume_slider(MIXER, 70),
+                &at_full_access,
+                hour(),
+                &mut |_| None,
+                noon(),
+            )
+        },
+    );
+    let Err(NotDone::Refused(refused)) = changed else {
+        panic!("a slider the window does not show was moved: {changed:?}");
+    };
+    assert_eq!(
+        refused.said(&in_english()).text(),
+        "org.example.Mixer shows no slider or number box named “Volume slider” now, so nothing \
+         was moved"
+    );
+    assert_eq!(counted.moves.get(), 0);
+    assert_eq!(entries(&record), 1);
+}
+
+/// **Where the window cannot be read before the card, the card is still
+/// asked**: the check refuses only what it saw cannot happen, and the move
+/// itself still looks again when it runs.
+#[test]
+fn where_the_window_cannot_be_read_the_card_is_still_asked() {
+    let mut windows = windows_of(MIXER);
+    windows.counted.unreadable.set(true);
+    let counted = windows.counted.clone();
+    let ((proposed, waiting), _) =
+        on_a_machine(&mut windows, the_mixer_is_granted, |turning, grants| {
+            let proposed = turning.proposing(SET_VALUE, &volume(MIXER, 40), grants, hour(), noon());
+            (proposed, turning.waiting_at(noon()).count())
+        });
+    assert!(proposed.is_ok(), "{proposed:?}");
+    assert_eq!(waiting, 1);
+    assert_eq!(counted.moves.get(), 0);
+}
+
+/// **The grants are asked before any window is read**: a move in an
+/// application nobody granted is refused with no tree opened, so the check
+/// never reads a window the agent could not reach.
+#[test]
+fn a_window_nobody_granted_is_never_read_before_the_card() {
+    let mut windows = windows_of(MIXER);
+    let counted = windows.counted.clone();
+    let (proposed, _) = on_a_machine(
+        &mut windows,
+        |_| {},
+        |turning, grants| turning.proposing(SET_VALUE, &volume(MIXER, 40), grants, hour(), noon()),
+    );
+    assert!(proposed.is_err(), "{proposed:?}");
+    assert_eq!(counted.opened.get(), 0, "a window nobody granted was read");
 }
 
 /// **At full access it runs without a card, once.**
@@ -370,7 +483,8 @@ fn a_declined_move_moves_nothing_and_is_recorded() {
         turning.declining(id, noon())
     });
     assert!(declined.is_ok(), "{declined:?}");
-    assert_eq!(counted.opened.get(), 0);
+    // Read once before the card, to see the slider is there; never again.
+    assert_eq!(counted.opened.get(), 1);
     assert_eq!(counted.moves.get(), 0);
     assert_eq!(entries(&record), 1);
 }
@@ -394,7 +508,9 @@ fn a_revoked_grant_stops_the_move_before_the_tree() {
         },
     );
     assert!(matches!(did, Err(NotDone::Refused(_))), "{did:?}");
-    assert_eq!(counted.opened.get(), 0);
+    // Read once before the card, while the grant stood; the move's own tree
+    // is never opened once it is revoked.
+    assert_eq!(counted.opened.get(), 1);
     assert_eq!(counted.moves.get(), 0);
     assert_eq!(entries(&record), 1);
 }
