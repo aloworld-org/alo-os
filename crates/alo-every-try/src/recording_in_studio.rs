@@ -313,10 +313,11 @@ mod tests {
             let expected = alo_protocol::ToAnAgent::did(done)
                 .written()
                 .expect("the reply writes");
+            let shown_after_reading = model.shown.get(1).expect("the model saw the status reply");
             assert!(
-                model.shown[1].contains(&expected),
+                shown_after_reading.contains(&expected),
                 "{verb}: {}",
-                model.shown[1]
+                shown_after_reading
             );
         }
     }
