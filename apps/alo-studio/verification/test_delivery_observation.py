@@ -123,6 +123,19 @@ class DeliveryEvidence(unittest.TestCase):
         with self.assertRaises(ValueError):
             observation.finish(enabled=True)
 
+    def test_an_unqualified_actual_delivery_cannot_hide_a_duplicate(self):
+        observation = self.observe()
+        self.interface().EnableMicrophone(timeout=3)
+        request = dbus.lowlevel.MethodCallMessage('org.aloworld.Studio',
+                                                  '/org/aloworld/Studio/Recorder', None,
+                                                  'EnableMicrophone')
+        reply = self.bus.send_message_with_reply_and_block(request, 3)
+        self.assertEqual(reply.get_type(), dbus.lowlevel.MESSAGE_TYPE_METHOD_RETURN)
+        self.assertEqual(json.loads(str(self.interface().GetStatus(timeout=3)))['actual_fixture_calls'],
+                         ['enable','enable'])
+        with self.assertRaises(ValueError):
+            observation.finish(enabled=True)
+
     def test_disable_and_interleaved_status_reads_are_observed(self):
         observation = self.observe()
         self.interface().GetStatus(timeout=3)
