@@ -110,7 +110,9 @@ class MachineActionNames(unittest.TestCase):
             with self.subTest(label=label), fixture(machine=['show-menu', 'click'],
                                                     localized=['Menu', label]) as (tree, pid, _, evidence):
                 activate(tree, pid, lambda name: name == 'Running code')
-                self.assertEqual(list(evidence.Calls(timeout=3)), ['count', 'name:0', 'name:1', 'do:1'])
+                self.assertEqual(list(evidence.Calls(timeout=3)),
+                                 ['count', 'name:0', 'name:1',
+                                  'count', 'name:0', 'name:1', 'do:1'])
 
     def test_a_localized_click_does_not_authorize_an_unrecognized_machine_action(self):
         with fixture(machine=['run-arbitrary-action'], localized=['click']) as (tree, pid, _, evidence):

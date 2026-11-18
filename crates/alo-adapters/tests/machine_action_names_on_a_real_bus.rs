@@ -2,37 +2,77 @@
 //! These isolated wire fixtures are not an installed Settings acceptance run.
 
 #![cfg(target_os = "linux")]
-#![expect(clippy::unwrap_used, clippy::expect_used,
-    reason = "unexpected fixture refusal is a test failure")]
+#![expect(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "unexpected fixture refusal is a test failure"
+)]
 
-use std::{collections::HashMap, io::{BufRead, BufReader}, path::PathBuf,
-    process::{Child, Command, Stdio}, sync::{Arc, Mutex}, time::{SystemTime, UNIX_EPOCH}};
 use alo_adapters::{AccessibilityTree, AccessibleSession, NodeAt, Pressable, Whose, press_by_hand};
 use alo_portals::Sandboxes;
-use zbus::{blocking::Connection, blocking::connection::Builder,
-    zvariant::{OwnedObjectPath, OwnedValue}};
+use std::{
+    collections::HashMap,
+    io::{BufRead, BufReader},
+    path::PathBuf,
+    process::{Child, Command, Stdio},
+    sync::{Arc, Mutex},
+    time::{SystemTime, UNIX_EPOCH},
+};
+use zbus::{
+    blocking::Connection,
+    blocking::connection::Builder,
+    zvariant::{OwnedObjectPath, OwnedValue},
+};
 
+/// The standard registry/application-root object path, on distinct connections.
 const ROOT: &str = "/org/a11y/atspi/accessible/root";
+/// The fixture's visible Settings window.
 const WINDOW: &str = "/org/a11y/atspi/accessible/window";
+/// The one visible, sensitive native control.
 const CONTROL: &str = "/org/a11y/atspi/accessible/control";
 
-struct Bus { directory: PathBuf, daemon: Child, address: String }
+/// An owned session bus with no activation directories or access to other buses.
+struct Bus {
+    /// Exclusive temporary socket/configuration folder.
+    directory: PathBuf,
+    /// The only daemon this fixture may stop.
+    daemon: Child,
+    /// Address read from that daemon's startup acknowledgement.
+    address: String,
+}
 impl Bus {
+    /// Start the isolated bus and permit both questions and their answers.
     fn start() -> Self {
-        let directory = std::env::temp_dir().join(format!("alo-machine-actions-{}-{}",
-            std::process::id(), SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()));
+        let directory = std::env::temp_dir().join(format!(
+            "alo-machine-actions-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
         std::fs::create_dir(&directory).unwrap();
         let config = directory.join("bus.conf");
         std::fs::write(&config, format!(
             "<busconfig><type>session</type><listen>unix:path={}</listen><auth>EXTERNAL</auth>\
-            <policy context=\"default\"><allow send_destination=\"*\"/><allow own=\"*\"/></policy></busconfig>",
+            <policy context=\"default\"><allow send_destination=\"*\"/><allow receive_sender=\"*\"/>\
+            <allow own=\"*\"/></policy></busconfig>",
             directory.join("bus").display())).unwrap();
-        let mut daemon = Command::new("dbus-daemon").arg(format!("--config-file={}", config.display()))
-            .args(["--nofork", "--print-address"]).stdout(Stdio::piped()).spawn()
+        let mut daemon = Command::new("dbus-daemon")
+            .arg(format!("--config-file={}", config.display()))
+            .args(["--nofork", "--print-address"])
+            .stdout(Stdio::piped())
+            .spawn()
             .expect("the test requires an actual dbus-daemon");
         let mut address = String::new();
-        BufReader::new(daemon.stdout.take().unwrap()).read_line(&mut address).unwrap();
-        Self { directory, daemon, address: address.trim().into() }
+        BufReader::new(daemon.stdout.take().unwrap())
+            .read_line(&mut address)
+            .unwrap();
+        Self {
+            directory,
+            daemon,
+            address: address.trim().into(),
+        }
     }
 }
 impl Drop for Bus {
@@ -44,117 +84,300 @@ impl Drop for Bus {
 }
 
 #[derive(Clone)]
-struct Node { path: &'static str, holder: String }
+/// Accessible facts for the application's root, window and named control.
+struct Node {
+    /// Which of the three fixture objects is answering.
+    path: &'static str,
+    /// The application's unique connection, never the registry's connection.
+    holder: String,
+}
 #[zbus::interface(name = "org.a11y.atspi.Accessible")]
 impl Node {
+    /// The label a person sees; it does not identify the control's action.
     #[zbus(property)]
-    fn name(&self) -> &str { match self.path { ROOT => "alo", WINDOW => "Settings", _ => "Running code" } }
+    fn name(&self) -> &str {
+        match self.path {
+            ROOT => "alo",
+            WINDOW => "Settings",
+            _ => "Running code",
+        }
+    }
+    /// Keep indexed children consistent with GetChildren.
     #[zbus(property)]
-    fn child_count(&self) -> i32 { i32::from(self.path != CONTROL) }
+    fn child_count(&self) -> i32 {
+        i32::from(self.path != CONTROL)
+    }
+    /// The fixture's actual root→window→control tree.
     fn get_children(&self) -> Vec<(String, OwnedObjectPath)> {
         match self.path {
-            ROOT => vec![(self.holder.clone(), OwnedObjectPath::try_from(WINDOW).unwrap())],
-            WINDOW => vec![(self.holder.clone(), OwnedObjectPath::try_from(CONTROL).unwrap())],
+            ROOT => vec![(
+                self.holder.clone(),
+                OwnedObjectPath::try_from(WINDOW).unwrap(),
+            )],
+            WINDOW => vec![(
+                self.holder.clone(),
+                OwnedObjectPath::try_from(CONTROL).unwrap(),
+            )],
             _ => Vec::new(),
         }
     }
+    /// Return the sole child of the root or window.
     fn get_child_at_index(&self, _index: i32) -> (String, OwnedObjectPath) {
-        (self.holder.clone(), OwnedObjectPath::try_from(if self.path == ROOT { WINDOW } else { CONTROL }).unwrap())
+        (
+            self.holder.clone(),
+            OwnedObjectPath::try_from(if self.path == ROOT { WINDOW } else { CONTROL }).unwrap(),
+        )
     }
-    fn get_role(&self) -> u32 { match self.path { ROOT => 75, WINDOW => 23, _ => 43 } }
-    fn get_state(&self) -> Vec<u32> { vec![(1 << 8) | (1 << 24) | (1 << 25), 0] }
-    fn get_interfaces(&self) -> Vec<&str> { vec!["org.a11y.atspi.Accessible", "org.a11y.atspi.Action"] }
+    /// Standard AT-SPI application/frame/push-button roles.
+    fn get_role(&self) -> u32 {
+        match self.path {
+            ROOT => 75,
+            WINDOW => 23,
+            _ => 43,
+        }
+    }
+    /// The fixture is enabled, sensitive and showing.
+    fn get_state(&self) -> Vec<u32> {
+        vec![(1 << 8) | (1 << 24) | (1 << 25), 0]
+    }
+    /// Advertise the action interface queried by the consumer.
+    fn get_interfaces(&self) -> Vec<&str> {
+        vec!["org.a11y.atspi.Accessible", "org.a11y.atspi.Action"]
+    }
+    /// The published surface ID differs from the visible Settings title.
     fn get_attributes(&self) -> HashMap<&str, &str> {
-        if self.path == WINDOW { HashMap::from([("alo-surface", "settings")]) } else { HashMap::new() }
+        if self.path == WINDOW {
+            HashMap::from([("alo-surface", "settings")])
+        } else {
+            HashMap::new()
+        }
     }
 }
 
-struct RegistryRoot { holder: String }
+/// The registry lists the application on its own unique connection.
+struct RegistryRoot {
+    /// Application connection containing the listed Accessible root.
+    holder: String,
+}
 #[zbus::interface(name = "org.a11y.atspi.Accessible")]
 impl RegistryRoot {
+    /// Exactly one fixture application is running on this isolated bus.
     fn get_children(&self) -> Vec<(String, OwnedObjectPath)> {
-        vec![(self.holder.clone(), OwnedObjectPath::try_from(ROOT).unwrap())]
+        vec![(
+            self.holder.clone(),
+            OwnedObjectPath::try_from(ROOT).unwrap(),
+        )]
     }
 }
 
 #[derive(Clone, Copy)]
-enum Count { Signed(i32), Unsigned(u32), Boolean(bool) }
-struct Action { machine: Vec<String>, localized: Vec<String>, count: Count, calls: Arc<Mutex<Vec<String>>> }
+/// Deliberately vary the property payload's wire type, not just its value.
+enum Count {
+    /// The protocol's signed i32, including malformed bounds.
+    Signed(i32),
+    /// An otherwise plausible integer with the wrong wire signature.
+    Unsigned(u32),
+    /// A truthy value must never become an action count.
+    Boolean(bool),
+}
+/// Independent machine names and localized descriptions for one control.
+struct Action {
+    /// GetName's identifiers, in actual action-index order.
+    machine: Vec<String>,
+    /// GetActions' localized names, intentionally different from identifiers.
+    localized: Vec<String>,
+    /// Property payload, verified independently before invoking the consumer.
+    count: Count,
+    /// Requests observed by the service, including actual DoAction calls.
+    calls: Arc<Mutex<Vec<String>>>,
+}
 #[zbus::interface(name = "org.a11y.atspi.Action")]
 impl Action {
+    /// AT-SPI NActions is an i32; malformed cases intentionally use other types.
     #[zbus(property, name = "NActions")]
     fn n_actions(&self) -> OwnedValue {
-        match self.count { Count::Signed(n) => n.into(), Count::Unsigned(n) => n.into(), Count::Boolean(n) => n.into() }
+        match self.count {
+            Count::Signed(n) => n.into(),
+            Count::Unsigned(n) => n.into(),
+            Count::Boolean(n) => n.into(),
+        }
     }
+    /// Standard GetActions tuples describe localized names, not machine names.
     fn get_actions(&self) -> Vec<(String, String, String)> {
         self.calls.lock().unwrap().push("localized-list".into());
-        self.localized.iter().map(|name| (name.clone(), String::new(), String::new())).collect()
+        self.localized
+            .iter()
+            .map(|name| (name.clone(), String::new(), String::new()))
+            .collect()
     }
+    /// Standard GetName returns the machine-readable identifier at this index.
     fn get_name(&self, index: i32) -> String {
         self.calls.lock().unwrap().push(format!("name:{index}"));
-        usize::try_from(index).ok().and_then(|at| self.machine.get(at)).cloned().unwrap_or_default()
+        usize::try_from(index)
+            .ok()
+            .and_then(|at| self.machine.get(at))
+            .cloned()
+            .unwrap_or_default()
     }
+    /// Retain the actual action index instead of inferring an effect from text.
     fn do_action(&self, index: i32) -> bool {
         self.calls.lock().unwrap().push(format!("do:{index}"));
         true
     }
 }
 
-struct Fixture { _registry: Connection, _service: Connection, tree: AccessibleSession,
-    holder: String, calls: Arc<Mutex<Vec<String>>> }
+/// Two live services and the unmodified native accessibility transport.
+struct Fixture {
+    /// Keep the separate registry connection alive throughout the observation.
+    _registry: Connection,
+    /// Keep the application and its action interfaces alive.
+    _service: Connection,
+    /// The consumer under test, pointed only at the fixture's owned bus.
+    tree: AccessibleSession,
+    /// Unique application identity used by the person's explicit surface query.
+    holder: String,
+    /// Service-side evidence of requested identifiers and action indexes.
+    calls: Arc<Mutex<Vec<String>>>,
+}
 impl Fixture {
+    /// Serve a typed tree/action fixture and independently check the count wire.
     fn on(bus: &Bus, machine: &[&str], localized: &[&str], count: Count) -> Self {
-        let service = Builder::address(bus.address.as_str()).unwrap().build().unwrap();
+        let service = Builder::address(bus.address.as_str())
+            .unwrap()
+            .build()
+            .unwrap();
         let holder = service.unique_name().unwrap().to_string();
-        let registry = Builder::address(bus.address.as_str()).unwrap()
-            .name("org.a11y.atspi.Registry").unwrap()
-            .serve_at(ROOT, RegistryRoot { holder: holder.clone() }).unwrap().build().unwrap();
+        let registry = Builder::address(bus.address.as_str())
+            .unwrap()
+            .name("org.a11y.atspi.Registry")
+            .unwrap()
+            .serve_at(
+                ROOT,
+                RegistryRoot {
+                    holder: holder.clone(),
+                },
+            )
+            .unwrap()
+            .build()
+            .unwrap();
         for path in [ROOT, WINDOW, CONTROL] {
-            service.object_server().at(path, Node { path, holder: holder.clone() }).unwrap();
+            service
+                .object_server()
+                .at(
+                    path,
+                    Node {
+                        path,
+                        holder: holder.clone(),
+                    },
+                )
+                .unwrap();
         }
         let calls = Arc::new(Mutex::new(Vec::new()));
-        service.object_server().at(CONTROL, Action { machine: machine.iter().map(|s| (*s).into()).collect(),
-            localized: localized.iter().map(|s| (*s).into()).collect(), count, calls: calls.clone() }).unwrap();
-        let property: OwnedValue = service.call_method(Some(holder.as_str()), CONTROL,
-            Some("org.freedesktop.DBus.Properties"), "Get", &("org.a11y.atspi.Action", "NActions"))
-            .unwrap().body().deserialize().unwrap();
+        service
+            .object_server()
+            .at(
+                CONTROL,
+                Action {
+                    machine: machine.iter().map(|s| (*s).into()).collect(),
+                    localized: localized.iter().map(|s| (*s).into()).collect(),
+                    count,
+                    calls: calls.clone(),
+                },
+            )
+            .unwrap();
+        let property: OwnedValue = service
+            .call_method(
+                Some(holder.as_str()),
+                CONTROL,
+                Some("org.freedesktop.DBus.Properties"),
+                "Get",
+                &("org.a11y.atspi.Action", "NActions"),
+            )
+            .unwrap()
+            .body()
+            .deserialize()
+            .unwrap();
         match count {
             Count::Signed(n) => assert_eq!(i32::try_from(property).unwrap(), n),
             Count::Unsigned(n) => assert_eq!(u32::try_from(property).unwrap(), n),
             Count::Boolean(n) => assert_eq!(bool::try_from(property).unwrap(), n),
         }
-        let tree = AccessibleSession::at(&bus.address, Sandboxes::under(bus.directory.join("unused-proc"))).unwrap();
-        Self { _registry: registry, _service: service, tree, holder, calls }
+        let tree = AccessibleSession::at(
+            &bus.address,
+            Sandboxes::under(bus.directory.join("unused-proc")),
+        )
+        .unwrap();
+        Self {
+            _registry: registry,
+            _service: service,
+            tree,
+            holder,
+            calls,
+        }
     }
-    fn node(&self) -> NodeAt { NodeAt { holder: self.holder.clone(), object: CONTROL.into() } }
+    /// The exact node whose action list is being inspected.
+    fn node(&self) -> NodeAt {
+        NodeAt {
+            holder: self.holder.clone(),
+            object: CONTROL.into(),
+        }
+    }
+    /// Exercise the same public hand-press API as alo-app's native Settings path.
     fn press(&self) -> Result<alo_adapters::PressedByHand, alo_adapters::Unpressed> {
-        press_by_hand(&self.tree, Whose::AlosOwn { answers_as: &self.holder }, Some("settings"),
-                      Pressable::Button, "Running code")
+        press_by_hand(
+            &self.tree,
+            Whose::AlosOwn {
+                answers_as: &self.holder,
+            },
+            Some("settings"),
+            Pressable::Button,
+            "Running code",
+        )
     }
 }
 
 #[test]
+/// A translated description cannot hide or renumber an available machine click.
 fn localized_action_labels_do_not_prevent_the_machine_click_or_change_its_index() {
     for localized in ["Running code", "Exécuter du code"] {
         let bus = Bus::start();
-        let fixture = Fixture::on(&bus, &["show-menu", "click"], &["Menu", localized], Count::Signed(2));
-        let pressed = fixture.press().expect("the exact machine click must remain usable in every language");
+        let fixture = Fixture::on(
+            &bus,
+            &["show-menu", "click"],
+            &["Menu", localized],
+            Count::Signed(2),
+        );
+        let pressed = fixture
+            .press()
+            .expect("the exact machine click must remain usable in every language");
         assert!(!pressed.unanswered());
         assert_eq!(*fixture.calls.lock().unwrap(), ["name:0", "name:1", "do:1"]);
     }
 }
 
 #[test]
+/// Human text saying click does not authorize an unrelated machine operation.
 fn a_localized_click_label_cannot_authorize_an_unknown_machine_action() {
     let bus = Bus::start();
-    let fixture = Fixture::on(&bus, &["run-arbitrary-action"], &["click"], Count::Signed(1));
+    let fixture = Fixture::on(
+        &bus,
+        &["run-arbitrary-action"],
+        &["click"],
+        Count::Signed(1),
+    );
     assert!(fixture.press().is_err());
     assert_eq!(*fixture.calls.lock().unwrap(), ["name:0"]);
 }
 
 #[test]
+/// Refuse invalid count types/ranges before querying names or invoking actions.
 fn action_count_is_a_bounded_signed_wire_integer_before_any_action_is_read_or_done() {
-    for count in [Count::Signed(-1), Count::Signed(65), Count::Unsigned(1), Count::Boolean(true)] {
+    for count in [
+        Count::Signed(-1),
+        Count::Signed(65),
+        Count::Unsigned(1),
+        Count::Boolean(true),
+    ] {
         let bus = Bus::start();
         let fixture = Fixture::on(&bus, &["click"], &["click"], count);
         assert!(fixture.tree.actions(&fixture.node()).is_err());
@@ -163,10 +386,14 @@ fn action_count_is_a_bounded_signed_wire_integer_before_any_action_is_read_or_do
 }
 
 #[test]
+/// Accept both inclusive endpoints of the bounded action-list contract.
 fn zero_and_the_exact_action_count_limit_are_read_without_truncation() {
     let bus = Bus::start();
     let empty = Fixture::on(&bus, &[], &[], Count::Signed(0));
-    assert_eq!(empty.tree.actions(&empty.node()).unwrap(), Vec::<String>::new());
+    assert_eq!(
+        empty.tree.actions(&empty.node()).unwrap(),
+        Vec::<String>::new()
+    );
     assert!(empty.calls.lock().unwrap().is_empty());
     drop(empty);
     let names = vec!["focus"; 64];
