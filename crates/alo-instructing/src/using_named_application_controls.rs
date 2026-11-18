@@ -27,9 +27,10 @@ pub(crate) fn using_named_application_controls(verbs: &Verbs) -> String {
         // same declaration that supplies the real provider/tool schema.
         let _ = writeln!(text, "{}: {}", status.name(), status.purpose_as_written());
         let prefix = format!("{family}.");
-        for verb in verbs.all().filter(|verb| {
-            verb.effect() == Effect::Change && verb.name().starts_with(&prefix)
-        }) {
+        for verb in verbs
+            .all()
+            .filter(|verb| verb.effect() == Effect::Change && verb.name().starts_with(&prefix))
+        {
             let _ = writeln!(text, "{}: {}", verb.name(), verb.purpose_as_written());
         }
     }
