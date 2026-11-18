@@ -431,8 +431,8 @@ const GRANTING: [&str; 9] = [
 /// `settings_granted.rs` may do.
 ///
 /// These words hold the grant's own type, the crate that seals a picked
-/// folder, and both calls that carry a checked choice to disk. The application
-/// choice and expiry are checked by `ApplicationBeingPicked` before that call.
+/// choice, and the calls that carry it to disk. The current application picker
+/// delegates to the shared application-grant road outside Settings.
 /// A Settings file reaching for any of them is a second road
 /// to a grant, which is the thing this file exists to keep at one.
 ///
@@ -537,17 +537,16 @@ fn settings_grants_only_from_a_pick_and_changes_only_through_the_owning_crates()
         for (line, text) in &code {
             if text.contains("Changing::of") {
                 revoking.push(format!("src/{named}:{line}"));
-                // Revoke a visible row, grant a picked folder, or grant the
-                // installed application and expiry the person selected.
+                // Revoke a visible row or grant a picked folder. Application
+                // picks use the shared grant road outside Settings.
                 // Anything else is this window changing the machine by a road
                 // of its own, which is what this file is here to keep from
                 // existing.
                 assert!(
                     text.contains(".revoked(row, now)")
-                        || text.contains(".granted(&granting, chosen, now)")
-                        || text.contains(".application_granted(grant, now)"),
+                        || text.contains(".granted(&granting, chosen, now)"),
                     "src/{named}:{line} makes a Changing for something other than revoking a row \
-                     or granting a picked folder or application: {text}"
+                     or granting a picked folder: {text}"
                 );
             }
         }
@@ -557,11 +556,11 @@ fn settings_grants_only_from_a_pick_and_changes_only_through_the_owning_crates()
         "Settings does what it must not:\n{}",
         refused.join("\n")
     );
-    // Each checked pick has one persistence path beside the shared revocation.
+    // The shared application-grant road adds no direct Changing in Settings.
     assert_eq!(
         revoking.len(),
-        3,
-        "revocation and the picked folder/application grants have three owning calls: \
+        2,
+        "revocation and the picked folder grant have two owning calls: \
          {revoking:?}"
     );
 }
