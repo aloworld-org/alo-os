@@ -25,10 +25,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let trace = Shared::default();
     let clock = gst::SystemClock::obtain();
     let audio = pipeline(
-        "audiotestsrc name=signal is-live=false samplesperbuffer=1600 wave=silence ! \
+        "audiotestsrc name=signal is-live=true samplesperbuffer=160 wave=silence ! \
          audio/x-raw,format=S16LE,rate=16000,channels=1 ! \
          pulsesink device=studio-verification-audio client-name=Studio-reference-signal \
-         sync=true slave-method=resample buffer-time=2000000 latency-time=100000",
+         sync=true slave-method=resample buffer-time=200000 latency-time=10000",
     )?;
     audio.use_clock(Some(&clock));
     audio
