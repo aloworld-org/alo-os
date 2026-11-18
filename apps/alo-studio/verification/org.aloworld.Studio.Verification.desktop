@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Studio verification window
+Exec=studio-reference-window
+Icon=org.aloworld.Studio.Verification
+Terminal=false
+NoDisplay=true
+Categories=AudioVideo;

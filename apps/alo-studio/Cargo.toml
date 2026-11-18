@@ -39,6 +39,10 @@ required-features = ["verification"]
 name = "verify-portal"
 required-features = ["verification"]
 
+[[example]]
+name = "studio-reference-window"
+required-features = ["verification"]
+
 [profile.dev]
 debug = 0
 incremental = false

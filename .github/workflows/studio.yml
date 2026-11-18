@@ -12,6 +12,24 @@ concurrency:
   group: studio-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
+  verification-instruments:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Private test transports
+        timeout-minutes: 15
+        run: |
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' | sudo tee /etc/apt/apt.conf.d/80-studio-network > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends python3-dbus python3-gi gir1.2-gtk-3.0 at-spi2-core xvfb dbus-x11 ffmpeg
+      - name: Check real decoder, native controls, reference and artifact refusals
+        run: |
+          command -v ffmpeg ffprobe
+          /usr/bin/python3 -I -c 'import dbus, gi'
+          dbus-run-session -- xvfb-run -a env STUDIO_PRIVATE_UI_SESSION=1 GDK_BACKEND=x11 /usr/bin/python3 -I -m unittest discover -s apps/alo-studio/verification -p 'test_*.py'
   desktop:
     runs-on: ubuntu-24.04
     timeout-minutes: 40

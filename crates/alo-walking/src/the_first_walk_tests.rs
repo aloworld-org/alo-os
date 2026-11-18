@@ -76,6 +76,7 @@ fn the_key_is_typed_only_from_its_secret_after_its_gate() {
         walk.secrets(),
         vec![
             crate::in_every_shipped_application::EVERY_APPLICATION,
+            "ALO_WALK_PRIVATE_STUDIO",
             THE_PROVIDER_KEY
         ]
     );

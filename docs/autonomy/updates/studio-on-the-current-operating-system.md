@@ -48,10 +48,10 @@ consent or microphone inputs.
 
 The real-model trial at that earlier head failed despite five repetitions at
 each approval level: status, three/five-second countdown and finish requests
-still took wrong roads. The model is now told to prefer a matching application
-operation before the accessibility fallback; recording status, countdown and
-automatic review descriptions are clearer. This change requires a new repeated
-trial. Scripted tests do not replace that trial or prove execution through the
+still took wrong roads. The initial follow-up preferred a matching application
+operation before the accessibility fallback and clarified recording status,
+countdown and automatic review descriptions. Its repeated result and the
+narrower correction are below. Scripted tests do not replace trials or prove execution through the
 installed agent.
 
 At `2385dee33`, all eighteen Studio changes passed all five tries at both
@@ -121,14 +121,130 @@ and bounded artifact transfer. At frozen source
 `76f131ecea607e317fa141004655f0d224107a32`, manual package run 44320429214
 passed normal packaging, signature refusals and separate reference/controller
 packaging. Installed KVM walk 44322063965 was dispatched with that exact source
-and package run. Its installed recording verdict is pending. The private
+and package run. That run timed out before the installed flow reported completion. The private
 instrument workflow also passed its real decoder/native-control checks on that
 source; local validation recorded 143 Python and 30 focused Rust test passes.
 The person-side controller is not an agent tool and cannot establish the
 separate installed grant/discovery/approval/revocation acceptance.
+
+## Private recording instruments
+
+The private KVM boot walk at `73fbe941ec29485f6d3667e86e9737a1e1a39f51`
+subsequently passed 64 checks, with none failed and 103 intentionally skipped.
+It did not install Studio. This was one branch walk, not an installed-media gate.
+
+The independently strengthened development GUI check passed: recording, a
+five-second paused interval with identical elapsed time, resume, finalization
+and library responsiveness with 128 previews. This check reruns in the native
+Studio workflow; verification features and generated sources make it distinct
+from installed OS consent or microphone acceptance.
+
+Private walk tooling now includes bounded loopback file transfer, a separate
+flashing reference application with a real Pulse monitor, and process-owned
+native accessibility control selection. The reference first failed on real
+audio gaps and clock drift. Using the monitor's actual sample clock for both
+reference pipelines produced one healthy 35-second observation: 18 matched
+markers, median absolute offset 114 ms, maximum 135 ms. This measured draw
+callbacks and monitor samples once, not decoded Studio media or compositor
+presentation. Its checker rejects missing channel boundaries, delivery gaps,
+repeated timestamps, static markers and insufficient matches. Independent
+tests caught a missing-leading-coverage fault before that checker was fixed.
+
+The private Python suite includes five real GTK/AT-SPI fixture cases. The nine
+Rust transfer/signal tests, all-target linting and documentation checks passed.
+A broad debug walk test run was stopped during expensive
+pre-existing pointer image searches; no full local walk-suite pass is claimed.
+The reference example compiles and passes strict linting. The separate reference
+Flatpak subsequently built in manual run 44310023010, source
+`b92b185fdce5d7d149bd8b7c6ce9a0ba7d5cf074`. That run also passed the normal
+package's signed-install, wrong-key and tampered-metadata checks. Its reference
+artifact predates the guest controller archive and cannot run the new installed
+walk. None of these helpers is a broker verb or an agent command surface.
+
+The guest recording controller and private KVM wiring are now written. The host
+requires an exact successful manual package run from the image's source commit,
+checks both producer manifests and feature identities, and serves only closed
+input names. The fresh test account installs normal Studio and the separate
+reference, operates real native consent controls, records screen/window clips,
+checks pause/resume and byte-identical export, and returns only named evidence.
+The workflow states explicitly that this person-flow completion is not decoded
+media or installed-agent acceptance. These new steps have not run on a guest.
+
+Independent tests specify decoded-media limits before their implementation.
+The real FFmpeg seam preserves nonzero timestamps, video/PCM gaps and overlaps,
+partial sample tails, track counts and distinct marker/motion regions. Review
+caught unfinished streaming WebM being accepted after its available frames
+decoded cleanly; the regression was observed red and the auditor now also
+requires finalized positive container duration. Seventeen decoder tests pass,
+alongside 34 observation-audit and 22 package-preparation tests. Synthetic media
+is test input only. Eighteen deliberate faults in the auditor, decoder, artifact
+and controller checks and six walk/provenance faults were caught once locally;
+this is targeted mutation evidence, not a hosted coverage result. The Rust
+walk/transfer/signal/workflow checks pass 30 tests,
+strict linting and warnings-denied docs. The receiver and archive are private
+test instruments. The installed screen/window recordings, decoded video/audio
+acceptance, actual native consent/export and real-agent permission walk remain
+unverified. Normal Studio continues to build with verification disabled.
+
+Independent pre-run review also caught the real Flatpak CLI refusing two local
+bundles in one install invocation, skipped cleanup after the first error, and
+empty XDG state paths bypassing preference history. Test-first corrections use
+two checked installs, attempt every owned resource before propagating cleanup
+failures, and restore automatic microphone selection only after a verified fresh
+profile was temporarily overridden. Both persisted WirePlumber state filenames
+are examined. An owned local PipeWire session confirmed source-only clearing
+preserves configured sink/video choices; it did not change an existing session.
+The complete private Python suite passed 143 tests with all five live native
+tests enabled, including the final four cleanup regressions. CI now reruns this suite with actual
+decoder and native transports, explicit dependency preflight and no skip gate.
+
+Pre-run trace: `.github/workflows/walk.yml:104` validates the exact package run;
+`:134` calls `prepare_installed_walk.py:49`, which verifies both original
+inventories before creating fresh input copies. The scoped walk starts at
+`crates/alo-walking/src/the_first_walk.rs:155`; `studio_installed_walk.rs:22`
+checks guest bytes before the installs and controller, and `:29` waits for the
+actual journaled exit status. `installed_session.py` calls the app's real D-Bus
+interface, whose `apps/alo-studio/src/ui/control_bus.rs:11` registration reaches
+`control_actions.rs:35`. Native source/export consent is still operated by the
+person-side test. `crates/alo-walking/src/studio_walk_files.rs:95` accepts only
+closed evidence names. The host's `decode_media.py:99` and
+`recording_health.py:53` audit decoded observations; `reference_health.py` must
+separately pass before synchronization is certified. No guest run has yet
+completed this chain.
 
 The shared UI kit's application window, input, control and accessibility layers
 remain unfinished prerequisites. Studio's GTK interface is a development test
 surface. Neither the shared-kit migration nor public market availability is
 complete. Local signed-repository verification remains the authorized
 distribution scope. No unrelated verification VM is to be paused.
+
+## Terminal focus failure found by the installed walk
+
+Private KVM run 44322063965, source `76f131ecea607e317fa141004655f0d224107a32`,
+built and booted the image, but the installed-flow completion check timed out.
+The retained terminal picture shows Window actions focused after maximising;
+the serial log records repeated window-placement actions while the setup
+command was being typed. No Studio session report or recording was returned.
+This is evidence of a pre-installation focus failure, not a recording verdict.
+
+The private branch now includes integration source `6656d0c91`. Its hosted
+repository gates and native/desktop checks passed. All 19 Studio model requests
+passed five repetitions at both approval levels (190 Studio tries), while the
+full model job failed on other requests. In particular, two close-application
+tries unnecessarily requested Studio status; the broader model gate remains
+unresolved. The hosted mutation job also found surviving changes and did not
+complete its entire candidate set. Neither job is reported as a pass.
+
+The private walk now presses Escape to leave the terminal band, submits a
+harmless journal acknowledgement, and requires that fresh acknowledgement
+within 30 seconds before typing the installation command. Three independent
+Rust tests failed against the old steps and passed after the correction,
+including missing and stale acknowledgements that must stop before installing.
+These checks run through the normal repository gate. A new exact-source package
+and installed KVM walk are still required; installed media and agent permission
+acceptance remain unverified.
+Focused walk validation passed 33 tests, formatting, strict all-target linting
+and warnings-denied documentation. Five deliberate faults (missing Escape,
+stale-log acceptance, a 20-minute preflight, missing Return and the wrong
+acknowledgement) each failed a regression test; the restored tests passed.
+These five mutation checks were performed once locally, not by the hosted job.

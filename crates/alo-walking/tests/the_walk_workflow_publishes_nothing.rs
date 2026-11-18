@@ -161,7 +161,8 @@ fn it_runs_after_every_merge_to_main_and_by_hand() {
             "every_application:",
             // The third (2026-11-17): build the image from the branch the
             // walk was started on, to measure it before it merges.
-            "image_from_this_branch:"
+            "image_from_this_branch:",
+            "private_studio_package_run:"
         ],
         "a trigger beside a merge to main and a person"
     );
@@ -169,6 +170,87 @@ fn it_runs_after_every_merge_to_main_and_by_hand() {
         lines.windows(2).any(|two| matches!(two, [push, branches]
             if push == "push:" && branches == "branches: [main]")),
         "the push trigger is not only main's"
+    );
+}
+
+/// Private Studio inputs come from an exact successful package run and are
+/// validated before anything is served to the disposable guest.
+#[test]
+fn studio_packages_require_an_explicit_branch_walk_and_validated_provenance() {
+    let lines = said();
+    assert!(
+        lines
+            .iter()
+            .any(|line| line == "private_studio_package_run:")
+    );
+    let input = lines
+        .iter()
+        .position(|line| line == "private_studio_package_run:")
+        .unwrap_or_else(|| panic!("no private package input"));
+    assert!(
+        lines
+            .iter()
+            .skip(input + 1)
+            .take(3)
+            .any(|line| line == "default: ''"),
+        "the private walk must be off unless a person supplies a run id"
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.contains("inputs.private_studio_package_run")
+                && line.contains("github.event_name == 'workflow_dispatch'"))
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.contains("prepare_installed_walk.py"))
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.contains("studio-walk-files") && line.contains("--inputs"))
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.contains("ALO_WALK_PRIVATE_STUDIO:"))
+    );
+    let start = lines
+        .iter()
+        .position(|line| line == "- name: Check the exact private Studio package run")
+        .unwrap_or_else(|| panic!("no private package provenance check"));
+    let guard: Vec<&str> = lines
+        .iter()
+        .skip(start + 1)
+        .take_while(|line| !line.starts_with("- name:") && !line.starts_with("- uses:"))
+        .map(String::as_str)
+        .collect();
+    let guard = guard.join("\n");
+    for required in [
+        "if: github.event_name == 'workflow_dispatch' && inputs.private_studio_package_run != ''",
+        "BRANCH_IMAGE: ${{ inputs.image_from_this_branch }}",
+        "if (process.env.BRANCH_IMAGE !== 'true') throw new Error(",
+        "run.head_sha !== context.sha",
+        "run.conclusion !== 'success'",
+        "run.event !== 'workflow_dispatch'",
+        "run.path !== '.github/workflows/studio-package.yml'",
+        "throw new Error('Studio packages must come from a successful manual package run at this exact source')",
+    ] {
+        assert!(
+            guard.contains(required),
+            "private run guard lost {required}: {guard}"
+        );
+    }
+    assert!(
+        lines
+            .iter()
+            .any(|line| line == "run-id: ${{ inputs.private_studio_package_run }}")
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|line| line == "walk/studio-inputs \"$GITHUB_SHA\"")
     );
 }
 
