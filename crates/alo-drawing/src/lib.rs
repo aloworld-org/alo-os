@@ -22,3 +22,5 @@ pub mod painted;
 pub mod painted_flat;
 pub mod painted_text;
 pub mod painted_text_wrapping;
+
+mod text_glyph_cache;

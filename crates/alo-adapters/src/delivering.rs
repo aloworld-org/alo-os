@@ -60,4 +60,13 @@ pub trait Delivers {
     /// # Errors
     /// [`NotDelivered`], saying which of the four it was.
     fn deliver(&self, message: &Message) -> Result<(), NotDelivered>;
+
+    /// Read a bounded text answer. Existing transports refuse reads until they
+    /// implement this explicitly; a successful unit reply cannot invent data.
+    ///
+    /// # Errors
+    /// [`NotDelivered`] when the answer is absent, invalid, or exceeds 8 KiB.
+    fn read_text(&self, _message: &Message) -> Result<String, NotDelivered> {
+        Err(NotDelivered::DoesNotOffer)
+    }
 }

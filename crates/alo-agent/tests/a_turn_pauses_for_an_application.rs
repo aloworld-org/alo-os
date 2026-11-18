@@ -23,6 +23,20 @@ use alo_instructing::{Instructions, TheConversationSoFar, WhatItMayReach};
 use alo_protocol::{FromAnAgent, ToAnAgent, Wording};
 use alo_strings::{Filling, Strings};
 
+/// Discovery metadata cannot stand in for an approval or an execution result.
+#[test]
+fn a_proposal_answered_with_capabilities_stops_without_reporting_success() {
+    let answer = a_proposal_answered(
+        "propose a recording action",
+        Ok(ToAnAgent::Capabilities { verbs: Vec::new() }),
+        Vec::new(),
+    );
+    assert!(matches!(
+        answer.unwrap_err().as_ref(),
+        WhatHappened::TheMachineCouldNotBeAsked { after, .. } if after.is_empty()
+    ));
+}
+
 /// A door that answers from a list and remembers every request it was given.
 struct ADoorThatAnswers {
     /// What it will answer, oldest first.

@@ -177,6 +177,7 @@ mod choosing_in_an_application;
 #[cfg(test)]
 mod choosing_in_an_application_tests;
 mod choosing_on_the_file_chooser;
+pub mod controlling_an_application;
 pub mod crossing;
 #[cfg(test)]
 mod down_the_corridor;
@@ -257,7 +258,7 @@ pub use how_an_application_starts::{NoRoad, SaysHowAnApplicationStarts, TheRoad}
 pub use kept::Kept;
 pub use machine::{
     Machine, WhatASoftwareVerbNeeds, WhatAnApplicationVerbNeeds, WhatPublishingNeeds,
-    the_verbs_a_whole_machine_offers,
+    the_verbs_a_whole_machine_offers, the_verbs_with_application_controls,
 };
 pub use naming_an_application::{as_the_catalogue_names_it, as_this_machine_names_them};
 pub use opening_a_file_in_an_application::AFileOpened;

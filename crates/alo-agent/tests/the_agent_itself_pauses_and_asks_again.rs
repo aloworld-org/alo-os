@@ -80,6 +80,22 @@ fn the_daemon_answers(daemon: &mut BufReader<UnixStream>, line: &str) {
         .unwrap();
 }
 
+/// Every model round first refreshes the live action list on the same socket.
+/// No Studio grant exists in this fixture, so only the core verbs are offered.
+fn the_next_model_question(daemon: &mut BufReader<UnixStream>) -> FromAnAgent {
+    assert_eq!(the_next_request(daemon), FromAnAgent::Capabilities);
+    let verbs = alo_turn::the_verbs_a_whole_machine_offers()
+        .unwrap()
+        .all()
+        .map(|verb| verb.name().to_owned())
+        .collect();
+    the_daemon_answers(
+        daemon,
+        &ToAnAgent::Capabilities { verbs }.written().unwrap(),
+    );
+    the_next_request(daemon)
+}
+
 /// What the agent writes the shell, up to and not including its pause, or to
 /// the end.
 fn what_the_agent_says(output: &mut BufReader<std::process::ChildStdout>) -> (String, bool) {
@@ -160,7 +176,10 @@ fn a_turn(answer_follows: bool) -> ATurn {
 
 /// The model proposes opening VSCodium, and the daemon refuses it.
 fn the_call_is_refused(daemon: &mut BufReader<UnixStream>) {
-    assert!(matches!(the_next_request(daemon), FromAnAgent::Ask { .. }));
+    assert!(matches!(
+        the_next_model_question(daemon),
+        FromAnAgent::Ask { .. }
+    ));
     the_daemon_answers(daemon, &the_model_said(OPEN_CODIUM));
     assert_eq!(
         the_next_request(daemon),
@@ -185,7 +204,7 @@ fn the_agent_pauses_for_an_application_and_asks_again() {
     // 1. The model is asked, and proposes opening VSCodium; the daemon
     //    refuses it.
     assert!(matches!(
-        the_next_request(&mut daemon),
+        the_next_model_question(&mut daemon),
         FromAnAgent::Ask { .. }
     ));
     the_daemon_answers(&mut daemon, &the_model_said(OPEN_CODIUM));
@@ -229,7 +248,7 @@ fn the_agent_pauses_for_an_application_and_asks_again() {
         .write_all(format!("{}\n", the_answer_line(&ToAPerson::Declined).unwrap()).as_bytes())
         .unwrap();
     assert!(matches!(
-        the_next_request(&mut daemon),
+        the_next_model_question(&mut daemon),
         FromAnAgent::Ask { .. }
     ));
     the_daemon_answers(&mut daemon, &the_model_said(AN_ANSWER));
@@ -261,7 +280,7 @@ fn not_given_the_turn_goes_on_to_its_end() {
         .write_all(format!("{IT_WAS_NOT_GIVEN}\n").as_bytes())
         .unwrap();
     assert!(matches!(
-        the_next_request(&mut daemon),
+        the_next_model_question(&mut daemon),
         FromAnAgent::Ask { .. }
     ));
     the_daemon_answers(&mut daemon, &the_model_said(AN_ANSWER));
@@ -308,7 +327,7 @@ fn without_the_answer_following_there_is_no_pause() {
     } = a_turn(false);
     the_call_is_refused(&mut daemon);
     assert!(matches!(
-        the_next_request(&mut daemon),
+        the_next_model_question(&mut daemon),
         FromAnAgent::Ask { .. }
     ));
     the_daemon_answers(&mut daemon, &the_model_said(AN_ANSWER));

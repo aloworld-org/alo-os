@@ -212,6 +212,7 @@ mod tests {
         verbs.declare(named(READ_WINDOW, Effect::Read)).unwrap();
         verbs.declare(named(TYPE_TEXT, Effect::Change)).unwrap();
         let told = working_in_an_application(&verbs);
+        assert!(!told.contains("Use an application's named verb"), "{told}");
         let reading = told.find(READ_WINDOW).unwrap();
         let typing = told.find(TYPE_TEXT).unwrap();
         assert!(reading < typing, "{told}");

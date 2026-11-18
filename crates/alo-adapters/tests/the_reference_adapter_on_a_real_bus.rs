@@ -217,6 +217,287 @@ fn approved(call: &Call, grants: &Grants, at: SystemTime) -> Authorised {
         .unwrap()
 }
 
+/// The recording-interface fixture on the private session bus.
+struct RecordingControls {
+    /// Calls observed independently at the public interface.
+    asked: Asked,
+    /// The status currently returned by the fixture.
+    status: Arc<Mutex<String>>,
+    /// The literal countdown requests received over D-Bus.
+    countdowns: Arc<Mutex<Vec<i64>>>,
+}
+
+#[zbus::interface(name = "org.aloworld.Studio.Recorder1")]
+impl RecordingControls {
+    /// Return the actual fixture status as a string.
+    fn get_status(&self) -> String {
+        self.asked.heard("GetStatus".to_owned());
+        self.status.lock().unwrap().clone()
+    }
+
+    fn new_recording(&self) {
+        self.asked.heard("NewRecording".to_owned());
+    }
+
+    fn choose_screen(&self) {
+        self.asked.heard("ChooseScreen".to_owned());
+    }
+
+    fn choose_window(&self) {
+        self.asked.heard("ChooseWindow".to_owned());
+    }
+
+    fn start(&self) {
+        self.asked.heard("Start".to_owned());
+    }
+
+    fn pause(&self) {
+        self.asked.heard("Pause".to_owned());
+    }
+
+    fn resume(&self) {
+        self.asked.heard("Resume".to_owned());
+    }
+
+    fn finish(&self) {
+        self.asked.heard("Finish".to_owned());
+    }
+
+    fn enable_microphone(&self) {
+        self.asked.heard("EnableMicrophone".to_owned());
+    }
+
+    fn disable_microphone(&self) {
+        self.asked.heard("DisableMicrophone".to_owned());
+    }
+
+    fn cancel_countdown(&self) {
+        self.asked.heard("CancelCountdown".to_owned());
+    }
+
+    fn show_library(&self) {
+        self.asked.heard("ShowLibrary".to_owned());
+    }
+
+    fn export_recording(&self) {
+        self.asked.heard("ExportRecording".to_owned());
+    }
+
+    fn set_quality(&self, quality: String) {
+        self.asked.heard(format!("SetQuality {quality}"));
+    }
+
+    fn review_recording(&self, recording: String) {
+        self.asked.heard(format!("ReviewRecording {recording}"));
+    }
+
+    fn rename_recording(&self, title: String) {
+        self.asked.heard(format!("RenameRecording {title}"));
+    }
+
+    /// Record the fixed numeric argument actually delivered.
+    fn set_countdown(&self, seconds: i64) {
+        self.asked.heard(format!("SetCountdown {seconds}"));
+        self.countdowns.lock().unwrap().push(seconds);
+    }
+}
+
+#[test]
+fn studio_reads_actual_bounded_status_and_sends_only_the_approved_fixed_countdown() {
+    let bus = ABusOfOurOwn::started("studio-controls");
+    let status = Arc::new(Mutex::new("{\"phase\":\"selected\"}".to_owned()));
+    let countdowns = Arc::new(Mutex::new(Vec::new()));
+    let service = zbus::blocking::connection::Builder::address(bus.address.as_str())
+        .unwrap()
+        .name(alo_adapters::studio::APPLICATION)
+        .unwrap()
+        .serve_at(
+            "/org/aloworld/Studio/Recorder",
+            RecordingControls {
+                asked: Asked::default(),
+                status: status.clone(),
+                countdowns: countdowns.clone(),
+            },
+        )
+        .unwrap()
+        .build()
+        .unwrap();
+    let transport = SessionBus::at(&bus.address).unwrap();
+    let strings = in_english();
+    let at = noon();
+    let adapters = shipped_adapters().unwrap();
+    let verbs = adapter_verbs().unwrap();
+    let installed =
+        Installed::holding([
+            Application::called(alo_adapters::studio::APPLICATION, "alo Studio").unwrap(),
+        ]);
+    let mut grants = Grants::default();
+    let permission = grants.grant(
+        Grant::checked(
+            "@alo",
+            Reach::Application(alo_adapters::studio::APPLICATION.to_owned()),
+            at,
+            hour(),
+        )
+        .unwrap(),
+    );
+    let read = || {
+        let call = verbs.call("studio.status", &[]).unwrap();
+        Authorised::read(&call, &agent(), &grants, at).unwrap()
+    };
+    let answer = Driving::of(read(), &adapters, &grants, &installed, &strings)
+        .unwrap()
+        .deliver(&transport, &strings)
+        .unwrap();
+    assert_eq!(answer.reply(), Some("{\"phase\":\"selected\"}"));
+    assert!(!answer.unanswered());
+    let call = verbs.call("studio.countdown_three", &[]).unwrap();
+    assert!(call.what_it_changes(&strings).is_some());
+    let authorised = approved(&call, &grants, at);
+    assert!(countdowns.lock().unwrap().is_empty());
+    Driving::of(authorised, &adapters, &grants, &installed, &strings)
+        .unwrap()
+        .deliver(&transport, &strings)
+        .unwrap();
+    assert_eq!(*countdowns.lock().unwrap(), [3]);
+    *status.lock().unwrap() = "x".repeat(8193);
+    assert!(
+        Driving::of(read(), &adapters, &grants, &installed, &strings)
+            .unwrap()
+            .deliver(&transport, &strings)
+            .is_err()
+    );
+    // Drop can leave asynchronous bus work owning the connection temporarily.
+    // Confirm that the name is released before testing an unavailable app.
+    assert!(
+        service
+            .release_name(alo_adapters::studio::APPLICATION)
+            .unwrap()
+    );
+    service.close().unwrap();
+    assert!(
+        Driving::of(read(), &adapters, &grants, &installed, &strings)
+            .unwrap()
+            .deliver(&transport, &strings)
+            .is_err()
+    );
+    assert!(grants.revoke(permission));
+    let call = verbs.call("studio.status", &[]).unwrap();
+    let authority = Authorised::read(&call, &agent(), &grants, at).unwrap();
+    assert!(Driving::of(authority, &adapters, &grants, &installed, &strings).is_err());
+}
+
+/// These wire expectations come from the public automation contract, rather
+/// than ACTION_NAMES or the adapter declaration. A swapped action or countdown
+/// constant must fail even when the model fixture agrees with that declaration.
+#[test]
+fn every_studio_control_delivers_its_contract_method_and_arguments_once() {
+    let bus = ABusOfOurOwn::started("studio-all-controls");
+    let asked = Asked::default();
+    let _service = zbus::blocking::connection::Builder::address(bus.address.as_str())
+        .unwrap()
+        .name("org.aloworld.Studio")
+        .unwrap()
+        .serve_at(
+            "/org/aloworld/Studio/Recorder",
+            RecordingControls {
+                asked: asked.clone(),
+                status: Arc::new(Mutex::new("{\"phase\":\"paused\"}".to_owned())),
+                countdowns: Arc::default(),
+            },
+        )
+        .unwrap()
+        .build()
+        .unwrap();
+    let transport = SessionBus::at(&bus.address).unwrap();
+    let strings = in_english();
+    let at = noon();
+    let adapters = shipped_adapters().unwrap();
+    let verbs = adapter_verbs().unwrap();
+    let installed =
+        Installed::holding([Application::called("org.aloworld.Studio", "alo Studio").unwrap()]);
+    let cases = [
+        ("studio.status", None, "GetStatus"),
+        ("studio.new_recording", None, "NewRecording"),
+        ("studio.choose_screen", None, "ChooseScreen"),
+        ("studio.choose_window", None, "ChooseWindow"),
+        ("studio.start", None, "Start"),
+        ("studio.pause", None, "Pause"),
+        ("studio.resume", None, "Resume"),
+        ("studio.finish", None, "Finish"),
+        ("studio.enable_microphone", None, "EnableMicrophone"),
+        ("studio.disable_microphone", None, "DisableMicrophone"),
+        (
+            "studio.set_quality",
+            Some(("quality", "lightweight")),
+            "SetQuality lightweight",
+        ),
+        ("studio.countdown_off", None, "SetCountdown 0"),
+        ("studio.countdown_three", None, "SetCountdown 3"),
+        ("studio.countdown_five", None, "SetCountdown 5"),
+        ("studio.cancel_countdown", None, "CancelCountdown"),
+        ("studio.show_library", None, "ShowLibrary"),
+        (
+            "studio.review",
+            Some(("recording", "1000-20-1")),
+            "ReviewRecording 1000-20-1",
+        ),
+        (
+            "studio.rename",
+            Some(("title", "Product demonstration")),
+            "RenameRecording Product demonstration",
+        ),
+        ("studio.export", None, "ExportRecording"),
+    ];
+    for (name, argument, expected) in cases {
+        let mut grants = Grants::default();
+        let permission = grants.grant(
+            Grant::checked(
+                "@alo",
+                Reach::Application("org.aloworld.Studio".to_owned()),
+                at,
+                hour(),
+            )
+            .unwrap(),
+        );
+        let given: Vec<_> = argument
+            .into_iter()
+            .map(|(name, value)| (name, Given::text(value)))
+            .collect();
+        let call = verbs.call(name, &given).unwrap();
+        let authority = || {
+            if name == "studio.status" {
+                Authorised::read(&call, &agent(), &grants, at).unwrap()
+            } else {
+                approved(&call, &grants, at)
+            }
+        };
+        let before = asked.everything();
+        let accepted = authority();
+        assert_eq!(asked.everything(), before, "authorisation sent {name}");
+        let answer = Driving::of(accepted, &adapters, &grants, &installed, &strings)
+            .unwrap()
+            .deliver(&transport, &strings)
+            .unwrap();
+        assert!(!answer.unanswered(), "{name}");
+        let mut expected_calls = before;
+        expected_calls.push(expected.to_owned());
+        assert_eq!(asked.everything(), expected_calls, "{name}");
+        if name == "studio.status" {
+            assert_eq!(answer.reply(), Some("{\"phase\":\"paused\"}"));
+        }
+        // Keep the service alive: an unavailable app cannot stand in for the
+        // grant check between authorisation and sending the message.
+        let already_authorised = authority();
+        assert!(grants.revoke(permission));
+        assert!(
+            Driving::of(already_authorised, &adapters, &grants, &installed, &strings).is_err(),
+            "revoked authority still reached {name}"
+        );
+        assert_eq!(asked.everything(), expected_calls, "revocation sent {name}");
+    }
+}
+
 /// **The text editor receives what a person approved, once, over a real bus**:
 /// the document's file address for *open*, and the action written into the
 /// adapter for *new window* — and both are recorded as run.

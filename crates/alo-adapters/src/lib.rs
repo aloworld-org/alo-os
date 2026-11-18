@@ -122,6 +122,7 @@ pub mod setting;
 pub mod setting_words;
 pub mod shown;
 pub mod states;
+pub mod studio;
 pub mod text_editor;
 pub mod typing_text;
 pub mod typing_without_saving_words;
@@ -169,7 +170,7 @@ pub use reading_windows::{ReadingWindows, WindowsRead};
 pub use role::Role;
 pub use scrolling::{Asked, Scrolled, Scrolling, Toward};
 #[cfg(target_os = "linux")]
-pub use session_bus::SessionBus;
+pub use session_bus::{ApplicationSession, SessionBus};
 pub use setting::{Set, Setting};
 pub use shown::{Contents, Limit, Seen, Shown, ShownWindow};
 pub use states::States;

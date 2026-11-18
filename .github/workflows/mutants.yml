@@ -165,6 +165,8 @@ jobs:
           packages=(
             libwayland-dev libinput-dev libseat-dev libxkbcommon-dev
             libpixman-1-dev libegl1-mesa-dev libgbm-dev libudev-dev
+            libpipewire-0.3-dev libspa-0.2-dev libclang-dev
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
             weston
             dbus-x11 dbus-daemon gnome-keyring at-spi2-core
             libgtk-3-bin
@@ -172,7 +174,7 @@ jobs:
           printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' \
             | sudo tee /etc/apt/apt.conf.d/80-gate-network > /dev/null
           sudo timeout 300 apt-get update
-          sudo timeout 300 apt-get install --no-install-recommends --yes "${packages[@]}"
+          sudo timeout 900 apt-get install --no-install-recommends --yes "${packages[@]}"
 
       # Many crates link `alo-bounding`, whose build script compiles the kernel
       # half with the pinned nightly and `bpf-linker` against LLVM 22. The gate

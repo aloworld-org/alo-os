@@ -3,7 +3,7 @@
 //! `org.freedesktop.portal.*` is the contract every Linux application already
 //! speaks. [`Backend::serve_on`] owns `org.freedesktop.portal.Desktop` on the
 //! bus it is given and answers, at `/org/freedesktop/portal/desktop`, **only the
-//! portals whose answers were decided without a dialog**:
+//! portals implemented by this frontend**:
 //!
 //! | Interface | Answered from |
 //! |---|---|
@@ -12,6 +12,7 @@
 //! | `org.freedesktop.portal.Settings` | what the person set for how the machine looks (`crate::settings_portal`) |
 //! | `org.freedesktop.portal.NetworkMonitor` | how far this machine reaches (`crate::network_monitor_portal`) |
 //! | `org.freedesktop.portal.FileChooser` | the person, on alo's own file chooser, and the documents portal to hand the file over (`crate::file_chooser_portal`) |
+//! | `org.freedesktop.portal.ScreenCast` | the person's source choice and its revocable capture session (`crate::screen_cast_portal`) |
 //!
 //! Every other portal is not registered, so the bus itself tells an application
 //! nothing answers it — [`crate::Portal::answered_on_the_bus`] is the list, and
@@ -63,12 +64,16 @@ pub struct Backend {
     sandboxes: Sandboxes,
     /// Where every answer is written.
     record: Arc<dyn Recording>,
-    /// How the desktop is asked to start the application a link opens in.
+    /// How the desktop is asked to start links.
     links: Arc<dyn OpensLinks>,
-    /// How the person is asked, on the desktop, to choose a file.
+    /// The current native file chooser.
     files: Arc<dyn ChoosesFiles>,
-    /// How a chosen file is handed to the application that asked.
+    /// Current Documents portal export.
     documents: Arc<dyn ExportsDocuments>,
+    /// Pending capture choices and cancellation.
+    native_requests: Arc<crate::dialog_request::NativeRequests>,
+    /// Session-scoped capture permission and stream owners.
+    capture_sessions: Arc<crate::capture_sessions::Sessions>,
 }
 
 impl Backend {
@@ -89,6 +94,8 @@ impl Backend {
             links: Arc::new(NoDesktopToAsk),
             files: Arc::new(NoDesktopToAsk),
             documents: Arc::new(NoDocumentsPortal),
+            native_requests: Arc::default(),
+            capture_sessions: Arc::default(),
         }
     }
 
@@ -134,6 +141,13 @@ impl Backend {
             .map_err(|_| NotServed::NotAnAddress)?
             .serve_at(
                 THE_PORTALS_OBJECT,
+                crate::screen_cast_portal::ScreenCastPortal {
+                    backend: self.clone(),
+                },
+            )
+            .map_err(|_| NotServed::Unreachable)?
+            .serve_at(
+                THE_PORTALS_OBJECT,
                 SecretPortal {
                     backend: self.clone(),
                 },
@@ -175,8 +189,31 @@ impl Backend {
                 _ => NotServed::Unreachable,
             })?;
         let (stop, stopped) = channel();
+        self.capture_sessions.ready.store(
+            self.machine.begin_capture_sessions(),
+            std::sync::atomic::Ordering::Release,
+        );
         let bus = connection.inner().clone();
         let seen = crate::appearance_settings::read(self.machine()).ok();
+        let native_requests = self.native_requests.clone();
+        let capture_sessions = self.capture_sessions.clone();
+        let machine = self.machine.clone();
+        let native_backend = self.clone();
+        let native_bus = bus.clone();
+        bus.executor()
+            .spawn(
+                async move {
+                    while !native_backend.native_requests().stopped() {
+                        native_backend
+                            .capture_sessions()
+                            .refresh(&native_bus, &native_backend)
+                            .await;
+                        async_io::Timer::after(std::time::Duration::from_millis(100)).await;
+                    }
+                },
+                "alo-capture-permissions",
+            )
+            .detach();
         let watching = std::thread::Builder::new()
             .name("alo-portals-appearance".to_owned())
             .spawn(move || crate::watching_appearance::watch(&bus, &self, seen, &stopped))
@@ -185,6 +222,9 @@ impl Backend {
             connection,
             stop: Some(stop),
             watching: Some(watching),
+            native_requests,
+            capture_sessions,
+            machine,
         })
     }
 
@@ -208,24 +248,34 @@ impl Backend {
         self.record.as_ref()
     }
 
-    /// How the desktop is asked to start what a link opens in.
+    /// How links open on this desktop.
     pub(crate) fn links(&self) -> &dyn OpensLinks {
         self.links.as_ref()
     }
-
-    /// How the person is asked to choose a file.
+    /// Current native file chooser.
     pub(crate) fn files(&self) -> &dyn ChoosesFiles {
         self.files.as_ref()
     }
-
-    /// How a chosen file is handed over.
+    /// Current Documents portal export.
     pub(crate) fn documents(&self) -> &dyn ExportsDocuments {
         self.documents.as_ref()
+    }
+    /// Admission and cancellation of capture choices.
+    pub(crate) fn native_requests(&self) -> &Arc<crate::dialog_request::NativeRequests> {
+        &self.native_requests
+    }
+    /// Bounded permission-scoped capture sessions.
+    pub(crate) fn capture_sessions(&self) -> &crate::capture_sessions::Sessions {
+        &self.capture_sessions
     }
 }
 
 /// The backend, answering, for as long as this is held.
 pub struct Served {
+    /// End publishers and remove session grants before the service disappears.
+    capture_sessions: Arc<crate::capture_sessions::Sessions>,
+    /// The actual writer for those exact session grants.
+    machine: Arc<dyn TheMachine>,
     /// The connection the portals are served on; dropping it stops them.
     connection: zbus::blocking::Connection,
     /// Dropped to stop the thread watching how the machine looks.
@@ -233,10 +283,15 @@ pub struct Served {
     /// That thread, waited for when this is dropped, so nothing is sent on
     /// the portals' behalf after they stop answering.
     watching: Option<JoinHandle<()>>,
+    /// Stop dialog tasks before releasing the public frontend name.
+    native_requests: Arc<crate::dialog_request::NativeRequests>,
 }
 
 impl Drop for Served {
     fn drop(&mut self) {
+        self.native_requests.stop();
+        self.capture_sessions.stop(self.machine.as_ref());
+        let _released = self.connection.release_name(THE_PORTALS_NAME);
         drop(self.stop.take());
         if let Some(watching) = self.watching.take() {
             // A watcher that panicked has already stopped, which is all that

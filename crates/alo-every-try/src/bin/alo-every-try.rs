@@ -75,7 +75,7 @@ fn running() -> Result<Verdict, String> {
             .only(&only)
             .ok_or(format!("the set has no request called `{only}`"))?;
     }
-    let verbs = alo_turn::the_verbs_a_whole_machine_offers().map_err(|why| why.to_string())?;
+    let verbs = alo_turn::the_verbs_with_application_controls().map_err(|why| why.to_string())?;
     let strings =
         alo_every_try::words_for_the_answers::the_words().map_err(|why| why.to_string())?;
     let provider = Provider::checked(

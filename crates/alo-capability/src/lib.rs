@@ -181,6 +181,7 @@ pub mod allowing;
 pub mod alo_in_applications;
 pub mod alo_in_the_terminal;
 pub mod approval;
+pub mod approval_words;
 pub mod approvals;
 pub mod arg;
 /// What happens around a command alo runs while it runs: where it starts, and

@@ -49,6 +49,8 @@ use crate::typing_into_an_application::ATextTyped;
 /// list as the verbs an agent may ask for, by [`crate::Machine`]'s rule.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WhatAVerbDid {
+    /// A granted application's own typed operation was sent.
+    ApplicationControlled(crate::controlling_an_application::Controlled),
     /// One of the six file verbs: what was found, read, or where a file now is.
     ToFiles(Answer),
     /// An application was installed, and what it is sandboxed by.
@@ -170,7 +172,8 @@ impl WhatAVerbDid {
     pub const fn published(&self) -> Option<&Published> {
         match self {
             Self::AFolderWasPublished(published) => Some(published),
-            Self::ToFiles(_)
+            Self::ApplicationControlled(_)
+            | Self::ToFiles(_)
             | Self::AnApplicationInstalled(_)
             | Self::AnApplicationWasReached(_)
             | Self::WhatCanBeInstalled(_)
@@ -198,7 +201,8 @@ impl WhatAVerbDid {
     pub const fn to_files(&self) -> Option<&Answer> {
         match self {
             Self::ToFiles(answer) => Some(answer),
-            Self::AnApplicationInstalled(_)
+            Self::ApplicationControlled(_)
+            | Self::AnApplicationInstalled(_)
             | Self::AnApplicationWasReached(_)
             | Self::WhatCanBeInstalled(_)
             | Self::WhatTouchedAFile(_)
@@ -223,6 +227,7 @@ impl WhatAVerbDid {
         match self {
             Self::AnApplicationInstalled(installed) => Some(installed),
             Self::ToFiles(_)
+            | Self::ApplicationControlled(_)
             | Self::AnApplicationWasReached(_)
             | Self::WhatCanBeInstalled(_)
             | Self::WhatTouchedAFile(_)
@@ -247,6 +252,7 @@ impl WhatAVerbDid {
         match self {
             Self::WhatCanBeInstalled(holds) => Some(holds),
             Self::ToFiles(_)
+            | Self::ApplicationControlled(_)
             | Self::AnApplicationInstalled(_)
             | Self::AnApplicationWasReached(_)
             | Self::WhatTouchedAFile(_)
@@ -271,6 +277,7 @@ impl WhatAVerbDid {
         match self {
             Self::WhatTouchedAFile(found) => Some(found),
             Self::ToFiles(_)
+            | Self::ApplicationControlled(_)
             | Self::AnApplicationInstalled(_)
             | Self::AnApplicationWasReached(_)
             | Self::WhatCanBeInstalled(_)
@@ -349,6 +356,7 @@ impl WhatAVerbDid {
         match self {
             Self::AnApplicationWasReached(reached) => Some(reached),
             Self::ToFiles(_)
+            | Self::ApplicationControlled(_)
             | Self::AnApplicationInstalled(_)
             | Self::WhatCanBeInstalled(_)
             | Self::WhatTouchedAFile(_)

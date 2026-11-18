@@ -4,8 +4,8 @@
 //! ([`mod@crate::fallback_verbs`]) on the list, so they are held to ADR 0009 by the
 //! same check.
 //!
-//! One adapter today: GNOME Text Editor ([`crate::text_editor`]), the reference adapter
-//! the plan asks for. `docs/contracts/agent-verbs.md` asks a crate declaring
+//! GNOME Text Editor ([`crate::text_editor`]) and alo Studio ([`crate::studio`])
+//! supply the shipped declarations. `docs/contracts/agent-verbs.md` asks a crate declaring
 //! verbs to hand them over through a `pub fn declare_into` in `src/verbs.rs`,
 //! because `alo-by-hand` walks the workspace for exactly that — an adapter's
 //! verbs are held to ADR 0009 by the same check every other verb is, beside the
@@ -26,6 +26,7 @@ use crate::text_editor::TEXT_EDITOR;
 pub fn shipped_adapters() -> Result<Adapters, NotLoaded> {
     let mut adapters = Adapters::default();
     adapters.add(load(&TEXT_EDITOR)?)?;
+    adapters.add(crate::studio::loaded()?)?;
     Ok(adapters)
 }
 
@@ -63,11 +64,18 @@ mod tests {
         let verbs = adapter_verbs().unwrap();
         let names: Vec<&str> = verbs.all().map(|verb| verb.name()).collect();
         assert_eq!(
-            names,
-            ["text_editor.open_document", "text_editor.new_window"]
+            names.get(..2),
+            Some(["text_editor.open_document", "text_editor.new_window"].as_slice())
         );
+        assert!(names.contains(&"studio.status"));
+        assert!(names.contains(&"studio.finish"));
         for verb in verbs.all() {
-            assert_eq!(verb.effect(), Effect::Change, "{}", verb.name());
+            let effect = if verb.name() == "studio.status" {
+                Effect::Read
+            } else {
+                Effect::Change
+            };
+            assert_eq!(verb.effect(), effect, "{}", verb.name());
         }
         assert!(matches!(
             verbs.of("text_editor.open_document").unwrap().requires(),

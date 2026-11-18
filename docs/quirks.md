@@ -34,15 +34,21 @@ We behave correctly; we cope with hardware and applications that do not.
 Pinned drm-rs 0.14.1 `map_dumb_buffer` issues MAP_DUMB and a shared read/write
 mmap using its private allocation length. The shell now checks the returned
 slice covers pitch times height before clearing all bytes, including padding
-and allocation tail, and drops the mapping before framebuffer registration.
+and allocation tail. Its private mapping stays with the owned dumb buffer across
+detached reuse, and drops before GEM destruction. Only unbound allocations have
+an upload API; active scanout never exposes writable bytes. The lifetime is
+held by the already pinned `self_cell` safe owner/dependent API, with no local
+lifetime extension or raw-pointer access.
 MAP_DUMB/mmap errors are returned and unwind buffer ownership. `DumbMapping::drop`
 calls munmap with `expect`, so an unmap failure can panic rather than become a
 ResourceError. The wrapper also constructs its slice before the shell can inspect
 the hidden capacity. These source-inspected limits are not malformed-kernel
 containment or recovered unmap failures. No engine patch or unsafe repository
-code was added. Successful DRM mapping/unmapping and production recovery remain
-unmeasured; fake memory tests and actual MAP_DUMB ENOTTY only prove their stated
-paths. See `autonomy/updates/scanout-buffer-initialization.md`.
+code was added. Installed software-VM walks exercise successful mapping and
+retirement; physical-device mapping and production recovery remain unmeasured.
+Fake memory tests and actual MAP_DUMB ENOTTY only prove their stated paths.
+See `autonomy/updates/scanout-buffer-initialization.md` and the later
+`autonomy/updates/recording-permissions-and-native-capture.md` measurements.
 
 ## DRM allocation wrappers assume valid kernel handles (2026-09-07)
 
@@ -8395,3 +8401,19 @@ extending it to the whole service is a reading, not a ruling.
 The provider half — the answer coming back from the provider with the service
 running — **has not been verified on any machine**, and needs one with a
 boundary.
+
+## A recording clock can outlive a manually closed PulseAudio source
+
+On 2026-11-07, normally installed Studio `54eb8544` aborts in the GNOME 49
+runtime's GStreamer 1.26.11 PulseAudio plugin after its audio queue fills and
+controlled finalization begins. The core's failing streaming thread reads an
+audio clock and reaches `pa_threaded_mainloop_unlock` with a null mainloop.
+The source had been manually moved to Null while another stream still used
+its clock. This is a one-time observed failure, preserved with the partial
+recording and journals in `installed-preprocessing-window`.
+
+Studio's correction corks and locks the microphone during drain, retaining its
+native clock context until normal pipeline shutdown. The real PulseAudio
+integration probe now checks that stopped capture still has its selected clock
+provider. Installed verification of this correction is pending; the original
+partial is retained and is not reported as a completed recording.

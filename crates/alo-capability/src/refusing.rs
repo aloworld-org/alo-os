@@ -153,6 +153,19 @@ mod tests {
     use crate::testing::{in_english, translated};
     use std::path::PathBuf;
 
+    #[test]
+    fn application_control_refusal_keeps_the_current_permission_guidance() {
+        let refusal = NotGranted::Never {
+            agent: "alo".to_owned(),
+            wanted: Ask::Application("org.aloworld.Studio".to_owned()),
+        };
+        assert_eq!(refusal.word(), words::APPLICATION_NOT_GIVEN);
+        let said = refusal.said(&in_english());
+        assert!(!said.is_a_bug());
+        assert!(said.text().contains("Settings"));
+        assert!(said.text().contains("full access"));
+    }
+
     fn never() -> NotGranted {
         NotGranted::Never {
             agent: "@files".to_owned(),

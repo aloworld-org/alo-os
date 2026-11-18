@@ -1,0 +1,7 @@
+# alo-portald is started by the system for the signed-in person's session.
+# The rented GTK backend and Documents service retain their own activation.
+# A frontend outage must never activate a second frontend with different policy.
+[D-BUS Service]
+Name=org.freedesktop.portal.Desktop
+Exec=/usr/bin/false
+SystemdService=xdg-desktop-portal.service

@@ -45,4 +45,11 @@ pub trait SaysHowAnApplicationStarts {
     ///
     /// [`NoRoad`] when nothing should be asked to start it.
     fn how_it_starts(&self, identifier: &str) -> Result<TheRoad, NoRoad>;
+
+    /// A fresh inventory from the same desktop entries, when this host can read
+    /// one. A control executor asks only after checking the application grant.
+    /// Legacy implementations retain their constructor's inventory.
+    fn applications_installed_now(&self) -> Option<alo_applications::Installed> {
+        None
+    }
 }

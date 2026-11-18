@@ -90,6 +90,133 @@ fn a_desktop_where_the_person_asked_for(
     (f, editor)
 }
 
+/// A new cross-process dialog may follow only its explicitly exported, focused parent.
+#[test]
+fn an_exported_focused_parent_brings_its_dialog_in_front() {
+    let (f, mut editor) = a_desktop_where_the_person_asked_for(None, true);
+    let (_exported, handle) = editor.export_parent();
+    let before = front_to_back(&f);
+    let mut dialog = Application::new(&f);
+    let _imported = dialog.import_parent(&handle);
+    dialog.configure();
+    dialog.attach();
+    dialog.sync();
+    let child = the_new_one(&f, &before);
+    f.backend(|s| s.what_the_person_opened_comes_in_front());
+    dialog.sync();
+    editor.sync();
+    assert_eq!(the_front_one(&f), Some(child));
+    assert_eq!(
+        dialog.events.keyboard.surfaces.last(),
+        Some(&dialog.surface.id().protocol_id())
+    );
+    assert_eq!(editor.events.keyboard.leaves, 1);
+}
+
+/// Exporting a background window gives its dialog no right to interrupt the person.
+#[test]
+fn a_background_parents_dialog_does_not_take_the_keyboard() {
+    let (f, _editor) = a_desktop_where_the_person_asked_for(None, true);
+    let front = the_front_one(&f);
+    let (mut background, _) = mapped(&f, "org.example.Background");
+    let (_exported, handle) = background.export_parent();
+    let mut dialog = Application::new(&f);
+    let _imported = dialog.import_parent(&handle);
+    dialog.configure();
+    dialog.attach();
+    dialog.sync();
+    f.backend(|s| s.what_the_person_opened_comes_in_front());
+    dialog.sync();
+    assert_eq!(the_front_one(&f), front);
+    assert!(dialog.events.keyboard.surfaces.is_empty());
+}
+
+/// Revoking the export before a dialog maps removes its permission to follow the parent.
+#[test]
+fn a_revoked_parent_handle_cannot_raise_a_new_dialog() {
+    let (f, mut editor) = a_desktop_where_the_person_asked_for(None, true);
+    let front = the_front_one(&f);
+    let (exported, handle) = editor.export_parent();
+    let mut dialog = Application::new(&f);
+    let _imported = dialog.import_parent(&handle);
+    exported.destroy();
+    editor.sync();
+    dialog.sync();
+    dialog.configure();
+    dialog.attach();
+    dialog.sync();
+    f.backend(|s| s.what_the_person_opened_comes_in_front());
+    dialog.sync();
+    assert_eq!(dialog.events.invalidated_parents, 1);
+    assert_eq!(the_front_one(&f), front);
+    assert!(dialog.events.keyboard.surfaces.is_empty());
+}
+
+/// A guessed handle is invalidated and never associates a window with somebody else's focus.
+#[test]
+fn an_unknown_parent_handle_cannot_raise_a_new_dialog() {
+    let (f, _editor) = a_desktop_where_the_person_asked_for(None, true);
+    let front = the_front_one(&f);
+    let mut dialog = Application::new(&f);
+    let _imported = dialog.import_parent("not-an-exported-window");
+    dialog.configure();
+    dialog.attach();
+    dialog.sync();
+    f.backend(|s| s.what_the_person_opened_comes_in_front());
+    dialog.sync();
+    assert_eq!(dialog.events.invalidated_parents, 1);
+    assert_eq!(the_front_one(&f), front);
+    assert!(dialog.events.keyboard.surfaces.is_empty());
+}
+
+/// Destroying the caller window invalidates a handle even if its export object survives.
+#[test]
+fn a_destroyed_parent_window_cannot_raise_a_new_dialog() {
+    let (f, mut editor) = a_desktop_where_the_person_asked_for(None, true);
+    let (_exported, handle) = editor.export_parent();
+    let mut dialog = Application::new(&f);
+    let _imported = dialog.import_parent(&handle);
+    editor.toplevel.destroy();
+    editor.xdg.destroy();
+    editor.surface.destroy();
+    editor.sync();
+    dialog.sync();
+    dialog.configure();
+    dialog.attach();
+    dialog.sync();
+    f.backend(|s| s.what_the_person_opened_comes_in_front());
+    dialog.sync();
+    assert_eq!(dialog.events.invalidated_parents, 1);
+    assert!(dialog.events.keyboard.surfaces.is_empty());
+}
+
+/// Replacing an import is not undone when the earlier export is later closed.
+#[test]
+fn an_old_export_does_not_revoke_a_replacement_relationship() {
+    let (f, mut editor) = a_desktop_where_the_person_asked_for(None, true);
+    let (old_export, old_handle) = editor.export_parent();
+    let (_current_export, current_handle) = editor.export_parent();
+    let before = front_to_back(&f);
+    let mut dialog = Application::new(&f);
+    let _old_import = dialog.import_parent(&old_handle);
+    let _current_import = dialog.import_parent(&current_handle);
+    old_export.destroy();
+    editor.sync();
+    dialog.sync();
+    dialog.configure();
+    dialog.attach();
+    dialog.sync();
+    let child = the_new_one(&f, &before);
+    f.backend(|s| s.what_the_person_opened_comes_in_front());
+    dialog.sync();
+    assert_eq!(dialog.events.invalidated_parents, 1);
+    assert_eq!(the_front_one(&f), Some(child));
+    assert_eq!(
+        dialog.events.keyboard.surfaces.last(),
+        Some(&dialog.surface.id().protocol_id())
+    );
+}
+
 /// **The application the person started comes in front with the keyboard.**
 #[test]
 fn the_application_the_person_started_comes_in_front_with_the_keyboard() {

@@ -191,3 +191,27 @@ fn nothing_to_clear_writes_nothing_and_knocks_nobody() {
     assert_eq!(std::fs::read(&at).unwrap(), before);
     assert_eq!(door.knocks.get(), 1, "the second call knocked");
 }
+
+/// A session grant made after Settings read the list must still end at sign-out.
+#[test]
+fn signing_out_uses_the_latest_file_and_preserves_new_remembered_grants() {
+    let folder = a_folder_of_our_own("newer-file");
+    let at = folder.join("grants.toml");
+    let mut stale = Grants::default();
+    drop(a_session_and_a_remembered_grant(&at));
+    let door = AtTheDoor {
+        reading: at.clone(),
+        knocks: Cell::new(0),
+        seen: RefCell::new(Vec::new()),
+    };
+    assert_eq!(
+        Changing::of(&mut stale, &at, &door)
+            .the_session_is_over(noon())
+            .unwrap(),
+        1
+    );
+    assert!(!the_daemon_permits(&at, "com.vscodium.codium"));
+    assert!(the_daemon_permits(&at, "org.mozilla.firefox"));
+    assert_eq!(stale.len(), 1);
+    assert_eq!(door.knocks.get(), 1);
+}

@@ -169,6 +169,107 @@ pub enum RenderError {
 /// on import, draw or submit failure and must not dispatch client requests.
 /// No returned surface receives a presentation-time guarantee.
 pub trait FrameTarget {
+    /// Exclusive lock, sign-in and recovery scenes end desktop capture first.
+    fn capture_forbidden(&self) -> bool {
+        false
+    }
+    /// Request a copy of the next successfully submitted complete output only.
+    /// Custom backends opt in explicitly; no frame is guessed from another output.
+    fn capture_output(&mut self, _wanted: bool) {}
+    /// Take the requested submitted BGRx frame, retaining at most one copy.
+    fn captured_output(&mut self) -> Option<std::sync::Arc<[u8]>> {
+        None
+    }
+    /// Render only the selected window tree and its popups into a private target.
+    /// No native desktop layer or other application's window may enter this frame.
+    ///
+    /// # Errors
+    /// An unsupported backend, import failure, or invalid private target size.
+    fn capture_window(
+        &mut self,
+        _size: Size<i32, Physical>,
+        _root: &WlSurface,
+        _popups: &[crate::Popup],
+        _cursor: &crate::Cursor,
+        _camera: alo_canvas::Camera,
+    ) -> Result<std::sync::Arc<[u8]>, RenderError> {
+        Err(RenderError::ControlsUnsupported)
+    }
+    /// Complete the selected application's frame clock after a successful capture.
+    /// A covered window still needs callbacks to produce its next real frame.
+    ///
+    /// # Errors
+    /// The same unsupported backend, import or size errors as `capture_window`.
+    fn capture_window_at(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+        camera: alo_canvas::Camera,
+        time: u32,
+    ) -> Result<std::sync::Arc<[u8]>, RenderError> {
+        let pixels = self.capture_window(size, root, popups, cursor, camera)?;
+        crate::capture_frames::completed(root, popups, camera, time);
+        Ok(pixels)
+    }
+    /// Share the submitted output allocation when the backend supports it.
+    /// Existing backends retain their original capture implementation.
+    fn shared_captured_output(&mut self) -> Option<std::sync::Arc<Vec<u8>>> {
+        self.captured_output()
+            .map(|pixels| std::sync::Arc::new(pixels.to_vec()))
+    }
+    /// Render a private window while retaining its already owned pixel storage.
+    ///
+    /// # Errors
+    /// The same backend, import and size errors as `capture_window`.
+    fn shared_capture_window(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+        camera: alo_canvas::Camera,
+    ) -> Result<std::sync::Arc<Vec<u8>>, RenderError> {
+        self.capture_window(size, root, popups, cursor, camera)
+            .map(|pixels| std::sync::Arc::new(pixels.to_vec()))
+    }
+    /// Complete callbacks only after the selected tree was captured successfully.
+    ///
+    /// # Errors
+    /// The same errors as `shared_capture_window`.
+    fn shared_capture_window_at(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+        camera: alo_canvas::Camera,
+        time: u32,
+    ) -> Result<std::sync::Arc<Vec<u8>>, RenderError> {
+        self.capture_window_at(size, root, popups, cursor, camera, time)
+            .map(|pixels| std::sync::Arc::new(pixels.to_vec()))
+    }
+    /// Retain immutable storage without requiring a Vec allocation from a backend.
+    fn retained_captured_output(&mut self) -> Option<crate::SharedPixels> {
+        self.shared_captured_output().map(Into::into)
+    }
+    /// Retain the selected tree's real pixels and its existing callback behavior.
+    ///
+    /// # Errors
+    /// The same errors as `shared_capture_window_at`.
+    fn retained_capture_window_at(
+        &mut self,
+        size: Size<i32, Physical>,
+        root: &WlSurface,
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+        camera: alo_canvas::Camera,
+        time: u32,
+    ) -> Result<crate::SharedPixels, RenderError> {
+        self.shared_capture_window_at(size, root, popups, cursor, camera, time)
+            .map(Into::into)
+    }
     /// Submit a complete reader with its strip, clients, popups and cursor.
     /// Refuse unsupported content; never silently submit only the strip.
     /// No dispatch or publication is allowed during this transaction.

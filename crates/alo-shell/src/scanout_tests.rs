@@ -12,13 +12,14 @@ impl ScanoutDevice for Device {
         let disabling = format!("{request:?}")
             == format!("{:?}", expected_request(self.connector, true, 21, 72));
         let log = self.log.borrow();
-        let fb = 20
+        let newest_fb = 20
             + log
                 .calls
                 .iter()
                 .filter(|call| **call == "framebuffer")
                 .count() as u64;
-        let blob = 71 + log.calls.iter().filter(|call| **call == "blob").count() as u64;
+        let newest_blob = 71 + log.calls.iter().filter(|call| **call == "blob").count() as u64;
+        let (fb, blob) = log.expected_binding.unwrap_or((newest_fb, newest_blob));
         drop(log);
         // drm-rs exposes Debug, but not a request iterator. Compare independently
         // constructed wire requests, including allocation-owned framebuffer/blob.

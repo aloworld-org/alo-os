@@ -411,11 +411,13 @@ const WORDING: [&str; 6] = [
 /// say *nothing granted*, and every file verb was refused forever.
 ///
 /// The rule became narrower rather than weaker — **a grant is made from a
-/// folder a person picked and from nothing else.** Those three words moved to
+/// folder or installed application a person picked and from nothing else.**
+/// The grant-making words moved to
 /// [`PICKING`], which one file may use; everything left here still forbids
 /// this window inventing a grant, a revocation or a write of its own.
-const GRANTING: [&str; 9] = [
+const GRANTING: [&str; 10] = [
     ".grant(",
+    ".application_granted(",
     ".revoke(",
     "revoke_on",
     "revoke_pairing",
@@ -426,12 +428,13 @@ const GRANTING: [&str; 9] = [
     "put_everything_back",
 ];
 
-/// Making a grant from a folder a person picked, which only
+/// Making a grant from a folder or installed application a person picked, which only
 /// `settings_granted.rs` may do.
 ///
-/// Three words rather than one, so that all three ends are held: the grant's
-/// own type, the crate that seals a picked folder, and the call that carries
-/// it to the disk. A Settings file reaching for any of them is a second road
+/// These words hold the grant's own type, the crate that seals a picked
+/// choice, and the calls that carry it to disk. The current application picker
+/// delegates to the shared application-grant road outside Settings.
+/// A Settings file reaching for any of them is a second road
 /// to a grant, which is the thing this file exists to keep at one.
 ///
 /// **`a_folder_is_picked_in_settings.rs` is not among the files checked here**,
@@ -530,8 +533,8 @@ fn settings_grants_only_from_a_pick_and_changes_only_through_the_owning_crates()
         for (line, text) in &code {
             if text.contains("Changing::of") {
                 revoking.push(format!("src/{named}:{line}"));
-                // **Two things a `Changing` may be, and no third.** Revoking a
-                // row a person saw, or making the grant a person's pick means.
+                // Revoke a visible row or grant a picked folder. Application
+                // picks use the shared grant road outside Settings.
                 // Anything else is this window changing the machine by a road
                 // of its own, which is what this file is here to keep from
                 // existing.
@@ -549,14 +552,11 @@ fn settings_grants_only_from_a_pick_and_changes_only_through_the_owning_crates()
         "Settings does what it must not:\n{}",
         refused.join("\n")
     );
-    // **Two, and the test above says which two they may be.** One revokes —
-    // a grant and a pairing by the same call, which is what the one list
-    // means — and one carries a person's pick to the disk. This was `1` until
-    // 2026-10-24, when nothing could grant anything.
+    // The shared application-grant road adds no direct Changing in Settings.
     assert_eq!(
         revoking.len(),
         2,
-        "a grant and a pairing are revoked by one call, and one call grants a picked folder: \
+        "revocation and the picked folder grant have two owning calls: \
          {revoking:?}"
     );
 }
@@ -595,6 +595,16 @@ fn a_settings_file_that_words_grants_or_writes_around_its_keeper_is_refused() {
             "settings_window.rs",
             "changing.granted(&granting, &chosen, now)?;",
             ".granted(",
+        ),
+        (
+            "settings_window.rs",
+            "changing.application_granted(grant, now)?;",
+            ".application_granted(",
+        ),
+        (
+            "settings_granted.rs",
+            "changing.application_granted(grant, now)?;",
+            ".application_granted(",
         ),
         (
             "settings_page.rs",

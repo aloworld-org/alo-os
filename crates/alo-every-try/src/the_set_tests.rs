@@ -45,7 +45,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 20);
+    assert_eq!(THE_VERSION, 22);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -80,6 +80,25 @@ fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
             "press a key in an application",
             "type into a search box without saving",
             "answer the file chooser",
+            "read Studio status",
+            "prepare a new Studio recording",
+            "choose a screen in Studio",
+            "choose a window in Studio",
+            "start a Studio recording",
+            "pause a Studio recording",
+            "resume a Studio recording",
+            "finish a Studio recording",
+            "enable the Studio microphone",
+            "disable the Studio microphone",
+            "set Studio recording quality",
+            "turn off the Studio countdown",
+            "set a three-second Studio countdown",
+            "set a five-second Studio countdown",
+            "cancel the Studio countdown",
+            "show the Studio library",
+            "review a Studio recording",
+            "rename a Studio recording",
+            "export a Studio recording",
         ]
     );
 }
@@ -101,6 +120,28 @@ fn every_verb_the_machine_offers_is_on_some_road() {
         .filter(|name| !asked.contains(&name.as_str()))
         .collect();
     assert!(missing.is_empty(), "no request asks for {missing:?}");
+}
+
+/// Studio's live controls must be tried too, rather than hidden by a core-only list.
+#[test]
+fn every_studio_control_has_a_fixed_request_for_the_real_model() {
+    let set = the_set().expect("the set builds");
+    let asked: Vec<&str> = set
+        .requests()
+        .iter()
+        .flat_map(|request| request.road().iter().map(Step::verb))
+        .collect();
+    let declared = alo_turn::the_verbs_with_application_controls()
+        .expect("the live application controls declare");
+    let missing: Vec<&str> = declared
+        .all()
+        .map(|verb| verb.name())
+        .filter(|name| name.starts_with("studio.") && !asked.contains(name))
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "no real-model request asks for {missing:?}"
+    );
 }
 
 /// **Every step's scripted answer is one the protocol writes**, so the model

@@ -22,6 +22,11 @@ pub struct XrgbFrame<'a> {
 }
 
 impl<'a> XrgbFrame<'a> {
+    /// Full physical extent, validated when this source was constructed.
+    pub(crate) fn size(&self) -> (u32, u32) {
+        self.size
+    }
+
     /// Validate nonempty dimensions, aligned stride and exact `stride * height`
     /// byte length, with checked arithmetic. Refuses malformed input without I/O.
     pub fn new(size: (u32, u32), stride: usize, pixels: &'a [u8]) -> io::Result<Self> {
@@ -72,7 +77,10 @@ pub(crate) fn upload<D: ResourceDevice>(
         if bytes.len() < required {
             return Err(io::ErrorKind::InvalidData.into());
         }
-        bytes.fill(0);
+        bytes
+            .get_mut(required..)
+            .ok_or(io::ErrorKind::InvalidData)?
+            .fill(0);
         for (source, destination) in frame.pixels.chunks_exact(frame.stride).zip(
             bytes
                 .get_mut(..required)
@@ -82,10 +90,16 @@ pub(crate) fn upload<D: ResourceDevice>(
             let source = source
                 .get(..frame.row_bytes)
                 .ok_or(io::ErrorKind::InvalidData)?;
-            let destination = destination
+            let visible = destination
                 .get_mut(..frame.row_bytes)
                 .ok_or(io::ErrorKind::InvalidData)?;
-            destination.copy_from_slice(source);
+            visible.copy_from_slice(source);
+            // Only padding needs clearing: every visible byte was overwritten.
+            // Clear it through the full row, rather than the visible subslice.
+            destination
+                .get_mut(frame.row_bytes..)
+                .ok_or(io::ErrorKind::InvalidData)?
+                .fill(0);
         }
         Ok(())
     })

@@ -198,6 +198,16 @@ pub fn in_use_in(objects: &[Value]) -> Result<Vec<Use>, NotHeard> {
         if !node.running {
             continue;
         }
+        // A portal publisher is created for one authenticated recipient. Its
+        // consuming node need not repeat the connection's portal stamp.
+        if what == Used::Screen && said_in(node.props, THE_STAMPED_IDENTITY).is_some() {
+            in_use.push(Use::of(
+                UseId::recorded(node.number),
+                what,
+                who_it_is(node.props),
+            ));
+            continue;
+        }
         let readers = readers_of(node.number, &links, &by_number);
         if readers.is_empty() {
             in_use.push(Use::of(
@@ -420,6 +430,32 @@ mod tests {
         assert_eq!(both.first().map(Use::what), Some(Used::Microphone));
     }
     use crate::testing::{a_record_of, a_recorded_link, a_recorded_node};
+
+    /// Native screen publishers retain attribution when a consuming node omits it.
+    #[test]
+    fn a_portal_screen_stream_is_named_by_its_authenticated_recipient() {
+        let record = a_record_of(&[
+            a_recorded_node(
+                39,
+                VIDEO_INTO_THE_GRAPH,
+                RUNNING,
+                &[(THE_STAMPED_IDENTITY, "org.aloworld.Studio")],
+            ),
+            a_recorded_node(41, "Stream/Input/Video", RUNNING, &[]),
+            a_recorded_link(50, 39, 41),
+        ]);
+        let uses = in_use_in(objects(&record).objects()).unwrap();
+        assert_eq!(uses.len(), 1);
+        assert_eq!(uses.first().unwrap().what(), Used::Screen);
+        assert_eq!(
+            uses.first()
+                .unwrap()
+                .by()
+                .application()
+                .map(Application::identifier),
+            Some("org.aloworld.Studio")
+        );
+    }
 
     /// **A running camera read by one application is one use, named.** The
     /// shape of every record this file reads, at its smallest.

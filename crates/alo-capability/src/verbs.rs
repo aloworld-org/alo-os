@@ -42,6 +42,19 @@ pub struct Verbs {
 }
 
 impl Verbs {
+    /// A view containing only selected existing declarations, in the same order.
+    /// No declaration is added or revalidated, and the source remains intact.
+    #[must_use]
+    pub fn selecting(&self, mut keep: impl FnMut(&Verb) -> bool) -> Self {
+        Self {
+            declared: self
+                .declared
+                .iter()
+                .filter(|verb| keep(verb))
+                .cloned()
+                .collect(),
+        }
+    }
     /// Put a verb on the list.
     ///
     /// # Errors

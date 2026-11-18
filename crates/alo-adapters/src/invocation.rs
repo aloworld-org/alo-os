@@ -39,6 +39,8 @@ pub enum Part {
     FileAddressOf(&'static str),
     /// Text the adapter's author wrote, never a model (`s`).
     Literal(&'static str),
+    /// A fixed whole number the adapter author declared (`x`).
+    Number(i64),
     /// A name, or a chosen option's name, from an argument (`s`).
     TextOf(&'static str),
     /// A number, from an argument (`x`).
@@ -66,7 +68,7 @@ impl Part {
             | Self::TextOf(argument)
             | Self::CountOf(argument)
             | Self::Evaluated { argument, .. } => Some(argument),
-            Self::Literal(_) | Self::NoParameters | Self::NoPlatformData => None,
+            Self::Literal(_) | Self::Number(_) | Self::NoParameters | Self::NoPlatformData => None,
         }
     }
 }

@@ -9,6 +9,8 @@ mod scanout_tests;
 #[path = "scanout_frame_tests.rs"]
 mod scanout_frame_tests;
 
+#[path = "scanout_reuse_tests.rs"]
+mod scanout_reuse_tests;
 #[path = "scene_identity_tests.rs"]
 mod scene_identity_tests;
 #[path = "scene_replacement_tests.rs"]
@@ -52,6 +54,8 @@ impl Buffer for FakeBuffer {
 /// Shared event log outlives the cleanup owner.
 #[derive(Default)]
 struct Log {
+    /// Exact next binding for rotation tests; other tests expect the newest allocation.
+    expected_binding: Option<(u64, u64)>,
     /// Dynamically injected faults after initial activation.
     failures: Vec<&'static str>,
     /// Released handles, for distinguishing old and replacement allocations.

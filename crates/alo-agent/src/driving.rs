@@ -194,6 +194,15 @@ struct Watched<'a> {
 }
 
 impl TheDoor for Watched<'_> {
+    fn offered_verbs(&mut self) -> Result<Option<Vec<String>>, NotAnswered> {
+        if (self.stopped)() {
+            return Err(NotAnswered::NotReached {
+                why: "the person stopped the turn".to_owned(),
+            });
+        }
+        self.door.offered_verbs()
+    }
+
     fn asking(&mut self, request: &FromAnAgent) -> Result<ToAnAgent, NotAnswered> {
         if (self.stopped)() {
             return Err(NotAnswered::NotReached {
@@ -285,9 +294,14 @@ fn driving_from(
     mut steps: Vec<AStep>,
 ) -> WhatHappened {
     for _ in 0..how_far.rounds() {
+        let offered = match door.offered_verbs() {
+            Ok(Some(names)) => verbs.selecting(|verb| names.iter().any(|name| name == verb.name())),
+            Ok(None) => verbs.clone(),
+            Err(why) => return could_not_be_asked(why, steps),
+        };
         let shown = shown_in_progress(
             instructions,
-            verbs,
+            &offered,
             ATurnInProgress::of(request, &steps, may_reach)
                 .after(earlier)
                 .about(window),
@@ -307,7 +321,10 @@ fn driving_from(
             // We asked a question; an answer about a verb means this machine
             // answered something we did not ask. Its own fault, in English.
             Ok(
-                ToAnAgent::Did(_) | ToAnAgent::DoneWithoutAsking { .. } | ToAnAgent::Proposed(_),
+                ToAnAgent::Capabilities { .. }
+                | ToAnAgent::Did(_)
+                | ToAnAgent::DoneWithoutAsking { .. }
+                | ToAnAgent::Proposed(_),
             ) => {
                 return WhatHappened::TheMachineCouldNotBeAsked {
                     why: "a question was answered with what a verb did".to_owned(),
@@ -437,6 +454,14 @@ fn driving_from(
                         after: steps,
                     };
                 }
+                Ok(ToAnAgent::Capabilities { .. }) => {
+                    return WhatHappened::TheMachineCouldNotBeAsked {
+                        why:
+                            "a command received capability metadata instead of an execution result"
+                                .to_owned(),
+                        after: steps,
+                    };
+                }
                 Err(not_answered) => return could_not_be_asked(not_answered, steps),
             },
             // The model asked for a question to be put to a model, which is
@@ -446,7 +471,7 @@ fn driving_from(
             FromAnAgent::Ask { .. } if speaks_of_the_verbs(&said, request, verbs) => {
                 steps.push(AStep::of(&said, NOT_FOR_THE_PERSON));
             }
-            FromAnAgent::Ask { .. } => {
+            FromAnAgent::Ask { .. } | FromAnAgent::Capabilities => {
                 return WhatHappened::ItWasAnsweredInWords { said, after: steps };
             }
         }
@@ -512,6 +537,13 @@ pub fn a_proposal_answered(
         Ok(ToAnAgent::Did(_) | ToAnAgent::Answered { .. }) => {
             return Err(Box::new(WhatHappened::TheMachineCouldNotBeAsked {
                 why: "a change was answered as though it had already run".to_owned(),
+                after: steps,
+            }));
+        }
+        Ok(ToAnAgent::Capabilities { .. }) => {
+            return Err(Box::new(WhatHappened::TheMachineCouldNotBeAsked {
+                why: "a proposal received capability metadata instead of an approval or execution result"
+                    .to_owned(),
                 after: steps,
             }));
         }

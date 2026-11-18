@@ -42,6 +42,14 @@ pub fn taking(
                 given: String::new(),
             });
         }
+        FromAnAgent::Capabilities => {
+            return Err(WentWrong::AnotherVerb {
+                step: at,
+                expected: step.verb().to_owned(),
+                asked: "capability discovery".to_owned(),
+                given: String::new(),
+            });
+        }
         FromAnAgent::Read { verb, .. } | FromAnAgent::Propose { verb, .. } => verb.trim(),
     };
     if named != step.verb() {

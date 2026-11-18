@@ -1,27 +1,27 @@
 //! KMS allocation/destruction ioctls through the caller's borrowed descriptor.
 
+use crate::retained_dumb_buffer::RetainedBuffer;
 use crate::{display_resources::ResourceDevice, drm_inventory::Inventory};
 use drm::{
     buffer::DrmFourcc,
-    control::{Device, Mode, dumbbuffer::DumbBuffer, framebuffer},
+    control::{Device, Mode, framebuffer},
 };
 use std::io;
 
 impl ResourceDevice for Inventory<'_> {
-    type Buffer = DumbBuffer;
-    fn create_buffer(&self, size: (u32, u32)) -> io::Result<DumbBuffer> {
+    type Buffer = RetainedBuffer;
+    fn create_buffer(&self, size: (u32, u32)) -> io::Result<RetainedBuffer> {
         self.create_dumb_buffer(size, DrmFourcc::Xrgb8888, 32)
+            .map(RetainedBuffer::new)
     }
     fn with_mapping(
         &self,
-        buffer: &mut DumbBuffer,
+        buffer: &mut RetainedBuffer,
         initialize: impl FnOnce(&mut [u8]) -> io::Result<()>,
     ) -> io::Result<()> {
-        let mut mapping = self.map_dumb_buffer(buffer)?;
-        initialize(mapping.as_mut())
-        // drm-rs unmaps on drop, before registration or allocation unwind.
+        buffer.with_bytes(self, initialize)
     }
-    fn create_framebuffer(&self, buffer: &DumbBuffer) -> io::Result<framebuffer::Handle> {
+    fn create_framebuffer(&self, buffer: &RetainedBuffer) -> io::Result<framebuffer::Handle> {
         // ADDFB registers the fixed depth-24/bpp-32 XRGB format. It is not a
         // legacy modeset and does not provide a fallback from atomic KMS.
         self.add_framebuffer(buffer, 24, 32)
@@ -36,7 +36,7 @@ impl ResourceDevice for Inventory<'_> {
     fn destroy_framebuffer(&self, framebuffer: framebuffer::Handle) -> io::Result<()> {
         Device::destroy_framebuffer(self, framebuffer)
     }
-    fn destroy_buffer(&self, buffer: DumbBuffer) -> io::Result<()> {
-        self.destroy_dumb_buffer(buffer)
+    fn destroy_buffer(&self, buffer: RetainedBuffer) -> io::Result<()> {
+        self.destroy_dumb_buffer(buffer.into_buffer())
     }
 }

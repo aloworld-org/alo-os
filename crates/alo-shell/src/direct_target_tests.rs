@@ -77,7 +77,8 @@ impl ScenePainter for Painter {
 #[test]
 fn direct_target_clean_refusals_allow_retry_and_drop_disables_once()
 -> Result<(), Box<dyn std::error::Error>> {
-    for failure in ["buffer", "upload map", "test", "enable"] {
+    // Initial and replacement frames now upload during the first mapping.
+    for failure in ["buffer", "map", "test", "enable"] {
         let (device, log) = fixture(&[], 0);
         let mut target = Target::new(Painter::default(), device, scanout_tests::output());
         assert_eq!(target.size(), (1280, 720).into());

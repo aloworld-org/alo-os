@@ -105,6 +105,7 @@ fn filled(part: Part, call: &Call) -> Option<Argument> {
             _ => None,
         },
         Part::Literal(text) => Some(Argument::Text(text.to_owned())),
+        Part::Number(number) => Some(Argument::Number(number)),
         Part::TextOf(argument) => match call.value(argument)? {
             Value::Name(name) => Some(Argument::Text(name.clone())),
             Value::Choice { chosen, .. } => Some(Argument::Text(chosen.clone())),

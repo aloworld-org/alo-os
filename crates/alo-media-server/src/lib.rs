@@ -47,6 +47,8 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod asking;
+#[cfg(target_os = "linux")]
+pub mod capture;
 pub mod reaching;
 pub mod record;
 pub mod refusing;

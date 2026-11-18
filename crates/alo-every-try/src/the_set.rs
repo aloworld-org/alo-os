@@ -47,7 +47,7 @@ use crate::a_road::{ARequest, Answered, Step};
 
 /// The version of the set. Up by one for every change to a request, a road or
 /// the machine.
-pub const THE_VERSION: u32 = 20;
+pub const THE_VERSION: u32 = 22;
 
 /// The person's home on the machine the walk boots: Fedora's atomic layout
 /// puts homes under `/var/home`, measured on 2026-11-10
@@ -226,10 +226,19 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
     let their_folders =
         ThePersonsFolders::of(home, folders.iter().map(|(role, at)| (*role, at.as_path())))
             .ok_or_else(|| NotTheSet(format!("{THE_HOME} is not a home a line may name")))?;
-    let installed = TheApplicationsInstalled::of(shipped.every().iter().map(|pinned| {
-        let identifier = pinned.application().identifier();
-        (identifier, names.name_of(identifier))
-    }));
+    let installed = TheApplicationsInstalled::of(
+        shipped
+            .every()
+            .iter()
+            .map(|pinned| {
+                let identifier = pinned.application().identifier();
+                (identifier, names.name_of(identifier))
+            })
+            .chain(std::iter::once((
+                alo_adapters::studio::APPLICATION,
+                Some("alo Studio"),
+            ))),
+    );
     let may_reach = WhatItMayReach::nothing()
         .in_this_home(Some(their_folders))
         .at_full_access(true)
@@ -239,6 +248,7 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
     requests.extend(crate::every_other_verb::every_other_verb(home, &shipped)?);
     // **And answering the file chooser** (2026-11-17).
     requests.push(crate::answering_the_file_chooser::answering_the_file_chooser(home, &shipped));
+    requests.extend(crate::recording_in_studio::the_requests());
     let mut places: Vec<String> = shipped
         .every()
         .iter()
