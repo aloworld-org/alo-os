@@ -1,0 +1,61 @@
+# What alo's model is offered, one fingerprint a line (crates/alo-every-try,
+# `the_declaration`). A change to what the model chooses changes a line here,
+# and the every-try check tries the requests that line belongs to: the
+# change's own, which must each take the road at least 9 of 10 tries.
+#
+# Written by `cargo run -p alo-every-try -- declare`. A test fails while this
+# file is not what the code offers.
+
+every-turn	685814d2d4a8920b
+verb	accessible.activate_control	9b8fd01725f5ff20
+verb	accessible.choose_option	a704adc1f21da24f
+verb	accessible.open_item	ea8a9bb4c741d8f3
+verb	accessible.open_menu	52dd00a4bf14c1d1
+verb	accessible.press_key	575abadbe5b825fc
+verb	accessible.read_window	8f5bfd66b3134190
+verb	accessible.scroll_page	34457c53f37cd100
+verb	accessible.scroll_to	37d8db9b7cb6ad7d
+verb	accessible.select_item	9ac6cf32dab59aad
+verb	accessible.set_value	7cceef874d10e97d
+verb	accessible.type_text	edc7daaa35b7faf4
+verb	accessible.type_without_saving	8899c723cf6dd0fa
+verb	archive_folder	6edb54bc45096848
+verb	choose_on_the_file_chooser	cb8d104ff641ffb4
+verb	close_application	b19bcb0d5a7a15fa
+verb	find_in_folder	d97626453d4825de
+verb	focus_application	58da4f8b22c60318
+verb	install_application	5f9e0dac634707af
+verb	list_folder	f6b734a8a2ea4ce0
+verb	move_file	7d17f0c13ae1c9a2
+verb	open_application	1c7107a5a68aef72
+verb	open_file_in_application	849046eb12f91bbf
+verb	publish_to_github_pages	0f0c0ef10aa33152
+verb	read_file	b463794346301948
+verb	rename_file	f1d04ddeae487769
+verb	what_can_be_installed	8a809f6c3b6c1c40
+verb	what_touched_this_file	c05f793e1b3ad6c3
+request	write in VSCodium	a6568300a2c6eb0c	open_file_in_application,accessible.read_window,accessible.type_text,read_file
+request	publish to GitHub Pages	72c0d16b9762dc24	publish_to_github_pages
+request	open an application by name	fc0f16ba65ac2068	open_application
+request	list a folder	a10d7e0163b43f88	list_folder
+request	read a file	78d789b77df9dc2c	read_file
+request	find files by name	8d2b5c91380e53df	find_in_folder
+request	rename a file	e72c794264480a78	rename_file
+request	move a file	af16e3c5d702d3d0	move_file
+request	archive a folder	665d62100abbf4d0	archive_folder
+request	see what can be installed	681e09beb986a348	what_can_be_installed
+request	install an application	750e4fc13895ba74	what_can_be_installed,install_application
+request	bring an application to the front	5f8667f78b53305f	focus_application
+request	close an application	aeb8b5455f509ec4	close_application
+request	ask the record about a file	616bfbf62c601df8	what_touched_this_file
+request	press a button in an application	6781e626201f528f	accessible.read_window,accessible.activate_control
+request	scroll to a named thing in an application	9ed7615aba816c43	accessible.read_window,accessible.scroll_to,accessible.scroll_page
+request	scroll a page in an application	2b34b41a753eae11	accessible.read_window,accessible.scroll_page
+request	move a slider in an application	cbcf1ecae4736b44	accessible.read_window,accessible.set_value
+request	choose an option in a drop-down	d32a5a4b2ba64cfe	accessible.read_window,accessible.choose_option
+request	select a file in the file manager	da1b9175203055e2	accessible.read_window,accessible.select_item
+request	open a file in the file manager	3935d6cd84a36122	accessible.read_window,accessible.open_item
+request	open a thing's right-click menu in an application	2893934895ef5495	accessible.read_window,accessible.open_menu
+request	press a key in an application	a13be3f72b16a695	accessible.read_window,accessible.press_key
+request	type into a search box without saving	144ca47bfed260e4	accessible.read_window,accessible.type_without_saving
+request	answer the file chooser	3eb4ca1f11d1efb8	choose_on_the_file_chooser

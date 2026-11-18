@@ -1,5 +1,5 @@
 //! **Try the fixed set against the real model, several times each**, and say
-//! whether every try took the expected road (law 9).
+//! whether the tries took the expected road (law 9).
 //!
 //! ```text
 //! ALO_PROVIDER_KEY=…                        # never printed, never written
@@ -10,19 +10,39 @@
 //! ALO_EVERY_TRY_SUMMARY=summary.md                # where the summary goes, optional
 //! ALO_EVERY_TRY_SHOWN=shown.txt                   # every question's whole text, optional
 //! ALO_EVERY_TRY_LEVEL=ask-each-time               # full-access (the default) or ask-each-time
+//! ALO_EVERY_TRY_BEFORE=before.txt                 # the base's declaration: try a change's own
+//! ALO_EVERY_TRY_OTHER_TRIES=3                     # with BEFORE: tries of every other request
 //!   alo-every-try
+//!
+//! alo-every-try declare                           # write what-the-model-is-offered.txt again
 //! ```
 //!
-//! Exits 0 when every try of every request took the road, 1 when any left it,
-//! and 2 when nothing could be measured: no key, a provider that did not
-//! answer, or a set that would not build. **Nothing is carried out**: the
-//! model's choices are recorded and answered from a script.
+//! **The whole set**, without `ALO_EVERY_TRY_BEFORE`: exits 0 when every try
+//! of every request took the road, 1 when any left it, and 2 when nothing
+//! could be measured.
+//!
+//! **A change's own**, with `ALO_EVERY_TRY_BEFORE` naming the base's
+//! declaration (`alo_every_try::the_declaration`): the requests the change
+//! owns (`alo_every_try::its_own`) are tried `ALO_EVERY_TRY_TRIES` times and
+//! held to at least nine in every ten; every other request is tried
+//! `ALO_EVERY_TRY_OTHER_TRIES` times and reported, not counted
+//! (`alo_every_try::counted`). A change that owns nothing exits 0 **before the
+//! key is read and without asking anybody**. Exits 0 when its own held, 1 when
+//! one slipped and 2 when nothing could be said.
+//!
+//! **Nothing is carried out**: the model's choices are recorded and answered
+//! from a script.
 
 use std::io::Write as _;
 use std::process::ExitCode;
 
+use alo_capability::Verbs;
+use alo_every_try::counted::{counted, summary_counting};
+use alo_every_try::its_own::{ItsOwn, its_own};
+use alo_every_try::the_declaration::{Declared, THE_FILE};
 use alo_every_try::{
-    AtAProvider, TheLevel, Tried, Verdict, Went, summary, tallying_at, the_set, verdict,
+    ARequest, AtAProvider, TheLevel, TheSet, Tried, Verdict, Went, summary, tallying_at, the_set,
+    verdict,
 };
 use alo_models::{Provider, Region, Secret};
 
@@ -39,9 +59,28 @@ fn said(name: &str, otherwise: &str) -> String {
         .unwrap_or_else(|| otherwise.to_owned())
 }
 
+/// A count the variable `name` says, or `otherwise`.
+fn a_count(name: &str, otherwise: &str) -> Result<usize, String> {
+    said(name, otherwise)
+        .parse()
+        .map_err(|_| format!("{name} is a whole number"))
+}
+
 fn main() -> ExitCode {
+    if std::env::args().nth(1).as_deref() == Some("declare") {
+        return match declaring() {
+            Ok(to) => {
+                println!("What the model is offered was written to {to}.");
+                ExitCode::SUCCESS
+            }
+            Err(why) => {
+                eprintln!("nothing was written: {why}");
+                ExitCode::FAILURE
+            }
+        };
+    }
     match running() {
-        Ok(verdict) => ExitCode::from(verdict.exit_code()),
+        Ok(code) => ExitCode::from(code),
         Err(why) => {
             eprintln!("nothing was measured: {why}");
             ExitCode::from(Verdict::NotMeasured.exit_code())
@@ -49,16 +88,86 @@ fn main() -> ExitCode {
     }
 }
 
-/// Try the set and write its summary, answering with the verdict, or why
-/// nothing could be measured.
-fn running() -> Result<Verdict, String> {
+/// Write the declaration of what the code offers the model to this crate's
+/// committed file, answering with where.
+fn declaring() -> Result<String, String> {
+    let set = the_set().map_err(|why| why.to_string())?;
+    let verbs = alo_turn::the_verbs_a_whole_machine_offers().map_err(|why| why.to_string())?;
+    let declared = Declared::of(&set, &verbs).map_err(|why| why.to_string())?;
+    let to = format!("{}/{THE_FILE}", env!("CARGO_MANIFEST_DIR"));
+    std::fs::write(&to, declared.written()).map_err(|why| format!("{to}: {why}"))?;
+    Ok(to)
+}
+
+/// Append `written` to the summary file a run named, if it named one.
+fn writing_the_summary(written: &str) -> Result<(), String> {
+    let to = said("ALO_EVERY_TRY_SUMMARY", "");
+    if to.is_empty() {
+        return Ok(());
+    }
+    let failed = |why: std::io::Error| format!("the summary could not be written to {to}: {why}");
+    std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&to)
+        .map_err(failed)?
+        .write_all(written.as_bytes())
+        .map_err(failed)
+}
+
+/// The requests the change owns, when the run was given the base's
+/// declaration.
+fn what_it_owns(set: &TheSet, verbs: &Verbs) -> Result<Option<Vec<ItsOwn>>, String> {
+    let before = said("ALO_EVERY_TRY_BEFORE", "");
+    if before.is_empty() {
+        return Ok(None);
+    }
+    let text = std::fs::read_to_string(&before)
+        .map_err(|why| format!("the base's declaration {before} could not be read: {why}"))?;
+    let before = Declared::read(&text).map_err(|why| why.to_string())?;
+    let after = Declared::of(set, verbs).map_err(|why| why.to_string())?;
+    Ok(Some(its_own(&before, &after)))
+}
+
+/// Say one try as it ends.
+fn telling(request: &ARequest, try_number: usize, tried: &Tried) {
+    let went = match tried.went() {
+        Went::TheRoad => "took the road".to_owned(),
+        Went::WentWrong(why) => format!("left the road: {why}"),
+        Went::NotAnswered(why) => format!("could not ask the model: {why}"),
+    };
+    println!(
+        "{} — try {try_number}: {} — {went}",
+        request.named(),
+        tried.chose().join(" → ")
+    );
+}
+
+/// Try the set, or a change's own, and write its summary, answering with the
+/// exit code, or why nothing could be measured.
+fn running() -> Result<u8, String> {
     let endpoint = said("ALO_EVERY_TRY_ENDPOINT", "https://api.openai.com");
     let model = said("ALO_EVERY_TRY_MODEL", "gpt-4o-mini");
-    let tries: usize = said("ALO_EVERY_TRY_TRIES", "5")
-        .parse()
-        .ok()
-        .filter(|tries| *tries > 0)
-        .ok_or("ALO_EVERY_TRY_TRIES is a whole number above zero")?;
+    let tries = a_count("ALO_EVERY_TRY_TRIES", "5")?;
+    if tries == 0 {
+        return Err("ALO_EVERY_TRY_TRIES is a whole number above zero".to_owned());
+    }
+    let asked_of = format!("{model} at {endpoint}");
+    let mut set = the_set().map_err(|why| why.to_string())?;
+    let verbs = alo_turn::the_verbs_a_whole_machine_offers().map_err(|why| why.to_string())?;
+
+    // **A change that owns nothing is answered here**, before the key is read
+    // and before anybody is asked.
+    let own = what_it_owns(&set, &verbs)?;
+    if let Some(own) = &own
+        && own.is_empty()
+    {
+        let written = summary_counting(&[], own, &asked_of);
+        println!("{written}");
+        writing_the_summary(&written)?;
+        return Ok(counted(&[], own).exit_code());
+    }
+
     let key = std::env::var(THE_KEY)
         .ok()
         .filter(|key| !key.trim().is_empty())
@@ -68,14 +177,18 @@ fn running() -> Result<Verdict, String> {
     let key = Secret::typed(key.trim())
         .map_err(|_| format!("{THE_KEY} is not a key that can be sent"))?;
 
-    let mut set = the_set().map_err(|why| why.to_string())?;
     let only = said("ALO_EVERY_TRY_ONLY", "");
     if !only.is_empty() {
+        if own.is_some() {
+            return Err(
+                "ALO_EVERY_TRY_ONLY and ALO_EVERY_TRY_BEFORE choose the requests two ways; give one"
+                    .to_owned(),
+            );
+        }
         set = set
             .only(&only)
             .ok_or(format!("the set has no request called `{only}`"))?;
     }
-    let verbs = alo_turn::the_verbs_a_whole_machine_offers().map_err(|why| why.to_string())?;
     let strings =
         alo_every_try::words_for_the_answers::the_words().map_err(|why| why.to_string())?;
     let provider = Provider::checked(
@@ -103,52 +216,63 @@ fn running() -> Result<Verdict, String> {
             ));
         }
     };
-    let asked_of = format!("{model} at {endpoint}");
     println!(
-        "Trying set {} against {asked_of}, {tries} times per request. This leaves the machine: \
-         every try asks the provider.",
+        "Trying set {} against {asked_of}. This leaves the machine: every try asks the provider.",
         alo_every_try::THE_VERSION
     );
-    let tallied = tallying_at(
-        level,
-        &set,
-        tries,
-        &verbs,
-        &strings,
-        &mut asking,
-        &mut |request, try_number, tried: &Tried| {
-            let went = match tried.went() {
-                Went::TheRoad => "took the road".to_owned(),
-                Went::WentWrong(why) => format!("left the road: {why}"),
-                Went::NotAnswered(why) => format!("could not ask the model: {why}"),
-            };
-            println!(
-                "{} — try {try_number}: {} — {went}",
-                request.named(),
-                tried.chose().join(" → ")
+    let (mut written, code) = match &own {
+        None => {
+            let tallied = tallying_at(
+                level,
+                &set,
+                tries,
+                &verbs,
+                &strings,
+                &mut asking,
+                &mut telling,
             );
-        },
-    );
-    let mut written = summary(&tallied, &asked_of);
+            (summary(&tallied, &asked_of), verdict(&tallied).exit_code())
+        }
+        Some(own) => {
+            let is_its_own =
+                |request: &ARequest| own.iter().any(|one| one.named() == request.named());
+            let others = a_count("ALO_EVERY_TRY_OTHER_TRIES", "3")?;
+            let mut tallied = tallying_at(
+                level,
+                &set.clone().retaining(is_its_own),
+                tries,
+                &verbs,
+                &strings,
+                &mut asking,
+                &mut telling,
+            );
+            if others > 0 {
+                tallied.extend(tallying_at(
+                    level,
+                    &set.retaining(|request| !is_its_own(request)),
+                    others,
+                    &verbs,
+                    &strings,
+                    &mut asking,
+                    &mut telling,
+                ));
+            }
+            (
+                summary_counting(&tallied, own, &asked_of),
+                counted(&tallied, own).exit_code(),
+            )
+        }
+    };
     written.push_str(&format!(
         "\nThe provider was asked {} times, second attempts after no answer included.\n",
         asking.calls()
     ));
     println!("\n{written}");
-    let to = said("ALO_EVERY_TRY_SUMMARY", "");
-    if !to.is_empty() {
-        let mut file = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&to)
-            .map_err(|why| format!("the summary could not be written to {to}: {why}"))?;
-        file.write_all(written.as_bytes())
-            .map_err(|why| format!("the summary could not be written to {to}: {why}"))?;
-    }
+    writing_the_summary(&written)?;
     // After the summary is written, so a fault here never hides what was
     // measured.
     if !asking.is_quiet() {
         return Err("a question was left open, so the indicator would still be lit".to_owned());
     }
-    Ok(verdict(&tallied))
+    Ok(code)
 }
