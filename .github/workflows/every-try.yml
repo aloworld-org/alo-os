@@ -87,6 +87,7 @@ on:
       - "crates/alo-adapters/src/opening_words.rs"
       - "crates/alo-adapters/src/menu_words.rs"
       - "crates/alo-adapters/src/keys_words.rs"
+      - "crates/alo-adapters/src/picture_words.rs"
       - "crates/alo-adapters/src/typing_without_saving_words.rs"
       # How the machine finds the field a name means.
       - "crates/alo-adapters/src/places_for_text.rs"
