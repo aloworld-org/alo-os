@@ -419,8 +419,7 @@ fn where_the_window_cannot_be_read_the_card_is_still_asked() {
     let counted = windows.counted.clone();
     let ((proposed, waiting), _) =
         on_a_machine(&mut windows, the_mixer_is_granted, |turning, grants| {
-            let proposed =
-                turning.proposing(SET_VALUE, &volume(MIXER, 40), grants, hour(), noon());
+            let proposed = turning.proposing(SET_VALUE, &volume(MIXER, 40), grants, hour(), noon());
             (proposed, turning.waiting_at(noon()).count())
         });
     assert!(proposed.is_ok(), "{proposed:?}");
