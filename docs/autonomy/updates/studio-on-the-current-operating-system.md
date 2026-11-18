@@ -51,6 +51,28 @@ automatic review descriptions are clearer. This change requires a new repeated
 trial. Scripted tests do not replace that trial or prove execution through the
 installed agent.
 
+At `2385dee33`, all eighteen Studio changes passed all five tries at both
+approval levels. The status-only question still passed only two of five at full
+access and none when asking each time. The full set also retained pre-existing
+file-manager, chooser, scrolling and search-box failures; these are not new
+passes or proven regressions. The broad application-verb preference has been
+removed. A narrower, registry-derived status-read rule tells the model to read
+live state before answering a state question. Its regression was observed red,
+passed after the change and failed again when that rule was deliberately
+disconnected. The restored implementation passed. The affected four packages
+now pass 767 local tests, strict linting, formatting and warnings-denied docs.
+The next real-model repetitions remain required.
+
+The hosted mutation baseline also exposed an outdated Settings source check
+that expected the old third grant path. Settings now uses main's shared
+application-grant road. The source check again permits exactly two direct
+Settings grant/revoke paths, as current main does. Independent review found a
+raw application grant could hide behind a previously bound `Changing`; a new
+negative fixture was seen failing and the guard now refuses that call in every
+Settings source file. All six source-only checks passed when compiled directly
+with Rust against the real shell source. Hosted Cargo/mutation validation still
+needs to pass; no hosted mutation coverage is claimed from a failed baseline.
+
 The private KVM image built and reached its OS boot walk. That walk does not
 install Studio or establish recording acceptance. A separate private reference
 window and real Pulse monitor are under development for the installed walk.

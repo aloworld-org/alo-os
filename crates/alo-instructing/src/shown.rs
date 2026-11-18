@@ -12,6 +12,7 @@
 use alo_capability::Verbs;
 
 use crate::instructions::Instructions;
+use crate::reading_application_status::reading_application_status;
 use crate::the_conversation_so_far::TheConversationSoFar;
 use crate::the_window_offered::TheWindowOffered;
 use crate::verb_as_told::as_told;
@@ -103,6 +104,7 @@ pub fn the_products_words(instructions: Instructions, verbs: &Verbs) -> String {
     // After every verb, because it names two of them and says in which order
     // they go — and only where the registry has them.
     text.push_str(&working_in_an_application(verbs));
+    text.push_str(&reading_application_status(verbs));
     text
 }
 
@@ -124,6 +126,40 @@ pub fn shown_to_a_turn(verbs: &Verbs, may_reach: &WhatItMayReach, request: &str)
 mod tests {
     use super::*;
     use crate::testing::{a_verb_of_somebody_elses, the_verbs};
+
+    /// Available operations do not report an application's live state.
+    #[test]
+    fn an_application_status_read_is_required_before_a_live_status_answer() {
+        use alo_capability::{Effect, Requires, Verb};
+        use alo_strings::Word;
+        let mut verbs = the_verbs();
+        verbs
+            .declare(
+                Verb::checked(
+                    "fixture.status",
+                    Word::saying(
+                        "testing.fixture.status",
+                        "read the fixture's current status",
+                    ),
+                    Effect::Read,
+                    vec![],
+                    Requires::nothing_because("this fixture reaches no machine"),
+                    Word::saying("testing.fixture.read", "read the fixture status"),
+                )
+                .unwrap(),
+            )
+            .unwrap();
+        let told = the_products_words(Instructions::SHOWN_TO_A_TURN, &verbs);
+        assert!(
+            told.contains("Read the live status before answering"),
+            "{told}"
+        );
+        assert!(
+            told.contains("a verb's description is not a live report"),
+            "{told}"
+        );
+        assert!(told.contains("fixture.status"), "{told}");
+    }
 
     /// **A model is told what a verb is for in the verb's own words.** Two
     /// descriptions of one verb are two things that can disagree, and the one
