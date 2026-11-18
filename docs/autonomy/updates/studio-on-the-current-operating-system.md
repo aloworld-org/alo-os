@@ -121,7 +121,7 @@ and bounded artifact transfer. At frozen source
 `76f131ecea607e317fa141004655f0d224107a32`, manual package run 44320429214
 passed normal packaging, signature refusals and separate reference/controller
 packaging. Installed KVM walk 44322063965 was dispatched with that exact source
-and package run. Its installed recording verdict is pending. The private
+and package run. That run timed out before the installed flow reported completion. The private
 instrument workflow also passed its real decoder/native-control checks on that
 source; local validation recorded 143 Python and 30 focused Rust test passes.
 The person-side controller is not an agent tool and cannot establish the
@@ -217,3 +217,34 @@ remain unfinished prerequisites. Studio's GTK interface is a development test
 surface. Neither the shared-kit migration nor public market availability is
 complete. Local signed-repository verification remains the authorized
 distribution scope. No unrelated verification VM is to be paused.
+
+## Terminal focus failure found by the installed walk
+
+Private KVM run 44322063965, source `76f131ecea607e317fa141004655f0d224107a32`,
+built and booted the image, but the installed-flow completion check timed out.
+The retained terminal picture shows Window actions focused after maximising;
+the serial log records repeated window-placement actions while the setup
+command was being typed. No Studio session report or recording was returned.
+This is evidence of a pre-installation focus failure, not a recording verdict.
+
+The private branch now includes integration source `6656d0c91`. Its hosted
+repository gates and native/desktop checks passed. All 19 Studio model requests
+passed five repetitions at both approval levels (190 Studio tries), while the
+full model job failed on other requests. In particular, two close-application
+tries unnecessarily requested Studio status; the broader model gate remains
+unresolved. The hosted mutation job also found surviving changes and did not
+complete its entire candidate set. Neither job is reported as a pass.
+
+The private walk now presses Escape to leave the terminal band, submits a
+harmless journal acknowledgement, and requires that fresh acknowledgement
+within 30 seconds before typing the installation command. Three independent
+Rust tests failed against the old steps and passed after the correction,
+including missing and stale acknowledgements that must stop before installing.
+These checks run through the normal repository gate. A new exact-source package
+and installed KVM walk are still required; installed media and agent permission
+acceptance remain unverified.
+Focused walk validation passed 33 tests, formatting, strict all-target linting
+and warnings-denied documentation. Five deliberate faults (missing Escape,
+stale-log acceptance, a 20-minute preflight, missing Return and the wrong
+acknowledgement) each failed a regression test; the restored tests passed.
+These five mutation checks were performed once locally, not by the hosted job.

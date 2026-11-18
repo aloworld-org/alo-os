@@ -54,9 +54,8 @@ fn a_separate_submitted_harmless_command_is_acknowledged_before_installation() {
         Step::ExpectLine { phrase, since: Since::Mark, within, a_retry_may_pass: false, .. }
         if phrase == ACCEPTED && !within.is_zero() && *within <= Duration::from_secs(30))
     });
-    let Some(accepted) = accepted else {
-        panic!("missing fresh terminal-command acknowledgement bounded to 30 seconds");
-    };
+    let accepted =
+        accepted.expect("missing fresh terminal-command acknowledgement bounded to 30 seconds");
     let before = &steps[..accepted];
     assert!(before.iter().any(|step| matches!(step, Step::Mark)));
     let commands: Vec<_> = before
