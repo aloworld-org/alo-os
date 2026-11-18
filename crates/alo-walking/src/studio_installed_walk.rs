@@ -14,7 +14,19 @@ pub const PRIVATE_STUDIO: &str = "ALO_WALK_PRIVATE_STUDIO";
 #[must_use]
 pub fn then_installed_studio(walk: Walk) -> Walk {
     walk.section_only_with(PRIVATE_STUDIO, |walk| {
-        walk.mark()
+        // Maximising returns focus to Window actions on the terminal's band.
+        // Leave that band and prove the shell accepts input before installing.
+        walk.press(Chord::key("esc"))
+            .mark()
+            .type_text("printf 'Studio terminal command accepted\\n' | systemd-cat -t studio-walk")
+            .press(Chord::key("ret"))
+            .expect_line(
+                "the terminal accepts the private Studio command",
+                "Studio terminal command accepted",
+                Since::Mark,
+                Duration::from_secs(30),
+            )
+            .mark()
             .type_text(concat!(
                 "(set -eu; d=$(mktemp -d); cd \"$d\"; ",
                 "for f in studio.flatpak fixture.flatpak studio-session source.txt features.txt sdk-versions.txt checksums.txt; ",
