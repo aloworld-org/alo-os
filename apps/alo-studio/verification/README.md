@@ -81,6 +81,16 @@ approval, exactly-once execution and execution-record checks remain required.
 The person-flow report retains bounded startup/cleanup failures even when no
 recording was created.
 
+The controller selects native Settings with `alo-app alo --in settings`, its
+published surface identifier. The visible title `Settings` does not select
+alo's own accessibility surface. An independent regression distinguishes the
+two, and a one-time isolated AT-SPI check with the real `alo-app` binary
+reproduced uppercase refusal and lowercase success. Installed recovery still
+requires the private walk. At source `10bd263330aa9d2b10f5ed30d552cbe36c7eb453`,
+run `44394653212` passed audio startup and reached Studio Ready, then failed
+reading native Settings controls before recording. Its journal confirms that
+Settings opened; no media was produced.
+
 In a fresh profile with no audio devices, `pw-dump` can omit the empty default
 metadata store even while `pw-cli` lists it. Startup validates saved microphone
 history and any observed live preference before creating its owned fixture.

@@ -395,3 +395,24 @@ appended Studio status, and generic archive, scroll, selection, file opening,
 private typing and file chooser cases also failed. The completed-request wording
 has therefore not eliminated unrelated status reads. No request, expected road
 or repetition count was weakened, and the failed gate is not reported as passed.
+
+## Installed startup and native Settings recovery
+
+Private installed run 44394653212 at `10bd263330aa9d2b10f5ed30d552cbe36c7eb453`
+passed audio startup and observed Studio Ready. It then failed before recording
+while reading native Settings controls. The journal confirms Settings opened;
+the retained report names the agent-permissions stage and command exit 1.
+The verified artifact digest is
+`2f47b846b933a80a0dab0d3fdbff6b59bbb01afaf0442e67a10e7a3e2fa29852`.
+No media was produced, so continuity and synchronization remain unmeasured.
+
+The controller used the visible title `Settings` where alo's own tree requires
+the published surface identifier `settings`. `alo-access/src/tree.rs` publishes
+that identifier, `alo-adapters/src/walking.rs` matches it exactly, and the
+terminal-command contract documents `--in settings`. The controller now uses
+that identifier. Independent tests failed before the correction; a one-time
+isolated AT-SPI experiment with the actual `alo-app` binary reproduced exit 1
+for the title and exit 0 for the identifier. Its fixture is synthetic, not an
+installed desktop result. All 210 verification tests now pass locally. The
+standing verification-instruments job reruns the regression. A new installed
+walk must still establish recovery and complete the recording flow.
