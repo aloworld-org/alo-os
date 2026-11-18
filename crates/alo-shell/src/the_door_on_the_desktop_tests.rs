@@ -104,3 +104,41 @@ fn an_open_at_the_desktops_door_reaches_the_agents_list() {
     drop(door);
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// **The file chooser's two acts reach the desktop through its door**: the
+/// portal's `choose-file` and alo's approved `alo-chooses-file` are each
+/// handed over once, with nothing answered by the door itself — and a door
+/// not yet served hands over nothing. Written after the mutation check of
+/// #1374 replaced the second hand-over with *nothing* and no test noticed.
+#[test]
+fn the_file_choosers_acts_reach_the_desktop_through_its_door() {
+    let root = std::env::temp_dir().join(format!("alo-desk-door-{}-chooser", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let place = ThePlace::beneath(&root, us());
+    let (_directory, mut server) = a_server("door-chooser");
+    let mut door = TheDoorOnTheDesktop::at(place.clone(), us());
+    assert!(door.alo_answers_the_file_chooser().is_empty());
+    assert!(door.asked_for_files().is_empty());
+
+    std::fs::create_dir_all(place.directory()).unwrap();
+    let _ = door.answered(&mut server);
+    assert!(door.is_served());
+    let mut daemon = UnixStream::connect(place.socket()).unwrap();
+    daemon
+        .write_all(b"alo-chooses-file /var/home/alo/Documents notes.txt\n")
+        .unwrap();
+    let mut portal = UnixStream::connect(place.socket()).unwrap();
+    portal
+        .write_all(b"choose-file org.gnome.TextEditor open /var/home/alo\n")
+        .unwrap();
+    assert_eq!(door.answered(&mut server), 0);
+    assert_eq!(door.alo_answers_the_file_chooser().len(), 1);
+    assert!(
+        door.alo_answers_the_file_chooser().is_empty(),
+        "handed over once"
+    );
+    assert_eq!(door.asked_for_files().len(), 1);
+    assert!(door.asked_for_files().is_empty(), "handed over once");
+    drop(door);
+    let _ = std::fs::remove_dir_all(&root);
+}

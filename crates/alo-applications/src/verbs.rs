@@ -730,4 +730,30 @@ mod tests {
         declare_into(&mut mine).unwrap();
         assert_eq!(mine.len(), 4);
     }
+
+    /// **Every verb this crate ships reaches the one list**: the four, opening
+    /// a file in an application, and answering the file chooser — and asked a
+    /// second time, nothing is quietly replaced. Written after the mutation
+    /// check of #1374 replaced this function with doing nothing and no test
+    /// noticed.
+    #[test]
+    fn every_verb_this_crate_ships_reaches_the_one_list_once() {
+        let mut every = Verbs::default();
+        declare_every_verb_into(&mut every).unwrap();
+        for name in [
+            OPEN_APPLICATION,
+            FOCUS_APPLICATION,
+            CLOSE_APPLICATION,
+            crate::OPEN_FILE_IN_APPLICATION,
+            crate::CHOOSE_ON_THE_FILE_CHOOSER,
+        ] {
+            assert!(every.of(name).is_some(), "{name} is not on the list");
+        }
+        assert_eq!(every.len(), 6, "the four, and the two added since");
+        assert!(
+            declare_every_verb_into(&mut every).is_err(),
+            "a second declaration replaced the first"
+        );
+        assert_eq!(every.len(), 6);
+    }
 }
