@@ -45,7 +45,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 20);
+    assert_eq!(THE_VERSION, 21);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -80,6 +80,25 @@ fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
             "press a key in an application",
             "type into a search box without saving",
             "answer the file chooser",
+            "read Studio status",
+            "prepare a new Studio recording",
+            "choose a screen in Studio",
+            "choose a window in Studio",
+            "start a Studio recording",
+            "pause a Studio recording",
+            "resume a Studio recording",
+            "finish a Studio recording",
+            "enable the Studio microphone",
+            "disable the Studio microphone",
+            "set Studio recording quality",
+            "turn off the Studio countdown",
+            "set a three-second Studio countdown",
+            "set a five-second Studio countdown",
+            "cancel the Studio countdown",
+            "show the Studio library",
+            "review a Studio recording",
+            "rename a Studio recording",
+            "export a Studio recording",
         ]
     );
 }

@@ -101,6 +101,12 @@ const STATUS_BY_HAND: Word = Word::saying(
 /// Declare each fixed control with translated purpose, approval and effect words.
 macro_rules! controls {
     ($(($name:ident, $key:literal, $purpose:literal, $sentence:literal, $manual:literal, $changes:literal, $method:literal, $args:expr, $parameters:expr)),* $(,)?) => {
+        /// Fully qualified action names, in declaration order, for discovery and checks.
+        pub const ACTION_NAMES: &[&str] = &[
+            "studio.status",
+            $(concat!("studio.", stringify!($name)),)*
+        ];
+
         /// Every translated word this recording adapter declares.
         pub const WORDS: &[Word] = &[
             KEEP_VIDEOS, QUALITY, RECORDING, TITLE, FULL_HD, HD, ORIGINAL, LIGHTWEIGHT,

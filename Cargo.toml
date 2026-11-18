@@ -305,5 +305,5 @@ codegen-units = 1
 strip = "symbols"
 
 [patch.crates-io]
-# ADR 0150: ownership and byte views of the existing CPU image mapping only.
+# ADR 0160: ownership and byte views of the existing CPU image mapping only.
 smithay = { path = "engines/smithay" }

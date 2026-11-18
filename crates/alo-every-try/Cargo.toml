@@ -18,7 +18,7 @@ path = "src/bin/alo-every-try.rs"
 # The agent's own loop. A try is `alo_agent::driving_about`, the function a
 # person's turn runs, given a door that records instead of carrying out.
 alo-agent = { path = "../alo-agent" }
-# The verbs a model is offered (`the_verbs_a_whole_machine_offers`) and the
+# The verbs a model is offered (`the_verbs_with_application_controls`) and the
 # shape a provider holds its answer to (`the_envelope_naming_the_verbs`).
 alo-turn = { path = "../alo-turn" }
 # The words a turn shows a model, and what it may reach.

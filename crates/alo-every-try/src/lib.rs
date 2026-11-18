@@ -12,7 +12,7 @@
 //! A try is **the agent's own loop**, `alo_agent::driving_about`, the function
 //! a person's turn runs, with the real instructions
 //! (`Instructions::SHOWN_TO_A_TURN`) and the real verbs
-//! (`alo_turn::the_verbs_a_whole_machine_offers`). Its question goes to the
+//! (`alo_turn::the_verbs_with_application_controls`). Its question goes to the
 //! real model through `alo-asking`'s provider road, held to the same shape a
 //! turn's question is (`alo_turn::the_shape_a_provider_is_held_to`). What is
 //! different is the **door**: where the daemon would carry a verb out, the
@@ -55,6 +55,8 @@ pub mod the_machine_answers;
 pub mod the_set;
 pub mod went_wrong;
 pub mod words_for_the_answers;
+
+mod recording_in_studio;
 
 #[cfg(test)]
 mod testing;

@@ -14,7 +14,7 @@ use crate::a_try::TheModel;
 
 /// The machine's verbs, from the one place that builds them.
 pub fn the_verbs() -> Verbs {
-    alo_turn::the_verbs_a_whole_machine_offers().expect("the machine's verbs declare")
+    alo_turn::the_verbs_with_application_controls().expect("the machine's verbs declare")
 }
 
 /// The machine a step is matched on: full access, and the editor told by its
