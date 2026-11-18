@@ -395,3 +395,29 @@ appended Studio status, and generic archive, scroll, selection, file opening,
 private typing and file chooser cases also failed. The completed-request wording
 has therefore not eliminated unrelated status reads. No request, expected road
 or repetition count was weakened, and the failed gate is not reported as passed.
+
+## Native approval evidence preparation
+
+The private approval instruments now validate bounded appended execution
+records, observe recorder D-Bus calls and successful replies, and observe one
+fresh pending Ask process through its matching successful exit. Independent
+test-first review caught an interface-omitted duplicate call escaping the
+delivery counter and normal systemd invalidations rejecting valid exits. Both
+regressions now pass. Thirty lifecycle tests use a typed private D-Bus fixture;
+a separate one-time systemd observation established the actual notification
+order through garbage collection. Thirteen deliberately introduced lifecycle
+faults and the duplicate-call regression fault were caught in temporary copies.
+Earlier record-reader and delivery checks caught twenty and eleven faults.
+
+The 298-test instrument suite passed before the Settings locator follow-up.
+The expanded 299-test run later passed 298 tests and hit one two-second child
+startup timeout in the FIFO refusal test; that test passed independently in
+0.156 seconds without a code change. The corrected Settings recovery branch
+passed all 210 tests. These are local observations, not installed acceptance.
+The standing verification-instruments job discovers all these regressions.
+
+The new observers are not yet connected to the installed controller. Process
+exit is not model success, and a record alone is not one delivered action.
+The completion observer captures a pending Ask turn, not a fast Full turn.
+Native approval, policy withdrawal, actual app state, matching execution record
+and single delivery must still be exercised together after provider setup.

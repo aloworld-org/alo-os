@@ -54,6 +54,14 @@ person controller must launch it as the image's agent with all capabilities
 and supplementary groups dropped and `NoNewPrivs` set. Running it as the person
 or root is an error.
 
+Native Settings is selected with `alo-app alo --in settings`: the lowercase
+identifier is the published surface contract. `Settings` is its displayed
+title, and using that title for alo's own surface returns no matching window.
+The independent controller regression keeps those two names distinct. A
+one-time isolated AT-SPI reproduction with the actual `alo-app` binary observed
+the uppercase refusal and lowercase success; installed recovery still needs
+the private walk.
+
 Its five stdout lines are `ask-before-grant`, `granted`, `revoked`, `full`, and
 `ask-again`. The controller must make and verify the corresponding native
 Settings choice before echoing that exact line to stdin. The probe neither
@@ -103,6 +111,28 @@ Owner changes, duplicate calls, error replies, disconnection, excessive traffic
 and missing replies refuse certification. `test_delivery_observation.py` uses
 an independent service on an isolated session bus; it does not run installed
 Studio. The installed controller does not yet call this observer.
+
+The observer also refuses interface-omitted calls to the recorder object: D-Bus
+allows them, so monitoring only the declared interface could hide a duplicate
+delivery. An independent private-bus regression reproduces that case.
+
+`asking_turn_observation` prepares the corresponding process-completion check.
+It subscribes on the system bus before an empty asking-unit baseline, then
+captures the fresh pending turn's exact agent command, role, invocation, PID
+and monotonic start time. Completion requires that same process's successful
+exit facts; inactive state or a removed unit alone is insufficient. Cached
+signal facts survive systemd garbage collection. Replacement, invalidated
+identity, owner loss, ambiguous starts, malformed wire types, excessive traffic
+and timeout refuse certification.
+
+The initial command identifies the observed process; this does not attest to
+unchanged unit configuration afterwards. systemd normally invalidates its
+command/status tuples at exit. The observer tolerates those notifications but
+continues requiring the anchored process identity and explicit exit facts.
+`test_asking_turn_observation.py` uses a typed service on a private bus. A
+separate one-time WSL systemd observation established the notification order;
+neither is an installed Ask alo result. This observer is not yet wired into the
+controller and supports capturing a pending Ask turn, not a fast Full turn.
 
 In a fresh profile with no audio devices, `pw-dump` can omit the empty default
 metadata store even while `pw-cli` lists it. Startup validates saved microphone

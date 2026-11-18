@@ -52,7 +52,7 @@ No message bodies or unrelated traffic are retained in the returned summary.
             self.monitor = dbus.SessionBus(private=True, mainloop=loop)
             self.monitor.set_exit_on_disconnect(False)
             self.monitor.add_message_filter(self.received)
-            rules = [f"type='method_call',interface='{INTERFACE}',path='{PATH}'",
+            rules = [f"type='method_call',path='{PATH}'",
                      f"type='method_return',sender='{self.owner}'",
                      f"type='error',sender='{self.owner}'",
                      f"type='signal',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='{NAME}'"]
@@ -84,7 +84,10 @@ No message bodies or unrelated traffic are retained in the returned summary.
                 self.failure = 'Studio changed owner during observation'
         elif (kind == dbus.lowlevel.MESSAGE_TYPE_METHOD_CALL
                 and message.get_destination() in (NAME, self.owner)
-                and message.get_path() == PATH and message.get_interface() == INTERFACE):
+                and message.get_path() == PATH):
+            if message.get_interface() != INTERFACE:
+                self.failure = 'Unexpected or unqualified call reached the Studio object'
+                return
             member = message.get_member()
             if member == 'GetStatus' and message.get_signature() == '':
                 if (message.get_sender() == self.client.get_unique_name()
