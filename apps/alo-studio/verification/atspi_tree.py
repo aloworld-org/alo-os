@@ -46,8 +46,13 @@ class AtspiTree:
             interfaces = self.interface(node, ACCESSIBLE).GetInterfaces(timeout=3)
             actions = []
             if ACTION in interfaces:
-                actions = [str(action[0]) for action in
-                           self.interface(node, ACTION).GetActions(timeout=3)]
+                count = self.interface(node, 'org.freedesktop.DBus.Properties').Get(
+                    ACTION, 'NActions', timeout=3)
+                if not isinstance(count, dbus.Int32) or not 0 <= count <= 64:
+                    raise ValueError('the native control has an invalid action count')
+                # GetActions returns translated labels; GetName is the machine name.
+                actions = [str(self.interface(node, ACTION).GetName(index, timeout=3))
+                           for index in range(count)]
             return {'name': str(name), 'states': states, 'actions': actions,
                     'children': self.children(node)}
         except dbus.DBusException as error:

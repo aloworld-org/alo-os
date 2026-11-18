@@ -485,10 +485,11 @@ the complete private Python suite then passed 382 tests in 61.258 seconds.
 Independent final review passed 49 focused checks and caught nine additional
 cleanup/entry faults in temporary copies. These fixtures and fault experiments
 are local checks, not installed native-consent evidence. All 228 walking tests
-and the instruction/evaluation tests passed locally. Strict linting identified
-five missing private-item comments, which were added; lint and documentation
-checks still need to finish. Package and installed approval results must still
-accompany this change.
+and the instruction/evaluation tests passed locally. The final format, strict
+lint and warnings-denied documentation checks passed for adapters, walking,
+instructions and evaluation. All 192 adapter tests passed after rebuilding the
+restored source following fault experiments. Package and installed approval
+results must still accompany this change.
 
 The recording recovery source `ab49f785268934879e41a3dac1d2f906ef003146`
 passed its matching private package run 44406856402. Installed run 44407708282
@@ -496,8 +497,14 @@ reached Studio Ready and read Settings, then failed pressing the Running code
 tab before recording (32 passed, one failed, 138 not reached). Its artifact
 digest is `7daab8a71d188d30ca80d37f0fd3db0422f04cb81e103b239105d9d850db7879`.
 The previous uppercase selector failure is corrected. The native action-name
-contract is now being investigated: GetActions returns localized names, while
-GetName supplies machine identifiers. Unrelated verification VMs remain running.
+contract was independently reproduced: GetActions returns localized names,
+while GetName supplies machine identifiers. Both the adapter and private
+controller now use GetName with a typed, bounded action count. Four Rust
+wire regressions and five Python regressions failed before correction. The
+complete Python suite now passes 387 tests in 59.606 seconds; the action fixture
+owns a separate bus so an earlier GTK test cannot occupy its service names.
+Five Rust and six Python deliberate action-name faults were caught. Unrelated
+verification VMs remain running.
 No decoded continuity, synchronization or pause/resume acceptance has yet been
 established by these new runs.
 

@@ -248,8 +248,21 @@ impl AccessibilityTree for AccessibleSession {
     }
 
     fn actions(&self, at: &NodeAt) -> Result<Vec<String>, TreeFault> {
-        let actions: Vec<(String, String, String)> = self.ask(at, ACTION, "GetActions", &())?;
-        Ok(actions.into_iter().map(|(name, _, _)| name).collect())
+        let count: OwnedValue = self.ask(
+            at,
+            "org.freedesktop.DBus.Properties",
+            "Get",
+            &(ACTION, "NActions"),
+        )?;
+        let count = i32::try_from(count).map_err(|_| TreeFault::Vanished)?;
+        if !(0..=64).contains(&count) {
+            return Err(TreeFault::Vanished);
+        }
+        // GetActions contains localized labels. Only GetName identifies the
+        // machine action; preserve its index when choosing what to invoke.
+        (0..count)
+            .map(|index| self.ask(at, ACTION, "GetName", &(index,)))
+            .collect()
     }
 
     fn act(&self, at: &NodeAt, action: usize) -> Result<bool, TreeFault> {
