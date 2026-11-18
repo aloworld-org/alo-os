@@ -260,6 +260,125 @@ mod tests {
     use crate::{TheLevel, one_try_at};
     use alo_instructing::WhatItMayReach;
 
+    /// Match the person's request to its semantic action independently of the
+    /// declaration-order zip used to build the roads under test.
+    #[test]
+    fn recording_requests_require_the_action_the_person_actually_asked_for() {
+        let expected = [
+            ("read Studio status", "studio.status", &[][..]),
+            (
+                "prepare a new Studio recording",
+                "studio.new_recording",
+                &[][..],
+            ),
+            ("choose a screen in Studio", "studio.choose_screen", &[][..]),
+            ("choose a window in Studio", "studio.choose_window", &[][..]),
+            ("start a Studio recording", "studio.start", &[][..]),
+            ("pause a Studio recording", "studio.pause", &[][..]),
+            ("resume a Studio recording", "studio.resume", &[][..]),
+            ("finish a Studio recording", "studio.finish", &[][..]),
+            (
+                "enable the Studio microphone",
+                "studio.enable_microphone",
+                &[][..],
+            ),
+            (
+                "disable the Studio microphone",
+                "studio.disable_microphone",
+                &[][..],
+            ),
+            (
+                "set Studio recording quality",
+                "studio.set_quality",
+                &[("quality", "lightweight")][..],
+            ),
+            (
+                "turn off the Studio countdown",
+                "studio.countdown_off",
+                &[][..],
+            ),
+            (
+                "set a three-second Studio countdown",
+                "studio.countdown_three",
+                &[][..],
+            ),
+            (
+                "set a five-second Studio countdown",
+                "studio.countdown_five",
+                &[][..],
+            ),
+            (
+                "cancel the Studio countdown",
+                "studio.cancel_countdown",
+                &[][..],
+            ),
+            ("show the Studio library", "studio.show_library", &[][..]),
+            (
+                "review a Studio recording",
+                "studio.review",
+                &[("recording", "1000-20-1")][..],
+            ),
+            (
+                "rename a Studio recording",
+                "studio.rename",
+                &[("title", "Product demonstration")][..],
+            ),
+            ("export a Studio recording", "studio.export", &[][..]),
+        ];
+        let requests = the_requests();
+        assert_eq!(requests.len(), expected.len());
+        for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+            for (name, verb, given) in expected {
+                let request = requests
+                    .iter()
+                    .find(|request| request.named() == name)
+                    .expect("the person's recording request exists");
+                let mut lines = vec![reading("studio.status", &[])];
+                if verb != "studio.status" {
+                    lines.push(proposing(verb, given));
+                }
+                lines.push(answering("Done."));
+                let tried = one_try_at(
+                    level,
+                    request,
+                    &WhatItMayReach::nothing().at_full_access(true),
+                    &the_verbs(),
+                    &the_words(),
+                    &mut Writing::these(&lines),
+                );
+                assert!(tried.took_the_road(), "{level:?}: {name}: {tried:?}");
+
+                if verb == "studio.status" {
+                    continue;
+                }
+                // Another valid recording action cannot fulfil this request,
+                // including the opposite pause/resume and microphone actions.
+                for (_, other, other_given) in expected {
+                    if other == verb || other == "studio.status" {
+                        continue;
+                    }
+                    let mut model = Writing::these(&[
+                        reading("studio.status", &[]),
+                        proposing(other, other_given),
+                        answering("Done."),
+                    ]);
+                    let tried = one_try_at(
+                        level,
+                        request,
+                        &WhatItMayReach::nothing().at_full_access(true),
+                        &the_verbs(),
+                        &the_words(),
+                        &mut model,
+                    );
+                    assert!(
+                        !tried.took_the_road(),
+                        "{level:?}: {other} incorrectly fulfilled {name}: {tried:?}"
+                    );
+                }
+            }
+        }
+    }
+
     #[test]
     fn every_studio_request_accepts_its_action_and_actual_status_reads_at_both_levels() {
         for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {

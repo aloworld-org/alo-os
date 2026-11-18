@@ -5,6 +5,26 @@ set -euo pipefail
 scratch="$1"
 app_dir="$(cd -- "$(dirname -- "$0")/.." && pwd)"
 probe="${CARGO_TARGET_DIR:-$app_dir/target}/debug/examples/verify-recording"
+# Observe the normal semantic status as well as sending UI input: a Space key
+# that does nothing must not pass merely because a recording was eventually saved.
+wait_for_phase() {
+  local expected="$1" snapshot="$2"
+  for attempt in $(seq 1 150); do
+    gdbus call --address "$(cat "$scratch/session-bus")" --timeout 2 \
+      --dest org.aloworld.Studio --object-path /org/aloworld/Studio/Recorder \
+      --method org.aloworld.Studio.Recorder1.GetStatus > "$snapshot"
+    if python3 -I - "$snapshot" "$expected" <<'PY'
+import ast, json, pathlib, sys
+status = json.loads(ast.literal_eval(pathlib.Path(sys.argv[1]).read_text())[0])
+sys.exit(0 if status['phase'] == sys.argv[2] else 1)
+PY
+    then return; fi
+    sleep .1
+  done
+  cat "$snapshot" >&2
+  echo "Studio did not reach $expected." >&2
+  return 1
+}
 win=$(timeout 15s xdotool search --sync --onlyvisible --name '^alo Studio$' | head -1)
 xdotool windowfocus "$win"
 xdotool key ctrl+shift+r
@@ -38,14 +58,25 @@ if [[ -z "$bar" ]]; then
   exit 1
 fi
 xdotool windowfocus "$bar"
-sleep 1
+wait_for_phase recording "$scratch/ui-recording-status.txt"
 if xdotool search --onlyvisible --name '^alo Studio$' >/dev/null 2>&1; then
   echo 'The recording workspace stayed visible after its controls appeared.' >&2
   exit 1
 fi
 xdotool key space
-sleep 1
+wait_for_phase paused "$scratch/ui-pause-before.txt"
+sleep 5
+wait_for_phase paused "$scratch/ui-pause-after.txt"
+python3 -I - "$scratch/ui-pause-before.txt" "$scratch/ui-pause-after.txt" <<'PY'
+import ast, json, pathlib, sys
+before, after = [json.loads(ast.literal_eval(pathlib.Path(p).read_text())[0]) for p in sys.argv[1:]]
+assert before['elapsed_ms'] == after['elapsed_ms'], (before, after)
+for status in [before, after]:
+    assert not status['microphone_active'], status
+    assert not status['can_pause'] and status['can_resume'] and status['can_finish'], status
+PY
 xdotool key space
+wait_for_phase recording "$scratch/ui-resumed-status.txt"
 sleep 1
 xdotool key ctrl+shift+r
 for attempt in $(seq 1 100); do
