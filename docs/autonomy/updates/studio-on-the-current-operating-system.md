@@ -41,14 +41,14 @@ Independent request/action expectations also reject other valid Studio changes.
 The four affected Rust packages passed 766 tests locally, with four
 environment-dependent tests ignored; formatting, strict linting and
 warnings-denied documentation passed. These checks rerun in CI. The strengthened
-GUI recording check still needs execution.
+GUI recording check subsequently passed, as detailed below.
 
 The real-model trial at that earlier head failed despite five repetitions at
 each approval level: status, three/five-second countdown and finish requests
-still took wrong roads. The model is now told to prefer a matching application
-operation before the accessibility fallback; recording status, countdown and
-automatic review descriptions are clearer. This change requires a new repeated
-trial. Scripted tests do not replace that trial or prove execution through the
+still took wrong roads. The initial follow-up preferred a matching application
+operation before the accessibility fallback and clarified recording status,
+countdown and automatic review descriptions. Its repeated result and the
+narrower correction are below. Scripted tests do not replace trials or prove execution through the
 installed agent.
 
 At `2385dee33`, all eighteen Studio changes passed all five tries at both
@@ -73,10 +73,10 @@ Settings source file. All six source-only checks passed when compiled directly
 with Rust against the real shell source. Hosted Cargo/mutation validation still
 needs to pass; no hosted mutation coverage is claimed from a failed baseline.
 
-The private KVM image built and reached its OS boot walk. That walk does not
-install Studio or establish recording acceptance. A separate private reference
-window and real Pulse monitor are under development for the installed walk.
-Their initial local timing check failed; no synchronization pass is claimed.
+The private KVM image built and reached its OS boot walk. That walk did not
+install Studio or establish recording acceptance. The separate private reference
+window and real Pulse monitor first failed their local timing check; the
+subsequent reference-only result is recorded below.
 The actual application handlers, native consent and byte-identical export,
 decoded video continuity, audio continuity and matched synchronization markers
 still need installed evidence. A build or unit test pass does not establish
@@ -105,19 +105,40 @@ presentation. Its checker rejects missing channel boundaries, delivery gaps,
 repeated timestamps, static markers and insufficient matches. Independent
 tests caught a missing-leading-coverage fault before that checker was fixed.
 
-The private Python suite has 38 tests, including five real GTK/AT-SPI fixture
-cases. The nine Rust transfer/signal tests, all-target linting and documentation
-checks passed. A broad debug walk test run was stopped during expensive
+The private Python suite includes five real GTK/AT-SPI fixture cases. The nine
+Rust transfer/signal tests, all-target linting and documentation checks passed.
+A broad debug walk test run was stopped during expensive
 pre-existing pointer image searches; no full local walk-suite pass is claimed.
 The reference example compiles and passes strict linting. The separate reference
-Flatpak has manifest tests and a manual build option, but its actual bundle has
-not yet built. None of these helpers is a broker verb or an agent command surface.
+Flatpak subsequently built in manual run 44310023010, source
+`b92b185fdce5d7d149bd8b7c6ce9a0ba7d5cf074`. That run also passed the normal
+package's signed-install, wrong-key and tampered-metadata checks. Its reference
+artifact predates the guest controller archive and cannot run the new installed
+walk. None of these helpers is a broker verb or an agent command surface.
 
-The guest recording controller, private KVM workflow wiring, normal installed
-screen/window recordings, decoded video/audio audits, native consent/export and
-installed agent permission walk remain unfinished. The normal package continues
-to build with verification disabled. The private reference's verification feature
-is confined to its separate application identifier and bundle.
+The guest recording controller and private KVM wiring are now written. The host
+requires an exact successful manual package run from the image's source commit,
+checks both producer manifests and feature identities, and serves only closed
+input names. The fresh test account installs normal Studio and the separate
+reference, operates real native consent controls, records screen/window clips,
+checks pause/resume and byte-identical export, and returns only named evidence.
+The workflow states explicitly that this person-flow completion is not decoded
+media or installed-agent acceptance. These new steps have not run on a guest.
+
+Independent tests specify decoded-media limits before their implementation.
+The real FFmpeg seam preserves nonzero timestamps, video/PCM gaps and overlaps,
+partial sample tails, track counts and distinct marker/motion regions. Review
+caught unfinished streaming WebM being accepted after its available frames
+decoded cleanly; the regression was observed red and the auditor now also
+requires finalized positive container duration. Seventeen decoder tests pass,
+alongside 34 observation-audit and 22 package-preparation tests. Synthetic media
+is test input only. Twelve deliberate faults in the auditor, decoder and artifact
+checks were caught once locally; this is targeted mutation evidence, not a hosted
+coverage result. The Rust walk/transfer/signal/workflow checks pass 25 tests,
+strict linting and warnings-denied docs. The receiver and archive are private
+test instruments. The installed screen/window recordings, decoded video/audio
+acceptance, actual native consent/export and real-agent permission walk remain
+unverified. Normal Studio continues to build with verification disabled.
 
 The shared UI kit's application window, input, control and accessibility layers
 remain unfinished prerequisites. Studio's GTK interface is a development test

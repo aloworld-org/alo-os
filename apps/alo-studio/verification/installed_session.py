@@ -211,10 +211,8 @@ class Session:
         with self.transport.open(request, timeout=30) as reply:
             require(reply.status == 201, f'{name} was not retained by the host')
 
-    def export(self, identifier, title):
-        self.call('RenameRecording', title)
-        metadata = json.loads((self.library / f'{identifier}.json').read_text())
-        require(metadata['title'] == title, 'the name was not saved in the private library')
+    def export_destination(self, title):
+        """Open and read the real SaveFile sheet without granting its destination."""
         self.call('ExportRecording')
         self.wait(lambda state: state['export_pending'])
         deadline = time.monotonic() + 15
@@ -232,6 +230,18 @@ class Session:
         require(destination.is_relative_to(self.home) and not destination.exists(),
                 'the native destination is not a fresh file in the test account')
         self.event('native-export-destination', path=str(destination))
+        return destination
+
+    def export(self, identifier, title):
+        self.call('RenameRecording', title)
+        metadata = json.loads((self.library / f'{identifier}.json').read_text())
+        require(metadata['title'] == title, 'the name was not saved in the private library')
+        cancelled = self.export_destination(title)
+        command('alo-app', 'alo', 'press', 'button', 'Cancel')
+        self.wait(lambda state: not state['export_pending'])
+        require(not cancelled.exists(), 'cancelling export created a destination')
+        self.event('native-export-cancelled', path=str(cancelled))
+        destination = self.export_destination(title)
         command('alo-app', 'alo', 'press', 'button', 'Save')
         self.wait(lambda state: not state['export_pending'])
         original = self.library / f'{identifier}.webm'
@@ -261,17 +271,16 @@ class Session:
         self.begin()
         self.refused('Resume')
         self.active_for(18 if microphone else 12)
-        if microphone:
-            self.call('Pause')
-            before = self.wait(lambda state: state['phase'] == 'paused')
-            self.refused('Pause')
-            time.sleep(5)
-            after = self.status()
-            require(after['phase'] == 'paused' and after['elapsed_ms'] == before['elapsed_ms']
-                    and not after['microphone_active'], 'pause did not freeze capture time')
-            self.call('Resume')
-            self.wait(lambda state: state['phase'] == 'recording' and state['microphone_active'])
-            self.active_for(12)
+        self.call('Pause')
+        before = self.wait(lambda state: state['phase'] == 'paused' and not state['microphone_active'])
+        self.refused('Pause')
+        time.sleep(5)
+        after = self.status()
+        require(after['phase'] == 'paused' and after['elapsed_ms'] == before['elapsed_ms']
+                and not after['microphone_active'], 'pause did not freeze capture time')
+        self.call('Resume')
+        self.wait(lambda state: state['phase'] == 'recording' and state['microphone_active'] == microphone)
+        self.active_for(12)
         self.call('Finish')
         state = self.wait(lambda state: state['phase'] == 'review', seconds=45)
         identifier = state['recording_id']
