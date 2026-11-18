@@ -32,7 +32,8 @@ class PendingMicrophoneEdges(unittest.TestCase):
                     if not part:
                         return
                     data += part
-                server.sendall((json.dumps(value) + '\n').encode())
+                data = value if isinstance(value, bytes) else (json.dumps(value) + '\n').encode()
+                server.sendall(data)
             except OSError:
                 pass
 
@@ -74,6 +75,29 @@ class PendingMicrophoneEdges(unittest.TestCase):
         change['sentence']['came_from'] = 'translation'
         change['texts'] = []
         self.assertEqual(self.exchange(value)['number'], 0)
+
+    def test_known_optional_wording_fields_still_require_their_declared_shape(self):
+        for field in ('changes', 'leaves'):
+            for invalid in (False, 0, '', [], {}, {'text': 'x'},
+                            {'text': 'x', 'came_from': 'unknown'},
+                            {'text': 1, 'came_from': 'the-source'},
+                            {'text': 'x', 'came_from': 'the-source', 'extra': True}):
+                with self.subTest(field=field, invalid=invalid), self.assertRaises(ValueError):
+                    value = reply()
+                    value['tells']['waiting']['changes'][0][field] = invalid
+                    self.exchange(value)
+            for valid in (None, {'text': 'A declared effect', 'came_from': 'the-source'}):
+                with self.subTest(field=field, valid=valid):
+                    value = reply()
+                    value['tells']['waiting']['changes'][0][field] = valid
+                    self.assertEqual(self.exchange(value)['number'], 0)
+
+    def test_json_numeric_overflow_cannot_hide_inside_an_optional_field(self):
+        value = reply()
+        value['tells']['waiting']['changes'][0]['changes'] = 'overflow-number'
+        data = (json.dumps(value).replace('"overflow-number"', '1e309') + '\n').encode()
+        with self.assertRaises(ValueError):
+            self.exchange(data)
 
     def test_invalid_options_refuse_before_sending_any_request(self):
         for options in ({'enabled': 1}, {'enabled': None}, {'timeout': True},
