@@ -10,6 +10,7 @@ for source in "$here"/src/gst/*.c; do
 done
 compile() {
   "${CC:-cc}" -std=gnu11 -O2 -fno-strict-aliasing -D_GNU_SOURCE \
+    -include spa/pod/iter.h \
     -Wall -Wextra -Wno-unused-parameter -I"$1" -I"$built" -I"$here/src" -I"$here/src/gst" \
     "$here/tests/buffer-wait.c" "${sources[@]}" -o "$2" \
     $(pkg-config --cflags --libs libpipewire-0.3 gstreamer-1.0 gstreamer-base-1.0 \

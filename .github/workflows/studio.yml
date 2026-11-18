@@ -23,8 +23,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Native desktop libraries
-        timeout-minutes: 8
+        timeout-minutes: 15
         run: |
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' | sudo tee /etc/apt/apt.conf.d/80-studio-network > /dev/null
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libwayland-dev libinput-dev libseat-dev libxkbcommon-dev libpixman-1-dev libegl1-mesa-dev libgbm-dev libudev-dev libpipewire-0.3-dev libspa-0.2-dev libclang-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev dbus-x11 dbus-daemon gnome-keyring at-spi2-core libgtk-3-bin
       - name: Rust toolchain
