@@ -67,6 +67,8 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+/// Whether a picture of an application's windows may be taken (ADR 0147 §1).
+pub mod a_picture_may_be_taken;
 #[cfg(target_os = "linux")]
 pub mod accessibility_bus;
 pub mod accessibility_tree;
