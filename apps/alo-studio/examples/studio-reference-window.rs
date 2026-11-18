@@ -109,7 +109,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let shown = shown.clone();
         let clock = clock.clone();
         area.set_draw_func(move |_, cairo, width, height| {
-            let Some(position) = drawing.query_position::<gst::ClockTime>() else {
+            let Some(base) = drawing.base_time() else {
+                return;
+            };
+            let now = clock.time();
+            let Some(position) = now.checked_sub(base) else {
                 return;
             };
             let lit = signal::lit_at(position.nseconds());
@@ -127,7 +131,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let _ = cairo.show_text(&format!("{:.2} seconds", position.seconds_f64()));
             if let Ok(mut shown) = shown.lock() {
                 shown.draws.push(json!({
-                    "clock_ns": clock.time().nseconds(),
+                    "clock_ns": now.nseconds(),
                     "position_ns": position.nseconds(), "lit": lit,
                 }));
             }
