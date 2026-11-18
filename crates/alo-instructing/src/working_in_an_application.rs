@@ -166,8 +166,9 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
     if verbs.of(PICTURE_WINDOW).is_some() {
         acts.push(format!(
             "when {READ_WINDOW} answered that a window shows no text and names nothing — a game, \
-             a drawing canvas — {PICTURE_WINDOW} once, to have a picture of it read to you in \
-             words, never for a window {READ_WINDOW} could read"
+             a photo, a drawing canvas, where it says a picture can be taken — {PICTURE_WINDOW} \
+             once, before saying anything about what the window shows, since you cannot see it; \
+             never for a window {READ_WINDOW} could read"
         ));
     }
     // **A click by position only where a picture said where** (ADR 0147,

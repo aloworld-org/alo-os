@@ -566,13 +566,38 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         )],
         false,
     );
+    // **What the machine tells of such a window**, in its own words: no text
+    // to read, and — pictures being on for it and a reader chosen, as on the
+    // machine this set is asked on — that a picture of it can be read.
+    let strings = alo_strings::Strings::of(
+        alo_adapters::words::adapter_words()
+            .map_err(|why| NotTheSet::because(format!("{why:?}")))?,
+    );
+    let told_of_the_canvas = vec![
+        alo_adapters::nothing_to_read(
+            THE_PICTURE,
+            &viewer,
+            alo_adapters::WorkingFully::NothingMoreToTurnOn,
+            &strings,
+        )
+        .into_text(),
+        strings
+            .say(
+                &alo_adapters::picture_words::A_PICTURE_CAN_BE_READ.key(),
+                &alo_strings::Filling::of(
+                    alo_adapters::fallback_words::APPLICATION,
+                    viewer.clone(),
+                ),
+            )
+            .into_text(),
+    ];
     let picturing = ARequest::asking(
         "have a picture of a window that describes nothing read",
         "What does the photo open in Loupe show?",
         vec![
             Step::of(
                 READ_WINDOW,
-                Answered::With(Done::of_a_window_read(&the_canvas, &[])),
+                Answered::With(Done::of_a_window_read(&the_canvas, &told_of_the_canvas)),
             )
             .expecting(fallback_verbs::APPLICATION, viewer.as_str()),
             Step::of(

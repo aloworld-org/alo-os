@@ -147,6 +147,13 @@ pub(crate) fn reading_an_applications_windows(
                 .map(alo_strings::Said::into_text),
         );
     }
+    // **And where a picture could say more, and may be taken, that is said**
+    // (ADR 0147 §1): read from the person's file now, as the picture itself is.
+    let (pictures, reading) = machine.the_screen_road_now();
+    told.extend(
+        alo_adapters::a_picture_could_say_more(&shown, &pictures, &reading, strings)
+            .map(alo_strings::Said::into_text),
+    );
     (
         Entry::ran(&authorised, strings),
         Ok(TheWindowsShowed {
