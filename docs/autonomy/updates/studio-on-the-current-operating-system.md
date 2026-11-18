@@ -154,9 +154,8 @@ failures, and restore automatic microphone selection only after a verified fresh
 profile was temporarily overridden. Both persisted WirePlumber state filenames
 are examined. An owned local PipeWire session confirmed source-only clearing
 preserves configured sink/video choices; it did not change an existing session.
-The complete private Python suite passed 139 tests with all five live native
-tests enabled before the final four cleanup regressions were added. The next
-complete run includes those regressions. CI now reruns this suite with actual
+The complete private Python suite passed 143 tests with all five live native
+tests enabled, including the final four cleanup regressions. CI now reruns this suite with actual
 decoder and native transports, explicit dependency preflight and no skip gate.
 
 Pre-run trace: `.github/workflows/walk.yml:104` validates the exact package run;
