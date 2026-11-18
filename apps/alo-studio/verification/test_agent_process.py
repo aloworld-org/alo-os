@@ -48,7 +48,7 @@ class ProcessFlow(unittest.TestCase):
     def start(self, source):
         process = subprocess.Popen([sys.executable, '-I', '-c', source],
                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
+                                   stderr=subprocess.PIPE, bufsize=0)
         self.addCleanup(self.reap, process)
         return process
 
@@ -187,6 +187,25 @@ class ProcessFlow(unittest.TestCase):
         self.assertEqual(settings.calls, ['prepare', 'restore'])
         self.assertTrue(all(stream.closed for stream in (process.stdin, process.stdout, process.stderr)))
         self.assertTrue(any('selector-close-refusal' in note for note in getattr(caught.exception, '__notes__', [])))
+        self.assertFalse(any(kind == 'agent-permission-probe-completed' for kind, _ in events))
+
+    def test_an_unreaped_child_must_not_restore_full_policy_under_its_live_connection(self):
+        process = self.start("import signal,sys,time;signal.signal(signal.SIGTERM,signal.SIG_IGN);print('ready',flush=True);print('ask-before-grant',flush=True);sys.stdin.readline();print('granted',flush=True);time.sleep(10)")
+        self.assertEqual(process.stdout.readline(), b'ready\n')
+        settings, events = Settings('granted'), []
+        began = time.monotonic()
+        with patch.object(process, 'terminate', side_effect=PermissionError('terminate-refusal')), \
+                patch.object(process, 'kill', side_effect=PermissionError('kill-refusal')) as kill, \
+                patch.object(process, 'wait', side_effect=OSError('wait-refusal')):
+            with self.assertRaisesRegex(ValueError, 'native boundary') as caught:
+                verify_process(process, settings, self.events(events), timeout=3)
+            kill.assert_called_once()
+        self.assertLess(time.monotonic() - began, 1.5)
+        self.assertIsNone(process.poll(), 'the fixture must establish a genuinely unreaped child')
+        self.assertEqual(settings.calls, ['prepare', 'ask-before-grant', 'granted'],
+                         'restore can select Full and must not run while the connection remains live')
+        self.assertTrue(all(stream.closed for stream in (process.stdin, process.stdout, process.stderr)))
+        self.assertTrue(any('kill-refusal' in note for note in getattr(caught.exception, '__notes__', [])))
         self.assertFalse(any(kind == 'agent-permission-probe-completed' for kind, _ in events))
 
 
