@@ -17,10 +17,10 @@ class SessionArchive(unittest.TestCase):
             self.assertTrue(zipfile.is_zipfile(output))
             with zipfile.ZipFile(output) as archive:
                 self.assertEqual(set(archive.namelist()),
-                                 {'__main__.py', 'native_controls.py', 'atspi_tree.py'})
+                                 {'__main__.py', 'native_controls.py', 'atspi_tree.py', 'audio_selection.py'})
                 self.assertEqual(archive.read('__main__.py'),
                                  (source / 'installed_session.py').read_bytes())
-                for name in ('native_controls.py', 'atspi_tree.py'):
+                for name in ('native_controls.py', 'atspi_tree.py', 'audio_selection.py'):
                     self.assertEqual(archive.read(name), (source / name).read_bytes())
 
 

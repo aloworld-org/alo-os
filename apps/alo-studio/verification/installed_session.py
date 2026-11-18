@@ -17,6 +17,7 @@ import urllib.request
 import dbus
 
 from atspi_tree import AtspiTree
+from audio_selection import clear_reference_source, require_automatic_source
 from native_controls import activate
 
 STUDIO = 'org.aloworld.Studio'
@@ -56,6 +57,7 @@ class Session:
         self.events = []
         self.children = []
         self.reference = None
+        self.audio_overridden = False
         self.transport = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
     def event(self, kind, **facts):
@@ -84,11 +86,20 @@ class Session:
                    runtime=runtime, runtime_commit=runtime_commit)
 
     def start(self):
-        audio = subprocess.Popen([
-            'pw-loopback', '--name', 'studio-verification-loop', '--channels', '1',
-            '--capture-props', 'media.class=Audio/Sink node.name=studio-verification-audio node.autoconnect=false',
-            '--playback-props', 'media.class=Audio/Source node.name=studio-verification-microphone node.autoconnect=false',
-        ], stdout=(self.folder / 'virtual-audio.log').open('w'), stderr=subprocess.STDOUT)
+        state_home = pathlib.Path(os.environ.get('XDG_STATE_HOME', self.home / '.local/state'))
+        history = []
+        for name in ('default-nodes', 'default-streams'):
+            path = state_home / 'wireplumber' / name
+            require(not path.is_symlink(), 'the private profile must own its audio preference state')
+            if path.exists():
+                history.append(path.read_text())
+        require_automatic_source(json.loads(command('pw-dump')), state='\n'.join(history))
+        with (self.folder / 'virtual-audio.log').open('w') as output:
+            audio = subprocess.Popen([
+                'pw-loopback', '--name', 'studio-verification-loop', '--channels', '1',
+                '--capture-props', 'media.class=Audio/Sink node.name=studio-verification-audio node.autoconnect=false',
+                '--playback-props', 'media.class=Audio/Source node.name=studio-verification-microphone node.autoconnect=false',
+            ], stdout=output, stderr=subprocess.STDOUT)
         self.children.append(audio)
         deadline = time.monotonic() + 15
         while True:
@@ -97,14 +108,15 @@ class Session:
                           if node.get('info', {}).get('props', {}).get('node.name')
                           == 'studio-verification-microphone']
             if len(microphone) == 1:
+                self.audio_overridden = True
                 command('wpctl', 'set-default', str(microphone[0]))
                 break
             require(audio.poll() is None and time.monotonic() < deadline,
                     'the owned virtual microphone did not become available')
             time.sleep(.1)
-        self.children.append(subprocess.Popen(
-            ['flatpak', 'run', STUDIO], stdout=(self.folder / 'studio.log').open('w'),
-            stderr=subprocess.STDOUT))
+        with (self.folder / 'studio.log').open('w') as output:
+            self.children.append(subprocess.Popen(
+                ['flatpak', 'run', STUDIO], stdout=output, stderr=subprocess.STDOUT))
         self.wait(lambda state: state['phase'] == 'ready')
 
     def interface(self):
@@ -169,10 +181,9 @@ class Session:
             self.wait(lambda state: state['phase'] == 'selected' and state['preview_ready'])
 
     def start_reference(self):
-        self.reference = subprocess.Popen(
-            ['flatpak', 'run', REFERENCE],
-            stdout=(self.folder / f'reference-{len(self.events)}.log').open('w'),
-            stderr=subprocess.STDOUT)
+        with (self.folder / f'reference-{len(self.events)}.log').open('w') as output:
+            self.reference = subprocess.Popen(
+                ['flatpak', 'run', REFERENCE], stdout=output, stderr=subprocess.STDOUT)
         self.children.append(self.reference)
         time.sleep(2)
         require(self.reference.poll() is None, 'the reference window did not start')
@@ -335,15 +346,33 @@ class Session:
             self.event('person-recording-flow-completed', media_acceptance='requires host decoding',
                        agent_permissions='requires separate real-agent walk')
         finally:
-            report = self.folder / 'session-report.json'
-            report.write_text(json.dumps({'version': 1, 'events': self.events}))
+            try:
+                self.cleanup()
+            finally:
+                report = self.folder / 'session-report.json'
+                report.write_text(json.dumps({'version': 1, 'events': self.events}))
+                self.upload('session-report.json', report)
+
+    def cleanup(self):
+        """Restore only our source override and stop owned children even on error."""
+        try:
             for application in (STUDIO, REFERENCE):
                 subprocess.run(['flatpak', 'kill', application], capture_output=True, timeout=10)
-            for child in self.children:
-                if child.poll() is None:
-                    child.terminate()
-                    child.wait(timeout=5)
-            self.upload('session-report.json', report)
+        finally:
+            try:
+                if getattr(self, 'audio_overridden', False):
+                    clear_reference_source(command)
+                    self.audio_overridden = False
+                    self.event('automatic-microphone-selection-restored')
+            finally:
+                for child in self.children:
+                    if child.poll() is None:
+                        child.terminate()
+                        try:
+                            child.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            child.kill()
+                            child.wait(timeout=5)
 
 
 if __name__ == '__main__':
