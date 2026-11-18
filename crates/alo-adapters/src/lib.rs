@@ -161,7 +161,7 @@ pub use not_walked::NotWalked;
 pub use nothing_to_read::nothing_to_read;
 pub use opening::{Opened, Opening};
 pub use opening_a_menu::{MenuOpened, OpeningAMenu};
-pub use picturing_a_window::PicturingAWindow;
+pub use picturing_a_window::{PicturingAWindow, a_picture_could_say_more};
 pub use pressable::Pressable;
 pub use pressing_a_key::PressingAKey;
 pub use reading_windows::{ReadingWindows, WindowsRead};

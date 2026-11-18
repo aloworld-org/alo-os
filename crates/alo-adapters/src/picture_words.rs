@@ -130,6 +130,18 @@ pub const NO_PICTURE: Word = Word::saying(
 )
 .noting("Said when the desktop could not draw the window, or could not be reached.");
 
+/// A read found nothing in words, and a picture could be read.
+pub const A_PICTURE_CAN_BE_READ: Word = Word::saying(
+    "adapters.fallback.picture-window.a-picture-can-be-read",
+    "Nothing in {application}'s windows can be read in words, and you let alo use pictures of \
+     it: to see what its window shows, alo takes a picture of it and has it read",
+)
+.noting(
+    "Said after reading an application's windows found no words and nothing named, where the \
+     person switched on pictures and keys for it and chose who reads the pictures. alo is the \
+     assistant and is never written with a capital letter.",
+);
+
 /// Asked for from another machine.
 pub const ACROSS_A_PAIRING: Word = Word::saying(
     "adapters.fallback.picture-window.across-a-pairing",
@@ -140,7 +152,7 @@ pub const ACROSS_A_PAIRING: Word = Word::saying(
 );
 
 /// Every word taking a picture declares.
-pub const EVERY_WORD: [Word; 13] = [
+pub const EVERY_WORD: [Word; 14] = [
     PICTURE_PURPOSE,
     PICTURE_APPLICATION,
     PICTURE_SENTENCE,
@@ -154,4 +166,5 @@ pub const EVERY_WORD: [Word; 13] = [
     NOT_ALOS_COPY,
     NO_PICTURE,
     ACROSS_A_PAIRING,
+    A_PICTURE_CAN_BE_READ,
 ];

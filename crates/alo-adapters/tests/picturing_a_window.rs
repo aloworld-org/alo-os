@@ -356,3 +356,48 @@ fn an_application_not_granted_is_refused_before_anything_else() {
     .unwrap_err();
     assert_ne!(said(&refused), expected(words::NOT_SWITCHED_ON));
 }
+
+/// **A read is told a picture could say more only where one may be taken**:
+/// windows that describe nothing, no password field, the switch on for that
+/// application, and somebody reading pictures.
+#[test]
+fn a_read_is_told_of_a_picture_only_where_one_may_be_taken() {
+    use alo_adapters::shown::{Seen, Shown, ShownWindow};
+    use alo_adapters::{Role, a_picture_could_say_more};
+    let of = |seen: Vec<Seen>| {
+        Shown::of(
+            GAME.to_owned(),
+            vec![ShownWindow::titled("SuperTuxKart".to_owned(), seen)],
+            false,
+        )
+    };
+    let nothing = of(vec![Seen::of(Role::Canvas, String::new(), None, 1)]);
+    let strings = in_english();
+    let said = a_picture_could_say_more(&nothing, &switched_on(), &a_reader(), &strings)
+        .expect("a picture may be taken");
+    assert_eq!(said.text(), expected(words::A_PICTURE_CAN_BE_READ));
+    for (shown, pictures, reader) in [
+        (&nothing, PicturesAndKeys::default(), a_reader()),
+        (&nothing, switched_on(), WhoReadsPictures::NoOne),
+        (
+            &of(vec![Seen::of(
+                Role::Button,
+                "Start race".to_owned(),
+                None,
+                1,
+            )]),
+            switched_on(),
+            a_reader(),
+        ),
+        (
+            &of(vec![Seen::of(Role::PasswordField, String::new(), None, 1)]),
+            switched_on(),
+            a_reader(),
+        ),
+    ] {
+        assert!(
+            a_picture_could_say_more(shown, &pictures, &reader, &strings).is_none(),
+            "told of a picture that may not be taken: {pictures:?} {reader:?}"
+        );
+    }
+}

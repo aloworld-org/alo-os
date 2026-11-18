@@ -42,6 +42,30 @@ use crate::not_walked::NotWalked;
 use crate::picture_words as words;
 use crate::walking::{Whose, walk};
 
+/// **What a read of `shown` adds where only a picture could say more**: the
+/// sentence that a picture can be taken and read, where the windows describe
+/// nothing and have no password field, *Pictures and keys* is on for the
+/// application and somebody reads pictures — and nothing anywhere else, so a
+/// model is never pointed at a picture it may not take.
+#[must_use]
+pub fn a_picture_could_say_more(
+    shown: &crate::shown::Shown,
+    pictures: &PicturesAndKeys,
+    reading: &WhoReadsPictures,
+    strings: &Strings,
+) -> Option<alo_strings::Said> {
+    let application = shown.application();
+    let may = pictures.allows(application)
+        && reading.may_take_pictures()
+        && a_picture_may_be_taken(shown).is_ok();
+    may.then(|| {
+        strings.say(
+            &words::A_PICTURE_CAN_BE_READ.key(),
+            &Filling::of(fallback::APPLICATION, application.to_owned()),
+        )
+    })
+}
+
 /// An approved picture of one application's window that has not been taken.
 ///
 /// Deliberately not `Clone`, like the [`Authorised`] inside it.
