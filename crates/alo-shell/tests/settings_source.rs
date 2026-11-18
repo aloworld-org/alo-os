@@ -606,6 +606,11 @@ fn a_settings_file_that_words_grants_or_writes_around_its_keeper_is_refused() {
             ".application_granted(",
         ),
         (
+            "settings_granted.rs",
+            "changing.application_granted(grant, now)?;",
+            ".application_granted(",
+        ),
+        (
             "settings_page.rs",
             "let picked = alo_picking::Picker::standing_in(at, folders)?;",
             "alo_picking",
