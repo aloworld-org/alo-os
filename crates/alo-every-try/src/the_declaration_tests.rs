@@ -303,6 +303,17 @@ fn the_every_turn_line_changes_with_anything_every_turn_is_told() {
 /// declaration does not hold, which could never be told apart from a change.
 #[test]
 fn a_verb_twice_or_a_verb_nowhere_is_refused() {
+    let refused = Declared::read(
+        "# a comment
+every-turn	abc
+nonsense
+",
+    )
+    .expect_err("a line of no kind is refused");
+    assert!(
+        refused.to_string().contains("at line 3"),
+        "the line refused is named as a person counts it: {refused}"
+    );
     assert!(Declared::read("every-turn\tabc\nverb\ta\tf1\nverb\ta\tf2\n").is_err());
     assert!(Declared::read("every-turn\tabc\nverb\ta\tf1\nrequest\tone\tf2\tb\n").is_err());
 }

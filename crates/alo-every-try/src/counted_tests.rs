@@ -145,6 +145,30 @@ fn tries_the_model_was_not_asked_are_neither_a_pass_nor_a_slip() {
     assert_eq!(counted(&[seven], &[own("mine")]), Counted::ItsOwnSlipped);
 }
 
+/// **A provider that is down is not a slip**: ten tries the model was never
+/// asked, or eight on the road, one unasked and one wrong, could each have been
+/// nine — so nothing was measured, and the run says so rather than blaming the
+/// change.
+#[test]
+fn a_provider_that_did_not_answer_is_not_blamed_on_the_change() {
+    let down = Tallied::of(
+        ARequest::asking("mine", "Open Firefox.", Vec::new()),
+        std::iter::repeat_with(not_answered).take(10).collect(),
+    );
+    assert_eq!(counted(&[down], &[own("mine")]), Counted::NotMeasured);
+    let eight = tried("mine", 8, 1);
+    let eight = Tallied::of(
+        eight.request().clone(),
+        eight
+            .tries()
+            .iter()
+            .cloned()
+            .chain([not_answered()])
+            .collect(),
+    );
+    assert_eq!(counted(&[eight], &[own("mine")]), Counted::NotMeasured);
+}
+
 /// Nine on the road and one the model was not asked is 9 of 10 whatever the
 /// one would have done, so it holds.
 #[test]
@@ -179,12 +203,15 @@ fn more_than_ten_tries_are_held_to_nine_in_every_ten() {
 #[test]
 fn the_summary_names_what_was_counted_and_what_was_not() {
     let said = summary_counting(
-        &[tried("mine", 8, 2), tried("somebody else's", 0, 3)],
+        &[tried("somebody else's", 0, 3), tried("mine", 8, 2)],
         &[own("mine")],
         "a model",
     );
     assert!(said.contains("mine"), "{said}");
-    assert!(said.contains("8 of 10"), "{said}");
+    assert!(
+        said.contains("| mine | its road changed | 8 of 10 |"),
+        "its own row reads its own tries, not another request's: {said}"
+    );
     assert!(said.contains("somebody else's"), "{said}");
     assert!(said.contains("not counted"), "{said}");
     assert!(said.contains("did not pass"), "{said}");
