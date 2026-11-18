@@ -60,6 +60,43 @@ decoded video continuity, audio continuity and matched synchronization markers
 still need installed evidence. A build or unit test pass does not establish
 smooth video or audio synchronization.
 
+## Private recording instruments
+
+The private KVM boot walk at `73fbe941ec29485f6d3667e86e9737a1e1a39f51`
+subsequently passed 64 checks, with none failed and 103 intentionally skipped.
+It did not install Studio. This was one branch walk, not an installed-media gate.
+
+The independently strengthened development GUI check passed: recording, a
+five-second paused interval with identical elapsed time, resume, finalization
+and library responsiveness with 128 previews. This check reruns in the native
+Studio workflow; verification features and generated sources make it distinct
+from installed OS consent or microphone acceptance.
+
+Private walk tooling now includes bounded loopback file transfer, a separate
+flashing reference application with a real Pulse monitor, and process-owned
+native accessibility control selection. The reference first failed on real
+audio gaps and clock drift. Using the monitor's actual sample clock for both
+reference pipelines produced one healthy 35-second observation: 18 matched
+markers, median absolute offset 114 ms, maximum 135 ms. This measured draw
+callbacks and monitor samples once, not decoded Studio media or compositor
+presentation. Its checker rejects missing channel boundaries, delivery gaps,
+repeated timestamps, static markers and insufficient matches. Independent
+tests caught a missing-leading-coverage fault before that checker was fixed.
+
+The private Python suite has 38 tests, including five real GTK/AT-SPI fixture
+cases. The nine Rust transfer/signal tests, all-target linting and documentation
+checks passed. A broad debug walk test run was stopped during expensive
+pre-existing pointer image searches; no full local walk-suite pass is claimed.
+The reference example compiles and passes strict linting. The separate reference
+Flatpak has manifest tests and a manual build option, but its actual bundle has
+not yet built. None of these helpers is a broker verb or an agent command surface.
+
+The guest recording controller, private KVM workflow wiring, normal installed
+screen/window recordings, decoded video/audio audits, native consent/export and
+installed agent permission walk remain unfinished. The normal package continues
+to build with verification disabled. The private reference's verification feature
+is confined to its separate application identifier and bundle.
+
 The shared UI kit's application window, input, control and accessibility layers
 remain unfinished prerequisites. Studio's GTK interface is a development test
 surface. Neither the shared-kit migration nor public market availability is
