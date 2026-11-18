@@ -81,6 +81,21 @@ approval, exactly-once execution and execution-record checks remain required.
 The person-flow report retains bounded startup/cleanup failures even when no
 recording was created.
 
+The private `record_delta` reader prepares the execution-record part of that
+check. It compares a bounded append with a validated checkpoint, refuses
+replacement or rewritten history, and requires one microphone change under the
+expected agent, approval and policy. Unknown events refuse certification; this
+is deliberately a reader for the fresh walk's supported events, not a general
+record export. Its independent JSONL fixtures are synthetic test inputs.
+`test_record_delta.py` reruns with the verification instrument suite.
+
+The reader is not yet connected to the installed controller. A matching record
+alone proves neither native approval nor one D-Bus delivery. Installed approval
+acceptance still requires a genuine Ask alo request after provider setup,
+the native approval card, independently observed application state and delivery
+count, and the matching appended record. A direct agent proposal does not cause
+the shell to show a card without the task window's real reply path.
+
 In a fresh profile with no audio devices, `pw-dump` can omit the empty default
 metadata store even while `pw-cli` lists it. Startup validates saved microphone
 history and any observed live preference before creating its owned fixture.
