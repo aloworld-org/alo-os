@@ -101,8 +101,12 @@ const STATUS_BY_HAND: Word = Word::saying(
 /// Declare each fixed control with translated purpose, approval and effect words.
 /// A changed purpose gets its own new key without retiring neighboring claims.
 macro_rules! purpose_key {
-    ($key:literal) => { concat!("adapters.studio.", $key, ".purpose") };
-    ($key:literal, $purpose_key:literal) => { $purpose_key };
+    ($key:literal) => {
+        concat!("adapters.studio.", $key, ".purpose")
+    };
+    ($key:literal, $purpose_key:literal) => {
+        $purpose_key
+    };
 }
 
 /// Declare each fixed control with translated purpose, approval and effect words.
