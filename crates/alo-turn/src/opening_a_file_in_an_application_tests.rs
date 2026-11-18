@@ -200,6 +200,14 @@ impl crate::SaysWhatAFileOpensWith for AsThisMachineSays {
         path.is_dir()
     }
 
+    fn called(&self, identifier: &str) -> Option<String> {
+        match identifier {
+            FILES => Some("Dolphin".to_owned()),
+            PAPERS => Some("Papers".to_owned()),
+            _ => None,
+        }
+    }
+
     fn opens_with(&self, _: &Path) -> Result<String, crate::NothingOpensIt> {
         *self.asked.borrow_mut() += 1;
         self.opens_with.map(str::to_owned).map_err(|why| {
@@ -812,7 +820,7 @@ fn a_file_opened_in_a_file_manager_opens_where_a_double_click_would() {
     assert!(ran.answered.is_ok(), "{:?}", ran.answered);
     assert_eq!(
         *card.borrow(),
-        format!("open {} in {PAPERS}, as {FILES} would", ran.file.display())
+        format!("open {} in Papers, as Dolphin would", ran.file.display())
     );
     assert_eq!(ran.asked.len(), 1, "one approval, one opening");
     assert_eq!(
@@ -856,7 +864,7 @@ fn at_full_access_a_file_opened_in_a_file_manager_opens_where_a_double_click_wou
     assert!(ran.answered.is_ok(), "{:?}", ran.answered);
     assert_eq!(
         *sentence.borrow(),
-        format!("open {} in {PAPERS}, as {FILES} would", ran.file.display())
+        format!("open {} in Papers, as Dolphin would", ran.file.display())
     );
     assert_eq!(
         ran.asked.first().map(|it| it.application().identifier()),
@@ -980,4 +988,35 @@ fn a_machine_not_told_opens_in_the_application_named() {
         ran.asked.first().map(|it| it.application().identifier()),
         Some(FILES)
     );
+}
+
+/// **No card names an application by its identifier where the application
+/// has a name** — at both levels, the sentence a person approves or reads
+/// holds no reverse-DNS identifier, only the names the entries give.
+#[test]
+fn no_card_names_an_application_by_its_identifier_where_it_has_a_name() {
+    let reverse_dns = |said: &str| {
+        said.split(|it: char| it.is_whitespace() || it == ',')
+            .any(|word| word.matches('.').count() >= 2 && word.starts_with(char::is_alphabetic))
+    };
+    let card = RefCell::new(String::new());
+    let _ = on_a_machine(
+        Arranged::in_the_file_manager(Ok(PAPERS)),
+        |turning, grants, file| {
+            turning.proposing(
+                OPEN_FILE_IN_APPLICATION,
+                &given(FILES, file),
+                grants,
+                hour(),
+                noon(),
+            )?;
+            *card.borrow_mut() = the_card(turning);
+            Ok(None)
+        },
+    );
+    let card = card.into_inner();
+    assert!(card.contains("Papers") && card.contains("Dolphin"), "{card}");
+    assert!(!reverse_dns(&card), "a card names an identifier: {card}");
+    // **And the check itself can fail**: an identifier is caught.
+    assert!(reverse_dns("open a.pdf in org.gnome.Papers, as Dolphin would"));
 }

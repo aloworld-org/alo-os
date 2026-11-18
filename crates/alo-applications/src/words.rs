@@ -642,14 +642,15 @@ pub const OPEN_FILE_IN_APPLICATION_SENTENCE: Word = Word::saying(
 /// double-click there would (the owner, 2026-11-17).
 pub const OPEN_FILE_AS_A_FILE_MANAGER_WOULD: Word = Word::saying(
     "applications.verb.open-file-in-application.as-a-file-manager-would",
-    "open {path} in {application}, as {file_manager} would",
+    "open {path} in {opens_in}, as {file_manager} would",
 )
 .noting(
-    "{path} is a file on this machine, {application} the identifier of the installed \
-     application that kind of file opens with, and {file_manager} the identifier of the file \
-     manager the person named; none is translated. The person asked alo to open the file in a \
-     file manager, and this says it opens where a double-click in that file manager would open \
-     it. The person approves this before alo opens it.",
+    "{path} is a file on this machine. {opens_in} is the name of the application that kind of \
+     file opens with, such as Papers, and {file_manager} the name of the file manager the \
+     person named, such as Dolphin — each as the application's own entry names it in the \
+     person's language, so neither is translated here. The person asked alo to open the file \
+     in a file manager, and this says it opens where a double-click in that file manager would \
+     open it. The person approves this before alo opens it.",
 );
 /// `open_file_in_application`'s application.
 pub const OPEN_FILE_IN_APPLICATION_APPLICATION: Word = Word::saying(

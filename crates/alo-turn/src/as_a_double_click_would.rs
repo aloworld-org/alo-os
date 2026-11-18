@@ -108,6 +108,15 @@ impl Turning<'_, '_> {
         };
         // **The application it opens with, wanted where it is not allowed**, so
         // the grants' refusal that follows puts the sheet up for it.
+        // **Named as the person reads them**, never by identifier where the
+        // entry gives a name (the owner, 2026-11-17: *open report.pdf in
+        // Papers, as Dolphin would*).
+        let named = |identifier: &str| {
+            opening
+                .called(identifier)
+                .unwrap_or_else(|| identifier.to_owned())
+        };
+        let (opens_in, file_manager) = (named(&opener), named(&manager));
         if grants
             .permitted(&grantee, &Ask::Application(opener.clone()), now)
             .is_err()
@@ -116,7 +125,7 @@ impl Turning<'_, '_> {
         }
         Ok(instead.saying_instead(
             words::OPEN_FILE_AS_A_FILE_MANAGER_WOULD.key(),
-            &[("file_manager", manager)],
+            &[("opens_in", opens_in), ("file_manager", file_manager)],
         ))
     }
 }

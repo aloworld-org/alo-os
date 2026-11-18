@@ -26,6 +26,12 @@ pub trait SaysWhatAFileOpensWith {
     /// Whether this real path is a folder, which a file manager opens itself.
     fn is_a_folder(&self, path: &Path) -> bool;
 
+    /// **The name a person reads for this application** — its entry's `Name`,
+    /// in their language where the entry says it in that language — or
+    /// [`None`] where its entry names it nothing. A card names applications by
+    /// this, never by an identifier, wherever there is one.
+    fn called(&self, identifier: &str) -> Option<String>;
+
     /// The identifier of the application this file opens with, as a
     /// double-click would open it: the person's choice for its kind, or the
     /// first installed application that declares it.

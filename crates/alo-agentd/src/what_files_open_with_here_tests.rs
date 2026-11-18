@@ -68,6 +68,10 @@ fn a_pdf_opens_with_what_declares_it_and_the_file_manager_opens_folders() {
     assert!(!here.opens_folders("org.gnome.Papers"));
     assert!(here.is_a_folder(&files));
     assert!(!here.is_a_folder(&files.join("report.pdf")));
+    // **Named as the entries name them**, so a card never shows an identifier.
+    assert_eq!(here.called("org.gnome.Papers").as_deref(), Some("Papers"));
+    assert_eq!(here.called("org.kde.dolphin").as_deref(), Some("Dolphin"));
+    assert_eq!(here.called("org.example.Nothing"), None);
     assert_eq!(
         here.opens_with(&files.join("report.pdf")),
         Ok("org.gnome.Papers".to_owned())
