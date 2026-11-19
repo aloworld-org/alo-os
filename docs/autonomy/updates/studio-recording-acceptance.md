@@ -1,4 +1,27 @@
 # Studio recording acceptance candidate
+The retained diagnostic run 44493013653 passed 189 of 190 Studio trials. In
+Ask each time, screen-picker attempt one selected `open_application` although
+the request said Studio was open and asked for its system picker without
+starting capture. Its complete first question and both policy transcripts
+were retained; artifact SHA-256 is
+`49b9551342a43e165842d26b7f1273e3a65afba04e92fb8e05a07247e6a0496c`.
+This is another observed model-selection failure, not a fabricated fixture.
+
+The screen-picker purpose now explicitly describes opening Studio's system
+picker for the person to choose a screen, without starting recording. A new
+translation key preserves ADR 0068. The action name, arguments, ChooseScreen
+D-Bus method, consent boundary, fixed trial request and expected road are
+unchanged. Independent review traced the actual prompt and adapter-to-UI
+handover and found no blocker. Local checks passed three vocabulary tests,
+198 adapter tests and eleven named-control/status guidance tests, formatting,
+strict all-target lint and warnings-denied adapter documentation. A one-time
+fault changing ChooseScreen to ChooseWindow failed the independent real-bus
+contract test at the exact method assertion; restored source passed. That
+fault proves method discrimination, not deterministic model selection.
+The recurring model suite must now evaluate the revised purpose against all
+fixed requests, ten attempts per policy; results remain pending. The original
+installed candidate and its active walk remain undisturbed.
+
 The recording candidate `1b26cea87135d7b783100ed69996afdf3119c631` passed
 signed package run 44491774129 and all 416 hosted verification-instrument
 tests plus nineteen CI-helper checks. Its installed walk 44492469477 is
