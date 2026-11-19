@@ -70,13 +70,13 @@ pub fn given_as_told(verb: &Verb) -> String {
 /// The bounds are the argument's own, because a model told *a whole number* and
 /// then refused for sending 5000 has been measured on something nobody asked it.
 ///
-/// **A path and an application carry an example**, because both have a form a
-/// model can get wrong while meaning the right thing — a relative path, or an
-/// application's display name where its identifier belongs — and the example
-/// shows the form rather than a value to copy.
+/// A path explains its absolute form without inventing a file or another
+/// person's home. Its value comes from the request, this machine's layout or
+/// a tool result. An application carries an identifier example because its
+/// display name and identifier are different forms.
 fn takes(takes: &Takes) -> String {
     match takes {
-        Takes::Path => "a full path, such as /home/anna/Documents/notes.txt".to_owned(),
+        Takes::Path => "a full path starting with /, based on the person's request, this computer's layout or a tool result".to_owned(),
         Takes::Application => {
             "an application's identifier, such as org.gnome.TextEditor; an application this \
              machine has may also be named by its name with the spaces left out, such as VSCodium"
