@@ -173,3 +173,7 @@ impl TheReaderIsTold {
         self.bus.answers_as()
     }
 }
+
+#[cfg(test)]
+#[path = "access_serving_tests.rs"]
+mod tests;

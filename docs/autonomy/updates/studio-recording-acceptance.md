@@ -1,4 +1,50 @@
 # Studio recording acceptance candidate
+On source `59dfbf8809b05d53da333f5876c6a4a74e9938a8`, signed package
+44454878392 passed, but installed walk 44455470524 stopped at native grant
+withdrawal: the native command reported that **Take back** was unavailable. It passed 32
+checks, failed one and did not reach 158, including recording and export.
+Retained evidence has SHA-256
+`20a93b53590c2962d42226dc273bd9a5670af1ceaba26cbbe47184504a436690`.
+Studio component verification 44454872190 and image build 44454872185 passed.
+Repository gates 44454872182 were accepted under the declared runner exception:
+16,157 passed, one declared permission-test failure and 101 skipped. Mutation
+run 44454872170 caught sixteen of twenty-five trials; nine were unviable.
+
+A grant's decreasing remaining duration was included in its accessibility
+action. Whole-tree equality therefore detected a change every frame and removed
+and republished unchanged controls. Independent tests reproduced that churn with
+only one nanosecond elapsed. Grant actions now carry the stable grant ID and
+resolve it among the current page's live rows when pressed, before following
+the existing deferred selection path. Visible labels, descriptions, states and
+attributes still participate in publication equality. Expiry and replacement
+still change the tree. This removes duration-only churn; it does not make
+structural tree replacement atomic or prove precisely which D-Bus read failed
+in the installed walk.
+The repaired baseline had six passing tests and two failures for duration-only
+publication. All eight independent real-bus tests passed after correction.
+Four deliberate faults were caught: discarded grant identity, duration in the
+action, accepting any live grant and refusing the selected live grant. Restored
+sources passed all eight new tests and 96 surrounding Settings checks (104
+total). The existing every-page projection test was observed failing on its old
+ARow expectation, then adapted to the new grant action without weakening its
+every-row coverage. Formatting, strict library/test lint and warnings-denied
+shell documentation passed; the five existing Smithay dependency warnings
+remain visible. Independent final review found no material blocker and verified
+that the candidate source and tests match the reviewed copies. Tests recur in
+repository gates; deliberate faults were one-time experiments.
+
+The same source's real-model run 44454872256 passed Studio 189/190: one Full-mode
+window-picker request proposed opening the already-open application. The window
+picker purpose now explicitly says it opens Studio's system picker without
+starting recording, under a new translation key as ADR 0068 requires. The fixed
+request, expected actions and repeated trial counts remain unchanged. Wording
+ambiguity is a hypothesis; corrected real-model trials are required, and the
+previous source's 190/190 result does not close this failure.
+The regenerated vocabulary changes only that key and sentence. All three
+vocabulary checks and all 198 adapter tests pass, as do adapter formatting,
+strict all-target lint and warnings-denied documentation. These local checks
+do not measure real-model selection; the matching-source repeated trials and
+installed recording walk remain required.
 
 Cancelling Studio's export chooser now receives an explicit empty URI list
 from the FileChooser portal. GTK reads that list before checking cancellation

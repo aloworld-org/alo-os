@@ -106,6 +106,9 @@ pub enum InSettings {
     APage(crate::SettingsCategory),
     /// A row on the page, or one of its side-by-side choices, or its button.
     ARow(crate::SettingsRow),
+    /// Take back this grant, resolved among the current page's live grants.
+    /// Its remaining lifetime is an observation, not the action's identity.
+    AGrant(alo_capability::GrantId),
     /// An entry of the list a row opened.
     AnEntry(crate::SettingsRow),
 }
