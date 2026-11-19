@@ -36,3 +36,13 @@ so passing them does not prove every individual guard indispensable.
 This is separate from the frozen installed approval and recording revision.
 No private fixture establishes native consent, decoded media continuity,
 audio synchronization or public release readiness.
+
+Hosted native and desktop recording checks in run 44419989906 passed, as did
+image build 44419989837. The hosted workspace gate exposed one formatting
+difference in the new provider test that the local snapshot had already
+formatted. That correction is now in the owned source, and a fresh full
+workspace formatting check passed there. Of 16,061 hosted tests, 16,060 passed;
+the remaining permission test is explicitly listed in
+`.github/the-tests-a-hosted-runner-cannot-run.txt` because it requires a non-root
+process. The formatting failure, rather than that declared runner limitation,
+blocked the gate. The corrected revision still needs its hosted verdict.
