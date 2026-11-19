@@ -10,8 +10,10 @@ was carried out on a machine.
 All three Studio jobs in 44477779235 passed: 393 private verification tests and
 fifteen CI helper tests, native recording and decoding checks, and optimized
 desktop regressions, strict checks and service compilation. These checks do not
-replace installed acceptance. Installed walk 44478570107 is still building its
-OS image; there is no recording-media result from this source yet.
+replace installed acceptance. Image check 44477779237 passed. Mutation run
+44477779261 tried thirty faults: twenty caught, ten unviable and none missed.
+Installed walk 44478570107 has built its image and disk and is running; there
+is no recording-media result from this source yet.
 
 Repository gate 44477779266 failed before workspace tests in both the first
 attempt and one infrastructure retry. The initial download exhausted its
