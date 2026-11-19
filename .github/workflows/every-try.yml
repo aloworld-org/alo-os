@@ -152,9 +152,23 @@ jobs:
           # ask each time it is approved once and the turn goes on from what
           # the daemon told the person it did (docs/contracts/asking-socket.md).
           # Either leaving the road fails the check.
+          # Keep the fixed test inputs, including continuations, for diagnosis.
+          # AtAProvider writes question text only; the key travels in a header.
+          mkdir -p model-evidence
           failed=0
           for level in full-access ask-each-time; do
             echo "## At $level" >> "$GITHUB_STEP_SUMMARY"
-            ALO_EVERY_TRY_LEVEL="$level" ALO_EVERY_TRY_SUMMARY="$GITHUB_STEP_SUMMARY" target/release/alo-every-try || failed=$?
+            ALO_EVERY_TRY_LEVEL="$level" ALO_EVERY_TRY_SUMMARY="$GITHUB_STEP_SUMMARY" ALO_EVERY_TRY_SHOWN="model-evidence/$level.txt" target/release/alo-every-try || failed=$?
           done
           exit "$failed"
+
+      - name: Retain the fixed model trial inputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-trial-inputs
+          if-no-files-found: ignore
+          retention-days: 7
+          path: |
+            model-evidence/full-access.txt
+            model-evidence/ask-each-time.txt

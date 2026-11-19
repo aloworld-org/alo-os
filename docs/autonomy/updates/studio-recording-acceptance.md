@@ -1,4 +1,26 @@
 # Studio recording acceptance candidate
+The recording candidate `1b26cea87135d7b783100ed69996afdf3119c631` passed
+signed package run 44491774129 and all 416 hosted verification-instrument
+tests plus nineteen CI-helper checks. Its installed walk 44492469477 is
+pending. A separate CI-only diagnostic branch retains the existing real-model
+input transcript, separately for Full and Ask, and uploads exactly those two
+files even after failure. This does not change model instructions, requests,
+trial counts, provider settings or application code. It does not fix the
+188/190 model result described below.
+
+Five independently written tests execute the real workflow shell with a
+harmless trial stand-in. Before the change, three methods failed because the
+transcript option and upload were absent; two passed. After correction, all
+twenty-four CI-helper checks pass. Five one-time faults were caught: omitted
+transcript output, combined policy files, masked trial failure, upload only
+after success and uploading a workspace glob. Independent final review found
+no blocker and confirmed both test files match the independent originals.
+These regressions recur in Studio's CI-helper discovery job. The synthetic
+shell checks do not measure model behavior; the new transcript will accompany
+future real-model trials. The existing provider writer stores only the fixed
+test question and continuation text; credentials follow its separate network
+transport and are not written into the artifact.
+
 On source `5b8f686b426e8e812bb316af088ffd308a992b2b`, signed package
 44477809005 passed. The focused window-picker trial 44477814824 passed all
 twenty attempts, ten under each access policy. Full repeated model run
