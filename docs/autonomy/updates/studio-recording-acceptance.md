@@ -1,34 +1,6 @@
 # Studio recording acceptance candidate
 
-Candidate `493c15d7f048eb40b7ad9a96bdcd508a1d39bb32` passed normal signed
-package run 44505962321, including wrong-key and tampered-metadata refusals.
-All three Studio jobs in run 44505947489 passed: 443 instrument tests, 24
-CI-helper tests, twenty playback checks, native capture and desktop checks.
-Its matching installed walk, 44506785160, is running. These results do not
-yet establish installed recording continuity or audio synchronization.
-
-The candidate's model run 44505947190 passed 189 of 190 Studio trials. One
-Ask status attempt selected `find_in_folder` instead of `studio.status`.
-The retained input is byte-identical to the successful first status prompts;
-the client sends one fresh user message and no previous request transcript.
-The input nevertheless contains twelve copies of an invented `notes.txt`
-path, including in folder-only parameter hints. Its artifact has SHA-256
-`e912fde9596c967d381f0a31ffc9767f7c77468d69785030dee7063464593646`.
-
-The separate generic-guidance correction removes that example and describes
-absolute path syntax using the person's request, machine layout or tool
-results. Actual paths and the fixed model requests and expected roads remain
-unchanged. Independent rendered-prompt tests first failed twice, then all
-five passed. The full instruction crate passed 113 checks, formatting, strict
-all-target lint and warnings-denied documentation. Two one-time compiled faults
-were caught: restoring the invented path and allowing relative paths. Restored
-source passed all five regressions; they recur in repository gates. Independent
-review found no blocker. Repeated real-model evaluation remains pending; the
-invented example's presence does not prove it caused the failed selection.
-Both trial policy labels share full-access reach context and vary simulated
-approval replies, so these trials do not independently test Ask reach rendering.
-
-The previous installed walk, 44492469477 on source
+The latest installed walk, 44492469477 on source
 `1b26cea87135d7b783100ed69996afdf3119c631`, failed before starting its first
 recording. All five initial permission stages passed, including withdrawal;
 native source cancellation and screen selection reached preview-ready. The
