@@ -4,6 +4,7 @@ Activation readback is a setup condition, not proof of visible moving pixels.
 The retained recording still needs independent decoding and region inspection.
 """
 
+import json
 import time
 
 import dbus
@@ -25,7 +26,45 @@ def roots(tree):
     return found
 
 
-def nodes(tree, root, process):
+def observed_read(report, node, read):
+    """Keep only the identity and kind of a failed read, never application text."""
+    try:
+        return read()
+    except (ValueError, dbus.DBusException) as error:
+        report['read_error'] = dict(node=[str(part)[:96] for part in node],
+                                    kind=type(error).__name__[:64])
+        cause = error if isinstance(error, dbus.DBusException) else error.__cause__
+        if isinstance(cause, dbus.DBusException):
+            name = cause.get_dbus_name()
+            if isinstance(name, str):
+                report['read_error']['error_name'] = name[:128]
+        raise
+
+
+def refusal(report):
+    """Fit the final observation in the installed report's bounded error field."""
+    while True:
+        text = json.dumps(report, ensure_ascii=False, separators=(',', ':'))
+        if len(text) <= 1600:
+            return text
+        observed = report['observed']
+        if observed['roots']:
+            observed['roots'].pop()
+        elif observed['frames']:
+            observed['frames'].pop()
+        else:
+            # Identities and exception classes have individual bounds. This
+            # final branch also bounds unusual escaped control characters.
+            report['application'] = report['application'][:32]
+            report['title'] = report['title'][:32]
+            if report['read_error']:
+                report['read_error']['node'] = [part[:32] for part in report['read_error']['node']]
+                report['read_error']['kind'] = report['read_error']['kind'][:32]
+                if 'error_name' in report['read_error']:
+                    report['read_error']['error_name'] = report['read_error']['error_name'][:32]
+
+
+def nodes(tree, root, process, report):
     """Read a bounded tree belonging entirely to the observed native owner."""
     pending, seen, found = [root], set(), []
     while pending:
@@ -35,7 +74,7 @@ def nodes(tree, root, process):
         seen.add(node)
         if len(seen) > 512 or tree.owner(node[0]) != process:
             raise ValueError('the reference activation tree changed owner or exceeded its limit')
-        facts = tree.facts(node)
+        facts = observed_read(report, node, lambda: tree.facts(node))
         found.append((node, facts))
         pending.extend(facts['children'])
     return found
@@ -68,32 +107,45 @@ reorder the person's native Settings and task windows.
     press(owner, lambda name: name == application)
     deadline = time.monotonic() + 10
     while True:
+        report = dict(reason='window_activation_not_observed',
+                      application=application[:128], title=title[:96], read_error=None,
+                      observed=dict(roots_count=None, roots=[], frames=[], shell_active=None))
+        observed = report['observed']
         try:
             current = roots(tree)
+            observed['roots_count'] = len(current)
+            observed['roots'] = [[str(part)[:96] for part in root] for root in current[:4]]
             if shell not in current or tree.owner(shell[0]) != owner:
                 raise ValueError('the native Dock owner changed')
             # GTK's root Name is the program name, not the window title.
             # Registered GApplication children use its D-Bus object path.
             reference = [root for root in current
                          if any(child[1].startswith(application_path)
-                                for child in tree.facts(root)['children'])]
+                                for child in observed_read(report, root, lambda: tree.facts(root))['children'])]
             if len(reference) != 1:
                 raise ValueError('exactly one reference application is required')
             root = reference[0]
             process = tree.owner(root[0])
             if type(process) is not int or process <= 0:
                 raise ValueError('the reference application owner is unavailable')
-            frames = [facts for node, facts in nodes(tree, root, process)
-                      if node != root and node[1].startswith(application_path)
-                      and facts['name'] == title
-                      and int(tree.interface(node, ACCESSIBLE).GetRole(timeout=3)) in {23, 69}]
+            frames = []
+            for node, facts in nodes(tree, root, process, report):
+                if node == root or not node[1].startswith(application_path) or facts['name'] != title:
+                    continue
+                role = observed_read(report, node, lambda: int(
+                    tree.interface(node, ACCESSIBLE).GetRole(timeout=3)))
+                if len(observed['frames']) < 4:
+                    observed['frames'].append(dict(role=role, states=sorted(facts['states'])[:16]))
+                if role in {23, 69}:
+                    frames.append(facts)
             shell_active = any({1, 25} <= facts['states']
-                               for _, facts in nodes(tree, shell, owner))
+                               for _, facts in nodes(tree, shell, owner, report))
+            observed['shell_active'] = shell_active
             if (len(frames) == 1 and ACTIVE_WINDOW <= frames[0]['states']
                     and not shell_active):
                 return dict(name=frames[0]['name'], process=process)
         except (ValueError, dbus.DBusException):
             pass
         if time.monotonic() >= deadline:
-            raise ValueError('the reference window activation was not observed')
+            raise ValueError(refusal(report))
         time.sleep(.1)
