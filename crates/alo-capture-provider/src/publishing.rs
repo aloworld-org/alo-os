@@ -146,6 +146,23 @@ fn feed(source: gst_app::AppSrc, bytes: usize) -> io::Result<()> {
     }
 }
 
+/// Match the worker's exact node and preserve its non-recycled serial identity.
+fn selected_node(
+    kind: &ObjectType,
+    id: u32,
+    node_name: Option<&str>,
+    serial: Option<&str>,
+    expected: &str,
+) -> Option<MediaNode> {
+    if *kind != ObjectType::Node || node_name != Some(expected) {
+        return None;
+    }
+    Some(MediaNode {
+        id,
+        serial: serial?.parse().ok()?,
+    })
+}
+
 /// Ask the actual registry for the immutable identity of this worker's own node.
 fn identify(name: &str, ended: &AtomicBool) -> io::Result<MediaNode> {
     let main_loop = pw::main_loop::MainLoopBox::new(None).map_err(failed)?;
@@ -158,19 +175,17 @@ fn identify(name: &str, ended: &AtomicBool) -> io::Result<MediaNode> {
     let _listener = registry
         .add_listener_local()
         .global(move |global| {
-            if global.type_ != ObjectType::Node {
-                return;
-            }
             let Some(props) = global.props else {
                 return;
             };
-            if props.get("node.name") == Some(name.as_str())
-                && let Some(serial) = props.get("object.serial").and_then(|s| s.parse().ok())
-            {
-                seen.set(Some(MediaNode {
-                    id: global.id,
-                    serial,
-                }));
+            if let Some(node) = selected_node(
+                &global.type_,
+                global.id,
+                props.get("node.name"),
+                props.get("object.serial"),
+                &name,
+            ) {
+                seen.set(Some(node));
             }
         })
         .register();
@@ -197,3 +212,7 @@ fn identify(name: &str, ended: &AtomicBool) -> io::Result<MediaNode> {
 fn failed(why: impl std::fmt::Display) -> io::Error {
     io::Error::other(why.to_string())
 }
+
+#[cfg(test)]
+#[path = "publishing_tests.rs"]
+mod tests;

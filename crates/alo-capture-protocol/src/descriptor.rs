@@ -95,4 +95,59 @@ mod tests {
         sender.write_all(&[1]).unwrap();
         assert!(receive_descriptor(&receiver).is_err());
     }
+
+    #[test]
+    fn a_live_descriptor_does_not_make_a_wrong_marker_or_empty_payload_valid() {
+        use std::os::unix::net::UnixDatagram;
+        for marker in [&[0][..], &[][..]] {
+            let (sender, receiver) = UnixDatagram::pair().unwrap();
+            let descriptor = File::open("/dev/null").unwrap();
+            let descriptors = [descriptor.as_fd()];
+            let mut space = [MaybeUninit::uninit(); rustix::cmsg_space!(ScmRights(1))];
+            let mut control = SendAncillaryBuffer::new(&mut space);
+            assert!(control.push(SendAncillaryMessage::ScmRights(&descriptors)));
+            assert_eq!(
+                sendmsg(
+                    &sender,
+                    &[IoSlice::new(marker)],
+                    &mut control,
+                    SendFlags::NOSIGNAL
+                )
+                .unwrap(),
+                marker.len()
+            );
+            assert_eq!(
+                receive_descriptor(&receiver).unwrap_err().kind(),
+                io::ErrorKind::InvalidData
+            );
+        }
+    }
+
+    #[test]
+    fn a_correct_marker_never_selects_one_of_multiple_descriptors() {
+        for count in [2, 3] {
+            let (sender, receiver) = UnixStream::pair().unwrap();
+            let files: Vec<File> = (0..count)
+                .map(|_| File::open("/dev/null").unwrap())
+                .collect();
+            let descriptors: Vec<_> = files.iter().map(AsFd::as_fd).collect();
+            let mut space = [MaybeUninit::uninit(); rustix::cmsg_space!(ScmRights(3))];
+            let mut control = SendAncillaryBuffer::new(&mut space);
+            assert!(control.push(SendAncillaryMessage::ScmRights(&descriptors)));
+            assert_eq!(
+                sendmsg(
+                    &sender,
+                    &[IoSlice::new(&[1])],
+                    &mut control,
+                    SendFlags::NOSIGNAL
+                )
+                .unwrap(),
+                1
+            );
+            assert_eq!(
+                receive_descriptor(&receiver).unwrap_err().kind(),
+                io::ErrorKind::InvalidData
+            );
+        }
+    }
 }
