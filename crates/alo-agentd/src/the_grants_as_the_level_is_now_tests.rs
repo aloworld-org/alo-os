@@ -32,6 +32,9 @@ use crate::testing::{
 };
 use crate::the_bracket_this_turn_takes::TheTurnsBracket;
 
+#[path = "studio_proposal_grants_tests.rs"]
+mod studio_proposal_grants;
+
 /// The agent every turn here is for, which is the one `granting` grants to.
 const THE_AGENT: &str = "@files";
 

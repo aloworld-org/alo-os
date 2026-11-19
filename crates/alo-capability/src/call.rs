@@ -391,12 +391,27 @@ impl Call {
     /// What has to be granted for this call to run.
     ///
     /// Empty only when the verb declared [`Requires::Nothing`] with its written
-    /// reason. Every path here is the path as it was given: whatever executes
-    /// the verb resolves symbolic links and asks about the real path, for the
-    /// reason set out in [`crate::path`].
+    /// reason and the machine added no requirements. Every path here is the path
+    /// as it was given: whatever executes the verb resolves symbolic links and
+    /// asks about the real path, for the reason set out in [`crate::path`].
     #[must_use]
     pub fn asks(&self) -> &[Ask] {
         &self.asks
+    }
+
+    /// Add reach that the machine knows independently of the model's arguments.
+    ///
+    /// A checked application adapter names its application even when its verb
+    /// takes no arguments. Adding that requirement before authorization lets
+    /// proposals, execution and their records use the same permission check.
+    /// This grants no authority and removes no existing requirement. An ask
+    /// already present keeps its original position and is not duplicated.
+    #[must_use]
+    pub fn also_requiring(mut self, ask: Ask) -> Self {
+        if !self.asks.contains(&ask) {
+            self.asks.push(ask);
+        }
+        self
     }
 
     /// One validated argument, by name.
@@ -420,7 +435,8 @@ impl Call {
     /// asks and believe it checked them all, and it stops at the first refusal
     /// so that a permitted answer is never half an answer.
     ///
-    /// A verb that declared [`Requires::Nothing`] permits with an empty list.
+    /// A verb that declared [`Requires::Nothing`], with no additional machine
+    /// requirements, permits with an empty list.
     /// That is the honest answer to *against which grant*: none, for the reason
     /// its author wrote down.
     ///

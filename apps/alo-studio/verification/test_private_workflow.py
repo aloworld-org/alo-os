@@ -40,7 +40,7 @@ class PrivateWorkflow(unittest.TestCase):
 
     def test_missing_preflights_and_skip_gates_are_detected(self):
         mutations = [
-            ("    paths: ['apps/alo-studio/**'", "    paths: ['unrelated/**'"),
+            ("'apps/alo-studio/**'", "'unrelated/**'"),
             ('          command -v ffmpeg ffprobe\n', ''),
             ("          /usr/bin/python3 -I -c 'import dbus, gi'\n", ''),
             ('          command -v ffmpeg ffprobe', '          command -v ffmpeg ffprobe || true'),
@@ -50,7 +50,8 @@ class PrivateWorkflow(unittest.TestCase):
             ('dbus-run-session -- ', ''),
             ('xvfb-run -a ', ''),
             ('-I -m unittest discover', '-I -m unittest'),
-            ("-p 'test_*.py'", "-p 'test_recording_health.py'"),
+            ("-s apps/alo-studio/verification -p 'test_*.py'",
+             "-s apps/alo-studio/verification -p 'test_recording_health.py'"),
             ('github.event.pull_request.head.sha || github.sha', 'github.sha'),
             ('    timeout-minutes: 20', '    timeout-minutes: 20\n    if: false'),
             ('    timeout-minutes: 20', '    timeout-minutes: 20\n    continue-on-error: true'),
@@ -58,8 +59,17 @@ class PrivateWorkflow(unittest.TestCase):
         ]
         for original, replacement in mutations:
             with self.subTest(mutation=original):
-                self.assertIn(original, self.workflow)
-                broken = self.workflow.replace(original, replacement, 1)
+                # Scope the path mutation to PRs even when other trigger paths
+                # precede it, and command mutations to the actual live job.
+                pattern = (r'^  pull_request:\n(.*?)(?=^  \w+:)'
+                           if original == "'apps/alo-studio/**'" else
+                           r'^  verification-instruments:\n(.*?)(?=^  [\w-]+:|\Z)')
+                section = re.search(pattern, self.workflow, re.M | re.S)
+                self.assertIsNotNone(section)
+                self.assertIn(original, section[1])
+                changed = section[1].replace(original, replacement, 1)
+                broken = (self.workflow[:section.start(1)] + changed
+                          + self.workflow[section.end(1):])
                 with self.assertRaises(AssertionError):
                     self.require_private_instruments(broken)
 
