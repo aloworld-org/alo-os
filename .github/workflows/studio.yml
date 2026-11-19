@@ -27,7 +27,7 @@ jobs:
           sudo python3 -I tools/ci/ubuntu_archive.py
           printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' | sudo tee /etc/apt/apt.conf.d/80-studio-network > /dev/null
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends python3-dbus python3-gi gir1.2-gtk-3.0 at-spi2-core xvfb dbus-x11 ffmpeg
+          sudo apt-get install -y --no-install-recommends python3-dbus python3-gi gir1.2-gtk-3.0 gir1.2-gtk-4.0 at-spi2-core xvfb dbus-x11 xdotool ffmpeg
       - name: Check real decoder, native controls, reference and artifact refusals
         run: |
           command -v ffmpeg ffprobe

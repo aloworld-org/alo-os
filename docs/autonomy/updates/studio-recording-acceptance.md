@@ -1,4 +1,30 @@
 # Studio recording acceptance candidate
+
+The private native-control selector now recognizes GTK 4's actual accessibility
+state: GTK reports SENSITIVE, SHOWING and VISIBLE, but does not report ENABLED.
+The exception requires the same process's registered application root to identify
+itself as GTK version 4; other toolkits retain the previous rule. Disabled GTK 4
+subtrees are excluded, and the process owner is checked again after the final
+control read. This changes the private verifier, not application consent.
+
+Independent tests first reproduced the missing-state and disabled-sibling
+failures against real GTK widgets. Four one-time faults were caught: removing
+GTK 4 support, accepting unidentified toolkits, traversing disabled ancestors,
+and omitting the final owner check. The restored focused suite passed 23 tests.
+The full verification suite then passed all 426 tests in 59.276 seconds, and
+all 24 CI-helper tests passed. The recurring Studio workflow installs GTK 4 and
+xdotool and discovers these tests. Each new live fixture owns a separate session
+bus: the first combined run exposed portal-name interference, and an isolated
+mixed run passed with the outer session's portal names still unowned.
+
+The frozen recording candidate's mutation job 44491752452 passed: 30 mutations
+were attempted, 20 caught and 10 unable to compile, with none missed. Its
+repository gate 44491752437 passed 16,164 tests and failed two: the declared
+root-permissions limitation and the pairings-file source rule, which found the
+new test fixture under shipped source. That fixture-placement correction is
+pending. Installed walk 44492469477 and model run 44497665478 remain pending.
+Review playback is not yet certified by library reopening or decoder checks.
+
 The retained diagnostic run 44493013653 passed 189 of 190 Studio trials. In
 Ask each time, screen-picker attempt one selected `open_application` although
 the request said Studio was open and asked for its system picker without

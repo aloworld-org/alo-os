@@ -144,7 +144,9 @@ class NativeSessionPicker(unittest.TestCase):
             except (ValueError, dbus.DBusException):
                 pass
             time.sleep(.05)
-        self.fail(f'native picker did not become readable: exit={process.poll()}, facts={last}')
+        errors = (Path(process.args[-1]).parent / 'stderr.log').read_text()
+        self.fail(f'native picker did not become readable: exit={process.poll()}, facts={last}, '
+                  f'stderr={errors[-2048:]}')
 
     def attempt(self, flow, source='window', *, cancel=False):
         """Only the picker's retry clock is accelerated; the native tree is ready."""
