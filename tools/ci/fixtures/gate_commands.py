@@ -1,4 +1,4 @@
-#!/usr/bin/python3 -I
+#!/usr/bin/python3 -IB
 """Harmless commands for executing only the gate's APT setup in a fixture.
 
 Every privileged APT/hosts operation is intercepted here. No real sudo,
