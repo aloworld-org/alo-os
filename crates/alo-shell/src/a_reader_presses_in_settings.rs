@@ -35,6 +35,15 @@ impl Server {
         let pointed_at = match what {
             InSettings::APage(category) => PointedAt::ACategory(*category),
             InSettings::ARow(row) => PointedAt::ARow(row.clone()),
+            InSettings::AGrant(id) => {
+                let Some(row) = self.settings.rows_on_the_page(now).into_iter().find(|row| {
+                    matches!(row, crate::SettingsRow::Granted(alo_changing::Row::Grant(seen))
+                        if seen.id() == *id)
+                }) else {
+                    return WhatAReaderPressCameTo::NothingInSettings;
+                };
+                PointedAt::ARow(row)
+            }
             InSettings::AnEntry(row) => PointedAt::AnEntry(row.clone()),
         };
         match self.settings.pointed_at(&pointed_at, now) {

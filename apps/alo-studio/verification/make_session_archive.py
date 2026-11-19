@@ -12,7 +12,7 @@ def build(source, output):
     with tempfile.TemporaryDirectory(prefix='studio-session-source-') as folder:
         prepared = pathlib.Path(folder)
         shutil.copyfile(source / 'installed_session.py', prepared / '__main__.py')
-        for name in ('native_controls.py', 'atspi_tree.py', 'audio_selection.py',
+        for name in ('native_controls.py', 'atspi_tree.py', 'audio_selection.py', 'reference_window.py', 'review_playback.py',
                      'agent_session.py', 'agent_settings.py', 'agent_process.py',
                      'approved_session.py', 'approved_runtime.py', 'microphone_turn.py',
                      'pending_microphone.py', 'record_delta.py', 'record_shape.py',

@@ -355,13 +355,8 @@ jobs:
           if ! fetch 60 90; then
             path="archive.ubuntu.com (fallback)"
             echo "::warning title=Ubuntu mirror::the runner's Ubuntu mirror did not deliver in time; fetching from archive.ubuntu.com instead"
-            for source in $(sudo grep -lrE 'apt-mirrors\.txt|azure\.archive' \
-                /etc/apt/sources.list /etc/apt/sources.list.d/ 2> /dev/null); do
-              sudo sed -i -E \
-                -e 's#mirror\+file:/etc/apt/apt-mirrors\.txt#http://archive.ubuntu.com/ubuntu/#g' \
-                -e 's#azure\.archive\.ubuntu\.com#archive.ubuntu.com#g' "$source"
-              echo "rewrote $source"
-            done
+            # Keep HTTPS and the source's signing fields on the fallback too.
+            sudo python3 -I tools/ci/ubuntu_archive.py
             # Only a name the runner's own resolver cannot answer is pinned.
             for host in archive.ubuntu.com security.ubuntu.com; do
               if timeout 5 getent ahostsv4 "$host" > /dev/null; then

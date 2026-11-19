@@ -199,7 +199,12 @@ impl Reading<'_, '_> {
         let at = self.push(
             parent,
             Node {
-                press: Some(Pressed::InSettings(InSettings::ARow(row.clone()))),
+                press: Some(Pressed::InSettings(match row {
+                    SettingsRow::Granted(alo_changing::Row::Grant(seen)) => {
+                        InSettings::AGrant(seen.id())
+                    }
+                    _ => InSettings::ARow(row.clone()),
+                })),
                 ..node
             },
         );

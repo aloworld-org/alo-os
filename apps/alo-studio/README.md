@@ -43,6 +43,11 @@ library even after you export a copy.
 Saved duration is read from the completed media without blocking the UI.
 Missing, damaged, or empty media is not reported as a completed recording.
 
+In Review, **Play recording** and **Pause playback** remain visible beside the
+position control. Use Tab to reach them, Space to play or pause, and the arrow
+keys on **Playback position** to seek. Elapsed time and duration stay readable;
+opening a different recording leaves it paused.
+
 ![The native recording workspace](data/screenshots/studio.png)
 
 ## Install a built package

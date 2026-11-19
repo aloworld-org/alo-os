@@ -155,7 +155,12 @@ fn every_page_is_heard_and_every_row_on_it_can_be_pressed() {
             crate::settings_page::the_page(window.open().unwrap(), category, &strings, noon());
         let _ = the(&under, Role::Heading, &page.heading);
         for row in page.rows() {
-            let pressed = Pressed::InSettings(InSettings::ARow(row.clone()));
+            let pressed = Pressed::InSettings(match &row {
+                SettingsRow::Granted(alo_changing::Row::Grant(seen)) => {
+                    InSettings::AGrant(seen.id())
+                }
+                _ => InSettings::ARow(row.clone()),
+            });
             assert!(
                 under
                     .iter()

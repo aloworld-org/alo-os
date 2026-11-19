@@ -53,6 +53,20 @@ pub(crate) enum ThenChoose {
     No,
 }
 
+impl SettingsRow {
+    /// Whether two observations name the same action. A timed grant's
+    /// remaining duration changes, but its non-reusable handle does not.
+    pub(crate) fn names_the_same_action_as(&self, other: &Self) -> bool {
+        match (self, other) {
+            (
+                Self::Granted(alo_changing::Row::Grant(current)),
+                Self::Granted(alo_changing::Row::Grant(heard)),
+            ) => current.id() == heard.id(),
+            _ => self == other,
+        }
+    }
+}
+
 impl SettingsWindow {
     /// The keyboard goes to what a press was on, and whether that press is
     /// then carried out as Enter. Nothing happens while the window is shut.
@@ -60,6 +74,7 @@ impl SettingsWindow {
         let Some(open) = self.open_mut() else {
             return ThenChoose::No;
         };
+        open.row_pressed = None;
         open.waiting_for_a_chord = false;
         match what {
             PointedAt::ACategory(category) => {
@@ -76,8 +91,12 @@ impl SettingsWindow {
             PointedAt::ARow(row) => {
                 open.picker = None;
                 let rows = open.rows_on(open.category, now);
-                match rows.iter().position(|it| it == row) {
+                // A timed grant's remaining duration changes after the reader
+                // hears it. Match its handle among the currently live rows;
+                // an expired or replaced grant must not become another target.
+                match rows.iter().position(|it| it.names_the_same_action_as(row)) {
                     Some(at) => {
+                        open.row_pressed = Some(row.clone());
                         open.in_the_page = true;
                         open.focus = at;
                         ThenChoose::Yes

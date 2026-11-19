@@ -1,7 +1,8 @@
 """Use Ubuntu's central HTTPS archive on disposable verification runners.
 
-Only archive URI tokens change. Suites, package signature configuration,
-security endpoints and unrelated repositories retain their original bytes.
+Only archive URI tokens and GitHub's standard Ubuntu mirror-list URI change.
+Suites, package signatures, direct security endpoints and unrelated repositories
+retain their original bytes.
 """
 
 from pathlib import Path
@@ -12,6 +13,8 @@ from urllib.parse import urlsplit
 def archive_uri(match):
     """Normalize an exact Ubuntu archive URI, leaving every other token alone."""
     token = match.group()
+    if token == 'mirror+file:/etc/apt/apt-mirrors.txt':
+        return 'https://archive.ubuntu.com/ubuntu'
     try:
         uri = urlsplit(token)
     except ValueError:

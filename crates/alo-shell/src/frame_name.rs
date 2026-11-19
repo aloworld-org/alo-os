@@ -174,8 +174,15 @@ impl crate::Server {
                 crate::window_menu_reading::what_a_reader_meets(&menu, keyboard, preview),
             ))
         });
-        let tree = crate::ReadAloudTree::of(strings, showing, turned_on)
-            .with_the_docks_slots(strings, &self.the_docks_slots_as_drawn())
+        let slots = self.the_docks_slots_as_drawn();
+        let mut showing = showing.to_vec();
+        // The desktop caller names Desktop; its drawn Dock is a separate
+        // accessibility surface. Hidden displays have no retained slots.
+        if !slots.is_empty() && !showing.contains(&alo_access::Surface::Dock) {
+            showing.push(alo_access::Surface::Dock);
+        }
+        let tree = crate::ReadAloudTree::of(strings, &showing, turned_on)
+            .with_the_docks_slots(strings, &slots)
             // **And the Bar's matches under the Dock's field**, while they
             // rise from it (the owner's decision of 2026-11-11).
             .with_the_bars_matches(strings, &self.the_bars_matches_as_read(strings))

@@ -32,7 +32,7 @@ use std::time::SystemTime;
 use zbus::fdo;
 use zbus::message::Header;
 use zbus::names::{BusName, OwnedUniqueName};
-use zbus::zvariant::{OwnedObjectPath, OwnedValue};
+use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};
 
 use crate::answered::{Answered, Outcome, Unanswered};
 use crate::caller::{application_of, named};
@@ -173,8 +173,18 @@ impl Asked {
         &self,
         connection: &zbus::Connection,
         response: u32,
-        results: HashMap<String, OwnedValue>,
+        mut results: HashMap<String, OwnedValue>,
     ) -> fdo::Result<OwnedObjectPath> {
+        // GTK reads this list before checking cancellation or refusal. Keep
+        // every FileChooser reply usable, including early refusals, without
+        // changing its response code or replacing a successfully exported URI.
+        if self.portal == Portal::FileChooser && !results.contains_key("uris") {
+            let empty =
+                OwnedValue::try_from(Value::from(Vec::<String>::new())).map_err(|error| {
+                    fdo::Error::Failed(format!("a file reply could not be encoded: {error}"))
+                })?;
+            results.insert("uris".to_owned(), empty);
+        }
         connection
             .emit_signal(
                 Some(BusName::Unique(self.sender.as_ref())),

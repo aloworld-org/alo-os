@@ -72,6 +72,9 @@ button.recording-stop:hover { background: #b93349; }
 .notice-text { font-size: 11px; }
 .notice button { padding: 4px; min-height: 16px; }
 .review-video { background: #192031; border-radius: 14px; min-height: 260px; }
+.playback-controls button { padding: 8px 12px; }
+.playback-controls scale:focus-visible { outline: 3px solid alpha(@accent, 0.4); outline-offset: 3px; border-radius: 6px; }
+.playback-time { font-family: "JetBrains Mono", monospace; font-size: 11px; color: @muted; }
 entry.clip-title { background: transparent; border: none; border-bottom: 1px solid @line; border-radius: 0; padding: 10px 0; font-size: 22px; font-weight: 650; box-shadow: none; }
 .recording-list { background: transparent; }
 .recording-list row { background: white; border: 1px solid @line; border-radius: 11px; margin-bottom: 9px; }

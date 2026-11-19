@@ -36,6 +36,7 @@ impl Review {
         video.set_vexpand(true);
         frame.add_overlay(&video);
         content.append(&frame);
+        content.append(&super::playback::controls(&video));
         let title = gtk::Entry::builder()
             .placeholder_text(t("Name your recording"))
             .max_length(200)

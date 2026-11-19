@@ -585,6 +585,9 @@ pub(crate) struct Open {
     pub(crate) the_screen_reader: Option<String>,
     /// Which row of the page has the focus, counted from its first.
     pub(crate) focus: usize,
+    /// The row a pointer or reader selected, until its deferred Choose.
+    /// A row index alone can name another action after a grant expires.
+    pub(crate) row_pressed: Option<SettingsRow>,
     /// Whether Settings waits for a chord for the focused shortcut.
     pub(crate) waiting_for_a_chord: bool,
     /// Where the side column is scrolled, on a screen where its categories
@@ -676,6 +679,7 @@ impl SettingsWindow {
             told: None,
             the_screen_reader: self.the_screen_reader.clone(),
             focus: 0,
+            row_pressed: None,
             waiting_for_a_chord: false,
             side_column: crate::settings_side_column_scrolls::TheSideColumnsScroll::at_the_top(),
             // **Not known until the desktop says**, asked once on the next
@@ -967,6 +971,7 @@ impl SettingsWindow {
         doors: SettingsDoors<'_>,
     ) -> Option<SettingsDid> {
         let open = self.open.as_mut()?;
+        let row_pressed = open.row_pressed.take();
         if open.waiting_for_a_chord {
             return Some(open.chord_pressed(press, doors));
         }
@@ -981,6 +986,15 @@ impl SettingsWindow {
             return did;
         }
         let rows = open.rows_on(open.category, doors.now);
+        if press.key == SettingsKey::Choose
+            && let Some(pressed) = row_pressed
+        {
+            // Resolve the selected action again at execution. Expiry may have
+            // removed it or shifted another row into its former position.
+            open.focus = rows
+                .iter()
+                .position(|row| row.names_the_same_action_as(&pressed))?;
+        }
         let last = rows.len().saturating_sub(1);
         open.focus = open.focus.min(last);
         let focused = rows.get(open.focus).cloned();
