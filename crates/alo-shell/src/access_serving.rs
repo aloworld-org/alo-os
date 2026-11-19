@@ -175,5 +175,5 @@ impl TheReaderIsTold {
 }
 
 #[cfg(test)]
-#[path = "access_serving_tests.rs"]
+#[path = "../tests/unit_fixtures/access_serving.rs"]
 mod tests;

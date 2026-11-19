@@ -21,8 +21,16 @@ The frozen recording candidate's mutation job 44491752452 passed: 30 mutations
 were attempted, 20 caught and 10 unable to compile, with none missed. Its
 repository gate 44491752437 passed 16,164 tests and failed two: the declared
 root-permissions limitation and the pairings-file source rule, which found the
-new test fixture under shipped source. That fixture-placement correction is
-pending. Installed walk 44492469477 and model run 44497665478 remain pending.
+new test fixture under shipped source. The unchanged fixture now lives in
+`alo-shell/tests/unit_fixtures`, following the existing Settings fixture, with
+only its `cfg(test)` module path updated. The existing source rule failed before
+relocation and passed all three checks afterward; all eight real-bus permission
+tests still pass. A one-time fault restoring a copy under shipped source failed
+the same rule, and removing it restored all three passes. Formatting, strict
+library/test lint and warnings-denied documentation passed. Independent review
+confirmed the fixture is byte-identical and the source rule was not weakened.
+These checks recur in the repository gate. Installed walk 44492469477 and model
+run 44497665478 remain pending.
 Review playback is not yet certified by library reopening or decoder checks.
 
 The retained diagnostic run 44493013653 passed 189 of 190 Studio trials. In
