@@ -78,7 +78,13 @@ fn a_node_id_without_its_own_parseable_serial_cannot_satisfy_selection() {
         Some("18446744073709551616"),
     ] {
         assert_eq!(
-            selected_node(&ObjectType::Node, 42, Some("capture-7"), serial, "capture-7"),
+            selected_node(
+                &ObjectType::Node,
+                42,
+                Some("capture-7"),
+                serial,
+                "capture-7"
+            ),
             None
         );
     }
