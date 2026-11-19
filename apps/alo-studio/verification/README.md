@@ -78,6 +78,14 @@ Settings grants Studio for an hour, withdraws it, and checks the policy changes
 on the same connection. Successful cleanup restores the initial policy. If an
 owned process cannot be reaped, restoring full trust is refused.
 
+Authentication invalidates the old sudo ticket in a separate command before
+validating the disposable password. Combining `-k` with `-v` succeeds without
+caching credentials and leaves the following noninteractive launch unable to
+start. Cleanup invalidates the new ticket on success and failure. The controller
+requires the child's first exact stage token before preparing Settings, and
+retains bounded child diagnostics if that handshake fails. Failed person-side
+commands retain bounded stderr in the uploaded session report.
+
 Run this only in the fresh disposable profile with no other controller. Native
 read/controls cannot distinguish a concurrent replacement folder with the same
 display name as Studio. The helper refuses observable foreign or ambiguous

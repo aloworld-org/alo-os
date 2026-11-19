@@ -352,8 +352,14 @@ class Session:
     def run(self):
         stage = 'provenance'
         def failed(error):
+            message = str(error)[:2048]
+            if isinstance(error, subprocess.CalledProcessError) and error.stderr:
+                diagnostic = error.stderr[:2048]
+                if isinstance(diagnostic, bytes):
+                    diagnostic = diagnostic.decode('utf-8', errors='replace')
+                message = message[:1024] + ': ' + diagnostic
             self.event('person-flow-failed', stage=stage,
-                       error_type=type(error).__name__, message=str(error)[:2048])
+                       error_type=type(error).__name__, message=message[:2048])
         try:
             self.record_provenance(pathlib.Path.cwd())
             stage = 'start'

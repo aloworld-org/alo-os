@@ -60,11 +60,15 @@ class AgentSession(unittest.TestCase):
             runs = [row for row in trace if row[0] == 'run']
             self.assertEqual(runs[0][1], ['systemd-cat', '-t', 'studio-walk'])
             self.assertEqual(runs[0][2]['input'], 'Studio native permission settings requested\n')
-            auth = next(row for row in runs if row[1] == ['sudo', '-k', '-S', '-p', '', '-v'])
+            auth = next(row for row in runs if row[1] == ['sudo', '-S', '-p', '', '-v'])
+            # sudo(8): combining -k with validation suppresses ticket updates.
+            invalidated = next(row for row in runs if row[1] == ['sudo', '-k'])
+            self.assertLess(trace.index(invalidated), trace.index(auth))
             self.assertTrue(auth[2]['input'].endswith('\n'))
             self.assertLess(trace.index(auth), trace.index(launched[0]))
             self.assertEqual(runs[-1][1], ['sudo', '-k'])
-            self.assertLess(trace.index(('verify',)), trace.index(runs[-1]))
+            final_run = max(index for index, row in enumerate(trace) if row[0] == 'run')
+            self.assertLess(trace.index(('verify',)), final_run)
             for _, _, options in runs:
                 self.assertTrue(options['check'])
                 self.assertLessEqual(options['timeout'], 30)

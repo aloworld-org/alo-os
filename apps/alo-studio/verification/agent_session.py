@@ -60,7 +60,10 @@ def run_permission_check(inputs, command, event):
         # Record the attempted authentication before calling it: even a failed
         # response must invalidate a timestamp it may have created.
         authenticated = True
-        run('sudo', '-k', '-S', '-p', '', '-v', input='walkpass1\n')
+        # Combining -k with -v authenticates without saving a ticket. The
+        # following noninteractive launch needs a fresh, cached validation.
+        run('sudo', '-k')
+        run('sudo', '-S', '-p', '', '-v', input='walkpass1\n')
         settings = NativeSettings(command)
         process = subprocess.Popen([
             'sudo', '-n', '--', '/usr/bin/setpriv', '--reuid=60989', '--regid=60989',

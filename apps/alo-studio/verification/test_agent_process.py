@@ -41,7 +41,7 @@ class Settings:
 
 class ProcessFlow(unittest.TestCase):
     def ignoring_term(self):
-        process = self.start("import signal,time;signal.signal(signal.SIGTERM,signal.SIG_IGN);print('ready',flush=True);time.sleep(10)")
+        process = self.start("import signal,time;signal.signal(signal.SIGTERM,signal.SIG_IGN);print('ready',flush=True);print('ask-before-grant',flush=True);time.sleep(10)")
         self.assertEqual(process.stdout.readline(), b'ready\n')
         return process
 

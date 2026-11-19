@@ -18,6 +18,7 @@ class Replies:
         self.selector.register(process.stdout, selectors.EVENT_READ, 'stdout')
         self.selector.register(process.stderr, selectors.EVENT_READ, 'stderr')
         self.diagnostic_bytes = 0
+        self.diagnostic = bytearray()
 
     def left(self):
         left = self.deadline - time.monotonic()
@@ -40,6 +41,7 @@ class Replies:
                     self.diagnostic_bytes += len(data)
                     if self.diagnostic_bytes > 16_384:
                         raise ValueError('the private agent diagnostics exceeded their limit')
+                    self.diagnostic.extend(data[:max(0, 1536 - len(self.diagnostic))])
                     continue
                 line.extend(data)
                 if len(line) > 64:
@@ -71,10 +73,15 @@ def verify_process(process, settings, event, timeout=300):
         if not isinstance(timeout, (float, int)) or not math.isfinite(timeout) or not 0 < timeout <= 300:
             raise ValueError('the private agent timeout must be positive and at most five minutes')
         replies = Replies(process, time.monotonic() + timeout)
-        settings.prepare()
         for expected in TOKENS:
             if replies.line() != expected:
-                raise ValueError('the private agent permission stages arrived out of order')
+                diagnostic = replies.diagnostic.decode('utf-8', errors='replace').strip()
+                raise ValueError('the private agent permission stages arrived out of order'
+                                 + (f': {diagnostic}' if diagnostic else ''))
+            if expected == TOKENS[0]:
+                # The confined child announces readiness before asking us to
+                # change policy. A failed launch must not be hidden by setup.
+                settings.prepare()
             settings.boundary(expected)
             replies.left()
             process.stdin.write((expected + '\n').encode('ascii'))
