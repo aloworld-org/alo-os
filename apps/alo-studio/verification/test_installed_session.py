@@ -67,6 +67,9 @@ class RecordingFlow(Session):
         self.calls.append(('picker', source))
         self.state['phase'] = 'selected'
 
+    def foreground_reference(self):
+        self.calls.append('foreground-reference')
+
     def export(self, *_):
         self.calls.append('export')
 

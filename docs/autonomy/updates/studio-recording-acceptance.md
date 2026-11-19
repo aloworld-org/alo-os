@@ -12,8 +12,69 @@ fifteen CI helper tests, native recording and decoding checks, and optimized
 desktop regressions, strict checks and service compilation. These checks do not
 replace installed acceptance. Image check 44477779237 passed. Mutation run
 44477779261 tried thirty faults: twenty caught, ten unviable and none missed.
-Installed walk 44478570107 has built its image and disk and is running; there
-is no recording-media result from this source yet.
+Installed walk 44478570107 passed all five initial permission stages, both
+source-picker cancellations, screen recording with pause/resume, export
+cancellation without a crash, exact-byte saving and library selection by ID.
+It then failed selecting the window source: the verifier expected “Window”
+while the native picker publishes “Application window.” Retained evidence ZIP
+SHA-256 is `f51a9c76f5436506e2b2cab42e72bb691658c60ff27e5d42cab19b062d866357`.
+The saved screen video has 123 frames over 24.652 seconds (4.989 fps), strictly
+increasing timestamps, a maximum 241 ms timestamp step and 41 ms uncovered gap.
+Settings obscures the moving reference in inspected frames, so visual
+continuity remains unverified. Window capture, microphone synchronization and
+the subsequent native approval walkthrough were not reached. These are
+one-time observations of retained media, not a completed acceptance verdict.
+
+The private verifier now selects its exact reference title after the portal's
+source-kind separator. The portal keeps ownership of its translated kind label.
+Five independent tests exercise the actual Session picker through native GTK
+radio controls, the session-bus owner lookup and AT-SPI activation. The original
+verifier failed the positive selection test; the correction passes all five,
+including ambiguity, foreign-owner, hidden/disabled and cancellation refusal
+paths. Three one-time faults were caught: the old kind label, selecting any
+title, and omitting Share. The fixture publishes its response atomically after
+one fault run exposed a test-only partial-JSON read race.
+
+The reference is brought forward by its native Dock action before each Start,
+including the cancelled countdown. The ordinary application-focus door alone
+does not reorder Settings above application windows; the person's Dock road
+does. The verifier waits for fresh reference activation and refuses while a
+showing shell surface remains active. This setup check does not replace visual
+inspection or decoded moving-region evidence. The new helper is included in
+the private session archive, not the application's public controls.
+
+A separate local GTK 4 experiment caught a naming assumption in that setup:
+the accessibility root uses the program name, while the frame uses the window
+title. GTK 4.20.4 source confirms that distinction and the registered
+GApplication object path used for accessible children. The helper identifies
+the reference through that path and requires exactly one owned frame with
+the expected title, a frame/window role and active/showing/visible states.
+It presses the Dock once and then reads fresh state; its polling deadline is
+checked between bounded tree scans, not a hard ten-second wall-clock limit.
+The ordinary Studio warning selector also uses the application's explicitly
+set program name instead of its display label.
+
+Independent tests first failed the missing foreground-before-Start condition,
+archive omission, program-name identity, wrong application path, wrong role
+and warning-owner selection. The completed local suite passes 416 checks,
+including five live GTK picker tests, fifteen foreground tests and three
+warning tests. Eight additional one-time faults were caught: repeated Dock
+activation, ignored covering Settings, ignored activation states, omitted
+foreground setup, omitted archive helper, accepted foreign application path,
+accepted label role and the old warning-owner name. Together with the three
+picker faults, all eleven were caught. The regressions recur in Studio's
+private-verification discovery step. The GTK observation and deliberate faults
+were one-time checks, not installed Wayland or recording acceptance.
+Independent final review found no concrete blocker and confirmed that all six
+integrated test/fixture files match the independently prepared sources.
+
+On the preceding CI-only source `377ac0d91e5865d679f75edb2a7612c8013c4e8e`,
+Studio run 44487234768 and package run 44487234877 passed. Repeated model run
+44487234777 passed 188/190 Studio trials: Full-mode status try one selected a
+file search, and Ask-mode five-second countdown try two selected recording
+quality. These new failures remain open despite the preceding 190/190 result.
+Mutation run 44487234780 timed out installing dependencies before mutation
+testing, so it supplies no mutation result.
 
 Repository gate 44477779266 failed before workspace tests in both the first
 attempt and one infrastructure retry. The initial download exhausted its
@@ -22,7 +83,9 @@ exhausted the 60-second index-fetch bound. The correction reuses the existing
 isolated Python archive helper to retain HTTPS, source suites, signing fields,
 direct security endpoints and unrelated repositories. Existing fetch limits,
 DNS fallback and installation from checked downloads remain in place. Hosted
-download reliability on the correction remains unmeasured.
+gate 44487235191 on correction `377ac0d91e5865d679f75edb2a7612c8013c4e8e`
+completed dependency setup and reached workspace checks; its final outcome is
+pending. One successful setup does not establish download reliability.
 
 Four independently authored tests execute the dependency-step shell with
 temporary APT files and intercepted commands. The original workflow passed three

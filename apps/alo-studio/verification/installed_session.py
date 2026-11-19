@@ -21,9 +21,9 @@ from atspi_tree import AtspiTree
 from audio_selection import automatic_source_ready, clear_reference_source
 from native_controls import activate
 from agent_session import run_permission_check
+from reference_window import APPLICATION as REFERENCE, TITLE as REFERENCE_TITLE, foreground
 
 STUDIO = 'org.aloworld.Studio'
-REFERENCE = 'org.aloworld.Studio.Verification'
 PORTAL = 'org.freedesktop.impl.portal.desktop.gtk'
 HOST = 'http://10.0.2.2:8767'
 
@@ -173,8 +173,12 @@ class Session:
                 if cancel:
                     self.press(owner, lambda name: name == 'Cancel')
                 else:
+                    # ChooseWindow already limits the native picker to windows.
+                    # Identify our reference by its exact title; the portal owns
+                    # the translated source-kind prefix shown before it.
                     self.press(owner, lambda name: name.startswith('Screen · ') if source == 'screen'
-                               else name == 'Window · Studio verification window')
+                               else bool(name.partition(' · ')[0])
+                               and name.partition(' · ')[2] == REFERENCE_TITLE)
                     self.press(owner, lambda name: name == 'Share')
                 break
             except (ValueError, dbus.DBusException):
@@ -203,11 +207,16 @@ class Session:
         self.reference.wait(timeout=10)
         require(self.reference.returncode == 0, 'the real reference reported a failure')
 
+    def foreground_reference(self):
+        observed = foreground(self.tree, self.press)
+        self.event('reference-window-activated', **observed)
+
     def warning(self):
         # Flatpak's session-bus and accessibility proxies have different PIDs.
-        # Identify the unique application root on the actual accessibility bus.
+        # GTK4 names the root with GLib's program name. Studio explicitly sets
+        # that to its application ID; its display label is not the identity.
         roots = [node for node in self.tree.roots()
-                 if self.tree.facts(node)['name'] == 'alo Studio']
+                 if self.tree.facts(node)['name'] == STUDIO]
         if len(roots) == 1:
             owner = self.tree.owner(roots[0][0])
             self.press(owner, lambda name: name == 'Record anyway')
@@ -304,10 +313,12 @@ class Session:
         if microphone:
             self.call('EnableMicrophone')
             self.call('SetCountdown', dbus.Int64(3))
+            self.foreground_reference()
             self.begin('countdown')
             self.call('CancelCountdown')
             self.wait(lambda state: state['phase'] == 'selected')
             self.call('SetCountdown', dbus.Int64(0))
+        self.foreground_reference()
         self.begin()
         self.refused('Resume')
         self.active_for(18 if microphone else 12)
