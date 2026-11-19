@@ -162,7 +162,10 @@ jobs:
           fi
 
       - name: Install the emulator and its firmware
+        timeout-minutes: 15
         run: |
+          sudo python3 -I tools/ci/ubuntu_archive.py
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' | sudo tee /etc/apt/apt.conf.d/80-studio-network > /dev/null
           sudo apt-get update -q
           sudo apt-get install -y -q qemu-system-x86 qemu-utils ovmf
           qemu-system-x86_64 --version
