@@ -12,6 +12,8 @@
 //! text, so two grades under different instructions are never read as one
 //! measurement.
 
+pub use crate::named_arguments::NAMED_ARGUMENTS;
+
 /// What every model is told before it is asked anything.
 ///
 /// It describes the message `alo_protocol::FromAnAgent` reads and nothing else.
@@ -311,16 +313,20 @@ pub enum Instructions {
     /// one command where no verb fits (ADR 0149). What a turn shows since
     /// 2026-11-08.
     EveryDoorAnAnswerAndACommand,
+    /// [`NAMED_ARGUMENTS`]: the four doors, with arguments as named object
+    /// properties, agreeing with the hosted schema. Older grades do not name it.
+    NamedArguments,
 }
 
 impl Instructions {
     /// Every set, in the order they were written.
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 6] = [
         Self::AsFirstWritten,
         Self::OneExamplePerDoor,
         Self::SeveralSteps,
         Self::EveryDoorAndAnAnswer,
         Self::EveryDoorAnAnswerAndACommand,
+        Self::NamedArguments,
     ];
 
     /// **The set an agent turn shows a model** (ADR 0037, decision 2, as ADR
@@ -344,7 +350,12 @@ impl Instructions {
     /// [`Self::EveryDoorAndAnAnswer`] — its only measurement is ADR 0133's own
     /// table, made to choose it — so nothing graded is invalidated, and this
     /// set is earned like any other before a grade names it.
-    pub const SHOWN_TO_A_TURN: Self = Self::EveryDoorAnAnswerAndACommand;
+    ///
+    /// The candidate now uses [`Self::NamedArguments`] so both hosted and local
+    /// models see argument examples consistent with the hosted strict schema.
+    /// This is a new measurement identity; historical grades do not transfer.
+    /// Repeated real-model acceptance is required before this candidate ships.
+    pub const SHOWN_TO_A_TURN: Self = Self::NamedArguments;
 
     /// The text a model is shown.
     #[must_use]
@@ -355,6 +366,7 @@ impl Instructions {
             Self::SeveralSteps => SEVERAL_STEPS,
             Self::EveryDoorAndAnAnswer => EVERY_DOOR_AND_AN_ANSWER,
             Self::EveryDoorAnAnswerAndACommand => EVERY_DOOR_AN_ANSWER_AND_A_COMMAND,
+            Self::NamedArguments => NAMED_ARGUMENTS,
         }
     }
 
@@ -367,6 +379,7 @@ impl Instructions {
             Self::SeveralSteps => "several-steps",
             Self::EveryDoorAndAnAnswer => "every-door-and-an-answer",
             Self::EveryDoorAnAnswerAndACommand => "every-door-an-answer-and-a-command",
+            Self::NamedArguments => "named-arguments",
         }
     }
 
@@ -463,19 +476,11 @@ mod tests {
         );
     }
 
-    /// **What a turn shows is the set ADR 0149 chose, and no other.**
-    ///
-    /// `SHOWN_TO_A_TURN` is a decided choice (ADR 0037, decision 2, as ADR 0133
-    /// and ADR 0149 amend it). Naming another set there would make every grade a statement
-    /// about text nobody graded under, which is the fault this whole enum
-    /// exists to prevent. When `several-steps` has been put to the fixed ten,
-    /// this test is the one to come back to.
+    /// The current candidate teaches the hosted argument shape under its own
+    /// identity. This assertion is not a real-model measurement.
     #[test]
-    fn what_a_turn_shows_is_a_set_that_has_been_measured() {
-        assert_eq!(
-            Instructions::SHOWN_TO_A_TURN,
-            Instructions::EveryDoorAnAnswerAndACommand
-        );
+    fn what_a_turn_shows_names_the_object_argument_candidate() {
+        assert_eq!(Instructions::SHOWN_TO_A_TURN, Instructions::NamedArguments);
         assert_ne!(
             Instructions::SHOWN_TO_A_TURN,
             Instructions::SeveralSteps,
@@ -531,15 +536,11 @@ mod tests {
     /// The digest the first instructions had on 2026-09-14.
     const FIRST_WRITTEN_DIGEST: &str = include_str!("instructions_first_written.sha256");
 
-    /// **The set a turn shows is one this crate has**, and it is the one ADR
-    /// 0149 named. A turn shown text with no digest here is a turn no grade can
-    /// ever be about.
+    /// The current candidate can be identified without borrowing an older
+    /// instruction set's digest or claiming its measurements.
     #[test]
-    fn what_a_turn_is_shown_is_named_and_measured() {
-        assert_eq!(
-            Instructions::SHOWN_TO_A_TURN,
-            Instructions::EveryDoorAnAnswerAndACommand
-        );
+    fn what_a_turn_is_shown_has_its_own_measurement_identity() {
+        assert_eq!(Instructions::SHOWN_TO_A_TURN, Instructions::NamedArguments);
         assert_eq!(
             Instructions::of_digest(&Instructions::SHOWN_TO_A_TURN.digest()),
             Some(Instructions::SHOWN_TO_A_TURN)
@@ -559,12 +560,20 @@ mod tests {
 
     /// Every set has a digest, and each digest finds its own set.
     ///
-    /// Five now. The shape of this test was `let [first, second] = …`, which
+    /// Six now. The shape of this test was `let [first, second] = …`, which
     /// is the honest kind of break: adding a set failed to compile here rather
     /// than quietly leaving the new one unchecked.
     #[test]
     fn a_digest_names_one_set_of_instructions() {
-        let [first, second, third, fourth, fifth] = Instructions::ALL.map(Instructions::digest);
+        let [first, second, third, fourth, fifth, sixth] =
+            Instructions::ALL.map(Instructions::digest);
+        for earlier in [&first, &second, &third, &fourth, &fifth] {
+            assert_ne!(&sixth, earlier);
+        }
+        assert_eq!(
+            Instructions::of_digest(&sixth),
+            Some(Instructions::NamedArguments)
+        );
         for earlier in [&first, &second, &third, &fourth] {
             assert_ne!(&fifth, earlier);
         }

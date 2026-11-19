@@ -57,6 +57,10 @@ use crate::words;
 /// two to each other, so the day the text changes this constant fails a test
 /// instead of quietly matching nothing.
 ///
+/// The 2026-11-19 candidate names object-shaped argument instructions. Existing
+/// grades remain under their original digests; none is attributed to this set.
+/// Repeated model acceptance is still required before this candidate ships.
+///
 /// **And again on 2026-11-09** (ADR 0150): the door for a command gained one
 /// sentence, that a command needing administrator rights starts with `sudo`
 /// and asks the person's password every time. Nothing was graded under the
@@ -77,7 +81,7 @@ use crate::words;
 /// text. Those grades are still in the catalogue, naming the text they were
 /// earned under; this file simply no longer reads them.
 pub const THE_WORDS_A_TURN_SHOWS: &str =
-    "1dd7243b1984c2a710b0da702edbad2652e150caba7029641da271c8de0f641e";
+    "072d08f8b1d62a63f299bba5c9735057d0689fb5ac954e1f2e16132bdcb78fcd";
 
 /// **The words a turn showed from 2026-10-27 to 2026-11-08** (ADR 0133 until
 /// ADR 0149), which the one follow-up grade in `data/follow-ups.toml` was

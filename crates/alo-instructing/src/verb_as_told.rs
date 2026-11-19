@@ -25,11 +25,32 @@
 
 use alo_capability::{Effect, Offered, Takes, Verb};
 
+use crate::Instructions;
+
 /// One verb, as a model is told about it: its name, its door, what it is for,
 /// every argument it takes with the bound that argument declared, and the
 /// `given` those arguments are sent in.
 #[must_use]
 pub fn as_told(verb: &Verb) -> String {
+    with_given(verb, &given_as_told(verb))
+}
+
+/// Render the catalogue in the argument format of the named instructions.
+pub(crate) fn as_told_for(verb: &Verb, instructions: Instructions) -> String {
+    if instructions == Instructions::NamedArguments {
+        let each: Vec<String> = verb
+            .args()
+            .iter()
+            .map(|arg| format!("{}:VALUE", serde_json::Value::String(arg.name().to_owned())))
+            .collect();
+        with_given(verb, &format!("{{{}}}", each.join(",")))
+    } else {
+        as_told(verb)
+    }
+}
+
+/// Keep the declaration's purpose, door and bounds identical in both formats.
+fn with_given(verb: &Verb, given: &str) -> String {
     let door = match verb.effect() {
         Effect::Read => "read",
         Effect::Change => "propose",
@@ -48,7 +69,7 @@ pub fn as_told(verb: &Verb) -> String {
         ));
     }
     text.push_str("\n  given: ");
-    text.push_str(&given_as_told(verb));
+    text.push_str(given);
     text
 }
 
