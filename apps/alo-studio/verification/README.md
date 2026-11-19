@@ -54,6 +54,22 @@ foregrounding the exact Studio window. It uploads saved media before checking
 playback and reports only position advancement/stability; rendered continuity
 and synchronized audio still require the separate media audit.
 
+GTK acknowledges native action dispatch before the button's animated click
+invokes Pause. A one-time normal-app observation measured the Play label
+appearing about 265–270 ms after dispatch, followed by stable position; the
+previous 150 ms sample could precede that acknowledgement. The observer now
+waits at most three seconds for the same owned, visible, sensitive button to
+show Play, then requires the unchanged one-second/80 ms stability check. It
+does not dispatch Pause twice. Same-named child labels are excluded by role;
+replacement, hidden, disabled and wrong-role buttons refuse acknowledgement.
+The asynchronous boundary and refusal cases recur in
+`test_review_playback_pause.py`, alongside the actual normal-app native probe.
+All 27 playback checks passed locally against the normal binary. The complete
+instrument suite passed 458 active checks with six actual-app checks run
+separately; all 24 CI-helper checks passed. Six one-time faults were caught in
+disposable source copies. Removing the final role recheck initially survived;
+an independent fresh-role race test now catches that fault as well.
+
 The separate `studio-agent-probe` binary in `alo-walking` prepares the installed
 permission check. It accepts no arguments and requires
 `STUDIO_PRIVATE_AGENT_WALK=1`. It reads its own Linux credentials, verifies the
