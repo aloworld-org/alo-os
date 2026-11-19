@@ -1,4 +1,37 @@
 # Studio recording acceptance candidate
+On source `5b8f686b426e8e812bb316af088ffd308a992b2b`, signed package
+44477809005 passed. The focused window-picker trial 44477814824 passed all
+twenty attempts, ten under each access policy. Full repeated model run
+44477779244 passed all 190 Studio trials: nineteen controls, five attempts
+under each policy. Generic requests outside Studio kept the overall job red;
+Studio's result does not close those failures. No model action in these trials
+was carried out on a machine.
+
+All three Studio jobs in 44477779235 passed: 393 private verification tests and
+fifteen CI helper tests, native recording and decoding checks, and optimized
+desktop regressions, strict checks and service compilation. These checks do not
+replace installed acceptance. Installed walk 44478570107 is still building its
+OS image; there is no recording-media result from this source yet.
+
+Repository gate 44477779266 failed before workspace tests in both the first
+attempt and one infrastructure retry. The initial download exhausted its
+90-second bound. Fallback rewrote the runner's mirror-list URI to HTTP and
+exhausted the 60-second index-fetch bound. The correction reuses the existing
+isolated Python archive helper to retain HTTPS, source suites, signing fields,
+direct security endpoints and unrelated repositories. Existing fetch limits,
+DNS fallback and installation from checked downloads remain in place. Hosted
+download reliability on the correction remains unmeasured.
+
+Four independently authored tests execute the dependency-step shell with
+temporary APT files and intercepted commands. The original workflow passed three
+and failed the HTTPS source-byte assertion. The correction passes all four;
+with the existing archive/helper wiring tests, nineteen checks pass. Three
+one-time deliberate faults were caught: HTTP from the helper, ignored retry
+failure, and installation without `--no-download`. All four tests passed after
+each restoration. Independent review found no blocker. These regressions recur
+in Studio's CI-helper discovery step; the deliberate faults were one-time
+checks. They do not certify network performance or real package signatures.
+
 On source `59dfbf8809b05d53da333f5876c6a4a74e9938a8`, signed package
 44454878392 passed, but installed walk 44455470524 stopped at native grant
 withdrawal: the native command reported that **Take back** was unavailable. It passed 32
