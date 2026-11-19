@@ -16,7 +16,7 @@ use crate::reading_application_status::reading_application_status;
 use crate::the_conversation_so_far::TheConversationSoFar;
 use crate::the_window_offered::TheWindowOffered;
 use crate::using_named_application_controls::using_named_application_controls;
-use crate::verb_as_told::as_told;
+use crate::verb_as_told::as_told_for;
 use crate::what_it_may_reach::WhatItMayReach;
 use crate::working_in_an_application::working_in_an_application;
 
@@ -100,7 +100,7 @@ pub fn shown_to_a_model_about(
 pub fn the_products_words(instructions: Instructions, verbs: &Verbs) -> String {
     let mut text = String::from(instructions.text());
     for verb in verbs.all() {
-        text.push_str(&as_told(verb));
+        text.push_str(&as_told_for(verb, instructions));
     }
     // After every verb, because it names two of them and says in which order
     // they go — and only where the registry has them.
@@ -245,10 +245,13 @@ mod tests {
     /// request itself are the same text under either set, which is what lets
     /// two grades be read as one variable apart (ADR 0034, decision 2).
     #[test]
-    fn two_sets_of_instructions_differ_only_in_how_to_answer() {
+    fn historical_sets_differ_only_in_how_to_answer() {
         let verbs = the_verbs();
         let request = "rename /home/anna/scan001.pdf to march.pdf";
-        for instructions in Instructions::ALL {
+        for instructions in Instructions::ALL
+            .into_iter()
+            .filter(|set| *set != Instructions::NamedArguments)
+        {
             let text = shown_to_a_model(instructions, &verbs, &WhatItMayReach::nothing(), request);
             let (shown, rest) = text.split_at(instructions.text().len());
             assert_eq!(shown, instructions.text());

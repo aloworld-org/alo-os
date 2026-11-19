@@ -53,6 +53,37 @@ def position(tree, process, expected=None):
     return node, current
 
 
+def playback_button(tree, process, expected=None):
+    """Read the same owned native button across its asynchronous activation."""
+    applications = set(roots(tree))
+    pending, seen, found = list(applications), set(), []
+    while pending:
+        node = pending.pop()
+        if node in seen:
+            continue
+        seen.add(node)
+        if len(seen) > 512:
+            raise ValueError('the playback button tree exceeded its limit')
+        if tree.owner(node[0]) != process:
+            continue
+        facts = tree.facts(node)
+        if node in applications or 24 in facts['states'] or not gtk4(tree, node, process):
+            pending.extend(facts['children'])
+        if (facts['name'] in {'Play recording', 'Pause playback'}
+                and int(tree.interface(node, ACCESSIBLE).GetRole(timeout=3)) == 43):
+            found.append(node)
+    if len(found) != 1 or (expected is not None and found[0] != expected):
+        raise ValueError('the unique playback button was missing or replaced')
+    node = found[0]
+    facts = tree.facts(node)
+    if (facts['name'] not in {'Play recording', 'Pause playback'}
+            or not usable(tree, node, process, facts)
+            or int(tree.interface(node, ACCESSIBLE).GetRole(timeout=3)) != 43
+            or tree.owner(node[0]) != process):
+        raise ValueError('the playback button changed or became unavailable')
+    return node, facts['name']
+
+
 def check(tree, process, press):
     """Play the selected recording, observe advancement, pause and verify stability.
 
@@ -82,12 +113,23 @@ def check(tree, process, press):
             if time.monotonic() >= deadline:
                 raise ValueError('playback did not advance after native Play')
             time.sleep(.1)
+        button, label = playback_button(tree, process)
+        if label != 'Pause playback':
+            raise ValueError('playback ended before native Pause')
         press(process, lambda name: name == 'Pause playback')
         started = False
-        time.sleep(.15)
+        # GTK acknowledges DoAction before its animated click invokes Pause.
+        # Anchor stability to the same button's readback, not a fixed delay.
+        deadline = time.monotonic() + 3
+        while playback_button(tree, process, button)[1] != 'Play recording':
+            if time.monotonic() >= deadline:
+                raise ValueError('native Pause was not acknowledged')
+            time.sleep(.1)
         _, paused = position(tree, process, node)
         deadline = time.monotonic() + 1
         while True:
+            if playback_button(tree, process, button)[1] != 'Play recording':
+                raise ValueError('playback restarted after Pause')
             _, stable = position(tree, process, node)
             if abs(stable - paused) > .08:
                 raise ValueError('playback position continued advancing after Pause')

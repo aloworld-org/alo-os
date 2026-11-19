@@ -463,3 +463,54 @@ second limits; this does not certify the default 1080p profile or physical
 microphone hardware. Local signed-repository validation is the authorized
 distribution scope. Public Market publication and shared UI-kit migration
 remain separate work; the GTK interface remains the development surface.
+
+## Instruction argument consistency, 2026-11-19 diagnostic candidate
+
+Fresh Studio status-selection failures remain open. The unchanged-guidance
+candidate run 44514101977 passed 187 of 190 Studio trials. Removing invented
+path examples in a separate experiment, run 44511923608, passed 368 of 380;
+that experiment failed its gate and was reverted. Neither result establishes
+a cause for the status-selection failures.
+
+Independent review found a separate concrete inconsistency: current prompt
+examples teach `given` as a list, while the actual hosted strict schema requires
+an object with each declared argument as a property. No-argument calls require
+`{}`. The candidate introduces `Instructions::NamedArguments`, uses it through
+the shared renderer for both hosted and local models, and preserves the five
+historical instruction texts, digests and list-form catalogues. Its digest is
+`072d08f8b1d62a63f299bba5c9735057d0689fb5ac954e1f2e16132bdcb78fcd`.
+The catalogue's current-grade identifier names that digest; historical grades
+remain under their original identifiers and do not transfer to this candidate.
+The strict schema, requests, expected roads, grants and approval policy are
+unchanged. No model-selection improvement is claimed yet.
+
+Nine independently authored tests in
+`crates/alo-turn/tests/named_argument_instructions.rs` compare rendered examples
+with the real hosted schema and machine registry, cover non-Studio zero- and
+multiple-argument calls, preserve historical bytes and check initial/continued
+rendering. After a fixture-only correction, six assertions failed and three
+passed before implementation; all nine then passed. The existing cross-crate
+catalogue-digest check also failed before its identifier was corrected.
+The instruction, turn, repeated-trial, model and driving suites passed 1,015
+tests with fifteen explicit ignored tests. Formatting, strict all-target
+Clippy and warnings-denied documentation passed. The ignored provider/hardware
+checks are not counted as acceptance.
+
+Six one-time compiled faults were caught: selecting the old current set,
+rendering current verbs as lists, changing historical catalogues, renaming
+declared properties, rendering empty arguments as lists, and continuing under
+the old set. Restored source passed all nine tests again. The regression tests
+recur in repository gates; these targeted fault experiments were performed
+once. Independent source review found no concrete blocker. Repeated real-model
+status trials and the complete fixed set must still pass before integration.
+
+Source trace for review: `alo-instructing/src/instructions.rs` selects the named
+set; `shown.rs::the_products_words` passes that set to
+`verb_as_told.rs::as_told_for`, which renders each declared argument's actual
+name. `a_turn_in_progress.rs::shown_in_progress` uses the same renderer and
+appends observed conversation unchanged. `alo-turn/src/next_request.rs:131`
+recognizes the same product prefix, avoiding double wrapping; its provider
+schema remains `the_shape_a_provider_is_held_to.rs:121`.
+`alo-every-try/src/a_try.rs:243` invokes the actual agent loop against the fixed
+request and simulated machine replies. These checks measure model selection,
+not installed execution, native consent or recording synchronization.

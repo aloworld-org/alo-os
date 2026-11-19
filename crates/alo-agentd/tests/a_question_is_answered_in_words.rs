@@ -355,7 +355,8 @@ fn a_request_to_read_is_answered_and_proposes_nothing() {
         Ok("as-first-written") => Instructions::AsFirstWritten,
         Ok("every-door-and-an-answer") => Instructions::EveryDoorAndAnAnswer,
         Ok("every-door-an-answer-and-a-command") => Instructions::EveryDoorAnAnswerAndACommand,
-        Ok(other) => panic!("ALO_INSTRUCTIONS is one of the five sets, not `{other}`"),
+        Ok("named-arguments") => Instructions::NamedArguments,
+        Ok(other) => panic!("ALO_INSTRUCTIONS is one of the six sets, not `{other}`"),
     };
     println!(
         "model {model} at {endpoint}, under {} (sha256 {}), {rounds} round(s) each",
