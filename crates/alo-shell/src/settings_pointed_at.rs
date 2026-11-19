@@ -76,7 +76,16 @@ impl SettingsWindow {
             PointedAt::ARow(row) => {
                 open.picker = None;
                 let rows = open.rows_on(open.category, now);
-                match rows.iter().position(|it| it == row) {
+                // A timed grant's remaining duration changes after the reader
+                // hears it. Match its handle among the currently live rows;
+                // an expired or replaced grant must not become another target.
+                match rows.iter().position(|it| match (it, row) {
+                    (
+                        SettingsRow::Granted(alo_changing::Row::Grant(current)),
+                        SettingsRow::Granted(alo_changing::Row::Grant(heard)),
+                    ) => current.id() == heard.id(),
+                    _ => it == row,
+                }) {
                     Some(at) => {
                         open.in_the_page = true;
                         open.focus = at;

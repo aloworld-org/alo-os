@@ -1,5 +1,42 @@
 # Studio recording acceptance candidate
 
+The next installed run, 44438292120, used source
+`81f53c36d2f18836d8a76dd66948f6f603a49952` and matching package run
+44437613964. It passed the previously failing ungranted boundary and created
+the application grant through native Settings, then failed withdrawal readback:
+32 checks passed, one failed and 158 were not reached. Its retained artifact has
+SHA-256 `42174c9edca5381fd322ecebb2b61ce573fff274bd527bde704046d2134a3aba`.
+It produced no recording acceptance evidence.
+
+Independent real-Settings tests reproduced the cause before correction:
+targeting compared a grant snapshot including its decreasing remaining duration.
+The same live grant therefore returned `NothingInSettings` when pressed later.
+Settings now matches that grant's stable ID among currently active rows. Other
+rows retain exact equality; expired grants and replacements with another ID
+cannot be selected through an old control. The normal reader dispatch and click
+path persist withdrawal to the real grants file in the regression test.
+
+All 74 focused Settings checks passed, including the independently written
+live, expired and replaced grant tests. Three deliberate faults were caught:
+snapshot equality, application-name equality and acceptance of an absent row.
+After source restoration, all seven reader tests passed again. Formatting,
+strict library/test lint and warnings-denied shell documentation checks passed;
+five existing vendored Smithay dependency warnings remain visible. Independent
+source review found no further concrete blocker in the subsequent permission
+and native approval flow. These regressions recur in repository gates; the
+three deliberate fault experiments were performed once. A fresh installed walk
+must still verify the correction and reach recording.
+
+On the preceding source, hosted Studio verification passed native recording,
+pause/resume and decoding, 393 instrument tests, desktop regressions and service
+builds. The signed package and image build passed. Real-model trials passed all
+190 Studio requests and ten close-application requests; generic file, slider,
+scrolling, private-typing and chooser failures kept the overall job red. The
+repository gate was accepted under its declared runner exceptions: 16,144 tests
+passed, one declared permission test failed and 101 were skipped. Ten generated
+mutations were tried: five caught and five unviable. This does not close the
+earlier broad integration mutation gaps or establish installed media acceptance.
+
 An ungranted Studio command could create an approval card even though delivery
 would refuse it. The installed walk caught this before recording. Independent
 daemon-router tests reproduced `Proposed` instead of `Refused` both before a
