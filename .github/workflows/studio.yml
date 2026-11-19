@@ -1,10 +1,10 @@
 name: alo Studio
 on:
   pull_request:
-    paths: ['apps/alo-studio/**', 'crates/alo-dock/**', 'crates/alo-shell/**', 'crates/alo-desktop/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/smithay/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
+    paths: ['tools/ci/**', 'apps/alo-studio/**', 'crates/alo-dock/**', 'crates/alo-shell/**', 'crates/alo-desktop/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/smithay/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
   push:
     branches: [main]
-    paths: ['apps/alo-studio/**', 'crates/alo-dock/**', 'crates/alo-shell/**', 'crates/alo-desktop/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/smithay/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
+    paths: ['tools/ci/**', 'apps/alo-studio/**', 'crates/alo-dock/**', 'crates/alo-shell/**', 'crates/alo-desktop/**', 'crates/alo-capture-provider/**', 'crates/alo-capture-remote/**', 'crates/alo-capture-protocol/**', 'crates/alo-media-server/**', 'engines/pipewire/**', 'engines/smithay/**', 'engines/pipewire-gstreamer/**', 'image/Containerfile', 'image/usr/lib/systemd/system/alo-portald.service', 'Cargo.toml', 'Cargo.lock', '.github/workflows/studio.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,9 +19,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Check package source selection
+        run: python3 -I -B -m unittest discover -s tools/ci -p 'test_*.py'
       - name: Private test transports
         timeout-minutes: 15
         run: |
+          sudo python3 -I tools/ci/ubuntu_archive.py
           printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' | sudo tee /etc/apt/apt.conf.d/80-studio-network > /dev/null
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends python3-dbus python3-gi gir1.2-gtk-3.0 at-spi2-core xvfb dbus-x11 ffmpeg
@@ -43,6 +46,7 @@ jobs:
       - name: Native desktop libraries
         timeout-minutes: 15
         run: |
+          sudo python3 -I tools/ci/ubuntu_archive.py
           printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' | sudo tee /etc/apt/apt.conf.d/80-studio-network > /dev/null
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libwayland-dev libinput-dev libseat-dev libxkbcommon-dev libpixman-1-dev libegl1-mesa-dev libgbm-dev libudev-dev libpipewire-0.3-dev libspa-0.2-dev libclang-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev dbus-x11 dbus-daemon gnome-keyring at-spi2-core libgtk-3-bin
@@ -110,10 +114,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Native libraries and test display
-        # The current runner mirror timed out after eight minutes while it
-        # was still downloading these media libraries, before any test ran.
+        # The regional HTTP mirror repeatedly exhausted this bound before
+        # tests began. Select the central HTTPS archive before downloading.
         timeout-minutes: 15
         run: |
+          sudo python3 -I tools/ci/ubuntu_archive.py
           printf 'Acquire::Retries "3";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' | sudo tee /etc/apt/apt.conf.d/80-studio-network > /dev/null
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libgtk-4-dev libgtk-4-media-gstreamer at-spi2-core libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libpipewire-0.3-dev libspa-0.2-dev libclang-dev gstreamer1.0-tools gstreamer1.0-gl gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-pipewire gstreamer1.0-pulseaudio pipewire pipewire-bin pipewire-pulse pulseaudio-utils wireplumber xvfb xdotool dbus-x11 appstream-util desktop-file-utils gdb
