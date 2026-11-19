@@ -1,6 +1,77 @@
 # Studio recording acceptance candidate
 
-The next installed run, 44438292120, used source
+Cancelling Studio's export chooser now receives an explicit empty URI list
+from the FileChooser portal. GTK reads that list before checking cancellation
+or refusal; alo previously omitted it when no file was handed over. The common
+response boundary now supplies a typed empty string array only for FileChooser
+replies lacking the field, preserving successful addresses, response codes,
+records and other interfaces. Independent tests first failed in eight no-file
+cases, then all thirteen passed after correction. Independent review found no
+concrete blocker. The [GTK compatibility note](../../quirks/gtk-file-chooser-reads-uris-before-the-response-code.md)
+distinguishes the installed GTK 4.20.4 crash from a one-time GTK 4.14.5 consumer
+experiment, where the corrected reply returned cancellation successfully.
+Five deliberate faults were caught by the intended assertions: omitted URI
+list, wrong list type, overwritten successful URI, refusal sent as success,
+and a changed reply map on another portal interface. Restored sources passed
+thirteen FileChooser and eight OpenURI tests, followed by the entire portal
+suite: 168 tests, including one documentation test. Formatting, strict
+all-target portal lint and warnings-denied documentation checks passed. These
+regressions recur in repository gates; the deliberate faults were one-time
+experiments. Independent final diff review found no code blocker. The corrected
+installed recording flow remains pending, including actual document writes,
+window/microphone media and native Ask execution. The current library check
+proves reopening by ID, not playback. FileChooser Request.Close remains a
+separate platform gap; this walk uses native Cancel and Save.
+
+Further boundary review reproduced an expiry race between selecting a Settings
+row and executing its deferred Choose. The pointer and reader paths select at
+one clock reading; `a_key_reaches_settings.rs` supplies a later reading to
+`SettingsWindow::pressed`. When a grant expires between them, the live row list
+shrinks and its old index can name a different grant or action. Three independent
+tests first failed by revoking a different grant, opening the folder picker from
+an expired grant, and missing a selected live grant after an earlier one expired.
+This makes an existing promise true: Settings must act only on the control the
+person selected. A further independent case reproduced the same problem for
+Give alo a folder, which became OpeningTheRecord after a preceding grant expired.
+Settings now retains the selected row until its deferred Choose and resolves
+that action against current rows. Grants match by non-reusable ID; other rows
+match their action. An absent target does nothing. Every new targeting event and
+every key press clears the pending target, preserving normal keyboard navigation
+and subsequent choices. All thirteen focused tests pass, including persisted
+grant state, folder-picker behavior, repointing and consumed-target checks.
+Independent source review found no concrete blocker. Four deliberate faults
+were caught: discarded selection, fallback to the old index, retaining a
+consumed selection and retaining grants but discarding other selected actions.
+Restored sources passed all thirteen focused tests, seven reader tests, 57
+Settings-window tests, five keyboard tests and six pointer tests (88 total).
+Formatting, strict library/test lint and warnings-denied shell documentation
+checks passed; the five existing Smithay dependency warnings remain visible.
+These tests recur in repository gates; the deliberate faults were one-time
+experiments. One experiment was interrupted during compilation, then resumed
+from the verified partial source with its log retained. These local results
+do not establish installed recording acceptance.
+
+On source `f5f0f0ea6d382ee80b7e86c71de134ee6f679a9b`, signed package run
+44447595166 passed. Studio verification 44447583077 passed native capture,
+desktop regressions, 393 instrument tests and fifteen CI helper tests. Image
+build 44447583206 passed. Real-model run 44447583007 passed Studio 190/190 and
+close-application 10/10, but failed generic file, slider, private-typing and
+chooser cases. Mutation run 44447583040 tried fourteen faults: eight caught,
+six unviable and none survived. These results do not cover the subsequent expiry
+correction or close earlier broad mutation gaps. Repository gate 44447583129 was
+accepted under its declared runner exception: 16,147 tests passed (three leaky),
+one declared permission test failed and 101 were skipped. Formatting, strict
+lint, documentation, supervisor and BPF gates passed. Installed run 44448153799
+passed all five native permission stages, including withdrawal, source-picker
+cancellation and screen recording through pause/resume and review. It then
+crashed while cancelling the first export chooser, before saving. The session's
+`native-export-destination` event records the proposed destination, not a saved
+file. GTK 4.20.4 terminated with SIGSEGV; the controller subsequently reported
+ServiceUnknown. No media was uploaded before that failure, so decoded
+continuity and synchronization remain pending. Its retained artifact has SHA-256
+`37f7b0f1291af0ed6006c75b6285229f9902d01e1dc5d3363054fd6601d088bf`.
+
+The earlier installed run, 44438292120, used source
 `81f53c36d2f18836d8a76dd66948f6f603a49952` and matching package run
 44437613964. It passed the previously failing ungranted boundary and created
 the application grant through native Settings, then failed withdrawal readback:
@@ -24,8 +95,8 @@ strict library/test lint and warnings-denied shell documentation checks passed;
 five existing vendored Smithay dependency warnings remain visible. Independent
 source review found no further concrete blocker in the subsequent permission
 and native approval flow. These regressions recur in repository gates; the
-three deliberate fault experiments were performed once. A fresh installed walk
-must still verify the correction and reach recording.
+three deliberate fault experiments were performed once. The subsequent f5f0f0
+installed walk verified withdrawal and reached recording, as described above.
 
 On the preceding source, hosted Studio verification passed native recording,
 pause/resume and decoding, 393 instrument tests, desktop regressions and service
