@@ -46,6 +46,14 @@ these tests on pull requests, including real decoder and isolated GTK/AT-SPI
 fixtures. Synthetic test media and patched decoder observations in unit tests
 are never installed acceptance evidence.
 
+The native job also preserves a normal Studio binary before building diagnostic
+features. On a private Xvfb, `test_*playback*.py` exercises actual keyboard and
+AT-SPI playback against that binary, with generated media and private audio
+services. The installed walk uses the same native Play/Pause observer after
+foregrounding the exact Studio window. It uploads saved media before checking
+playback and reports only position advancement/stability; rendered continuity
+and synchronized audio still require the separate media audit.
+
 The separate `studio-agent-probe` binary in `alo-walking` prepares the installed
 permission check. It accepts no arguments and requires
 `STUDIO_PRIVATE_AGENT_WALK=1`. It reads its own Linux credentials, verifies the

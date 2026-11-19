@@ -10,6 +10,17 @@ independent Server regressions reproduce. The retained artifact has SHA-256
 `060eecdb42d212e97898ff79b9782cbe59678e3eb3ff12980370e2711d78fc06`.
 No media was retained, so this run proves neither continuity nor synchronization.
 
+The shell now includes its drawn Dock in the published showing surfaces and
+removes only the hidden display's cached slots when the current draw has no
+Dock band. An old reader action can no longer operate those hidden controls;
+a remaining visible display still supplies its actual slots. Independent tests
+first produced four failures, then all fourteen passed. Three one-time compiled
+faults were caught: omitting drawn visibility, showing an absent Dock, and
+retaining hidden slots. Restored source passed 225 Dock-related checks and 38
+canvas checks, formatting, strict library/test lint and warnings-denied
+documentation. These regressions run in repository gates and the Studio desktop
+job. The matching installed walk is still required.
+
 Review now has persistent Play/Pause, a keyboard-operable position control,
 elapsed/duration text and a readable media error. These follow the actual GTK
 MediaStream; changing recordings disconnects and pauses the previous stream.
@@ -28,6 +39,28 @@ five separately run real-app playback checks; all 24 CI-helper checks passed.
 The recurring native Studio job builds and preserves a normal binary before
 building verification features, then runs the five playback checks on an owned
 display with private session and audio services.
+
+The installed walk now foregrounds the normal Studio window through its exact
+Dock entry, presses native Play/Pause, and reads actual Double-valued playback
+position. It requires advancement followed by one second of stable pause,
+retains the same scale identity, and rechecks the recording ID. Sealed media
+and reference files are uploaded before this observation so a playback refusal
+preserves decoding evidence. Its event explicitly reports position only.
+
+Independent tests observed the missing helper/caller, unsupported normal-app
+foreground and missing archive member before implementation. Review then found
+two further failing cases: a role change during value reading and a replaced
+scale supplying a different progress sequence. Both now refuse. All ten helper
+tests, four caller checks and three added foreground cases pass. A real local
+normal-app probe passed native action dispatch and position observation in
+11.519 seconds. Nine one-time faults in disposable copies were caught, covering
+missing progress/drift checks, replaced scale, final role, invalid range,
+omitted or early playback, wrong application identity and omitted archive helper.
+The final broader suite passed 443 checks with six separate real-app checks skipped;
+all 24 CI-helper checks passed. The native Studio job also discovers the new
+real AT-SPI probe. The exact native-job pattern then passed all twenty checks
+in 70.911 seconds, including both real-app suites. These local checks do not
+certify installed Wayland playback.
 
 The private native-control selector now recognizes GTK 4's actual accessibility
 state: GTK reports SENSITIVE, SHOWING and VISIBLE, but does not report ENABLED.
@@ -58,8 +91,10 @@ tests still pass. A one-time fault restoring a copy under shipped source failed
 the same rule, and removing it restored all three passes. Formatting, strict
 library/test lint and warnings-denied documentation passed. Independent review
 confirmed the fixture is byte-identical and the source rule was not weakened.
-These checks recur in the repository gate. Model run 44497665478 remains
-pending. Installed playback is not certified by library reopening or decoder
+These checks recur in the repository gate. Model run 44497665478 passed all
+380 Studio trials (ten attempts per control and policy), while 65 generic
+request failures kept the overall job red: 815 of 880 trials passed. Installed
+playback is not certified by library reopening or decoder
 checks; the installed walk failure is described above.
 
 The retained diagnostic run 44493013653 passed 189 of 190 Studio trials. In
@@ -81,8 +116,11 @@ strict all-target lint and warnings-denied adapter documentation. A one-time
 fault changing ChooseScreen to ChooseWindow failed the independent real-bus
 contract test at the exact method assertion; restored source passed. That
 fault proves method discrimination, not deterministic model selection.
-The recurring model suite must now evaluate the revised purpose against all
-fixed requests, ten attempts per policy; results remain pending.
+The revised purpose was evaluated against all fixed requests, ten attempts per
+policy, in run 44497665478. All 380 Studio trials passed. This measures model
+selection, not execution on a machine. The retained complete Full and Ask input
+artifact has SHA-256
+`501265be8039137e345b58dc7d044002667cd9b179fa1d97e5dd335c5c621279`.
 
 The recording candidate `1b26cea87135d7b783100ed69996afdf3119c631` passed
 signed package run 44491774129 and all 416 hosted verification-instrument

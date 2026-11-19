@@ -24,11 +24,11 @@ class SessionArchive(unittest.TestCase):
             self.assertTrue(zipfile.is_zipfile(output))
             with zipfile.ZipFile(output) as archive:
                 self.assertEqual(set(archive.namelist()),
-                                 {'__main__.py', 'native_controls.py', 'atspi_tree.py', 'audio_selection.py', 'reference_window.py',
+                                 {'__main__.py', 'native_controls.py', 'atspi_tree.py', 'audio_selection.py', 'reference_window.py', 'review_playback.py',
                                   'agent_session.py', 'agent_settings.py', 'agent_process.py', *APPROVAL})
                 self.assertEqual(archive.read('__main__.py'),
                                  (source / 'installed_session.py').read_bytes())
-                for name in ('native_controls.py', 'atspi_tree.py', 'audio_selection.py', 'reference_window.py',
+                for name in ('native_controls.py', 'atspi_tree.py', 'audio_selection.py', 'reference_window.py', 'review_playback.py',
                              'agent_session.py', 'agent_settings.py', 'agent_process.py', *APPROVAL):
                     self.assertEqual(archive.read(name), (source / name).read_bytes())
 

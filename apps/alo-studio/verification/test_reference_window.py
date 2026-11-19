@@ -352,5 +352,62 @@ class RecordingForegroundOrder(unittest.TestCase):
         self.assertNotIn('export', flow.calls)
 
 
+class StudioTree(NativeTree):
+    """Same owner/path contract for normal Studio, not the reference title."""
+    def __init__(self):
+        super().__init__()
+        self.studio_frame = (FRAME[0], '/org/aloworld/Studio/a11y/normal-window')
+        self.use_reference_path = False
+        self.use_reference_title = False
+
+    def facts(self, at):
+        original = FRAME if at == self.studio_frame else at
+        found = super().facts(original)
+        if at == DOCK:
+            found['name'] = 'org.aloworld.Studio'
+        elif at == REFERENCE_ROOT:
+            found['name'] = 'unrelated-program-name'
+            found['children'] = [FRAME if self.use_reference_path else self.studio_frame]
+        elif original == FRAME:
+            found['name'] = TITLE if self.use_reference_title else 'alo Studio'
+        return found
+
+    def interface(self, at, interface):
+        return super().interface(FRAME if at == self.studio_frame else at, interface)
+
+
+class NormalStudioForeground(unittest.TestCase):
+    def invoke(self, tree):
+        calls = []
+        def press(process, matches):
+            calls.append(process)
+            self.assertTrue(matches('org.aloworld.Studio'))
+            self.assertFalse(matches(REFERENCE))
+            self.assertFalse(matches('org.aloworld.Studio.Foreign'))
+            activate(tree, process, matches)
+        with patch('reference_window.time', clock(tree)):
+            result = foreground(tree, press, application='org.aloworld.Studio', title='alo Studio')
+        return result, calls
+
+    def test_normal_app_uses_its_own_exact_dock_identifier_registered_path_and_title(self):
+        tree = StudioTree()
+        result, calls = self.invoke(tree)
+        self.assertEqual(calls, [42])
+        self.assertEqual(tree.actions, [(DOCK, 0)])
+        self.assertEqual(result, dict(name='alo Studio', process=77))
+
+    def test_reference_registered_path_cannot_substitute_for_normal_app_with_same_title(self):
+        tree = StudioTree()
+        tree.use_reference_path = True
+        with self.assertRaises(ValueError):
+            self.invoke(tree)
+
+    def test_reference_title_cannot_substitute_for_normal_app_even_at_its_path(self):
+        tree = StudioTree()
+        tree.use_reference_title = True
+        with self.assertRaises(ValueError):
+            self.invoke(tree)
+
+
 if __name__ == '__main__':
     unittest.main()

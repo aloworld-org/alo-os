@@ -68,6 +68,7 @@ jobs:
           cargo +1.97.0 test --locked --release -p alo-shell --lib capture_authority::
           cargo +1.97.0 test --locked --release -p alo-shell --lib settings_window::
           cargo +1.97.0 test --locked --release -p alo-shell --lib dock_surface
+          cargo +1.97.0 test --locked --release -p alo-shell --lib the_dock_as_a_reader_meets_it::tests::
           cargo +1.97.0 test --locked --release -p alo-shell --lib painted::
           cargo +1.97.0 test --locked --release -p alo-shell --lib native_inked::
           cargo +1.97.0 test --locked --release -p alo-shell --lib retained_dumb_buffer::
@@ -148,7 +149,7 @@ jobs:
           STUDIO_PRIVATE_REVIEW_SESSION=1 \
           STUDIO_REVIEW_PLAYBACK_APP="$PWD/apps/alo-studio/target/debug/alo-studio-review" \
           STUDIO_REVIEW_PLAYBACK_FEATURE_SCOPE=normal \
-          xvfb-run -a -s '-screen 0 1280x1024x24' /usr/bin/python3 -I -B -m unittest discover -s apps/alo-studio/verification -p 'test_review_playback.py'
+          xvfb-run -a -s '-screen 0 1280x1024x24' /usr/bin/python3 -I -B -m unittest discover -s apps/alo-studio/verification -p 'test_*playback*.py'
       - name: Record, pause, finalize, and decode a real framebuffer
         run: bash apps/alo-studio/packaging/verify-native.sh
       - name: Build the native capture publisher and permission-scoped remote

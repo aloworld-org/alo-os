@@ -32,6 +32,8 @@ class RecordingFlow(Session):
             self.state['microphone_enabled'] = False
         elif method == 'SetCountdown':
             self.state['countdown_seconds'] = args[0]
+        elif method == 'ReviewRecording':
+            self.state.update(phase='review', recording_id=args[0])
         elif method in ('Pause', 'Resume', 'Finish', 'CancelCountdown'):
             self.state['phase'] = {'Pause': 'paused', 'Resume': 'recording',
                                    'Finish': 'review', 'CancelCountdown': 'selected'}[method]
@@ -75,6 +77,11 @@ class RecordingFlow(Session):
 
     def upload(self, *_):
         pass
+
+    def playback(self, identifier):
+        # This fixture measures recording orchestration. Actual native playback
+        # has its own transport and real normal-app checks.
+        self.calls.append(('playback', identifier))
 
 
 class InstalledSession(unittest.TestCase):

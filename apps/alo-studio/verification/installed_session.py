@@ -22,6 +22,7 @@ from audio_selection import automatic_source_ready, clear_reference_source
 from native_controls import activate
 from agent_session import run_permission_check
 from reference_window import APPLICATION as REFERENCE, TITLE as REFERENCE_TITLE, foreground
+from review_playback import check as check_playback
 
 STUDIO = 'org.aloworld.Studio'
 PORTAL = 'org.freedesktop.impl.portal.desktop.gtk'
@@ -297,6 +298,18 @@ class Session:
         require(destination.is_file() and hashlib.sha256(destination.read_bytes()).digest()
                 == hashlib.sha256(original.read_bytes()).digest(), 'the exported copy differs')
 
+    def playback(self, identifier):
+        """Observe the reopened recording through its normal native Review controls."""
+        def same_recording():
+            state = self.status()
+            require(state['phase'] == 'review' and state['recording_id'] == identifier,
+                    'the reviewed recording changed during playback verification')
+        same_recording()
+        observed = foreground(self.tree, self.press, application=STUDIO, title='alo Studio')
+        result = check_playback(self.tree, observed['process'], self.press)
+        same_recording()
+        self.event('review-playback-position', recording_id=identifier, **result)
+
     def recording(self, source, microphone):
         self.call('NewRecording')
         require(not self.status()['microphone_enabled'], 'a new recording enabled the microphone')
@@ -348,6 +361,7 @@ class Session:
         if microphone:
             reference = self.home / '.var/app' / REFERENCE / 'data/studio-walk/reference.json'
             self.upload('reference.json', reference)
+        self.playback(identifier)
 
     def verify_agent_permissions(self):
         """Permission reads/refusals must leave the launched recorder inactive."""

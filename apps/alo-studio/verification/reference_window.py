@@ -13,7 +13,6 @@ TITLE = 'Studio verification window'
 PROPERTIES = 'org.freedesktop.DBus.Properties'
 NATIVE_APPLICATION = 'org.a11y.atspi.Application'
 ACCESSIBLE = 'org.a11y.atspi.Accessible'
-REFERENCE_PATH = '/' + APPLICATION.replace('.', '/') + '/a11y/'
 # AT-SPI state numbers: active, showing, visible.
 ACTIVE_WINDOW = {1, 25, 30}
 
@@ -42,14 +41,15 @@ def nodes(tree, root, process):
     return found
 
 
-def foreground(tree, press):
-    """Press the owned reference's Dock entry once, then await fresh readback.
+def foreground(tree, press, *, application=APPLICATION, title=TITLE):
+    """Press the owned application's Dock entry once, then await fresh readback.
 
 The shell's root has no display name. Its native toolkit property identifies
 it; the reference's exact application identifier identifies the Dock action.
 Ordinary application focus is insufficient because it deliberately does not
 reorder the person's native Settings and task windows.
 """
+    application_path = '/' + application.replace('.', '/') + '/a11y/'
     shells = []
     for root in roots(tree):
         try:
@@ -65,7 +65,7 @@ reorder the person's native Settings and task windows.
     owner = tree.owner(shell[0])
     if type(owner) is not int or owner <= 0:
         raise ValueError('the native Dock owner is unavailable')
-    press(owner, lambda name: name == APPLICATION)
+    press(owner, lambda name: name == application)
     deadline = time.monotonic() + 10
     while True:
         try:
@@ -75,7 +75,7 @@ reorder the person's native Settings and task windows.
             # GTK's root Name is the program name, not the window title.
             # Registered GApplication children use its D-Bus object path.
             reference = [root for root in current
-                         if any(child[1].startswith(REFERENCE_PATH)
+                         if any(child[1].startswith(application_path)
                                 for child in tree.facts(root)['children'])]
             if len(reference) != 1:
                 raise ValueError('exactly one reference application is required')
@@ -84,8 +84,8 @@ reorder the person's native Settings and task windows.
             if type(process) is not int or process <= 0:
                 raise ValueError('the reference application owner is unavailable')
             frames = [facts for node, facts in nodes(tree, root, process)
-                      if node != root and node[1].startswith(REFERENCE_PATH)
-                      and facts['name'] == TITLE
+                      if node != root and node[1].startswith(application_path)
+                      and facts['name'] == title
                       and int(tree.interface(node, ACCESSIBLE).GetRole(timeout=3)) in {23, 69}]
             shell_active = any({1, 25} <= facts['states']
                                for _, facts in nodes(tree, shell, owner))
