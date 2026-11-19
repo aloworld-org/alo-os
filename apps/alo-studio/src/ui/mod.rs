@@ -3,6 +3,7 @@
 mod choices;
 mod controller;
 mod layout;
+mod playback;
 mod review;
 
 /// Open the app's one native window.

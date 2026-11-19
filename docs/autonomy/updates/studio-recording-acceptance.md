@@ -1,5 +1,34 @@
 # Studio recording acceptance candidate
 
+The latest installed walk, 44492469477 on source
+`1b26cea87135d7b783100ed69996afdf3119c631`, failed before starting its first
+recording. All five initial permission stages passed, including withdrawal;
+native source cancellation and screen selection reached preview-ready. The
+reference-window helper then found no eligible Dock control. The compositor
+publishes Desktop without adding its drawn Dock to the showing surfaces, which
+independent Server regressions reproduce. The retained artifact has SHA-256
+`060eecdb42d212e97898ff79b9782cbe59678e3eb3ff12980370e2711d78fc06`.
+No media was retained, so this run proves neither continuity nor synchronization.
+
+Review now has persistent Play/Pause, a keyboard-operable position control,
+elapsed/duration text and a readable media error. These follow the actual GTK
+MediaStream; changing recordings disconnects and pauses the previous stream.
+The previous hover-only controls were not reachable by keyboard before pointer
+motion. Independent tests observed four baseline failures, then five passes
+against a normal app build: play/pause/resume, seeking, replay, switching files
+and error recovery. The final rerun passed all five in 59.095 seconds. Separate
+window captures show different rendered frames. This is local playback of
+generated test media, not installed recording or audible-output certification.
+
+Five one-time compiled playback faults were caught: ignored Play, ignored Pause,
+frozen position, hidden error and ignored seek. Production source was restored
+byte-for-byte. The app's 35 tests, formatting, strict all-target lint and
+documentation passed. Full Python discovery passed 426 checks and skipped the
+five separately run real-app playback checks; all 24 CI-helper checks passed.
+The recurring native Studio job builds and preserves a normal binary before
+building verification features, then runs the five playback checks on an owned
+display with private session and audio services.
+
 The private native-control selector now recognizes GTK 4's actual accessibility
 state: GTK reports SENSITIVE, SHOWING and VISIBLE, but does not report ENABLED.
 The exception requires the same process's registered application root to identify
@@ -29,9 +58,9 @@ tests still pass. A one-time fault restoring a copy under shipped source failed
 the same rule, and removing it restored all three passes. Formatting, strict
 library/test lint and warnings-denied documentation passed. Independent review
 confirmed the fixture is byte-identical and the source rule was not weakened.
-These checks recur in the repository gate. Installed walk 44492469477 and model
-run 44497665478 remain pending.
-Review playback is not yet certified by library reopening or decoder checks.
+These checks recur in the repository gate. Model run 44497665478 remains
+pending. Installed playback is not certified by library reopening or decoder
+checks; the installed walk failure is described above.
 
 The retained diagnostic run 44493013653 passed 189 of 190 Studio trials. In
 Ask each time, screen-picker attempt one selected `open_application` although
@@ -53,13 +82,12 @@ fault changing ChooseScreen to ChooseWindow failed the independent real-bus
 contract test at the exact method assertion; restored source passed. That
 fault proves method discrimination, not deterministic model selection.
 The recurring model suite must now evaluate the revised purpose against all
-fixed requests, ten attempts per policy; results remain pending. The original
-installed candidate and its active walk remain undisturbed.
+fixed requests, ten attempts per policy; results remain pending.
 
 The recording candidate `1b26cea87135d7b783100ed69996afdf3119c631` passed
 signed package run 44491774129 and all 416 hosted verification-instrument
-tests plus nineteen CI-helper checks. Its installed walk 44492469477 is
-pending. A separate CI-only diagnostic branch retains the existing real-model
+tests plus nineteen CI-helper checks. Its installed walk 44492469477 failed
+before recording, as described above. A separate diagnostic branch retains the existing real-model
 input transcript, separately for Full and Ask, and uploads exactly those two
 files even after failure. This does not change model instructions, requests,
 trial counts, provider settings or application code. It does not fix the
