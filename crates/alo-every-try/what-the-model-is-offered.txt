@@ -54,7 +54,7 @@ request	scroll a page in an application	2b287101defbd7d8	accessible.read_window,
 request	move a slider in an application	f2ed93832499e303	accessible.read_window,accessible.set_value
 request	choose an option in a drop-down	59757652d027dbdc	accessible.read_window,accessible.choose_option
 request	select a file in the file manager	4fa8d0179a6b8bae	accessible.read_window,accessible.select_item
-request	open a file in the file manager	b9cadf2dba4bcdaa	accessible.read_window,accessible.open_item
+request	open a file in the file manager	5df08c0f5359ad68	accessible.read_window,accessible.open_item,open_file_in_application
 request	open a thing's right-click menu in an application	ccde4e2f85bf34c3	accessible.read_window,accessible.open_menu
 request	press a key in an application	7a6ad21b922eea33	accessible.read_window,accessible.press_key
 request	type into a search box without saving	083a0427355635b8	accessible.read_window,accessible.type_without_saving
