@@ -19,10 +19,14 @@
 //!   answer to before any verb is in it, and the places the machine installs
 //!   from.
 //! - **A verb**: the text the model is told about it
-//!   (`alo_instructing::verb_as_told::as_told`), its whole declaration, and the
-//!   branch of the envelope that holds a call of it.
-//! - **A request**: its whole definition — its words, its roads, what each
-//!   step expects and what the machine answers.
+//!   (`alo_instructing::verb_as_told::as_told`), what a call of it is judged
+//!   by (what each argument takes), the sentence a done change is told in, and
+//!   the branch of the envelope that holds a call of it — not why it needs no
+//!   grant, which the model is never shown.
+//! - **A request**: what the model is shown and how its road is judged
+//!   (`ARequest::as_shown_and_judged`) — never the raw text of its
+//!   declaration, so a field every request leaves at its default changes no
+//!   line (the owner, 2026-11-20).
 //!
 //! # What no line answers to
 //!
@@ -64,6 +68,31 @@ const THE_HEAD: &str = "\
 # file is not what the code offers.
 ";
 
+/// **Which way a declaration's lines were fingerprinted.** Two declarations
+/// are compared line by line only in one scheme; a base in another is
+/// compared with the head fingerprinted the base's way
+/// (`crate::its_own::its_own_against`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Scheme {
+    /// Until 2026-11-20: a request by the raw text of its definition
+    /// (`crate::the_first_fingerprints`). Its files name no scheme.
+    First,
+    /// A request by what the model is shown and how its road is judged, a verb
+    /// by what it is told and what a call of it is judged by.
+    WhatIsShown,
+}
+
+impl Scheme {
+    /// The number the file names it by.
+    #[must_use]
+    pub const fn number(self) -> u32 {
+        match self {
+            Self::First => 1,
+            Self::WhatIsShown => 2,
+        }
+    }
+}
+
 /// A declaration that could not be read.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("the declaration does not read, at line {line}: {why}")]
@@ -80,7 +109,7 @@ pub struct NotDeclared {
 pub struct ARequestDeclared {
     /// What the request is called.
     named: String,
-    /// The fingerprint of its whole definition.
+    /// The fingerprint of what the model is shown and how its road is judged.
     line: String,
     /// Every verb its roads and the reads aside of them ask for, once each.
     asks_for: Vec<String>,
@@ -93,7 +122,7 @@ impl ARequestDeclared {
         &self.named
     }
 
-    /// The fingerprint of its whole definition.
+    /// The fingerprint of what the model is shown and how its road is judged.
     #[must_use]
     pub fn line(&self) -> &str {
         &self.line
@@ -109,6 +138,8 @@ impl ARequestDeclared {
 /// What the model is offered, one fingerprint for each thing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Declared {
+    /// Which way its lines were fingerprinted.
+    scheme: Scheme,
     /// What every turn is told.
     every_turn: String,
     /// Each verb, by name.
@@ -117,8 +148,14 @@ pub struct Declared {
     requests: Vec<ARequestDeclared>,
 }
 
+/// How one scheme fingerprints a verb.
+type AVerbsLine = fn(&Verb, &Value) -> String;
+
+/// How one scheme fingerprints a request.
+type ARequestsLine = fn(&ARequest) -> String;
+
 /// The fingerprint of `text`.
-fn fingerprint(text: &str) -> String {
+pub(crate) fn fingerprint(text: &str) -> String {
     Sha256::digest(text.as_bytes())
         .iter()
         .take(8)
@@ -141,7 +178,7 @@ pub fn the_every_turn_line(words: &str, may_reach: &WhatItMayReach, places: &[St
 
 /// The branch of `envelope` that holds a call of the verb called `name`:
 /// the object whose `verb` property is that one name.
-fn the_branch_for<'a>(name: &str, envelope: &'a Value) -> Option<&'a Value> {
+pub(crate) fn the_branch_for<'a>(name: &str, envelope: &'a Value) -> Option<&'a Value> {
     match envelope {
         Value::Object(map) => {
             let named = envelope
@@ -167,16 +204,29 @@ pub fn a_verbs_line(verb: &Verb, envelope: &Value) -> String {
     let branch = the_branch_for(verb.name(), envelope)
         .map(Value::to_string)
         .unwrap_or_default();
+    let mut judged = String::new();
+    for arg in verb.args() {
+        judged.push_str(&format!("{} takes {:?}\n", arg.name(), arg.takes()));
+    }
+    judged.push_str(&format!("said as {:?}\n", verb.sentence()));
+    if let Some(changes) = verb.what_it_changes() {
+        judged.push_str(&format!("changes {changes:?}\n"));
+    }
+    if let Some(leaves) = verb.what_it_leaves() {
+        judged.push_str(&format!("leaves {leaves:?}\n"));
+    }
     fingerprint(&format!(
-        "{}\n--- declared\n{verb:?}\n--- held to\n{branch}",
+        "{}\n--- judged\n{judged}--- held to\n{branch}",
         as_told(verb)
     ))
 }
 
-/// **The line for one request**: its whole definition.
+/// **The line for one request**: what the model is shown and how its road is
+/// judged (`ARequest::as_shown_and_judged`), so a field every request leaves
+/// at its default changes no line.
 #[must_use]
 pub fn a_requests_line(request: &ARequest) -> String {
-    fingerprint(&format!("{request:?}"))
+    fingerprint(&request.as_shown_and_judged())
 }
 
 /// Every verb `request`'s roads ask for, the reads aside included, once each
@@ -200,6 +250,21 @@ impl Declared {
     /// [`NotTheSet`], when two requests share a name and could not be told
     /// apart.
     pub fn of(set: &TheSet, verbs: &Verbs) -> Result<Self, NotTheSet> {
+        Self::by_the_scheme(set, verbs, Scheme::WhatIsShown)
+    }
+
+    /// What `set` and `verbs` offer the model, fingerprinted in `scheme`.
+    ///
+    /// # Errors
+    /// As [`Declared::of`].
+    pub fn by_the_scheme(set: &TheSet, verbs: &Verbs, scheme: Scheme) -> Result<Self, NotTheSet> {
+        let (verb_line, request_line): (AVerbsLine, ARequestsLine) = match scheme {
+            Scheme::First => (
+                crate::the_first_fingerprints::a_verbs_line,
+                crate::the_first_fingerprints::a_requests_line,
+            ),
+            Scheme::WhatIsShown => (a_verbs_line, a_requests_line),
+        };
         let envelope =
             alo_turn::the_shape_a_provider_is_held_to::the_envelope_naming_the_verbs_and_places(
                 verbs,
@@ -212,7 +277,7 @@ impl Declared {
         );
         let offered: BTreeMap<String, String> = verbs
             .all()
-            .map(|verb| (verb.name().to_owned(), a_verbs_line(verb, &envelope)))
+            .map(|verb| (verb.name().to_owned(), verb_line(verb, &envelope)))
             .collect();
         let mut named = BTreeSet::new();
         let mut requests = Vec::with_capacity(set.requests().len());
@@ -232,11 +297,12 @@ impl Declared {
             }
             requests.push(ARequestDeclared {
                 named: request.named().to_owned(),
-                line: a_requests_line(request),
+                line: request_line(request),
                 asks_for,
             });
         }
         Ok(Self {
+            scheme,
             every_turn: the_every_turn_line(&words, set.may_reach(), set.places()),
             verbs: offered,
             requests,
@@ -252,6 +318,7 @@ impl Declared {
         requests: &[(&str, &str, &[&str])],
     ) -> Self {
         Self {
+            scheme: Scheme::WhatIsShown,
             every_turn: every_turn.to_owned(),
             verbs: verbs
                 .iter()
@@ -279,6 +346,12 @@ impl Declared {
         self
     }
 
+    /// Which way its lines were fingerprinted.
+    #[must_use]
+    pub const fn scheme(&self) -> Scheme {
+        self.scheme
+    }
+
     /// The line for what every turn is told.
     #[must_use]
     pub fn every_turn(&self) -> &str {
@@ -300,7 +373,11 @@ impl Declared {
     /// The declaration as the file holds it.
     #[must_use]
     pub fn written(&self) -> String {
-        let mut text = format!("{THE_HEAD}\nevery-turn\t{}\n", self.every_turn);
+        let mut text = THE_HEAD.to_owned();
+        if self.scheme != Scheme::First {
+            text.push_str(&format!("\nfingerprints\t{}", self.scheme.number()));
+        }
+        text.push_str(&format!("\nevery-turn\t{}\n", self.every_turn));
         for (name, line) in &self.verbs {
             text.push_str(&format!("verb\t{name}\t{line}\n"));
         }
@@ -326,6 +403,7 @@ impl Declared {
             line,
             why: why.to_owned(),
         };
+        let mut scheme = None;
         let mut every_turn = None;
         let mut verbs = BTreeMap::new();
         let mut requests: Vec<ARequestDeclared> = Vec::new();
@@ -335,6 +413,20 @@ impl Declared {
                 continue;
             }
             match line.split('\t').collect::<Vec<_>>().as_slice() {
+                ["fingerprints", which] => {
+                    let named = match *which {
+                        "2" => Scheme::WhatIsShown,
+                        _ => {
+                            return Err(refused(
+                                number,
+                                "a scheme of fingerprints this check does not know",
+                            ));
+                        }
+                    };
+                    if scheme.replace(named).is_some() {
+                        return Err(refused(number, "the scheme is declared twice"));
+                    }
+                }
                 ["every-turn", fingerprint] => {
                     if every_turn.replace((*fingerprint).to_owned()).is_some() {
                         return Err(refused(number, "what every turn is told is declared twice"));
@@ -382,6 +474,7 @@ impl Declared {
             ));
         }
         Ok(Self {
+            scheme: scheme.unwrap_or(Scheme::First),
             every_turn,
             verbs,
             requests,

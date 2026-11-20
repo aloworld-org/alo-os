@@ -236,3 +236,47 @@ fn against_the_bases_file_as_written() {
     assert_eq!(named(&own), ["list a folder"]);
     assert!(super::its_own_against("nonsense\n", &set, &verbs).is_err());
 }
+
+/// **A base declared in the first scheme is read in that scheme** (2026-11-20):
+/// the change that moved requests to what they show owns nothing by the move,
+/// because the head is fingerprinted the base's way to compare. A change to a
+/// request is still its own across the move.
+#[test]
+fn a_base_in_the_first_scheme_is_compared_in_that_scheme() {
+    use crate::the_declaration::Scheme;
+
+    let set = the_set().expect("the set builds");
+    let verbs = the_verbs();
+    let first = Declared::by_the_scheme(&set, &verbs, Scheme::First)
+        .expect("declares")
+        .written();
+    assert!(
+        !first.contains("\nfingerprints\t"),
+        "the first scheme's files named no scheme"
+    );
+    assert!(
+        super::its_own_against(&first, &set, &verbs)
+            .expect("it reads")
+            .is_empty(),
+        "moving the scheme owns nothing"
+    );
+    let changed: String = first
+        .lines()
+        .map(|line| {
+            if line.starts_with("request\tlist a folder\t") {
+                line.replacen(
+                    "request\tlist a folder\t",
+                    "request\tlist a folder\tchanged",
+                    1,
+                )
+            } else {
+                line.to_owned()
+            }
+        })
+        .map(|line| line + "\n")
+        .collect();
+    assert_eq!(
+        named(&super::its_own_against(&changed, &set, &verbs).expect("it reads")),
+        ["list a folder"]
+    );
+}

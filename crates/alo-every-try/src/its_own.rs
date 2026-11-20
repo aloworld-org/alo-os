@@ -107,7 +107,10 @@ pub fn its_own_against(
     verbs: &alo_capability::Verbs,
 ) -> Result<Vec<ItsOwn>, String> {
     let before = Declared::read(before).map_err(|why| why.to_string())?;
-    let after = Declared::of(set, verbs).map_err(|why| why.to_string())?;
+    // **In the base's own scheme**, so a change that moves the scheme owns
+    // only what it changed (`crate::the_first_fingerprints`).
+    let after =
+        Declared::by_the_scheme(set, verbs, before.scheme()).map_err(|why| why.to_string())?;
     Ok(its_own(&before, &after))
 }
 
