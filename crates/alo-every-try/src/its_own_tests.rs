@@ -76,10 +76,12 @@ fn a_request_whose_road_changed_is_its_own_and_no_other() {
     assert_eq!(own[0].why(), &WhyItsOwn::ItsRoadChanged);
 }
 
-/// **A verb whose words or arguments changed owns every request that asks for
-/// it**, and a request that does not ask for it is not its own.
+/// **Every turn is shown every verb offered** (the coordinator, 2026-11-20):
+/// a change to one verb's words or arguments, as the model reads them, owns
+/// every request — the one that fails is often one whose road never uses that
+/// verb, choosing it (#1413: the search box choosing the typing that saves).
 #[test]
-fn a_changed_verb_owns_every_request_that_asks_for_it() {
+fn a_changed_verb_owns_every_request_though_its_road_never_uses_it() {
     let after = Declared::by_hand(
         "turn-1",
         &[("a", "a-2"), ("b", "b-1")],
@@ -90,24 +92,45 @@ fn a_changed_verb_owns_every_request_that_asks_for_it() {
         ],
     );
     let own = its_own(&the_base(), &after);
-    assert_eq!(named(&own), ["one", "three"]);
-    assert_eq!(own[0].why(), &WhyItsOwn::ItAsksFor("a".to_owned()));
+    assert_eq!(named(&own), ["one", "two", "three"]);
+    assert_eq!(
+        own[1].why(),
+        &WhyItsOwn::EveryTurnIsShownAVerbOtherwise("a".to_owned()),
+        "`two` never asks for `a` and is still shown it"
+    );
 }
 
-/// A verb that is new is a verb that changed: every request asking for it is
-/// the change's own, though the request's line says the same.
+/// A verb that is new is offered to every request, so every request is the
+/// change's own, though no request's line changed.
 #[test]
-fn a_new_verb_owns_every_request_that_asks_for_it() {
+fn a_new_verb_owns_every_request() {
     let after = Declared::by_hand(
         "turn-1",
         &[("a", "a-1"), ("b", "b-1"), ("c", "c-1")],
         &[
             ("one", "one-1", &["a"]),
-            ("two", "two-1", &["b", "c"]),
+            ("two", "two-1", &["b"]),
             ("three", "three-1", &["a", "b"]),
         ],
     );
-    assert_eq!(named(&its_own(&the_base(), &after)), ["two"]);
+    let own = its_own(&the_base(), &after);
+    assert_eq!(named(&own), ["one", "two", "three"]);
+    assert!(
+        own.iter()
+            .all(|one| one.why() == &WhyItsOwn::EveryTurnIsShownAVerbOtherwise("c".to_owned()))
+    );
+}
+
+/// A verb taken off the list is no longer shown to any turn: every request
+/// that remains is the change's own.
+#[test]
+fn a_verb_taken_away_owns_every_request() {
+    let after = Declared::by_hand(
+        "turn-1",
+        &[("a", "a-1")],
+        &[("one", "one-1", &["a"]), ("three", "three-1", &["a"])],
+    );
+    assert_eq!(named(&its_own(&the_base(), &after)), ["one", "three"]);
 }
 
 /// **What every turn is told changed**: the instructions, the machine a turn
@@ -143,23 +166,23 @@ fn a_request_taken_away_owns_nothing() {
 }
 
 /// **On the real set**: a change to the words of `accessible.set_value` owns
-/// exactly the requests that ask for it — some, and not all.
+/// every request, the ones whose road never moves a slider among them.
 #[test]
-fn on_the_real_set_a_changed_verb_owns_only_its_requests() {
+fn on_the_real_set_a_changed_verb_owns_every_request() {
     let set = the_set().expect("the set builds");
     let verbs = the_verbs();
     let before = Declared::of(&set, &verbs).expect("declares");
     let after = before.clone().with_the_verb_changed(SET_VALUE);
     let own = its_own(&before, &after);
-    let asking: Vec<&str> = before
-        .requests()
-        .iter()
-        .filter(|one| one.asks_for().iter().any(|verb| verb == SET_VALUE))
-        .map(|one| one.named())
-        .collect();
-    assert!(!asking.is_empty(), "some request asks for {SET_VALUE}");
-    assert!(asking.len() < set.requests().len());
-    assert_eq!(named(&own), asking);
+    let every: Vec<&str> = set.requests().iter().map(|one| one.named()).collect();
+    assert_eq!(named(&own), every);
+    assert!(
+        before
+            .requests()
+            .iter()
+            .any(|one| !one.asks_for().iter().any(|verb| verb == SET_VALUE)),
+        "some request never asks for {SET_VALUE}"
+    );
 }
 
 /// A request that is its change's own for two reasons is tried once: listed
@@ -176,32 +199,8 @@ fn a_request_owned_twice_over_is_listed_once() {
         ],
     );
     let own = its_own(&the_base(), &after);
-    assert_eq!(named(&own), ["one", "three"]);
+    assert_eq!(named(&own), ["one", "two", "three"]);
     assert_eq!(own[0].why(), &WhyItsOwn::ItsRoadChanged);
-}
-
-/// Two verbs changed own every request asking for either.
-#[test]
-fn two_changed_verbs_own_every_request_asking_for_either() {
-    let base = Declared::by_hand(
-        "turn-1",
-        &[("a", "a-1"), ("b", "b-1"), ("c", "c-1")],
-        &[
-            ("one", "one-1", &["a"]),
-            ("two", "two-1", &["b"]),
-            ("three", "three-1", &["c"]),
-        ],
-    );
-    let after = Declared::by_hand(
-        "turn-1",
-        &[("a", "a-2"), ("b", "b-1"), ("c", "c-2")],
-        &[
-            ("one", "one-1", &["a"]),
-            ("two", "two-1", &["b"]),
-            ("three", "three-1", &["c"]),
-        ],
-    );
-    assert_eq!(named(&its_own(&base, &after)), ["one", "three"]);
 }
 
 /// **Against the base's file as the workflow hands it over**: the committed

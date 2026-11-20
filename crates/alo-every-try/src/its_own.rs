@@ -2,10 +2,13 @@
 //! model is offered (`crate::the_declaration`) — the base's committed file and
 //! the change's own code — never guessed from which files it touched.
 //!
-//! A request is the change's own when it is new, when its own line changed,
-//! when a verb it asks for is new or its line changed, or when what every turn
-//! is told changed, which owns every request. A request taken out of the set
-//! is nothing to try.
+//! A request is the change's own when it is new or its own line changed. And
+//! **every request is the change's own** when what every turn is told
+//! changed, or when any verb offered is new, taken away or reads otherwise:
+//! every turn is shown every verb offered, and the request a change to one
+//! verb breaks is often one whose road never uses it, choosing it (the
+//! coordinator, 2026-11-20, on #1413). A request taken out of the set is
+//! nothing to try.
 
 use crate::the_declaration::Declared;
 
@@ -16,10 +19,11 @@ pub enum WhyItsOwn {
     ItIsNew,
     /// Its definition changed: its words, its road, what a step expects.
     ItsRoadChanged,
-    /// It asks for this verb, which the change adds or alters.
-    ItAsksFor(String),
     /// What every turn is told changed, which every request is shown.
     EveryTurnIsToldOtherwise,
+    /// Every turn is shown this verb, which the change adds, alters or takes
+    /// away.
+    EveryTurnIsShownAVerbOtherwise(String),
 }
 
 impl WhyItsOwn {
@@ -29,8 +33,10 @@ impl WhyItsOwn {
         match self {
             Self::ItIsNew => "it is new".to_owned(),
             Self::ItsRoadChanged => "its road changed".to_owned(),
-            Self::ItAsksFor(verb) => format!("it asks for `{verb}`, which changed"),
             Self::EveryTurnIsToldOtherwise => "what every turn is told changed".to_owned(),
+            Self::EveryTurnIsShownAVerbOtherwise(verb) => {
+                format!("every turn is shown `{verb}`, which changed")
+            }
         }
     }
 }
@@ -72,6 +78,15 @@ impl ItsOwn {
 #[must_use]
 pub fn its_own(before: &Declared, after: &Declared) -> Vec<ItsOwn> {
     let every_turn_changed = before.every_turn() != after.every_turn();
+    // **The first verb, by name, whose line is not the same on both sides** —
+    // new, taken away or reading otherwise.
+    let a_verb_changed = before
+        .verb_names()
+        .chain(after.verb_names())
+        .collect::<std::collections::BTreeSet<&str>>()
+        .into_iter()
+        .find(|verb| before.verb(verb) != after.verb(verb))
+        .map(str::to_owned);
     after
         .requests()
         .iter()
@@ -83,11 +98,9 @@ pub fn its_own(before: &Declared, after: &Declared) -> Vec<ItsOwn> {
             let why = match was {
                 None => Some(WhyItsOwn::ItIsNew),
                 Some(was) if was.line() != request.line() => Some(WhyItsOwn::ItsRoadChanged),
-                Some(_) => request
-                    .asks_for()
-                    .iter()
-                    .find(|verb| before.verb(verb) != after.verb(verb))
-                    .map(|verb| WhyItsOwn::ItAsksFor(verb.clone()))
+                Some(_) => a_verb_changed
+                    .clone()
+                    .map(WhyItsOwn::EveryTurnIsShownAVerbOtherwise)
                     .or(every_turn_changed.then_some(WhyItsOwn::EveryTurnIsToldOtherwise)),
             };
             why.map(|why| ItsOwn::because(request.named(), why))

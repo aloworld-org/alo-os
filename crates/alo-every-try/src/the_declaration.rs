@@ -358,6 +358,11 @@ impl Declared {
         &self.every_turn
     }
 
+    /// The name of every verb offered, in order.
+    pub fn verb_names(&self) -> impl Iterator<Item = &str> {
+        self.verbs.keys().map(String::as_str)
+    }
+
     /// The line for the verb called `name`, if it is offered.
     #[must_use]
     pub fn verb(&self, name: &str) -> Option<&str> {

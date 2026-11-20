@@ -12,9 +12,10 @@
 # **What a change is held to** (the owner, 2026-11-17): *a change that adds or
 # alters something the AI chooses is blocked from merging until its OWN
 # practice requests pass at least 9 out of 10 tries. Other requests' slips
-# don't block it.* A request is a change's own when the change adds it, alters
-# its road, adds or alters a verb it asks for, or alters what every turn is
-# told (which owns them all). That is read off two copies of one declared
+# don't block it.* A request is a change's own when the change adds it or
+# alters its road; and every request is its own when the change adds, alters
+# or takes away any verb as the model reads it, or alters what every turn is
+# told, because every turn is shown every verb offered. That is read off two copies of one declared
 # file, `crates/alo-every-try/what-the-model-is-offered.txt` — the base's and
 # the change's — which a test holds to what the code offers the model
 # (`the_declaration`, `its_own` and `counted` in the crate). Its own requests
