@@ -298,3 +298,37 @@ fn its_own_are_tried_ten_times_and_the_others_fewer() {
     );
     assert_eq!(only_its_own.len(), 1, "no tries for the others tries none");
 }
+
+/// **The ratchet** (the owner, 2026-11-20): an own request the record says has
+/// reached every try at a level must take the road on every try there; one
+/// that has not is held to the bar.
+#[test]
+fn its_own_request_that_reached_ten_must_score_ten() {
+    let reached = |named: &str| named == "at ten";
+    assert_eq!(
+        super::counted_with(&[tried("at ten", 9, 1)], &[own("at ten")], &reached),
+        Counted::ItsOwnSlipped,
+        "nine of ten is below what it reached"
+    );
+    assert_eq!(
+        super::counted_with(&[tried("at ten", 10, 0)], &[own("at ten")], &reached),
+        Counted::ItsOwnHeld
+    );
+    assert_eq!(
+        super::counted_with(&[tried("not yet", 9, 1)], &[own("not yet")], &reached),
+        Counted::ItsOwnHeld,
+        "one that has not reached ten is held to the bar"
+    );
+    let nine_and_one_unasked = Tallied::of(
+        ARequest::asking("at ten", "Open Firefox.", Vec::new()),
+        std::iter::repeat_with(|| tried("x", 1, 0).tries()[0].clone())
+            .take(9)
+            .chain([not_answered()])
+            .collect(),
+    );
+    assert_eq!(
+        super::counted_with(&[nine_and_one_unasked], &[own("at ten")], &reached),
+        Counted::NotMeasured,
+        "the one not asked could have made it ten"
+    );
+}

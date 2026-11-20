@@ -88,6 +88,27 @@ forever*, honestly, as this is written:
     change that leaves that file alone asks the model nothing. Its own are
     tried ten times at each level; the others three times, reported and not
     counted. Whether it is required is still the owner's setting.
+  - **A temporary departure from law 9, decided 2026-11-20** (the owner,
+    *"Go ahead"*, on the coordinator's proposal). Law 9 says a change passes
+    only if **every** try takes the road. The check holds a change's own
+    requests to **9 of 10** for now, because at ten tries a request that
+    nearly always takes the road still fails by chance in many runs, and a
+    gate that fails good changes by chance is one lanes learn to route
+    around. Three parts:
+    1. **10 of 10 is the target.**
+    2. **A ratchet**: a request that has once taken the road on every try at
+       a level is recorded in `crates/alo-every-try/what-each-request-has-reached.txt`,
+       raised only from a measured run (`cargo run -p alo-every-try -- reached
+       <measured>`), never lowered (the check refuses a change whose record
+       drops an entry for a request still in the set), and an own request so
+       recorded must take the road on every try there.
+    3. **Then the law as written**: once every request is reliably at ten,
+       twenty tries per own request with all twenty required. That is one
+       line, `THE_BAR` in `crates/alo-every-try/src/the_bar.rs`, from
+       `TheBar::of(10, 9)` to `TheBar::of(20, 20)`.
+    Since 2026-11-20 every request is a change's own when the change alters
+    any verb as the model reads it, because every turn is shown every verb
+    offered, and `every-try` is a required check.
 
 The figures above are single runs on 2026-11-15. The two workflows are what
 measure them again.
