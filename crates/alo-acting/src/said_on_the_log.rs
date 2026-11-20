@@ -59,6 +59,22 @@ pub fn alo_pictured(asked: &crate::ToPicture, answered: crate::Pictured) -> Stri
     )
 }
 
+/// **A click alo asked for**: the application, the point in thousandths of
+/// its window, and what the desktop answered.
+#[must_use]
+pub fn alo_clicked(asked: &crate::ToClick, answered: crate::Clicked) -> String {
+    format!(
+        "{ALO_CLICKED} {} at {} {}, and it was answered {}",
+        asked.application.identifier(),
+        asked.across,
+        asked.down,
+        answered.written()
+    )
+}
+
+/// The words every sentence about a click alo asked for begins with.
+pub const ALO_CLICKED: &str = "alo asked for a click in the window in front of";
+
 /// The words every sentence about a picture alo asked for begins with.
 pub const ALO_PICTURED: &str = "alo asked for a picture of the window in front of";
 

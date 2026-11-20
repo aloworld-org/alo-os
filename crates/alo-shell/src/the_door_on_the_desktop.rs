@@ -109,6 +109,15 @@ impl TheDoorOnTheDesktop {
             .unwrap_or_default()
     }
 
+    /// Clicks alo asked for since the last frame (`click-at`), or none while
+    /// the door is not served.
+    pub(crate) fn asked_to_click(&mut self) -> Vec<crate::a_click_at_the_door::AskedToClick> {
+        self.served
+            .as_mut()
+            .map(TheApplicationDoor::asked_to_click)
+            .unwrap_or_default()
+    }
+
     /// Pictures alo asked for since the last frame (`picture-of`), or none
     /// while the door is not served.
     pub(crate) fn asked_to_picture(&mut self) -> Vec<crate::a_picture_at_the_door::AskedToPicture> {

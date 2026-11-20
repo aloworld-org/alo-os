@@ -694,7 +694,44 @@ keyboard, which must be `<application>`'s; alo's own copy where the setting
 asks for it; to that client alone, with the person's layout back after. No
 modifier is held.
 
-## alo opening a file in an application — `open-file`, added 2026-11-14
+## alo clicking at a point of the window in front — `click-at`, added 2026-11-17 (ADR 0147, amended 2026-11-17)
+
+**What it gives a person:** in an application whose window describes nothing —
+a game, a canvas — alo can press what a picture of the window showed, at the
+place it showed it, once the person has let it (*"Allow clicking by
+position"*, the owner, 2026-11-17). This act is the click and nothing else;
+whether alo may click, and where, are the turn's to decide before the line is
+written. Additive: nothing above changes meaning.
+
+```
+→ click-at <application> <across> <down>
+← clicked | not-in-front | not-alos-copy | the-person-is-pressing | could-not-click
+```
+
+- **A point of that one window, as proportions of it**: `<across>` and
+  `<down>` are thousandths of the window's width from its left edge and of its
+  height from its top edge, whole numbers from `0` to `1000` written in digits
+  alone. Never pixels and never a point outside the window. Anything else — a
+  number past 1000, a sign, a leading zero, a third number — is a caller with a
+  bug: the connection is closed with nothing written.
+- **Only the window that holds the keyboard**, and only when it is a window of
+  `<application>` and alo's own copy where the setting asks for one — the same
+  rule as `type-into` and `picture-of`: otherwise `not-in-front` or
+  `not-alos-copy`, and nothing is clicked. The compositor never moves the
+  keyboard to make a click possible.
+- **Measured from the window's own geometry**, the part `picture-of` draws, so a
+  point read off its picture is the same point of the window.
+- **One press and one release of the primary button**, delivered to that
+  client alone, at that point of its surface; then the pointer is given back
+  to whatever is under the person's own pointer. No drag, no held button, no
+  second click.
+- `the-person-is-pressing`: the person is holding a button down, so nothing is
+  clicked into the middle of what they are doing.
+- `could-not-click`: the window was that application's and no click could be
+  delivered — no pointer on this desktop, or a window with no size.
+- **This door decides nothing about permission**, as for every act.
+
+
 
 **What it gives a person:** *open hello.txt in VSCodium*, once they approved
 it, opens that file in VSCodium — in alo's own copy at the default, so what alo
