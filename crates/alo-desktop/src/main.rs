@@ -1151,18 +1151,7 @@ mod running {
                     // above keeps the detail for whoever reads the log. The
                     // mapping is this binary's because the failures are, and
                     // the words are the shell's because words are.
-                    Err(match why {
-                        crate::a_provider_a_person_added_is_saved::NotSaved::NoKeyring => {
-                            WhyNotSaved::ThereIsNoKeyring
-                        }
-                        crate::a_provider_a_person_added_is_saved::NotSaved::KeyNotKept(_) => {
-                            WhyNotSaved::TheKeyWasNotKept
-                        }
-                        crate::a_provider_a_person_added_is_saved::NotSaved::SettingsWouldNotRead(
-                            _,
-                        ) => WhyNotSaved::TheSettingsWouldNotRead,
-                        _ => WhyNotSaved::TheSettingsWouldNotRead,
-                    })
+                    Err(why.shown_as())
                 }
             }
         }

@@ -299,7 +299,9 @@ fn the_provider_with_a_key_is_one_row_further_down_and_past_the_switch() {
     let Some(typed) = keys.iter().position(|key| key == "type openai") else {
         panic!("the walk never types openai");
     };
-    let before = keys.get(..typed).expect("the keys before it");
+    let Some(before) = keys.get(..typed) else {
+        panic!("no keys before openai");
+    };
     let downs = before
         .iter()
         .rev()

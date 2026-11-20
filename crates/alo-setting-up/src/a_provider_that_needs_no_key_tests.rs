@@ -248,3 +248,58 @@ fn a_service_with_a_key_still_survives_the_settings_file_needing_one() {
         Some("provider/On this computer")
     );
 }
+
+#[test]
+fn going_back_from_the_model_reaches_the_switch_then_the_key() {
+    let mut form = AProviderBeingAddded::empty();
+    form.the_keyboard_is_in(WhichField::Model);
+    assert!(form.to_the_field_before());
+    assert_eq!(form.which_field(), WhichField::NoKeyNeeded);
+    assert!(form.to_the_field_before());
+    assert_eq!(form.which_field(), WhichField::Key);
+    assert!(form.to_the_field_before());
+    assert_eq!(form.which_field(), WhichField::Address);
+}
+
+#[test]
+fn backspace_in_the_key_while_none_is_needed_takes_nothing_back() {
+    // The key they typed is kept for when the switch goes off again, so a
+    // backspace on a row that reads *not needed* must not eat it unseen.
+    let mut form = AProviderBeingAddded::empty();
+    form.the_keyboard_is_in(WhichField::Key);
+    types(&mut form, "sk-kept");
+    form.the_keyboard_is_in(WhichField::NoKeyNeeded);
+    form.typed(' ');
+    form.the_keyboard_is_in(WhichField::Key);
+    assert!(!form.rubbed_out());
+    assert_eq!(form.what_is_in(WhichField::Key), "sk-kept");
+    // The control: with the switch off again, backspace takes one back.
+    form.the_keyboard_is_in(WhichField::NoKeyNeeded);
+    form.typed(' ');
+    form.the_keyboard_is_in(WhichField::Key);
+    assert!(form.rubbed_out());
+    assert_eq!(form.what_is_in(WhichField::Key), "sk-kep");
+}
+
+#[test]
+fn what_the_form_and_its_answer_say_of_themselves_is_the_switch_and_where_a_key_goes() {
+    // **The Debug is written by hand to say nothing of the key**, and it
+    // still says something: which way the switch is, and where a key would
+    // be filed — or that none would be.
+    let keyless = a_runtime_here_that_needs_no_key();
+    assert!(
+        format!("{keyless:?}").contains("needs_no_key: true"),
+        "{keyless:?}"
+    );
+    let saving = keyless.what_it_would_save().unwrap();
+    let said = format!("{saving:?}");
+    assert!(said.contains("filed_under: None"), "{said}");
+    assert!(said.contains("On this computer"), "{said}");
+
+    let mut keyed = a_runtime_here_with_the_key_left_empty();
+    keyed.the_keyboard_is_in(WhichField::Key);
+    types(&mut keyed, "sk-not-shown");
+    let said = format!("{:?}", keyed.what_it_would_save().unwrap());
+    assert!(said.contains("provider/On this computer"), "{said}");
+    assert!(!said.contains("sk-not-shown"), "{said}");
+}

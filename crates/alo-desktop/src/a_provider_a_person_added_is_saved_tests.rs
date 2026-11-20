@@ -303,3 +303,23 @@ fn the_walk_waits_for_the_line_said_when_a_keyless_provider_is_saved() {
         super::SAVED_NEEDING_NO_KEY
     );
 }
+
+#[test]
+fn a_key_with_no_keyring_is_shown_as_no_keyring_and_logged_as_one() {
+    // **Each refusal is shown as its own machine**: a key with nowhere to go
+    // is *there is no keyring*, not *the settings would not read*, which is
+    // where a missing arm used to fall.
+    assert_eq!(
+        NotSaved::NoKeyring.shown_as(),
+        alo_shell::WhyNotSaved::ThereIsNoKeyring
+    );
+    assert_eq!(
+        NotSaved::KeyNotKept(NotStored::Missing).shown_as(),
+        alo_shell::WhyNotSaved::TheKeyWasNotKept
+    );
+    let logged = NotSaved::NoKeyring.what_did_not_happen();
+    assert!(
+        logged.contains("no keyring") && logged.contains("nothing was tried"),
+        "{logged}"
+    );
+}

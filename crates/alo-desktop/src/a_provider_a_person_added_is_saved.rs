@@ -98,6 +98,25 @@ pub enum NotSaved {
 }
 
 impl NotSaved {
+    /// **Which of the four the screen says**, while
+    /// [`Self::what_did_not_happen`] keeps the detail for the log. The
+    /// mapping is this binary's because the failures are, and the words are
+    /// the shell's because words are.
+    ///
+    /// Moved here from `main.rs` so that a test holds it: there, a missing arm
+    /// fell through to *the settings would not read* and nothing noticed.
+    #[must_use]
+    pub const fn shown_as(&self) -> alo_shell::WhyNotSaved {
+        match self {
+            Self::NoKeyring => alo_shell::WhyNotSaved::ThereIsNoKeyring,
+            Self::KeyNotKept(_) => alo_shell::WhyNotSaved::TheKeyWasNotKept,
+            Self::SettingsWouldNotRead(_)
+            | Self::ProviderNotListed(_)
+            | Self::ChoiceNotWritten(_)
+            | Self::ChoiceNamedNothing(_) => alo_shell::WhyNotSaved::TheSettingsWouldNotRead,
+        }
+    }
+
     /// Which of the writes did not happen, for the service log.
     ///
     /// **Not for a person to read.** Every sentence a person reads belongs to
