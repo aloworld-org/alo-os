@@ -10,10 +10,17 @@ use alo_strings::Word;
 /// The placeholder for one character no key can type.
 pub const CHARACTER: &str = "character";
 
-/// What the verb is for.
+/// **What the verb is for**: a document, saved — never a field, which
+/// `accessible.type_without_saving` types into and saves nothing (2026-11-20).
+///
+/// Told *a field or a document*, `gpt-4o-mini` sent this into a web page's
+/// search box named *Search* in 18 of 20 tries (`alo-every-try` run
+/// 44793910551), where saving would have saved the page. A new key, because the
+/// old English named fields and a translation of it would too (ADR 0068).
 pub const TYPE_PURPOSE: Word = Word::saying(
-    "adapters.fallback.type-text.purpose",
-    "type a text into a field or a document in an application's window, and save it",
+    "adapters.fallback.type-text.purpose-of-a-document",
+    "type a text into a document open in an application's window, such as a file in an \
+     editor, and save it — never into a field such as a search box",
 )
 .noting("What one thing the agent can do is for, shown where its list of abilities is.");
 
