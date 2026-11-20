@@ -53,12 +53,7 @@
 //! refused to load on a machine whose `struct file` was perfectly ordinary.
 //! `docs/quirks.md` records it.
 
-use std::fs;
-
 use crate::failing::NotBounded;
-
-/// Where a kernel that was built to say so keeps its own type information.
-const WHERE_THE_KERNEL_SAYS: &str = "/sys/kernel/btf/vmlinux";
 
 /// What the first two bytes of the file are, on a machine that wrote them in
 /// its own byte order.
@@ -172,19 +167,12 @@ pub struct Types {
 }
 
 impl Types {
-    /// What the kernel this daemon is running on says about itself.
+    /// This kernel's account, with what one module adds to it.
     ///
-    /// A kernel that says nothing is a kernel this boundary will not be imposed
-    /// on, and the refusal names the file rather than the feature — because
-    /// what is missing is `CONFIG_DEBUG_INFO_BTF`, and somebody has to be able
-    /// to work that out from a machine that will not start.
-    pub fn of_this_kernel() -> Result<Self, NotBounded> {
-        let file =
-            fs::read(WHERE_THE_KERNEL_SAYS).map_err(|why| NotBounded::NoTypeInformation {
-                path: WHERE_THE_KERNEL_SAYS.to_owned(),
-                why,
-            })?;
-        Self::read(file)
+    /// # Errors
+    /// Not yet: the module is not read.
+    pub fn with_module(self, _module: Vec<u8>) -> Result<Self, NotBounded> {
+        Ok(self)
     }
 
     /// The same, from bytes somebody already has.
@@ -623,6 +611,81 @@ mod tests {
         truncated.truncate(30);
         assert!(matches!(
             Types::read(truncated),
+            Err(NotBounded::TypesAreNotReadable { .. })
+        ));
+    }
+
+    /// **A structure only a module describes is found, built from the kernel's
+    /// own types.** A kernel that builds btrfs as a module says nothing about
+    /// btrfs in `vmlinux`. The module's split type information does, and its
+    /// `anon_dev` is the kernel's `dev_t`, so its width is only right if the
+    /// module's ids are read as carrying on from the kernel's.
+    #[test]
+    fn a_structure_a_module_describes_is_found_through_the_kernels_own_types() {
+        let (kernel, module) = testing::btrfs_as_a_module();
+        let alone = Types::read(kernel.clone()).expect("the kernel reads");
+        assert_eq!(alone.member("btrfs_root", "anon_dev"), None);
+
+        let types = Types::read(kernel)
+            .expect("the kernel reads")
+            .with_module(module)
+            .expect("the module reads");
+        assert_eq!(
+            types.member("btrfs_root", "anon_dev"),
+            Some(Member {
+                offset: 120,
+                width: 4
+            })
+        );
+        assert_eq!(
+            types.member("btrfs_inode", "vfs_inode.i_ino"),
+            Some(Member {
+                offset: 432,
+                width: 8
+            })
+        );
+        assert_eq!(
+            types.member("btrfs_inode", "root").map(|m| m.width),
+            Some(8)
+        );
+        // And the kernel's own are where they were.
+        assert_eq!(
+            types.member("super_block", "s_dev"),
+            Some(Member {
+                offset: 8,
+                width: 4
+            })
+        );
+    }
+
+    /// **A module's type information read as a file of its own describes
+    /// nothing.** Its names are numbered from the end of the kernel's, so on
+    /// its own none of them can be read, and nothing is found by a name it
+    /// cannot read.
+    #[test]
+    fn a_module_read_without_its_kernel_describes_nothing() {
+        let (_, module) = testing::btrfs_as_a_module();
+        if let Ok(alone) = Types::read(module) {
+            assert_eq!(alone.member("btrfs_root", "anon_dev"), None);
+            assert_eq!(alone.member("btrfs_inode", "root"), None);
+        }
+    }
+
+    /// **A module whose file is not type information is refused**, as the
+    /// kernel's own is: it is read from `/sys`, and a boundary that went on
+    /// without it would be one that was told something it could not read.
+    #[test]
+    fn a_module_that_is_not_type_information_is_refused() {
+        let (kernel, module) = testing::btrfs_as_a_module();
+        let types = || Types::read(kernel.clone()).expect("the kernel reads");
+        assert!(matches!(
+            types().with_module(Vec::new()),
+            Err(NotBounded::TypesAreNotReadable { .. })
+        ));
+        let mut truncated = module;
+        truncated.truncate(30);
+        assert!(matches!(
+            types().with_module(truncated),
             Err(NotBounded::TypesAreNotReadable { .. })
         ));
     }
