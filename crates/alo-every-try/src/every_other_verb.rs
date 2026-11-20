@@ -665,7 +665,10 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         .a_look(),
         Step::of(OPEN_FILE_IN_APPLICATION, Answered::AFileOpened)
             .expecting(APPLICATION, files.as_str())
-            .expecting(PATH, written(&in_their(home, Folder::Downloads).join(REPORT))),
+            .expecting(
+                PATH,
+                written(&in_their(home, Folder::Downloads).join(REPORT)),
+            ),
     ])
     .or_looking_at(the_window_read_again(&the_folders_window, &files))
     // **As a person asks it, 2026-11-17**: with Dolphin's window offered beside

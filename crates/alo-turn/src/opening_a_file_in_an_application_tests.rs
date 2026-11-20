@@ -1015,8 +1015,13 @@ fn no_card_names_an_application_by_its_identifier_where_it_has_a_name() {
         },
     );
     let card = card.into_inner();
-    assert!(card.contains("Papers") && card.contains("Dolphin"), "{card}");
+    assert!(
+        card.contains("Papers") && card.contains("Dolphin"),
+        "{card}"
+    );
     assert!(!reverse_dns(&card), "a card names an identifier: {card}");
     // **And the check itself can fail**: an identifier is caught.
-    assert!(reverse_dns("open a.pdf in org.gnome.Papers, as Dolphin would"));
+    assert!(reverse_dns(
+        "open a.pdf in org.gnome.Papers, as Dolphin would"
+    ));
 }

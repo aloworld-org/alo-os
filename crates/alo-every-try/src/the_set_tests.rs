@@ -551,11 +551,8 @@ fn opening_a_shown_file_goes_on_from_a_wrong_path_and_holds_the_verb() {
         // and so is guessing, being refused, and then naming it rightly.
         let (by_path, _) = try_these(&[by_its_real_path.clone(), answer.clone()]);
         assert_eq!(by_path.went(), &Went::TheRoad, "{level:?}: {by_path:?}");
-        let (guessed_then_right, _) = try_these(&[
-            guessed.clone(),
-            by_its_real_path.clone(),
-            answer.clone(),
-        ]);
+        let (guessed_then_right, _) =
+            try_these(&[guessed.clone(), by_its_real_path.clone(), answer.clone()]);
         assert_eq!(
             guessed_then_right.went(),
             &Went::TheRoad,
