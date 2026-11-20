@@ -79,6 +79,15 @@ forever*, honestly, as this is written:
     publishing was 0 of 5. #1275 and #1278 were measured with it before they
     landed: publishing reached 5 of 5 twice and VSCodium 5 and then 4. It is
     still red today, because installing an application is 0 of 5.
+  - *Since 2026-11-17 it holds a change to its own requests* (the owner:
+    *"a change that adds or alters something the AI chooses is blocked from
+    merging until its OWN practice requests pass at least 9 out of 10 tries.
+    Other requests' slips don't block it."*). It runs on every pull request
+    and queue branch; which requests are a change's own is read off the
+    declared file `crates/alo-every-try/what-the-model-is-offered.txt`, and a
+    change that leaves that file alone asks the model nothing. Its own are
+    tried ten times at each level; the others three times, reported and not
+    counted. Whether it is required is still the owner's setting.
 
 The figures above are single runs on 2026-11-15. The two workflows are what
 measure them again.

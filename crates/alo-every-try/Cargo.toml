@@ -52,6 +52,8 @@ alo-their-folders = { path = "../alo-their-folders" }
 alo-walking = { path = "../alo-walking" }
 # The schema a provider holds an answer to, handed through as it is built.
 serde_json = { workspace = true }
+# The fingerprints of what the model is offered (`the_declaration`).
+sha2 = { workspace = true }
 thiserror = { workspace = true }
 
 [lints]
