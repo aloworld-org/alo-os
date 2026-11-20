@@ -602,13 +602,6 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .map_err(|why| NotTheSet::because(format!("{why:?}")))?,
     );
     let told_of_the_canvas = vec![
-        alo_adapters::nothing_to_read(
-            THE_PICTURE,
-            &viewer,
-            alo_adapters::WorkingFully::NothingMoreToTurnOn,
-            &strings,
-        )
-        .into_text(),
         strings
             .say(
                 &alo_adapters::picture_words::A_PICTURE_CAN_BE_READ.key(),
