@@ -444,3 +444,29 @@ fn the_declaration_names_its_scheme() {
     );
     assert!(Declared::read("fingerprints\t3\nevery-turn\tabc\n").is_err());
 }
+
+/// **The first scheme still tells things apart**, so a base declared in it is
+/// compared line by line rather than read as one line for everything.
+#[test]
+fn the_first_scheme_tells_every_verb_and_request_apart() {
+    use super::Scheme;
+
+    let first = Declared::by_the_scheme(
+        &the_set().expect("the set builds"),
+        &the_verbs(),
+        Scheme::First,
+    )
+    .expect("declares");
+    let requests: std::collections::BTreeSet<&str> =
+        first.requests().iter().map(|one| one.line()).collect();
+    assert_eq!(requests.len(), first.requests().len(), "a line per request");
+    let verbs: std::collections::BTreeSet<&str> = the_verbs()
+        .all()
+        .filter_map(|verb| first.verb(verb.name()))
+        .collect();
+    assert_eq!(verbs.len(), the_verbs().len(), "a line per verb");
+    assert!(
+        first.requests().iter().all(|one| one.line().len() == 16),
+        "each a fingerprint"
+    );
+}
