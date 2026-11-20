@@ -39,7 +39,7 @@ request	write in VSCodium	b4805f6efd4cf6a4	open_file_in_application,accessible.r
 request	publish to GitHub Pages	aa3a135a2efc4b97	publish_to_github_pages
 request	open an application by name	5e3fe109142187bc	open_application,accessible.read_window
 request	list a folder	8cb0bbd1b2ef14bf	list_folder
-request	read a file	7362b9eced3f5cb7	read_file
+request	read a file	f9133ec130d1b23e	read_file
 request	find files by name	e6931ab8d03d0b20	find_in_folder
 request	rename a file	a91a2a4175d35a4d	rename_file
 request	move a file	f0e67fcf5506859d	move_file
