@@ -20,7 +20,7 @@
 use alo_acting::{Clicked, ToClick};
 use smithay::backend::input::ButtonState;
 use smithay::input::pointer::{ButtonEvent, MotionEvent};
-use smithay::utils::{Logical, Point, SERIAL_COUNTER};
+use smithay::utils::{Logical, Point, Rectangle, SERIAL_COUNTER};
 
 use crate::Server;
 use crate::the_window_in_front_alo_may_reach::NotReached;
@@ -28,6 +28,27 @@ use crate::typing_into_the_window_in_front::MayTypeInto;
 
 /// The primary button, as Linux numbers it (`BTN_LEFT`).
 const THE_PRIMARY_BUTTON: u32 = 0x110;
+
+/// **The point on the window's surface** that `asked` names: the corner of
+/// the window's geometry, then the proportion of its width and height, never
+/// past its last pixel — or [`None`] for a window with no width or no height,
+/// where no point is inside it.
+fn the_point(window: Rectangle<f64, Logical>, asked: &ToClick) -> Option<Point<f64, Logical>> {
+    if window.size.w <= 0.0 || window.size.h <= 0.0 {
+        return None;
+    }
+    let at = |thousandths: u16, along: f64, from: f64| {
+        let share = f64::from(thousandths) / f64::from(ToClick::THE_WHOLE);
+        from + (share * along).min(along - 1.0).max(0.0)
+    };
+    Some(
+        (
+            at(asked.across, window.size.w, window.loc.x),
+            at(asked.down, window.size.h, window.loc.y),
+        )
+            .into(),
+    )
+}
 
 impl Server {
     /// Click once at the point `asked` names of the window in front, if it is
@@ -43,10 +64,9 @@ impl Server {
             Err(NotReached::NotInFront) => return Clicked::NotInFront,
             Err(NotReached::NotAlosCopy) => return Clicked::NotAlosCopy,
         };
-        let window = crate::scene::geometry(&root);
-        if window.size.w <= 0.0 || window.size.h <= 0.0 {
+        let Some(here) = the_point(crate::scene::geometry(&root), asked) else {
             return Clicked::CouldNotClick;
-        }
+        };
         let Some(pointer) = self.surfaces.pointer.as_ref() else {
             return Clicked::CouldNotClick;
         };
@@ -58,17 +78,6 @@ impl Server {
         let time = pointer.time;
         let _ = self.alo_acts_in(&root, identifier);
 
-        // The point on the window's surface: its geometry's corner, then the
-        // proportion of its width and height, never past its last pixel.
-        let at = |thousandths: u16, along: f64, from: f64| {
-            let share = f64::from(thousandths) / f64::from(ToClick::THE_WHOLE);
-            from + (share * along).min(along - 1.0).max(0.0)
-        };
-        let here: Point<f64, Logical> = (
-            at(asked.across, window.size.w, window.loc.x),
-            at(asked.down, window.size.h, window.loc.y),
-        )
-            .into();
         // **Surface-local on both sides**: the surface given at the origin, so
         // the client is told exactly `here`.
         handle.motion(
@@ -107,5 +116,51 @@ impl Server {
         );
         handle.frame(&mut self.surfaces);
         Clicked::Clicked
+    }
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None is the failure being reported"
+)]
+mod tests {
+    use super::*;
+
+    fn at(across: u16, down: u16) -> ToClick {
+        ToClick::at(
+            alo_applications::Application::identified("net.supertuxkart.SuperTuxKart")
+                .expect("an identifier"),
+            across,
+            down,
+        )
+        .expect("a point")
+    }
+
+    fn a_window(x: f64, y: f64, w: f64, h: f64) -> Rectangle<f64, Logical> {
+        Rectangle::new((x, y).into(), (w, h).into())
+    }
+
+    /// **From the geometry's corner, by proportion, never past the last pixel.**
+    #[test]
+    fn the_point_is_a_proportion_of_the_window_from_its_corner() {
+        let window = a_window(10.0, 20.0, 200.0, 100.0);
+        let point = the_point(window, &at(500, 250)).expect("inside");
+        let near = |a: f64, b: f64| (a - b).abs() < 1e-9;
+        assert!(near(point.x, 110.0) && near(point.y, 45.0), "{point:?}");
+        let corner = the_point(window, &at(1000, 1000)).expect("inside");
+        assert!(near(corner.x, 209.0) && near(corner.y, 119.0), "{corner:?}");
+    }
+
+    /// **A window with no width, or no height, has no point to click.**
+    #[test]
+    fn a_window_with_no_width_or_no_height_has_no_point() {
+        for window in [
+            a_window(0.0, 0.0, 0.0, 100.0),
+            a_window(0.0, 0.0, 100.0, 0.0),
+            a_window(0.0, 0.0, -1.0, 100.0),
+        ] {
+            assert!(the_point(window, &at(500, 500)).is_none(), "{window:?}");
+        }
     }
 }
