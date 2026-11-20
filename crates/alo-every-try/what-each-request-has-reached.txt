@@ -1,0 +1,7 @@
+# What each of alo's practice requests has reached, per level: each request
+# that took the road on every try of a measured run (crates/alo-every-try,
+# `what_each_has_reached`). A request here is held to every try at that level
+# when a change owns it, and no change may take its line away.
+#
+# Raised only from a measured run: download a run's every-try-measured
+# artifact and run `cargo run -p alo-every-try -- reached <file>...`.

@@ -53,11 +53,13 @@ pub mod no_such_control;
 pub mod nothing_is_there;
 pub mod taking_a_step;
 pub mod tallied;
+pub mod the_bar;
 pub mod the_declaration;
 pub mod the_first_fingerprints;
 pub mod the_machine_answers;
 pub mod the_set;
 pub mod went_wrong;
+pub mod what_each_has_reached;
 pub mod words_for_the_answers;
 
 #[cfg(test)]
