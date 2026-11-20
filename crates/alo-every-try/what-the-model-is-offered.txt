@@ -6,9 +6,10 @@
 # Written by `cargo run -p alo-every-try -- declare`. A test fails while this
 # file is not what the code offers.
 
-every-turn	27b0f6884ed23820
+every-turn	d85802477fae72df
 verb	accessible.activate_control	9b8fd01725f5ff20
 verb	accessible.choose_option	a704adc1f21da24f
+verb	accessible.click_at	e0b61f8a954cf9fb
 verb	accessible.open_item	ea8a9bb4c741d8f3
 verb	accessible.open_menu	52dd00a4bf14c1d1
 verb	accessible.picture_window	85a93c0f8fcce7ce
@@ -60,4 +61,5 @@ request	open a thing's right-click menu in an application	ccde4e2f85bf34c3	acces
 request	press a key in an application	7a6ad21b922eea33	accessible.read_window,accessible.press_key
 request	type into a search box without saving	083a0427355635b8	accessible.read_window,accessible.type_without_saving
 request	have a picture of a window that describes nothing read	5570102d2f8929e9	accessible.read_window,accessible.picture_window
+request	click by position where a picture of a window showed a thing	1a80d0d27673552b	accessible.read_window,accessible.picture_window,accessible.click_at
 request	answer the file chooser	f7bb29aaf3c1692a	choose_on_the_file_chooser
