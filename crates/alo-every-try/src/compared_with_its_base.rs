@@ -239,7 +239,7 @@ pub fn summary_of(rows: &[Row], asked_of: &str) -> String {
         Counted::ItsOwnSlipped => {
             "**The check did not pass**: a request is worse than its base.\n\n"
         }
-        Counted::NotMeasured => {
+        Counted::NotMeasured | Counted::ToConfirm => {
             "**Nothing was decided yet**: a request is flagged, or could not be compared.\n\n"
         }
         Counted::ItsOwnHeld | Counted::NothingOfItsOwn => {
