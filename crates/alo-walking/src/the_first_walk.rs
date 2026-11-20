@@ -156,6 +156,7 @@ pub fn the_first_walk() -> Walk {
     // would notice about it, on the desktop and over applications alo did not
     // make (`crate::the_pointer_walk`).
     let walk = crate::the_pointer_walk::then_the_pointer(walk);
+    let walk = then_a_provider_that_needs_no_key(walk);
     then_the_provider(walk)
 }
 
@@ -203,6 +204,52 @@ pub const THE_TERMINAL_AT_REST: &str = "window band over the terminal: 0 control
 pub const THE_TERMINAL_MAXIMISED: &str =
     "window panel: the terminal maximised, filling the work area";
 
+/// What `alo-desktop` says when a provider that needs no key was saved — its
+/// `SAVED_NEEDING_NO_KEY`, which a test there reads from this line.
+pub const A_PROVIDER_THAT_NEEDS_NO_KEY_SAVED: &str =
+    "alo-desktop: a provider that needs no key was saved";
+
+/// Then add a provider that needs no key, the way a person adds a runtime of
+/// their own on this computer: the key left empty, the switch after it turned
+/// on with Space, and Enter.
+///
+/// **On every walk**, before the gate that needs a real provider's key,
+/// because it needs none. Nothing answers at that address on a walk's
+/// machine, and nothing here asks it anything: what is walked is that the
+/// form saves it. **It is added before the provider with a key**, so that one
+/// is what answers the sections after it.
+fn then_a_provider_that_needs_no_key(walk: Walk) -> Walk {
+    let look = Settling::UNDER_KVM;
+    let tab = Chord::key("tab");
+    walk.press(Chord::key("esc"))
+        .press(Chord::with("meta_l", "i"))
+        .look("settings-for-a-provider-that-needs-no-key", look)
+        .press(Chord::key("home"))
+        .press(tab.clone())
+        .press_times(&Chord::key("down"), 4)
+        .look("on-add-a-provider-that-needs-no-key", look)
+        .press(Chord::key("ret"))
+        .type_text("On this computer")
+        .press(tab.clone())
+        .type_text("http://127.0.0.1:11434")
+        // Past the key, left empty, to the switch.
+        .press(tab.clone())
+        .press(tab.clone())
+        .press(Chord::key("spc"))
+        .press(tab)
+        .type_text("llama3.2")
+        .look("the-keyless-provider-form", look)
+        .mark()
+        .press(Chord::key("ret"))
+        .expect_line(
+            "a provider that needs no key is saved",
+            A_PROVIDER_THAT_NEEDS_NO_KEY_SAVED,
+            Since::Mark,
+            Duration::from_secs(60),
+        )
+        .look("the-keyless-provider-saved", look)
+}
+
 /// Then add a provider, typing its key from [`THE_PROVIDER_KEY`] — and
 /// nothing at all without it.
 fn then_the_provider(walk: Walk) -> Walk {
@@ -215,7 +262,9 @@ fn then_the_provider(walk: Walk) -> Walk {
         .look("settings-again", look)
         .press(Chord::key("home"))
         .press(tab.clone())
-        .press_times(&Chord::key("down"), 4)
+        // **Five, not four, since the provider that needs no key**: it is
+        // a row of its own under *my provider*, above *Add a provider*.
+        .press_times(&Chord::key("down"), 5)
         .look("on-add-a-provider", look)
         .press(Chord::key("ret"))
         .look("the-provider-form", look)
@@ -224,6 +273,8 @@ fn then_the_provider(walk: Walk) -> Walk {
         .type_text("https://api.openai.com")
         .press(tab.clone())
         .type_secret(THE_PROVIDER_KEY)
+        .press(tab.clone())
+        // Past the switch that says a service needs no key, left off.
         .press(tab)
         .type_text("gpt-4o-mini")
         .look("the-provider-form-filled", look)

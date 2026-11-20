@@ -317,8 +317,14 @@ pub(crate) fn the_form_page(form: TheFormsWords, strings: &Strings) -> APage {
         .into_iter()
         .map(|line| {
             let mut parts = line.parts.into_iter();
-            let mut row = ARow::named(None, TheKind::Plain, parts.next().unwrap_or_default());
+            // **The switch is drawn as every switch in Settings is**, with
+            // the word beside it, so a person has met it before.
+            let kind = line.switch.map_or(TheKind::Plain, TheKind::ASwitch);
+            let mut row = ARow::named(None, kind, parts.next().unwrap_or_default());
             row.lines = parts.collect();
+            if let Some(is) = line.switch {
+                row.at_its_end = Some(AnEnd::Words(switch_said(is, strings)));
+            }
             row
         })
         .collect();

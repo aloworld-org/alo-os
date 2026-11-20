@@ -373,7 +373,9 @@ fn the_form_is_heard_and_what_is_typed_never_crosses() {
         );
     let (_, under) = settings_of(&tree);
     for field in alo_setting_up::a_provider_is_filled_in::WhichField::EVERY {
-        let role = if field.is_a_secret() {
+        let role = if field == alo_setting_up::a_provider_is_filled_in::WhichField::NoKeyNeeded {
+            Role::Switch
+        } else if field.is_a_secret() {
             Role::PasswordEntry
         } else {
             Role::Entry
@@ -399,4 +401,40 @@ fn the_form_is_heard_and_what_is_typed_never_crosses() {
         keyboard.name,
         crate::a_provider_being_added_is_drawn::label(form.which_field(), &strings)
     );
+}
+
+/// **The switch that says a service needs no key is heard as a switch**, off
+/// until it is turned on and on after, with the keyboard on it.
+#[test]
+fn the_switch_in_the_form_is_heard_on_or_off() {
+    use alo_setting_up::a_provider_is_filled_in::WhichField;
+    let strings = settings_words();
+    let (_machine, window) = opened("reader-form-switch");
+    let mut form = AProviderBeingAddded::empty();
+    form.the_keyboard_is_in(WhichField::NoKeyNeeded);
+    let heard = |form: &AProviderBeingAddded| {
+        let tree = ReadAloudTree::of(&strings, &[Surface::Desktop], &TurnedOn::nothing())
+            .with_settings(
+                &strings,
+                Some(SettingsShows {
+                    window: &window,
+                    filling_in: Some((form, None)),
+                    takes_the_keys: true,
+                    now: noon(),
+                }),
+            );
+        let (_, under) = settings_of(&tree);
+        let switch = the(
+            &under,
+            Role::Switch,
+            &crate::a_provider_being_added_is_drawn::label(WhichField::NoKeyNeeded, &strings),
+        );
+        (
+            access_roles::is_checked(switch.states),
+            access_roles::has_the_keyboard(switch.states),
+        )
+    };
+    assert_eq!(heard(&form), (false, true), "off, with the keyboard on it");
+    form.typed(' ');
+    assert_eq!(heard(&form), (true, true), "and on after Space");
 }
