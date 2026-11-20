@@ -143,3 +143,122 @@ fn through_the_server_a_card_for_another_task_takes_nothing() {
     );
     assert_eq!(server.alo_took_the_keys, took_from(other));
 }
+
+/// A server with one task, `answered` — a card waiting in it, or words — and
+/// the applications in front, as alo's opening of a file leaves them.
+fn a_server_where_alo_opened_a_file(card: bool) -> (tempfile::TempDir, crate::Server, WhichTask) {
+    let (runtime, mut server) = crate::a_key_reaches_the_task_in_front::tests::a_session();
+    let which = server
+        .tasks_mut()
+        .and_now_this_one(alo_tasks::ATask::asked_for(
+            "write in my file",
+            alo_models::InferenceSource::ThisMachine,
+        ));
+    let daemon = crate::a_key_reaches_the_task_in_front::tests::holding(7, "Type it");
+    let words = crate::a_key_reaches_the_task_in_front::tests::ADaemon::default();
+    server.an_answer_came_back(
+        which,
+        "Shall I?".to_owned(),
+        false,
+        None,
+        Some(if card { &daemon } else { &words }),
+        &crate::a_key_reaches_the_task_in_front::tests::in_english(),
+    );
+    assert_eq!(
+        server.the_change_waiting.is_asking(),
+        card,
+        "the control: a card is waiting only where one was asked for"
+    );
+    server
+        .which_is_in_front
+        .comes_to_the_front(crate::which_window_is_in_front::AKindOfWindow::Applications);
+    server.alo_took_the_keys = took_from(which);
+    (runtime, server, which)
+}
+
+/// **The card takes back the keys alo took, with the seat still on the window
+/// alo opened** — through the server's own road, the seat given because a unit
+/// test has no client window to focus.
+#[test]
+fn through_the_server_the_card_takes_back_what_alo_took() {
+    let (_runtime, mut server, which) = a_server_where_alo_opened_a_file(true);
+    server.what_alo_took_goes_back_with_the_seat_on(which, Some(WindowId::numbered(7)));
+    assert_eq!(server.the_task_with_the_keyboard, Some(which));
+    assert!(
+        server.which_is_in_front().the_task_windows_are_in_front(),
+        "the card's window did not come in front"
+    );
+    assert_eq!(
+        server.alo_took_the_keys, None,
+        "what alo took was not spent"
+    );
+}
+
+/// **With no card waiting — alo answered in words — nothing is taken**, and
+/// what alo took is spent all the same.
+#[test]
+fn through_the_server_words_take_nothing() {
+    let (_runtime, mut server, which) = a_server_where_alo_opened_a_file(false);
+    server.what_alo_took_goes_back_with_the_seat_on(which, Some(WindowId::numbered(7)));
+    assert_eq!(server.the_task_with_the_keyboard, None);
+    assert_eq!(server.alo_took_the_keys, None);
+}
+
+/// **With the seat on another window**, the person went there: nothing is
+/// taken.
+#[test]
+fn through_the_server_the_seat_elsewhere_takes_nothing() {
+    let (_runtime, mut server, which) = a_server_where_alo_opened_a_file(true);
+    server.what_alo_took_goes_back_with_the_seat_on(which, Some(WindowId::numbered(8)));
+    assert_eq!(server.the_task_with_the_keyboard, None);
+}
+
+/// **With the task windows already in front**, nothing covers the card:
+/// nothing is taken.
+#[test]
+fn through_the_server_task_windows_in_front_take_nothing() {
+    let (_runtime, mut server, which) = a_server_where_alo_opened_a_file(true);
+    server
+        .which_is_in_front
+        .comes_to_the_front(crate::which_window_is_in_front::AKindOfWindow::TaskWindows);
+    server.what_alo_took_goes_back_with_the_seat_on(which, Some(WindowId::numbered(7)));
+    assert_eq!(server.the_task_with_the_keyboard, None);
+}
+
+/// **With a task already holding the keys**, they stay where they are.
+#[test]
+fn through_the_server_a_task_holding_the_keys_keeps_them() {
+    let (_runtime, mut server, which) = a_server_where_alo_opened_a_file(true);
+    let holder = server
+        .tasks_mut()
+        .and_now_this_one(alo_tasks::ATask::asked_for(
+            "tidy my invoices",
+            alo_models::InferenceSource::ThisMachine,
+        ));
+    server.the_task_with_the_keyboard = Some(holder);
+    server
+        .which_is_in_front
+        .comes_to_the_front(crate::which_window_is_in_front::AKindOfWindow::Applications);
+    server.what_alo_took_goes_back_with_the_seat_on(which, Some(WindowId::numbered(7)));
+    assert_eq!(server.the_task_with_the_keyboard, Some(holder));
+}
+
+/// **Through `an_answer_came_back` itself**, what alo took from this task is
+/// spent by its next answer, card or words — so a card much later in a long
+/// turn does not reach back for it.
+#[test]
+fn the_next_answer_spends_what_alo_took() {
+    for card in [true, false] {
+        let (_runtime, mut server, which) = a_server_where_alo_opened_a_file(card);
+        let daemon = crate::a_key_reaches_the_task_in_front::tests::holding(8, "Save it");
+        server.an_answer_came_back(
+            which,
+            "Next.".to_owned(),
+            false,
+            None,
+            Some(&daemon),
+            &crate::a_key_reaches_the_task_in_front::tests::in_english(),
+        );
+        assert_eq!(server.alo_took_the_keys, None, "card: {card}");
+    }
+}

@@ -505,7 +505,7 @@ impl crate::Server {
         // **And a card in front of a window alo just opened comes in front of
         // it**, taking back the keys alo's opening took from this task — and
         // only those (`crate::the_card_comes_in_front_of_what_alo_opened`).
-        self.a_card_may_take_back_what_alo_took(which, arrived == WhatArrived::AQuestion);
+        self.a_card_may_take_back_what_alo_took(which);
         // **And a reply the person sent while alo was answering goes now**,
         // with the conversation as it stands — unless what just arrived is a
         // change waiting for them, which keeps it held (ADR 0138).

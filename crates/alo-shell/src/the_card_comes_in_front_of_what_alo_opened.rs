@@ -88,18 +88,29 @@ impl crate::Server {
     }
 
     /// **An answer arrived in `which`**: what alo took from it is spent, and
-    /// where the answer is a card and this module's four conditions hold, the
+    /// where a card is now waiting and this module's four conditions hold, the
     /// task takes the keys back and comes in front.
-    pub(crate) fn a_card_may_take_back_what_alo_took(&mut self, which: WhichTask, a_card: bool) {
-        let Some(took) = self.alo_took_the_keys.filter(|took| took.from == which) else {
-            return;
-        };
-        self.alo_took_the_keys = None;
+    pub(crate) fn a_card_may_take_back_what_alo_took(&mut self, which: WhichTask) {
         let seat = self
             .surfaces
             .keyboard_root()
             .map(|root| crate::window_number::the_window_id_of(&root));
-        if a_card
+        self.what_alo_took_goes_back_with_the_seat_on(which, seat);
+    }
+
+    /// The same, with the window the seat's focus is on given — read by
+    /// [`Self::a_card_may_take_back_what_alo_took`] from the seat, and by a
+    /// test that has no client window to focus.
+    pub(crate) fn what_alo_took_goes_back_with_the_seat_on(
+        &mut self,
+        which: WhichTask,
+        seat: Option<WindowId>,
+    ) {
+        let Some(took) = self.alo_took_the_keys.filter(|took| took.from == which) else {
+            return;
+        };
+        self.alo_took_the_keys = None;
+        if self.the_change_waiting.is_asking()
             && the_card_takes_the_keys_back(
                 Some(took),
                 which,
