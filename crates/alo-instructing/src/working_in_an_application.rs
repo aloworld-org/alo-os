@@ -177,11 +177,10 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
     // amended 2026-11-17): a named control is still pressed by its name.
     if verbs.of(PICTURE_WINDOW).is_some() && verbs.of(CLICK_AT).is_some() {
         acts.push(format!(
-            "to press something that may have no name — an arrow, a picture, a place in a game — \
-             never a guessed name: {READ_WINDOW} first, and where it names nothing, \
-             {PICTURE_WINDOW} asking where that thing is, then {CLICK_AT} once at the place its \
-             words gave, as per cent across and down; never {CLICK_AT} in a window that names its \
-             controls"
+            "to click on something in a photo, a game or a drawing — a person, an arrow, a \
+             place — {PICTURE_WINDOW} first, asking where it is, then {CLICK_AT} once at the \
+             per cent across and down its words gave; never a guessed control name, and never \
+             {CLICK_AT} in a window that names its controls"
         ));
     }
     format!(

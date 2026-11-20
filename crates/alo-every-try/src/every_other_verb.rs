@@ -651,7 +651,9 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
                 READ_WINDOW,
                 Answered::With(Done::of_a_window_read(&the_canvas, &told_of_the_canvas)),
             )
-            .expecting(fallback_verbs::APPLICATION, viewer.as_str()),
+            .expecting(fallback_verbs::APPLICATION, viewer.as_str())
+            // **A look**, as for the picture: the picture verb asks the tree.
+            .a_look(),
             Step::of(
                 PICTURE_WINDOW,
                 Answered::With(Done::of_a_picture(
