@@ -16,7 +16,9 @@
 //! where the keys were not the person's to lose: **alo's own opening took them
 //! from this task**, and nothing has moved them since. Then the card's task
 //! window comes in front and takes them back, which is where the person was.
-//! All four must hold:
+//! **The owner allowed it on 2026-11-20, in these words: *"Yes, allow the
+//! narrow exception."*** It is recorded beside the rule in
+//! `docs/design/the-ask-alo-task-window.md`. All four must hold:
 //!
 //! - the keys alo's opening took came from **this** task;
 //! - the seat's focus is **still on the window alo opened** — the person has

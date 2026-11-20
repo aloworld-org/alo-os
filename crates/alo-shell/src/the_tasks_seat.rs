@@ -17,6 +17,13 @@
 //! could press *Tab* then *Enter* — two ordinary keys — and approve a change
 //! they never read.
 //!
+//! **One narrow exception**, the owner, 2026-11-20: *"Yes, allow the narrow
+//! exception."* A card takes back keys alo's own opening of a file took from
+//! its task, only while nothing has moved them since
+//! (`crate::the_card_comes_in_front_of_what_alo_opened` has the four
+//! conditions; `docs/design/the-ask-alo-task-window.md` records them beside
+//! this rule).
+//!
 //! # Intercepted, exactly as the Bar is
 //!
 //! While a task window holds the keyboard every key is intercepted at the seat
