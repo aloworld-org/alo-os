@@ -118,6 +118,14 @@ impl TheSet {
         self.requests.retain(|request| request.named() == named);
         (!self.requests.is_empty()).then_some(self)
     }
+
+    /// Only the requests `keeping` keeps, on the same machine — a change's own
+    /// requests, or every other — which may be none.
+    #[must_use]
+    pub fn retaining(mut self, keeping: impl Fn(&ARequest) -> bool) -> Self {
+        self.requests.retain(|request| keeping(request));
+        self
+    }
 }
 
 /// The set, built from its sources.
