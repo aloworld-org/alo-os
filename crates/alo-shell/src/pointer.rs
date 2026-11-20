@@ -21,8 +21,9 @@ pub(crate) struct Pointer {
     pub(crate) buttons: Vec<u32>,
     /// Last accepted location and timestamp for cancellation.
     pub(crate) location: Point<f64, Logical>,
-    /// Timestamp used for synthetic cancellation events.
-    time: u32,
+    /// Timestamp used for synthetic cancellation events, and for alo's own
+    /// click (`crate::clicking_in_the_window_in_front`).
+    pub(crate) time: u32,
     /// Scroll a canvas pan has not been able to spend yet, in screen pixels.
     ///
     /// See `crate::canvas_pan`: the plane is measured in whole units and a scroll

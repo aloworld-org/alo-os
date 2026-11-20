@@ -150,6 +150,27 @@ mod tests {
         assert_eq!(offsets.at(Field::SuperMagic), 48);
     }
 
+    /// **A kernel that builds btrfs as a module is bounded with btrfs**, at the
+    /// offsets the module describes, so a granted file on a btrfs disk opens
+    /// there too. The test above is the other side: a kernel that describes
+    /// btrfs nowhere still refuses every btrfs file.
+    #[test]
+    fn a_kernel_that_builds_btrfs_as_a_module_is_bounded_with_it() {
+        let (kernel, module) = testing::btrfs_as_a_module();
+        let types = Types::read(kernel)
+            .expect("the kernel reads")
+            .with_module(module)
+            .expect("the module reads");
+        let offsets = Offsets::found(&types).expect("every field is there");
+        assert_eq!(offsets.at(Field::BtrfsInodeNumber), 432);
+        assert_eq!(offsets.at(Field::BtrfsInodeRoot), 0);
+        assert_eq!(offsets.at(Field::BtrfsRootDevice), 120);
+        assert_eq!(offsets.at(Field::SuperMagic), 48);
+        for field in Field::ALL {
+            assert_ne!(offsets.at(field), NOT_IN_THIS_KERNEL, "{field:?}");
+        }
+    }
+
     /// A kernel with no `struct file` at all — far enough from what alo OS
     /// certifies that there is nothing to walk, and a refusal that names what
     /// was looked for.

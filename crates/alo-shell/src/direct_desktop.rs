@@ -1545,6 +1545,18 @@ impl LoopInput for TheDesktopLane<'_> {
             );
             one.answered(typed);
         }
+        // **And every click alo asked for** (ADR 0147, amended 2026-11-17), in
+        // the window in front only, carried out in the same frame.
+        for one in self.door.asked_to_click() {
+            let mut asking =
+                crate::typing_into_the_window_in_front::TheDesktopAnswers(&mut *self.desktop);
+            let clicked = server.clicked_in_the_window_in_front(one.asked(), &mut asking);
+            eprintln!(
+                "alo-shell: {}",
+                alo_acting::said_on_the_log::alo_clicked(one.asked(), clicked)
+            );
+            one.answered(clicked);
+        }
         // **And every picture alo asked for** (ADR 0147 §1), of the window in
         // front only, taken in the same frame and sent on from there.
         for one in self.door.asked_to_picture() {

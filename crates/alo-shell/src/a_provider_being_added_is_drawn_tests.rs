@@ -43,9 +43,9 @@ fn what_is_shown(form: &AProviderBeingAddded, field: WhichField) -> String {
 }
 
 #[test]
-fn there_is_a_line_for_each_of_the_four_fields() {
+fn there_is_a_line_for_each_of_the_five_fields() {
     let drawn = the_form(&AProviderBeingAddded::empty(), None, &strings());
-    assert_eq!(drawn.lines.len(), 4);
+    assert_eq!(drawn.lines.len(), 5);
     // And a heading and a line saying what to do, above them.
     assert_eq!(drawn.said.len(), 2);
 }
@@ -60,7 +60,16 @@ fn every_label_is_a_sentence_and_not_a_literal() {
         .iter()
         .map(|line| line.parts.first().expect("a label").as_str())
         .collect();
-    assert_eq!(labels, vec!["Name", "Address", "Key", "Model"]);
+    assert_eq!(
+        labels,
+        vec![
+            "Name",
+            "Address",
+            "Key",
+            "This service needs no key",
+            "Model"
+        ]
+    );
 }
 
 #[test]
@@ -157,7 +166,7 @@ fn the_field_with_the_keyboard_is_the_one_marked() {
         .into_iter()
         .map(|field| what_is_shown(&form, field).ends_with('▏'))
         .collect();
-    assert_eq!(marked, vec![false, true, false, false]);
+    assert_eq!(marked, vec![false, true, false, false, false]);
 }
 
 /// **A save that did not happen says so, above the form.**
@@ -345,4 +354,142 @@ fn this_machines_own_network_address_over_http_gets_both_cautions() {
     form.this_machine_is_also_at(vec![std::net::IpAddr::from([192, 168, 1, 20])]);
     assert!(is_cautioned(&form));
     assert!(is_cautioned_as_unencrypted(&form));
+}
+
+/// The form with the keyboard on the switch that says a service needs no key.
+fn on_the_switch() -> AProviderBeingAddded {
+    let mut form = AProviderBeingAddded::empty();
+    form.the_keyboard_is_in(WhichField::NoKeyNeeded);
+    form
+}
+
+/// Where a field's line is, among the form's lines.
+fn the_line_of(field: WhichField) -> usize {
+    WhichField::EVERY
+        .iter()
+        .position(|each| *each == field)
+        .expect("one of the fields")
+}
+
+#[test]
+fn the_switch_is_drawn_as_a_switch_straight_after_the_key_and_starts_off() {
+    let drawn = the_form(&AProviderBeingAddded::empty(), None, &strings());
+    assert_eq!(
+        the_line_of(WhichField::NoKeyNeeded),
+        the_line_of(WhichField::Key) + 1
+    );
+    let switches: Vec<Option<crate::settings_page::SwitchIs>> =
+        drawn.lines.iter().map(|line| line.switch).collect();
+    assert_eq!(
+        switches,
+        vec![
+            None,
+            None,
+            None,
+            Some(crate::settings_page::SwitchIs::Off),
+            None
+        ],
+        "only the one line is a switch, and it is off until the person turns it on"
+    );
+    let label = drawn
+        .lines
+        .get(the_line_of(WhichField::NoKeyNeeded))
+        .and_then(|line| line.parts.first())
+        .expect("the switch's label");
+    assert!(
+        !label.contains('«'),
+        "the switch reached a person as a key: {label}"
+    );
+}
+
+#[test]
+fn space_on_the_switch_draws_it_on() {
+    let mut form = on_the_switch();
+    form.typed(' ');
+    let drawn = the_form(&form, None, &strings());
+    assert_eq!(
+        drawn
+            .lines
+            .get(the_line_of(WhichField::NoKeyNeeded))
+            .and_then(|line| line.switch),
+        Some(crate::settings_page::SwitchIs::On)
+    );
+}
+
+#[test]
+fn the_switch_with_the_keyboard_carries_the_caret_and_says_what_it_is_for() {
+    let shown = what_is_shown(&on_the_switch(), WhichField::NoKeyNeeded);
+    assert!(shown.ends_with('▏'), "{shown}");
+    assert!(!shown.contains('«'), "{shown}");
+    assert!(
+        shown.len() > '▏'.len_utf8(),
+        "a sentence and not only the caret"
+    );
+}
+
+#[test]
+fn while_no_key_is_needed_the_key_line_says_so_rather_than_drawing_marks() {
+    let mut form = AProviderBeingAddded::empty();
+    form.the_keyboard_is_in(WhichField::Key);
+    types(&mut form, "abcd");
+    assert_eq!(what_is_shown(&form, WhichField::Key), "••••▏");
+
+    form.the_keyboard_is_in(WhichField::NoKeyNeeded);
+    form.typed(' ');
+    assert_eq!(
+        what_is_shown(&form, WhichField::Key),
+        "Not needed",
+        "a key nobody will use is drawn as marks"
+    );
+    form.the_keyboard_is_in(WhichField::Key);
+    assert_eq!(
+        what_is_shown(&form, WhichField::Key),
+        "Not needed▏",
+        "and the caret still marks it when the keyboard is there"
+    );
+}
+
+#[test]
+fn the_page_draws_the_switch_as_a_switch_with_its_word() {
+    // **Drawn as every other switch in Settings**, with *Off* or *On* beside
+    // it, read from the same words the other switches use.
+    let strings = crate::settings_testing::settings_words();
+    let row_of = |form: &AProviderBeingAddded| {
+        let page = crate::settings_page::the_form_page(the_form(form, None, &strings), &strings);
+        page.blocks
+            .into_iter()
+            .find_map(|block| match block {
+                crate::settings_page::ABlock::Section(section) => section
+                    .rows
+                    .into_iter()
+                    .find(|row| matches!(row.kind, crate::settings_page::TheKind::ASwitch(_))),
+                crate::settings_page::ABlock::Said(_)
+                | crate::settings_page::ABlock::AnAction(_) => None,
+            })
+            .expect("a switch row on the form's page")
+    };
+    let off = row_of(&on_the_switch());
+    assert_eq!(
+        off.kind,
+        crate::settings_page::TheKind::ASwitch(crate::settings_page::SwitchIs::Off)
+    );
+    assert_eq!(
+        off.at_its_end,
+        Some(crate::settings_page::AnEnd::Words(
+            crate::settings_page::switch_said(crate::settings_page::SwitchIs::Off, &strings)
+        ))
+    );
+    let mut form = on_the_switch();
+    form.typed(' ');
+    let on = row_of(&form);
+    assert_eq!(
+        on.kind,
+        crate::settings_page::TheKind::ASwitch(crate::settings_page::SwitchIs::On)
+    );
+    assert_eq!(
+        on.at_its_end,
+        Some(crate::settings_page::AnEnd::Words(
+            crate::settings_page::switch_said(crate::settings_page::SwitchIs::On, &strings)
+        ))
+    );
 }

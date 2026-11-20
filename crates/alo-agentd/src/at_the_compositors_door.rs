@@ -239,6 +239,33 @@ impl TheDoorTheCompositorServes for AtTheCompositorsDoor {
         Ok((pictured, png))
     }
 
+    fn clicking(
+        &mut self,
+        asked: &alo_acting::ToClick,
+    ) -> Result<alo_acting::Clicked, NotAtTheDoor> {
+        let not = |why: String| NotAtTheDoor::NotAnswered { why };
+        let mut talking = self.knocking()?;
+        talking
+            .write_all(format!("{}\n", asked.written()).as_bytes())
+            .and_then(|()| talking.flush())
+            .map_err(|why| not(why.to_string()))?;
+        let mut heard = String::new();
+        let read = BufReader::new(&talking)
+            .read_line(&mut heard)
+            .map_err(|why| not(why.to_string()))?;
+        if read == 0 {
+            return Err(not(
+                "the compositor closed the connection without answering".to_owned(),
+            ));
+        }
+        // As for an act: an unknown word is never read as clicked.
+        alo_acting::Clicked::read(&heard).ok_or_else(|| {
+            not(format!(
+                "the compositor answered {heard:?}, which this machine does not know"
+            ))
+        })
+    }
+
     fn opening_a_file(
         &mut self,
         asked: &alo_acting::ToOpenAFile,
@@ -318,6 +345,14 @@ impl AtTheCompositorsDoor {
 )]
 #[path = "at_the_compositors_door_picturing_tests.rs"]
 mod picturing_tests;
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+#[path = "at_the_compositors_door_clicking_tests.rs"]
+mod clicking_tests;
 
 #[cfg(test)]
 // Counted: 11 `unwrap` and 3 `panic!`, and no `expect` — an unfulfilled

@@ -143,6 +143,7 @@ fn a_filled_in_form_asks_to_be_saved() {
     server.a_key_fills_in_the_provider(FillingInKey::NextField);
     types(&mut server, "sk-not-a-real-key");
     server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
     types(&mut server, "gpt-4o-mini");
 
     assert_eq!(
@@ -321,6 +322,7 @@ fn filled_in(server: &mut crate::Server) {
     server.a_key_fills_in_the_provider(FillingInKey::NextField);
     types(server, "sk-not-a-real-key");
     server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
     types(server, "gpt-4o-mini");
 }
 
@@ -387,6 +389,7 @@ fn an_address_that_is_not_one_names_the_field_rather_than_the_form() {
     server.a_key_fills_in_the_provider(FillingInKey::NextField);
     types(&mut server, "sk-not-a-real-key");
     server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
     types(&mut server, "gpt-4o-mini");
 
     assert_eq!(
@@ -438,6 +441,7 @@ fn a_service_at_this_machines_address_is_still_saved_when_they_go_ahead() {
     types(&mut server, "http://127.0.0.1:11434");
     server.a_key_fills_in_the_provider(FillingInKey::NextField);
     types(&mut server, "none");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
     server.a_key_fills_in_the_provider(FillingInKey::NextField);
     types(&mut server, "llama3");
     assert!(
@@ -531,6 +535,7 @@ fn a_provider_at_an_address_this_machine_has_is_still_saved() {
     server.a_key_fills_in_the_provider(FillingInKey::NextField);
     types(&mut server, "none");
     server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
     types(&mut server, "llama3");
     assert!(
         server
@@ -557,6 +562,7 @@ fn filled_in_at(server: &mut crate::Server, address: &str) {
     types(server, address);
     server.a_key_fills_in_the_provider(FillingInKey::NextField);
     types(server, "none");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
     server.a_key_fills_in_the_provider(FillingInKey::NextField);
     types(server, "llama3");
 }
@@ -655,4 +661,118 @@ fn plain_http_to_the_internet_is_still_not_saved() {
         ))
     );
     assert!(server.take_the_provider_to_save().is_none());
+}
+
+/// A runtime of the person's own on this machine, filled in through presses
+/// with the key left empty, ending with the keyboard in the model.
+fn a_runtime_here_with_no_key_typed(server: &mut crate::Server, switched: bool) {
+    server.a_provider_is_added();
+    types(server, "On this computer");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(server, "http://127.0.0.1:11434");
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    assert_eq!(
+        server.the_field_being_filled_in(),
+        Some(WhichField::NoKeyNeeded)
+    );
+    if switched {
+        assert_eq!(
+            server.a_key_fills_in_the_provider(FillingInKey::Typed(' ')),
+            Some(WhatFillingInDid::ItChanged),
+            "Space on the switch is a change to draw"
+        );
+    }
+    server.a_key_fills_in_the_provider(FillingInKey::NextField);
+    types(server, "llama3.2");
+}
+
+#[test]
+fn a_service_that_needs_no_key_is_put_aside_to_save_with_no_key() {
+    let (_directory, mut server) = a_server();
+    a_runtime_here_with_no_key_typed(&mut server, true);
+
+    assert_eq!(
+        server.a_key_fills_in_the_provider(FillingInKey::Save),
+        Some(WhatFillingInDid::SaveIt)
+    );
+    let saving = server
+        .take_the_provider_to_save()
+        .expect("put aside for the frame loop");
+    assert!(saving.key.is_none(), "nothing for the keyring");
+    assert!(
+        saving.provider.key.is_none(),
+        "and the provider refers to none"
+    );
+}
+
+#[test]
+fn an_empty_key_with_the_switch_left_off_is_not_finished() {
+    // The refusal path: nothing is put aside, and the form keeps what they
+    // typed so they can paste their key or turn the switch on.
+    let (_directory, mut server) = a_server();
+    a_runtime_here_with_no_key_typed(&mut server, false);
+
+    assert_eq!(
+        server.a_key_fills_in_the_provider(FillingInKey::Save),
+        Some(WhatFillingInDid::NotFinished)
+    );
+    assert!(server.take_the_provider_to_save().is_none());
+    assert_eq!(
+        server
+            .a_provider_is_being_filled_in()
+            .expect("the form is still open")
+            .what_is_in(WhichField::Name),
+        "On this computer"
+    );
+}
+
+#[test]
+fn a_paste_on_the_switch_does_not_press_it() {
+    // A pasted sentence with a space in it is not the person pressing Space:
+    // the switch says what a provider needs, and only a press changes it.
+    use std::io::Write as _;
+
+    let (_directory, mut server) = a_server();
+    server.a_provider_is_added();
+    let pasted = |server: &mut crate::Server, seconds: u64| {
+        let (reading, writing) = std::io::pipe().expect("a pipe");
+        server
+            .clipboard
+            .reading(std::os::unix::io::OwnedFd::from(reading));
+        let mut writing = writing;
+        writing.write_all(b"two words").expect("the client writes");
+        drop(writing);
+        let until = std::time::Instant::now() + std::time::Duration::from_secs(seconds);
+        let mut arrived = false;
+        while !arrived && std::time::Instant::now() < until {
+            arrived = server.that_paste_arrived();
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        arrived
+    };
+    // **The control first**: the same paste into the name lands, so the pipe
+    // delivers and the silence below is the switch refusing it.
+    assert!(pasted(&mut server, 2), "the paste into the name arrived");
+    assert_eq!(
+        server
+            .a_provider_is_being_filled_in()
+            .expect("a form")
+            .what_is_in(WhichField::Name),
+        "two words"
+    );
+
+    let form = server.filling_in.as_mut().expect("a form");
+    form.the_keyboard_is_in(WhichField::NoKeyNeeded);
+    assert!(
+        !pasted(&mut server, 1),
+        "a paste on the switch changed the form"
+    );
+    assert!(
+        !server
+            .a_provider_is_being_filled_in()
+            .expect("a form")
+            .needs_no_key(),
+        "a paste turned the switch on"
+    );
 }
