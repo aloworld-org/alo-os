@@ -51,7 +51,7 @@ impl<T> Noted<T> {
 
 /// A daemon holding what a test tells it to, and remembering what it was told.
 #[derive(Debug, Default, Clone)]
-struct ADaemon {
+pub(crate) struct ADaemon {
     holding: Vec<Standing>,
     approved: Noted<Vec<u64>>,
     declined: Noted<Vec<u64>>,
@@ -110,7 +110,7 @@ impl Answering for ADaemon {
 }
 
 /// The card's words, untranslated — what a person reads after answering.
-fn in_english() -> alo_strings::Strings {
+pub(crate) fn in_english() -> alo_strings::Strings {
     let mut vocabulary = alo_strings::Vocabulary::empty();
     crate::the_cards_words::declare_the_cards_words(&mut vocabulary)
         .expect("the card's words declare");
@@ -137,7 +137,7 @@ fn the_last_thing_said(
 }
 
 /// A daemon holding one change, read from the wire form a daemon sends.
-fn holding(number: u64, sentence: &str) -> ADaemon {
+pub(crate) fn holding(number: u64, sentence: &str) -> ADaemon {
     let wire = format!(
         r#"{{"number":{number},"sentence":{{"text":{sentence:?},"came_from":"the-source"}}}}"#
     );
@@ -148,7 +148,7 @@ fn holding(number: u64, sentence: &str) -> ADaemon {
 }
 
 /// A session with a keyboard on a US layout.
-fn a_session() -> (tempfile::TempDir, Server) {
+pub(crate) fn a_session() -> (tempfile::TempDir, Server) {
     let runtime = tempfile::tempdir().expect("a runtime directory of this test's own");
     std::fs::set_permissions(runtime.path(), std::fs::Permissions::from_mode(0o700))
         .expect("a private runtime directory");
