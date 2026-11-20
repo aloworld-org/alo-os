@@ -81,6 +81,9 @@ pub use icons::Icons;
 mod what_they_are;
 pub use what_they_are::{WhatEachIs, the_keys_a_language_reads, what_they_are};
 
+mod what_opens_folders;
+pub use what_opens_folders::{A_FOLDER, what_opens_folders};
+
 mod what_they_are_called;
 pub use what_they_are_called::{WhatEachIsCalled, what_they_are_called};
 
