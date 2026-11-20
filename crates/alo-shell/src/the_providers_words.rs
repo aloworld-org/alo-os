@@ -1,7 +1,8 @@
 //! What the form that adds a provider says, in words somebody can translate.
 //!
-//! Twelve sentences, and none of them is drawn from a string literal: the labels
-//! beside the four fields, the heading above them, the one line that says what
+//! Fifteen sentences, and none of them is drawn from a string literal: the
+//! labels beside the five fields, the line under the switch that says a service
+//! needs no key, what the key's field says while it is on, the heading above them, the one line that says what
 //! a person is about to do, the four reasons a save did not happen, the caution
 //! about a service at this machine's address, and the caution about plain http
 //! to another computer on the person's own network.
@@ -70,6 +71,39 @@ pub const ITS_MODEL: Word = Word::saying("shell.provider.model", "Model").noting
      provider names it. One or two words.",
 );
 
+/// The switch after the key: this service needs no key.
+///
+/// **For a service of the person's own** — a runtime on this computer or on
+/// their network, such as Ollama or LM Studio — which asks for no credential.
+/// `docs/features.md` promises *a compatible API … using the credentials that
+/// provider requires*, and for these that is none. Off until the person turns
+/// it on, because almost every hosted service needs one.
+pub const ITS_NEEDS_NO_KEY: Word =
+    Word::saying("shell.provider.needs-no-key", "This service needs no key").noting(
+        "The label beside an on/off switch in the form that adds a provider, straight after the \
+         field for the key. The person turns it on for a service that asks for no secret key, \
+         such as a program running on their own computer or on their own network. Short, like \
+         a label.",
+    );
+
+/// The line under that switch, saying what it is for and how to press it.
+pub const WHAT_NEEDING_NO_KEY_IS_FOR: Word = Word::saying(
+    "shell.provider.needs-no-key.what",
+    "Turn it on for a service of your own, on this computer or your network, that asks for no key. Space turns it on or off.",
+)
+.noting(
+    "Under the switch \"This service needs no key\". \"A service of your own\" is a program the \
+     person runs themselves that answers questions, such as a local model server. Space is the \
+     key on a keyboard; leave its name as it is written on keyboards in your language.",
+);
+
+/// What the key's field says while the switch says none is needed.
+pub const THE_KEY_IS_NOT_NEEDED: Word = Word::saying("shell.provider.key-not-needed", "Not needed")
+    .noting(
+        "Shown in place of the key, in the form that adds a provider, while the person has said \
+         this service needs no key. One or two words.",
+    );
+
 /// Every sentence this form says.
 ///
 /// **The four refusals are in here**, which is the whole point of the list: a
@@ -77,12 +111,15 @@ pub const ITS_MODEL: Word = Word::saying("shell.provider.model", "Model").noting
 /// form drew six of those on a booted machine on 2026-10-23 for that fault one
 /// layer up. The length is written out so that adding a `Word` above and
 /// forgetting this line does not compile.
-pub const THE_PROVIDERS_WORDS: [Word; 12] = [
+pub const THE_PROVIDERS_WORDS: [Word; 15] = [
     ADDING_A_PROVIDER,
     WHAT_TO_DO_WITH_IT,
     ITS_NAME,
     ITS_ADDRESS,
     ITS_KEY,
+    ITS_NEEDS_NO_KEY,
+    WHAT_NEEDING_NO_KEY_IS_FOR,
+    THE_KEY_IS_NOT_NEEDED,
     ITS_MODEL,
     NOT_SAVED_NO_KEYRING,
     NOT_SAVED_KEY_NOT_KEPT,

@@ -25,6 +25,7 @@ fn one_a_person_filled_in() -> AProviderBeingAddded {
     form.to_the_next_field();
     types(&mut form, "sk-not-a-real-key");
     form.to_the_next_field();
+    form.to_the_next_field();
     types(&mut form, "gpt-4o-mini");
     form
 }
@@ -152,7 +153,10 @@ fn a_filled_in_form_becomes_a_provider_its_key_and_a_model() {
     assert_eq!(saving.provider.name, "OpenAI");
     assert_eq!(saving.provider.endpoint, "https://api.openai.com");
     assert_eq!(saving.model, "gpt-4o-mini");
-    assert_eq!(saving.filed_under.as_str(), "provider/OpenAI");
+    assert_eq!(
+        saving.key.as_ref().map(|key| key.filed_under.as_str()),
+        Some("provider/OpenAI")
+    );
     assert_eq!(
         saving
             .provider
@@ -291,6 +295,7 @@ fn space_alone_is_not_a_filled_in_field() {
     form.to_the_next_field();
     types(&mut form, "sk-not-a-real-key");
     form.to_the_next_field();
+    form.to_the_next_field();
     types(&mut form, "gpt-4o-mini");
 
     assert!(!form.every_field_is_filled());
@@ -311,6 +316,7 @@ fn every_field_filled_is_not_the_same_question_as_every_field_right() {
     types(&mut form, "not-an-address");
     form.to_the_next_field();
     types(&mut form, "sk-not-a-real-key");
+    form.to_the_next_field();
     form.to_the_next_field();
     types(&mut form, "gpt-4o-mini");
 
@@ -351,11 +357,15 @@ fn the_key_is_filed_under_the_name_as_it_will_be_saved() {
     form.to_the_next_field();
     types(&mut form, "sk-not-a-real-key");
     form.to_the_next_field();
+    form.to_the_next_field();
     types(&mut form, "gpt-4o-mini");
 
     let saving = form.what_it_would_save().unwrap();
     assert_eq!(saving.provider.name, "OpenAI");
-    assert_eq!(saving.filed_under.as_str(), "provider/OpenAI");
+    assert_eq!(
+        saving.key.as_ref().map(|key| key.filed_under.as_str()),
+        Some("provider/OpenAI")
+    );
     assert_eq!(
         saving
             .provider
@@ -411,6 +421,7 @@ fn the_model_list_is_exactly_what_was_typed() {
     types(&mut form, "https://api.openai.com");
     form.to_the_next_field();
     types(&mut form, "sk-not-a-real-key");
+    form.to_the_next_field();
     form.to_the_next_field();
     types(&mut form, "  o3-mini  ");
     let saving = form
@@ -524,7 +535,10 @@ fn another_computer_on_the_persons_network_over_http_is_cautioned_and_can_be_sav
         .what_it_would_save()
         .expect("another computer on the person's own network is the person's to add");
     assert_eq!(saving.provider.endpoint, "http://192.168.1.21:11434");
-    assert_eq!(saving.filed_under.as_str(), "provider/OpenAI");
+    assert_eq!(
+        saving.key.as_ref().map(|key| key.filed_under.as_str()),
+        Some("provider/OpenAI")
+    );
 }
 
 #[test]

@@ -1283,6 +1283,24 @@ RUN test -s /usr/share/polkit-1/rules.d/50-alo-time-zone.rules \
  && chpasswd --help >/dev/null \
  && rpm -q polkit systemd shadow-utils
 
+# **Whether this image's kernel builds btrfs in**, said in the build log and
+# never refused on. Every alo disk is btrfs, and the kernel boundary reads
+# btrfs's structures from the kernel's type information, from `vmlinux` when
+# btrfs is built in and from the module's own when it is not
+# (`crates/alo-bounding/src/what_the_kernel_says.rs`). Both work; this says
+# which one a machine will take, so a base whose kernel changed is noticed in a
+# build rather than on a walk. `image-check.yml` lifts the line into the run's
+# summary as a warning.
+RUN for config in /usr/lib/modules/*/config; do \
+      if grep -q '^CONFIG_BTRFS_FS=y' "$config"; then \
+        echo "alo-btrfs: built into the kernel ($config)"; \
+      elif grep -q '^CONFIG_BTRFS_FS=m' "$config"; then \
+        echo "alo-btrfs WARNING: the kernel builds btrfs as a module ($config); the boundary reads its types from /sys/kernel/btf/btrfs"; \
+      else \
+        echo "alo-btrfs WARNING: the kernel configuration says nothing about btrfs ($config); the boundary will refuse every file on a btrfs disk"; \
+      fi; \
+    done
+
 # **Firefox starts with sharing data with Mozilla switched off**, as defaults the
 # person can switch back on in Firefox's own Settings. The owner, 2026-11-13:
 # "Off by default". The files go in /usr, which every update replaces; the

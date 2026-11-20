@@ -74,8 +74,14 @@ enum Kernel {
     WithoutBtrfs,
 }
 
-/// The fixture, in whichever of its three shapes.
+/// The fixture, in whichever of its shapes.
 fn written(kernel: Kernel) -> Vec<u8> {
+    the_kernel(kernel).0.finished()
+}
+
+/// The fixture's kernel, still being written, and the types of it btrfs is
+/// built from.
+fn the_kernel(kernel: Kernel) -> (Writing, WhatBtrfsNames) {
     let mut writing = Writing::new();
 
     // Three integers, and the two names a device number hides behind.
@@ -255,28 +261,72 @@ fn written(kernel: Kernel) -> Vec<u8> {
         ],
     );
 
-    // btrfs keeps the inode every other filesystem would hand over inside one
-    // of its own, behind a pointer to the subvolume. Embedded four hundred
-    // bytes in, so the inode number inside it is found as a sum.
+    let names = WhatBtrfsNames {
+        unsigned_long,
+        dev_t,
+        inode,
+    };
     if kernel != Kernel::WithoutBtrfs {
-        let btrfs_root = writing.reserve();
-        let btrfs_root_pointer = writing.pointer_to(btrfs_root);
-        let btrfs_inode = writing.reserve();
-        writing.structure(
-            btrfs_root,
-            "btrfs_root",
-            1000,
-            &[("fs_info", unsigned_long, 0), ("anon_dev", dev_t, 120)],
-        );
-        writing.structure(
-            btrfs_inode,
-            "btrfs_inode",
-            1100,
-            &[("root", btrfs_root_pointer, 0), ("vfs_inode", inode, 400)],
-        );
+        btrfs(&mut writing, &names);
     }
+    (writing, names)
+}
 
-    writing.finished()
+/// The kernel's own types, which btrfs's structures are built from.
+struct WhatBtrfsNames {
+    /// `unsigned long`.
+    unsigned_long: u32,
+    /// `dev_t`, which a subvolume's device number is.
+    dev_t: u32,
+    /// `struct inode`, which btrfs embeds in its own.
+    inode: u32,
+}
+
+/// btrfs's two structures, written into whichever piece of type information
+/// describes them: the kernel's own, or the module's.
+///
+/// btrfs keeps the inode every other filesystem would hand over inside one of
+/// its own, behind a pointer to the subvolume. Embedded four hundred bytes in,
+/// so the inode number inside it is found as a sum.
+fn btrfs(writing: &mut Writing, names: &WhatBtrfsNames) {
+    let btrfs_root = writing.reserve();
+    let btrfs_root_pointer = writing.pointer_to(btrfs_root);
+    let btrfs_inode = writing.reserve();
+    writing.structure(
+        btrfs_root,
+        "btrfs_root",
+        1000,
+        &[
+            ("fs_info", names.unsigned_long, 0),
+            ("anon_dev", names.dev_t, 120),
+        ],
+    );
+    writing.structure(
+        btrfs_inode,
+        "btrfs_inode",
+        1100,
+        &[
+            ("root", btrfs_root_pointer, 0),
+            ("vfs_inode", names.inode, 400),
+        ],
+    );
+}
+
+/// A kernel that builds btrfs as a module, as the two files it publishes:
+/// `/sys/kernel/btf/vmlinux`, which says nothing about btrfs, and
+/// `/sys/kernel/btf/btrfs`, which does.
+///
+/// The second is **split** type information, as the kernel writes a module's:
+/// its type ids carry on from the kernel's own, its names are numbered from the
+/// end of the kernel's names, and its structures are built from the kernel's
+/// `dev_t`, `struct inode` and `unsigned long` rather than copies of them. So a
+/// reader that took it as a file of its own would find `btrfs_root.anon_dev`
+/// pointing at a type that is not there.
+pub fn btrfs_as_a_module() -> (Vec<u8>, Vec<u8>) {
+    let (kernel, names) = the_kernel(Kernel::WithoutBtrfs);
+    let mut module = Writing::after(&kernel);
+    btrfs(&mut module, &names);
+    (kernel.finished(), module.finished())
 }
 
 /// How many bytes a type record is before its kind-specific tail.
@@ -287,8 +337,17 @@ struct Writing {
     /// The type records, in order, each already the right length.
     types: Vec<Vec<u8>>,
 
-    /// The names, null-terminated, starting with the empty one.
+    /// The names, null-terminated. A kernel's start with the empty one; a
+    /// module's do not, because the empty name it uses is the kernel's.
     strings: Vec<u8>,
+
+    /// The id the first type here would have: zero for a kernel's own type
+    /// information, and the kernel's last id for a module's.
+    first: u32,
+
+    /// Where this file's names are numbered from: zero for a kernel's, and
+    /// the length of the kernel's names for a module's.
+    names_from: u32,
 }
 
 impl Writing {
@@ -298,7 +357,25 @@ impl Writing {
         Self {
             types: Vec::new(),
             strings: vec![0],
+            first: 0,
+            names_from: 0,
         }
+    }
+
+    /// A module's type information, carrying on from this kernel's: its ids
+    /// after the kernel's last, and its names after the kernel's.
+    fn after(kernel: &Self) -> Self {
+        Self {
+            types: Vec::new(),
+            strings: Vec::new(),
+            first: kernel.first + kernel.types.len() as u32,
+            names_from: kernel.names_from + kernel.strings.len() as u32,
+        }
+    }
+
+    /// The id of the type written last.
+    fn last(&self) -> u32 {
+        self.first + self.types.len() as u32
     }
 
     /// A name, at the offset it ends up at.
@@ -310,7 +387,7 @@ impl Writing {
         if name.is_empty() {
             return 0;
         }
-        let at = self.strings.len() as u32;
+        let at = self.names_from + self.strings.len() as u32;
         self.strings.extend_from_slice(name.as_bytes());
         self.strings.push(0);
         at
@@ -320,7 +397,7 @@ impl Writing {
     /// something it contains points back at it.
     fn reserve(&mut self) -> u32 {
         self.types.push(vec![0; RECORD]);
-        self.types.len() as u32
+        self.last()
     }
 
     /// An integer of a given width.
@@ -329,20 +406,20 @@ impl Writing {
         let mut record = record(at, 1, 0, width);
         record.extend_from_slice(&0u32.to_le_bytes());
         self.types.push(record);
-        self.types.len() as u32
+        self.last()
     }
 
     /// A pointer to something.
     fn pointer_to(&mut self, target: u32) -> u32 {
         self.types.push(record(0, 2, 0, target));
-        self.types.len() as u32
+        self.last()
     }
 
     /// Another name for a type that already exists.
     fn name_for(&mut self, name: &str, target: u32) -> u32 {
         let at = self.named(name);
         self.types.push(record(at, 8, 0, target));
-        self.types.len() as u32
+        self.last()
     }
 
     /// A structure, written into a place already reserved for it. Member
@@ -377,7 +454,7 @@ impl Writing {
             record.extend_from_slice(&of_type.to_le_bytes());
             record.extend_from_slice(&(offset * 8).to_le_bytes());
         }
-        if let Some(slot) = self.types.get_mut(id as usize - 1) {
+        if let Some(slot) = self.types.get_mut((id - self.first) as usize - 1) {
             *slot = record;
         }
     }

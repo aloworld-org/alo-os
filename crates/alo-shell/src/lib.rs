@@ -498,8 +498,13 @@ mod the_market_as_read;
 use alo_drawing::painted_flat;
 use alo_drawing::painted_text;
 use alo_drawing::painted_text_wrapping;
+/// A click asked for at the door, answered in one word.
+pub mod a_click_at_the_door;
 /// A picture asked for at the door, and its answer sent on across turns.
 pub mod a_picture_at_the_door;
+/// One click at a point of the window in front, for alo (ADR 0147, amended
+/// 2026-11-17).
+mod clicking_in_the_window_in_front;
 mod panel_cards;
 mod panel_raster;
 mod peeking_at_a_put_aside_window;
