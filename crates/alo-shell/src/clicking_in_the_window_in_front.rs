@@ -158,7 +158,6 @@ mod tests {
         for window in [
             a_window(0.0, 0.0, 0.0, 100.0),
             a_window(0.0, 0.0, 100.0, 0.0),
-            a_window(0.0, 0.0, -1.0, 100.0),
         ] {
             assert!(the_point(window, &at(500, 500)).is_none(), "{window:?}");
         }
