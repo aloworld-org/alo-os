@@ -220,6 +220,7 @@ mod setting_in_an_application_tests;
 pub mod shortening;
 pub mod the_applications_here;
 pub mod the_bracket_a_turn_takes;
+mod the_control_to_set_is_there;
 mod the_door_the_compositor_serves;
 mod the_screen_road_as_chosen;
 mod the_sentence_is_about_something;

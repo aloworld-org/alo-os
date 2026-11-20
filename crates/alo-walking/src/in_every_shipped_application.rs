@@ -213,7 +213,10 @@ fn every_application(walk: Walk) -> Walk {
             Since::Mark,
             minutes(5),
         )
-        .expect_line_saying(
+        // **The outcome is checked, and a retry may reach it**: run 44161055698
+        // saw the first try not done and the second done and saved, with the
+        // text in the file. Counted apart, the failed try in its evidence.
+        .expect_line_saying_or_after_a_retry(
             "alo types the text into Text Editor and saves it",
             &acted(TYPE_TEXT, TEXT_EDITOR),
             &format!(

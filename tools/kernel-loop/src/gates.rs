@@ -240,13 +240,21 @@ pub const EVERY_GATE: &[Gate] = &[
     // and naming those five the way the sixth binary is already named would put
     // **539 tests back on the merge path.**
     //
-    // **It is not changed here, deliberately.** A filter built on the wrong list
-    // turns a hole into a wall that blocks every lane, and the measurement above
-    // is of one VM: *passes as root on a kernel with `bpf` started* is not
-    // *passes on a hosted runner as the `runner` user*, and the fourteen that
-    // want root would still have to be named. What is settled is that the
-    // **package** is the wrong unit, and that the cost of it is 539 tests rather
-    // than a handful.
+    // **Changed on 2026-11-17, by the owner's decision: "Yes, run them on every
+    // change."** The package is no longer the unit. What this gate leaves out of
+    // `alo-agentd` is what attaches a BPF programme: the five binaries above, and
+    // the two `a_paired_machine_*` modules, whose outer tests call
+    // `Imposed::once`. Everything else in the crate runs here, on every pull
+    // request and every queue branch, as root, which is how this gate already
+    // runs. The seven run after each merge in `.github/workflows/boundary.yml`,
+    // with the rest of the boundary suite.
+    //
+    // **The list is held by a test, not by this comment.**
+    // `the_boundary_suite::tests` reads every file in `crates/alo-agentd` and
+    // fails when one that attaches is not named below, when one named below no
+    // longer attaches, or when this filter stops being exactly the complement of
+    // [`crate::the_boundary_suite::THE_BOUNDARY`]. A new kernel test therefore
+    // cannot drop out of both runs without a red test.
     //
     // **What it has already cost, once that anybody noticed.** `main` was red for
     // a day on 2026-10-19: `alo-agentd`'s
@@ -266,8 +274,15 @@ pub const EVERY_GATE: &[Gate] = &[
             "--profile",
             "gates",
             "-E",
-            "not (package(alo-bounding) + package(alo-agentd) + package(alo-boundaryd)) \
-             and not binary(the_kernel_refuses_what_a_run_was_not_given) \
+            "not (package(alo-bounding) + package(alo-boundaryd) \
+             + binary(the_kernel_refuses_what_a_run_was_not_given) \
+             + binary_id(=alo-agentd::a_question_is_bounded_by_the_kernel) \
+             + binary_id(=alo-agentd::a_turn_is_bounded_by_the_kernel) \
+             + binary_id(=alo-agentd::a_turn_is_refused_when_the_boundary_is_gone) \
+             + binary_id(=alo-agentd::the_agent_asks_a_real_provider) \
+             + binary_id(=alo-agentd::the_agent_really_does_the_work) \
+             + (binary_id(=alo-agentd) and test(/^a_paired_machine_on_two_networks_with_one_address::/)) \
+             + (binary_id(=alo-agentd) and test(/^a_paired_machine_over_link_local::/))) \
              and not test(=naming_the_root_of_the_machine_stops_at_each_mount_point_and_says_so)",
         ],
         within: ".",

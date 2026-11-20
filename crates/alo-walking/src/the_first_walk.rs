@@ -232,7 +232,7 @@ fn then_the_provider(walk: Walk) -> Walk {
     // **Four independent sections**, each starting from its own Escape and
     // setting its own level and grants, so a failure in one does not hide the
     // others: the walk still fails, and the report gives each its result.
-    // None needs another; a section that did would name it in `needs`.
+    // Only the last needs one before it, and names it in `needs`.
     //
     // With a provider, alo can be asked: Demo 2's second road, at full access.
     let walk = walk.section(
@@ -253,10 +253,14 @@ fn then_the_provider(walk: Walk) -> Walk {
         crate::writing_in_vscodium_at_each_ask::at_each_ask,
     );
     // And then alo asks for an application nobody gave it, on the sheet,
-    // and the grant goes with its task.
+    // and the grant goes with its task. **It needs ask-each-time VSCodium**:
+    // a failure there leaves its turn waiting on a card, and the daemon serves
+    // one turn at a time, so this ask would fail on a broken pipe (runs
+    // 44069105568 and 44161055698). A Stop shortcut would be a product
+    // promise, and is not being built here.
     walk.section(
         "the Papers sheet at ask each time",
-        &[],
+        &["VSCodium at ask each time"],
         crate::asking_for_an_application_at_each_ask::for_this_task,
     )
 }

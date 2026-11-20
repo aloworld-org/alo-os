@@ -20,11 +20,14 @@
 #   (code under `#[cfg(test)]` inside a source file cargo-mutants skips itself);
 # - build scripts, benches and examples;
 # - `alo-bounding-kernel`, which is compiled for the kernel's BPF machine;
-# - every package the gate's own test filter leaves out — today `alo-bounding`,
-#   `alo-agentd` and `alo-boundaryd`, whose tests attach BPF programmes and run
-#   on main after a merge. Their tests do not run here, so every break in them
-#   would read as unnoticed. **This is a hole, said out loud in every run's
-#   summary**, not a pass.
+# - every package the gate's own test filter leaves out — today `alo-bounding`
+#   and `alo-boundaryd`, whose tests attach BPF programmes and run on main after
+#   each merge (`boundary.yml`). Their tests do not run here, so every break in
+#   them would read as unnoticed. **This is a hole, said out loud in every run's
+#   summary**, not a pass. `alo-agentd` is broken here since 2026-11-17, when
+#   the gate began running all of its tests but the seven that attach; a break
+#   only those seven would notice reads here as unnoticed, and the summary says
+#   so.
 #
 # Documentation is not a `.rs` file and never reaches the diff.
 #
@@ -108,7 +111,6 @@ jobs:
             ':(exclude,glob)**/examples/**'
             ':(exclude)crates/alo-bounding-kernel'
             ':(exclude)crates/alo-bounding'
-            ':(exclude)crates/alo-agentd'
             ':(exclude)crates/alo-boundaryd'
             ':(exclude)tools/kernel-loop'
           )
@@ -203,7 +205,7 @@ jobs:
       - name: Break the changed code, one change at a time
         if: steps.changed.outputs.rust == 'true' && steps.listed.outputs.any == 'true'
         run: |
-          filter="not (package(alo-bounding) + package(alo-agentd) + package(alo-boundaryd)) and not binary(the_kernel_refuses_what_a_run_was_not_given) and not test(=naming_the_root_of_the_machine_stops_at_each_mount_point_and_says_so)"
+          filter="not (package(alo-bounding) + package(alo-boundaryd) + binary(the_kernel_refuses_what_a_run_was_not_given) + binary_id(=alo-agentd::a_question_is_bounded_by_the_kernel) + binary_id(=alo-agentd::a_turn_is_bounded_by_the_kernel) + binary_id(=alo-agentd::a_turn_is_refused_when_the_boundary_is_gone) + binary_id(=alo-agentd::the_agent_asks_a_real_provider) + binary_id(=alo-agentd::the_agent_really_does_the_work) + (binary_id(=alo-agentd) and test(/^a_paired_machine_on_two_networks_with_one_address::/)) + (binary_id(=alo-agentd) and test(/^a_paired_machine_over_link_local::/))) and not test(=naming_the_root_of_the_machine_stops_at_each_mount_point_and_says_so)"
           while read -r package test _; do
             case "$package" in ''|'#'*) continue ;; esac
             filter="$filter and not (package($package) and test(=$test))"
@@ -264,7 +266,7 @@ jobs:
           fi
           {
             echo
-            echo "Only the tests of the package each change is in were run, so a test elsewhere might have noticed. Not broken here at all: \`alo-bounding\`, \`alo-agentd\` and \`alo-boundaryd\`, whose tests run on main after a merge, not on this runner."
+            echo "Only the tests of the package each change is in were run, so a test elsewhere might have noticed. Not broken here at all: \`alo-bounding\` and \`alo-boundaryd\`, whose tests run on main after each merge, not on this runner. In \`alo-agentd\`, the seven tests that attach to the kernel do not run here either, so a break only they would notice is listed as unnoticed."
           } >> "$GITHUB_STEP_SUMMARY"
           case "$code" in
             0|2|3|124|130) ;;

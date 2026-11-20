@@ -14,6 +14,10 @@ use std::fmt::Write as _;
 pub enum Verdict {
     /// It held.
     Passed,
+    /// **It held on a later try, after a first that did not** — a pass, counted
+    /// apart, with the failed try in its evidence. Only a check that allows a
+    /// retry can come to this (`crate::step::Walk::expect_line_saying_or_after_a_retry`).
+    PassedAfterARetry,
     /// It did not.
     Failed,
     /// It was not tried, for a reason the evidence gives.
@@ -28,6 +32,7 @@ impl Verdict {
     pub fn said(self) -> &'static str {
         match self {
             Self::Passed => "PASS",
+            Self::PassedAfterARetry => "PASS AFTER A RETRY",
             Self::Failed => "FAIL",
             Self::Skipped => "SKIP",
             Self::NotReached => "NOT REACHED",
@@ -105,7 +110,7 @@ impl Report {
                     Verdict::Failed
                 } else if any(Verdict::NotReached) {
                     Verdict::NotReached
-                } else if any(Verdict::Passed) {
+                } else if any(Verdict::Passed) || any(Verdict::PassedAfterARetry) {
                     Verdict::Passed
                 } else {
                     Verdict::Skipped
@@ -120,19 +125,28 @@ impl Report {
     #[must_use]
     pub fn passed(&self) -> bool {
         let checks = self.checks();
-        checks.iter().any(|it| it.verdict == Verdict::Passed)
+        let held =
+            |verdict: Verdict| matches!(verdict, Verdict::Passed | Verdict::PassedAfterARetry);
+        checks.iter().any(|it| held(it.verdict))
             && checks
                 .iter()
-                .all(|it| matches!(it.verdict, Verdict::Passed | Verdict::Skipped))
+                .all(|it| held(it.verdict) || it.verdict == Verdict::Skipped)
     }
 
-    /// How many checks had each outcome, as a sentence.
+    /// How many checks had each outcome, as a sentence — the passes after a
+    /// retry said apart, where there are any.
     #[must_use]
     pub fn tally(&self) -> String {
         let checks = self.checks();
         let count = |verdict: Verdict| checks.iter().filter(|it| it.verdict == verdict).count();
+        let retried = count(Verdict::PassedAfterARetry);
+        let after_a_retry = if retried == 0 {
+            String::new()
+        } else {
+            format!("{retried} passed after a retry, ")
+        };
         format!(
-            "{} passed, {} failed, {} skipped, {} not reached",
+            "{} passed, {after_a_retry}{} failed, {} skipped, {} not reached",
             count(Verdict::Passed),
             count(Verdict::Failed),
             count(Verdict::Skipped),

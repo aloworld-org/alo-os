@@ -155,10 +155,17 @@ fn the_maximise_check_reads_from_alt_f3() {
     );
 }
 
-/// **The four sections alo is asked in are independent**: each starts from
-/// its own Escape and sets its own level and grants, so a failure in one does
-/// not stop the next — full-access VSCodium, every application, ask-each-time
-/// VSCodium and the Papers sheet, in that order, and none needs another.
+/// **The four sections alo is asked in**: each starts from its own Escape and
+/// sets its own level and grants, so a failure in one does not stop the next —
+/// full-access VSCodium, every application, ask-each-time VSCodium and the
+/// Papers sheet, in that order — **except the Papers sheet, which needs
+/// ask-each-time VSCodium.** A failure there leaves its turn waiting on a card,
+/// and `alo-agentd` serves one turn at a time (`serving.rs`: *a second agent
+/// arriving while a turn is under way is refused in words and closed*), so the
+/// Papers ask then fails on a broken pipe that says nothing about Papers (runs
+/// 44069105568 and 44161055698). Nothing a person can press ends a waiting
+/// turn from any state; a Stop shortcut would be a product promise, and is not
+/// being built here.
 #[test]
 fn the_sections_alo_is_asked_in_are_independent() {
     let sections: Vec<(String, Vec<String>)> = the_first_walk()
@@ -182,8 +189,14 @@ fn the_sections_alo_is_asked_in_are_independent() {
             "the Papers sheet at ask each time",
         ]
     );
-    assert!(
-        sections.iter().all(|(_, needs)| needs.is_empty()),
-        "{sections:?}"
+    let needs: Vec<Vec<String>> = sections.into_iter().map(|(_, needs)| needs).collect();
+    assert_eq!(
+        needs,
+        vec![
+            Vec::<String>::new(),
+            Vec::new(),
+            Vec::new(),
+            vec!["VSCodium at ask each time".to_owned()],
+        ]
     );
 }

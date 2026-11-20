@@ -1,7 +1,10 @@
 //! **A request and the road it is expected to take**: the verbs, in order,
 //! the arguments whose values matter, and what the machine answers at each.
 
+use std::path::PathBuf;
+
 use alo_adapters::places_for_text::APlaceForText;
+use alo_instructing::TheWindowOffered;
 
 /// What the machine answers when a step is taken — as a booted machine at full
 /// access would, written by [`crate::the_machine_answers`].
@@ -72,6 +75,9 @@ pub struct Step {
     look: bool,
     /// Whether the model may take this step again, as often as it asks.
     again: bool,
+    /// Whether the window shows no other control of this kind, so a name the
+    /// road does not expect names nothing there.
+    the_only_one: bool,
 }
 
 impl Step {
@@ -85,7 +91,24 @@ impl Step {
             answered,
             look: false,
             again: false,
+            the_only_one: false,
         }
+    }
+
+    /// **And the window shows no other control of its kind**: a name other
+    /// than the one expected names nothing there, so the machine refuses it
+    /// before anybody is asked, in the move's own words, and the try goes on
+    /// from the refusal (`crate::no_such_control`).
+    #[must_use]
+    pub const fn the_only_control_of_its_kind(mut self) -> Self {
+        self.the_only_one = true;
+        self
+    }
+
+    /// Whether another name names nothing in the window.
+    #[must_use]
+    pub const fn is_the_only_control_of_its_kind(&self) -> bool {
+        self.the_only_one
     }
 
     /// **And the model may take it again**, as often as it asks, without the
@@ -179,6 +202,12 @@ pub struct ARequest {
     /// **Other roads to the same place** ([`ARequest::or_by_another_road`]),
     /// which a try may take instead from where they part.
     other: Vec<Vec<Step>>,
+    /// The window the person offered with the request
+    /// ([`ARequest::offering`]), as *Help with this window* sends it.
+    window: Option<TheWindowOffered>,
+    /// What is on the machine ([`ARequest::where_there_is`]), so that a path
+    /// where nothing is is refused as the machine refuses it.
+    there: Vec<PathBuf>,
 }
 
 impl ARequest {
@@ -192,7 +221,41 @@ impl ARequest {
             road,
             aside: Vec::new(),
             other: Vec::new(),
+            window: None,
+            there: Vec::new(),
         }
+    }
+
+    /// **And the window the person offered with it** — sent beside the request
+    /// as *Help with this window* sends it (#1155), so the model is told which
+    /// window the request is about exactly as a booted machine tells it.
+    #[must_use]
+    pub fn offering(mut self, window: TheWindowOffered) -> Self {
+        self.window = Some(window);
+        self
+    }
+
+    /// The window offered with the request, if one was.
+    #[must_use]
+    pub const fn window(&self) -> Option<&TheWindowOffered> {
+        self.window.as_ref()
+    }
+
+    /// **And what is on the machine**: a path a try names that is none of
+    /// these, nor a folder holding one, is refused before anybody is asked, in
+    /// the machine's own words, and the try goes on from the refusal
+    /// (`crate::nothing_is_there`). A request that declares nothing is held to
+    /// its road as before.
+    #[must_use]
+    pub fn where_there_is(mut self, there: impl IntoIterator<Item = PathBuf>) -> Self {
+        self.there.extend(there);
+        self
+    }
+
+    /// What the request says is on the machine.
+    #[must_use]
+    pub fn there(&self) -> &[PathBuf] {
+        &self.there
     }
 
     /// **And another road that ends where the person asked to be** — a page at
