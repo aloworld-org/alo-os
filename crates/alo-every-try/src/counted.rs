@@ -9,10 +9,12 @@ use crate::a_road::ARequest;
 use crate::a_try::{TheLevel, TheModel, Tried, Went};
 use crate::its_own::ItsOwn;
 use crate::tallied::{Tallied, tallying_at};
+use crate::the_bar::THE_BAR;
 use crate::the_set::TheSet;
 
-/// How many times a change's own request is tried, at each level.
-pub const THE_TRIES_ITS_OWN_TAKES: usize = 10;
+/// How many times a change's own request is tried, at each level: the bar's
+/// (`crate::the_bar`).
+pub const THE_TRIES_ITS_OWN_TAKES: usize = THE_BAR.tries();
 
 /// What a change's own requests say.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,9 +43,14 @@ impl Counted {
     }
 }
 
-/// What `tallied` says about the change owning `own`.
+/// [`counted`], with `reached` saying which of its own requests have reached
+/// every try at this level (`crate::what_each_has_reached`).
 #[must_use]
-pub fn counted(tallied: &[Tallied], own: &[ItsOwn]) -> Counted {
+pub fn counted_with(
+    tallied: &[Tallied],
+    own: &[ItsOwn],
+    reached: &dyn Fn(&str) -> bool,
+) -> Counted {
     if own.is_empty() {
         return Counted::NothingOfItsOwn;
     }
@@ -52,7 +59,9 @@ pub fn counted(tallied: &[Tallied], own: &[ItsOwn]) -> Counted {
             tallied
                 .iter()
                 .find(|tried| tried.request().named() == one.named())
-                .map_or(Counted::NotMeasured, what_one_says)
+                .map_or(Counted::NotMeasured, |tried| {
+                    what_one_says(tried, reached(one.named()))
+                })
         })
         .fold(Counted::ItsOwnHeld, |so_far, this| match (so_far, this) {
             (Counted::ItsOwnSlipped, _) | (_, Counted::ItsOwnSlipped) => Counted::ItsOwnSlipped,
@@ -61,17 +70,18 @@ pub fn counted(tallied: &[Tallied], own: &[ItsOwn]) -> Counted {
         })
 }
 
-/// Whether `tries` of which `on_the_road` took it are at least nine in every
-/// ten.
-const fn nine_in_every_ten(on_the_road: usize, tries: usize) -> bool {
-    on_the_road.saturating_mul(10) >= tries.saturating_mul(9)
+/// What `tallied` says about the change owning `own`.
+#[must_use]
+pub fn counted(tallied: &[Tallied], own: &[ItsOwn]) -> Counted {
+    counted_with(tallied, own, &|_| false)
 }
 
-/// What one request of the change's own says: held at nine in every ten of at
-/// least ten tries; not measured when it was tried fewer times, or when the
-/// tries the model could not be asked would have decided it; slipped
+/// What one request of the change's own says: held when it meets the bar
+/// ([`THE_BAR`]) of at least the bar's tries — every try, where it has
+/// `reached` every try before; not measured when it was tried fewer times, or
+/// when the tries the model could not be asked would have decided it; slipped
 /// otherwise.
-fn what_one_says(tallied: &Tallied) -> Counted {
+fn what_one_says(tallied: &Tallied, reached: bool) -> Counted {
     let tries = tallied.tries().len();
     let on_the_road = tallied.on_the_road();
     let not_asked = tallied
@@ -81,9 +91,9 @@ fn what_one_says(tallied: &Tallied) -> Counted {
         .count();
     if tries < THE_TRIES_ITS_OWN_TAKES {
         Counted::NotMeasured
-    } else if nine_in_every_ten(on_the_road, tries) {
+    } else if THE_BAR.holds(on_the_road, tries, reached) {
         Counted::ItsOwnHeld
-    } else if nine_in_every_ten(on_the_road + not_asked, tries) {
+    } else if THE_BAR.holds(on_the_road + not_asked, tries, reached) {
         Counted::NotMeasured
     } else {
         Counted::ItsOwnSlipped

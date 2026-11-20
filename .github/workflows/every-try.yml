@@ -123,7 +123,12 @@ jobs:
             exit 1
           fi
           git show "$base:$file" > "$RUNNER_TEMP/before.txt"
-          if cmp -s "$RUNNER_TEMP/before.txt" "$file"; then
+          # **The ratchet's record** (what each request has reached), the
+          # base's beside the change's. A base from before the record is an
+          # empty one: nothing in it can be lowered.
+          record=crates/alo-every-try/what-each-request-has-reached.txt
+          git show "$base:$record" > "$RUNNER_TEMP/reached-before.txt" 2>/dev/null || : > "$RUNNER_TEMP/reached-before.txt"
+          if cmp -s "$RUNNER_TEMP/before.txt" "$file" && cmp -s "$RUNNER_TEMP/reached-before.txt" "$record"; then
             echo "This change alters nothing the model is offered: $file is the base's ($base), so it owns no request and nothing was tried." | tee -a "$GITHUB_STEP_SUMMARY"
             echo "mode=none" >> "$GITHUB_OUTPUT"
             exit 0
@@ -175,19 +180,24 @@ jobs:
           WHOLE_TRIES: ${{ inputs.tries || '5' }}
           ALO_EVERY_TRY_ONLY: ${{ inputs.only || '' }}
         run: |
+          # A change that owns nothing, or only raised the record, needs no
+          # key: the check answers it before asking anybody, and says so.
           if [ -z "$ALO_PROVIDER_KEY" ]; then
-            echo "There is no provider key for this run (ALO_WALK_PROVIDER_KEY is not available here), so nothing was tried." | tee -a "$GITHUB_STEP_SUMMARY"
-            exit 1
+            echo "There is no provider key for this run (ALO_WALK_PROVIDER_KEY is not available here): anything that needs the model cannot be tried." | tee -a "$GITHUB_STEP_SUMMARY"
           fi
           if [ "$MODE" = own ]; then
-            # Its own ten times each; every other request three times,
-            # reported and not counted.
+            # Its own as many times as the bar says (`alo_every_try::the_bar`),
+            # and held to it, or to every try where the record says it once
+            # took every try; every other request three times, reported and
+            # not counted. What was measured is kept for `reached`.
             export ALO_EVERY_TRY_BEFORE="$RUNNER_TEMP/before.txt"
-            export ALO_EVERY_TRY_TRIES=10
+            export ALO_EVERY_TRY_REACHED_BEFORE="$RUNNER_TEMP/reached-before.txt"
+            export ALO_EVERY_TRY_MEASURED="$RUNNER_TEMP/every-try-measured.txt"
             export ALO_EVERY_TRY_OTHER_TRIES=3
             export ALO_EVERY_TRY_ONLY=
           else
             export ALO_EVERY_TRY_TRIES="$WHOLE_TRIES"
+            export ALO_EVERY_TRY_MEASURED="$RUNNER_TEMP/every-try-measured.txt"
           fi
           # **Both levels**: at full access a change is done without asking; at
           # ask each time it is approved once and the turn goes on from what
@@ -201,3 +211,13 @@ jobs:
             if [ "$code" -ne 0 ]; then failed=$code; fi
           done
           exit "$failed"
+
+      # **What was measured, for raising the record**: download it and run
+      # `cargo run -p alo-every-try -- reached every-try-measured.txt`.
+      - name: Keep what was measured
+        if: always() && steps.own.outputs.mode != 'none'
+        uses: actions/upload-artifact@v4
+        with:
+          name: every-try-measured
+          path: ${{ runner.temp }}/every-try-measured.txt
+          if-no-files-found: ignore
