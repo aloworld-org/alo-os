@@ -199,3 +199,20 @@ fn reached_raises_the_record_from_what_was_measured() {
     let _ = std::fs::remove_file(&measured);
     let _ = std::fs::remove_file(&record);
 }
+
+/// **A line may go when its request has left the set**: dropping it is not a
+/// lowering, so a change owning nothing passes.
+#[test]
+fn a_line_for_a_request_gone_from_the_set_may_go() {
+    let before = a_file("reached-before-gone.txt");
+    std::fs::write(
+        &before,
+        "reached\tfull-access\ta request no longer in the set\n",
+    )
+    .expect("it is written");
+    let output = ran(the_check()
+        .env("ALO_EVERY_TRY_BEFORE", the_committed())
+        .env("ALO_EVERY_TRY_REACHED_BEFORE", &before));
+    assert_eq!(output.status.code(), Some(0), "{}", said(&output));
+    let _ = std::fs::remove_file(&before);
+}

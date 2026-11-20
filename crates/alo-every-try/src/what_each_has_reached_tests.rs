@@ -143,3 +143,16 @@ fn an_entry_taken_out_is_lowering_unless_its_request_is_gone() {
     let lowered = Reached::default().lowered_from(&base, &in_the_set);
     assert_eq!(lowered, [("full-access".to_owned(), "open it".to_owned())]);
 }
+
+/// A refused line is named as a person counts it, comments included.
+#[test]
+fn a_refused_line_is_named_by_its_number() {
+    let refused = Reached::read(
+        "# a comment
+reached	full-access	open it
+nonsense
+",
+    )
+    .expect_err("a line of no kind");
+    assert!(refused.to_string().contains("at line 3"), "{refused}");
+}
