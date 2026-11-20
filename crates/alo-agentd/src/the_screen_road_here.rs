@@ -74,7 +74,9 @@ mod tests {
     /// **What the file says now is what is answered**, read again each time.
     #[test]
     fn the_file_is_read_again_each_time() {
-        let at = a_file_saying("screen-road-read-again", "");
+        // **No file yet**, which is how a machine arrives: the choices write it.
+        let at = crate::testing::a_directory_of_our_own("screen-road-read-again")
+            .join("how-code-runs.toml");
         let here = TheScreenRoadHere::at(&at);
         assert_eq!(here.who_reads_pictures(), WhoReadsPictures::NoOne);
         alo_remembering::who_reads_pictures_chosen(&at, WhoReadsPictures::ThisComputer).unwrap();

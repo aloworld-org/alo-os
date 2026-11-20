@@ -53,7 +53,7 @@ fn a_person_who_added_a_service(what: &str, endpoint: &str, models: &str) -> Que
     std::fs::write(
         folder.join(alo_choosing::THE_SETTINGS),
         format!(
-            "format = 3\n\n[[provider]]\nname = \"Here\"\nendpoint = \"{endpoint}\"\nmodels = \
+            "format = 3\n\n[[provider]]\nname = \"Here\"\nendpoint = \"{endpoint}\"\nneeds-a-key = false\nmodels = \
              [{models}]\n"
         ),
     )
@@ -102,7 +102,12 @@ fn a_service_chosen_by_name_is_sent_the_picture_and_its_words_go_on() {
 
     assert_eq!(read.application, GAME);
     assert_eq!((read.wide, read.tall), (1280, 800));
-    assert_eq!(read.read.as_deref(), Some("a menu: Start race at 0.5, 0.4"));
+    assert_eq!(
+        read.read.as_deref(),
+        Some("a menu: Start race at 0.5, 0.4"),
+        "not read: {:?}",
+        read.not_read
+    );
     assert_eq!(read.not_read, None);
     let sent = crate::testing::the_body_of(&heard.join().unwrap());
     assert_eq!(sent["model"], "a-model");
