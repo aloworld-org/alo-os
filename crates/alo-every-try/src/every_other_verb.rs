@@ -77,10 +77,14 @@ pub const WHAT_THE_READER_SAW: &str = "A photograph of a beach at sunset, with t
      (0.5, 0.6). No text and no buttons are in the window.";
 
 /// What the reader says the image viewer's window shows, for the clicking
-/// request: where the arrow to the next photo is.
-pub const WHERE_THE_ARROW_IS: &str = "A photograph of a beach fills the window. On its right edge is an arrow pointing right, \
-     at 96% across and 50% down; on its left edge an arrow pointing left, at 4% across and 50% \
-     down. No text.";
+/// request: where in the photo the people are.
+///
+/// **A place in a picture, not a control** (2026-11-18): asked to click
+/// Loupe's next-photo arrow, the model pressed a button it guessed was named
+/// *Next* in 20 of 20 tries — Loupe's own arrows are named, and a request about
+/// a named control is the accessibility road's, not this one's.
+pub const WHERE_THE_PEOPLE_ARE: &str = "A photograph of a beach at sunset fills the window. Two people walk by the water, their \
+     centre at 50% across and 60% down. No text and no buttons are in the window.";
 
 /// The option the choosing request names, in the document viewer's
 /// [`ZOOM`] drop-down.
@@ -635,7 +639,7 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
     // is the read, the picture, and a click where the picture's words put it.
     let clicking = ARequest::asking(
         "click by position where a picture of a window showed a thing",
-        "In Loupe, click the arrow that shows the next photo.",
+        "In Loupe, click on the two people in the photo.",
         vec![
             Step::of(
                 READ_WINDOW,
@@ -647,7 +651,7 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
                 Answered::With(Done::of_a_picture(
                     &viewer,
                     (1280, 800),
-                    Ok(WHERE_THE_ARROW_IS.to_owned()),
+                    Ok(WHERE_THE_PEOPLE_ARE.to_owned()),
                 )),
             )
             .expecting(fallback_verbs::APPLICATION, viewer.as_str()),
@@ -655,16 +659,16 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
                 CLICK_AT,
                 Answered::With(Done::of_a_click(
                     &viewer,
-                    (96, 50),
+                    (50, 60),
                     true,
                     Some(Ok(
-                        "The next photograph, of a harbour, fills the window.".to_owned()
+                        "The same photograph, zoomed in on the two people.".to_owned()
                     )),
                 )),
             )
             .expecting(fallback_verbs::APPLICATION, viewer.as_str())
-            .expecting(ACROSS, "96")
-            .expecting(DOWN, "50"),
+            .expecting(ACROSS, "50")
+            .expecting(DOWN, "60"),
         ],
     );
     let papers = shipped
