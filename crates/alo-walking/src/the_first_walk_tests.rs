@@ -200,3 +200,55 @@ fn the_sections_alo_is_asked_in_are_independent() {
         ]
     );
 }
+
+/// **A provider that needs no key is added on every walk**, before the gate
+/// that skips everything without a real provider's key: the switch is pressed
+/// with Space, and the walk waits — since a mark set just before Enter — for
+/// the line `alo-desktop` says when such a provider was saved
+/// (`alo-desktop`'s `the_walk_waits_for_the_line_said_when_a_keyless_provider_is_saved`
+/// holds the two together).
+#[test]
+fn a_provider_that_needs_no_key_is_added_before_the_gate() {
+    let steps = the_first_walk().steps().to_vec();
+    let Some(check) = steps.iter().position(|step| {
+        matches!(step, Step::ExpectLine { phrase, since: Since::Mark, .. }
+            if phrase == super::A_PROVIDER_THAT_NEEDS_NO_KEY_SAVED)
+    }) else {
+        panic!("the walk does not check that a keyless provider was saved");
+    };
+    let gate = steps
+        .iter()
+        .position(|step| *step == Step::OnlyWith(THE_PROVIDER_KEY))
+        .unwrap_or(steps.len());
+    assert!(
+        check < gate,
+        "the keyless provider is skipped without a key"
+    );
+    let before: Vec<&Step> = steps.iter().take(check).collect();
+    let Some(mark) = before.iter().rposition(|step| matches!(step, Step::Mark)) else {
+        panic!("no mark before the keyless provider check");
+    };
+    assert!(
+        matches!(before.get(mark + 1), Some(Step::Press(chord)) if chord.the_key() == "ret"),
+        "the step after the mark is not Enter"
+    );
+    let Some(form) = before.iter().rposition(
+        |step| matches!(step, Step::Look { name, .. } if name == "the-keyless-provider-form"),
+    ) else {
+        panic!("no picture of the keyless form before it was saved");
+    };
+    assert!(
+        before.get(..form).is_some_and(|it| it
+            .iter()
+            .rev()
+            .take(4)
+            .any(|step| matches!(step, Step::Press(chord) if chord.the_key() == "spc"))),
+        "the switch was not pressed with Space just before the form was pictured"
+    );
+    assert!(
+        !before
+            .iter()
+            .any(|step| matches!(step, Step::TypeSecret(_))),
+        "a key was typed for a service that needs none"
+    );
+}

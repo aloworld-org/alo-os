@@ -465,17 +465,22 @@ impl Reading<'_, '_> {
         for field in WhichField::EVERY {
             // **A field's contents never cross**: no `Text` is served on this
             // tree, and the key is a password field, which no reader reads.
-            let role = if field.is_a_secret() {
-                Role::PasswordEntry
+            //
+            // **The switch is a switch to a reader too**, on or off, as every
+            // other switch in Settings is read.
+            let (role, state, set) = if field == WhichField::NoKeyNeeded {
+                (Role::Switch, State::OnOrOff, Some(form.needs_no_key()))
+            } else if field.is_a_secret() {
+                (Role::PasswordEntry, State::CanBeUsed, None)
             } else {
-                Role::Entry
+                (Role::Entry, State::CanBeUsed, None)
             };
             let at = self.push(
                 window,
                 Node {
                     role: access_roles::number_of(role),
                     name: crate::a_provider_being_added_is_drawn::label(field, self.strings),
-                    states: access_roles::words_of(State::CanBeUsed, None),
+                    states: access_roles::words_of(state, set),
                     ..Node::default()
                 },
             );

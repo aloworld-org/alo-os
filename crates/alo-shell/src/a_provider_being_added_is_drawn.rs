@@ -1,5 +1,6 @@
-//! **The four fields a person fills in, as words Settings already knows how to
-//! draw.**
+//! **The five fields a person fills in, as words Settings already knows how to
+//! draw**: four of text, and the switch after the key that says a service needs
+//! none.
 //!
 //! The last thing between a person and a machine that answers them. Everything
 //! under this existed and none of it was on a screen: the form, the keys that
@@ -57,6 +58,10 @@ pub(crate) struct TheFormsWords {
 pub(crate) struct AFieldsWords {
     /// The pieces of text, in reading order: the label, then what is in it.
     pub(crate) parts: Vec<String>,
+    /// Which way it is, when the field is a switch rather than text — the
+    /// one that says a service needs no key, drawn as Settings draws every
+    /// other switch.
+    pub(crate) switch: Option<crate::settings_page::SwitchIs>,
 }
 
 /// What one hidden character is drawn as.
@@ -127,9 +132,43 @@ fn one_field(
     which: WhichField,
     strings: &Strings,
 ) -> AFieldsWords {
+    // **The switch is a sentence and a switch, not a field of text**: its
+    // line says what it is for, and the caret marks it as it marks every
+    // field with the keyboard, because the caret is this form's one mark.
+    if field == WhichField::NoKeyNeeded {
+        let is = if form.needs_no_key() {
+            crate::settings_page::SwitchIs::On
+        } else {
+            crate::settings_page::SwitchIs::Off
+        };
+        let mut line = said(
+            strings,
+            &crate::the_providers_words::WHAT_NEEDING_NO_KEY_IS_FOR,
+        );
+        if field == which {
+            line.push('▏');
+        }
+        return AFieldsWords {
+            parts: vec![label(field, strings), line],
+            switch: Some(is),
+        };
+    }
+    // **And the key says it is not needed while the switch is on**, rather
+    // than drawing marks for a key that will not be saved.
+    if field == WhichField::Key && form.needs_no_key() {
+        let mut line = said(strings, &crate::the_providers_words::THE_KEY_IS_NOT_NEEDED);
+        if field == which {
+            line.push('▏');
+        }
+        return AFieldsWords {
+            parts: vec![label(field, strings), line],
+            switch: None,
+        };
+    }
     let typed = form.what_is_in(field);
     AFieldsWords {
         parts: vec![label(field, strings), shown(typed, field, which)],
+        switch: None,
     }
 }
 
@@ -163,6 +202,7 @@ pub(crate) fn label(field: WhichField, strings: &Strings) -> String {
         WhichField::Name => &crate::the_providers_words::ITS_NAME,
         WhichField::Address => &crate::the_providers_words::ITS_ADDRESS,
         WhichField::Key => &crate::the_providers_words::ITS_KEY,
+        WhichField::NoKeyNeeded => &crate::the_providers_words::ITS_NEEDS_NO_KEY,
         WhichField::Model => &crate::the_providers_words::ITS_MODEL,
     };
     said(strings, word)

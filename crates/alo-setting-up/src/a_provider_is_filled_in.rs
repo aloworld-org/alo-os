@@ -21,13 +21,14 @@
 //! testable now*. Everything here can be tested by typing into it and reading
 //! back what it would save — no compositor, no font, no display.
 //!
-//! # Four fields, and why each is asked
+//! # Four fields and a switch, and why each is asked
 //!
 //! | | |
 //! |---|---|
 //! | the name | what they will see when it answers, and what the key is filed under |
 //! | the address | where to ask. `Provider::checked` refuses one that is not `https://`, unless it is this machine or another computer on the person's own network |
 //! | the key | what the provider gave them. Held as [`alo_models::Secret`], which exists for exactly this moment |
+//! | *this service needs no key* | a switch, off until the person turns it on, for a runtime of their own on this machine or their network that asks for no credential. While it is on nothing is kept in the keyring and the settings file says `needs-a-key = false` |
 //! | the model | what to ask for, *exactly as they wrote it*, because a provider's model names are the provider's |
 //!
 //! **The region is not asked.** `Provider` carries one *as whoever added it
@@ -57,7 +58,7 @@ use alo_models::source::Region;
 use alo_models::{Provider, ProviderError, Secret, SecretError, SecretRef};
 use unicode_segmentation::UnicodeSegmentation;
 
-/// Which of the four fields a person is typing into.
+/// Which of the five fields a person is in: four of text, and the switch.
 ///
 /// **In the order they are asked**, which is the order a person has the
 /// answers in: they know what they are adding, then where it is, then the key
@@ -71,13 +72,24 @@ pub enum WhichField {
     Address,
     /// The key the provider gave them.
     Key,
+    /// **A switch, not text: this service needs no key.** Straight after the
+    /// key it is about, so a person who has no key to paste meets it on the
+    /// next Tab. For a runtime of their own — on this machine or on their
+    /// network, such as Ollama or LM Studio — that asks for none.
+    NoKeyNeeded,
     /// What to ask for.
     Model,
 }
 
 impl WhichField {
     /// Every field, in the order they are asked.
-    pub const EVERY: [Self; 4] = [Self::Name, Self::Address, Self::Key, Self::Model];
+    pub const EVERY: [Self; 5] = [
+        Self::Name,
+        Self::Address,
+        Self::Key,
+        Self::NoKeyNeeded,
+        Self::Model,
+    ];
 
     /// The field after this one, or [`None`] at the last.
     ///
@@ -89,7 +101,8 @@ impl WhichField {
         match self {
             Self::Name => Some(Self::Address),
             Self::Address => Some(Self::Key),
-            Self::Key => Some(Self::Model),
+            Self::Key => Some(Self::NoKeyNeeded),
+            Self::NoKeyNeeded => Some(Self::Model),
             Self::Model => None,
         }
     }
@@ -101,7 +114,8 @@ impl WhichField {
             Self::Name => None,
             Self::Address => Some(Self::Name),
             Self::Key => Some(Self::Address),
-            Self::Model => Some(Self::Key),
+            Self::NoKeyNeeded => Some(Self::Key),
+            Self::Model => Some(Self::NoKeyNeeded),
         }
     }
 
@@ -114,6 +128,16 @@ impl WhichField {
     #[must_use]
     pub const fn is_a_secret(self) -> bool {
         matches!(self, Self::Key)
+    }
+
+    /// Whether letters typed here are text, which every field but the switch
+    /// is.
+    ///
+    /// **Asked by whatever puts letters in a field**, so a paste with a space
+    /// in it cannot flip the switch: on the switch only a press of Space does.
+    #[must_use]
+    pub const fn takes_typing(self) -> bool {
+        !matches!(self, Self::NoKeyNeeded)
     }
 }
 
@@ -128,6 +152,10 @@ pub struct AProviderBeingAddded {
     key: String,
     /// What to ask for.
     model: String,
+    /// **The person said this service needs no key.** Off until they turn it
+    /// on. While it is on the key is not saved, and what they typed there
+    /// stays in the form, so turning it off again gives it back.
+    needs_no_key: bool,
     /// Which field the keyboard is in.
     which: WhichField,
     /// **This machine's own network addresses**, as they were read when the
@@ -150,6 +178,7 @@ impl std::fmt::Debug for AProviderBeingAddded {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AProviderBeingAddded")
             .field("which", &self.which)
+            .field("needs_no_key", &self.needs_no_key)
             .finish_non_exhaustive()
     }
 }
@@ -195,12 +224,20 @@ impl NotYetAProvider {
 pub struct WhatToSave {
     /// The provider, checked by the crate that owns what one is.
     pub provider: Provider,
-    /// Its key, for `alo_secrets::TheKeyring::keep`.
-    pub key: Secret,
-    /// Where that key is to be filed, which is what the provider refers to.
-    pub filed_under: SecretRef,
+    /// Its key and where to file it — **or [`None`] for a service the person
+    /// said needs no key**, whose provider then refers to no key either, and
+    /// which `alo-choosing` writes as `needs-a-key = false`.
+    pub key: Option<AKeyToKeep>,
     /// The model to ask for, exactly as the person wrote it.
     pub model: String,
+}
+
+/// A key to put in the keyring, and where it is filed.
+pub struct AKeyToKeep {
+    /// Where the key is to be filed, which is what the provider refers to.
+    pub filed_under: SecretRef,
+    /// The key, for `alo_secrets::TheKeyring::keep`.
+    pub secret: Secret,
 }
 
 /// **Says what is to be saved, and nothing about the key.**
@@ -208,7 +245,10 @@ impl std::fmt::Debug for WhatToSave {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("WhatToSave")
             .field("provider", &self.provider.name)
-            .field("filed_under", &self.filed_under.as_str())
+            .field(
+                "filed_under",
+                &self.key.as_ref().map(|key| key.filed_under.as_str()),
+            )
             .field("model", &self.model)
             .finish_non_exhaustive()
     }
@@ -269,11 +309,22 @@ impl AProviderBeingAddded {
             WhichField::Name => &self.name,
             WhichField::Address => &self.address,
             WhichField::Key => &self.key,
+            // The switch holds no text; [`Self::needs_no_key`] says which way
+            // it is.
+            WhichField::NoKeyNeeded => "",
             WhichField::Model => &self.model,
         }
     }
 
-    /// Add this character to the field the keyboard is in.
+    /// Whether the person said this service needs no key.
+    #[must_use]
+    pub const fn needs_no_key(&self) -> bool {
+        self.needs_no_key
+    }
+
+    /// Add this character to the field the keyboard is in — **or, on the
+    /// switch, turn it on or off when the character is a space**, which is
+    /// how a switch is pressed from a keyboard everywhere else.
     ///
     /// Answers whether anything changed.
     pub fn typed(&mut self, letter: char) -> bool {
@@ -284,7 +335,23 @@ impl AProviderBeingAddded {
             return false;
         }
         let which = self.which;
-        self.field_mut(which).push(letter);
+        if which == WhichField::NoKeyNeeded {
+            if letter == ' ' {
+                self.needs_no_key = !self.needs_no_key;
+                return true;
+            }
+            return false;
+        }
+        // **The key takes nothing while none is needed.** Its row reads *not
+        // needed*, and letters typed there would be a key nobody can see,
+        // going nowhere.
+        if which == WhichField::Key && self.needs_no_key {
+            return false;
+        }
+        let Some(field) = self.field_mut(which) else {
+            return false;
+        };
+        field.push(letter);
         true
     }
 
@@ -299,7 +366,12 @@ impl AProviderBeingAddded {
     /// Answers whether anything changed.
     pub fn rubbed_out(&mut self) -> bool {
         let which = self.which;
-        let field = self.field_mut(which);
+        if which == WhichField::Key && self.needs_no_key {
+            return false;
+        }
+        let Some(field) = self.field_mut(which) else {
+            return false;
+        };
         let Some(last) = field.graphemes(true).next_back() else {
             return false;
         };
@@ -315,10 +387,15 @@ impl AProviderBeingAddded {
     /// person can have filled in four fields and typed an address that is not
     /// one. This answers *are they finished typing*, and that answers *is it
     /// right*.
+    ///
+    /// **The switch is never a field to fill**, and the key is not one while
+    /// the person has said the service needs none.
     #[must_use]
     pub fn every_field_is_filled(&self) -> bool {
         WhichField::EVERY
             .iter()
+            .filter(|which| which.takes_typing())
+            .filter(|which| !(**which == WhichField::Key && self.needs_no_key))
             .all(|which| !self.what_is_in(*which).trim().is_empty())
     }
 
@@ -396,8 +473,19 @@ impl AProviderBeingAddded {
         if model.is_empty() {
             return Err(NotYetAProvider::NoModel);
         }
-        let key = Secret::typed(&self.key).map_err(NotYetAProvider::TheKey)?;
-        let filed_under = SecretRef::named(&format!("provider/{}", self.name.trim()));
+        // **No key, and no reference to one, when the person said none is
+        // needed.** An empty key without that choice is still refused, here:
+        // leaving a field empty is not the same as saying a service asks for
+        // nothing, and a person who forgot to paste theirs is told so here
+        // rather than at the first question.
+        let key = if self.needs_no_key {
+            None
+        } else {
+            Some(AKeyToKeep {
+                secret: Secret::typed(&self.key).map_err(NotYetAProvider::TheKey)?,
+                filed_under: SecretRef::named(&format!("provider/{}", self.name.trim())),
+            })
+        };
         // **Checked last of the three, because its refusals are about the two
         // fields above and it is the only one that can rename what it is
         // given.** `Provider::checked` trims the name and strips a trailing
@@ -407,7 +495,7 @@ impl AProviderBeingAddded {
             &self.name,
             &self.address,
             Region::Unknown,
-            Some(filed_under.clone()),
+            key.as_ref().map(|it| it.filed_under.clone()),
         )
         .map_err(NotYetAProvider::TheProvider)?;
         // **The provider carries the model the person named**, and until
@@ -436,18 +524,19 @@ impl AProviderBeingAddded {
         Ok(WhatToSave {
             provider,
             key,
-            filed_under,
             model: model.to_owned(),
         })
     }
 
-    /// The field the keyboard is in, to be written into.
-    fn field_mut(&mut self, which: WhichField) -> &mut String {
+    /// The field the keyboard is in, to be written into — [`None`] on the
+    /// switch, which holds no text.
+    fn field_mut(&mut self, which: WhichField) -> Option<&mut String> {
         match which {
-            WhichField::Name => &mut self.name,
-            WhichField::Address => &mut self.address,
-            WhichField::Key => &mut self.key,
-            WhichField::Model => &mut self.model,
+            WhichField::Name => Some(&mut self.name),
+            WhichField::Address => Some(&mut self.address),
+            WhichField::Key => Some(&mut self.key),
+            WhichField::NoKeyNeeded => None,
+            WhichField::Model => Some(&mut self.model),
         }
     }
 }
@@ -455,3 +544,7 @@ impl AProviderBeingAddded {
 #[cfg(test)]
 #[path = "a_provider_is_filled_in_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "a_provider_that_needs_no_key_tests.rs"]
+mod needs_no_key;

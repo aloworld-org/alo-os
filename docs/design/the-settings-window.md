@@ -571,6 +571,16 @@ the design draws them, and choosing one says in words that nothing changed**
     page draws a form's fields as plain rows, which have none, and no frame
     draws the form. Lost in the first stage of this redesign and found when
     the old window's line-builder was deleted in the fourth.
+11. **The form's switch *This service needs no key* is a reading, not a
+    measurement** (2026-11-20). No frame draws the form, so it is the plainest
+    control Settings already has: a switch row, drawn as every other switch
+    with *On* or *Off* beside it, straight after *Key*, with one line under it
+    saying what it is for and that Space turns it. Off until the person turns
+    it on. While it is on the key's row reads *Not needed* and takes no typing,
+    nothing goes to the keyring, and the settings file says
+    `needs-a-key = false`. Like the fields, it is marked as having the
+    keyboard only by the caret, here at the end of its line. A reader meets it
+    as a switch, on or off. *For the owner to overrule.*
 
 ## Dark
 
