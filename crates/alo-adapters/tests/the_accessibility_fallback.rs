@@ -908,6 +908,17 @@ fn drop_downs_list_items_and_sliders_are_read_for_what_they_are() {
             (Role::Range, "Sending", None, None, Some("40.5")),
         ]
     );
+    // **And whether each can be moved is said**, so a model told a slider
+    // holds 150 is not left to guess whether it may set it: a slider can, a
+    // progress bar cannot (2026-11-20 — told only `slider` and a number,
+    // `gpt-4o-mini` answered "it cannot be set to 200" in 11 of 20 tries).
+    let moved: Vec<(&str, Option<bool>)> = read
+        .shown()
+        .everything()
+        .filter(|seen| seen.role() == Role::Range)
+        .map(|seen| (seen.name(), seen.can_be_moved()))
+        .collect();
+    assert_eq!(moved, [("Zoom", Some(true)), ("Sending", Some(false))]);
 }
 
 /// One thing read: its role, name, limit, text and number.

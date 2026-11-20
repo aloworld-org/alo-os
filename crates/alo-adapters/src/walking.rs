@@ -444,7 +444,12 @@ impl Walker<'_> {
             .usable(states.usable())
             .cut_short(cut_short)
             .selected(states.selected())
-            .valued(value);
+            .valued(value)
+            // **And whether it can be moved, said beside its number**, so a
+            // model is never left to guess it from the word `slider`.
+            .movable(
+                (movable || ONLY_SAID.contains(&facts.role)).then_some(movable),
+            );
         let kept = match role {
             Role::Button
             | Role::CheckBox

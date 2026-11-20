@@ -536,7 +536,13 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         viewer.clone(),
         vec![ShownWindow::titled(
             THE_PICTURE.to_owned(),
-            vec![Seen::of(OnScreen::Range, ZOOM.to_owned(), None, 1).valued(Some(100.0))],
+            // **A slider, said to be movable**, as the machine's walk says it
+            // since 2026-11-20 (`alo_adapters::Seen::can_be_moved`).
+            vec![
+                Seen::of(OnScreen::Range, ZOOM.to_owned(), None, 1)
+                    .valued(Some(100.0))
+                    .movable(Some(true)),
+            ],
         )],
         false,
     );

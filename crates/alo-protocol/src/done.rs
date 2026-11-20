@@ -426,6 +426,11 @@ pub struct OneThingShown {
     /// The number a `slider` holds, as the application gives it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub value: Option<String>,
+    /// **Whether a `slider` can be moved** — a slider or a number box can, a
+    /// progress bar or a meter cannot — said beside its number since
+    /// 2026-11-20, additively. Absent for anything that holds no number.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub can_be_moved: Option<bool>,
 }
 
 /// One thing the record says was done to a file, as it goes back to a client.
@@ -1080,6 +1085,7 @@ impl OneThingShown {
             cut_short: seen.is_cut_short(),
             selected: seen.is_selected(),
             value: seen.value().map(ToOwned::to_owned),
+            can_be_moved: seen.can_be_moved(),
         }
     }
 }

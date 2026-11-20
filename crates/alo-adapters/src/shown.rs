@@ -84,6 +84,9 @@ pub struct Seen {
     /// The number it holds, for a slider or a meter, as the application gives
     /// it.
     value: Option<String>,
+    /// Whether it can be moved, for a thing that holds a number: a slider or a
+    /// number box can, a progress bar or a meter cannot.
+    movable: Option<bool>,
 }
 
 impl Seen {
@@ -108,7 +111,24 @@ impl Seen {
             cut_short: false,
             selected: None,
             value: None,
+            movable: None,
         }
+    }
+
+    /// The same thing, said to be movable or not — for a thing that holds a
+    /// number, and [`None`] for anything else.
+    #[must_use]
+    pub fn movable(mut self, movable: Option<bool>) -> Self {
+        self.movable = movable;
+        self
+    }
+
+    /// **Whether it can be moved**, for a thing that holds a number: a slider
+    /// or a number box can, a progress bar or a meter cannot. [`None`] for a
+    /// thing that holds no number.
+    #[must_use]
+    pub fn can_be_moved(&self) -> Option<bool> {
+        self.movable
     }
 
     /// The same thing, selected or not.
