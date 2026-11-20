@@ -173,9 +173,20 @@ impl Walking {
             Step::ExpectLine {
                 check,
                 phrase,
+                and_says: Some(also),
+                since,
+                within,
+                a_retry_may_pass: true,
+            } => {
+                self.expect_line_or_after_a_retry(machine, check, phrase, also, *since, *within)?
+            }
+            Step::ExpectLine {
+                check,
+                phrase,
                 and_says,
                 since,
                 within,
+                ..
             } => self.expect_line(machine, check, phrase, and_says.as_deref(), *since, *within)?,
             Step::ExpectNoLine {
                 check,
@@ -334,6 +345,61 @@ impl Walking {
                     Verdict::Failed,
                     format!("{phrase:?} was not said within {}s", within.as_secs()),
                 );
+                self.stop_after_failure();
+                return Ok(());
+            }
+            machine.wait(READ_THE_LOG_EVERY);
+        }
+    }
+
+    /// **A line that says `also` — or, where the first line with the phrase
+    /// does not, a later one that does**, within the time. The first passes;
+    /// a later one passes after a retry, counted apart, with the failed try in
+    /// its evidence; neither by the time fails, on the first line.
+    fn expect_line_or_after_a_retry(
+        &mut self,
+        machine: &mut impl Machine,
+        check: &str,
+        phrase: &str,
+        also: &str,
+        since: Since,
+        within: Duration,
+    ) -> Result<(), MachineError> {
+        let from = self.from(since);
+        let start = machine.elapsed();
+        let phrases = [phrase.to_owned()];
+        loop {
+            let lines = the_log::all_with(&machine.log()?, from, &phrases);
+            let took = machine.elapsed().saturating_sub(start).as_secs();
+            if let Some(first) = lines.first() {
+                if first.contains(also) {
+                    self.checked(
+                        check.to_owned(),
+                        Verdict::Passed,
+                        format!("after {took}s: {first}"),
+                    );
+                    return Ok(());
+                }
+                if let Some(held) = lines.iter().skip(1).find(|line| line.contains(also)) {
+                    self.checked(
+                        check.to_owned(),
+                        Verdict::PassedAfterARetry,
+                        format!(
+                            "after {took}s, after a first try that did not say {also:?} \
+                             ({first}): {held}"
+                        ),
+                    );
+                    return Ok(());
+                }
+            }
+            if machine.elapsed().saturating_sub(start) >= within {
+                let evidence = match lines.first() {
+                    Some(first) => format!(
+                        "after {took}s the line does not say {also:?}, nor any after it: {first}"
+                    ),
+                    None => format!("{phrase:?} was not said within {}s", within.as_secs()),
+                };
+                self.checked(check.to_owned(), Verdict::Failed, evidence);
                 self.stop_after_failure();
                 return Ok(());
             }

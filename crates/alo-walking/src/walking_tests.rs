@@ -718,3 +718,91 @@ fn a_failure_before_the_sections_stops_them_all() {
         ]
     );
 }
+
+/// A check on the line that says what alo did, which may pass after a retry.
+fn typed_and_saved(retry_may_pass: bool) -> Walk {
+    let walk = Walk::named("w").mark();
+    if retry_may_pass {
+        walk.expect_line_saying_or_after_a_retry(
+            "alo types and saves",
+            "alo in an application: accessible.type_text in org.gnome.TextEditor",
+            "done, and saved",
+            Since::Mark,
+            Duration::from_secs(30),
+        )
+    } else {
+        walk.expect_line_saying(
+            "alo types and saves",
+            "alo in an application: accessible.type_text in org.gnome.TextEditor",
+            "done, and saved",
+            Since::Mark,
+            Duration::from_secs(30),
+        )
+    }
+}
+
+/// The two lines main's walk at 71932e07 (run 44161055698) saw: the first try
+/// not done (827.96 s) and the second done and saved (832.15 s).
+fn a_first_try_that_failed_then_one_that_held() -> PicturesAndLines {
+    PicturesAndLines::showing(screens())
+        .saying(
+            Duration::from_secs(2),
+            "alo-agentd: alo in an application: accessible.type_text in org.gnome.TextEditor, not done",
+        )
+        .saying(
+            Duration::from_secs(6),
+            "alo-agentd: alo in an application: accessible.type_text in org.gnome.TextEditor, done, and saved",
+        )
+}
+
+/// **The outcome right after a failed first try passes, counted apart**, with
+/// both lines as its evidence, and the walk passes.
+#[test]
+fn a_check_that_allows_a_retry_passes_after_one_and_says_so() {
+    let mut machine = a_first_try_that_failed_then_one_that_held();
+    let report = walk(&mut machine, &typed_and_saved(true), &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![("alo types and saves".to_owned(), Verdict::PassedAfterARetry)],
+        "{}",
+        report.as_text()
+    );
+    assert!(report.passed(), "{}", report.as_text());
+    let text = report.as_text();
+    assert!(
+        text.contains("not done") && text.contains("done, and saved"),
+        "{text}"
+    );
+    assert!(text.contains("1 passed after a retry"), "{text}");
+}
+
+/// **But a failed try with nothing after it still fails**, once its time is up.
+#[test]
+fn a_check_that_allows_a_retry_still_fails_with_no_good_line() {
+    let mut machine = PicturesAndLines::showing(screens()).saying(
+        Duration::from_secs(2),
+        "alo-agentd: alo in an application: accessible.type_text in org.gnome.TextEditor, not done",
+    );
+    let report = walk(&mut machine, &typed_and_saved(true), &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![("alo types and saves".to_owned(), Verdict::Failed)],
+        "{}",
+        report.as_text()
+    );
+    assert!(!report.passed());
+}
+
+/// **And a check that does not allow a retry is judged on the first line**, as
+/// every check was: the card checks depend on it.
+#[test]
+fn a_check_that_does_not_allow_a_retry_fails_on_the_first_line() {
+    let mut machine = a_first_try_that_failed_then_one_that_held();
+    let report = walk(&mut machine, &typed_and_saved(false), &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![("alo types and saves".to_owned(), Verdict::Failed)],
+        "{}",
+        report.as_text()
+    );
+}
