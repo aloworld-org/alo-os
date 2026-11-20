@@ -166,6 +166,16 @@ pub fn summary(tallied: &[Tallied], asked_of: &str) -> String {
              says nothing about the road.\n\n"
         }
     });
+    said.push_str(&the_requests_tried(tallied));
+    said
+}
+
+/// **Every request tried**, as the summary says it after its verdict: the
+/// table of how many tries took the road and where the others went, the
+/// passes that were not clean ones, and each request's tries.
+#[must_use]
+pub fn the_requests_tried(tallied: &[Tallied]) -> String {
+    let mut said = String::new();
     said.push_str("| Request | Took the road | Where the other tries went |\n|---|---|---|\n");
     let mut looked: Vec<String> = Vec::new();
     let mut refused: Vec<String> = Vec::new();

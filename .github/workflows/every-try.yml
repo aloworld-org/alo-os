@@ -1,6 +1,6 @@
-# Try alo's model on a fixed set of requests, five times each, and pass only if
-# every try takes the expected road — law 9 of CLAUDE.md, *what the model
-# chooses is tested many times, not once* (ADR 0157).
+# Try alo's model on a fixed set of requests, several times each — law 9 of
+# CLAUDE.md, *what the model chooses is tested many times, not once* (ADR
+# 0157).
 #
 # `crates/alo-every-try` is the check. Each try is the agent's own loop with the
 # real instructions and the real verbs, asked of the real model through the
@@ -9,100 +9,58 @@
 # compares what the model asked for with the road the request expects, and
 # answers from a script. The crate's header says what that cannot show.
 #
-# **When it runs.** On a pull request that changes what the model is told or
-# offered — its instructions, its verbs, their descriptions, the shape its
-# answer is held to, the loop that asks it, or the check itself — and by hand.
-# Not on every pull request, because it spends the provider's key.
+# **What a change is held to** (the owner, 2026-11-17): *a change that adds or
+# alters something the AI chooses is blocked from merging until its OWN
+# practice requests pass at least 9 out of 10 tries. Other requests' slips
+# don't block it.* A request is a change's own when the change adds it, alters
+# its road, adds or alters a verb it asks for, or alters what every turn is
+# told (which owns them all). That is read off two copies of one declared
+# file, `crates/alo-every-try/what-the-model-is-offered.txt` — the base's and
+# the change's — which a test holds to what the code offers the model
+# (`the_declaration`, `its_own` and `counted` in the crate). Its own requests
+# are tried ten times at each level and must each take the road at least nine
+# times; every other request is tried three times and reported, not counted.
 #
-# **What it costs**, per run of the whole set at five tries each: 40 model calls
-# when every try takes the road (writing in VSCodium takes four a try,
-# publishing two, opening an application two), fewer when a try leaves it early,
-# because a try ends at its first wrong step, and more only when a provider does
-# not answer and the question is put a second time, or the model's line is not a
-# request and the turn's own loop tells it so. The summary says how many were
-# made.
+# **When it runs.** On every pull request and every queue branch, so that it
+# can be a required check. A change whose declaration is the base's owns
+# nothing: it passes in seconds, builds nothing and asks the model nothing. On
+# a queue branch the model is not asked again — the pull request's own run
+# measured it, and a second draw of a nine-in-ten would fail some good changes
+# for nothing they did — so there it only says what changed. By hand
+# (`workflow_dispatch`) it tries the whole set, or, given `against`, what this
+# branch owns against that commit or branch.
 #
-# **It is not a required check.** Whether it blocks a merge is the owner's
-# setting, and this file does not decide it.
+# **What it costs**: nothing for a change that owns no request; for one that
+# does, twenty tries per own request (ten at each level) and six per other
+# request, each try one model call or a few. The summary says how many calls
+# were made.
+#
+# **Whether it blocks a merge is the owner's setting**, made in the repository's
+# rules, and this file does not decide it. The check it posts is `every-try`.
 #
 # **The key.** `ALO_WALK_PROVIDER_KEY` is the walk's secret. It is handed to the
 # one step that asks the model, as `ALO_PROVIDER_KEY`, and is never echoed:
 # GitHub masks it in the log, the check never prints it, and nothing it writes
-# — the log, the summary — contains it. A run without the secret (a fork's pull
-# request) says so and measures nothing.
+# — the log, the summary — contains it. A run that must try something and has
+# no secret (a fork's pull request) says so and fails.
 
 name: Every try
 
 on:
   pull_request:
-    paths:
-      - "crates/alo-every-try/**"
-      - ".github/workflows/every-try.yml"
-      # What the model is told.
-      - "crates/alo-instructing/src/**"
-      # The loop that asks it, and the shape its answer is read as.
-      - "crates/alo-agent/src/driving.rs"
-      - "crates/alo-protocol/src/agent.rs"
-      - "crates/alo-protocol/src/frame.rs"
-      # What it is offered, the shape a provider holds its answer to, and the
-      # road a turn's question takes.
-      - "crates/alo-turn/src/machine.rs"
-      - "crates/alo-turn/src/the_shape_a_provider_is_held_to.rs"
-      - "crates/alo-turn/src/next_request.rs"
-      - "crates/alo-models/src/in_the_envelope.rs"
-      - "crates/alo-asking/src/openai.rs"
-      - "crates/alo-asking/src/asking.rs"
-      - "crates/alo-asking/src/hosted.rs"
-      - "crates/alo-asking/src/question.rs"
-      # How a call is validated, and the answers the model reads back.
-      - "crates/alo-capability/src/arg.rs"
-      - "crates/alo-capability/src/call.rs"
-      - "crates/alo-capability/src/verbs.rs"
-      - "crates/alo-protocol/src/to_an_agent.rs"
-      - "crates/alo-protocol/src/done.rs"
-      - "crates/alo-protocol/src/argument.rs"
-      # Every verb on that list, and the words that describe it.
-      - "crates/alo-files/src/verbs.rs"
-      - "crates/alo-files/src/words.rs"
-      - "crates/alo-software/src/verbs.rs"
-      - "crates/alo-software/src/words.rs"
-      - "crates/alo-software/shipped.toml"
-      # The names the shipped applications are told by, and how a name is
-      # matched to one.
-      - "crates/alo-software/the-shipped-names.txt"
-      - "crates/alo-turn/src/naming_an_application.rs"
-      - "crates/alo-applications/src/verbs.rs"
-      - "crates/alo-applications/src/opening_a_file.rs"
-      - "crates/alo-applications/src/choosing_on_the_file_chooser.rs"
-      - "crates/alo-every-try/src/answering_the_file_chooser.rs"
-      - "crates/alo-applications/src/words.rs"
-      - "crates/alo-record/src/verbs.rs"
-      - "crates/alo-record/src/words.rs"
-      - "crates/alo-adapters/src/fallback_verbs.rs"
-      - "crates/alo-adapters/src/fallback_words.rs"
-      - "crates/alo-adapters/src/typing_words.rs"
-      - "crates/alo-adapters/src/scrolling_words.rs"
-      - "crates/alo-adapters/src/setting_words.rs"
-      - "crates/alo-adapters/src/choosing_words.rs"
-      - "crates/alo-adapters/src/opening_words.rs"
-      - "crates/alo-adapters/src/menu_words.rs"
-      - "crates/alo-adapters/src/keys_words.rs"
-      - "crates/alo-adapters/src/typing_without_saving_words.rs"
-      # How the machine finds the field a name means.
-      - "crates/alo-adapters/src/places_for_text.rs"
-      - "crates/alo-publishing/src/verbs.rs"
-      - "crates/alo-publishing/src/words.rs"
-      - "crates/alo-capability/src/words.rs"
-      # The VSCodium walk's request, which the set asks too.
-      - "crates/alo-walking/src/writing_in_vscodium.rs"
+  merge_group:
   workflow_dispatch:
     inputs:
       tries:
-        description: "How many times to try each request"
+        description: "How many times to try each request, when trying the whole set"
         type: string
         default: "5"
       only:
         description: "Try only this request (for example: write in VSCodium); empty tries the whole set"
+        type: string
+        default: ""
+      against:
+        description: "A commit or branch to compare with: try what this branch owns against it, ten times each"
         type: string
         default: ""
 
@@ -116,18 +74,72 @@ concurrency:
 jobs:
   every-try:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
+      # **Which requests are this change's own**, from the declared file
+      # alone, before anything is built. `mode` is `none` (nothing to try, and
+      # the check passes), `own` (try the change's own) or `whole` (a hand run
+      # of the whole set).
+      - name: Which requests are this change's own
+        id: own
+        env:
+          EVENT: ${{ github.event_name }}
+          PULL_REQUEST_BASE: ${{ github.event.pull_request.base.sha }}
+          QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
+          AGAINST: ${{ inputs.against }}
+        run: |
+          file=crates/alo-every-try/what-the-model-is-offered.txt
+          case "$EVENT" in
+            pull_request) base="$PULL_REQUEST_BASE" ;;
+            merge_group) base="$QUEUE_BASE" ;;
+            *) base="$AGAINST" ;;
+          esac
+          if [ -z "$base" ]; then
+            echo "mode=whole" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch --no-tags --depth=1 origin "$base"
+          base=$(git rev-parse FETCH_HEAD)
+          if ! git cat-file -e "$base:$file" 2>/dev/null; then
+            echo "The base ($base) has no declaration of what the model is offered, so no request can be called this change's own and nothing was tried. That is true only of the change that adds the declaration." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "mode=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git show "$base:$file" > "$RUNNER_TEMP/before.txt"
+          if cmp -s "$RUNNER_TEMP/before.txt" "$file"; then
+            echo "This change alters nothing the model is offered: $file is the base's ($base), so it owns no request and nothing was tried." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "mode=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          {
+            echo "What the model is offered changed against $base:"
+            echo
+            echo '```diff'
+            diff "$RUNNER_TEMP/before.txt" "$file" || true
+            echo '```'
+            echo
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$EVENT" = merge_group ]; then
+            echo "On a queue branch the model is not asked again: the pull request's own run tried these requests." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "mode=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "mode=own" >> "$GITHUB_OUTPUT"
+
       # The check's own tests first, the refusal cases among them: a check
       # whose own logic is broken must not spend the key and report a verdict.
+      # Among them, that the declaration is what the code offers, so the
+      # requests counted as this change's own are read off a true file.
       - name: Test the check itself
+        if: steps.own.outputs.mode != 'none'
         run: cargo test --release --locked -p alo-every-try
 
       # Its lints and its documentation, as the gate holds every crate to them,
       # so a fault in the check itself is named here in minutes.
       - name: Lint and document the check itself
+        if: steps.own.outputs.mode != 'none'
         env:
           RUSTDOCFLAGS: -D warnings
         run: |
@@ -135,27 +147,42 @@ jobs:
           cargo doc --release --locked -p alo-every-try --no-deps
 
       - name: Build the check
+        if: steps.own.outputs.mode != 'none'
         run: cargo build --release --locked -p alo-every-try
 
-      - name: Try the set against the real model
+      - name: Try the requests against the real model
+        if: steps.own.outputs.mode != 'none'
         env:
           ALO_PROVIDER_KEY: ${{ secrets.ALO_WALK_PROVIDER_KEY }}
           ALO_EVERY_TRY_ENDPOINT: https://api.openai.com
           ALO_EVERY_TRY_MODEL: gpt-4o-mini
-          ALO_EVERY_TRY_TRIES: ${{ inputs.tries || '5' }}
+          MODE: ${{ steps.own.outputs.mode }}
+          WHOLE_TRIES: ${{ inputs.tries || '5' }}
           ALO_EVERY_TRY_ONLY: ${{ inputs.only || '' }}
         run: |
           if [ -z "$ALO_PROVIDER_KEY" ]; then
             echo "There is no provider key for this run (ALO_WALK_PROVIDER_KEY is not available here), so nothing was tried." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
+          if [ "$MODE" = own ]; then
+            # Its own ten times each; every other request three times,
+            # reported and not counted.
+            export ALO_EVERY_TRY_BEFORE="$RUNNER_TEMP/before.txt"
+            export ALO_EVERY_TRY_TRIES=10
+            export ALO_EVERY_TRY_OTHER_TRIES=3
+            export ALO_EVERY_TRY_ONLY=
+          else
+            export ALO_EVERY_TRY_TRIES="$WHOLE_TRIES"
+          fi
           # **Both levels**: at full access a change is done without asking; at
           # ask each time it is approved once and the turn goes on from what
           # the daemon told the person it did (docs/contracts/asking-socket.md).
-          # Either leaving the road fails the check.
+          # Either failing fails the check.
           failed=0
           for level in full-access ask-each-time; do
             echo "## At $level" >> "$GITHUB_STEP_SUMMARY"
-            ALO_EVERY_TRY_LEVEL="$level" ALO_EVERY_TRY_SUMMARY="$GITHUB_STEP_SUMMARY" target/release/alo-every-try || failed=$?
+            code=0
+            ALO_EVERY_TRY_LEVEL="$level" ALO_EVERY_TRY_SUMMARY="$GITHUB_STEP_SUMMARY" target/release/alo-every-try || code=$?
+            if [ "$code" -ne 0 ]; then failed=$code; fi
           done
           exit "$failed"
