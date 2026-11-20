@@ -714,9 +714,15 @@ fn the_click_request_is_asked_of_the_game() {
     let request = set
         .requests()
         .iter()
-        .find(|request| request.named() == "click by position where a picture of a window showed a thing")
+        .find(|request| {
+            request.named() == "click by position where a picture of a window showed a thing"
+        })
         .expect("the set has the click request");
-    assert!(request.words().contains("SuperTuxKart"), "{}", request.words());
+    assert!(
+        request.words().contains("SuperTuxKart"),
+        "{}",
+        request.words()
+    );
     assert_eq!(
         request
             .road()

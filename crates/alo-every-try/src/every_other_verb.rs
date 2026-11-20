@@ -68,9 +68,36 @@ pub const ZOOM: &str = "Zoom";
 /// The number the setting request asks for.
 pub const ZOOMED: i64 = 200;
 
-/// The game the machine also has, from the catalogue: a window that describes
-/// nothing, which the click request asks about. A stub until it is declared.
-pub const THE_GAME_IDENTIFIER: &str = "not.yet.declared";
+/// **The game the machine also has**, a window that describes nothing — a
+/// game draws its own menu — which the click request asks about. Taken from
+/// the decided catalogue (`catalogue.toml`), so it is one a person could
+/// install, and held to it by `the_set`'s tests.
+pub const THE_GAME_IDENTIFIER: &str = "net.supertuxkart.SuperTuxKart";
+
+/// The game, as a person says it and as its catalogue entry names it.
+pub const THE_GAME: &str = "SuperTuxKart";
+
+/// What the reader says the game's window shows, for the clicking request.
+pub const WHERE_THE_RACE_STARTS: &str = "The game's main menu fills the window, drawn by the game itself. A \
+     large button reading Start race is at 50% across and 40% down; one reading Options is at 50% \
+     across and 55% down.";
+
+/// The game, as the catalogue lists it: its identifier and its name.
+///
+/// # Errors
+/// [`NotTheSet`], when the catalogue would not read or has no such game.
+pub fn the_game() -> Result<(String, String), NotTheSet> {
+    let catalogue = Catalogue::decided().map_err(|why| NotTheSet::because(format!("{why:?}")))?;
+    let listed = the_one_called(&catalogue, THE_GAME)?;
+    let application = listed.application();
+    if application.identifier() != THE_GAME_IDENTIFIER {
+        return Err(NotTheSet::because(format!(
+            "{THE_GAME} is {} in the catalogue, not {THE_GAME_IDENTIFIER}",
+            application.identifier()
+        )));
+    }
+    Ok((application.identifier().to_owned(), THE_GAME.to_owned()))
+}
 
 /// The title of the image viewer's window the setting request reads.
 pub const THE_PICTURE: &str = "holiday.jpg";
@@ -79,16 +106,6 @@ pub const THE_PICTURE: &str = "holiday.jpg";
 /// shows, as the picture request's machine answers it.
 pub const WHAT_THE_READER_SAW: &str = "A photograph of a beach at sunset, with two people walking by the water near the centre \
      (0.5, 0.6). No text and no buttons are in the window.";
-
-/// What the reader says the image viewer's window shows, for the clicking
-/// request: where in the photo the people are.
-///
-/// **A place in a picture, not a control** (2026-11-18): asked to click
-/// Loupe's next-photo arrow, the model pressed a button it guessed was named
-/// *Next* in 20 of 20 tries — Loupe's own arrows are named, and a request about
-/// a named control is the accessibility road's, not this one's.
-pub const WHERE_THE_PEOPLE_ARE: &str = "A photograph of a beach at sunset fills the window. Two people walk by the water, their \
-     centre at 50% across and 60% down. No text and no buttons are in the window.";
 
 /// The option the choosing request names, in the document viewer's
 /// [`ZOOM`] drop-down.
@@ -658,40 +675,67 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
     );
     // **A click by position, 2026-11-17**: the arrow has no name, so the road
     // is the read, the picture, and a click where the picture's words put it.
+    // **A click by position, 2026-11-20**, asked of a game: its window names
+    // nothing, so the road is the read, the picture, and a click where the
+    // picture's words put the button.
+    let game = THE_GAME_IDENTIFIER.to_owned();
+    let the_game_shown = Shown::of(
+        game.clone(),
+        vec![ShownWindow::titled(
+            THE_GAME.to_owned(),
+            vec![Seen::of(OnScreen::Canvas, THE_GAME.to_owned(), None, 1)],
+        )],
+        false,
+    );
+    let told_of_the_game = vec![
+        alo_adapters::nothing_to_read(
+            THE_GAME,
+            &game,
+            alo_adapters::WorkingFully::NothingMoreToTurnOn,
+            &strings,
+        )
+        .into_text(),
+        strings
+            .say(
+                &alo_adapters::picture_words::A_PICTURE_CAN_BE_READ.key(),
+                &alo_strings::Filling::of(alo_adapters::fallback_words::APPLICATION, game.clone()),
+            )
+            .into_text(),
+    ];
     let clicking = ARequest::asking(
         "click by position where a picture of a window showed a thing",
-        "In Loupe, click on the two people in the photo.",
+        format!("In {THE_GAME}, start a race."),
         vec![
             Step::of(
                 READ_WINDOW,
-                Answered::With(Done::of_a_window_read(&the_canvas, &told_of_the_canvas)),
+                Answered::With(Done::of_a_window_read(&the_game_shown, &told_of_the_game)),
             )
-            .expecting(fallback_verbs::APPLICATION, viewer.as_str())
+            .expecting(fallback_verbs::APPLICATION, game.as_str())
             // **A look**, as for the picture: the picture verb asks the tree.
             .a_look(),
             Step::of(
                 PICTURE_WINDOW,
                 Answered::With(Done::of_a_picture(
-                    &viewer,
+                    &game,
                     (1280, 800),
-                    Ok(WHERE_THE_PEOPLE_ARE.to_owned()),
+                    Ok(WHERE_THE_RACE_STARTS.to_owned()),
                 )),
             )
-            .expecting(fallback_verbs::APPLICATION, viewer.as_str()),
+            .expecting(fallback_verbs::APPLICATION, game.as_str()),
             Step::of(
                 CLICK_AT,
                 Answered::With(Done::of_a_click(
-                    &viewer,
-                    (50, 60),
+                    &game,
+                    (50, 40),
                     true,
                     Some(Ok(
-                        "The same photograph, zoomed in on the two people.".to_owned()
+                        "A track is being chosen: the race menu fills the window.".to_owned(),
                     )),
                 )),
             )
-            .expecting(fallback_verbs::APPLICATION, viewer.as_str())
+            .expecting(fallback_verbs::APPLICATION, game.as_str())
             .expecting(ACROSS, "50")
-            .expecting(DOWN, "60"),
+            .expecting(DOWN, "40"),
         ],
     );
     let papers = shipped

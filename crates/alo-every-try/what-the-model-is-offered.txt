@@ -7,9 +7,10 @@
 # file is not what the code offers.
 
 fingerprints	2
-every-turn	27b0f6884ed23820
+every-turn	f46b9f238945cdd7
 verb	accessible.activate_control	6992bb174a174353
 verb	accessible.choose_option	c232a57322aa106c
+verb	accessible.click_at	cf271e12dda543a6
 verb	accessible.open_item	212fe17d915277f0
 verb	accessible.open_menu	287987e536c5b571
 verb	accessible.picture_window	7333bfce0e1562b5
@@ -61,4 +62,5 @@ request	open a thing's right-click menu in an application	6f7dceb2523fa088	acces
 request	press a key in an application	7468e92326e37cf8	accessible.read_window,accessible.press_key
 request	type into a search box without saving	3e2a28cd8e62e5e4	accessible.read_window,accessible.type_without_saving
 request	have a picture of a window that describes nothing read	f2b7a1fb621fb79d	accessible.read_window,accessible.picture_window
+request	click by position where a picture of a window showed a thing	affe74a91d9aef1e	accessible.read_window,accessible.picture_window,accessible.click_at
 request	answer the file chooser	193f4148b094375c	choose_on_the_file_chooser

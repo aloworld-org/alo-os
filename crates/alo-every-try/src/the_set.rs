@@ -234,10 +234,19 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
     let their_folders =
         ThePersonsFolders::of(home, folders.iter().map(|(role, at)| (*role, at.as_path())))
             .ok_or_else(|| NotTheSet(format!("{THE_HOME} is not a home a line may name")))?;
-    let installed = TheApplicationsInstalled::of(shipped.every().iter().map(|pinned| {
-        let identifier = pinned.application().identifier();
-        (identifier, names.name_of(identifier))
-    }));
+    // **And the game**, from the catalogue, so a window that describes nothing
+    // is one the machine has (`crate::every_other_verb::the_game`).
+    let (game, game_named) = crate::every_other_verb::the_game()?;
+    let installed = TheApplicationsInstalled::of(
+        shipped
+            .every()
+            .iter()
+            .map(|pinned| {
+                let identifier = pinned.application().identifier();
+                (identifier, names.name_of(identifier))
+            })
+            .chain(std::iter::once((game.as_str(), Some(game_named.as_str())))),
+    );
     let may_reach = WhatItMayReach::nothing()
         .in_this_home(Some(their_folders))
         .at_full_access(true)
