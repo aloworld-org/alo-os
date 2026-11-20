@@ -735,21 +735,39 @@ fn a_paste_on_the_switch_does_not_press_it() {
 
     let (_directory, mut server) = a_server();
     server.a_provider_is_added();
+    let pasted = |server: &mut crate::Server, seconds: u64| {
+        let (reading, writing) = std::io::pipe().expect("a pipe");
+        server
+            .clipboard
+            .reading(std::os::unix::io::OwnedFd::from(reading));
+        let mut writing = writing;
+        writing.write_all(b"two words").expect("the client writes");
+        drop(writing);
+        let until = std::time::Instant::now() + std::time::Duration::from_secs(seconds);
+        let mut arrived = false;
+        while !arrived && std::time::Instant::now() < until {
+            arrived = server.that_paste_arrived();
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        arrived
+    };
+    // **The control first**: the same paste into the name lands, so the pipe
+    // delivers and the silence below is the switch refusing it.
+    assert!(pasted(&mut server, 2), "the paste into the name arrived");
+    assert_eq!(
+        server
+            .a_provider_is_being_filled_in()
+            .expect("a form")
+            .what_is_in(WhichField::Name),
+        "two words"
+    );
+
     let form = server.filling_in.as_mut().expect("a form");
     form.the_keyboard_is_in(WhichField::NoKeyNeeded);
-
-    let (reading, writing) = std::io::pipe().expect("a pipe");
-    server
-        .clipboard
-        .reading(std::os::unix::io::OwnedFd::from(reading));
-    let mut writing = writing;
-    writing.write_all(b"two words").expect("the client writes");
-    drop(writing);
-
-    let until = std::time::Instant::now() + std::time::Duration::from_secs(1);
-    while !server.that_paste_arrived() && std::time::Instant::now() < until {
-        std::thread::sleep(std::time::Duration::from_millis(5));
-    }
+    assert!(
+        !pasted(&mut server, 1),
+        "a paste on the switch changed the form"
+    );
     assert!(
         !server
             .a_provider_is_being_filled_in()

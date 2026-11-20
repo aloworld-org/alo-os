@@ -279,13 +279,13 @@ fn the_walk_waits_for_the_line_said_when_a_keyless_provider_is_saved() {
             .join("../alo-walking/src/the_first_walk.rs"),
     )
     .expect("the first walk's source is beside this crate");
+    // **Wherever rustfmt breaks the declaration**: the first string after the
+    // constant's name is its value.
     let declared = walk
-        .lines()
-        .find_map(|line| {
-            line.trim()
-                .strip_prefix("pub const A_PROVIDER_THAT_NEEDS_NO_KEY_SAVED: &str = \"")
-                .and_then(|rest| rest.strip_suffix("\";"))
-        })
+        .split_once("pub const A_PROVIDER_THAT_NEEDS_NO_KEY_SAVED: &str =")
+        .and_then(|(_, rest)| rest.split_once('"'))
+        .and_then(|(_, rest)| rest.split_once("\";"))
+        .map(|(value, _)| value)
         .expect("the walk declares the line it waits for");
     assert_eq!(declared, super::SAVED_NEEDING_NO_KEY);
     assert_eq!(

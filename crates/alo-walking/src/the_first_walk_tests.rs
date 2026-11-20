@@ -252,3 +252,63 @@ fn a_provider_that_needs_no_key_is_added_before_the_gate() {
         "a key was typed for a service that needs none"
     );
 }
+
+/// The keys a step presses, or what it types, as one word each.
+fn said_as_keys(steps: &[Step]) -> Vec<String> {
+    steps
+        .iter()
+        .filter_map(|step| match step {
+            Step::Press(chord) => Some(chord.the_key().to_owned()),
+            Step::Type(text) => Some(format!("type {text}")),
+            Step::TypeSecret(_) => Some("type the secret".to_owned()),
+            _ => None,
+        })
+        .collect()
+}
+
+/// The keys pressed from the step that typed `from`, for `count` keys.
+fn the_keys_after(from: &str, count: usize) -> Vec<String> {
+    let keys = said_as_keys(the_first_walk().steps());
+    let Some(at) = keys.iter().position(|key| key == from) else {
+        panic!("the walk never does {from:?}");
+    };
+    keys.into_iter().skip(at).take(count).collect()
+}
+
+/// **The keyless provider's Tabs land where the form's fields are**: past the
+/// empty key to the switch, Space, then the model. One Tab fewer would put
+/// the Space in the key and leave the switch off, and Enter would be refused
+/// on the machine with every test here still green.
+#[test]
+fn the_keyless_form_is_tabbed_through_field_by_field() {
+    assert_eq!(
+        the_keys_after("type http://127.0.0.1:11434", 5),
+        vec!["type http://127.0.0.1:11434", "tab", "tab", "spc", "tab",]
+    );
+    assert_eq!(
+        the_keys_after("type llama3.2", 2),
+        vec!["type llama3.2", "ret"]
+    );
+}
+
+/// **And the provider with a key is found one row further down**, under the
+/// keyless one, and tabbed past the switch left off to its model.
+#[test]
+fn the_provider_with_a_key_is_one_row_further_down_and_past_the_switch() {
+    let keys = said_as_keys(the_first_walk().steps());
+    let Some(typed) = keys.iter().position(|key| key == "type openai") else {
+        panic!("the walk never types openai");
+    };
+    let before = keys.get(..typed).expect("the keys before it");
+    let downs = before
+        .iter()
+        .rev()
+        .skip_while(|key| *key != "down")
+        .take_while(|key| *key == "down")
+        .count();
+    assert_eq!(downs, 5, "down to Add a provider, below the keyless one");
+    assert_eq!(
+        the_keys_after("type the secret", 4),
+        vec!["type the secret", "tab", "tab", "type gpt-4o-mini"]
+    );
+}

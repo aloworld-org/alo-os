@@ -436,10 +436,60 @@ fn while_no_key_is_needed_the_key_line_says_so_rather_than_drawing_marks() {
 
     form.the_keyboard_is_in(WhichField::NoKeyNeeded);
     form.typed(' ');
-    let shown = what_is_shown(&form, WhichField::Key);
-    assert!(
-        !shown.contains('•'),
-        "a key nobody will use is drawn: {shown}"
+    assert_eq!(
+        what_is_shown(&form, WhichField::Key),
+        "Not needed",
+        "a key nobody will use is drawn as marks"
     );
-    assert!(!shown.is_empty() && !shown.contains('«'), "{shown}");
+    form.the_keyboard_is_in(WhichField::Key);
+    assert_eq!(
+        what_is_shown(&form, WhichField::Key),
+        "Not needed▏",
+        "and the caret still marks it when the keyboard is there"
+    );
+}
+
+#[test]
+fn the_page_draws_the_switch_as_a_switch_with_its_word() {
+    // **Drawn as every other switch in Settings**, with *Off* or *On* beside
+    // it, read from the same words the other switches use.
+    let strings = crate::settings_testing::settings_words();
+    let row_of = |form: &AProviderBeingAddded| {
+        let page = crate::settings_page::the_form_page(the_form(form, None, &strings), &strings);
+        page.blocks
+            .into_iter()
+            .find_map(|block| match block {
+                crate::settings_page::ABlock::Section(section) => section
+                    .rows
+                    .into_iter()
+                    .find(|row| matches!(row.kind, crate::settings_page::TheKind::ASwitch(_))),
+                crate::settings_page::ABlock::Said(_)
+                | crate::settings_page::ABlock::AnAction(_) => None,
+            })
+            .expect("a switch row on the form's page")
+    };
+    let off = row_of(&on_the_switch());
+    assert_eq!(
+        off.kind,
+        crate::settings_page::TheKind::ASwitch(crate::settings_page::SwitchIs::Off)
+    );
+    assert_eq!(
+        off.at_its_end,
+        Some(crate::settings_page::AnEnd::Words(
+            crate::settings_page::switch_said(crate::settings_page::SwitchIs::Off, &strings)
+        ))
+    );
+    let mut form = on_the_switch();
+    form.typed(' ');
+    let on = row_of(&form);
+    assert_eq!(
+        on.kind,
+        crate::settings_page::TheKind::ASwitch(crate::settings_page::SwitchIs::On)
+    );
+    assert_eq!(
+        on.at_its_end,
+        Some(crate::settings_page::AnEnd::Words(
+            crate::settings_page::switch_said(crate::settings_page::SwitchIs::On, &strings)
+        ))
+    );
 }
