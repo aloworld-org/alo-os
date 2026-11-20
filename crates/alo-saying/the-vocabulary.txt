@@ -231,7 +231,7 @@ adapters.fallback.type-text.no-such-field-but-these	{application} shows no field
 adapters.fallback.type-text.not-alos-copy.what-alo-can-use	That {application} window is yours, not alo's own copy, so nothing was typed. To let alo type in your own windows, choose “alo may work in your own window” in Settings → What alo can use
 adapters.fallback.type-text.not-in-front	“{name}” in {application} does not have the keyboard, so nothing was typed. alo types only where the keyboard is: bring the window forward and click in it first
 adapters.fallback.type-text.password-field	“{name}” in {application} is a password field, and alo never types into one, so nothing was typed
-adapters.fallback.type-text.purpose	type a text into a field or a document in an application's window, and save it
+adapters.fallback.type-text.purpose-of-a-document	type a text into a document open in an application's window, such as a file in an editor, and save it — never into a field such as a search box
 adapters.fallback.type-text.read-back-differs	What “{name}” in {application} shows now is not exactly the text you approved, so it was not saved. Look at the window, and undo with Ctrl+Z if you want it gone
 adapters.fallback.type-text.sentence	type {text} into “{name}” in {application}, and save it
 adapters.fallback.type-text.text	the text to type, shown to you in full before anything is typed

@@ -17,7 +17,7 @@ verb	accessible.scroll_page	34457c53f37cd100
 verb	accessible.scroll_to	37d8db9b7cb6ad7d
 verb	accessible.select_item	9ac6cf32dab59aad
 verb	accessible.set_value	7cceef874d10e97d
-verb	accessible.type_text	edc7daaa35b7faf4
+verb	accessible.type_text	186925ac08ccae91
 verb	accessible.type_without_saving	8899c723cf6dd0fa
 verb	archive_folder	6edb54bc45096848
 verb	choose_on_the_file_chooser	cb8d104ff641ffb4
