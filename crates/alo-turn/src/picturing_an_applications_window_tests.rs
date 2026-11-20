@@ -577,6 +577,8 @@ fn at_ask_each_time_one_approval_takes_exactly_one_picture_of_that_window() {
     });
     let taken = did.picture_taken().unwrap();
     assert_eq!(taken.application(), GAME);
+    // **And what it is to answer, as the call gave it**, for the reader.
+    assert_eq!(taken.question(), Some("Is a race on?"));
     assert_eq!(taken.png(), the_png().as_slice());
     assert_eq!(taken.size(), (WIDE, TALL));
     assert_eq!(

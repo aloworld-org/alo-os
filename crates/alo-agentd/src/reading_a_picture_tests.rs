@@ -136,6 +136,37 @@ fn a_service_chosen_by_name_is_sent_the_picture_and_its_words_go_on() {
     assert!(!crossed.contains("base64"), "{crossed}");
 }
 
+/// **Where the service that reads is the one the person asks questions of, the
+/// model they chose for it reads too**, not the first it lists.
+#[test]
+fn the_model_chosen_for_the_service_reads_its_pictures() {
+    let (port, heard) = crate::testing::a_service_here_answering("a menu");
+    let config = a_directory_of_our_own("picture-read-by-the-chosen-model");
+    let folder = config.join(alo_choosing::THE_FOLDER);
+    std::fs::create_dir_all(&folder).unwrap();
+    std::fs::write(
+        folder.join(alo_choosing::THE_SETTINGS),
+        format!(
+            "format = 3\n\n[answers]\nprovider = {{ name = \"Here\", model = \"the-chosen\" \
+             }}\n\n[[provider]]\nname = \"Here\"\nendpoint = \"http://127.0.0.1:{port}\"\nneeds-a-key \
+             = false\nmodels = [\"the-first\", \"the-chosen\"]\n"
+        ),
+    )
+    .unwrap();
+    let mut questions = Questions::of_a_session(
+        Some(config.into_os_string()),
+        None,
+        alo_models::Catalogue::built_in().unwrap(),
+        TheBound::ThePersons(SourcePolicy::Anywhere),
+        WhoseKeyring::Nobodys,
+    );
+    let road = reading_by(WhoReadsPictures::a_provider("Here").unwrap());
+    let read = the_picture_read(told(&mut questions, &road));
+    assert_eq!(read.read.as_deref(), Some("a menu"), "{:?}", read.not_read);
+    let sent = crate::testing::the_body_of(&heard.join().unwrap());
+    assert_eq!(sent["model"], "the-chosen");
+}
+
 /// **Nobody reads, and the person's own model cannot be sent one yet**: each
 /// refused in words, the picture not read, and nothing sent.
 #[test]

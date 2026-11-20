@@ -7,7 +7,7 @@
 # file is not what the code offers.
 
 fingerprints	2
-every-turn	27b0f6884ed23820
+every-turn	685814d2d4a8920b
 verb	accessible.activate_control	6992bb174a174353
 verb	accessible.choose_option	c232a57322aa106c
 verb	accessible.open_item	212fe17d915277f0

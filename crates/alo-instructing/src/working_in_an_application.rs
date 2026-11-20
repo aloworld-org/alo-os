@@ -157,18 +157,12 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
              names that key, {PRESS_KEY}"
         ));
     }
-    // **A picture is the last resort** (ADR 0147 §1): told only after the
-    // read, for a window whose answer names nothing to act on.
-    if verbs.of(PICTURE_WINDOW).is_some() {
-        acts.push(format!(
-            "when {READ_WINDOW} answered that a window shows no text and names nothing and that \
-             a picture of it can be read — a game, a photo, a drawing canvas — you have not seen \
-             that window: your next step is {PICTURE_WINDOW} for its application, with what the person wants \
-             to know as its question, once, even \
-             when the person only asked what it shows, and never an answer about it before the \
-             picture is read; never {PICTURE_WINDOW} for a window {READ_WINDOW} could read"
-        ));
-    }
+    // **The picture is told by the read that needs it, not here** (2026-11-20):
+    // told to every turn, the act pulled the model off pressing a named button
+    // (press a button at full access, 17 of 20 against main's 19 of 20). A
+    // read that finds nothing, where a picture may be taken, says so itself
+    // (`alo_adapters::a_picture_could_say_more`), and the verb's own words
+    // say what it is for.
     format!(
         "\n\nTo work in an application's window, send {READ_WINDOW} first: its answer names \
          the window's fields, documents and controls. Then act on one by its name exactly as \
@@ -272,13 +266,13 @@ mod tests {
         assert!(told.contains("Never send a run line"), "{told}");
         assert!(!told.contains(TYPE_WITHOUT_SAVING), "{told}");
 
-        assert!(!told.contains(PICTURE_WINDOW), "{told}");
+        // **The picture is never in what every turn is told**: the read that
+        // needs it says so.
         verbs
             .declare(named(PICTURE_WINDOW, Effect::Change))
             .unwrap();
         let told = working_in_an_application(&verbs);
-        assert!(told.contains(PICTURE_WINDOW), "{told}");
-        assert!(told.contains("shows no text and names nothing"), "{told}");
+        assert!(!told.contains(PICTURE_WINDOW), "{told}");
 
         verbs
             .declare(named(TYPE_WITHOUT_SAVING, Effect::Change))
