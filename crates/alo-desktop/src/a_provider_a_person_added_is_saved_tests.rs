@@ -9,7 +9,7 @@
 use alo_keyring_fixture::AKeyringOfOurOwn;
 use alo_models::SecretRef;
 use alo_secrets::{NotStored, TheKeyring};
-use alo_setting_up::a_provider_is_filled_in::AProviderBeingAddded;
+use alo_setting_up::a_provider_is_filled_in::{AProviderBeingAddded, WhichField};
 
 use super::{NotSaved, a_provider_a_person_added_is_saved};
 
@@ -39,6 +39,7 @@ fn one_a_person_filled_in() -> AProviderBeingAddded {
     form.to_the_next_field();
     types(&mut form, "sk-not-a-real-key");
     form.to_the_next_field();
+    form.to_the_next_field();
     types(&mut form, "gpt-4o-mini");
     form
 }
@@ -65,7 +66,8 @@ fn a_provider_a_person_added_can_be_asked_afterwards() {
         Err(NotStored::Missing)
     ));
 
-    a_provider_a_person_added_is_saved(&ours, &at, &saving).expect("a filled-in provider saves");
+    a_provider_a_person_added_is_saved(Some(&ours), &at, &saving)
+        .expect("a filled-in provider saves");
 
     assert!(
         alo_choosing::what_answers_here(&at).is_some(),
@@ -85,7 +87,7 @@ fn the_provider_is_on_the_persons_own_list_under_the_name_they_gave() {
     let at = somewhere_of_its_own();
     let saving = one_a_person_filled_in().what_it_would_save().unwrap();
 
-    a_provider_a_person_added_is_saved(&ours, &at, &saving).unwrap();
+    a_provider_a_person_added_is_saved(Some(&ours), &at, &saving).unwrap();
 
     let settings = alo_choosing::Settings::at(&at).expect("a settings file that was just written");
     let provider = settings.provider().expect("the provider that was added");
@@ -107,7 +109,7 @@ fn the_settings_file_never_holds_the_key_itself() {
     let at = somewhere_of_its_own();
     let saving = one_a_person_filled_in().what_it_would_save().unwrap();
 
-    a_provider_a_person_added_is_saved(&ours, &at, &saving).unwrap();
+    a_provider_a_person_added_is_saved(Some(&ours), &at, &saving).unwrap();
 
     let written = std::fs::read_to_string(&at).expect("the settings file");
     assert!(
@@ -141,7 +143,7 @@ fn a_keyring_that_will_not_take_the_key_leaves_the_settings_exactly_as_they_were
 
     keyring.stop_letting_anyone_reach_the_keyring();
 
-    let refused = a_provider_a_person_added_is_saved(&ours, &at, &saving)
+    let refused = a_provider_a_person_added_is_saved(Some(&ours), &at, &saving)
         .expect_err("a keyring nothing can reach refuses");
     assert!(
         matches!(refused, NotSaved::KeyNotKept(_)),
@@ -166,7 +168,7 @@ fn saving_a_second_provider_over_the_first_leaves_one_key_and_one_choice() {
     let at = somewhere_of_its_own();
 
     let first = one_a_person_filled_in().what_it_would_save().unwrap();
-    a_provider_a_person_added_is_saved(&ours, &at, &first).unwrap();
+    a_provider_a_person_added_is_saved(Some(&ours), &at, &first).unwrap();
 
     let mut again = AProviderBeingAddded::empty();
     types(&mut again, "OpenAI");
@@ -175,10 +177,11 @@ fn saving_a_second_provider_over_the_first_leaves_one_key_and_one_choice() {
     again.to_the_next_field();
     types(&mut again, "sk-the-one-that-works");
     again.to_the_next_field();
+    again.to_the_next_field();
     types(&mut again, "gpt-4o");
     let second = again.what_it_would_save().unwrap();
 
-    a_provider_a_person_added_is_saved(&ours, &at, &second)
+    a_provider_a_person_added_is_saved(Some(&ours), &at, &second)
         .expect("a person correcting their key saves again");
 
     let settings = alo_choosing::Settings::at(&at).unwrap();
@@ -208,9 +211,115 @@ fn a_provider_on_this_machine_over_http_saves_too() {
     form.to_the_next_field();
     types(&mut form, "not-really-needed");
     form.to_the_next_field();
+    form.to_the_next_field();
     types(&mut form, "llama3");
     let saving = form.what_it_would_save().unwrap();
 
-    a_provider_a_person_added_is_saved(&ours, &at, &saving).unwrap();
+    a_provider_a_person_added_is_saved(Some(&ours), &at, &saving).unwrap();
     assert!(alo_choosing::what_answers_here(&at).is_some());
+}
+
+/// A runtime of the person's own on this machine, with the switch saying it
+/// needs no key turned on and the key left empty.
+fn a_runtime_here_that_needs_no_key() -> AProviderBeingAddded {
+    let mut form = AProviderBeingAddded::empty();
+    types(&mut form, "On this computer");
+    form.to_the_next_field();
+    types(&mut form, "http://127.0.0.1:11434");
+    form.the_keyboard_is_in(WhichField::NoKeyNeeded);
+    form.typed(' ');
+    form.the_keyboard_is_in(WhichField::Model);
+    types(&mut form, "llama3.2");
+    form
+}
+
+#[test]
+fn a_service_that_needs_no_key_saves_on_a_machine_with_no_keyring() {
+    // **Nothing to keep, so nothing is asked of a keyring** — and a machine
+    // without one, which `alo-desktop` reports as *there is no keyring*, can
+    // still be answered by a runtime of the person's own.
+    let at = somewhere_of_its_own();
+    let saving = a_runtime_here_that_needs_no_key()
+        .what_it_would_save()
+        .expect("a service that needs no key");
+
+    a_provider_a_person_added_is_saved(None, &at, &saving)
+        .expect("a provider with no key needs no keyring");
+
+    assert!(
+        alo_choosing::what_answers_here(&at).is_some(),
+        "the machine knows what answers them"
+    );
+    let written = std::fs::read_to_string(&at).expect("the settings file");
+    assert!(written.contains("needs-a-key = false"), "{written}");
+    let settings = alo_choosing::Settings::at(&at).expect("a settings file");
+    assert!(settings.provider().expect("the provider").key.is_none());
+}
+
+#[test]
+fn a_provider_with_a_key_and_no_keyring_is_refused_and_nothing_is_written() {
+    // **The refusal path.** A key with nowhere to go is not saved as though
+    // it needed none: the file is left exactly as it was.
+    let at = somewhere_of_its_own();
+    let saving = one_a_person_filled_in().what_it_would_save().unwrap();
+
+    let refused =
+        a_provider_a_person_added_is_saved(None, &at, &saving).expect_err("a key and no keyring");
+    assert!(matches!(refused, NotSaved::NoKeyring), "{refused:?}");
+    assert!(!at.exists(), "the settings file was written anyway");
+}
+
+/// **The walk waits for the line this binary says**, read from the walk's own
+/// source the way `alo-shell`'s `the_walk_waits_for_the_words_this_says` reads
+/// it, so the two cannot drift apart without one of them going red.
+#[test]
+fn the_walk_waits_for_the_line_said_when_a_keyless_provider_is_saved() {
+    let walk = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../alo-walking/src/the_first_walk.rs"),
+    )
+    .expect("the first walk's source is beside this crate");
+    // **Wherever rustfmt breaks the declaration**: the first string after the
+    // constant's name is its value.
+    let declared = walk
+        .split_once("pub const A_PROVIDER_THAT_NEEDS_NO_KEY_SAVED: &str =")
+        .and_then(|(_, rest)| rest.split_once('"'))
+        .and_then(|(_, rest)| rest.split_once("\";"))
+        .map(|(value, _)| value)
+        .expect("the walk declares the line it waits for");
+    assert_eq!(declared, super::SAVED_NEEDING_NO_KEY);
+    assert_eq!(
+        super::what_is_said_when_saved(
+            &a_runtime_here_that_needs_no_key()
+                .what_it_would_save()
+                .unwrap()
+        ),
+        super::SAVED_NEEDING_NO_KEY
+    );
+    // The control: a provider with a key says something else, so the walk's
+    // line is the keyless road and not any save at all.
+    assert_ne!(
+        super::what_is_said_when_saved(&one_a_person_filled_in().what_it_would_save().unwrap()),
+        super::SAVED_NEEDING_NO_KEY
+    );
+}
+
+#[test]
+fn a_key_with_no_keyring_is_shown_as_no_keyring_and_logged_as_one() {
+    // **Each refusal is shown as its own machine**: a key with nowhere to go
+    // is *there is no keyring*, not *the settings would not read*, which is
+    // where a missing arm used to fall.
+    assert_eq!(
+        NotSaved::NoKeyring.shown_as(),
+        alo_shell::WhyNotSaved::ThereIsNoKeyring
+    );
+    assert_eq!(
+        NotSaved::KeyNotKept(NotStored::Missing).shown_as(),
+        alo_shell::WhyNotSaved::TheKeyWasNotKept
+    );
+    let logged = NotSaved::NoKeyring.what_did_not_happen();
+    assert!(
+        logged.contains("no keyring") && logged.contains("nothing was tried"),
+        "{logged}"
+    );
 }

@@ -28,8 +28,10 @@
 # whole, or when a test in `alo-agentd` attaches without being listed.
 #
 # **When.** After each merge to main, by hand, and on a pull request that
-# changes this file, so a change to how the suite runs is watched running
-# before it lands. A failure is a failed check on the merged commit.
+# changes this file or the boundary's own crates (`alo-bounding`, its kernel
+# half and its map), whose tests the merge gate leaves to this suite. So a
+# change to the boundary is watched running before it lands, and a change to
+# how the suite runs is too. A failure is a failed check on the merged commit.
 
 name: Boundary
 
@@ -39,6 +41,9 @@ on:
   pull_request:
     paths:
       - .github/workflows/boundary.yml
+      - crates/alo-bounding/**
+      - crates/alo-bounding-kernel/**
+      - crates/alo-bounding-map/**
   workflow_dispatch:
 
 permissions:
