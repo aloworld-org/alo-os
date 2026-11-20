@@ -1098,25 +1098,44 @@ mod running {
                 eprintln!("alo-desktop: this person has no settings file to save a provider in");
                 return Err(WhyNotSaved::ThereIsNowhereToKeep);
             };
-            let Ok(bus) = alo_secrets::TheBus::of_this_process() else {
-                eprintln!("alo-desktop: this session has no bus, so there is no keyring to ask");
-                return Err(WhyNotSaved::ThereIsNoKeyring);
-            };
-            let Ok(keyring) = alo_secrets::TheKeyring::opened(&bus) else {
-                // **The machine this is most likely to be**, so it says which:
-                // an image with no Secret Service is exactly what ADR 0022
-                // named as the first thing standing in the way, and it stayed
-                // that way until `alo-keyring.service` was added.
-                eprintln!(
-                    "alo-desktop: there is no keyring on this machine, so a provider's key has \
-                     nowhere to go"
-                );
-                return Err(WhyNotSaved::ThereIsNoKeyring);
+            // **The keyring is asked for only when there is a key to keep.** A
+            // service the person said needs no key is saved on a machine with
+            // no keyring at all, and nothing is asked of the bus for it.
+            let keyring = if saving.key.is_some() {
+                let Ok(bus) = alo_secrets::TheBus::of_this_process() else {
+                    eprintln!(
+                        "alo-desktop: this session has no bus, so there is no keyring to ask"
+                    );
+                    return Err(WhyNotSaved::ThereIsNoKeyring);
+                };
+                let Ok(keyring) = alo_secrets::TheKeyring::opened(&bus) else {
+                    // **The machine this is most likely to be**, so it says
+                    // which: an image with no Secret Service is exactly what
+                    // ADR 0022 named as the first thing standing in the way,
+                    // and it stayed that way until `alo-keyring.service` was
+                    // added.
+                    eprintln!(
+                        "alo-desktop: there is no keyring on this machine, so a provider's key \
+                         has nowhere to go"
+                    );
+                    return Err(WhyNotSaved::ThereIsNoKeyring);
+                };
+                Some(keyring)
+            } else {
+                None
             };
             match crate::a_provider_a_person_added_is_saved::a_provider_a_person_added_is_saved(
-                &keyring, &at, saving,
+                keyring.as_ref(),
+                &at,
+                saving,
             ) {
-                Ok(()) => Ok(()),
+                Ok(()) => {
+                    eprintln!(
+                        "{}",
+                        crate::a_provider_a_person_added_is_saved::what_is_said_when_saved(saving)
+                    );
+                    Ok(())
+                }
                 Err(why) => {
                     // **Said on the error stream and not shown**, which is this
                     // binary's own shape: the words a person reads belong to
@@ -1132,15 +1151,7 @@ mod running {
                     // above keeps the detail for whoever reads the log. The
                     // mapping is this binary's because the failures are, and
                     // the words are the shell's because words are.
-                    Err(match why {
-                        crate::a_provider_a_person_added_is_saved::NotSaved::KeyNotKept(_) => {
-                            WhyNotSaved::TheKeyWasNotKept
-                        }
-                        crate::a_provider_a_person_added_is_saved::NotSaved::SettingsWouldNotRead(
-                            _,
-                        ) => WhyNotSaved::TheSettingsWouldNotRead,
-                        _ => WhyNotSaved::TheSettingsWouldNotRead,
-                    })
+                    Err(why.shown_as())
                 }
             }
         }

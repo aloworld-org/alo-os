@@ -318,6 +318,13 @@ impl Server {
             // up and came back has not asked for this again.
             return false;
         };
+        // **A paste is not a press of the switch.** Text with a space in it,
+        // landing while the keyboard is on the switch that says a service
+        // needs no key, would flip it once per space — a choice about what a
+        // provider needs, made by whatever was on the clipboard.
+        if !form.which_field().takes_typing() {
+            return false;
+        }
         let mut changed = false;
         for came in pasted {
             for letter in came.text().chars() {

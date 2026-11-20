@@ -45,7 +45,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 22);
+    assert_eq!(THE_VERSION, 26);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -626,5 +626,117 @@ fn a_slider_named_wrongly_is_refused_before_the_card_and_the_try_goes_on() {
         // the road.
         let (stopped, _) = try_these(&[as_said.clone(), answer.clone()]);
         assert!(!stopped.took_the_road(), "{level:?}: {stopped:?}");
+    }
+}
+
+/// **A file named by a path where nothing is is refused as the machine
+/// refuses it**, and the try goes on: a read of a path that names nothing is
+/// answered by `alo_files::Touching` with *there is nothing at …*, at both
+/// levels, and a model that then reads the file the person named takes the
+/// road, said to have been refused first. Run 44793910551: one try at ask
+/// each time named `notes.txt},` and the check ended it where the machine
+/// would have answered.
+#[test]
+fn reading_a_file_goes_on_from_a_path_where_nothing_is() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, reading, the_words};
+    use alo_files::verbs::{FILE, READ_FILE};
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "read a file")
+        .expect("the set has it");
+    let notes = format!("{THE_HOME}/Documents/notes.txt");
+    let garbled = reading(READ_FILE, &[(FILE, &format!("{notes}}},"))]);
+    let read = reading(READ_FILE, &[(FILE, &notes)]);
+    let answer = answering("It says to buy bread and call Anna on Friday.");
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let try_these = |lines: &[String]| {
+            let mut model = Writing::these(lines);
+            let tried = one_try_at(
+                level,
+                request,
+                set.may_reach(),
+                &the_verbs(),
+                &the_words(),
+                &mut model,
+            );
+            (tried, model.shown)
+        };
+        let (went_on, shown) = try_these(&[garbled.clone(), read.clone(), answer.clone()]);
+        assert_eq!(went_on.went(), &Went::TheRoad, "{level:?}: {went_on:?}");
+        assert_eq!(went_on.refused_before_asking(), 1, "{level:?}");
+        assert!(
+            shown
+                .get(1)
+                .is_some_and(|second| second.contains("there is nothing at")),
+            "{level:?}: the refusal is shown: {shown:?}"
+        );
+        let (straight, _) = try_these(&[read.clone(), answer.clone()]);
+        assert_eq!(straight.went(), &Went::TheRoad, "{level:?}: {straight:?}");
+        assert_eq!(straight.refused_before_asking(), 0, "{level:?}");
+        // **The refusal case**: the wrong path and then an answer is not
+        // the road.
+        let (stopped, _) = try_these(&[garbled.clone(), answer.clone()]);
+        assert!(!stopped.took_the_road(), "{level:?}: {stopped:?}");
+    }
+}
+
+/// **The machine also has a game, from the decided catalogue**, so the click
+/// request asks about a window that really describes nothing: a game draws
+/// its own menu, and no control in it has a name the tree can give.
+#[test]
+fn the_machine_also_has_a_game_from_the_catalogue() {
+    let set = the_set().expect("the set builds");
+    let told = set.may_reach().told();
+    assert!(
+        told.contains(crate::every_other_verb::THE_GAME_IDENTIFIER),
+        "{told}"
+    );
+    let catalogue = alo_software::Catalogue::decided().expect("the catalogue reads");
+    assert!(
+        catalogue
+            .every()
+            .iter()
+            .any(|one| one.application().identifier()
+                == crate::every_other_verb::THE_GAME_IDENTIFIER),
+        "the game is not one a person could install"
+    );
+}
+
+/// **Clicking by position is asked of the game**: read it, picture it, click
+/// where its picture's words put the thing — every step about the game.
+#[test]
+fn the_click_request_is_asked_of_the_game() {
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "click by position where a picture of a window showed a thing")
+        .expect("the set has the click request");
+    assert!(request.words().contains("SuperTuxKart"), "{}", request.words());
+    assert_eq!(
+        request
+            .road()
+            .iter()
+            .map(crate::a_road::Step::verb)
+            .collect::<Vec<_>>(),
+        [
+            alo_adapters::fallback_verbs::READ_WINDOW,
+            alo_adapters::fallback_verbs::PICTURE_WINDOW,
+            alo_adapters::fallback_verbs::CLICK_AT,
+        ]
+    );
+    for step in request.road() {
+        assert!(
+            step.expected().iter().any(|(argument, is)| *argument
+                == alo_adapters::fallback_verbs::APPLICATION
+                && is == crate::every_other_verb::THE_GAME_IDENTIFIER),
+            "{} is not about the game: {:?}",
+            step.verb(),
+            step.expected()
+        );
     }
 }

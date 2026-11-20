@@ -82,6 +82,20 @@ jobs:
           sudo podman build -f image/Containerfile -t localhost/alo-os:check . > "$RUNNER_TEMP/image-build.log" 2>&1 || { tail -40 "$RUNNER_TEMP/image-build.log"; echo "The image did not build after $(( $(date +%s) - start )) s; the last forty lines of its log are above, and the whole log is kept with this run for three days." | tee -a "$GITHUB_STEP_SUMMARY"; exit 1; }
           echo "The image built in $(( $(date +%s) - start )) s." | tee -a "$GITHUB_STEP_SUMMARY"
           df -h /
+          # Whether the image's kernel builds btrfs in, which the recipe says on
+          # a line of its own: a warning here, never a failure, because the
+          # boundary reads btrfs either way (image/Containerfile says why).
+          said=$(grep -h '^alo-btrfs' "$RUNNER_TEMP/image-build.log" | sort -u || true)
+          if [ -z "$said" ]; then
+            said="alo-btrfs WARNING: the recipe did not say whether its kernel builds btrfs in"
+          fi
+          printf '%s\n' "$said" | while read -r line; do
+            case "$line" in
+              *WARNING*) echo "::warning title=btrfs in the image's kernel::$line" ;;
+              *) echo "$line" ;;
+            esac
+            echo "$line" >> "$GITHUB_STEP_SUMMARY"
+          done
 
       - name: Throw the image away
         if: always()

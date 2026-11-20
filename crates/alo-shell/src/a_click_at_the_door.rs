@@ -35,3 +35,11 @@ impl AskedToClick {
         let _ = self.talking.flush();
     }
 }
+
+#[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected Err is the failure being reported"
+)]
+#[path = "a_click_at_the_door_tests.rs"]
+mod tests;

@@ -68,6 +68,10 @@ pub const ZOOM: &str = "Zoom";
 /// The number the setting request asks for.
 pub const ZOOMED: i64 = 200;
 
+/// The game the machine also has, from the catalogue: a window that describes
+/// nothing, which the click request asks about. A stub until it is declared.
+pub const THE_GAME_IDENTIFIER: &str = "not.yet.declared";
+
 /// The title of the image viewer's window the setting request reads.
 pub const THE_PICTURE: &str = "holiday.jpg";
 
@@ -258,6 +262,17 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             )
             .expecting(FILE, written(&notes)),
         ],
+    )
+    // **On a machine where the notes and every one of their folders are
+    // there**, so a path that names nothing is refused as the machine
+    // refuses a read of it (`alo_files::Touching::of_looking_in`, *there is
+    // nothing at …*), and the try goes on. Run 44793910551: one try at ask
+    // each time read `notes.txt},` and the check ended it there.
+    .where_there_is(
+        Folder::ALL
+            .iter()
+            .map(|folder| in_their(home, *folder))
+            .chain(std::iter::once(notes.clone())),
     );
     let finding = ARequest::asking(
         "find files by name",

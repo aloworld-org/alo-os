@@ -99,3 +99,31 @@ fn every_answer_reads_back_and_nothing_else_does() {
         assert_eq!(Clicked::read(not), None, "{not}");
     }
 }
+
+/// **A line exactly as long as the door allows is read, not refused as too
+/// long**: the bound is the longest, not one short of it.
+#[test]
+fn a_line_at_the_longest_is_not_too_long() {
+    let filler = "a".repeat(Request::THE_MOST - "click-at  5 5".len());
+    let line = format!("click-at {filler} 5 5");
+    assert_eq!(line.len(), Request::THE_MOST);
+    assert_ne!(ToClick::read(&line), Some(Err(NotToClick::TooLong)));
+    assert_eq!(
+        ToClick::read(&format!("click-at a{filler} 5 5")),
+        Some(Err(NotToClick::TooLong))
+    );
+}
+
+/// **The log says which application, where, and what the desktop answered.**
+#[test]
+fn the_log_names_the_application_the_point_and_the_answer() {
+    let said = crate::said_on_the_log::alo_clicked(
+        &ToClick::at(a_game(), 500, 400).unwrap(),
+        Clicked::ThePersonIsPressing,
+    );
+    assert_eq!(
+        said,
+        "alo asked for a click in the window in front of net.supertuxkart.SuperTuxKart at 500 \
+         400, and it was answered the-person-is-pressing"
+    );
+}

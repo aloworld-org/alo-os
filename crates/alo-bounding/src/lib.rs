@@ -413,6 +413,7 @@ mod place;
 mod places;
 mod turns;
 mod waiting;
+mod what_the_kernel_says;
 
 #[cfg(test)]
 mod testing;
