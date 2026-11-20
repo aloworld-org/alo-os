@@ -70,6 +70,7 @@ fn a_provider_a_person_added_is_one_that_really_answers() {
     form.to_the_next_field();
     types(&mut form, &key);
     form.to_the_next_field();
+    form.to_the_next_field();
     types(&mut form, &model);
 
     assert!(
@@ -89,7 +90,7 @@ fn a_provider_a_person_added_is_one_that_really_answers() {
     std::fs::create_dir_all(at.parent().unwrap()).unwrap();
     let _ = std::fs::remove_file(&at);
 
-    a_provider_a_person_added_is_saved(&ours, &at, &saving).expect("the provider saves");
+    a_provider_a_person_added_is_saved(Some(&ours), &at, &saving).expect("the provider saves");
 
     // **The machine now knows what answers**, which is the question
     // `a_task_for` asks before it opens a window for a person's words.

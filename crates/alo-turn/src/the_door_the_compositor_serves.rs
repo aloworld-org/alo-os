@@ -110,6 +110,23 @@ pub trait TheDoorTheCompositorServes {
         let _ = asked;
         Err(NotAtTheDoor::NoCompositor)
     }
+
+    /// Put `click-at` to the compositor — one click at one point of the
+    /// window in front, given as thousandths of it (ADR 0147, amended
+    /// 2026-11-17) — and wait for its one word.
+    ///
+    /// **No compositor by default**, as for [`Self::typing`], so a door that
+    /// does not know this act clicks nothing.
+    ///
+    /// # Errors
+    /// [`NotAtTheDoor`], as for [`Self::asking`].
+    fn clicking(
+        &mut self,
+        asked: &alo_acting::ToClick,
+    ) -> Result<alo_acting::Clicked, NotAtTheDoor> {
+        let _ = asked;
+        Err(NotAtTheDoor::NoCompositor)
+    }
 }
 
 /// Why the compositor was not asked.

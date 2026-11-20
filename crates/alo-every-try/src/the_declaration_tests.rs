@@ -261,6 +261,44 @@ fn a_requests_line_changes_with_anything_in_its_definition() {
             "another road",
             base.clone().or_by_another_road(vec![step(), step()]),
         ),
+        (
+            "the window offered with it",
+            base.clone().offering(
+                alo_instructing::TheWindowOffered::of("Downloads", "org.kde.dolphin")
+                    .expect("a window"),
+            ),
+        ),
+        (
+            "what is on its machine",
+            base.clone()
+                .where_there_is([std::path::PathBuf::from("/var/home/alo/report.pdf")]),
+        ),
+        (
+            "a step that is a look",
+            ARequest::asking("open it", "Open Firefox.", vec![step().a_look(), step()]),
+        ),
+        (
+            "a step taken as often as asked",
+            ARequest::asking("open it", "Open Firefox.", vec![step().as_often_as_asked()]),
+        ),
+        (
+            "a step whose control is the only one of its kind",
+            ARequest::asking(
+                "open it",
+                "Open Firefox.",
+                vec![step().the_only_control_of_its_kind()],
+            ),
+        ),
+        (
+            "what the machine answers",
+            ARequest::asking(
+                "open it",
+                "Open Firefox.",
+                vec![
+                    Step::of(OPEN_APPLICATION, Answered::AFileOpened).expecting("application", "a"),
+                ],
+            ),
+        ),
     ] {
         assert_ne!(
             a_requests_line(&base),
@@ -317,4 +355,118 @@ nonsense
     );
     assert!(Declared::read("every-turn\tabc\nverb\ta\tf1\nverb\ta\tf2\n").is_err());
     assert!(Declared::read("every-turn\tabc\nverb\ta\tf1\nrequest\tone\tf2\tb\n").is_err());
+}
+
+/// **A change to the format owns nothing** (the owner, 2026-11-20): a request
+/// is told by what the model is shown and how its road is judged, and a field
+/// left at its default — no window, nothing on its machine, no look — adds
+/// nothing to it. #1382 and #1391 each added such a field to every request,
+/// and each changed every request's line while the model was shown the same.
+#[test]
+fn a_field_left_at_its_default_adds_nothing_to_a_request() {
+    let request = ARequest::asking(
+        "open it",
+        "Open Firefox.",
+        vec![
+            Step::of(OPEN_APPLICATION, Answered::AnApplicationOpened).expecting("application", "a"),
+        ],
+    );
+    assert_eq!(
+        request.as_shown_and_judged(),
+        "words: Open Firefox.
+road:
+- open_application; expecting application=a; answered AnApplicationOpened
+"
+    );
+}
+
+/// **The name a summary calls a request by is not shown to the model**, so
+/// renaming it changes nothing a try is judged by.
+#[test]
+fn a_request_is_told_by_what_it_shows_and_not_its_name() {
+    let step = || Step::of(OPEN_APPLICATION, Answered::AnApplicationOpened);
+    assert_eq!(
+        a_requests_line(&ARequest::asking("open it", "Open Firefox.", vec![step()])),
+        a_requests_line(&ARequest::asking("start it", "Open Firefox.", vec![step()]))
+    );
+}
+
+/// **A verb's line is what the model is shown about it and how a call is
+/// judged**, not its whole declaration: why it needs no grant is said to
+/// nobody, so a change to that reason changes no line.
+#[test]
+fn a_verbs_line_does_not_answer_to_what_the_model_is_never_shown() {
+    let with = |reason: &'static str| {
+        Verb::checked(
+            "water_the_plants",
+            Word::saying(
+                "testing.verb.water-the-plants.purpose",
+                "water the plants in a room",
+            ),
+            Effect::Change,
+            vec![Arg::taking(
+                "room",
+                Word::saying("testing.verb.water-the-plants.room", "the room to water"),
+                Takes::name(64),
+            )],
+            Requires::nothing_because(reason),
+            Word::saying(
+                "testing.verb.water-the-plants.sentence",
+                "water the plants in {room}",
+            ),
+        )
+        .expect("the verb declares")
+    };
+    assert_eq!(
+        its_line(&with("a room is not a path, a file or an application")),
+        its_line(&with("rooms are not granted"))
+    );
+}
+
+/// **The file names the scheme its lines were written in**, and a scheme this
+/// code does not know is refused rather than compared line by line.
+#[test]
+fn the_declaration_names_its_scheme() {
+    use super::Scheme;
+
+    let written = declared_with(&the_verbs()).written();
+    assert!(written.contains("\nfingerprints\t2\n"), "{written}");
+    assert_eq!(
+        Declared::read(&written).expect("it reads").scheme(),
+        Scheme::WhatIsShown
+    );
+    assert_eq!(
+        Declared::read("every-turn\tabc\n")
+            .expect("it reads")
+            .scheme(),
+        Scheme::First,
+        "a file that names no scheme is the first"
+    );
+    assert!(Declared::read("fingerprints\t3\nevery-turn\tabc\n").is_err());
+}
+
+/// **The first scheme still tells things apart**, so a base declared in it is
+/// compared line by line rather than read as one line for everything.
+#[test]
+fn the_first_scheme_tells_every_verb_and_request_apart() {
+    use super::Scheme;
+
+    let first = Declared::by_the_scheme(
+        &the_set().expect("the set builds"),
+        &the_verbs(),
+        Scheme::First,
+    )
+    .expect("declares");
+    let requests: std::collections::BTreeSet<&str> =
+        first.requests().iter().map(|one| one.line()).collect();
+    assert_eq!(requests.len(), first.requests().len(), "a line per request");
+    let verbs: std::collections::BTreeSet<&str> = the_verbs()
+        .all()
+        .filter_map(|verb| first.verb(verb.name()))
+        .collect();
+    assert_eq!(verbs.len(), the_verbs().len(), "a line per verb");
+    assert!(
+        first.requests().iter().all(|one| one.line().len() == 16),
+        "each a fingerprint"
+    );
 }

@@ -53,12 +53,7 @@
 //! refused to load on a machine whose `struct file` was perfectly ordinary.
 //! `docs/quirks.md` records it.
 
-use std::fs;
-
 use crate::failing::NotBounded;
-
-/// Where a kernel that was built to say so keeps its own type information.
-const WHERE_THE_KERNEL_SAYS: &str = "/sys/kernel/btf/vmlinux";
 
 /// What the first two bytes of the file are, on a machine that wrote them in
 /// its own byte order.
@@ -155,13 +150,36 @@ struct Found {
     of_type: u32,
 }
 
-/// This kernel's account of its own structures.
+/// This kernel's account of its own structures, and its modules'.
+///
+/// # A module's type information is split, not whole
+///
+/// A module's file at `/sys/kernel/btf/<module>` is written **on top of** the
+/// kernel's: its first type is the one after the kernel's last, a member of one
+/// of its structures may be any of the kernel's types (btrfs's `anon_dev` is the
+/// kernel's `dev_t`), and its names are numbered from the end of the kernel's,
+/// so offset zero is still the kernel's empty name. So each module is kept as a
+/// part of its own, and a type a module names is looked for in the kernel when
+/// its id is the kernel's and in that module when it is past it. Two modules
+/// share ids past the kernel's, so a module's type is only ever looked for from
+/// the module that named it.
 #[derive(Debug)]
 pub struct Types {
+    /// The kernel's own.
+    kernel: Part,
+
+    /// The modules read, each split from the kernel's.
+    modules: Vec<Part>,
+}
+
+/// One file of type information, read.
+#[derive(Debug)]
+struct Part {
     /// The whole file, as the kernel published it.
     file: Vec<u8>,
 
-    /// Where each type record starts, by type id. The first entry is id 1.
+    /// Where each type record starts. The first entry is the part's first id:
+    /// 1 for the kernel's, the kernel's last plus one for a module's.
     at: Vec<usize>,
 
     /// Where the strings start.
@@ -171,24 +189,260 @@ pub struct Types {
     strings_length: usize,
 }
 
-impl Types {
-    /// What the kernel this daemon is running on says about itself.
-    ///
-    /// A kernel that says nothing is a kernel this boundary will not be imposed
-    /// on, and the refusal names the file rather than the feature — because
-    /// what is missing is `CONFIG_DEBUG_INFO_BTF`, and somebody has to be able
-    /// to work that out from a machine that will not start.
-    pub fn of_this_kernel() -> Result<Self, NotBounded> {
-        let file =
-            fs::read(WHERE_THE_KERNEL_SAYS).map_err(|why| NotBounded::NoTypeInformation {
-                path: WHERE_THE_KERNEL_SAYS.to_owned(),
-                why,
-            })?;
-        Self::read(file)
-    }
+/// Which part a record is in: [`None`] for the kernel's, the index of the
+/// module otherwise.
+type Whose = Option<usize>;
 
+/// One type record, and the part it is in.
+#[derive(Debug, Clone, Copy)]
+struct Record {
+    /// Whose file it is in.
+    whose: Whose,
+
+    /// Where in that file it starts.
+    at: usize,
+}
+
+impl Types {
     /// The same, from bytes somebody already has.
     pub fn read(file: Vec<u8>) -> Result<Self, NotBounded> {
+        Ok(Self {
+            kernel: Part::read(file)?,
+            modules: Vec::new(),
+        })
+    }
+
+    /// This kernel's account, with what one module's split type information
+    /// adds to it.
+    ///
+    /// # Errors
+    /// [`NotBounded::TypesAreNotReadable`] when the module's file is not type
+    /// information, for the reason the kernel's own would be refused.
+    pub fn with_module(mut self, module: Vec<u8>) -> Result<Self, NotBounded> {
+        self.modules.push(Part::read(module)?);
+        Ok(self)
+    }
+
+    /// Where a member of a structure sits, and how wide it is.
+    ///
+    /// `member` is a name, or a path of names separated by dots: `struct sock`
+    /// keeps who it is joined to inside a member called `__sk_common`, so the
+    /// peer's port is `__sk_common.skc_dport` and the answer is measured from
+    /// the start of `struct sock`, which is the pointer the program holds. Each
+    /// step but the last has to be a structure or a union **embedded** in the
+    /// one before it — a step through a pointer would add an offset to an
+    /// address that is not this structure's, so it answers [`None`].
+    ///
+    /// [`None`] when this kernel has no such structure, or the structure has no
+    /// such member — both of which mean the same thing to the caller, which is
+    /// that the program cannot be told where to look.
+    pub fn member(&self, structure: &str, member: &str) -> Option<Member> {
+        let mut found = self.structure_called(structure)?;
+        let mut offset: u32 = 0;
+        let mut steps = member.split('.').peekable();
+        loop {
+            let step = steps.next()?;
+            let here = self.member_of(found, step, PATIENCE)?;
+            offset = offset.checked_add(here.offset)?;
+            if steps.peek().is_none() {
+                return Some(Member {
+                    offset,
+                    width: here.width,
+                });
+            }
+            found = self.composite(found.whose, here.of_type, PATIENCE)?;
+        }
+    }
+
+    /// The same question asked of one already-found structure or union, with the
+    /// answer measured from the start of *that* one.
+    ///
+    /// A member with no name is an anonymous structure or union, and what it
+    /// holds belongs to this one — so the search goes into it and comes back
+    /// with the two offsets added together.
+    fn member_of(&self, found: Record, member: &str, patience: usize) -> Option<Found> {
+        if patience == 0 {
+            return None;
+        }
+        let info = self.word(found, 4)?;
+        let bitfields = info >> 31 == 1;
+        let members = (info & 0xffff) as usize;
+        for which in 0..members {
+            let at = RECORD + which * 12;
+            let name = self.word(found, at)?;
+            let of_type = self.word(found, at + 4)?;
+            let offset = self.word(found, at + 8)?;
+            // With bitfields in the structure the high byte of the offset is
+            // the member's width in bits, and only the low twenty-four are the
+            // position. Without them the whole word is the position. Both are
+            // in bits, and nothing this program reads is a bitfield.
+            let bits = if bitfields {
+                offset & 0x00ff_ffff
+            } else {
+                offset
+            };
+            let name = self.string_at(found.whose, name)?;
+            // A member with no name is never an answer, whatever was asked
+            // for: it is an anonymous structure or union, and what belongs to
+            // this structure is what is inside it.
+            if name.is_empty() {
+                let Some(inside) = self.composite(found.whose, of_type, PATIENCE) else {
+                    continue;
+                };
+                if let Some(deeper) = self.member_of(inside, member, patience - 1) {
+                    return Some(Found {
+                        offset: bits / 8 + deeper.offset,
+                        width: deeper.width,
+                        of_type: deeper.of_type,
+                    });
+                }
+                continue;
+            }
+            if name == member {
+                return Some(Found {
+                    offset: bits / 8,
+                    width: self.width_of(found.whose, of_type, PATIENCE)?,
+                    of_type,
+                });
+            }
+        }
+        None
+    }
+
+    /// Where the record for a structure of that name starts, in the kernel's
+    /// own type information first and then in each module's.
+    ///
+    /// A name can belong to several types — a forward declaration and the
+    /// structure it stands for share one — so the search is for a structure
+    /// with members, which is the definition rather than the promise of one.
+    fn structure_called(&self, name: &str) -> Option<Record> {
+        let kernel = self.kernel.at.iter().map(|at| Record {
+            whose: None,
+            at: *at,
+        });
+        let modules = self.modules.iter().enumerate().flat_map(|(which, part)| {
+            part.at.iter().map(move |at| Record {
+                whose: Some(which),
+                at: *at,
+            })
+        });
+        kernel.chain(modules).find(|record| {
+            let Some(info) = self.word(*record, 4) else {
+                return false;
+            };
+            if (info >> 24) & 0x1f != kind::STRUCT || info & 0xffff == 0 {
+                return false;
+            }
+            self.word(*record, 0)
+                .and_then(|at| self.string_at(record.whose, at))
+                .is_some_and(|found| found == name)
+        })
+    }
+
+    /// The record a type id names, seen from the part that named it: the
+    /// kernel's when the id is one of the kernel's, and otherwise the naming
+    /// module's own.
+    fn record_of(&self, whose: Whose, of_type: u32) -> Option<Record> {
+        let index = (of_type as usize).checked_sub(1)?;
+        if let Some(at) = self.kernel.at.get(index) {
+            return Some(Record {
+                whose: None,
+                at: *at,
+            });
+        }
+        let module = whose?;
+        let at = self
+            .modules
+            .get(module)?
+            .at
+            .get(index - self.kernel.at.len())?;
+        Some(Record {
+            whose: Some(module),
+            at: *at,
+        })
+    }
+
+    /// The record of the structure or union a type finally names, following the
+    /// names and qualifiers put in front of it.
+    ///
+    /// [`None`] for anything else, which is what makes an anonymous member that
+    /// is not a composite — which the format does not have, and a file read from
+    /// `/sys` could still hold — a member the search steps over rather than one
+    /// it walks into.
+    fn composite(&self, whose: Whose, of_type: u32, patience: usize) -> Option<Record> {
+        if patience == 0 || of_type == 0 {
+            return None;
+        }
+        let record = self.record_of(whose, of_type)?;
+        let info = self.word(record, 4)?;
+        match (info >> 24) & 0x1f {
+            kind::STRUCT | kind::UNION => Some(record),
+            kind::TYPEDEF | kind::VOLATILE | kind::CONST | kind::RESTRICT | kind::TYPE_TAG => {
+                self.composite(record.whose, self.word(record, 8)?, patience - 1)
+            }
+            _ => None,
+        }
+    }
+
+    /// How many bytes a type occupies, following the names and qualifiers put
+    /// in front of it.
+    fn width_of(&self, whose: Whose, of_type: u32, patience: usize) -> Option<u32> {
+        if patience == 0 || of_type == 0 {
+            return None;
+        }
+        let record = self.record_of(whose, of_type)?;
+        let info = self.word(record, 4)?;
+        let size_or_type = self.word(record, 8)?;
+        match (info >> 24) & 0x1f {
+            kind::INT | kind::STRUCT | kind::UNION | kind::ENUM | kind::ENUM64 | kind::FLOAT => {
+                Some(size_or_type)
+            }
+            kind::PTR => Some(POINTER),
+            kind::TYPEDEF
+            | kind::VOLATILE
+            | kind::CONST
+            | kind::RESTRICT
+            | kind::TYPE_TAG
+            | kind::DECL_TAG => self.width_of(record.whose, size_or_type, patience - 1),
+            kind::ARRAY => {
+                let element = self.word(record, RECORD)?;
+                let many = self.word(record, RECORD + 8)?;
+                self.width_of(record.whose, element, patience - 1)?
+                    .checked_mul(many)
+            }
+            _ => None,
+        }
+    }
+
+    /// The part a record is in.
+    fn part(&self, whose: Whose) -> Option<&Part> {
+        match whose {
+            None => Some(&self.kernel),
+            Some(module) => self.modules.get(module),
+        }
+    }
+
+    /// Four bytes of a record, `at` bytes into it.
+    fn word(&self, record: Record, at: usize) -> Option<u32> {
+        u32(&self.part(record.whose)?.file, record.at.checked_add(at)?)
+    }
+
+    /// A name, seen from the part that named it: the kernel's own names come
+    /// first, and a module's are numbered from where the kernel's end.
+    fn string_at(&self, whose: Whose, offset: u32) -> Option<&str> {
+        let kernels = self.kernel.strings_length;
+        if (offset as usize) < kernels {
+            return self.kernel.string_at(offset as usize);
+        }
+        self.part(Some(whose?))?
+            .string_at(offset as usize - kernels)
+    }
+}
+
+impl Part {
+    /// One file of type information, checked to be the format and read into
+    /// where each record starts.
+    fn read(file: Vec<u8>) -> Result<Self, NotBounded> {
         let magic = u16(&file, 0).ok_or(NotBounded::TypesAreNotReadable {
             what: "the file is shorter than a header",
         })?;
@@ -239,168 +493,13 @@ impl Types {
         })
     }
 
-    /// Where a member of a structure sits, and how wide it is.
-    ///
-    /// `member` is a name, or a path of names separated by dots: `struct sock`
-    /// keeps who it is joined to inside a member called `__sk_common`, so the
-    /// peer's port is `__sk_common.skc_dport` and the answer is measured from
-    /// the start of `struct sock`, which is the pointer the program holds. Each
-    /// step but the last has to be a structure or a union **embedded** in the
-    /// one before it — a step through a pointer would add an offset to an
-    /// address that is not this structure's, so it answers [`None`].
-    ///
-    /// [`None`] when this kernel has no such structure, or the structure has no
-    /// such member — both of which mean the same thing to the caller, which is
-    /// that the program cannot be told where to look.
-    pub fn member(&self, structure: &str, member: &str) -> Option<Member> {
-        let mut found = self.structure_called(structure)?;
-        let mut offset: u32 = 0;
-        let mut steps = member.split('.').peekable();
-        loop {
-            let step = steps.next()?;
-            let here = self.member_of(found, step, PATIENCE)?;
-            offset = offset.checked_add(here.offset)?;
-            if steps.peek().is_none() {
-                return Some(Member {
-                    offset,
-                    width: here.width,
-                });
-            }
-            found = self.composite(here.of_type, PATIENCE)?;
-        }
-    }
-
-    /// The same question asked of one already-found structure or union, with the
-    /// answer measured from the start of *that* one.
-    ///
-    /// A member with no name is an anonymous structure or union, and what it
-    /// holds belongs to this one — so the search goes into it and comes back
-    /// with the two offsets added together.
-    fn member_of(&self, found: usize, member: &str, patience: usize) -> Option<Found> {
-        if patience == 0 {
+    /// One of the null-terminated names at the end of this file, `offset`
+    /// bytes into them.
+    fn string_at(&self, offset: usize) -> Option<&str> {
+        if offset >= self.strings_length {
             return None;
         }
-        let info = u32(&self.file, found + 4)?;
-        let bitfields = info >> 31 == 1;
-        let members = (info & 0xffff) as usize;
-        for which in 0..members {
-            let record = found + RECORD + which * 12;
-            let name = u32(&self.file, record)?;
-            let of_type = u32(&self.file, record + 4)?;
-            let offset = u32(&self.file, record + 8)?;
-            // With bitfields in the structure the high byte of the offset is
-            // the member's width in bits, and only the low twenty-four are the
-            // position. Without them the whole word is the position. Both are
-            // in bits, and nothing this program reads is a bitfield.
-            let bits = if bitfields {
-                offset & 0x00ff_ffff
-            } else {
-                offset
-            };
-            let name = self.string_at(name)?;
-            // A member with no name is never an answer, whatever was asked
-            // for: it is an anonymous structure or union, and what belongs to
-            // this structure is what is inside it.
-            if name.is_empty() {
-                let Some(inside) = self.composite(of_type, PATIENCE) else {
-                    continue;
-                };
-                if let Some(deeper) = self.member_of(inside, member, patience - 1) {
-                    return Some(Found {
-                        offset: bits / 8 + deeper.offset,
-                        width: deeper.width,
-                        of_type: deeper.of_type,
-                    });
-                }
-                continue;
-            }
-            if name == member {
-                return Some(Found {
-                    offset: bits / 8,
-                    width: self.width_of(of_type, PATIENCE)?,
-                    of_type,
-                });
-            }
-        }
-        None
-    }
-
-    /// Where the record for a structure of that name starts.
-    ///
-    /// A name can belong to several types — a forward declaration and the
-    /// structure it stands for share one — so the search is for a structure
-    /// with members, which is the definition rather than the promise of one.
-    fn structure_called(&self, name: &str) -> Option<usize> {
-        self.at.iter().copied().find(|record| {
-            let Some(info) = u32(&self.file, record + 4) else {
-                return false;
-            };
-            if (info >> 24) & 0x1f != kind::STRUCT || info & 0xffff == 0 {
-                return false;
-            }
-            u32(&self.file, *record)
-                .and_then(|at| self.string_at(at))
-                .is_some_and(|found| found == name)
-        })
-    }
-
-    /// The record of the structure or union a type finally names, following the
-    /// names and qualifiers put in front of it.
-    ///
-    /// [`None`] for anything else, which is what makes an anonymous member that
-    /// is not a composite — which the format does not have, and a file read from
-    /// `/sys` could still hold — a member the search steps over rather than one
-    /// it walks into.
-    fn composite(&self, of_type: u32, patience: usize) -> Option<usize> {
-        if patience == 0 || of_type == 0 {
-            return None;
-        }
-        let record = *self.at.get((of_type as usize).checked_sub(1)?)?;
-        let info = u32(&self.file, record + 4)?;
-        match (info >> 24) & 0x1f {
-            kind::STRUCT | kind::UNION => Some(record),
-            kind::TYPEDEF | kind::VOLATILE | kind::CONST | kind::RESTRICT | kind::TYPE_TAG => {
-                self.composite(u32(&self.file, record + 8)?, patience - 1)
-            }
-            _ => None,
-        }
-    }
-
-    /// How many bytes a type occupies, following the names and qualifiers put
-    /// in front of it.
-    fn width_of(&self, of_type: u32, patience: usize) -> Option<u32> {
-        if patience == 0 || of_type == 0 {
-            return None;
-        }
-        let record = *self.at.get((of_type as usize).checked_sub(1)?)?;
-        let info = u32(&self.file, record + 4)?;
-        let size_or_type = u32(&self.file, record + 8)?;
-        match (info >> 24) & 0x1f {
-            kind::INT | kind::STRUCT | kind::UNION | kind::ENUM | kind::ENUM64 | kind::FLOAT => {
-                Some(size_or_type)
-            }
-            kind::PTR => Some(POINTER),
-            kind::TYPEDEF
-            | kind::VOLATILE
-            | kind::CONST
-            | kind::RESTRICT
-            | kind::TYPE_TAG
-            | kind::DECL_TAG => self.width_of(size_or_type, patience - 1),
-            kind::ARRAY => {
-                let element = u32(&self.file, record + RECORD)?;
-                let many = u32(&self.file, record + RECORD + 8)?;
-                self.width_of(element, patience - 1)?.checked_mul(many)
-            }
-            _ => None,
-        }
-    }
-
-    /// One of the null-terminated names at the end of the file.
-    fn string_at(&self, offset: u32) -> Option<&str> {
-        let from = self.strings.checked_add(offset as usize)?;
-        if offset as usize >= self.strings_length {
-            return None;
-        }
+        let from = self.strings.checked_add(offset)?;
         let rest = self.file.get(from..self.strings + self.strings_length)?;
         let end = rest.iter().position(|byte| *byte == 0)?;
         std::str::from_utf8(rest.get(..end)?).ok()
@@ -623,6 +722,81 @@ mod tests {
         truncated.truncate(30);
         assert!(matches!(
             Types::read(truncated),
+            Err(NotBounded::TypesAreNotReadable { .. })
+        ));
+    }
+
+    /// **A structure only a module describes is found, built from the kernel's
+    /// own types.** A kernel that builds btrfs as a module says nothing about
+    /// btrfs in `vmlinux`. The module's split type information does, and its
+    /// `anon_dev` is the kernel's `dev_t`, so its width is only right if the
+    /// module's ids are read as carrying on from the kernel's.
+    #[test]
+    fn a_structure_a_module_describes_is_found_through_the_kernels_own_types() {
+        let (kernel, module) = testing::btrfs_as_a_module();
+        let alone = Types::read(kernel.clone()).expect("the kernel reads");
+        assert_eq!(alone.member("btrfs_root", "anon_dev"), None);
+
+        let types = Types::read(kernel)
+            .expect("the kernel reads")
+            .with_module(module)
+            .expect("the module reads");
+        assert_eq!(
+            types.member("btrfs_root", "anon_dev"),
+            Some(Member {
+                offset: 120,
+                width: 4
+            })
+        );
+        assert_eq!(
+            types.member("btrfs_inode", "vfs_inode.i_ino"),
+            Some(Member {
+                offset: 432,
+                width: 8
+            })
+        );
+        assert_eq!(
+            types.member("btrfs_inode", "root").map(|m| m.width),
+            Some(8)
+        );
+        // And the kernel's own are where they were.
+        assert_eq!(
+            types.member("super_block", "s_dev"),
+            Some(Member {
+                offset: 8,
+                width: 4
+            })
+        );
+    }
+
+    /// **A module's type information read as a file of its own describes
+    /// nothing.** Its names are numbered from the end of the kernel's, so on
+    /// its own none of them can be read, and nothing is found by a name it
+    /// cannot read.
+    #[test]
+    fn a_module_read_without_its_kernel_describes_nothing() {
+        let (_, module) = testing::btrfs_as_a_module();
+        if let Ok(alone) = Types::read(module) {
+            assert_eq!(alone.member("btrfs_root", "anon_dev"), None);
+            assert_eq!(alone.member("btrfs_inode", "root"), None);
+        }
+    }
+
+    /// **A module whose file is not type information is refused**, as the
+    /// kernel's own is: it is read from `/sys`, and a boundary that went on
+    /// without it would be one that was told something it could not read.
+    #[test]
+    fn a_module_that_is_not_type_information_is_refused() {
+        let (kernel, module) = testing::btrfs_as_a_module();
+        let types = || Types::read(kernel.clone()).expect("the kernel reads");
+        assert!(matches!(
+            types().with_module(Vec::new()),
+            Err(NotBounded::TypesAreNotReadable { .. })
+        ));
+        let mut truncated = module;
+        truncated.truncate(30);
+        assert!(matches!(
+            types().with_module(truncated),
             Err(NotBounded::TypesAreNotReadable { .. })
         ));
     }

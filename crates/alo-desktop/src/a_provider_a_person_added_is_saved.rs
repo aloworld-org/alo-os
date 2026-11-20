@@ -63,6 +63,9 @@ use alo_setting_up::a_provider_is_filled_in::WhatToSave;
 /// by matching, which is what the three names are for.
 #[derive(Debug)]
 pub enum NotSaved {
+    /// There is a key to keep and no keyring to keep it in. **Nothing was
+    /// attempted.** A provider that needs no key never meets this.
+    NoKeyring,
     /// The key did not reach the keyring. **Nothing else was attempted**, so
     /// the settings file is exactly as it was.
     KeyNotKept(NotStored),
@@ -95,6 +98,25 @@ pub enum NotSaved {
 }
 
 impl NotSaved {
+    /// **Which of the four the screen says**, while
+    /// [`Self::what_did_not_happen`] keeps the detail for the log. The
+    /// mapping is this binary's because the failures are, and the words are
+    /// the shell's because words are.
+    ///
+    /// Moved here from `main.rs` so that a test holds it: there, a missing arm
+    /// fell through to *the settings would not read* and nothing noticed.
+    #[must_use]
+    pub const fn shown_as(&self) -> alo_shell::WhyNotSaved {
+        match self {
+            Self::NoKeyring => alo_shell::WhyNotSaved::ThereIsNoKeyring,
+            Self::KeyNotKept(_) => alo_shell::WhyNotSaved::TheKeyWasNotKept,
+            Self::SettingsWouldNotRead(_)
+            | Self::ProviderNotListed(_)
+            | Self::ChoiceNotWritten(_)
+            | Self::ChoiceNamedNothing(_) => alo_shell::WhyNotSaved::TheSettingsWouldNotRead,
+        }
+    }
+
     /// Which of the writes did not happen, for the service log.
     ///
     /// **Not for a person to read.** Every sentence a person reads belongs to
@@ -111,6 +133,10 @@ impl NotSaved {
     #[must_use]
     pub fn what_did_not_happen(&self) -> String {
         match self {
+            Self::NoKeyring => {
+                "there is a key to keep and no keyring on this machine, and nothing was tried"
+                    .to_owned()
+            }
             Self::KeyNotKept(why) => {
                 format!("the key did not reach the keyring, and nothing else was tried: {why:?}")
             }
@@ -133,7 +159,31 @@ impl NotSaved {
     }
 }
 
+/// What the service log says when a provider that needs no key was saved.
+///
+/// **For whoever reads the journal, and for the walk**, which waits for
+/// exactly this line (`alo-walking`'s `A_PROVIDER_THAT_NEEDS_NO_KEY_SAVED`, and
+/// a test here holds the two together). It names no provider: the name is the
+/// person's own.
+pub const SAVED_NEEDING_NO_KEY: &str = "alo-desktop: a provider that needs no key was saved";
+
+/// What the service log says when a provider with a key was saved.
+pub const SAVED_WITH_ITS_KEY: &str = "alo-desktop: a provider was saved, its key in the keyring";
+
+/// Which of the two lines a saved provider is said with.
+#[must_use]
+pub const fn what_is_said_when_saved(saving: &WhatToSave) -> &'static str {
+    if saving.key.is_some() {
+        SAVED_WITH_ITS_KEY
+    } else {
+        SAVED_NEEDING_NO_KEY
+    }
+}
+
 /// Save a provider a person filled in: its key, then its place in settings.
+///
+/// `keyring` is [`None`] on a machine that has none; that is only a refusal
+/// when there is a key to keep.
 ///
 /// `at` is the person's own settings file, which is
 /// `alo_choosing::where_it_is`'s answer.
@@ -142,14 +192,21 @@ impl NotSaved {
 ///
 /// [`NotSaved`], naming which of the three writes did not happen.
 pub fn a_provider_a_person_added_is_saved(
-    keyring: &TheKeyring,
+    keyring: Option<&TheKeyring>,
     at: &std::path::Path,
     saving: &WhatToSave,
 ) -> Result<(), NotSaved> {
-    // **First, and the file above says why.**
-    keyring
-        .keep(&saving.filed_under, &saving.key)
-        .map_err(NotSaved::KeyNotKept)?;
+    // **First, and the file above says why** — and only when there is a key.
+    // A service the person said needs none has nothing to keep, so a machine
+    // with no keyring can still be answered by one (`needs-a-key = false`).
+    // A key with no keyring is refused before anything is written, rather
+    // than saved as though it needed none.
+    if let Some(key) = &saving.key {
+        let keyring = keyring.ok_or(NotSaved::NoKeyring)?;
+        keyring
+            .keep(&key.filed_under, &key.secret)
+            .map_err(NotSaved::KeyNotKept)?;
+    }
 
     // **Opened after the key is kept, not before.** `Choosing::at` reads the
     // person's settings, and reading them earlier would widen the window in
