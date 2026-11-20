@@ -112,6 +112,13 @@ impl Measured {
         }
     }
 
+    /// Each measurement: its level's name, its request, on the road, tried.
+    pub fn each(&self) -> impl Iterator<Item = (&str, &str, usize, usize)> {
+        self.each
+            .iter()
+            .map(|(level, named, on, of)| (level.as_str(), named.as_str(), *on, *of))
+    }
+
     /// As its file holds it.
     #[must_use]
     pub fn written(&self) -> String {

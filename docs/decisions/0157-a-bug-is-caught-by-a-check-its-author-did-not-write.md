@@ -109,6 +109,24 @@ forever*, honestly, as this is written:
     Since 2026-11-20 every request is a change's own when the change alters
     any verb as the model reads it, because every turn is shown every verb
     offered, and `every-try` is a required check.
+  - **Compare with main, for a change that owns the whole set** (the owner,
+    2026-11-20: *"Compare with main"*). A change to what every turn is told,
+    or to any verb as the model reads it, owns every request, and the whole
+    set wobbles from run to run: two whole-set runs at ten tries of one
+    model-facing tree (CI runs 44779963562 and 44793910551) disagreed by two
+    or more tries on 6 of 50 request-and-level pairs, and "type into a search
+    box without saving" went from 9 to 1 with nothing changed. Held to the bar
+    absolutely, such a change fails by chance. So it is tried, whole, beside
+    its base, the same number of times, and blocks only where a request is
+    clearly worse than its base (a drop of `THE_CLEARLY_WORSE_DROP`, two, in
+    every ten), falls below the bar where its base met it, or breaks the
+    ratchet; a request below the bar on its base may stay there, no worse.
+    **Flag, then confirm** (approved the same day): a fault on the first ten
+    is a flag, the flagged request is tried `THE_CONFIRMING_TRIES`, ten, more
+    on both sides, and the verdict is on the twenty — a drop of four, a floor
+    of eighteen where the base had eighteen, twenty where the record holds it.
+    Both settings are in `crates/alo-every-try/src/the_bar.rs`;
+    `crates/alo-every-try/src/compared_with_its_base.rs` is the rule.
 
 The figures above are single runs on 2026-11-15. The two workflows are what
 measure them again.

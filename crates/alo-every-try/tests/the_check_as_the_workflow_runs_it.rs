@@ -58,7 +58,8 @@ fn said(output: &Output) -> String {
 
 /// The committed declaration with one request's line changed, as a change to
 /// that request would leave the base's beside it.
-fn a_base_where_listing_a_folder_was_otherwise() -> PathBuf {
+/// Under `named`, its own file, so two tests never share one.
+fn a_base_where_listing_a_folder_was_otherwise(named: &str) -> PathBuf {
     let committed = std::fs::read_to_string(the_committed()).expect("it reads");
     let changed: String = committed
         .lines()
@@ -75,7 +76,7 @@ fn a_base_where_listing_a_folder_was_otherwise() -> PathBuf {
         })
         .map(|line| line + "\n")
         .collect();
-    let to = a_file("before-changed.txt");
+    let to = a_file(named);
     std::fs::write(&to, changed).expect("it is written");
     to
 }
@@ -102,7 +103,7 @@ fn a_change_that_owns_nothing_passes_without_asking_anybody() {
 /// at the key, which proves it did not pass on nothing.
 #[test]
 fn a_change_that_owns_a_request_goes_on_to_ask_the_model() {
-    let before = a_base_where_listing_a_folder_was_otherwise();
+    let before = a_base_where_listing_a_folder_was_otherwise("before-changed-1.txt");
     let output = ran(the_check().env("ALO_EVERY_TRY_BEFORE", &before));
     assert_eq!(output.status.code(), Some(2), "{}", said(&output));
     assert!(
@@ -215,4 +216,117 @@ fn a_line_for_a_request_gone_from_the_set_may_go() {
         .env("ALO_EVERY_TRY_REACHED_BEFORE", &before));
     assert_eq!(output.status.code(), Some(0), "{}", said(&output));
     let _ = std::fs::remove_file(&before);
+}
+
+/// The committed declaration with the line for what every turn is told
+/// changed, as a change to the instructions would leave the base's beside it.
+fn a_base_where_every_turn_was_told_otherwise() -> PathBuf {
+    let committed = std::fs::read_to_string(the_committed()).expect("it reads");
+    let changed: String = committed
+        .lines()
+        .map(|line| {
+            if line.starts_with("every-turn\t") {
+                "every-turn\totherwise".to_owned()
+            } else {
+                line.to_owned()
+            }
+        })
+        .map(|line| line + "\n")
+        .collect();
+    let to = a_file("before-every-turn.txt");
+    std::fs::write(&to, changed).expect("it is written");
+    to
+}
+
+/// **`owns` says which way the workflow goes**, before anything is asked:
+/// nothing, some requests, or the whole set to compare with its base.
+#[test]
+fn owns_says_which_way_the_workflow_goes() {
+    let output = ran(the_check()
+        .arg("owns")
+        .env("ALO_EVERY_TRY_BEFORE", the_committed()));
+    assert_eq!(output.status.code(), Some(0), "{}", said(&output));
+    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "none");
+
+    let some = a_base_where_listing_a_folder_was_otherwise("before-changed-2.txt");
+    let output = ran(the_check().arg("owns").env("ALO_EVERY_TRY_BEFORE", &some));
+    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "some");
+    let _ = std::fs::remove_file(&some);
+
+    let whole = a_base_where_every_turn_was_told_otherwise();
+    let output = ran(the_check().arg("owns").env("ALO_EVERY_TRY_BEFORE", &whole));
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout).trim(),
+        "the-whole-set"
+    );
+    let _ = std::fs::remove_file(&whole);
+}
+
+/// **`compare` judges a change against its base** from what each measured,
+/// writes what it flagged, and exits by its verdict.
+#[test]
+fn compare_judges_the_change_against_its_base() {
+    let change = a_file("compare-change.txt");
+    let base = a_file("compare-base.txt");
+    let flagged = a_file("compare-flagged.txt");
+    std::fs::write(
+        &change,
+        "measured\tfull-access\tlist a folder\t10\t10\nmeasured\tfull-access\tread a file\t7\t10\n",
+    )
+    .expect("it is written");
+    std::fs::write(
+        &base,
+        "measured\tfull-access\tlist a folder\t10\t10\nmeasured\tfull-access\tread a file\t10\t10\n",
+    )
+    .expect("it is written");
+    let _ = std::fs::remove_file(&flagged);
+    let output = ran(the_check()
+        .arg("compare")
+        .arg(&change)
+        .arg(&base)
+        .env("ALO_EVERY_TRY_FLAGGED", &flagged));
+    assert_eq!(
+        output.status.code(),
+        Some(2),
+        "a flag is not a verdict: {}",
+        said(&output)
+    );
+    assert_eq!(
+        std::fs::read_to_string(&flagged).expect("it was written"),
+        "full-access\tread a file\n"
+    );
+    std::fs::write(
+        &change,
+        "measured\tfull-access\tlist a folder\t10\t10\nmeasured\tfull-access\tread a file\t7\t10\nmeasured\tfull-access\tread a file\t6\t10\n",
+    )
+    .expect("it is written");
+    std::fs::write(
+        &base,
+        "measured\tfull-access\tlist a folder\t10\t10\nmeasured\tfull-access\tread a file\t10\t10\nmeasured\tfull-access\tread a file\t10\t10\n",
+    )
+    .expect("it is written");
+    let output = ran(the_check().arg("compare").arg(&change).arg(&base));
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "confirmed worse: {}",
+        said(&output)
+    );
+    assert!(
+        said(&output).contains("below the bar, where its base met it"),
+        "{}",
+        said(&output)
+    );
+    for file in [change, base, flagged] {
+        let _ = std::fs::remove_file(&file);
+    }
+}
+
+/// **`the-bar` says how many tries, and how many more a flag is given**, so
+/// the workflow asks the base the same.
+#[test]
+fn the_bar_is_said_for_the_workflow() {
+    let output = ran(the_check().arg("the-bar"));
+    assert_eq!(output.status.code(), Some(0), "{}", said(&output));
+    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "10 10");
 }
