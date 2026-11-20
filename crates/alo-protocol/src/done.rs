@@ -431,6 +431,14 @@ pub struct OneThingShown {
     /// 2026-11-20, additively. Absent for anything that holds no number.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub can_be_moved: Option<bool>,
+    /// **The least a `slider` that can be moved may be set to**, as the
+    /// application says, since 2026-11-20, additively. Absent where it said
+    /// none, and for anything that cannot be moved.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub least: Option<String>,
+    /// **And the most**, the same way.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub most: Option<String>,
 }
 
 /// One thing the record says was done to a file, as it goes back to a client.
@@ -1086,6 +1094,8 @@ impl OneThingShown {
             selected: seen.is_selected(),
             value: seen.value().map(ToOwned::to_owned),
             can_be_moved: seen.can_be_moved(),
+            least: seen.goes_from_to().map(|(least, _)| least.to_owned()),
+            most: seen.goes_from_to().map(|(_, most)| most.to_owned()),
         }
     }
 }

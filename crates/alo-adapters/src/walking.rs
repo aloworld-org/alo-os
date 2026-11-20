@@ -418,6 +418,17 @@ impl Walker<'_> {
         } else {
             None
         };
+        // **And how far one that can be moved goes**, asked of nothing else, so
+        // a model told a slider at 100 is not left to guess that is its most.
+        let range = if role == Role::Range && movable {
+            match self.tree.range(at) {
+                Ok(bounds) => bounds.map(|bounds| (bounds.least, bounds.most)),
+                Err(TreeFault::Vanished) => None,
+                Err(fault) => return Err(NotWalked::Tree(fault)),
+            }
+        } else {
+            None
+        };
         // **What a drop-down or an item is chosen by**: its name, or the text
         // it shows where it has none — what a read said of it either way.
         if matches!(role, Role::DropDown | Role::Item) {
@@ -447,7 +458,8 @@ impl Walker<'_> {
             .valued(value)
             // **And whether it can be moved, said beside its number**, so a
             // model is never left to guess it from the word `slider`.
-            .movable((movable || ONLY_SAID.contains(&facts.role)).then_some(movable));
+            .movable((movable || ONLY_SAID.contains(&facts.role)).then_some(movable))
+            .ranged(range);
         let kept = match role {
             Role::Button
             | Role::CheckBox

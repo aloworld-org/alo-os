@@ -363,6 +363,16 @@ impl AccessibilityTree for ATree {
         Ok(self.values.get(at).copied())
     }
 
+    /// Every thing holding a number goes from 0 to 400 here.
+    fn range(&self, at: &NodeAt) -> Result<Option<alo_adapters::Bounds>, TreeFault> {
+        self.hear(Asked::Facts(at.clone()))?;
+        Ok(self.values.get(at).map(|_| alo_adapters::Bounds {
+            least: 0.0,
+            most: 400.0,
+            step: 1.0,
+        }))
+    }
+
     fn actions(&self, at: &NodeAt) -> Result<Vec<String>, TreeFault> {
         self.hear(Asked::Actions(at.clone()))?;
         Ok(self.actions.get(at).cloned().unwrap_or_default())
@@ -919,6 +929,17 @@ fn drop_downs_list_items_and_sliders_are_read_for_what_they_are() {
         .map(|seen| (seen.name(), seen.can_be_moved()))
         .collect();
     assert_eq!(moved, [("Zoom", Some(true)), ("Sending", Some(false))]);
+    // **And how far a slider goes**, so a model is not left to guess that a
+    // slider at 100 can go no further: told a number and nothing else, it
+    // answered "cannot be set to 200" in 2 of 10 tries at full access
+    // (run 44803684908). A progress bar is never asked its range.
+    let ranges: Vec<(&str, Option<(&str, &str)>)> = read
+        .shown()
+        .everything()
+        .filter(|seen| seen.role() == Role::Range)
+        .map(|seen| (seen.name(), seen.goes_from_to()))
+        .collect();
+    assert_eq!(ranges, [("Zoom", Some(("0", "400"))), ("Sending", None)]);
 }
 
 /// One thing read: its role, name, limit, text and number.
