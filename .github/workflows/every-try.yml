@@ -80,7 +80,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
+      # Two commits deep: on a pull request the checkout is the merge of the
+      # change into the base as it stands now, and its first parent is that
+      # base.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       # **Which requests are this change's own**, from the declared file
       # alone, before anything is built. `mode` is `none` (nothing to try, and
@@ -90,13 +95,17 @@ jobs:
         id: own
         env:
           EVENT: ${{ github.event_name }}
-          PULL_REQUEST_BASE: ${{ github.event.pull_request.base.sha }}
           QUEUE_BASE: ${{ github.event.merge_group.base_sha }}
           AGAINST: ${{ inputs.against }}
         run: |
           file=crates/alo-every-try/what-the-model-is-offered.txt
           case "$EVENT" in
-            pull_request) base="$PULL_REQUEST_BASE" ;;
+            # **The merge's first parent, not `pull_request.base.sha`**, which
+            # is the base as it was when the pull request was last updated:
+            # on 2026-11-20 it named a commit from before the declaration for
+            # two pull requests whose merge already held it, and both passed
+            # as "the base has no declaration" without being compared.
+            pull_request) base=$(git rev-parse HEAD^1) ;;
             merge_group) base="$QUEUE_BASE" ;;
             *) base="$AGAINST" ;;
           esac
@@ -107,9 +116,10 @@ jobs:
           git fetch --no-tags --depth=1 origin "$base"
           base=$(git rev-parse FETCH_HEAD)
           if ! git cat-file -e "$base:$file" 2>/dev/null; then
-            echo "The base ($base) has no declaration of what the model is offered, so no request can be called this change's own and nothing was tried. That is true only of the change that adds the declaration." | tee -a "$GITHUB_STEP_SUMMARY"
-            echo "mode=none" >> "$GITHUB_OUTPUT"
-            exit 0
+            # Every base since #1388 has one, so a base without one is not
+            # a change that owns nothing: it is a comparison that cannot be made.
+            echo "The base ($base) has no declaration of what the model is offered, so which requests this change owns cannot be told, and the check does not pass." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
           git show "$base:$file" > "$RUNNER_TEMP/before.txt"
           if cmp -s "$RUNNER_TEMP/before.txt" "$file"; then
