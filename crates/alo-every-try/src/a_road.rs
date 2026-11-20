@@ -6,6 +6,9 @@ use std::path::PathBuf;
 use alo_adapters::places_for_text::APlaceForText;
 use alo_instructing::TheWindowOffered;
 
+#[path = "a_road_as_shown_and_judged.rs"]
+mod as_shown_and_judged;
+
 /// What the machine answers when a step is taken — as a booted machine at full
 /// access would, written by [`crate::the_machine_answers`].
 #[derive(Debug, Clone, PartialEq, Eq)]
