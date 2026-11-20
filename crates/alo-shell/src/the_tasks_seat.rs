@@ -159,7 +159,9 @@ impl Server {
     }
 
     /// This task window takes the keyboard — because the person just asked for
-    /// it. **Never because a question arrived in it.**
+    /// it. **Never because a question arrived in it**, except to take back keys
+    /// alo's own opening of a file took from it, with nothing moved since
+    /// (`crate::the_card_comes_in_front_of_what_alo_opened`).
     ///
     /// **And off the Dock**, if F6 had put it there: the Dock is asked for keys
     /// after a task window, so Enter would reach the task — but the Dock would
