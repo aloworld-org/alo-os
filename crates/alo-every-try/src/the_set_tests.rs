@@ -982,3 +982,93 @@ fn a_call_turned_away_leaves_the_try_on_its_road() {
         assert!(!tried.by_the_other_road(), "{level:?}: {tried:?}");
     }
 }
+
+/// **A guessed name where nothing is named is refused as the machine refuses
+/// it, and the try goes on**: read the game, guess a button, be told to take a
+/// picture, take it, click where it said — the road, at both levels.
+#[test]
+fn a_guessed_name_where_nothing_is_named_is_refused_and_the_try_goes_on() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, reading, the_words};
+    use alo_adapters::fallback_verbs::{
+        ACROSS, APPLICATION, CLICK_AT, DOWN, NAME, PICTURE_WINDOW, QUESTION, READ_WINDOW,
+        SELECT_ITEM,
+    };
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| {
+            request.named() == "click by position where a picture of a window showed a thing"
+        })
+        .expect("the set has it");
+    let game = crate::every_other_verb::THE_GAME_IDENTIFIER;
+    let lines = [
+        reading(READ_WINDOW, &[(APPLICATION, game)]),
+        proposing(SELECT_ITEM, &[(APPLICATION, game), (NAME, "Start Race")]),
+        proposing(
+            PICTURE_WINDOW,
+            &[(APPLICATION, game), (QUESTION, "Where is Start race?")],
+        ),
+        proposing(
+            CLICK_AT,
+            &[(APPLICATION, game), (ACROSS, "50"), (DOWN, "40")],
+        ),
+        answering("The race is starting."),
+    ];
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let mut model = Writing::these(&lines);
+        let tried = one_try_at(
+            level,
+            request,
+            set.may_reach(),
+            &crate::testing::the_verbs(),
+            &the_words(),
+            &mut model,
+        );
+        assert_eq!(tried.went(), &Went::TheRoad, "{level:?}: {tried:?}");
+        assert_eq!(tried.refused_before_asking(), 1, "{level:?}");
+        assert!(
+            model
+                .shown
+                .iter()
+                .any(|shown| shown.contains("names none of its controls")),
+            "{level:?}: the model was not told why"
+        );
+    }
+}
+
+/// **A window that names its controls is unaffected**: pressing Reload in
+/// Firefox takes its road with nothing refused.
+#[test]
+fn a_window_that_names_its_controls_is_unaffected() {
+    use crate::a_try::{Went, one_try};
+    use crate::testing::{Writing, answering, proposing, reading, the_words};
+    use alo_adapters::fallback_verbs::{ACTIVATE_CONTROL, APPLICATION, KIND, NAME, READ_WINDOW};
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "press a button in an application")
+        .expect("the set has it");
+    let browser = "org.mozilla.firefox";
+    let mut model = Writing::these(&[
+        reading(READ_WINDOW, &[(APPLICATION, browser)]),
+        proposing(
+            ACTIVATE_CONTROL,
+            &[(APPLICATION, browser), (KIND, "button"), (NAME, "Reload")],
+        ),
+        answering("Reload is pressed."),
+    ]);
+    let tried = one_try(
+        request,
+        set.may_reach(),
+        &crate::testing::the_verbs(),
+        &the_words(),
+        &mut model,
+    );
+    assert_eq!(tried.went(), &Went::TheRoad, "{tried:?}");
+    assert_eq!(tried.refused_before_asking(), 0);
+}

@@ -246,6 +246,7 @@ pub fn one_try_at(
         skipped_looks: 0,
         on_the_other: None,
         the_screen_road_open: false,
+        where_nothing_is_named: Vec::new(),
     };
     let mut after = Vec::new();
     let happened = loop {
@@ -398,6 +399,8 @@ struct Recording<'a> {
     /// Whether a read in this try was answered with windows that describe
     /// nothing, which opens the screen road for the rest of it.
     the_screen_road_open: bool,
+    /// The applications whose windows such a read found to name nothing.
+    where_nothing_is_named: Vec<String>,
 }
 
 /// Why the loop is stopped once the road is left: the try is over.
@@ -409,9 +412,16 @@ impl TheDoor for Recording<'_> {
         // **A read of windows that describe nothing opens the screen road**,
         // as the agent reads it off the same answer.
         if let Ok(ToAnAgent::Did(done)) = &answer
-            && done.a_window_that_describes_nothing()
+            && let Some(application) = done.the_application_that_describes_nothing()
         {
             self.the_screen_road_open = true;
+            if !self
+                .where_nothing_is_named
+                .iter()
+                .any(|one| one == application)
+            {
+                self.where_nothing_is_named.push(application.to_owned());
+            }
         }
         answer
     }
@@ -551,6 +561,20 @@ impl Recording<'_> {
                 // **As the machine answers a call that does not form**: turned
                 // away before anything else, at both levels, in its own words
                 // — whatever verb it named (`crate::turned_away`).
+                // **As the machine answers a control named where nothing is
+                // named**: refused before any card, in its own words, and the
+                // try goes on (`alo_adapters::where_nothing_is_named`).
+                if let Some(refused) = crate::named_where_nothing_is::refused(
+                    request,
+                    self.verbs,
+                    &self.machine,
+                    &self.where_nothing_is_named,
+                    self.strings,
+                ) {
+                    self.refused_before_asking += 1;
+                    self.on_the_other = was_on;
+                    return Ok(refused);
+                }
                 if let Some(refused) = crate::turned_away::turned_away(
                     request,
                     self.verbs,

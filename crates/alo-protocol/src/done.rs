@@ -780,6 +780,20 @@ impl Done {
         }
     }
 
+    /// The application whose windows a read found to describe nothing, where
+    /// this is such a read.
+    #[must_use]
+    pub fn the_application_that_describes_nothing(&self) -> Option<&str> {
+        match self {
+            Self::WindowsShowed {
+                application,
+                describes_nothing: true,
+                ..
+            } => Some(application),
+            _ => None,
+        }
+    }
+
     /// **Whether this is a read of windows that describe nothing**, which opens
     /// the screen road for the rest of the turn.
     #[must_use]

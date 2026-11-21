@@ -132,6 +132,7 @@ pub mod typing_without_saving_words;
 pub mod typing_words;
 pub mod verbs;
 pub mod walking;
+pub mod where_nothing_is_named;
 #[cfg(target_os = "linux")]
 mod whose_connection;
 pub mod words;

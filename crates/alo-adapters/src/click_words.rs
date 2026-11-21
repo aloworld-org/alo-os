@@ -166,8 +166,20 @@ pub const ACROSS_A_PAIRING: Word = Word::saying(
 )
 .noting("Said when another computer paired with this one asked alo to click by position here.");
 
+/// A control named in a window that names none of its controls.
+pub const NAMES_NOTHING: Word = Word::saying(
+    "adapters.fallback.click-at.names-nothing",
+    "This window of {application} names none of its controls, so nothing called “{name}” can be \
+     found in it. Take a picture of it to see where things are",
+)
+.noting(
+    "Said, before anybody is asked, when alo names a button, a field or an item in a window that \
+     a read has just found to name none of its controls, as a game does. {application} is the \
+     application's identifier and {name} the name alo gave; neither is translated.",
+);
+
 /// Every word clicking declares.
-pub const EVERY_WORD: [Word; 17] = [
+pub const EVERY_WORD: [Word; 18] = [
     CLICK_PURPOSE,
     CLICK_APPLICATION,
     CLICK_ACROSS,
@@ -185,4 +197,5 @@ pub const EVERY_WORD: [Word; 17] = [
     THE_PERSON_IS_PRESSING,
     NO_CLICK,
     ACROSS_A_PAIRING,
+    NAMES_NOTHING,
 ];

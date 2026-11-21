@@ -105,6 +105,7 @@ adapters.fallback.click-at.changes	Clicks once at that point of the application'
 adapters.fallback.click-at.describes-itself	{application} names what is in its window, so alo presses things there by their names and clicked nothing by position
 adapters.fallback.click-at.down	how far down the window, from its top edge, in per cent: 0 to 100
 adapters.fallback.click-at.leaves	No other window is clicked, nothing is dragged or held down, and nothing is clicked in a terminal or in a window with a password field.
+adapters.fallback.click-at.names-nothing	This window of {application} names none of its controls, so nothing called “{name}” can be found in it. Take a picture of it to see where things are
 adapters.fallback.click-at.no-click	This machine could not click in {application} just now, so nothing was clicked
 adapters.fallback.click-at.no-one-reads	alo cannot click inside {application}: nobody has been chosen to read pictures of its window, so alo could not see what a click did, and nothing was clicked. To choose, open “Who reads the pictures” in Settings → What alo can use
 adapters.fallback.click-at.not-alos-copy	That {application} window is yours, not alo's own copy, so nothing was clicked. To let alo work in your own windows, choose “alo may work in your own window” in Settings → What alo can use

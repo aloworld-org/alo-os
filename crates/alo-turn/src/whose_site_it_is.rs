@@ -64,6 +64,20 @@ impl Turning<'_, '_> {
         // And a file opened *in* a file manager, as a double-click there would
         // open it (`crate::as_a_double_click_would`), at both levels.
         let offered = self.as_a_double_click_would(offered, grants, now)?;
+        // **A control named where nothing is named is refused before any
+        // card**, in words that send alo to a picture
+        // (`alo_adapters::where_nothing_is_named`), at both levels.
+        let strings = self.machine().strings();
+        if let Some(said) = alo_adapters::where_nothing_is_named::named_where_nothing_is_named(
+            &offered,
+            self.where_nothing_is_named(),
+            strings,
+        ) {
+            let refused = alo_capability::Refused::worded_elsewhere(offered, said);
+            let entry = Entry::refused(&refused, self.grantee(), strings, now);
+            self.writing_down(entry)?;
+            return Err(NotDone::Refused(refused));
+        }
         if offered.verb() != alo_publishing::PUBLISH_TO_GITHUB_PAGES {
             return Ok(offered);
         }

@@ -1346,3 +1346,77 @@ fn the_click_is_offered_only_after_a_read_finds_a_window_that_describes_nothing(
         "not offered after a read of a window that describes nothing"
     );
 }
+
+/// **A control named in the game, after a read found it names nothing, is
+/// refused before any card**, in words that send alo to a picture; the door is
+/// never asked.
+#[test]
+fn a_control_named_where_nothing_is_named_is_refused_before_any_card() {
+    let (answered, asked) = on_a_turn(ready(), the_game_is_granted, |turning, grants, _| {
+        let read = turning.reading(
+            alo_adapters::READ_WINDOW,
+            &[(APPLICATION, Given::text(GAME))],
+            grants,
+            noon(),
+        );
+        assert!(read.is_ok(), "{read:?}");
+        turning.proposing(
+            alo_adapters::ACTIVATE_CONTROL,
+            &[
+                (APPLICATION, Given::text(GAME)),
+                (alo_adapters::fallback_verbs::KIND, Given::text("button")),
+                (
+                    alo_adapters::fallback_verbs::NAME,
+                    Given::text("Start Race"),
+                ),
+            ],
+            grants,
+            hour(),
+            noon(),
+        )
+    });
+    assert!(answered.is_err(), "proposed: {answered:?}");
+    let Err(not_done) = &answered else { return };
+    let said = not_done.said(&in_english()).into_text();
+    assert!(said.contains("names none of its controls"), "{said}");
+    assert!(said.contains("Start Race"), "{said}");
+    assert!(
+        asked.at_the_door.is_empty(),
+        "the door was asked: {:?}",
+        asked.at_the_door
+    );
+}
+
+/// **A window that names its controls is unaffected**: a press there is put
+/// to the person as before.
+#[test]
+fn a_control_named_in_a_window_that_names_its_controls_is_proposed() {
+    let arranged = Arranged {
+        shown: Shown::ANamedButton,
+        ..ready()
+    };
+    let (answered, _) = on_a_turn(arranged, the_game_is_granted, |turning, grants, _| {
+        let read = turning.reading(
+            alo_adapters::READ_WINDOW,
+            &[(APPLICATION, Given::text(GAME))],
+            grants,
+            noon(),
+        );
+        assert!(read.is_ok(), "{read:?}");
+        turning.proposing(
+            alo_adapters::ACTIVATE_CONTROL,
+            &[
+                (APPLICATION, Given::text(GAME)),
+                (alo_adapters::fallback_verbs::KIND, Given::text("button")),
+                (
+                    alo_adapters::fallback_verbs::NAME,
+                    Given::text("Start race"),
+                ),
+            ],
+            grants,
+            hour(),
+            noon(),
+        )
+    });
+    assert!(answered.is_ok(), "{answered:?}");
+}

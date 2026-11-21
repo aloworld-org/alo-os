@@ -152,6 +152,10 @@ pub struct Turning<'a, 'm> {
     /// what opens the screen road for the rest of it
     /// ([`Turning::the_verbs_offered_now`]). Never carried into another turn.
     a_window_described_nothing: bool,
+    /// The applications whose windows a read in this turn found to name
+    /// nothing, by identifier: a control named in one is refused before any
+    /// card (`alo_adapters::where_nothing_is_named`).
+    where_nothing_is_named: Vec<String>,
 }
 
 impl<'a, 'm> Turning<'a, 'm> {
@@ -189,6 +193,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             kept_as: None,
             wanted: Vec::new(),
             a_window_described_nothing: false,
+            where_nothing_is_named: Vec::new(),
         })
     }
 
@@ -224,6 +229,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             kept_as: None,
             wanted: Vec::new(),
             a_window_described_nothing: false,
+            where_nothing_is_named: Vec::new(),
         })
     }
 
@@ -269,6 +275,10 @@ impl<'a, 'm> Turning<'a, 'm> {
             && alo_adapters::a_picture_may_be_taken::a_picture_may_be_taken(showed.shown()).is_ok()
         {
             self.a_window_described_nothing = true;
+            let application = showed.shown().application().to_owned();
+            if !self.where_nothing_is_named.contains(&application) {
+                self.where_nothing_is_named.push(application);
+            }
         }
         Ok(read)
     }
@@ -297,6 +307,12 @@ impl<'a, 'm> Turning<'a, 'm> {
     #[must_use]
     pub fn the_verbs_offered_now(&self) -> alo_capability::Verbs {
         alo_instructing::the_verbs_offered(self.machine.verbs(), self.a_window_described_nothing)
+    }
+
+    /// The applications whose windows a read in this turn found to name
+    /// nothing.
+    pub(crate) fn where_nothing_is_named(&self) -> &[String] {
+        &self.where_nothing_is_named
     }
 
     /// A change, put to a person in one sentence.
