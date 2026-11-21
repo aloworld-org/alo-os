@@ -37,6 +37,19 @@ pub fn refused(
 /// against when it arrives, with no read first, as the machine asks its tree.
 #[must_use]
 pub fn as_the_request_shows(request: &crate::a_road::ARequest) -> Vec<String> {
-    let _ = request;
-    Vec::new()
+    let mut shown: Vec<String> = Vec::new();
+    let steps = request
+        .road()
+        .iter()
+        .chain(request.aside())
+        .chain(request.other_roads().iter().flatten());
+    for step in steps.filter(|step| step.verb() == alo_adapters::fallback_verbs::READ_WINDOW) {
+        if let crate::a_road::Answered::With(done) = step.answered()
+            && let Some(application) = done.the_application_that_describes_nothing()
+            && !shown.iter().any(|one| one == application)
+        {
+            shown.push(application.to_owned());
+        }
+    }
+    shown
 }

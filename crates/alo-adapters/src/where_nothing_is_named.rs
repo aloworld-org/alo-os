@@ -58,6 +58,18 @@ pub fn named_where_nothing_is_named(
     ))
 }
 
+/// The application a call that names a control names, where it is one.
+#[must_use]
+pub fn the_application_named(call: &Call) -> Option<String> {
+    THE_NAMED_CONTROL_VERBS
+        .iter()
+        .find(|(verb, _)| *verb == call.verb())?;
+    match call.value(APPLICATION) {
+        Some(Value::Application(application)) => Some(application.clone()),
+        _ => None,
+    }
+}
+
 /// **Whether `application`'s windows, as the tree shows them now, name
 /// nothing** — what a named guess is checked against when it arrives, with no
 /// earlier read needed (the coordinator's decision of 2026-11-21). An
@@ -69,8 +81,11 @@ pub fn the_windows_name_nothing(
     tree: &dyn crate::accessibility_tree::AccessibilityTree,
     application: &str,
 ) -> bool {
-    let _ = (tree, application);
-    false
+    match crate::walking::walk(tree, crate::walking::Whose::Application(application), None) {
+        Ok(walked) => crate::a_picture_may_be_taken::a_picture_may_be_taken(&walked.shown).is_ok(),
+        Err(crate::not_walked::NotWalked::NoWindow) => true,
+        Err(_) => false,
+    }
 }
 
 #[cfg(test)]
