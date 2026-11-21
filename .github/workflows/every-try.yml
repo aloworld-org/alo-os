@@ -223,7 +223,8 @@ jobs:
           for level in full-access ask-each-time; do
             echo "## At $level" >> "$GITHUB_STEP_SUMMARY"
             code=0
-            ALO_EVERY_TRY_LEVEL="$level" ALO_EVERY_TRY_SUMMARY="$GITHUB_STEP_SUMMARY" target/release/alo-every-try || code=$?
+            set -o pipefail
+            ALO_EVERY_TRY_LEVEL="$level" ALO_EVERY_TRY_SUMMARY="$GITHUB_STEP_SUMMARY" target/release/alo-every-try 2>&1 | tee "$RUNNER_TEMP/change-$level.log" || code=$?
             if [ "$code" -ne 0 ]; then failed=$code; fi
           done
           exit "$failed"
@@ -289,6 +290,15 @@ jobs:
               "$t/change-check" compare "$t/change-all.txt" "$t/base-all.txt" || code=$?
           fi
           cp "$t/change.txt" "$t/every-try-measured.txt"
+          # **A try the model could not be asked, on either side, in either
+          # round, is not a measurement** (2026-11-20: a provider out of credit
+          # read as nought of ten on both sides and passed). The check reads
+          # it from what was measured; a base whose check predates that is read
+          # from its own log, which says so of every such try.
+          if grep -l "could not ask the model" "$t"/change-*.log "$t"/base-*.log > "$t/not-asked.txt" 2>/dev/null; then
+            echo "**Nothing was measured**: the model could not be asked on some tries, in $(wc -l < "$t/not-asked.txt") of the runs, so this says nothing about the change and the check does not pass." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 2
+          fi
           exit "$code"
 
       # **What was measured, for raising the record**: download it and run
@@ -298,5 +308,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: every-try-measured
-          path: ${{ runner.temp }}/every-try-measured.txt
+          # And every try's own line — took the road, left it, or could not
+          # ask the model and why — so a refused try is never read as a wrong
+          # one.
+          path: |
+            ${{ runner.temp }}/every-try-measured.txt
+            ${{ runner.temp }}/*.log
           if-no-files-found: ignore
