@@ -18,7 +18,7 @@ verb	accessible.scroll_page	36569ba1b02d77d1
 verb	accessible.scroll_to	18542b42c2337aa6
 verb	accessible.select_item	596a18ac72394ce2
 verb	accessible.set_value	98039b4e5b977de0
-verb	accessible.type_text	c568d1d1d6c36e88
+verb	accessible.type_text	26d6eab468c2b026
 verb	accessible.type_without_saving	76d9953a0ec3564f
 verb	archive_folder	6fb1129dce2aadcd
 verb	choose_on_the_file_chooser	1d1aa6171d6ed02e
@@ -55,7 +55,7 @@ request	scroll a page in an application	bbb9aee905194d1d	accessible.read_window,
 request	move a slider in an application	5d51ed11e3cb6b1a	accessible.read_window,accessible.set_value
 request	choose an option in a drop-down	e2ceb92e54d34e46	accessible.read_window,accessible.choose_option
 request	select a file in the file manager	9170bea06001523e	accessible.read_window,accessible.select_item
-request	open a file in the file manager	7c50e769177d9fb1	accessible.read_window,accessible.open_item
+request	open a file in the file manager	b7c9fa5f2bd0ad99	accessible.read_window,accessible.open_item,open_file_in_application
 request	open a thing's right-click menu in an application	6f7dceb2523fa088	accessible.read_window,accessible.open_menu
 request	press a key in an application	7468e92326e37cf8	accessible.read_window,accessible.press_key
 request	type into a search box without saving	3e2a28cd8e62e5e4	accessible.read_window,accessible.type_without_saving
