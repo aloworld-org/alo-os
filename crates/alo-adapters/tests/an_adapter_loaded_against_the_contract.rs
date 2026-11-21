@@ -412,6 +412,30 @@ fn screenshots_and_synthetic_input_are_refused_and_so_is_what_is_not_carried_out
     }
 }
 
+/// **A change that does not say what it changes and leaves alone is refused**
+/// (the owner, 2026-11-01: both are on the card), with the verb named; and a
+/// read that says either is refused by the verb contract.
+#[test]
+fn a_change_that_says_not_what_it_changes_is_refused() {
+    static SILENT: [AdapterVerb; 1] = [AdapterVerb {
+        says: None,
+        ..A_SOUND_VERB
+    }];
+    static WITHOUT: Adapter = with_verb(&SILENT);
+    assert_eq!(
+        load(&WITHOUT).unwrap_err(),
+        NotLoaded::SaysNotWhatItChanges {
+            verb: "drawing.open_drawing".to_owned()
+        }
+    );
+    static A_READ_THAT_SAYS: [AdapterVerb; 1] = [AdapterVerb {
+        effect: Effect::Read,
+        ..A_SOUND_VERB
+    }];
+    static READS: Adapter = with_verb(&A_READ_THAT_SAYS);
+    assert!(matches!(load(&READS).unwrap_err(), NotLoaded::Verb { .. }));
+}
+
 /// **A verb with no by-hand road is refused** (ADR 0009), with the verb named.
 #[test]
 fn a_verb_with_no_by_hand_road_is_refused() {
