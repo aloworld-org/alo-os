@@ -139,22 +139,21 @@ fn no_road_draws_its_controls_shown_as_a_constant() {
 /// **The one drawing road asks the reveal every band is told by.**
 #[test]
 fn alos_roads_ask_the_bands_reveal() {
-    for road in ["a_band_is_drawn.rs"] {
-        let (_, code) = every_source_file()
-            .into_iter()
-            .find(|(name, _)| name == road)
-            .expect("the road exists");
-        assert!(
-            code.iter().any(|line| line.contains("alos_band_as_drawn(")),
-            "{road} draws a band without asking whether it is revealed"
-        );
-        assert!(
-            !code
-                .iter()
-                .any(|line| line.contains("alos_band_as_pressed(")),
-            "{road} finds a press on its band itself, beside the one press road"
-        );
-    }
+    let road = "a_band_is_drawn.rs";
+    let (_, code) = every_source_file()
+        .into_iter()
+        .find(|(name, _)| name == road)
+        .expect("the road exists");
+    assert!(
+        code.iter().any(|line| line.contains("alos_band_as_drawn(")),
+        "{road} draws a band without asking whether it is revealed"
+    );
+    assert!(
+        !code
+            .iter()
+            .any(|line| line.contains("alos_band_as_pressed(")),
+        "{road} finds a press on its band itself, beside the one press road"
+    );
     let (_, reveals) = every_source_file()
         .into_iter()
         .find(|(name, _)| name == "the_bands_over_alos_windows.rs")
