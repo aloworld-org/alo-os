@@ -167,6 +167,7 @@ mod a_question_that_leaves_this_machine;
 mod acting_on_an_application;
 pub mod answering_for;
 pub mod answers;
+mod applications_named_as_a_person_calls_them;
 pub mod arriving;
 mod as_a_double_click_would;
 pub mod asking;
