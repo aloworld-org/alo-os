@@ -406,3 +406,42 @@ sight. The window is never moved. `crate::going_to_a_window_shows_it_whole`.
 its location* true; it adds no setting. A window partly in sight is still left
 where it is, so going to one mostly under the Dock (`w26-38`) still moves
 nothing — that is the 2026-11-09 rule, and changing it is the owner's call.
+
+---
+
+## Amended 2026-11-21 — a window alo opens finds room as the person's does
+
+From the owner's screenshot of 2026-11-20: alo, working on *Open the file
+hello.txt in my home folder in VSCodium*, opened alo's copy of VSCodium, and
+the task window lay over most of it. By the 2026-11-07 amendment above, that
+was the rule as written: *a window an application or alo opened in the
+background keeps rule 5, in front and offset, and the view does not move.*
+
+Asked where a window alo opens should go, the owner answered: **"on the canvas
+like figma, xd, miro so it can be really be hard to fill it all but when filled
+we go with your recommendation"**. The recommendation was the person's own
+rule.
+
+So **a window alo opens is placed exactly as one the person opened is**, by the
+same function (`Server::where_this_window_goes`): room in view is used first,
+beside the active window; with no room and *Glide to empty space* kept, it
+opens in the nearest empty space on the Place, covering nothing, and the view
+glides there (or jumps, with less motion asked for). *Open in front, slightly
+offset* still means rule 5 for both. The canvas is endless, so *no space left*
+happens only past what *Show all* reaches (decision 3 above).
+
+- **Which windows are alo's:** the first window of an application alo
+  started, by an approved `open_application` or `open_file_in_application`,
+  within 90 seconds of the start (`crate::a_window_alo_opened`).
+- **Focus is unchanged.** Whether the window comes in front with the keyboard
+  is still rule 8's: alo's file window comes in front by its own road
+  (`crate::a_file_alo_opened_comes_in_front`), and an application alo opened
+  does not.
+- **A window nobody asked for**, one an application opens by itself, still
+  keeps rule 5 and the view still. *This lane's reading, the owner's to
+  change:* the owner's answer was about alo's windows, and moving the view
+  for a window nobody asked for would take the person's view from them
+  (rule 8).
+
+This supersedes, for alo's windows, the third condition of *When it happens*
+under the 2026-11-07 amendment.

@@ -169,6 +169,51 @@ fn the_persons_window_with_no_room_glides_to_empty_space_with_the_focus() {
     );
 }
 
+/// **A window alo opened, no room: it lands on no other window and the view
+/// moves to it**, by the person's own rule — the owner, 2026-11-21: *"on the
+/// canvas like figma, xd, miro so it can be really be hard to fill it all but
+/// when filled we go with your recommendation"*. On the screenshot of
+/// 2026-11-20 alo's copy of VSCodium lay under the task window. It is not
+/// brought in front by this: focus is rule 8's, and alo's file window has its
+/// own road (`a_file_alo_opened_comes_in_front`).
+#[test]
+fn a_window_alo_opened_with_no_room_lands_on_nothing_and_the_view_moves_to_it() {
+    let (f, _editor, editor) = a_full_view(false);
+    f.backend(|s| s.alo_opened_a_file_in("com.vscodium.codium", Instant::now()));
+    let (_codium, alos) = mapped(&f, "com.vscodium.codium");
+    assert_eq!(placed(&f, A_SMALL_VIEW), 1);
+    let (editor_is, alos_is) = (where_it_is(&f, &editor), where_it_is(&f, &alos));
+    assert!(
+        !editor_is.overlaps(alos_is),
+        "the window alo opened covers the editor: {alos_is:?} over {editor_is:?}"
+    );
+    assert!(
+        f.backend(|s| s.the_view_is_gliding()),
+        "the view is not moving to the window alo opened"
+    );
+    let began = Instant::now();
+    assert!(!f.backend(move |s| s.the_glide_moves_on(began + Duration::from_secs(5))));
+    let after = the_view(&f);
+    assert!(
+        view_at(after).contains_rect(alos_is),
+        "the view moved somewhere the window alo opened is not: {after:?}, {alos_is:?}"
+    );
+    assert_eq!(where_it_is(&f, &editor), editor_is, "the editor moved");
+    // **Only the first window of what alo started**: a second window of the
+    // same application, which nobody asked for, keeps rule 5 and the view.
+    let (_again, _second) = mapped(&f, "com.vscodium.codium");
+    assert_eq!(placed(&f, A_SMALL_VIEW), 1);
+    assert!(
+        !f.backend(|s| s.the_view_is_gliding()),
+        "a window nobody asked for moved the view"
+    );
+    assert_eq!(
+        the_view(&f),
+        after,
+        "a window nobody asked for moved the view"
+    );
+}
+
 /// **The other choice**: open in front, offset — today's rule 5 — and the view
 /// stays where it is.
 #[test]

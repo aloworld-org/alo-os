@@ -124,6 +124,10 @@ impl Server {
                 // (`crate::a_window_the_person_opened`). The agent's does
                 // not: only a person's own road moves what is in front.
                 self.the_person_started(application);
+            } else {
+                // **But it is placed as the person's would be**, in empty
+                // space (`crate::a_window_alo_opened`, the owner, 2026-11-21).
+                self.alo_started(application, std::time::Instant::now());
             }
         }
         not_started
