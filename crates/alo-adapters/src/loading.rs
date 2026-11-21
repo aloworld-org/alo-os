@@ -167,20 +167,30 @@ fn a_verb(adapter: &Adapter, verb: &AdapterVerb) -> Result<Verb, NotLoaded> {
         Reaches::Over(arguments) => Requires::grants_over(arguments.iter().copied()),
         Reaches::OnlyItsApplication => Requires::nothing_because(ONLY_ITS_APPLICATION),
     };
-    Verb::checked(
+    let checked = Verb::checked(
         &named,
         verb.purpose,
         verb.effect,
         verb.args.iter().map(as_an_arg).collect(),
         requires,
         verb.sentence,
-    )
-    .map_err(|why| NotLoaded::Verb { verb: named, why })
+    );
+    // **A change says what it changes and what it leaves alone**, and a read
+    // says neither: `Verb::changing` refuses a read that tries.
+    let checked = match (verb.effect.waits_for_approval(), verb.says) {
+        (_, Some(says)) => checked.and_then(|one| one.changing(says.changes, Some(says.leaves))),
+        (true, None) => return Err(NotLoaded::SaysNotWhatItChanges { verb: named }),
+        (false, None) => checked,
+    };
+    checked.map_err(|why| NotLoaded::Verb { verb: named, why })
 }
 
 /// Every word a verb is declared with.
 fn words_of(verb: &AdapterVerb, by_hand: Word) -> Vec<Word> {
     let mut words = vec![verb.purpose, verb.sentence, by_hand];
+    if let Some(says) = verb.says {
+        words.extend([says.changes, says.leaves]);
+    }
     for arg in verb.args {
         words.push(arg.purpose);
         if let Kind::Choice(offers) = arg.kind {

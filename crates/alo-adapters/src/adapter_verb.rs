@@ -55,6 +55,15 @@ impl Sends {
     }
 }
 
+/// What a change says on its card: what it changes, and what it leaves alone.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WhatItDoes {
+    /// What every call of it changes.
+    pub changes: Word,
+    /// What every call of it leaves alone.
+    pub leaves: Word,
+}
+
 /// One verb of an adapter.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AdapterVerb {
@@ -75,6 +84,12 @@ pub struct AdapterVerb {
     /// How a person does the same thing in the application without the agent
     /// (ADR 0009). A verb with none is refused.
     pub by_hand: Option<Word>,
+    /// **What every call of a change changes, and what it leaves alone**: one
+    /// short sentence each, said on the approval card under the action (the
+    /// owner's decision of 2026-11-01, `docs/contracts/agent-verbs.md`). A
+    /// change with none is refused; a read must have none. Added 2026-11-21,
+    /// when an adapter's verbs were first offered to alo.
+    pub says: Option<WhatItDoes>,
     /// How it is carried out.
     pub carried_out: Invocation,
 }

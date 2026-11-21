@@ -31,7 +31,7 @@ use std::time::{Duration, SystemTime};
 use alo_adapters::{
     Adapter, AdapterArg, AdapterVerb, Adapters, Argument, DBusMethod, Delivers, Driving,
     Invocation, Kind, Mechanism, Message, NotDelivered, NotLoaded, ONLY_ITS_APPLICATION, Part,
-    Reaches, Sends, TEXT_EDITOR, adapter_verbs, load, shipped_adapters,
+    Reaches, Sends, TEXT_EDITOR, WhatItDoes, adapter_verbs, load, shipped_adapters,
 };
 use alo_applications::{Application, Installed};
 use alo_capability::{
@@ -150,7 +150,17 @@ const SENTENCE: Word = Word::saying("adapters.test.sentence", "do it to {which}"
 const SENTENCE_NONE: Word = Word::saying("adapters.test.sentence-none", "do it");
 const BY_HAND: Word = Word::saying("adapters.test.by-hand", "do it yourself");
 const UNDECLARED: Word = Word::saying("adapters.test.undeclared", "a word nobody declared");
-const WORDS: [Word; 5] = [PURPOSE, WHICH, SENTENCE, SENTENCE_NONE, BY_HAND];
+const CHANGES: Word = Word::saying("adapters.test.changes", "one thing is done");
+const LEAVES: Word = Word::saying("adapters.test.leaves", "nothing else is touched");
+const WORDS: [Word; 7] = [
+    PURPOSE,
+    WHICH,
+    SENTENCE,
+    SENTENCE_NONE,
+    BY_HAND,
+    CHANGES,
+    LEAVES,
+];
 
 /// A method that passes every check.
 const OPEN: DBusMethod = DBusMethod {
@@ -174,6 +184,10 @@ const A_SOUND_VERB: AdapterVerb = AdapterVerb {
     reaches: Reaches::Over(&["which"]),
     sentence: SENTENCE,
     by_hand: Some(BY_HAND),
+    says: Some(WhatItDoes {
+        changes: CHANGES,
+        leaves: LEAVES,
+    }),
     carried_out: Invocation::DBus(OPEN),
 };
 

@@ -660,6 +660,8 @@ mod tests {
                 "publish_to_github_pages",
                 "read_file",
                 "rename_file",
+                "text_editor.new_window",
+                "text_editor.open_document",
                 "what_can_be_installed",
                 "what_touched_this_file",
             ],
