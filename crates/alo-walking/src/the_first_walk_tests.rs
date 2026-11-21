@@ -538,3 +538,49 @@ fn the_launchers_look_may_find_the_screen_as_it_was() {
         "a launcher's look still needs the screen to change: {launcher_looks:?}"
     );
 }
+
+/// **A band's pointing picture is named for the control pressed next**: run
+/// 44915943010 kept Settings' picture before Minimise as
+/// `band-settings-pointed-for-close`, because the names were handed out in
+/// turn rather than by the control. And **the ask for a task window may find
+/// the screen as it was**: Super+A puts a caret in the Dock's field and
+/// nothing else (picture 73), as the launcher does.
+#[test]
+fn a_bands_pictures_are_named_for_what_is_pressed_and_the_asks_look_may_be_as_it_was() {
+    let steps = the_first_walk().steps().to_vec();
+    let mut last_look: Option<String> = None;
+    let mut after_pointing = false;
+    for step in &steps {
+        match step {
+            Step::PointAtTheBand { .. } => after_pointing = true,
+            Step::Look { name, .. } if after_pointing => {
+                last_look = Some(name.clone());
+                after_pointing = false;
+            }
+            Step::ClickTheControl { name } => {
+                if let Some(look) = last_look.take() {
+                    let what = name.to_lowercase().replace(' ', "-");
+                    assert!(
+                        look.ends_with("-revealed")
+                            || look.ends_with(&format!("-pointed-for-{what}")),
+                        "{look} is the picture before {name}"
+                    );
+                }
+            }
+            _ => {}
+        }
+    }
+    let asks: Vec<bool> = steps
+        .iter()
+        .filter_map(|step| match step {
+            Step::Look {
+                name,
+                may_be_as_it_was,
+                ..
+            } if name.ends_with("-the-bar") => Some(*may_be_as_it_was),
+            _ => None,
+        })
+        .collect();
+    assert!(!asks.is_empty(), "the walk never asks for a task window");
+    assert!(asks.iter().all(|it| *it), "{asks:?}");
+}
