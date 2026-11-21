@@ -983,6 +983,22 @@ fn the_cards_ink(drawn: &TaskPicture) -> [&crate::painted::Inked; 5] {
     [at(6), at(5), at(4), at(3), at(2)]
 }
 
+/// How many pieces of ink start level with `action` or below it: the card's own
+/// and what is under it.
+///
+/// **Counted from the action, not over the whole window**, for the reason the
+/// test of the row's place gives: a taller card scrolls the conversation, and
+/// since each message carries its speaker's label (2026-11-20) the label of the
+/// message at the top of the view is the first thing scrolled out of it, so a
+/// count of everything drawn changed with the scroll and not with the card.
+fn from_the_action_on(drawn: &TaskPicture, action: &crate::painted::Inked) -> usize {
+    drawn
+        .inked
+        .iter()
+        .filter(|one| one.area.loc.y >= action.area.loc.y)
+        .count()
+}
+
 /// The middle of a piece of ink, across.
 fn its_middle(ink: &crate::painted::Inked) -> i32 {
     ink.area.loc.x + ink.area.size.w / 2
@@ -1182,23 +1198,23 @@ fn march() -> crate::task_text::ATouchedRow {
 fn the_file_a_change_touches_has_a_row_between_the_action_and_the_answers() {
     let without = with_the_approved_card(None);
     let with = with_the_approved_card_touching(&[march()]);
-    assert_eq!(
-        with.inked.len(),
-        without.inked.len() + 2,
-        "the file's name and where it is were not both written"
-    );
     let at = |back: usize| {
         with.inked
             .get(with.inked.len() - back)
             .expect("a piece of ink the order says is there")
     };
     let (action, name, where_it_is, allow) = (at(7), at(6), at(5), at(4));
+    let [_, action_before, allow_before, _, _] = the_cards_ink(&without);
+    assert_eq!(
+        from_the_action_on(&with, action),
+        from_the_action_on(&without, action_before) + 2,
+        "the file's name and where it is were not both written"
+    );
     assert!(action.area.loc.y + action.area.size.h <= name.area.loc.y);
     assert!(name.area.loc.y + name.area.size.h <= where_it_is.area.loc.y);
     assert!(where_it_is.area.loc.y + where_it_is.area.size.h <= allow.area.loc.y);
     // Measured from the action, because the conversation opens at its newest
     // words and a taller card scrolls the whole view.
-    let [_, action_before, allow_before, _, _] = the_cards_ink(&without);
     assert_eq!(
         (allow.area.loc.y - action.area.loc.y)
             - (allow_before.area.loc.y - action_before.area.loc.y),
@@ -1233,9 +1249,14 @@ fn where_a_file_is_is_written_from_home() {
 
     let with = with_the_approved_card_touching(&[editor]);
     let without = with_the_approved_card(None);
+    let action = with
+        .inked
+        .get(with.inked.len() - 6)
+        .expect("the action, before the row, the answers and the scope note");
+    let [_, action_before, _, _, _] = the_cards_ink(&without);
     assert_eq!(
-        with.inked.len(),
-        without.inked.len() + 1,
+        from_the_action_on(&with, action),
+        from_the_action_on(&without, action_before) + 1,
         "an application's row wrote a place it does not have"
     );
 }

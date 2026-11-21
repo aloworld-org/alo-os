@@ -104,35 +104,41 @@ fn a_task_window_draws_the_pixels_it_drew_before() {
 }
 
 /// What a task window drew before. See `crate::the_desktops_pictures_pinned`.
+///
+/// **Retaken on 2026-11-20, once, from CI's run of the change**, when each
+/// message gained its speaker's label (`task_raster_speaker_tests` holds what
+/// changed). They were `0xe109_587a_4b8c_7858`, `0xeed9_0760_a7b9_7eed`,
+/// `0x3800_b84c_10d5_0178`, `0x19c2_ae70_b293_980f`, `0x7b16_9fc0_1527_7d38` and
+/// `0xc640_4fdc_b598_5bb7`.
 const BEFORE: [Drawn; 6] = [
     Drawn {
         scale: 100,
         text: 100,
-        hash: 0xe109_587a_4b8c_7858,
+        hash: 0x0b43_bb12_7e5b_5e73,
     },
     Drawn {
         scale: 100,
         text: 125,
-        hash: 0xeed9_0760_a7b9_7eed,
+        hash: 0x7cef_7565_0e29_8d7c,
     },
     Drawn {
         scale: 150,
         text: 100,
-        hash: 0x3800_b84c_10d5_0178,
+        hash: 0x7f36_ba0e_d32e_0325,
     },
     Drawn {
         scale: 150,
         text: 125,
-        hash: 0x19c2_ae70_b293_980f,
+        hash: 0x1389_6157_0b65_3440,
     },
     Drawn {
         scale: 200,
         text: 100,
-        hash: 0x7b16_9fc0_1527_7d38,
+        hash: 0x8ef4_708b_d334_3a8e,
     },
     Drawn {
         scale: 200,
         text: 125,
-        hash: 0xc640_4fdc_b598_5bb7,
+        hash: 0xe260_b862_37d6_04d3,
     },
 ];
