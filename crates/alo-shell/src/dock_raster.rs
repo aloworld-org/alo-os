@@ -1511,7 +1511,8 @@ pub(crate) fn picture(
                 what,
                 if typing { room } else { field.size.w },
                 Metrics::new(size as f32, size as f32),
-                palette.badge,
+                // On the field's own colour, which is what is under them.
+                palette.field,
                 palette.ink,
             );
             let x = if from_the_left {
