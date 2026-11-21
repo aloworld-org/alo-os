@@ -1,6 +1,6 @@
 # ADR 0158 — an application from its maker's signed release
 
-**Status:** proposed, 2026-11-17, by the market lane, on the owner's decision of
+**Status:** accepted, 2026-11-21. Proposed 2026-11-17 by the market lane, on the owner's decision of
 the same day relayed by the coordinator: the Craft applications
 (github.com/storytold) are *"added, labelled early version"*, *"installed from
 their signed `.flatpak` bundle on GitHub releases"*, and *"the signature and
@@ -8,6 +8,15 @@ checksum are verified before installing; a bad or missing signature is
 refused, and that refusal is tested."* What is the owner's is that; how the
 machine decides whom to trust is this lane's, and is what an owner's answer is
 asked for below.
+
+*Accepted 2026-11-21, because both things it put to the owner are now
+answered.* The door out of the sandbox was answered on 2026-11-17 (*"list them
+with a plain warning"*, `docs/features.md`, the market's lines). Whom the
+machine trusts was answered on 2026-11-21 by the owner's *"Registered makers,
+free apps first"* (ADR 0160): each maker registers a signing key and alo
+reviews each listing, which is decision 1 below made for every maker rather
+than one. **Accepting it measures nothing:** whether the pinned base carries
+`gpgv` is still unmeasured, as *What this costs* says.
 **Date:** 2026-11-17
 
 ## What it changes for the person
@@ -101,7 +110,9 @@ wrong:
 ## What is not decided here
 
 - Any maker but storytold. A second maker is a second key file and a second
-  fingerprint, reviewed as this one is.
+  fingerprint, reviewed as this one is. *ADR 0160 (2026-11-21) decides there
+  will be others, as registered makers on exactly these terms; each is still
+  pinned and reviewed one at a time.*
 - Any architecture but x86_64. The pinned addresses are x86_64 bundles, and a
   machine of another architecture is refused rather than handed the wrong one.
 - An update path. Building one — reading a maker's newer signed release and
