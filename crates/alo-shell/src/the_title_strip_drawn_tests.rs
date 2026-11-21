@@ -42,14 +42,15 @@ fn the_top_corners_are_rounded_and_the_bottom_ones_are_not() {
     );
 }
 
-/// **The ground and the line are the look's.**
+/// **The ground and the line are the card's, whatever has the keyboard** —
+/// the owner, 2026-11-21: *"Only the title softens"*.
 #[test]
-fn the_focused_strip_is_white_and_every_other_is_cream() {
+fn every_strip_has_the_cards_ground_and_line() {
     for (look, ground, line) in [
-        (WhichLook::Focused, [0xFF, 0xFF, 0xFF], [0xCB, 0xD5, 0xE1]),
+        (WhichLook::Focused, [0xFF, 0xFF, 0xFF], [0xE7, 0xEB, 0xEF]),
         (
             WhichLook::NotFocused,
-            [0xFA, 0xF7, 0xF2],
+            [0xFF, 0xFF, 0xFF],
             [0xE7, 0xEB, 0xEF],
         ),
     ] {

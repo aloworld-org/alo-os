@@ -76,20 +76,25 @@ fn the_window_band_draws_the_pixels_it_drew_before() {
 }
 
 /// What the band drew before. See `crate::the_desktops_pictures_pinned`.
+///
+/// **Re-taken on 2026-11-21, on purpose**: the owner's *"One card for all
+/// windows"* and *"Only the title softens"* changed the band's corner (10 to
+/// 16), its line (`border/strong` to `border/default`) and its shadow
+/// (`0 16 40` at 10 % of `#102a43`). Read from the failure the change printed.
 const BEFORE: [Drawn; 3] = [
     Drawn {
         scale: 100,
         text: 100,
-        hash: 0x57e3_6fb5_798c_2521,
+        hash: 0x35a2_cbcd_1de6_0301,
     },
     Drawn {
         scale: 150,
         text: 100,
-        hash: 0x7371_bcb3_8115_b755,
+        hash: 0x6154_ae2e_698c_f9c1,
     },
     Drawn {
         scale: 200,
         text: 100,
-        hash: 0xcc81_b324_b016_7af1,
+        hash: 0x5928_5555_aa71_b0ed,
     },
 ];

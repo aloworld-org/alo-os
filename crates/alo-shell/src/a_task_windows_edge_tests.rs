@@ -129,7 +129,10 @@ fn the_edge_carries_its_three_controls_at_the_designs_figures() {
             && close.loc.x + close.size.w >= window.loc.x + window.size.w - 18,
         "Close is not at the trailing end: {close:?}"
     );
-    assert_eq!(edge.title, None, "a task window's edge drew a title");
+    assert!(
+        edge.title.is_some(),
+        "a task window's band carries no title (the owner, 2026-11-21)"
+    );
 }
 
 /// **At twice the scale the edge still meets the window**, because the

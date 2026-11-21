@@ -199,7 +199,8 @@ pub struct WindowEdge {
     /// shown — so a press where a hidden control would be is a press on the
     /// band, because a control nobody can see is never pressed.
     pub drag: Rectangle<i32, Logical>,
-    /// Where the title starts, on a window whose band carries one.
+    /// Where the title starts. Every band carries one since 2026-11-21; kept an
+    /// [`Option`] for a band too narrow to hold it.
     pub title: Option<Point<i32, Logical>>,
     /// How wide the title and the application's name may run, from
     /// [`Self::title`]: to one gap before where the first control is **whether
@@ -342,15 +343,12 @@ pub fn edge_of(
         Size::from(((drag_until - region.loc.x).max(0), THE_REGION_IS_TALL)),
     );
 
-    // **Only where the shell carries the title**: an application with its
-    // own header has its own, and a task window carries its title inside it.
-    let carries_a_title = matches!(
-        decorations,
-        Decorations::TheShellDraws
-            | Decorations::AlosOwnWindow
-            | Decorations::AlosOwnWindowThatIsPlaced
-    );
-    let title = carries_a_title.then(|| Point::from((title_at, region.loc.y + THE_TITLE_SITS_AT)));
+    // **Every band carries the title**, whoever draws the window's header:
+    // the owner, 2026-11-21 — the band always shows the window's title and the
+    // application's name, an application with its own header and a task
+    // window included. Until then only the shell's and alo's own windows'
+    // bands had one.
+    let title = Some(Point::from((title_at, region.loc.y + THE_TITLE_SITS_AT)));
 
     WindowEdge {
         region,

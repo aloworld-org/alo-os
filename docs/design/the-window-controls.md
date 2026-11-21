@@ -47,6 +47,49 @@ standing promises disagreed:
   **withdrawn by the owner** — law 5 lets the owner withdraw what was offered,
   and `docs/features.md` records it with these words.
 
+## The owner's decisions, 2026-11-21
+
+Asked in a question dialog while the root cause of the window controls breaking
+again was being found. Quoted as the question and the label the owner chose.
+They bind every window, alo's own and every one a person installs (`CLAUDE.md`,
+*a rule applies everywhere it is true*).
+
+- *"For other apps' windows (VSCodium, Firefox...), should they also become one
+  card?"* — **"One card for all windows"**. The band and the window are one
+  card in the 2026-11-09 look, `11:30` of `XbSmsBYix0TrcQ0Qzaup64`: corner
+  **16**, one line round it, shadow `0 16 40` at 10 % of `#102a43`, and **no
+  seam** between the band and the content.
+- *"What should that strip show?"* — **"Show title and app name"**, on every
+  window, an application that draws its own header and a task window included.
+- A task window's band — **"Request · alo"**: *tidy my invoices · alo*.
+- The terminal, Settings and the record, whose title is their name —
+  **"Once: \"Settings\""**: *Terminal*, *Settings* and *What alo did* are drawn
+  once, never the same word twice.
+- The card's bottom corners over an application — **"Round them, like
+  macOS"**: the application's own picture is rounded at the card's bottom
+  corners, at 16, and the owner accepted losing the few pixels in each corner.
+  **This reverses** the reading of 2026-11-01 (`crate::a_window_raised`, *the
+  application's own content is never cropped*, so its corners stayed square).
+- A window without the keyboard — **"Only the title softens"**: the same card
+  and the same shadow for every window; the title of a window without the
+  keyboard is drawn in `text/muted`.
+
+**The card's colours are the coordinator's reading, for the owner to
+overrule.** `11:30` binds no variables, so its `#d9dfd9` line and `#fdfefc`
+ground are literals. They are drawn as the roles the 2026-11-09 reading mapped
+them to, `border/default` and `bg/surface`, which changes nothing outside
+windows; the owner chose *the 2026-11-09 design*.
+
+These replace two earlier readings:
+
+- **The round-2 look of 2026-11-01** (`557:456`, `554:56`): a strip with
+  corners of 10, a different ground, line and shadow for a window without the
+  keyboard, and a body line `border/strong`. `crate::window_edge_look` carried
+  it until this change.
+- **"Only where the shell carries the title"** (`crate::window_edge::edge_of`):
+  an application that drew its own header, and a task window, had a band with
+  no title on it.
+
 ## What the person sees
 
 ### The band, at rest (`11:2`)
@@ -54,7 +97,8 @@ standing promises disagreed:
 The title, then the application name in quieter text — **The next chapter ·
 Notes**. Both are visible whatever the pointer is doing; an inactive window's
 softens and stays readable. With no meaningful title, the application name only,
-never the same word twice. A long title is cut with an ellipsis before the area
+never the same word twice. **On every window** (the owner, 2026-11-21): an application that draws its own
+header and a task window carry them too. A long title is cut with an ellipsis before the area
 the controls take, so **revealing the controls never moves the title**, and the
 whole title is shown on hover or keyboard focus (the 2026-10-10 ruling, kept).
 

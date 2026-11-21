@@ -36,8 +36,10 @@ use crate::painted::Washed;
 use crate::window_edge_look::{A_LINE_IS, WhichLook};
 use crate::window_rasters_kept::{TheKey, Which, kept_or_made, placed};
 
-/// The shadow's colour, `#07131f`, as every raised surface in this crate has it.
-const THE_SHADOWS_COLOUR: [u8; 3] = [0x07, 0x13, 0x1F];
+/// The card's shadow colour: `text/primary`, `#102a43`, as `11:30` draws it
+/// (the owner, 2026-11-21: *"One card for all windows"*). It was `#07131f`,
+/// every other raised surface's, until then.
+const THE_SHADOWS_COLOUR: [u8; 3] = [0x10, 0x2A, 0x43];
 
 /// The line and the shadow round one window, as up to four rasters.
 ///
