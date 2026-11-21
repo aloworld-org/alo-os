@@ -228,6 +228,15 @@ pub enum Miswired {
          came from is about the thing that answered it"
     )]
     NotTheRuntime,
+    /// A question about a picture was put to a road that cannot carry one —
+    /// the runtime, or a machine down the corridor. **Nothing was sent**: the
+    /// words without the picture would be answered by a model that never saw
+    /// it (ADR 0147 §4). A caller refuses such a reader in words first.
+    #[error(
+        "this question is about a picture, and this road cannot carry one, so nothing was sent — \
+         a picture is read only by a service asked in the OpenAI-compatible way"
+    )]
+    NoRoomForAPicture,
     /// The address given for a service on this machine is not on this machine.
     ///
     /// **The one refusal here that is not about a permission at all**, and the

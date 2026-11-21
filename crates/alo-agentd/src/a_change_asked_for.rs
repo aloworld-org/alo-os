@@ -64,6 +64,7 @@ pub fn a_change_asked_for(
     verb: &str,
     given: &[(&str, Given)],
     turning: &mut Turning<'_, '_>,
+    questions: &mut crate::questions::Questions,
     grants: &Grants,
     commands: Commands<'_>,
     strings: &Strings,
@@ -95,7 +96,18 @@ pub fn a_change_asked_for(
     match changed {
         Ok(Changed::Done { did, sentence }) => {
             let kept = bracket.is_some_and(|bracket| bracket.taken_at().is_some());
-            done_without_asking(as_a_client_sees_it(&did, now), sentence, kept, strings)
+            // **A picture is read before anything is said of it**
+            // (`crate::reading_a_picture`), at full access as after an OK.
+            let done = crate::reading_a_picture::read_if_a_picture(
+                &did,
+                turning,
+                questions,
+                crate::starting::the_screen_road(),
+                strings,
+                now,
+            )
+            .unwrap_or_else(|| as_a_client_sees_it(&did, now));
+            done_without_asking(done, sentence, kept, strings)
         }
         Ok(Changed::Waiting(number)) => crate::doing::waiting_under(turning, number, strings, now),
         // **A publication nobody signed in for tells the desktop**, so the

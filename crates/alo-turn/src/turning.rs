@@ -149,6 +149,10 @@ pub struct Turning<'a, 'm> {
     /// that asks (the owner's decision of 2026-11-16). Told to the person's
     /// door only (`alo_protocol::FromAPerson::Wanted`), never to the agent.
     wanted: Vec<String>,
+    /// Whether a read in this turn found a window that describes nothing —
+    /// what opens the screen road for the rest of it
+    /// ([`Turning::the_verbs_offered_now`]). Never carried into another turn.
+    a_window_described_nothing: bool,
 }
 
 impl<'a, 'm> Turning<'a, 'm> {
@@ -185,6 +189,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             became: Vec::new(),
             kept_as: None,
             wanted: Vec::new(),
+            a_window_described_nothing: false,
         })
     }
 
@@ -219,6 +224,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             became: Vec::new(),
             kept_as: None,
             wanted: Vec::new(),
+            a_window_described_nothing: false,
         })
     }
 
@@ -256,7 +262,16 @@ impl<'a, 'm> Turning<'a, 'm> {
     ) -> Result<WhatAVerbDid, NotDone> {
         self.still_open()?;
         let call = self.calling_by_name(verb, given, grants, now)?;
-        self.reading_call(call, grants, now)
+        let read = self.reading_call(call, grants, now)?;
+        // **A read of windows that describe nothing opens the screen road**
+        // for the rest of this turn — by the picture's own rule, as the read
+        // the agent is told says it (`alo_protocol::Done::of_a_window_read`).
+        if let Some(showed) = read.the_windows_showed()
+            && alo_adapters::a_picture_may_be_taken::a_picture_may_be_taken(showed.shown()).is_ok()
+        {
+            self.a_window_described_nothing = true;
+        }
+        Ok(read)
     }
 
     /// The read, from the call onwards: the grants, the boundary, the record.
@@ -274,6 +289,15 @@ impl<'a, 'm> Turning<'a, 'm> {
             Err(refused) => return self.stopped_under(refused, grants, now),
         };
         self.running(authorised, grants, now)
+    }
+
+    /// **What this turn offers now**: every verb, but the screen road's only
+    /// once a read in this turn found a window that describes nothing
+    /// (`alo_instructing::the_verbs_offered`, the owner's framing of
+    /// 2026-11-20).
+    #[must_use]
+    pub fn the_verbs_offered_now(&self) -> alo_capability::Verbs {
+        alo_instructing::the_verbs_offered(self.machine.verbs(), self.a_window_described_nothing)
     }
 
     /// A change, put to a person in one sentence.

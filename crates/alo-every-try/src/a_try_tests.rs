@@ -171,7 +171,12 @@ fn a_model_that_cannot_be_asked_is_not_a_model_that_chose_wrongly() {
 #[test]
 fn the_model_is_shown_the_text_a_turn_shows() {
     let (_, model) = tried(&[opening(), looking(), typing(), answering("Done.")]);
-    let products = the_products_words(Instructions::SHOWN_TO_A_TURN, &the_verbs());
+    // **What the turn offers**: no read here finds a window that describes
+    // nothing, so the screen road is not in it.
+    let products = the_products_words(
+        Instructions::SHOWN_TO_A_TURN,
+        &alo_instructing::the_verbs_offered(&the_verbs(), false),
+    );
     for shown in &model.shown {
         assert!(shown.starts_with(&products));
         assert_eq!(shown, shown.trim(), "shown as the daemon shows it: trimmed");
@@ -784,4 +789,60 @@ fn on_its_own_road_a_read_declared_aside_is_answered_aside() {
     assert!(tried.took_the_road(), "{tried:?}");
     assert_eq!(tried.looked_aside(), 1, "{tried:?}");
     assert!(!tried.by_the_other_road(), "{tried:?}");
+}
+
+/// **The seam: the agent's own loop and every-try's model are offered the same
+/// verbs at every step**, both built by `alo_instructing::the_verbs_offered` —
+/// the picture verb neither told to the model nor in what its answer is held to
+/// before the read, and in both after a read of a window that describes nothing.
+#[test]
+fn the_agents_loop_and_the_check_offer_the_screen_road_alike() {
+    let set = crate::the_set();
+    assert!(set.is_ok(), "the set does not build");
+    let Ok(set) = set else { return };
+    let picturing = set
+        .clone()
+        .only("have a picture of a window that describes nothing read");
+    assert!(picturing.is_some(), "the set has no picture request");
+    let Some(request) = picturing.as_ref().and_then(|one| one.requests().first()) else {
+        return;
+    };
+    let viewer = "org.gnome.Loupe";
+    let mut model = Writing::these(&[
+        reading(READ_WINDOW, &[(APPLICATION, viewer)]),
+        proposing(
+            alo_adapters::fallback_verbs::PICTURE_WINDOW,
+            &[
+                (APPLICATION, viewer),
+                (alo_adapters::fallback_verbs::QUESTION, "What does it show?"),
+            ],
+        ),
+        answering("It shows a beach."),
+    ]);
+    let tried = one_try(
+        request,
+        set.may_reach(),
+        &the_verbs(),
+        &the_words(),
+        &mut model,
+    );
+    assert!(tried.took_the_road(), "{tried:?}");
+    let picture = alo_adapters::fallback_verbs::PICTURE_WINDOW;
+    let held = |at: usize| {
+        model
+            .held_to
+            .get(at)
+            .is_some_and(|verbs| verbs.iter().any(|verb| verb == picture))
+    };
+    let told = |at: usize| {
+        model
+            .shown
+            .get(at)
+            .is_some_and(|shown| shown.contains(picture))
+    };
+    assert!(!held(0) && !told(0), "offered before any read");
+    assert!(
+        held(1) && told(1),
+        "not offered after a read of a window that describes nothing"
+    );
 }
