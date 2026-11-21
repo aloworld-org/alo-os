@@ -67,6 +67,20 @@ impl Turning<'_, '_> {
         // And every application it names said by what a person calls it
         // (`crate::applications_named_as_a_person_calls_them`), at both levels.
         let offered = self.naming_its_applications(offered);
+        // **A control named where nothing is named is refused before any
+        // card**, in words that send alo to a picture
+        // (`alo_adapters::where_nothing_is_named`), at both levels.
+        let strings = self.machine().strings();
+        if let Some(said) = alo_adapters::where_nothing_is_named::named_where_nothing_is_named(
+            &offered,
+            self.where_nothing_is_named(),
+            strings,
+        ) {
+            let refused = alo_capability::Refused::worded_elsewhere(offered, said);
+            let entry = Entry::refused(&refused, self.grantee(), strings, now);
+            self.writing_down(entry)?;
+            return Err(NotDone::Refused(refused));
+        }
         if offered.verb() != alo_publishing::PUBLISH_TO_GITHUB_PAGES {
             return Ok(offered);
         }

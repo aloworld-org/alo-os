@@ -138,7 +138,16 @@ pub(crate) fn reading_an_applications_windows(
     // **A read that found nothing says why**, window by window — never an
     // empty answer a model would take for an empty document — naming the one
     // switch that would help (`alo_adapters::nothing_to_read`).
-    if !shown.shows_any_text() {
+    // **Where a picture could say more, and may be taken, that is said
+    // instead** (ADR 0147 §1), read from the person's file now as the picture
+    // itself is: told also to switch on *Apps describe themselves*, the model
+    // ran settings commands in 7 of 20 tries rather than take the picture
+    // (2026-11-20), and for a game the switch would change nothing.
+    let (pictures, reading) = machine.the_screen_road_now();
+    let a_picture = alo_adapters::a_picture_could_say_more(&shown, &pictures, &reading, strings);
+    if let Some(a_picture) = a_picture {
+        told.push(a_picture.into_text());
+    } else if !shown.shows_any_text() {
         told.extend(
             shown
                 .windows()

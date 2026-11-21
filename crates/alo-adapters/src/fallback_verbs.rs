@@ -30,11 +30,13 @@
 use alo_capability::{Arg, Effect, Requires, Takes, Verb, Verbs};
 
 use crate::choosing_words as choosing;
+use crate::click_words as click;
 use crate::fallback_words as words;
 use crate::keys_words as keys;
 use crate::menu_words as menu;
 use crate::not_loaded::NotLoaded;
 use crate::opening_words as opening;
+use crate::picture_words as picture;
 use crate::pressable::Pressable;
 use crate::pressing_a_key::the_keys_offered;
 use crate::scrolling::Toward;
@@ -69,6 +71,34 @@ pub const PRESS_KEY: &str = "accessible.press_key";
 
 /// The argument naming the key.
 pub const KEY: &str = "key";
+
+/// The verb that takes one picture of an application's window that describes
+/// nothing, and has it read in words by whoever the person chose (ADR 0147 §1,
+/// the screen road).
+pub const PICTURE_WINDOW: &str = "accessible.picture_window";
+
+/// The argument carrying what the picture is to answer, in the person's words.
+///
+/// **There for the reader, and for the shape** (2026-11-17): taking the
+/// application alone, `accessible.picture_window` had `focus_application`'s
+/// shape, and `gpt-4o-mini` sent `accessible.open_menu` naming the photo in 9
+/// of 10 tries and the verb as a command line in the tenth
+/// (`docs/quirks/two-verbs-taking-the-same-arguments-and-gpt-4o-mini-sends-neither.md`).
+pub const QUESTION: &str = "question";
+
+/// The verb that clicks once at one point of a window that describes nothing,
+/// given as proportions of it (ADR 0147, amended 2026-11-17: *"Allow clicking
+/// by position"*).
+pub const CLICK_AT: &str = "accessible.click_at";
+
+/// The argument saying how far across the window a click is, in per cent.
+pub const ACROSS: &str = "across";
+
+/// The argument saying how far down the window a click is, in per cent.
+pub const DOWN: &str = "down";
+
+/// The whole width or height, in the per cent a click is given in.
+pub const THE_WHOLE_WAY: u8 = 100;
 
 /// The verb that types one approved text into one field and saves nothing
 /// (2026-11-17): a search box, a form, an address, where `Ctrl+S` would save
@@ -386,6 +416,57 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
             unsaved::UNSAVED_SENTENCE,
         )
         .and_then(|verb| verb.changing(unsaved::UNSAVED_CHANGES, Some(typing::TYPE_LEAVES))),
+    )?)?;
+    // **One picture of a window that describes nothing** (ADR 0147 §1,
+    // `crate::picturing_a_window`): a change, so it is one sentence and one OK
+    // at *ask each time*, and it takes the application and nothing else — no
+    // place, no region, no second window.
+    verbs.declare(checked(
+        PICTURE_WINDOW,
+        Verb::checked(
+            PICTURE_WINDOW,
+            picture::PICTURE_PURPOSE,
+            Effect::Change,
+            vec![
+                Arg::taking(
+                    APPLICATION,
+                    picture::PICTURE_APPLICATION,
+                    Takes::Application,
+                ),
+                Arg::taking(QUESTION, picture::PICTURE_QUESTION, Takes::Text),
+            ],
+            Requires::grants_over([APPLICATION]),
+            picture::PICTURE_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(picture::PICTURE_CHANGES, Some(picture::PICTURE_LEAVES))),
+    )?)?;
+    // **One click at one point, by proportions of the window** (ADR 0147,
+    // amended 2026-11-17, `crate::clicking_at`): a change, one sentence and one
+    // OK at *ask each time*; two numbers from 0 to 100 and no third, so no
+    // pixel, no drag and no second window can arrive.
+    verbs.declare(checked(
+        CLICK_AT,
+        Verb::checked(
+            CLICK_AT,
+            click::CLICK_PURPOSE,
+            Effect::Change,
+            vec![
+                Arg::taking(APPLICATION, click::CLICK_APPLICATION, Takes::Application),
+                Arg::taking(
+                    ACROSS,
+                    click::CLICK_ACROSS,
+                    Takes::count(0, i64::from(THE_WHOLE_WAY)),
+                ),
+                Arg::taking(
+                    DOWN,
+                    click::CLICK_DOWN,
+                    Takes::count(0, i64::from(THE_WHOLE_WAY)),
+                ),
+            ],
+            Requires::grants_over([APPLICATION]),
+            click::CLICK_SENTENCE,
+        )
+        .and_then(|verb| verb.changing(click::CLICK_CHANGES, Some(click::CLICK_LEAVES))),
     )?)?;
     Ok(())
 }

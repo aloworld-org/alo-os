@@ -227,6 +227,12 @@ pub enum Done {
         /// the likeliest reason. **Sentences rather than keys**, because their
         /// reader is the model answering the person, which reads words.
         told: Vec<String>,
+        /// **Whether the windows describe nothing** — no text, nothing named,
+        /// no password field — which opens the screen road for the rest of the
+        /// turn (`alo_instructing::the_verbs_offered`). Added 2026-11-20,
+        /// additively: absent is `false`.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        describes_nothing: bool,
     },
     /// One control was pressed, or asked to be by an application that did not
     /// answer (`accessible.activate_control`).
@@ -376,6 +382,62 @@ pub enum Done {
         /// Whether it read back exactly.
         read_back: bool,
     },
+    /// One picture of an application's window was taken and put to the
+    /// reader the person chose (`accessible.picture_window`). Added
+    /// 2026-11-17, additively.
+    PictureRead(APictureRead),
+    /// One click was made at a point of an application's window, given in per
+    /// cent of it (`accessible.click_at`). Added 2026-11-17, additively.
+    Clicked(AClickRead),
+}
+
+/// One picture alo took of an application's window, as it goes back to a
+/// client (`accessible.picture_window`, ADR 0147 §1). Added additively.
+///
+/// **The picture itself never crosses**: what crosses is the size it was and
+/// what the reader the person chose said it shows, in words — or, where it was
+/// not read, why not.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct APictureRead {
+    /// The application.
+    pub application: String,
+    /// How wide the picture was, in pixels.
+    pub wide: u32,
+    /// How tall the picture was, in pixels.
+    pub tall: u32,
+    /// What the reader said the window shows, where it read it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub read: Option<String>,
+    /// Why it was not read, in the person's words, where it was not.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub not_read: Option<String>,
+}
+
+/// One click alo made at a point of a window, as it goes back to a client
+/// (`accessible.click_at`, ADR 0147 as amended 2026-11-17). Added additively.
+///
+/// **What it did is said only as far as it can be known**: `changed` is
+/// whether the window's picture after differs from the one before, and
+/// `false` is *not known*, never *nothing happened*; `read` is what the reader
+/// the person chose said the window shows after it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct AClickRead {
+    /// The application.
+    pub application: String,
+    /// How far across the window, in per cent.
+    pub across: u8,
+    /// How far down the window, in per cent.
+    pub down: u8,
+    /// Whether the window visibly changed; `false` is *not known*.
+    pub changed: bool,
+    /// What the reader said the window shows after the click, where it read it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub read: Option<String>,
+    /// Why the window after was not read, where it was not.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub not_read: Option<String>,
 }
 
 /// One window an application showed, as it goes back to a client.
@@ -713,7 +775,36 @@ impl Done {
                 .collect(),
             not_all_read: shown.not_all_read(),
             told: told.to_vec(),
+            describes_nothing: alo_adapters::a_picture_may_be_taken::a_picture_may_be_taken(shown)
+                .is_ok(),
         }
+    }
+
+    /// The application whose windows a read found to describe nothing, where
+    /// this is such a read.
+    #[must_use]
+    pub fn the_application_that_describes_nothing(&self) -> Option<&str> {
+        match self {
+            Self::WindowsShowed {
+                application,
+                describes_nothing: true,
+                ..
+            } => Some(application),
+            _ => None,
+        }
+    }
+
+    /// **Whether this is a read of windows that describe nothing**, which opens
+    /// the screen road for the rest of the turn.
+    #[must_use]
+    pub const fn a_window_that_describes_nothing(&self) -> bool {
+        matches!(
+            self,
+            Self::WindowsShowed {
+                describes_nothing: true,
+                ..
+            }
+        )
     }
 
     /// What a press answered, as it goes on the wire.
@@ -879,6 +970,61 @@ impl Done {
         }
     }
 
+    /// A picture taken of `application`'s window, `wide` by `tall`, and what
+    /// its reader said — `Ok` with its words, `Err` with why it was not read.
+    #[must_use]
+    pub fn of_a_picture(application: &str, size: (u32, u32), read: Result<String, String>) -> Self {
+        let (read, not_read) = match read {
+            Ok(read) => (Some(read), None),
+            Err(why) => (None, Some(why)),
+        };
+        Self::PictureRead(APictureRead {
+            application: application.to_owned(),
+            wide: size.0,
+            tall: size.1,
+            read,
+            not_read,
+        })
+    }
+
+    /// A picture taken and **not put to any reader** — neither words nor a
+    /// reason: what a client is told where nothing on this side read it.
+    #[must_use]
+    pub fn of_a_picture_not_read(application: &str, size: (u32, u32)) -> Self {
+        Self::PictureRead(APictureRead {
+            application: application.to_owned(),
+            wide: size.0,
+            tall: size.1,
+            read: None,
+            not_read: None,
+        })
+    }
+
+    /// A click made at `at`, in per cent of `application`'s window, whether
+    /// it visibly changed, and what the reader said of the window after — `None`
+    /// where nothing on this side read it.
+    #[must_use]
+    pub fn of_a_click(
+        application: &str,
+        at: (u8, u8),
+        changed: bool,
+        read: Option<Result<String, String>>,
+    ) -> Self {
+        let (read, not_read) = match read {
+            Some(Ok(read)) => (Some(read), None),
+            Some(Err(why)) => (None, Some(why)),
+            None => (None, None),
+        };
+        Self::Clicked(AClickRead {
+            application: application.to_owned(),
+            across: at.0,
+            down: at.1,
+            changed,
+            read,
+            not_read,
+        })
+    }
+
     /// What one of the six file verbs answered, as it goes on the wire.
     #[must_use]
     pub fn of_a_file_verb(answer: &Answer) -> Self {
@@ -1031,6 +1177,10 @@ impl Done {
             Self::MenuOpened { unanswered, .. } => *unanswered,
             // **A key leaves nothing out**: it was pressed once, as approved.
             Self::KeyPressed { .. } => false,
+            // **A picture not read leaves out the one thing it was for.**
+            Self::PictureRead(picture) => picture.read.is_none(),
+            // **A click whose outcome is not known leaves that out.**
+            Self::Clicked(click) => !click.changed || click.read.is_none(),
             // **A typing that saves nothing** leaves out only what did not read
             // back: nothing was to be saved.
             Self::TypedWithoutSaving { read_back, .. } => !*read_back,
@@ -1434,3 +1584,7 @@ mod tests {
         assert!(!Done::of_a_key("org.mozilla.firefox", "enter").left_something_out());
     }
 }
+
+#[cfg(test)]
+#[path = "done_describes_nothing_tests.rs"]
+mod describes_nothing_tests;

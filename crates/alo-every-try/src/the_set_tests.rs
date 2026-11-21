@@ -45,7 +45,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 34);
+    assert_eq!(THE_VERSION, 35);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -79,6 +79,8 @@ fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
             "open a thing's right-click menu in an application",
             "press a key in an application",
             "type into a search box without saving",
+            "have a picture of a window that describes nothing read",
+            "click by position where a picture of a window showed a thing",
             "answer the file chooser",
         ]
     );
@@ -768,6 +770,69 @@ fn reading_a_file_goes_on_from_a_path_where_nothing_is() {
     }
 }
 
+/// **The machine also has a game, from the decided catalogue**, so the click
+/// request asks about a window that really describes nothing: a game draws
+/// its own menu, and no control in it has a name the tree can give.
+#[test]
+fn the_machine_also_has_a_game_from_the_catalogue() {
+    let set = the_set().expect("the set builds");
+    let told = set.may_reach().told();
+    assert!(
+        told.contains(crate::every_other_verb::THE_GAME_IDENTIFIER),
+        "{told}"
+    );
+    let catalogue = alo_software::Catalogue::decided().expect("the catalogue reads");
+    assert!(
+        catalogue
+            .every()
+            .iter()
+            .any(|one| one.application().identifier()
+                == crate::every_other_verb::THE_GAME_IDENTIFIER),
+        "the game is not one a person could install"
+    );
+}
+
+/// **Clicking by position is asked of the game**: read it, picture it, click
+/// where its picture's words put the thing — every step about the game.
+#[test]
+fn the_click_request_is_asked_of_the_game() {
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| {
+            request.named() == "click by position where a picture of a window showed a thing"
+        })
+        .expect("the set has the click request");
+    assert!(
+        request.words().contains("SuperTuxKart"),
+        "{}",
+        request.words()
+    );
+    assert_eq!(
+        request
+            .road()
+            .iter()
+            .map(crate::a_road::Step::verb)
+            .collect::<Vec<_>>(),
+        [
+            alo_adapters::fallback_verbs::READ_WINDOW,
+            alo_adapters::fallback_verbs::PICTURE_WINDOW,
+            alo_adapters::fallback_verbs::CLICK_AT,
+        ]
+    );
+    for step in request.road() {
+        assert!(
+            step.expected().iter().any(|(argument, is)| *argument
+                == alo_adapters::fallback_verbs::APPLICATION
+                && is == crate::every_other_verb::THE_GAME_IDENTIFIER),
+            "{} is not about the game: {:?}",
+            step.verb(),
+            step.expected()
+        );
+    }
+}
+
 /// **A path through `/home` is the same place at full access**: on this image
 /// `/home` is a link to `/var/home` (`image/usr/lib/tmpfiles.d/alo.conf`, the
 /// walk of 2026-10-26 in `alo_capability::Grant::really`), every path verb
@@ -995,6 +1060,96 @@ fn a_call_turned_away_leaves_the_try_on_its_road() {
     }
 }
 
+/// **A guessed name where nothing is named is refused as the machine refuses
+/// it, and the try goes on**: read the game, guess a button, be told to take a
+/// picture, take it, click where it said — the road, at both levels.
+#[test]
+fn a_guessed_name_where_nothing_is_named_is_refused_and_the_try_goes_on() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, reading, the_words};
+    use alo_adapters::fallback_verbs::{
+        ACROSS, APPLICATION, CLICK_AT, DOWN, NAME, PICTURE_WINDOW, QUESTION, READ_WINDOW,
+        SELECT_ITEM,
+    };
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| {
+            request.named() == "click by position where a picture of a window showed a thing"
+        })
+        .expect("the set has it");
+    let game = crate::every_other_verb::THE_GAME_IDENTIFIER;
+    let lines = [
+        reading(READ_WINDOW, &[(APPLICATION, game)]),
+        proposing(SELECT_ITEM, &[(APPLICATION, game), (NAME, "Start Race")]),
+        proposing(
+            PICTURE_WINDOW,
+            &[(APPLICATION, game), (QUESTION, "Where is Start race?")],
+        ),
+        // **The point as numbers**, as a model writes a count.
+        format!(
+            r#"{{"format":1,"asks":{{"propose":{{"verb":"{CLICK_AT}","given":[{{"named":"{APPLICATION}","is":"{game}"}},{{"named":"{ACROSS}","is":50}},{{"named":"{DOWN}","is":40}}]}}}}}}"#
+        ),
+        answering("The race is starting."),
+    ];
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let mut model = Writing::these(&lines);
+        let tried = one_try_at(
+            level,
+            request,
+            set.may_reach(),
+            &crate::testing::the_verbs(),
+            &the_words(),
+            &mut model,
+        );
+        assert_eq!(tried.went(), &Went::TheRoad, "{level:?}: {tried:?}");
+        assert_eq!(tried.refused_before_asking(), 1, "{level:?}");
+        assert!(
+            model
+                .shown
+                .iter()
+                .any(|shown| shown.contains("names none of its controls")),
+            "{level:?}: the model was not told why"
+        );
+    }
+}
+
+/// **A window that names its controls is unaffected**: pressing Reload in
+/// Firefox takes its road with nothing refused.
+#[test]
+fn a_window_that_names_its_controls_is_unaffected() {
+    use crate::a_try::{Went, one_try};
+    use crate::testing::{Writing, answering, proposing, reading, the_words};
+    use alo_adapters::fallback_verbs::{ACTIVATE_CONTROL, APPLICATION, KIND, NAME, READ_WINDOW};
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "press a button in an application")
+        .expect("the set has it");
+    let browser = "org.mozilla.firefox";
+    let mut model = Writing::these(&[
+        reading(READ_WINDOW, &[(APPLICATION, browser)]),
+        proposing(
+            ACTIVATE_CONTROL,
+            &[(APPLICATION, browser), (KIND, "button"), (NAME, "Reload")],
+        ),
+        answering("Reload is pressed."),
+    ]);
+    let tried = one_try(
+        request,
+        set.may_reach(),
+        &crate::testing::the_verbs(),
+        &the_words(),
+        &mut model,
+    );
+    assert_eq!(tried.went(), &Went::TheRoad, "{tried:?}");
+    assert_eq!(tried.refused_before_asking(), 0);
+}
+
 /// **A heading read on the screen and then scrolled to by name reaches the same
 /// place**: the machine answers a scroll to a thing already on the screen
 /// (`alo_adapters::scrolling`, *already on the screen*, or scrolled), so a try
@@ -1065,5 +1220,59 @@ fn a_heading_read_on_the_screen_may_still_be_scrolled_to_by_name() {
             answer.clone(),
         ]);
         assert!(!twice.took_the_road(), "{level:?}: {twice:?}");
+    }
+}
+
+/// **A guess with no read first is refused as the machine refuses it — the
+/// machine asks the game's windows when the guess arrives — and the try goes
+/// on**: guess, be told to read and take a picture, read, picture, click.
+#[test]
+fn a_guess_with_no_read_first_is_refused_and_the_try_goes_on() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, reading, the_words};
+    use alo_adapters::fallback_verbs::{
+        ACROSS, APPLICATION, CLICK_AT, DOWN, NAME, OPEN_ITEM, PICTURE_WINDOW, QUESTION, READ_WINDOW,
+    };
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| {
+            request.named() == "click by position where a picture of a window showed a thing"
+        })
+        .expect("the set has it");
+    let game = crate::every_other_verb::THE_GAME_IDENTIFIER;
+    let lines = [
+        proposing(OPEN_ITEM, &[(APPLICATION, game), (NAME, "Start Race")]),
+        reading(READ_WINDOW, &[(APPLICATION, game)]),
+        proposing(
+            PICTURE_WINDOW,
+            &[(APPLICATION, game), (QUESTION, "Where is Start race?")],
+        ),
+        format!(
+            r#"{{"format":1,"asks":{{"propose":{{"verb":"{CLICK_AT}","given":[{{"named":"{APPLICATION}","is":"{game}"}},{{"named":"{ACROSS}","is":50}},{{"named":"{DOWN}","is":40}}]}}}}}}"#
+        ),
+        answering("The race is starting."),
+    ];
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let mut model = Writing::these(&lines);
+        let tried = one_try_at(
+            level,
+            request,
+            set.may_reach(),
+            &crate::testing::the_verbs(),
+            &the_words(),
+            &mut model,
+        );
+        assert_eq!(tried.went(), &Went::TheRoad, "{level:?}: {tried:?}");
+        assert_eq!(tried.refused_before_asking(), 1, "{level:?}");
+        assert!(
+            model
+                .shown
+                .iter()
+                .any(|shown| shown.contains("Read its windows")),
+            "{level:?}: the model was not told what to do"
+        );
     }
 }

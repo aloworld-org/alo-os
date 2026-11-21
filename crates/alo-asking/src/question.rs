@@ -80,6 +80,9 @@ pub struct Question {
     asked: String,
     /// The model to put it to, as whatever answers names it.
     of: String,
+    /// A picture of one window, put with the words (ADR 0147 §4), where one
+    /// is: a PNG, exactly as the compositor drew it.
+    picture: Option<std::sync::Arc<[u8]>>,
 }
 
 impl Question {
@@ -106,6 +109,7 @@ impl Question {
         Ok(Self {
             asked: asked.to_owned(),
             of: of.to_owned(),
+            picture: None,
         })
     }
 
@@ -129,6 +133,21 @@ impl Question {
     pub(crate) fn text(&self) -> &str {
         &self.asked
     }
+
+    /// **This question, about one picture of a window** (ADR 0147 §4): the
+    /// words are what the reader is asked, and the PNG goes with them in the
+    /// same request — to a reader the person chose, and to no other.
+    #[must_use]
+    pub fn about_a_picture(mut self, png: std::sync::Arc<[u8]>) -> Self {
+        self.picture = Some(png);
+        self
+    }
+
+    /// The picture, where the question is about one. `pub(crate)` for
+    /// [`Self::text`]'s reason.
+    pub(crate) fn picture(&self) -> Option<&[u8]> {
+        self.picture.as_deref()
+    }
 }
 
 /// Says which model, and nothing about what was asked.
@@ -140,6 +159,7 @@ impl fmt::Debug for Question {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Question")
             .field("of", &self.of)
+            .field("about_a_picture", &self.picture.is_some())
             .finish_non_exhaustive()
     }
 }

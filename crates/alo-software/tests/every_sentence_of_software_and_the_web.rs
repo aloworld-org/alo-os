@@ -72,6 +72,8 @@ fn every_word_the_three_declare() -> Vec<Word> {
         .chain(alo_adapters::menu_words::EVERY_WORD.iter())
         .chain(alo_adapters::keys_words::EVERY_WORD.iter())
         .chain(alo_adapters::typing_without_saving_words::EVERY_WORD.iter())
+        .chain(alo_adapters::picture_words::EVERY_WORD.iter())
+        .chain(alo_adapters::click_words::EVERY_WORD.iter())
         .copied()
         .collect()
 }

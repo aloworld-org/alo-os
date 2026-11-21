@@ -806,6 +806,81 @@ turn and the compositor's `press-in` (`application-door.md`).
   recorded, with nothing pressed.
 - The answer is `key-pressed` on the wire, with `application` and `key`.
 
+## The picture verb — added 2026-11-17, additively
+
+`accessible.picture_window` takes **one picture of the window of an application
+that describes nothing**, such as a game, and has it read in words by whoever
+the person chose under *Who reads the pictures* — the screen road's picture
+([ADR 0147](../decisions/0147-the-screen-road-and-who-reads-the-screen.md) §1,
+§4). Declared in `alo-adapters` (`fallback_verbs.rs`), checked by
+`crates/alo-adapters/src/picturing_a_window.rs`, taken through a turn and the
+compositor's `picture-of` (`application-door.md`), and read by
+`crates/alo-agentd/src/reading_a_picture.rs`.
+
+| Arguments | The sentence a person approves |
+|---|---|
+| `application` (an application), `question` (text: what the picture is to answer, in the person's words, put to the reader with it) | *take a picture of the {application} window and have it read, to answer: {question}* |
+
+- **Offered only once a read in that turn found a window that describes nothing**
+  (the owner, 2026-11-20: the screen road is for the applications alo cannot
+  read). Until then a turn is neither told the verb nor allowed it in the shape
+  its answer is held to, and a new turn starts without it. `accessible.read_window`
+  answers `describes-nothing` for such windows, and one function,
+  `alo_instructing::the_verbs_offered`, builds the offer for the daemon's turn and
+  for the agent alike.
+- **A change.** At *ask each time* each picture waits for one approval and one
+  approval takes one picture; at full access it is taken at once and recorded
+  the same way.
+- **Only where the person chose it, read at that moment**: *Pictures and keys*
+  switched on for **that** application, and somebody chosen to read pictures
+  (`how-code-runs-file.md`). With either off, no picture is taken and alo says
+  where to switch it on.
+- **The last resort.** A window whose tree describes itself is read instead; a
+  password field anywhere in the application's windows means no picture, at any
+  setting. An application the tree knows no window of — a game not on the
+  accessibility bus — describes nothing, and the compositor answers whether a
+  window of it is in front.
+- **One window, alone, never kept, never across a pairing.** No argument can
+  name a place, a region or a second window.
+- **The picture never crosses to the agent.** The answer is `picture-read` on
+  the wire: `application`, `wide`, `tall`, and `read` — the reader's words —
+  or `not-read`, the sentence saying why it was not read. A service as reader
+  is egress: shown on the indicator as it leaves and written in the record. The
+  person's own model on this computer cannot be handed a picture yet, and is
+  refused in words with nothing sent.
+
+## The click verb — added 2026-11-17, additively
+
+`accessible.click_at` clicks **once at one point of the window of an application
+that describes nothing**, at a place a picture of it showed — ADR 0147's
+amendment of 2026-11-17 (the owner: *"Allow clicking by position"*). Declared in
+`alo-adapters` (`fallback_verbs.rs`), checked by
+`crates/alo-adapters/src/clicking_at.rs`, carried out through a turn and the
+compositor's `click-at` (`application-door.md`). **Dragging stays the
+person's**: no verb holds a button.
+
+| Arguments | The sentence a person approves |
+|---|---|
+| `application` (an application), `across` and `down` (whole numbers, 0 to 100: per cent of the window from its left and top edges) | *click {across}% across and {down}% down the {application} window* |
+
+- **A change.** At *ask each time* each click waits for one approval and one
+  approval clicks once; at full access it clicks at once, and is recorded the
+  same way.
+- **Offered only once a read in that turn found a window that describes nothing**,
+  as the picture is (`alo_instructing::the_verbs_offered`).
+- **The picture's rules, all of them**: *Pictures and keys* on for that
+  application and somebody chosen to read pictures, read at the moment; never a
+  window that describes itself (a control there is pressed by its name), never a
+  password field anywhere in the application's windows, never a terminal, never
+  across a pairing; only the window that holds the keyboard, alo's own copy at
+  the default; and nothing while the person holds a button down.
+- **Read again after.** The window is pictured before the click and after it.
+  Where the two are the same, or no picture after could be taken, the click is
+  recorded as having run with its outcome **not known**.
+- The answer is `clicked` on the wire: `application`, `across`, `down`,
+  `changed` (`false` is *not known*, never *nothing happened*), and `read` —
+  what the reader said the window shows after — or `not-read`.
+
 **`scroll_to`'s argument is `to`, and `name` is still accepted, deprecated**
 (since 2026-11-17). The verb landed taking `name`, which shaped it like
 `accessible.type_text` with one argument fewer, and a hosted model sent

@@ -73,7 +73,7 @@
 
 use alo_adapters::Adapters;
 use alo_applications::Installed;
-use alo_capability::Verbs;
+use alo_capability::{PicturesAndKeys, Verbs, WhoReadsPictures};
 use alo_egress::{EgressPolicy, Indicator};
 use alo_files::{Resolving, file_verbs};
 use alo_record::Entry;
@@ -86,6 +86,7 @@ use crate::kept::Kept;
 use crate::shortening::{Shortened, Shortening};
 use crate::the_applications_here::TheApplicationsHere;
 use crate::the_door_the_compositor_serves::TheDoorTheCompositorServes;
+use crate::the_screen_road_as_chosen::TheScreenRoadAsChosen;
 use crate::the_verbs_would_not_declare::TheVerbsWouldNotDeclare;
 use crate::the_windows_on_the_screen::TheWindowsOnTheScreen;
 use crate::what_a_file_opens_with::SaysWhatAFileOpensWith;
@@ -194,6 +195,10 @@ pub struct Machine<'a> {
     /// the tool: only the whole machine's constructor takes it, and only that
     /// constructor declares the verb.
     publishing: Option<WhatPublishingNeeds<'a>>,
+    /// The person's two choices for the screen road, read at each picture
+    /// (`crate::the_screen_road_as_chosen`). **`None` is no application and
+    /// no one**: a machine told nothing takes no picture.
+    screen_road: Option<&'a dyn TheScreenRoadAsChosen>,
     /// What says which application a file opens with and which applications
     /// open folders (`crate::what_a_file_opens_with`). `None` on a machine
     /// that was not told, which opens a file in the application named.
@@ -364,6 +369,7 @@ impl<'a> Machine<'a> {
             windows: None,
             adapters: Adapters::default(),
             publishing: None,
+            screen_road: None,
             opening: None,
             bound: Bound::Nobodys,
             bounding,
@@ -427,6 +433,7 @@ impl<'a> Machine<'a> {
             windows: None,
             adapters: Adapters::default(),
             publishing: None,
+            screen_road: None,
             opening: None,
             bound,
             bounding,
@@ -518,6 +525,7 @@ impl<'a> Machine<'a> {
             windows: None,
             adapters: Adapters::default(),
             publishing: Some(publishing),
+            screen_road: None,
             opening: None,
             bound: Bound::Nobodys,
             bounding,
@@ -586,6 +594,7 @@ impl<'a> Machine<'a> {
             windows: Some(applications.windows),
             adapters,
             publishing: Some(software.publishing),
+            screen_road: None,
             opening: None,
             bound: software.bound,
             bounding,
@@ -693,6 +702,24 @@ impl<'a> Machine<'a> {
     pub fn with_the_persons_home(mut self, home: std::path::PathBuf) -> Self {
         self.the_persons_home = Some(home);
         self
+    }
+
+    /// **This machine, reading the person's choices for the screen road**
+    /// each time a picture is asked for (ADR 0147). Without it, no picture is
+    /// taken: pictures are off for every application and nobody reads them.
+    #[must_use]
+    pub fn with_the_screen_road(mut self, road: &'a dyn TheScreenRoadAsChosen) -> Self {
+        self.screen_road = Some(road);
+        self
+    }
+
+    /// The applications alo may use pictures and keys in, and who reads the
+    /// pictures, as the person's file says **now**.
+    pub(crate) fn the_screen_road_now(&self) -> (PicturesAndKeys, WhoReadsPictures) {
+        self.screen_road.map_or_else(
+            || (PicturesAndKeys::default(), WhoReadsPictures::NoOne),
+            |road| (road.pictures_and_keys(), road.who_reads_pictures()),
+        )
     }
 
     /// The person's home folder, where this machine was told it.
@@ -1043,6 +1070,12 @@ mod tests {
             "accessible.press_key",
             // And typing that saves nothing, added 2026-11-17.
             "accessible.type_without_saving",
+            // And one picture of a window that describes nothing, added
+            // 2026-11-17 (ADR 0147 §1), read by whoever the person chose.
+            "accessible.picture_window",
+            // And one click at a point of such a window, by proportions of
+            // it, added 2026-11-17 (the owner: "Allow clicking by position").
+            "accessible.click_at",
             // `alo-publishing`'s one, added 2026-11-13: Demo 2's second road.
             "publish_to_github_pages",
         ];

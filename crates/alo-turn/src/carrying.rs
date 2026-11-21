@@ -65,12 +65,14 @@ use crate::asking_the_record::asking_the_record;
 use crate::bounding::Doing;
 use crate::choosing_in_an_application::choosing_in_an_application;
 use crate::choosing_on_the_file_chooser::choosing_on_the_file_chooser;
+use crate::clicking_in_an_applications_window::clicking_in_an_applications_window;
 use crate::installing_an_application::installing_an_application;
 use crate::looking_at_the_catalogue::looking_at_the_catalogue;
 use crate::machine::Machine;
 use crate::opening_a_file_in_an_application::opening_a_file_in_an_application;
 use crate::opening_a_menu_in_an_application::opening_a_menu_in_an_application;
 use crate::opening_an_item_in_an_application::opening_an_item_in_an_application;
+use crate::picturing_an_applications_window::picturing_an_applications_window;
 use crate::pressing_a_control::pressing_a_control;
 use crate::pressing_a_key_in_an_application::pressing_a_key_in_an_application;
 use crate::publishing_a_folder::publishing_a_folder;
@@ -232,6 +234,20 @@ fn carrying_it_out(
     if authorised.verb() == alo_adapters::PRESS_KEY {
         let (entry, pressed) = pressing_a_key_in_an_application(machine, authorised, grants);
         return (entry, pressed.map(WhatAVerbDid::from));
+    }
+    // **One picture of a window that describes nothing** (ADR 0147 §1),
+    // before the boundary for the same reason; the only one of these told where
+    // the call came from, because a picture is never taken across a pairing.
+    // **One click at one point, by proportions** (ADR 0147, amended
+    // 2026-11-17), before the boundary for the same reason, and told where the
+    // call came from for the picture's.
+    if authorised.verb() == alo_adapters::CLICK_AT {
+        let (entry, made) = clicking_in_an_applications_window(machine, authorised, grants, origin);
+        return (entry, made.map(WhatAVerbDid::from));
+    }
+    if authorised.verb() == alo_adapters::PICTURE_WINDOW {
+        let (entry, taken) = picturing_an_applications_window(machine, authorised, grants, origin);
+        return (entry, taken.map(WhatAVerbDid::from));
     }
     // **Opening a file in an application, routed by name like the rest**
     // (2026-11-14). Before the boundary, for the accessibility verbs' reason:

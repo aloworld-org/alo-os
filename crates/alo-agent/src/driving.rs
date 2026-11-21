@@ -285,9 +285,13 @@ fn driving_from(
     mut steps: Vec<AStep>,
 ) -> WhatHappened {
     for _ in 0..how_far.rounds() {
+        // **What the turn offers now**, by the one function the daemon builds
+        // its offer with: the screen road once a read in it found a window
+        // that describes nothing.
+        let offered = alo_instructing::the_verbs_offered(verbs, the_screen_road_is_open(&steps));
         let shown = shown_in_progress(
             instructions,
-            verbs,
+            &offered,
             ATurnInProgress::of(request, &steps, may_reach)
                 .after(earlier)
                 .about(window),
@@ -543,6 +547,19 @@ fn as_a_step(answer: &ToAnAgent) -> String {
     answer
         .written()
         .unwrap_or_else(|_| "{\"format\":1,\"tells\":{}}".to_owned())
+}
+
+/// **Whether a read in this turn found a window that describes nothing**, as
+/// the daemon said it in the read's answer (`Done::a_window_that_describes_nothing`)
+/// — read from the steps, so a turn going on after an approval keeps it.
+#[must_use]
+pub fn the_screen_road_is_open(steps: &[AStep]) -> bool {
+    steps.iter().any(|step| {
+        matches!(
+            ToAnAgent::read(step.what_came_back()),
+            Ok(ToAnAgent::Did(done)) if done.a_window_that_describes_nothing()
+        )
+    })
 }
 
 /// The door failed, and how far the turn had got.
