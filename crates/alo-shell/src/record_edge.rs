@@ -20,8 +20,6 @@
 
 use smithay::utils::{Physical, Rectangle};
 
-use crate::an_alo_windows_edge::{WhatItShows, its_picture};
-
 impl crate::Server {
     /// Where the record's body is seen on the display, while it is open here
     /// and has been drawn: what its edge sits on.
@@ -33,24 +31,19 @@ impl crate::Server {
     }
 
     /// The record's edge as a picture for this display: `output` its size in
-    /// pixels and `scale` its scale in per cent.
+    /// pixels and `scale` its scale in per cent. Drawn by the one function
+    /// every band is (`crate::a_band_is_drawn`).
     pub(crate) fn the_records_edge_picture(
         &self,
         fonts: &mut cosmic_text::FontSystem,
         says: &alo_strings::Strings,
         (output, scale): ((i32, i32), u32),
     ) -> Option<crate::window_edge_picture::EdgePicture> {
-        let body = self.where_the_records_body_is_seen()?;
-        // **Looked up where the window's words are**, `crate::the_records_words`:
-        // the window itself says nothing (`tests/record_source.rs`).
-        let title = crate::the_records_words::TheRecordsSentences::of(says).title;
-        its_picture(
-            self,
-            (alo_put_aside::AlosOwnWindow::TheRecord, body),
-            WhatItShows {
-                title: &title,
-                focused: self.the_record_is_taking_the_keys(),
-            },
+        self.the_band_drawn(
+            &crate::which_band::ABand::Alos(crate::the_bands_over_alos_windows::AlosBand::Its(
+                alo_put_aside::AlosOwnWindow::TheRecord,
+            )),
+            says,
             fonts,
             (output, scale),
         )

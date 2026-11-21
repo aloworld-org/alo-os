@@ -21,8 +21,6 @@
 //! The edge is laid out over the window **where the last frame drew it**
 //! (`crate::settings_as_drawn`), so the two cannot come apart at any zoom.
 
-use crate::an_alo_windows_edge::{WhatItShows, its_picture};
-
 impl crate::Server {
     /// Where Settings' window is seen on the display, while it is open here
     /// and has been drawn.
@@ -38,7 +36,8 @@ impl crate::Server {
     }
 
     /// Settings' edge as a picture for this display: `output` its size in
-    /// pixels and `scale` its scale in per cent.
+    /// pixels and `scale` its scale in per cent. Drawn by the one function
+    /// every band is (`crate::a_band_is_drawn`).
     pub(crate) fn the_settings_edge_picture(
         &self,
         fonts: &mut cosmic_text::FontSystem,
@@ -46,18 +45,11 @@ impl crate::Server {
         output: (i32, i32),
         scale: u32,
     ) -> Option<crate::window_edge_picture::EdgePicture> {
-        let window = self.where_settings_is_seen()?;
-        let title = says.say(
-            &crate::the_settings_words::SETTINGS.key(),
-            &alo_strings::Filling::nothing(),
-        );
-        its_picture(
-            self,
-            (alo_put_aside::AlosOwnWindow::Settings, window),
-            WhatItShows {
-                title: title.text(),
-                focused: self.settings_is_taking_the_keys(),
-            },
+        self.the_band_drawn(
+            &crate::which_band::ABand::Alos(crate::the_bands_over_alos_windows::AlosBand::Its(
+                alo_put_aside::AlosOwnWindow::Settings,
+            )),
+            says,
             fonts,
             (output, scale),
         )

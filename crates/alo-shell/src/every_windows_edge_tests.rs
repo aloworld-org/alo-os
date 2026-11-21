@@ -85,7 +85,7 @@ fn every_display_is_asked_at_its_own_scale() {
 fn every_edge_road_reads_the_window_where_it_is_drawn() {
     let here = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     for file in [
-        "every_windows_edge.rs",
+        "a_band_is_drawn.rs",
         "a_press_on_an_edge.rs",
         "a_press_in_the_menu.rs",
         "the_window_edge_reveals.rs",

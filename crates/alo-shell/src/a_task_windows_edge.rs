@@ -39,20 +39,14 @@
 //! Until 2026-10-28 a press was read against the edge laid out at 100, so on a
 //! 200 per cent display Close was drawn where a press did not find it.
 
-use smithay::utils::Size;
 #[cfg(test)]
-use smithay::utils::{Logical, Rectangle};
+use smithay::utils::{Logical, Rectangle, Size};
 
 use crate::Server;
-use crate::an_edge_in_its_displays_units::{
-    a_point_in_the_edges_units, a_window_in_the_edges_units,
-};
 use crate::the_bands_over_alos_windows::AlosBand;
-use crate::which_band::ABand;
 #[cfg(test)]
 use crate::window_edge::WindowEdge;
-use crate::window_edge_picture::{EdgePicture, OverTheEdge};
-use crate::window_edge_pointing::pointing_at;
+use crate::window_edge_picture::EdgePicture;
 
 /// The edge above one task window **with its controls**, in `room` — the
 /// geometry a test reads where they would be. The machine never lays one out
@@ -74,71 +68,24 @@ pub(crate) fn the_edge_of_a_task_window(
 /// Every open task window's edge, as pictures for this display.
 ///
 /// `output` is the display's size in pixels and `scale` its scale in per
-/// cent, exactly as `crate::every_windows_edge` takes them.
+/// cent, exactly as `crate::every_windows_edge` takes them. Each is drawn by
+/// the one function every band is (`crate::a_band_is_drawn`).
 pub(crate) fn every_task_windows_edge(
     server: &Server,
     fonts: &mut cosmic_text::FontSystem,
+    says: &alo_strings::Strings,
     output: (i32, i32),
     scale: u32,
 ) -> Vec<EdgePicture> {
-    let room = crate::window_edge::the_usable_output(Size::from(output), scale);
-    let pointer = server.where_the_pointer_is_in_logical_pixels();
-    let now = std::time::Instant::now();
     server
         .the_task_windows_on_the_screen()
         .into_iter()
-        .filter_map(|(which, window)| {
-            let (edge, how_shown) = server.alos_band_as_drawn(
-                AlosBand::ATask(which),
-                a_window_in_the_edges_units(window, scale),
-                room,
-                now,
-            );
-            let keyboard =
-                server.where_the_keyboard_is_on_this_band(&ABand::Alos(AlosBand::ATask(which)));
-            let pointing = pointing_at(
-                &edge,
-                pointer.map(|at| a_point_in_the_edges_units(at, scale)),
-                keyboard.what_the_painter_shows(),
-            );
-            // **Its window panel, while it is open** (`crate::alos_windows_panel`).
-            let (panel, pointing_at_it) = server
-                .the_panel_drawn_over(AlosBand::ATask(which), &edge, (room, scale))
-                .map_or((None, None), |(menu, pointing)| {
-                    (Some(menu), Some(pointing))
-                });
-            let look = crate::window_edge_look::WhichLook::of(
-                server.the_kind_in_front()
-                    == crate::which_window_is_in_front::AKindOfWindow::TaskWindows
-                    && server.tasks().the_one_in_front() == Some(which),
-            );
-            EdgePicture::of(
-                &edge,
-                OverTheEdge {
-                    menu: panel.as_ref().zip(pointing_at_it),
-                    field: None,
-                    showing: None,
-                    alo: None,
-                },
-                // **No title and no body from the edge**: a task window carries
-                // its own title inside it and draws its own body. Its look is
-                // the focused one while it is the window the keys go to.
-                crate::window_edge_picture::TheWindow {
-                    title: None,
-                    application: None,
-                    look,
-                    body: None,
-                    laid_over: false,
-                    controls: crate::window_edge_paint::HowTheControlsLook {
-                        pointing,
-                        open: keyboard.the_menu().is_some(),
-                        how_shown,
-                        look,
-                    },
-                },
+        .filter_map(|(which, _)| {
+            server.the_band_drawn(
+                &crate::which_band::ABand::Alos(AlosBand::ATask(which)),
+                says,
                 fonts,
-                output,
-                scale,
+                (output, scale),
             )
         })
         .collect()

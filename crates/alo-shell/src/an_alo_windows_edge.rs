@@ -7,31 +7,23 @@
 //! otherwise (`crate::window_edge_look`), and Minimise, which puts the window
 //! in the right-hand panel (`crate::alos_own_window_goes_aside`). The edge is
 //! laid out by `crate::window_edge::edge_of` with `Decorations::AlosOwnWindow`,
-//! painted by `crate::window_edge_picture::EdgePicture` and pressed through
-//! `crate::window_edge_pointing` — one edge, one set of measures — **from where
-//! the camera draws the window**, so it pans and zooms with it as #1084 made
-//! every application's edge do.
+//! drawn by the one function every band is (`crate::a_band_is_drawn`) and
+//! pressed by the one road every band is (`crate::a_band_is_pressed`) — **from
+//! where the camera draws the window**, so it pans and zooms with it as #1084
+//! made every application's edge do.
 //!
 //! **Revealed as every band is** (`crate::the_bands_over_alos_windows`): no
 //! controls at rest, shown while the pointer is in the band, always shown for a
 //! person who asked for that. Until 2026-11-14 this band was laid out revealed
 //! and drawn shown whatever the pointer did.
 
-use std::time::Instant;
-
-use alo_put_aside::AlosOwnWindow;
 #[cfg(test)]
-use smithay::utils::Logical;
-use smithay::utils::{Physical, Rectangle, Size};
+use smithay::utils::{Logical, Physical, Rectangle, Size};
 
-use crate::an_edge_in_its_displays_units::{
-    a_point_in_the_edges_units, a_window_in_the_edges_units,
-};
-use crate::the_bands_over_alos_windows::AlosBand;
+#[cfg(test)]
+use crate::an_edge_in_its_displays_units::a_window_in_the_edges_units;
 #[cfg(test)]
 use crate::window_edge::WindowEdge;
-use crate::window_edge_picture::{EdgePicture, OverTheEdge};
-use crate::window_edge_pointing::pointing_at;
 
 /// The edge over a window drawn at `window` on the display, laid out at
 /// `scale` per cent in `room`, **with its controls** — the geometry a test
@@ -49,69 +41,6 @@ pub(crate) fn the_edge_over(
         crate::window_edge::Decorations::AlosOwnWindow,
         true,
         room,
-    )
-}
-
-/// What one of alo's windows shows on its edge.
-#[derive(Debug, Clone, Copy)]
-pub(crate) struct WhatItShows<'a> {
-    /// Its title, in the person's language.
-    pub(crate) title: &'a str,
-    /// Whether the keys go to it.
-    pub(crate) focused: bool,
-}
-
-/// The edge over `which`, drawn at `window`, as a picture for a display
-/// `output` pixels big at `scale` per cent — its controls as shown as its
-/// band's reveal says.
-pub(crate) fn its_picture(
-    server: &crate::Server,
-    (which, window): (AlosOwnWindow, Rectangle<i32, Physical>),
-    shows: WhatItShows<'_>,
-    fonts: &mut cosmic_text::FontSystem,
-    (output, scale): ((i32, i32), u32),
-) -> Option<EdgePicture> {
-    let room = crate::window_edge::the_usable_output(Size::from(output), scale);
-    let (edge, how_shown) = server.alos_band_as_drawn(
-        AlosBand::Its(which),
-        a_window_in_the_edges_units(window, scale),
-        room,
-        Instant::now(),
-    );
-    let pointing = pointing_at(
-        &edge,
-        server
-            .where_the_pointer_is_in_logical_pixels()
-            .map(|at| a_point_in_the_edges_units(at, scale)),
-        None,
-    );
-    let look = crate::window_edge_look::WhichLook::of(shows.focused);
-    EdgePicture::of(
-        &edge,
-        OverTheEdge {
-            menu: None,
-            field: None,
-            showing: None,
-            alo: None,
-        },
-        // **No body from the edge**: each of these windows draws its own
-        // panel, hairline and shadow.
-        crate::window_edge_picture::TheWindow {
-            title: Some(shows.title),
-            application: None,
-            look,
-            body: None,
-            laid_over: false,
-            controls: crate::window_edge_paint::HowTheControlsLook {
-                pointing,
-                open: false,
-                how_shown,
-                look,
-            },
-        },
-        fonts,
-        output,
-        scale,
     )
 }
 

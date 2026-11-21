@@ -192,9 +192,12 @@ pub mod the_window_panels_field;
 /// What reads the pictures alo takes of a window, chosen in Settings.
 mod who_reads_pictures_in_settings;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
+mod a_band_is_drawn;
 mod a_band_is_pressed;
 mod a_reader_presses;
 mod a_reader_presses_in_settings;
+#[cfg(all(test, target_os = "linux"))]
+mod every_kind_of_band_testing;
 pub use a_reader_presses::WhatAReaderPressCameTo;
 /// A file alo was approved to open comes in front, in the window alo may type
 /// into, with the keyboard (2026-11-14).
