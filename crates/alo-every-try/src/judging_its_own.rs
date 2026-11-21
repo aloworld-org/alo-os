@@ -7,7 +7,8 @@ use alo_strings::Strings;
 use crate::a_road::ARequest;
 use crate::a_try::{TheLevel, TheModel, Tried};
 use crate::counted::{
-    Counted, counted_with, summary_counting, tallying_its_own, the_flagged_of_its_own, with_more,
+    Counted, counted_with, summary_counting, tallying_its_own, the_flagged_of_its_own,
+    what_one_says, with_more,
 };
 use crate::its_own::ItsOwn;
 use crate::tallied::{Tallied, tallying_at};
@@ -23,6 +24,8 @@ pub struct TheJudgement {
     said: String,
     /// The verdict.
     counted: Counted,
+    /// Its own requests to be tried on the base and judged against it.
+    to_compare: Vec<String>,
 }
 
 impl TheJudgement {
@@ -42,6 +45,13 @@ impl TheJudgement {
     #[must_use]
     pub const fn counted(&self) -> Counted {
         self.counted
+    }
+
+    /// Its own requests below the bar on all their tries, to be tried on the
+    /// base and judged against it.
+    #[must_use]
+    pub fn to_compare_with_its_base(&self) -> &[String] {
+        &self.to_compare
     }
 }
 
@@ -107,11 +117,35 @@ pub fn judging_its_own(
             held_to_every_try.join(", ")
         ));
     }
-    let counted = counted_with(&tallied, own, reached);
+    // **An own request below the bar on all its tries is compared with its
+    // base** (the coordinator, 2026-11-20, keeping the owner's two decisions
+    // consistent): it may be weak on the base too, and a change that did not
+    // break it is not blocked for it. The ratchet still blocks outright.
+    let says = |one: &ItsOwn, at_every_try: bool| {
+        tallied
+            .iter()
+            .find(|tried| tried.request().named() == one.named())
+            .map(|tried| what_one_says(tried, at_every_try))
+    };
+    let ratchet_broken = own
+        .iter()
+        .any(|one| reached(one.named()) && says(one, true) == Some(Counted::ItsOwnSlipped));
+    let to_compare: Vec<String> = own
+        .iter()
+        .filter(|one| !reached(one.named()) && says(one, false) == Some(Counted::ItsOwnSlipped))
+        .map(|one| one.named().to_owned())
+        .collect();
+    let counted = match counted_with(&tallied, own, reached) {
+        Counted::ItsOwnSlipped if !ratchet_broken && !to_compare.is_empty() => {
+            Counted::ToCompareWithItsBase
+        }
+        counted => counted,
+    };
     TheJudgement {
         tallied,
         said,
         counted,
+        to_compare,
     }
 }
 

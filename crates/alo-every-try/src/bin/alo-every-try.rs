@@ -208,6 +208,22 @@ fn the_record_against_its_base(set: &TheSet) -> Result<Reached, String> {
     }
 }
 
+/// Append `text` to the file the variable `name` names, if it names one.
+fn appending(name: &str, text: &str) -> Result<(), String> {
+    let to = said(name, "");
+    if to.is_empty() {
+        return Ok(());
+    }
+    let failed = |why: std::io::Error| format!("{to} could not be written: {why}");
+    std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&to)
+        .map_err(failed)?
+        .write_all(text.as_bytes())
+        .map_err(failed)
+}
+
 /// Append `text` to the file the run named for what it measured, if any.
 fn writing_what_was_measured(text: &str) -> Result<(), String> {
     let to = said("ALO_EVERY_TRY_MEASURED", "");
@@ -427,6 +443,27 @@ fn running() -> Result<u8, String> {
                 &asked_of,
             );
             writing_what_was_measured(&Measured::of(level, judgement.tallied()).written())?;
+            // **What is to be compared with the base**, for the workflow to
+            // try there (`ALO_EVERY_TRY_AGAINST_BASE`): each level, request and
+            // how many tries the change took, so the base takes as many.
+            if judgement.counted() == alo_every_try::counted::Counted::ToCompareWithItsBase {
+                let lines: String = judgement
+                    .to_compare_with_its_base()
+                    .iter()
+                    .map(|named| {
+                        let tries = judgement
+                            .tallied()
+                            .iter()
+                            .find(|one| one.request().named() == named.as_str())
+                            .map_or(0, |one| one.tries().len());
+                        format!(
+                            "{}\t{named}\t{tries}\n",
+                            what_each_has_reached::the_name_of(level)
+                        )
+                    })
+                    .collect();
+                appending("ALO_EVERY_TRY_AGAINST_BASE", &lines)?;
+            }
             (judgement.said().to_owned(), judgement.counted().exit_code())
         }
     };
