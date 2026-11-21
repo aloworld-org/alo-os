@@ -83,9 +83,10 @@ fn it_lands_exactly_where_it_is_put() {
 }
 
 #[test]
-fn a_fully_transparent_icon_leaves_the_badge_showing() {
-    // This is what keeps the circle visible around a rounded icon: the badge is
-    // not erased first, so the transparent border of an icon shows it.
+fn a_fully_transparent_icon_leaves_what_is_under_it_showing() {
+    // What is under an icon is not erased first, so its transparent border shows
+    // it: the Dock's own ground, since no circle is drawn under an icon (the
+    // owner's decision of 2026-11-21).
     let mut surface = a_surface(4, 4, [70, 80, 90, 255]);
     let icon = a_picture(4, 4, [0, 0, 0, 0]);
     pictures_onto(&mut surface, &[(a_box(0, 0, 4, 4), &icon)]);

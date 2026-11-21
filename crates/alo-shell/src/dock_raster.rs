@@ -246,6 +246,10 @@ struct TheOverflowIsDrawn<'a> {
     palette: crate::desktop_look::DesktopPalette,
     /// The display's scale, which every measure on the popover goes through.
     scale: crate::display_scale::DisplayScale,
+    /// What each application draws, where it draws anything: the bar's own,
+    /// so an application has the same icon in both places, and no circle
+    /// where it has one.
+    artwork: &'a alo_dock::artwork::TheArtwork,
 }
 
 /// Draw *More apps*, into `panels`, `solids` and `inked`.
@@ -281,6 +285,7 @@ fn the_overflow_list(
         focused,
         palette,
         scale,
+        artwork,
     } = drawn;
     let (width, height) = room;
     let pad = scale.px(alo_dock::measures::INSIDE_MORE_APPS);
@@ -642,6 +647,9 @@ fn the_overflow_list(
     let mut circles: Vec<Rectangle<i32, Physical>> = Vec::new();
     let mut marks: Vec<Rectangle<i32, Physical>> = Vec::new();
     let mut rings: Vec<Rectangle<i32, Physical>> = Vec::new();
+    // **Each application's own icon, where it has one**, composited onto the
+    // popover once it is rasterised, as the bar's are onto the bar.
+    let mut pictures: Vec<(Rectangle<i32, Physical>, &alo_dock::artwork::APicture)> = Vec::new();
     let cell = scale.px(alo_dock::measures::AN_APP_CELL_IS_WIDE);
     let cell_is = scale.px(alo_dock::measures::AN_APP_CELL_IS_TALL);
     let icon = scale.px(alo_dock::measures::ICON);
@@ -727,11 +735,16 @@ fn the_overflow_list(
                     ),
                 });
             }
+        } else if let Some(picture) = application.app().and_then(|app| artwork.of(app)) {
+            // **An application that draws its own icon has it here too, and
+            // no circle** — the owner's decision of 2026-11-21: the circle is
+            // the mark of an application with no icon, on the bar and here.
+            pictures.push((art, picture));
         } else {
-            // No artwork exists yet, so every application shows the initial
-            // the owner ruled: a circle with its first letter. `dock_surface`
-            // draws the circle with the Dock's own badges; this is the same
-            // shape in a list.
+            // No artwork, so the application shows the initial the owner
+            // ruled: a circle with its first letter. `dock_surface` draws the
+            // circle with the Dock's own badges; this is the same shape in a
+            // list.
             circles.push(art);
             // **`AppId::first_letter`, which the Dock's own badges already
             // use.** It takes the first *grapheme* and not the first `char`,
@@ -855,7 +868,7 @@ fn the_overflow_list(
     // walk is what gathers the circles that belong in it; the painter draws
     // every panel before any ink, so the order these two vectors are filled in
     // does not decide what covers what.
-    if let Some(washed) = crate::dock_surface::a_panel(
+    if let Some(mut washed) = crate::dock_surface::a_panel(
         area,
         palette.dock,
         palette.edge,
@@ -873,6 +886,7 @@ fn the_overflow_list(
             in_primary: crate::dock_surface::InPrimary::NOTHING,
         },
     ) {
+        crate::an_icon_is_drawn_on_its_badge::pictures_onto(&mut washed, &pictures);
         panels.push(washed);
     }
 
@@ -1100,15 +1114,20 @@ pub(crate) fn picture(
     // because a badge is drawn *into* the surface's raster, which is the only
     // way a circle gets an edge that is not a staircase.
     //
-    // Every application gets one today: the owner's ruling of 2026-10-11 keeps
-    // the first letter as the fallback for an application with **no usable
-    // icon**, and `alo-applications` names an icon in none of its files, so
-    // that is still every application. A real icon replaces a badge without the
-    // slot moving, because the badge **is** the artwork box.
+    // **Only an application with no icon gets one**: the owner's decision of
+    // 2026-11-21, that an icon stands on the Dock's own ground as the design
+    // draws it and the circle is the mark of an application that has none
+    // (`docs/design/the-docks-visual-specification.md`). The first letter is
+    // still the fallback the ruling of 2026-10-11 keeps; the badge's box is the
+    // artwork box, so an icon takes the slot without it moving.
     let badges: Vec<Rectangle<i32, Physical>> = places
         .each()
         .iter()
-        .filter(|place| place.app().is_some())
+        .filter(|place| {
+            place
+                .app()
+                .is_some_and(|app| what_each_application_draws.of(app).is_none())
+        })
         .map(|place| {
             let along = scale.px(place.from_the_start());
             let (left, top) = a_slot_at(band, layout.edge(), along, icon);
@@ -1234,11 +1253,12 @@ pub(crate) fn picture(
     // is *centred in its 48 × 48 target, so a real icon replaces one without
     // the slot moving or resizing.*
     //
-    // **Onto the surface, not beside it.** The badge **is** the artwork box, so
-    // compositing into the same buffer needs no second texture and no change to
-    // `desktop_paint`'s positional order — and it shows the circle through a
-    // rounded icon's transparent corners, which is what gives every slot on the
-    // bar one silhouette.
+    // **Onto the surface, not beside it.** The badge's box is the artwork box,
+    // so compositing into the same buffer needs no second texture and no change
+    // to `desktop_paint`'s positional order. **No circle is under it** (the
+    // owner's decision of 2026-11-21): a rounded icon's transparent corners show
+    // the Dock's own ground, as the design draws them. Until that day the circle
+    // was kept underneath on purpose, to give every slot one silhouette.
     //
     // An application with no artwork is absent from this list and its letter is
     // inked below exactly as before.
@@ -1604,6 +1624,7 @@ pub(crate) fn picture(
                 focused: the_dock_has_open.focused(),
                 palette,
                 scale,
+                artwork: what_each_application_draws,
             },
             fonts,
         ))
