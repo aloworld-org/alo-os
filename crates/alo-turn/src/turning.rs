@@ -369,7 +369,9 @@ impl<'a, 'm> Turning<'a, 'm> {
         // the setting they chose, asked with the desktop's own function
         // (`before_an_adapters_card`), so no card asks a person to approve
         // something the desktop would refuse.
-        if let Err(refused) = crate::before_an_adapters_card::may_an_adapters_call_go(&call, self.machine) {
+        if let Err(refused) =
+            crate::before_an_adapters_card::may_an_adapters_call_go(&call, self.machine)
+        {
             return self.stopped_under(refused, grants, now);
         }
         let id = self.approvals.propose(proposal);

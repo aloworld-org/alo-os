@@ -32,6 +32,7 @@ use alo_files::OnThisMachine;
 use alo_record::{Asking, Record};
 use alo_software::Bound;
 
+use crate::Turning;
 use crate::how_an_application_starts::{NoRoad, SaysHowAnApplicationStarts, TheRoad};
 use crate::machine::{Machine, WhatASoftwareVerbNeeds, WhatAnApplicationVerbNeeds};
 use crate::refusing::NotDone;
@@ -39,7 +40,6 @@ use crate::testing::{a_folder_of_our_own, hour, in_english, noon, offering};
 use crate::the_door_the_compositor_serves::{
     NotAtTheDoor, TheDoorTheCompositorServes, WhileAloWorks,
 };
-use crate::Turning;
 
 /// The application, and its adapter's verb.
 const EDITOR: &str = "org.gnome.TextEditor";
@@ -270,7 +270,11 @@ fn an_adapters_verb_in_the_persons_window_tells_the_desktop_first() {
     assert_eq!(
         saw.happened,
         [
-            ToWorkIn::at(Application::identified(EDITOR).unwrap(), Where::InTheirWindow).written(),
+            ToWorkIn::at(
+                Application::identified(EDITOR).unwrap(),
+                Where::InTheirWindow
+            )
+            .written(),
             format!("sent {EDITOR}"),
             "done".to_owned(),
         ]

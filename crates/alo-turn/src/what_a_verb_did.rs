@@ -31,12 +31,12 @@ use alo_record::WhatTouchedIt;
 use alo_software::{Installed, WhatTheCatalogueHolds};
 
 use crate::acting_on_an_application::Reached;
+use crate::acting_through_an_adapter::AnAdapterVerbRan;
 use crate::choosing_in_an_application::AChoiceMade;
 use crate::choosing_on_the_file_chooser::AFileChosen;
 use crate::opening_a_file_in_an_application::AFileOpened;
 use crate::opening_a_menu_in_an_application::AMenuOpened;
 use crate::opening_an_item_in_an_application::AnItemOpened;
-use crate::acting_through_an_adapter::AnAdapterVerbRan;
 use crate::pressing_a_control::AControlPressed;
 use crate::pressing_a_key_in_an_application::AKeyPressed;
 use crate::reading_an_applications_windows::TheWindowsShowed;

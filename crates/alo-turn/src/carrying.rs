@@ -253,9 +253,14 @@ fn carrying_it_out(
     // **An adapter's verb** (2026-11-21), before the boundary for the
     // accessibility verbs' reason: what it reaches is the application over
     // the person's session bus, and no work of ours touches the disk.
-    if machine.the_adapters().carrying_out(authorised.verb()).is_some() {
-        let (entry, ran) =
-            crate::acting_through_an_adapter::acting_through_an_adapter(machine, authorised, grants);
+    if machine
+        .the_adapters()
+        .carrying_out(authorised.verb())
+        .is_some()
+    {
+        let (entry, ran) = crate::acting_through_an_adapter::acting_through_an_adapter(
+            machine, authorised, grants,
+        );
         return (entry, ran.map(WhatAVerbDid::from));
     }
     if THE_APPLICATION_ACTS.contains(&authorised.verb()) {

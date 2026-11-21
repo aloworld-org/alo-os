@@ -1054,6 +1054,9 @@ impl Done {
             Self::MenuOpened { unanswered, .. } => *unanswered,
             // **A key leaves nothing out**: it was pressed once, as approved.
             Self::KeyPressed { .. } => false,
+            // **An adapter's verb leaves out whether it was done** only where
+            // the application did not answer, as a press does.
+            Self::AdapterVerbRan { unanswered, .. } => *unanswered,
             // **A typing that saves nothing** leaves out only what did not read
             // back: nothing was to be saved.
             Self::TypedWithoutSaving { read_back, .. } => !*read_back,
