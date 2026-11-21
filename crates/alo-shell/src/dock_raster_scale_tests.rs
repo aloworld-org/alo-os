@@ -157,9 +157,17 @@ fn at_one_hundred_the_whole_dock_draws_the_bytes_it_drew_before() {
             )),
         )
     });
+    // **On one line**, because the gate shows a failure's first lines only, and
+    // a pretty-printed list was cut before its first number.
+    let said: Vec<String> = now
+        .iter()
+        .map(|(edge, hash)| format!("{edge:?} {hash:#018x}"))
+        .collect();
     assert_eq!(
-        now, BEFORE,
-        "the Docks at 100 drew {now:#018x?}, before {BEFORE:#018x?}"
+        now,
+        BEFORE,
+        "the Docks at 100 drew {}; before, {BOTTOM_BEFORE:#018x} and {LEFT_BEFORE:#018x}",
+        said.join(", ")
     );
 }
 
