@@ -170,7 +170,15 @@ jobs:
     # fork cannot leave anything behind on it. The figures below were measured
     # on `ubuntu-24.04`, the standard 4-core runner, and are kept as the
     # baseline the new runner is measured against.
-    runs-on: alo-16-core
+    #
+    # **Only the merge queue uses it, since 2026-11-21, by the owner's choice**
+    # ("2", of three ways to keep within the budget). Measured that day: about
+    # forty gate runs, each roughly thirteen minutes on the big runner, which
+    # would spend the $100 monthly budget in about three days. A pull request's
+    # own gate runs on the free standard runner; the queue's gate, the one that
+    # decides what becomes `main`, keeps the 16-core runner so landing stays
+    # fast.
+    runs-on: ${{ github.event_name == 'merge_group' && 'alo-16-core' || 'ubuntu-24.04' }}
     # A cold build of this workspace is tens of minutes; a warm one is minutes.
     # This is above the cold figure and under the queue's own eighty-minute
     # timeout (ruleset 24109151), so a genuinely stuck run is killed before the
