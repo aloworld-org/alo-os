@@ -157,12 +157,20 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
              names that key, {PRESS_KEY}"
         ));
     }
-    // **The picture is told by the read that needs it, not here** (2026-11-20):
-    // told to every turn, the act pulled the model off pressing a named button
-    // (press a button at full access, 17 of 20 against main's 19 of 20). A
-    // read that finds nothing, where a picture may be taken, says so itself
-    // (`alo_adapters::a_picture_could_say_more`), and the verb's own words
-    // say what it is for.
+    // **Told only once the picture is offered**, which is only after a read in
+    // the turn found a window that describes nothing
+    // (`crate::the_screen_road_offered`): told to every turn, this pulled the
+    // model off pressing a named button (2026-11-20), and told to none the
+    // picture request fell to 15 and 14 of 20.
+    if verbs.of(PICTURE_WINDOW).is_some() {
+        acts.push(format!(
+            "when {READ_WINDOW} answered that a window shows no text and names nothing and that \
+             a picture of it can be read — a game, a photo, a drawing canvas — you have not seen \
+             that window: your next step is {PICTURE_WINDOW} for its application, with what the \
+             person wants to know as its question, once, even when the person only asked what it \
+             shows, and never an answer about it before the picture is read"
+        ));
+    }
     format!(
         "\n\nTo work in an application's window, send {READ_WINDOW} first: its answer names \
          the window's fields, documents and controls. Then act on one by its name exactly as \
@@ -266,13 +274,18 @@ mod tests {
         assert!(told.contains("Never send a run line"), "{told}");
         assert!(!told.contains(TYPE_WITHOUT_SAVING), "{told}");
 
-        // **The picture is never in what every turn is told**: the read that
-        // needs it says so.
+        // **Told only where the picture is offered**, which the turn decides
+        // (`crate::the_verbs_offered`).
+        assert!(!told.contains(PICTURE_WINDOW), "{told}");
         verbs
             .declare(named(PICTURE_WINDOW, Effect::Change))
             .unwrap();
         let told = working_in_an_application(&verbs);
-        assert!(!told.contains(PICTURE_WINDOW), "{told}");
+        assert!(told.contains(PICTURE_WINDOW), "{told}");
+        assert!(
+            !working_in_an_application(&crate::the_verbs_offered(&verbs, false))
+                .contains(PICTURE_WINDOW)
+        );
 
         verbs
             .declare(named(TYPE_WITHOUT_SAVING, Effect::Change))
