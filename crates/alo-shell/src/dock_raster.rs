@@ -1213,7 +1213,8 @@ pub(crate) fn picture(
         badges: &badges,
         badge: palette.badge,
         wells: &wells,
-        well_is: palette.badge,
+        // The composer's field, in the design's own fill for it.
+        well_is: palette.field,
         panel: band,
         fill: palette.dock,
         edge: palette.edge,
@@ -1534,7 +1535,8 @@ pub(crate) fn picture(
                 what,
                 if typing { room } else { field.size.w },
                 Metrics::new(size as f32, size as f32),
-                palette.badge,
+                // On the field's own colour, which is what is under them.
+                palette.field,
                 palette.ink,
             );
             let x = if from_the_left {
@@ -3247,3 +3249,7 @@ mod tests {
 #[cfg(test)]
 #[path = "dock_raster_scale_tests.rs"]
 mod scale_tests;
+
+#[cfg(test)]
+#[path = "dock_composer_field_tests.rs"]
+mod composer_field_tests;

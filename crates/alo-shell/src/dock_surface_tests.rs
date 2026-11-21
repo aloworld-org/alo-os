@@ -32,8 +32,13 @@ fn a_surface(against: Edge) -> super::Washed {
         room: (1920, 1080),
         badges: &[],
         badge: [0xEE, 0xF2, 0xF4],
+        // **No wells, so no well colour is checked here.** This read the
+        // design's `#F5F6F7` until 2026-11-20, in a fixture that draws no well:
+        // it looked like a check of the composer's field and could not fail,
+        // while the Dock passed the badge's `#EEF2F4`. What the Dock gives the
+        // surface is asked of the Dock, in `dock_composer_field_tests`.
         wells: &[],
-        well_is: [0xF5, 0xF6, 0xF7],
+        well_is: [0, 0, 0],
         rings: &[],
         ring_is: [0, 0, 0],
         in_primary: super::InPrimary::NOTHING,
