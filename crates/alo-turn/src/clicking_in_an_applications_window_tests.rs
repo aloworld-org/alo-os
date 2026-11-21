@@ -1318,3 +1318,31 @@ fn a_click_asked_for_from_a_paired_machine_is_always_refused() {
     );
     assert_eq!(asked.entries, 1, "the refusal was not written down");
 }
+
+/// **A click by position is offered only once a read in this turn found a
+/// window that describes nothing**, as the picture is — and not before.
+#[test]
+fn the_click_is_offered_only_after_a_read_finds_a_window_that_describes_nothing() {
+    let ((before, after), _) = on_a_turn(ready(), the_game_is_granted, |turning, grants, _| {
+        let offers = |turning: &Turning<'_, '_>| {
+            turning
+                .the_verbs_offered_now()
+                .of(alo_adapters::CLICK_AT)
+                .is_some()
+        };
+        let before = offers(turning);
+        let read = turning.reading(
+            alo_adapters::READ_WINDOW,
+            &[(alo_adapters::fallback_verbs::APPLICATION, Given::text(GAME))],
+            grants,
+            noon(),
+        );
+        assert!(read.is_ok(), "{read:?}");
+        (before, offers(turning))
+    });
+    assert!(!before, "offered before any read");
+    assert!(
+        after,
+        "not offered after a read of a window that describes nothing"
+    );
+}
