@@ -1222,3 +1222,57 @@ fn a_heading_read_on_the_screen_may_still_be_scrolled_to_by_name() {
         assert!(!twice.took_the_road(), "{level:?}: {twice:?}");
     }
 }
+
+/// **A guess with no read first is refused as the machine refuses it — the
+/// machine asks the game's windows when the guess arrives — and the try goes
+/// on**: guess, be told to read and take a picture, read, picture, click.
+#[test]
+fn a_guess_with_no_read_first_is_refused_and_the_try_goes_on() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, reading, the_words};
+    use alo_adapters::fallback_verbs::{
+        ACROSS, APPLICATION, CLICK_AT, DOWN, NAME, OPEN_ITEM, PICTURE_WINDOW, QUESTION, READ_WINDOW,
+    };
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| {
+            request.named() == "click by position where a picture of a window showed a thing"
+        })
+        .expect("the set has it");
+    let game = crate::every_other_verb::THE_GAME_IDENTIFIER;
+    let lines = [
+        proposing(OPEN_ITEM, &[(APPLICATION, game), (NAME, "Start Race")]),
+        reading(READ_WINDOW, &[(APPLICATION, game)]),
+        proposing(
+            PICTURE_WINDOW,
+            &[(APPLICATION, game), (QUESTION, "Where is Start race?")],
+        ),
+        format!(
+            r#"{{"format":1,"asks":{{"propose":{{"verb":"{CLICK_AT}","given":[{{"named":"{APPLICATION}","is":"{game}"}},{{"named":"{ACROSS}","is":50}},{{"named":"{DOWN}","is":40}}]}}}}}}"#
+        ),
+        answering("The race is starting."),
+    ];
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let mut model = Writing::these(&lines);
+        let tried = one_try_at(
+            level,
+            request,
+            set.may_reach(),
+            &crate::testing::the_verbs(),
+            &the_words(),
+            &mut model,
+        );
+        assert_eq!(tried.went(), &Went::TheRoad, "{level:?}: {tried:?}");
+        assert_eq!(tried.refused_before_asking(), 1, "{level:?}");
+        assert!(
+            model
+                .shown
+                .iter()
+                .any(|shown| shown.contains("Read its windows")),
+            "{level:?}: the model was not told what to do"
+        );
+    }
+}

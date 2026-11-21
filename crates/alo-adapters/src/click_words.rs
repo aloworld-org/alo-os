@@ -170,7 +170,7 @@ pub const ACROSS_A_PAIRING: Word = Word::saying(
 pub const NAMES_NOTHING: Word = Word::saying(
     "adapters.fallback.click-at.names-nothing",
     "This window of {application} names none of its controls, so nothing called “{name}” can be \
-     found in it. Take a picture of it to see where things are",
+     found in it. Read its windows, then take a picture of them to see where things are",
 )
 .noting(
     "Said, before anybody is asked, when alo names a button, a field or an item in a window that \

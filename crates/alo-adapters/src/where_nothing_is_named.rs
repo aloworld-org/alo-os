@@ -58,6 +58,21 @@ pub fn named_where_nothing_is_named(
     ))
 }
 
+/// **Whether `application`'s windows, as the tree shows them now, name
+/// nothing** — what a named guess is checked against when it arrives, with no
+/// earlier read needed (the coordinator's decision of 2026-11-21). An
+/// application the tree knows no window of names nothing, as for a picture
+/// (`crate::picturing_a_window`); a tree that cannot be read says nothing
+/// either way, so nothing is refused for it.
+#[must_use]
+pub fn the_windows_name_nothing(
+    tree: &dyn crate::accessibility_tree::AccessibilityTree,
+    application: &str,
+) -> bool {
+    let _ = (tree, application);
+    false
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,

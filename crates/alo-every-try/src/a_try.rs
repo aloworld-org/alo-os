@@ -564,11 +564,14 @@ impl Recording<'_> {
                 // **As the machine answers a control named where nothing is
                 // named**: refused before any card, in its own words, and the
                 // try goes on (`alo_adapters::where_nothing_is_named`).
+                let mut where_nothing_is_named =
+                    crate::named_where_nothing_is::as_the_request_shows(self.request);
+                where_nothing_is_named.extend(self.where_nothing_is_named.iter().cloned());
                 if let Some(refused) = crate::named_where_nothing_is::refused(
                     request,
                     self.verbs,
                     &self.machine,
-                    &self.where_nothing_is_named,
+                    &where_nothing_is_named,
                     self.strings,
                 ) {
                     self.refused_before_asking += 1;

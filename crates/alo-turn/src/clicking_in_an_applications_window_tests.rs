@@ -1420,3 +1420,35 @@ fn a_control_named_in_a_window_that_names_its_controls_is_proposed() {
     });
     assert!(answered.is_ok(), "{answered:?}");
 }
+
+/// **A guess in the game is refused before any card even with no read
+/// first**: the machine asks the windows when the guess arrives, and they name
+/// nothing (the coordinator's decision of 2026-11-21).
+#[test]
+fn a_guess_with_no_read_first_is_refused_where_the_windows_name_nothing() {
+    let (answered, asked) = on_a_turn(ready(), the_game_is_granted, |turning, grants, _| {
+        turning.proposing(
+            alo_adapters::OPEN_ITEM,
+            &[
+                (APPLICATION, Given::text(GAME)),
+                (
+                    alo_adapters::fallback_verbs::NAME,
+                    Given::text("Start Race"),
+                ),
+            ],
+            grants,
+            hour(),
+            noon(),
+        )
+    });
+    assert!(answered.is_err(), "proposed: {answered:?}");
+    let Err(not_done) = &answered else { return };
+    let said = not_done.said(&in_english()).into_text();
+    assert!(said.contains("names none of its controls"), "{said}");
+    assert!(said.contains("Read its windows"), "{said}");
+    assert!(
+        asked.at_the_door.is_empty(),
+        "the door was asked: {:?}",
+        asked.at_the_door
+    );
+}

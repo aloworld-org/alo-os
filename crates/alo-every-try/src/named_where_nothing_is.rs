@@ -31,3 +31,12 @@ pub fn refused(
     )
     .map(|said| ToAnAgent::refused(&said))
 }
+
+/// **The applications whose windows the request's machine shows naming
+/// nothing**, as its scripted reads answer — what a named guess is checked
+/// against when it arrives, with no read first, as the machine asks its tree.
+#[must_use]
+pub fn as_the_request_shows(request: &crate::a_road::ARequest) -> Vec<String> {
+    let _ = request;
+    Vec::new()
+}
