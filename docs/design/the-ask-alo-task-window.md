@@ -299,6 +299,32 @@ of window, not inside one: task windows keep theirs, the last opened in front.
 Built in `crates/alo-shell/src/which_window_is_in_front.rs`, which the painter,
 a press and the keyboard all read.
 
+**A question arriving never moves the keyboard** — the owner, 2026-10-26
+(*ordinary focus*, recorded until now only in
+`crates/alo-shell/src/the_tasks_seat.rs`): the window a person just asked for
+takes the keyboard, and a card arriving does not. If a proposal could take the
+keyboard, a person typing in a document could press *Tab* then *Enter* — two
+ordinary keys — and approve a change they never read.
+
+**One narrow exception: a card takes back keys alo's own opening took** — the
+owner, 2026-11-20: *"Yes, allow the narrow exception."* At *ask each time*,
+alo opens a file in its own copy of an application after the person approves,
+and that window comes in front with the keyboard. The next card then rose in
+the task window behind it, where the person could not see what they were asked
+to approve (walk run 44161055698, picture 92). Now the card's task window comes
+in front and takes the keys back, **only when all four hold**:
+
+1. the keys alo's opening took came from **this** task;
+2. the seat's focus is **still on the window alo opened** — the person has not
+   gone anywhere since;
+3. **no task holds the keys** now;
+4. the **applications are in front**, not the terminal, Settings or the record.
+
+What alo took is remembered only until that task's next answer. The seat's own
+focus stays on the opened window, so the typing that follows approval still
+reaches it. Built in
+`crates/alo-shell/src/the_card_comes_in_front_of_what_alo_opened.rs`.
+
 ## The approval card, 920 × 152
 
 `417:27797`, inside the conversation scroll, `bg/cool`, p 16, radius

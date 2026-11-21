@@ -567,6 +567,11 @@ pub struct Server {
     /// proposal that could take the keyboard could be approved by somebody
     /// typing *Tab* and *Enter* into a document.
     pub(crate) the_task_with_the_keyboard: Option<crate::the_tasks_a_person_opened::WhichTask>,
+    /// **The keys alo's own opening of a file took from a task**, until that
+    /// task's next answer: a card arriving there may take them back
+    /// (`crate::the_card_comes_in_front_of_what_alo_opened`).
+    pub(crate) alo_took_the_keys:
+        Option<crate::the_card_comes_in_front_of_what_alo_opened::AloTookTheKeys>,
     /// The Dock's composer, as a field a person types a request into.
     ///
     /// **One per machine and not one per display**, because there is one
@@ -1046,6 +1051,7 @@ impl Server {
             the_applications_entry_is_called: String::new(),
             the_tasks: crate::the_tasks_a_person_opened::TheTasks::none_yet(),
             the_task_with_the_keyboard: None,
+            alo_took_the_keys: None,
             the_change_waiting:
                 crate::a_change_waiting_reaches_the_person::AChangeWaiting::nothing_yet(),
             the_answers: crate::an_answer_goes_off_the_frame::TheAnswersOnTheirWay::default(),
