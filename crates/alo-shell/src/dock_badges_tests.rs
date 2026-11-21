@@ -163,8 +163,8 @@ fn badge_coloured(picture: &DockPicture, badge: [u8; 3]) -> usize {
     picture
         .panels
         .iter()
-        .flat_map(|panel| panel.pixels.chunks_exact(4))
-        .filter(|pixel| pixel.get(..3) == Some(&badge[..]) && pixel.get(3) == Some(&0xFF))
+        .flat_map(|panel| panel.pixels.as_chunks::<4>().0)
+        .filter(|[red, green, blue, opacity]| [*red, *green, *blue] == badge && *opacity == 0xFF)
         .count()
 }
 
