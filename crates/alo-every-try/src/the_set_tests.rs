@@ -772,7 +772,10 @@ fn a_path_through_home_is_the_same_file_at_full_access() {
     assert!(!asked.took_the_road(), "{asked:?}");
     let elsewhere = proposing(
         OPEN_FILE_IN_APPLICATION,
-        &[(APPLICATION, &editor), (PATH, &format!("/homes/alo/{THE_FILE}"))],
+        &[
+            (APPLICATION, &editor),
+            (PATH, &format!("/homes/alo/{THE_FILE}")),
+        ],
     );
     let wrong = try_at(
         TheLevel::FullAccess,

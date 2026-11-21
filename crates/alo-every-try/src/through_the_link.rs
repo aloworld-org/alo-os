@@ -87,4 +87,22 @@ mod tests {
         assert_eq!(led_to("/var/home/alo/hello.txt"), None);
         assert_eq!(led_to("home/alo"), None);
     }
+    /// **Only an argument the verb takes as a path is led anywhere**: a text
+    /// that happens to begin with `/home` is typed as it was given.
+    #[test]
+    fn a_text_that_begins_with_home_is_left_alone() {
+        use super::through_the_link;
+        use crate::testing::{proposing, read, the_verbs};
+        use alo_adapters::fallback_verbs::{APPLICATION, NAME, TEXT, TYPE_TEXT};
+
+        let typed = read(&proposing(
+            TYPE_TEXT,
+            &[
+                (APPLICATION, "com.vscodium.codium"),
+                (NAME, "hello.txt"),
+                (TEXT, "/home/alo/notes"),
+            ],
+        ));
+        assert_eq!(through_the_link(&typed, &the_verbs()), typed);
+    }
 }
