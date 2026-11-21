@@ -227,6 +227,12 @@ pub enum Done {
         /// the likeliest reason. **Sentences rather than keys**, because their
         /// reader is the model answering the person, which reads words.
         told: Vec<String>,
+        /// **Whether the windows describe nothing** — no text, nothing named,
+        /// no password field — which opens the screen road for the rest of the
+        /// turn (`alo_instructing::the_verbs_offered`). Added 2026-11-20,
+        /// additively: absent is `false`.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        describes_nothing: bool,
     },
     /// One control was pressed, or asked to be by an application that did not
     /// answer (`accessible.activate_control`).
@@ -740,7 +746,21 @@ impl Done {
                 .collect(),
             not_all_read: shown.not_all_read(),
             told: told.to_vec(),
+            describes_nothing: false,
         }
+    }
+
+    /// **Whether this is a read of windows that describe nothing**, which opens
+    /// the screen road for the rest of the turn.
+    #[must_use]
+    pub const fn a_window_that_describes_nothing(&self) -> bool {
+        matches!(
+            self,
+            Self::WindowsShowed {
+                describes_nothing: true,
+                ..
+            }
+        )
     }
 
     /// What a press answered, as it goes on the wire.
@@ -1493,3 +1513,7 @@ mod tests {
         assert!(!Done::of_a_key("org.mozilla.firefox", "enter").left_something_out());
     }
 }
+
+#[cfg(test)]
+#[path = "done_describes_nothing_tests.rs"]
+mod describes_nothing_tests;

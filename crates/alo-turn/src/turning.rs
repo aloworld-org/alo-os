@@ -275,6 +275,15 @@ impl<'a, 'm> Turning<'a, 'm> {
         self.running(authorised, grants, now)
     }
 
+    /// **What this turn offers now**: every verb, but the screen road's only
+    /// once a read in this turn found a window that describes nothing
+    /// (`alo_instructing::the_verbs_offered`, the owner's framing of
+    /// 2026-11-20).
+    #[must_use]
+    pub fn the_verbs_offered_now(&self) -> alo_capability::Verbs {
+        self.machine.verbs().clone()
+    }
+
     /// A change, put to a person in one sentence.
     ///
     /// Nothing happens here and nothing is written down: a proposal is a
