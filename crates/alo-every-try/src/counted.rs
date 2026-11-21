@@ -9,7 +9,7 @@ use crate::a_road::ARequest;
 use crate::a_try::{TheLevel, TheModel, Tried, Went};
 use crate::its_own::ItsOwn;
 use crate::tallied::{Tallied, tallying_at};
-use crate::the_bar::THE_BAR;
+use crate::the_bar::{THE_BAR, THE_CONFIRMING_TRIES};
 use crate::the_set::TheSet;
 
 /// How many times a change's own request is tried, at each level: the bar's
@@ -25,6 +25,9 @@ pub enum Counted {
     ItsOwnHeld,
     /// A request of its own took the road fewer than nine in every ten.
     ItsOwnSlipped,
+    /// A request of its own slipped on the first tries: flagged, to be tried
+    /// again and judged on both rounds — not a verdict yet.
+    ToConfirm,
     /// A request of its own was not tried enough, or the model could not be
     /// asked often enough, to say.
     NotMeasured,
@@ -38,7 +41,7 @@ impl Counted {
         match self {
             Self::NothingOfItsOwn | Self::ItsOwnHeld => 0,
             Self::ItsOwnSlipped => 1,
-            Self::NotMeasured => 2,
+            Self::NotMeasured | Self::ToConfirm => 2,
         }
     }
 }
@@ -65,6 +68,7 @@ pub fn counted_with(
         })
         .fold(Counted::ItsOwnHeld, |so_far, this| match (so_far, this) {
             (Counted::ItsOwnSlipped, _) | (_, Counted::ItsOwnSlipped) => Counted::ItsOwnSlipped,
+            (Counted::ToConfirm, _) | (_, Counted::ToConfirm) => Counted::ToConfirm,
             (Counted::NotMeasured, _) | (_, Counted::NotMeasured) => Counted::NotMeasured,
             _ => Counted::ItsOwnHeld,
         })
@@ -95,6 +99,10 @@ fn what_one_says(tallied: &Tallied, reached: bool) -> Counted {
         Counted::ItsOwnHeld
     } else if THE_BAR.holds(on_the_road + not_asked, tries, reached) {
         Counted::NotMeasured
+    } else if tries < THE_BAR.tries() + THE_CONFIRMING_TRIES {
+        // **Flag, then confirm** (approved 2026-11-20): a slip on the first
+        // tries is tried again, and the verdict is on both rounds.
+        Counted::ToConfirm
     } else {
         Counted::ItsOwnSlipped
     }
@@ -130,6 +138,11 @@ pub fn summary_counting(tallied: &[Tallied], own: &[ItsOwn], asked_of: &str) -> 
         Counted::ItsOwnSlipped => {
             "**The check did not pass**: a request of this change's own took the road fewer \
              than 9 of every 10 tries.\n\n"
+        }
+        Counted::ToConfirm => {
+            "**Flagged**: a request of this change's own slipped on these tries, and is tried \n             again; the verdict is on both rounds.
+
+"
         }
         Counted::NotMeasured => {
             "**Nothing was measured**: a request of this change's own was not tried ten times, \
@@ -201,6 +214,47 @@ pub fn tallying_its_own(
         ));
     }
     tallied
+}
+
+/// Its own requests flagged on these tries.
+#[must_use]
+pub fn the_flagged_of_its_own(
+    tallied: &[Tallied],
+    own: &[ItsOwn],
+    reached: &dyn Fn(&str) -> bool,
+) -> Vec<String> {
+    own.iter()
+        .filter(|one| {
+            tallied
+                .iter()
+                .find(|tried| tried.request().named() == one.named())
+                .is_some_and(|tried| {
+                    what_one_says(tried, reached(one.named())) == Counted::ToConfirm
+                })
+        })
+        .map(|one| one.named().to_owned())
+        .collect()
+}
+
+/// `tallied` with the tries of `more` added to the request each is of.
+#[must_use]
+pub fn with_more(tallied: Vec<Tallied>, more: Vec<Tallied>) -> Vec<Tallied> {
+    tallied
+        .into_iter()
+        .map(|one| {
+            let again: Vec<Tried> = more
+                .iter()
+                .filter(|other| other.request().named() == one.request().named())
+                .flat_map(|other| other.tries().iter().cloned())
+                .collect();
+            if again.is_empty() {
+                one
+            } else {
+                let tries = one.tries().iter().cloned().chain(again).collect();
+                Tallied::of(one.request().clone(), tries)
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]

@@ -22,6 +22,18 @@ pub struct TheBar {
 /// The bar, today: ten tries, nine on the road.
 pub const THE_BAR: TheBar = TheBar::of(10, 9);
 
+/// **What "clearly worse" means** (the owner, 2026-11-20, *"Compare with
+/// main"*): a drop of this many tries in every [`THE_BAR`]'s tries, below
+/// the base, for a change that owns the whole set
+/// (`crate::compared_with_its_base`) — two of ten, four of twenty.
+pub const THE_CLEARLY_WORSE_DROP: usize = 2;
+
+/// **How many more tries a flagged request is given**, on the change and on
+/// its base, before it blocks: a fault on the first tries is a flag, and the
+/// verdict is on the totals (approved 2026-11-20). Zero makes the first tries
+/// the verdict.
+pub const THE_CONFIRMING_TRIES: usize = 10;
+
 impl TheBar {
     /// `at_least` of every `tries`.
     #[must_use]
