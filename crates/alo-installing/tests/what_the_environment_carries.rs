@@ -502,9 +502,12 @@ fn a_list_missing_what_the_installer_finishes_with_is_caught() {
 /// Three are worth saying out loud, because each is a way for every other part
 /// to be right and the join to fail:
 ///
-/// - **the bus policy is in `/etc`**, not `/usr/share` where the activation
-///   service is. Without it the bus denies NetworkManager's call to the
-///   supplicant, and the error names NetworkManager rather than this file;
+/// - **the bus policy is in `/usr/share`**, beside the activation service.
+///   Without it the bus denies NetworkManager's call to the supplicant, and the
+///   error names NetworkManager rather than this file. It was in `/etc` until
+///   Fedora 44's `wpa_supplicant` 2.11-8 (*"Move dbus conf from /etc to
+///   /usr/share"*), and naming the old place stopped the environment building
+///   on the Fedora 44 base: install-check run 44928885871, 2026-11-21;
 /// - **the supplicant is at `/usr/bin`**, which is the rpm's own path.
 ///   `/usr/sbin/wpa_supplicant` resolves too, because Fedora merged the two (42, and 44 still: `/usr/sbin` is a link to `bin`),
 ///   and is not the one named;
@@ -524,7 +527,7 @@ const EVERY_WIRELESS_PART: [&str; 10] = [
     "/usr/bin/nmcli",
     "/usr/lib/systemd/system/wpa_supplicant.service",
     "/usr/share/dbus-1/system-services/fi.w1.wpa_supplicant1.service",
-    "/etc/dbus-1/system.d/wpa_supplicant.conf",
+    "/usr/share/dbus-1/system.d/wpa_supplicant.conf",
     "/usr/lib64/NetworkManager/*/libnm-device-plugin-wifi.so",
     "/usr/lib/firmware/intel/iwlwifi/iwlwifi-3168-29.ucode.xz",
     "/usr/lib/firmware/regulatory.db",
