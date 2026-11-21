@@ -1198,6 +1198,7 @@ version = "0.0.1"
 dependencies = [
  "alo-folded-light",
  "alo-image",
+ "alo-installer",
  "alo-keyboards",
  "alo-saying",
  "alo-starting",

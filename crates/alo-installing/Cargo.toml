@@ -47,6 +47,11 @@ thiserror = { workspace = true }
 # says something is collected by `alo-saying`, and never reaches for it.
 alo-saying = { path = "../alo-saying" }
 
+# The test that installs beside Windows stages the choice with the installer's
+# own writer, so the line the loader reads is the one Windows writes, not a copy
+# of it typed into the test. `alo-saying` already brings this crate in.
+alo-installer = { path = "../alo-installer" }
+
 # The test that boots the environment in a virtual machine makes a key that is
 # not the owner's, to show that a download signed by anybody else writes
 # nothing. The workspace already rents its primitives from here (ADR 0031).
