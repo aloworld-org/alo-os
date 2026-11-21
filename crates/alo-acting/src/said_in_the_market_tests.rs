@@ -27,6 +27,15 @@ fn each_line_begins_with_its_start() {
     }
 }
 
+/// **Both answers to an installation begin alike**, so a walk waiting for one
+/// is answered by the other too, and reads which it was.
+#[test]
+fn both_answers_begin_alike() {
+    assert!(an_installation_arrived("org.kde.kate").starts_with(AN_INSTALLATION));
+    assert!(an_installation_was_not_done("org.kde.kate", "no").starts_with(AN_INSTALLATION));
+    assert!(!a_person_asked_to_install("org.kde.kate").starts_with(AN_INSTALLATION));
+}
+
 /// **The lines as they are written**, so a reader of the journal and this
 /// file see the same words.
 #[test]

@@ -10,11 +10,6 @@
 //! identifier — whenever it changes, the shape
 //! `crate::settings_says_where_the_keyboard_is` has for Settings.
 
-#![expect(
-    dead_code,
-    reason = "called from the roads in the next commit; the tests come first"
-)]
-
 use alo_acting::said_in_the_market as said;
 
 use crate::the_dock_as_a_reader_meets_it::{ItsName, as_read};
@@ -87,6 +82,28 @@ impl crate::Server {
         }
         self.said_in_the_market = None;
         self.the_market_says_where_the_keyboard_went();
+    }
+
+    /// **The host says an installation arrived**: said on the journal, and the
+    /// window told. Every road that answers the market comes through here or
+    /// [`Self::the_market_is_told_it_was_refused`], so none is left unsaid.
+    pub(crate) fn the_market_is_told_it_arrived(&mut self, identifier: &str) {
+        say(&said::an_installation_arrived(identifier));
+        self.market.it_arrived(identifier);
+    }
+
+    /// **The host says an installation was not done**: said on the journal
+    /// with why, in `alo-software`'s own terms, and the window told.
+    pub(crate) fn the_market_is_told_it_was_refused(
+        &mut self,
+        identifier: &str,
+        why: alo_software::Stopped,
+    ) {
+        say(&said::an_installation_was_not_done(
+            identifier,
+            &format!("{why:?}"),
+        ));
+        self.market.it_was_refused(identifier, why);
     }
 }
 

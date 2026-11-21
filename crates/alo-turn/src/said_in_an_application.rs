@@ -22,7 +22,12 @@ use crate::what_a_verb_did::WhatAVerbDid;
 
 /// The verbs alo acts in an application by: each one names the application in
 /// its `application` argument.
-const IN_AN_APPLICATION: [&str; 16] = [
+///
+/// **And `install_application`**, which names the application it installs in
+/// the same argument: not an act *in* it, but the one a walk most needs to see
+/// done or not done before it acts in it (the launch audit of 2026-11-21).
+const IN_AN_APPLICATION: [&str; 17] = [
+    alo_software::INSTALL_APPLICATION,
     "open_application",
     "focus_application",
     "close_application",

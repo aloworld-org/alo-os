@@ -37,6 +37,11 @@ pub const IN_THE_MARKET_THE_KEYBOARD_IS_ON: &str = "alo-shell: in the market the
 /// The start of the line that says a person pressed Install.
 pub const A_PERSON_ASKED_TO_INSTALL: &str = "alo-shell: in the market a person asked to install";
 
+/// The start both answers share, arrived and not done: a walk waits for it
+/// and reads which, so a refusal fails at once, saying why, rather than as a
+/// wait for an arrival that never comes.
+pub const AN_INSTALLATION: &str = "alo-shell: in the market an installation";
+
 /// The start of the line that says an installation arrived.
 pub const AN_INSTALLATION_ARRIVED: &str = "alo-shell: in the market an installation arrived:";
 

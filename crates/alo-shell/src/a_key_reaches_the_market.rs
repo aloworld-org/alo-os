@@ -150,8 +150,18 @@ impl Server {
                 // the row says *installing it*.
                 if did == MarketPressed::AskedToInstall {
                     self.asked_to_install = window.what_they_asked_for().cloned();
+                    if let Some(asked) = &self.asked_to_install {
+                        crate::the_road_to_the_market_is_said::say(
+                            &alo_acting::said_in_the_market::a_person_asked_to_install(
+                                asked.application().identifier(),
+                            ),
+                        );
+                    }
                 }
                 self.market = window;
+                // **And which card the keyboard is on now, by its identifier**
+                // (`crate::the_road_to_the_market_is_said`).
+                self.the_market_says_where_the_keyboard_went();
                 Ok(Some(did))
             }
             // A release, a repeat, and a code this keyboard has that evdev does
