@@ -18,10 +18,9 @@
 //! confirmation open or not; Escape is the key that closes a confirmation
 //! first, and keeps doing so.
 
-use smithay::utils::{Logical, Physical, Point, Rectangle};
+use smithay::utils::{Physical, Rectangle};
 
-use crate::an_alo_windows_edge::{OnItsEdge, WhatItShows, its_picture, what_a_press_is_on};
-use crate::which_window_is_in_front::AKindOfWindow;
+use crate::an_alo_windows_edge::{WhatItShows, its_picture};
 
 impl crate::Server {
     /// Where the record's body is seen on the display, while it is open here
