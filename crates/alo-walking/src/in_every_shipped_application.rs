@@ -247,7 +247,7 @@ fn every_application(walk: Walk) -> Walk {
         );
 
     // **Dolphin**: opened, and its window read.
-    let walk = opened_and_read(walk, DOLPHIN, &dolphin.1, "dolphin");
+    let walk = opened_and_read(walk, DOLPHIN, &dolphin.1, "dolphin", true);
     // **Loupe** and **Ark**: a file opened in each, and its window read.
     let walk = a_file_opened_and_read(walk, LOUPE, &loupe.1, "loupe");
     let walk = a_file_opened_and_read(walk, ARK, &ark.1, "ark");
@@ -264,8 +264,8 @@ fn every_application(walk: Walk) -> Walk {
         )
         .look("every-app-in-dolphin", look.at_most(minutes(1)));
     // **Papers** and **Firefox**: opened, and the window read.
-    let walk = opened_and_read(walk, PAPERS, &papers.1, "papers");
-    let walk = opened_and_read(walk, FIREFOX, &firefox.1, "firefox");
+    let walk = opened_and_read(walk, PAPERS, &papers.1, "papers", false);
+    let walk = opened_and_read(walk, FIREFOX, &firefox.1, "firefox", false);
 
     // **And closed**: Dolphin, asked by name.
     asking(walk, "every-app-close-dolphin-ask", "Close Dolphin.")
@@ -279,28 +279,39 @@ fn every_application(walk: Walk) -> Walk {
         .look("every-app-dolphin-closed", look.at_most(minutes(1)))
 }
 
-/// Ask for an application to be opened and read, and check both happened.
-fn opened_and_read(walk: Walk, application: &str, ask: &str, picture: &str) -> Walk {
+/// Ask for an application to be opened and read, and check both happened —
+/// the read passing after a retry where `a_retry_may_pass`, counted apart:
+/// Dolphin's, whose window is read before it is ready (run 44242727940: not
+/// done at 927.12 s, done at 928.28 s).
+fn opened_and_read(
+    walk: Walk,
+    application: &str,
+    ask: &str,
+    picture: &str,
+    a_retry_may_pass: bool,
+) -> Walk {
     let minutes = |it: u64| Duration::from_secs(it * 60);
-    asking(walk, &format!("every-app-{picture}-ask"), ask)
-        .expect_line_saying(
-            &format!("alo opens {application}"),
-            &acted("open_application", application),
-            &done_in(application),
-            Since::Mark,
-            minutes(5),
-        )
-        .expect_line_saying(
-            &format!("alo reads {application}'s window"),
-            &acted(READ_WINDOW, application),
-            &done_in(application),
-            Since::Mark,
-            minutes(5),
-        )
-        .look(
-            &format!("every-app-{picture}"),
-            Settling::UNDER_KVM.at_most(minutes(1)),
-        )
+    let opened = asking(walk, &format!("every-app-{picture}-ask"), ask).expect_line_saying(
+        &format!("alo opens {application}"),
+        &acted("open_application", application),
+        &done_in(application),
+        Since::Mark,
+        minutes(5),
+    );
+    let (check, phrase, done) = (
+        format!("alo reads {application}'s window"),
+        acted(READ_WINDOW, application),
+        done_in(application),
+    );
+    let read = if a_retry_may_pass {
+        opened.expect_line_saying_or_after_a_retry(&check, &phrase, &done, Since::Mark, minutes(5))
+    } else {
+        opened.expect_line_saying(&check, &phrase, &done, Since::Mark, minutes(5))
+    };
+    read.look(
+        &format!("every-app-{picture}"),
+        Settling::UNDER_KVM.at_most(minutes(1)),
+    )
 }
 
 /// Ask for a file to be opened in an application and its window read, and
