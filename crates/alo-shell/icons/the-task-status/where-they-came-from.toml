@@ -1,0 +1,27 @@
+# Where the task status's artwork came from.
+#
+# Taken from the design file on 2026-11-21 with the Figma connector's
+# `get_design_context` on the status pills of the approved alo window frames
+# (page `544:30910`), whose asset links were downloaded with curl and committed
+# byte for byte. alo's mark on *alo is working* (`549:46`) is the approval card's
+# own file, `../the-approval-card/alo-mark.svg`, and is not copied here.
+# `crates/alo-shell/src/the_status_icons_tests.rs` reads this file.
+
+file = "nDxyF5Ho9oC4RObjVzwBNJ"
+fetched = "2026-11-21"
+
+[[icon]]
+svg = "clock.svg"
+names = "the clock before *Waiting for your permission*"
+frame = "549:135"
+node = "549:155"
+drawn_at = 16
+colour = "#102A43"
+
+[[icon]]
+svg = "circle-check.svg"
+names = "the circled tick before *Complete*"
+frame = "549:261"
+node = "549:281"
+drawn_at = 16
+colour = "#146C43"

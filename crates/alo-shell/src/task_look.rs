@@ -99,6 +99,11 @@ pub(crate) struct TaskPalette {
     ///
     /// Deep teal, reserved by ADR 0067, and never the person's accent.
     pub(crate) alo: [u8; 3],
+    /// The ground of the *alo is working* status — `accent/soft`, alo's own
+    /// soft teal, under the teal words (`549:45`).
+    pub(crate) alo_soft: [u8; 3],
+    /// The circled tick on *Complete* — `status/positive` (`549:281`).
+    pub(crate) positive: [u8; 3],
     /// The ground of the one Send-or-Stop button, which is `text/primary`.
     ///
     /// The design fills it with the ink colour and draws its arrow in the
@@ -148,6 +153,8 @@ impl TaskPalette {
             ink_quiet: desktop.ink_quiet,
             // **The reserved token, read directly.** Never `desktop.accent`.
             alo: rgb_of(Role::AccentDefault),
+            alo_soft: rgb_of(Role::AccentSoft),
+            positive: rgb_of(Role::StatusPositive),
             the_one_button: desktop.ink,
             on_the_one_button: desktop.dock,
             canvas: desktop.ground,
