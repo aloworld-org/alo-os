@@ -298,3 +298,22 @@ fn which_changes_own_the_whole_set() {
         WhyItsOwn::EveryTurnIsToldOtherwise
     )]));
 }
+
+/// **A base in the second scheme is read in that scheme**, so moving to
+/// answers as sent owns nothing by the move.
+#[test]
+fn a_base_in_the_second_scheme_is_compared_in_that_scheme() {
+    use crate::the_declaration::Scheme;
+
+    let set = the_set().expect("the set builds");
+    let verbs = the_verbs();
+    let second = Declared::by_the_scheme(&set, &verbs, Scheme::WhatIsShown)
+        .expect("declares")
+        .written();
+    assert!(second.contains("\nfingerprints\t2"), "{second}");
+    assert!(
+        super::its_own_against(&second, &set, &verbs)
+            .expect("it reads")
+            .is_empty()
+    );
+}

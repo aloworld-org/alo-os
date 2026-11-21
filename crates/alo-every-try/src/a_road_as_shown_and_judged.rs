@@ -17,10 +17,46 @@
 
 use std::fmt::Write as _;
 
-use super::{ARequest, Step};
+use super::{ARequest, Answered, Step};
+
+/// **How a step's answer is written** into the text a fingerprint is taken of.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TheAnswerWritten {
+    /// As Rust prints it (`{:?}`): every field, an empty one included. The
+    /// second scheme of fingerprints (`crate::the_declaration::Scheme::WhatIsShown`).
+    AsPrinted,
+    /// **As the model is sent it** (since 2026-11-21): what the machine did,
+    /// as the protocol writes it on the wire, so a field the protocol leaves
+    /// out when it is empty is not in it. Found on #1412, where three empty
+    /// fields on a thing shown moved the line of every request reading a
+    /// window though the model read the same bytes.
+    AsSent,
+}
+
+/// One step's answer, written `how`.
+fn the_answer(answered: &Answered, how: TheAnswerWritten) -> String {
+    match (how, answered) {
+        (TheAnswerWritten::AsSent, Answered::With(done)) => {
+            serde_json::to_string(done).unwrap_or_else(|_| format!("{done:?}"))
+        }
+        // **The catalogue as the model may be sent it**: what it holds under
+        // each kind of work a call may choose, and under everything.
+        (TheAnswerWritten::AsSent, Answered::TheCatalogue(catalogue)) => std::iter::once(None)
+            .chain(alo_software::Category::EVERY.into_iter().map(Some))
+            .map(|kind| {
+                let sent = alo_protocol::Done::of_a_catalogue_read(
+                    &alo_software::WhatTheCatalogueHolds::under(catalogue, kind),
+                );
+                serde_json::to_string(&sent).unwrap_or_else(|_| format!("{sent:?}"))
+            })
+            .collect::<Vec<_>>()
+            .join("; "),
+        _ => format!("{answered:?}"),
+    }
+}
 
 /// One step, on one line.
-fn a_step(step: &Step) -> String {
+fn a_step(step: &Step, how: TheAnswerWritten) -> String {
     let Step {
         verb,
         expecting,
@@ -42,7 +78,7 @@ fn a_step(step: &Step) -> String {
     for (argument, place) in fields {
         let _ = write!(line, "; the field {argument} names {place:?}");
     }
-    let _ = write!(line, "; answered {answered:?}");
+    let _ = write!(line, "; answered {}", the_answer(answered, how));
     if *look {
         line.push_str("; a look");
     }
@@ -59,19 +95,25 @@ fn a_step(step: &Step) -> String {
 }
 
 /// Steps, one a line, under `heading`.
-fn steps(heading: &str, steps: &[Step]) -> String {
+fn steps(heading: &str, steps: &[Step], how: TheAnswerWritten) -> String {
     let mut said = format!("{heading}:\n");
     for step in steps {
-        let _ = writeln!(said, "- {}", a_step(step));
+        let _ = writeln!(said, "- {}", a_step(step, how));
     }
     said
 }
 
 impl ARequest {
     /// The request as the model is shown it and as its road is judged, with
-    /// nothing for a field left at its default.
+    /// nothing for a field left at its default, and each answer as sent.
     #[must_use]
     pub fn as_shown_and_judged(&self) -> String {
+        self.as_shown_and_judged_with(TheAnswerWritten::AsSent)
+    }
+
+    /// The same, each answer written `how`.
+    #[must_use]
+    pub fn as_shown_and_judged_with(&self, how: TheAnswerWritten) -> String {
         let Self {
             named: _,
             words,
@@ -89,12 +131,12 @@ impl ARequest {
             let each: Vec<String> = there.iter().map(|at| at.display().to_string()).collect();
             let _ = writeln!(said, "on its machine: {}", each.join(", "));
         }
-        said.push_str(&steps("road", road));
+        said.push_str(&steps("road", road, how));
         if !aside.is_empty() {
-            said.push_str(&steps("aside", aside));
+            said.push_str(&steps("aside", aside, how));
         }
         for (at, road) in other.iter().enumerate() {
-            said.push_str(&steps(&format!("another road {}", at + 1), road));
+            said.push_str(&steps(&format!("another road {}", at + 1), road, how));
         }
         said
     }
