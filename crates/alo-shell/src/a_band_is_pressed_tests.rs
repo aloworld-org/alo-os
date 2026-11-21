@@ -286,8 +286,11 @@ fn it_did(server: &Server, band: AlosBand, control: OnTheEdge) -> bool {
 }
 
 /// The controls `band` has, which is the list every road is held to.
-fn its_controls(band: AlosBand) -> Vec<OnTheEdge> {
-    crate::window_edge_reading::the_controls_of(band.decorations())
+fn its_controls(kind: Kind) -> Vec<OnTheEdge> {
+    crate::window_edge_reading::the_controls_of(match kind {
+        Kind::Its(which) => AlosBand::Its(which).decorations(),
+        Kind::ATask => crate::window_edge::Decorations::ATaskWindow,
+    })
 }
 
 /// **The pointer**: every control on every kind does what it says.
