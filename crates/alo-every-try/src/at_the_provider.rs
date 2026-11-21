@@ -19,6 +19,7 @@ use std::io::Write as _;
 use std::path::PathBuf;
 
 use crate::a_try::TheModel;
+use crate::waiting_for_a_busy_provider::{Attempted, asking_until_answered, is_busy};
 
 /// Who the run asks as. Not a person, and never on a machine's grants.
 const ASKING_AS: &str = "@every-try";
@@ -119,21 +120,18 @@ fn resolved(where_to: Option<(String, u16)>) -> Vec<std::net::SocketAddr> {
         .unwrap_or_default()
 }
 
-/// How many times one question is put before the provider is said not to
-/// answer: a provider that took too long once is not a model that chose.
-const ATTEMPTS: usize = 2;
-
 impl AtAProvider {
     /// One attempt at one question.
     ///
     /// **What went wrong is said by its kind alone**, never by what the
     /// provider sent back: a refused key's reply quotes part of the key, and
     /// GitHub masks only the whole of it.
-    fn once(&mut self, question: &Question, strings: &Strings) -> Result<ToAnAgent, String> {
+    fn once(&mut self, question: &Question, strings: &Strings) -> Attempted<ToAnAgent> {
         let hosted = Hosted::provider(&self.provider, Some(&self.key));
         let policy = SourcePolicy::Anywhere;
-        let answering = Answering::chosen(hosted.named_source(), &policy)
-            .map_err(|_| "the policy forbids this provider".to_owned())?;
+        let Ok(answering) = Answering::chosen(hosted.named_source(), &policy) else {
+            return Attempted::Refused("the policy forbids this provider".to_owned());
+        };
         let agent = Grantee::named(ASKING_AS);
         let asking = Asking::by(&agent, answering, &[], &policy);
         let to = resolved(hosted.where_it_would_connect());
@@ -149,7 +147,7 @@ impl AtAProvider {
         match asked {
             Ok(asked) => {
                 let answer = asked.ended(&mut self.indicator);
-                Ok(ToAnAgent::answered(
+                Attempted::Answered(ToAnAgent::answered(
                     answer.text(),
                     &answer.came_from(strings),
                     answer.model(),
@@ -161,13 +159,22 @@ impl AtAProvider {
             // long left one open, and the run ended before its summary.
             Err(NotAsked::DidNotAnswer(unanswered)) => {
                 let failed = unanswered.ended(&mut self.indicator);
-                Err(format!("the provider did not answer: {:?}", failed.why()))
+                let why = format!("the provider did not answer: {:?}", failed.why());
+                if is_busy(&failed.why()) {
+                    Attempted::Busy(why)
+                } else {
+                    Attempted::Refused(why)
+                }
             }
             Err(NotAsked::CannotBeShown(_)) => {
-                Err("the question could not be shown on the indicator".to_owned())
+                Attempted::Refused("the question could not be shown on the indicator".to_owned())
             }
-            Err(NotAsked::HeldBack(_)) => Err("the question was held back".to_owned()),
-            Err(NotAsked::Miswired(_)) => Err("the provider road is miswired".to_owned()),
+            Err(NotAsked::HeldBack(_)) => {
+                Attempted::Refused("the question was held back".to_owned())
+            }
+            Err(NotAsked::Miswired(_)) => {
+                Attempted::Refused("the provider road is miswired".to_owned())
+            }
         }
     }
 
@@ -183,13 +190,9 @@ impl TheModel for AtAProvider {
         let question =
             Question::asked(shown, &self.model).map_err(|_| "nothing could be asked".to_owned())?;
         self.writing_down(shown)?;
-        let mut last = String::new();
-        for _ in 0..ATTEMPTS {
-            match self.once(&question, strings) {
-                Ok(answered) => return Ok(answered),
-                Err(why) => last = why,
-            }
-        }
-        Err(last)
+        asking_until_answered(
+            &mut || self.once(&question, strings),
+            &mut std::thread::sleep,
+        )
     }
 }

@@ -317,3 +317,15 @@ fn the_summary_shows_the_tries_not_asked_on_each_side() {
     assert!(said.contains("6 not asked"), "{said}");
     assert!(said.contains("Nothing was decided yet"), "{said}");
 }
+
+/// A side the model was asked on every try says nothing of tries not asked.
+#[test]
+fn a_side_asked_every_try_says_none_not_asked() {
+    let rows = compared(
+        &running_out_after(10),
+        &running_out_after(10),
+        &Reached::default(),
+    );
+    let said = super::summary_of(&rows, "a scripted model");
+    assert!(!said.contains("not asked)"), "{said}");
+}
