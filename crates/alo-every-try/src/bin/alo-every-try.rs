@@ -17,6 +17,9 @@
 //! ALO_EVERY_TRY_REACHED_BEFORE=reached.txt         # the base's record of what each has reached
 //! ALO_EVERY_TRY_MEASURED=measured.txt              # with BEFORE: where what was measured is added
 //!
+//! alo-every-try owns                            # with BEFORE: none, some or the-whole-set
+//! alo-every-try compare <change> <base>          # judge the whole set against its base
+//! alo-every-try the-bar                          # the bar's tries, and how many more a flag gets
 //! alo-every-try reached <measured>...             # raise what-each-request-has-reached.txt
 //! alo-every-try declare [to]                      # write what-the-model-is-offered.txt again, or to `to`
 //! ```
@@ -41,10 +44,14 @@ use std::io::Write as _;
 use std::process::ExitCode;
 
 use alo_capability::Verbs;
+use alo_every_try::compared_with_its_base::{compared, summary_of, the_flagged, verdict_of};
 use alo_every_try::counted::tallying_its_own;
-use alo_every_try::counted::{counted, counted_with, summary_counting};
-use alo_every_try::its_own::{ItsOwn, its_own_against};
+use alo_every_try::counted::{
+    counted, counted_with, summary_counting, the_flagged_of_its_own, with_more,
+};
+use alo_every_try::its_own::{ItsOwn, its_own_against, owns_the_whole_set};
 use alo_every_try::the_bar::THE_BAR;
+use alo_every_try::the_bar::THE_CONFIRMING_TRIES;
 use alo_every_try::the_declaration::{Declared, THE_FILE};
 use alo_every_try::what_each_has_reached::{self, Measured, Reached};
 use alo_every_try::{
@@ -76,6 +83,35 @@ fn a_count(name: &str, otherwise: &str) -> Result<usize, String> {
 fn main() -> ExitCode {
     let mut arguments = std::env::args().skip(1);
     let first = arguments.next();
+    if first.as_deref() == Some("the-bar") {
+        println!("{} {THE_CONFIRMING_TRIES}", THE_BAR.tries());
+        return ExitCode::SUCCESS;
+    }
+    if first.as_deref() == Some("owns") {
+        return match owning() {
+            Ok(which) => {
+                println!("{which}");
+                ExitCode::SUCCESS
+            }
+            Err(why) => {
+                eprintln!("which requests this change owns cannot be said: {why}");
+                ExitCode::from(Verdict::NotMeasured.exit_code())
+            }
+        };
+    }
+    if first.as_deref() == Some("compare") {
+        let (Some(change), Some(base)) = (arguments.next(), arguments.next()) else {
+            eprintln!("compare takes what the change measured and what its base measured");
+            return ExitCode::from(Verdict::NotMeasured.exit_code());
+        };
+        return match comparing(&change, &base) {
+            Ok(code) => ExitCode::from(code),
+            Err(why) => {
+                eprintln!("nothing was compared: {why}");
+                ExitCode::from(Verdict::NotMeasured.exit_code())
+            }
+        };
+    }
     if first.as_deref() == Some("reached") {
         return match raising(arguments.collect()) {
             Ok(to) => {
@@ -189,6 +225,62 @@ fn writing_what_was_measured(text: &str) -> Result<(), String> {
         .map_err(failed)?
         .write_all(text.as_bytes())
         .map_err(failed)
+}
+
+/// **Which way the workflow goes**: `none`, `some` or `the-whole-set` — and
+/// first, the ratchet, so a record lowered against its base fails whichever.
+fn owning() -> Result<&'static str, String> {
+    let set = the_set().map_err(|why| why.to_string())?;
+    let verbs = alo_turn::the_verbs_a_whole_machine_offers().map_err(|why| why.to_string())?;
+    the_record_against_its_base(&set)?;
+    let own = what_it_owns(&set, &verbs)?
+        .ok_or("ALO_EVERY_TRY_BEFORE names the base's declaration to compare with")?;
+    Ok(if own.is_empty() {
+        "none"
+    } else if owns_the_whole_set(&own) {
+        "the-whole-set"
+    } else {
+        "some"
+    })
+}
+
+/// **Compare what the change measured with what its base did**
+/// (`alo_every_try::compared_with_its_base`): write the summary, write what
+/// was flagged to `ALO_EVERY_TRY_FLAGGED`, and answer with the exit code.
+fn comparing(change: &str, base: &str) -> Result<u8, String> {
+    let read = |file: &str| {
+        std::fs::read_to_string(file)
+            .map_err(|why| format!("{file}: {why}"))
+            .and_then(|text| Measured::read(&text).map_err(|why| why.to_string()))
+    };
+    let record =
+        Reached::read(what_each_has_reached::AS_COMMITTED).map_err(|why| why.to_string())?;
+    let base = read(base)?;
+    // **A base that measured nothing is not compared with**: every request
+    // would read as new and be held to the bar alone.
+    if base.each().next().is_none() {
+        return Err(
+            "the base measured nothing, so the change cannot be compared with it".to_owned(),
+        );
+    }
+    let rows = compared(&read(change)?, &base, &record);
+    let asked_of = format!(
+        "{} at {}",
+        said("ALO_EVERY_TRY_MODEL", "gpt-4o-mini"),
+        said("ALO_EVERY_TRY_ENDPOINT", "https://api.openai.com")
+    );
+    let written = summary_of(&rows, &asked_of);
+    println!("{written}");
+    writing_the_summary(&written)?;
+    let flagged = said("ALO_EVERY_TRY_FLAGGED", "");
+    if !flagged.is_empty() {
+        let lines: String = the_flagged(&rows)
+            .iter()
+            .map(|(level, named)| format!("{level}\t{named}\n"))
+            .collect();
+        std::fs::write(&flagged, lines).map_err(|why| format!("{flagged}: {why}"))?;
+    }
+    Ok(verdict_of(&rows).exit_code())
 }
 
 /// Append `written` to the summary file a run named, if it named one.
@@ -324,7 +416,7 @@ fn running() -> Result<u8, String> {
             (summary(&tallied, &asked_of), verdict(&tallied).exit_code())
         }
         Some(own) => {
-            let tallied = tallying_its_own(
+            let mut tallied = tallying_its_own(
                 level,
                 &set,
                 own,
@@ -336,8 +428,28 @@ fn running() -> Result<u8, String> {
                 &mut asking,
                 &mut telling,
             );
-            writing_what_was_measured(&Measured::of(level, &tallied).written())?;
             let mut written = summary_counting(&tallied, own, &asked_of);
+            // **Flag, then confirm** (approved 2026-11-20): what slipped on
+            // the first tries is tried again, and the verdict is on both.
+            let flagged = the_flagged_of_its_own(&tallied, own, &|named| record.has(level, named));
+            if !flagged.is_empty() && THE_CONFIRMING_TRIES > 0 {
+                let again = tallying_at(
+                    level,
+                    &set.clone()
+                        .retaining(|request| flagged.iter().any(|named| named == request.named())),
+                    THE_CONFIRMING_TRIES,
+                    &verbs,
+                    &strings,
+                    &mut asking,
+                    &mut telling,
+                );
+                tallied = with_more(tallied, again);
+                written.push_str(&format!(
+                    "\n### After {THE_CONFIRMING_TRIES} more tries of what was flagged\n\n"
+                ));
+                written.push_str(&summary_counting(&tallied, own, &asked_of));
+            }
+            writing_what_was_measured(&Measured::of(level, &tallied).written())?;
             let held_to_every_try: Vec<&str> = own
                 .iter()
                 .map(|one| one.named())
