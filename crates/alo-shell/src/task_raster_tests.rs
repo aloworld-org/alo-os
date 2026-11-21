@@ -1090,23 +1090,31 @@ fn the_line_beside_the_answers_is_on_the_canvas() {
     );
 }
 
-/// **alo's mark is drawn**, in its teal, which nothing else in the panel is.
-/// The control is the card the closing question keeps, which draws none.
+/// **alo's mark is drawn**, in its teal. The control is the card the closing
+/// question keeps, which draws none.
+///
+/// **Counted, not merely found, since 2026-11-21**: the window's status is now
+/// the design's pill, and *alo is working* carries alo's own mark in teal on
+/// its soft teal — so teal is already in the panel of both, and what the card
+/// adds is more of it.
 #[test]
 fn alos_mark_is_drawn_on_the_approved_card() {
-    let teal =
-        |panel: &crate::painted::Washed| {
-            panel.pixels.as_chunks::<4>().0.iter().any(|&[r, g, b, _]| {
+    let teal = |panel: &crate::painted::Washed| {
+        panel
+            .pixels
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .filter(|&&[r, g, b, _]| {
                 g > r.saturating_add(40) && b > r.saturating_add(40) && g < 200
             })
-        };
+            .count()
+    };
+    let control = teal(&with_a_card(None, true).panel);
+    let approved = teal(&with_the_approved_card(None).panel);
     assert!(
-        !teal(&with_a_card(None, true).panel),
-        "the control: something teal was already in the panel"
-    );
-    assert!(
-        teal(&with_the_approved_card(None).panel),
-        "alo's mark was not drawn"
+        approved > control,
+        "alo's mark was not drawn: {approved} teal pixels with it, {control} without"
     );
 }
 

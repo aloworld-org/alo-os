@@ -51,12 +51,6 @@ impl TheStatus {
     pub fn of(word: alo_strings::Word) -> Option<Self> {
         Self::EVERY.into_iter().find(|status| status.word() == word)
     }
-
-    /// Whether this is alo at work, the one status drawn in alo's teal.
-    #[must_use]
-    pub const fn is_alo_at_work(self) -> bool {
-        matches!(self, Self::AloIsWorking)
-    }
 }
 
 #[cfg(test)]

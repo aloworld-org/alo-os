@@ -207,6 +207,13 @@ enum AStatusIcon {
     Its(crate::the_status_icons::AStatusIcon),
 }
 
+/// A status's pill: its ground, its words' colour, and its icon with that
+/// icon's size and colour.
+type TheStatusPill = ([u8; 3], [u8; 3], Option<AnIconInAPill>);
+
+/// One icon in a status's pill: which, at what size, in what colour.
+type AnIconInAPill = (AStatusIcon, u32, [u8; 3]);
+
 /// **How each status's pill is drawn**: its ground, its words' colour, and its
 /// icon with that icon's size and colour, as the approved frames draw them —
 /// `549:45` *alo is working* (alo's mark, 12, on `accent/soft`, all in teal),
@@ -218,10 +225,7 @@ enum AStatusIcon {
 /// requested · not confirmed* have no frame: they are the same pill on
 /// `bg/cool` with their words in `text/primary` and **no icon**, rather than an
 /// icon the design never drew. A frame for any of them changes one arm here.
-const fn the_status_pill(
-    status: alo_tasks::TheStatus,
-    palette: &TaskPalette,
-) -> ([u8; 3], [u8; 3], Option<(AStatusIcon, u32, [u8; 3])>) {
+const fn the_status_pill(status: alo_tasks::TheStatus, palette: &TaskPalette) -> TheStatusPill {
     use crate::the_status_icons::AStatusIcon as Its;
     match status {
         alo_tasks::TheStatus::AloIsWorking => (
