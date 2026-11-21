@@ -6,7 +6,7 @@
 //! owner's *"Yes do all"*).
 //!
 //! The steps are `alo_adapters::Choosing`'s: the grants asked again at this
-//! moment, the application here, no adapter of its own, and then the
+//! moment, the application here, and then the
 //! drop-down or item looked for again in the window as it is now. What this
 //! file adds is the order around it: the tree is opened **after** every
 //! refusal that needs no tree, for this one choice, and dropped when it ends;
@@ -107,7 +107,6 @@ pub(crate) fn choosing_in_an_application(
 
     let choosing = match Choosing::of(
         authorised,
-        machine.the_adapters(),
         grants,
         &machine.the_applications_installed_now(),
         strings,

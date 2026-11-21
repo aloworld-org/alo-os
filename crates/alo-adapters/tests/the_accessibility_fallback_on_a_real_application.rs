@@ -46,8 +46,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime};
 
 use alo_adapters::{
-    ACTIVATE_CONTROL, AccessibilityTree, AccessibleSession, Activating, Adapters, Contents, Limit,
-    NodeAt, READ_WINDOW, ReadingWindows, Role, WorkingFully, fallback_verbs,
+    ACTIVATE_CONTROL, AccessibilityTree, AccessibleSession, Activating, Contents, Limit, NodeAt,
+    READ_WINDOW, ReadingWindows, Role, WorkingFully, fallback_verbs,
 };
 use alo_applications::{Application, Installed};
 use alo_capability::{Approvals, Authorised, Call, Given, Grant, Grantee, Grants, Proposal, Reach};
@@ -582,7 +582,6 @@ fn read_the_fixture(
     let asks_as = tree.asks_as().unwrap();
     let (authorised, shown) = ReadingWindows::of(
         Authorised::read(&call, &agent(), grants, at).unwrap(),
-        &Adapters::default(),
         grants,
         &installed(),
         strings,
@@ -774,7 +773,6 @@ fn a_real_control_is_pressed_by_its_kind_and_name() {
     let asks_as = tree.asks_as().unwrap();
     let pressed = Activating::of(
         approved(&pressing("check_box", "Remember me"), &grants, at),
-        &Adapters::default(),
         &grants,
         &installed(),
         &strings,
@@ -825,7 +823,6 @@ fn a_real_control_is_pressed_by_its_kind_and_name() {
         let asks_as = tree.asks_as().unwrap();
         let refused = Activating::of(
             approved(&pressing(kind, name), &grants, at),
-            &Adapters::default(),
             &grants,
             &installed(),
             &strings,
@@ -936,7 +933,6 @@ fn a_real_application_is_asked_to_scroll_a_named_line_onto_the_screen_once() {
         .unwrap();
     let scrolled = alo_adapters::Scrolling::of(
         approved(&call, &grants, at),
-        &Adapters::default(),
         &grants,
         &installed(),
         &strings,

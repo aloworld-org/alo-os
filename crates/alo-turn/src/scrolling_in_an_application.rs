@@ -5,7 +5,7 @@
 //! {application}*, and at full access it runs at once, recorded the same way.
 //!
 //! The steps are `alo_adapters::Scrolling`'s: the grants asked again at this
-//! moment, the application here, no adapter of its own; then what to scroll to
+//! moment, the application here; then what to scroll to
 //! found in the window as it is now, never a password field; then the
 //! application asked once, and the thing's states asked again.
 //!
@@ -82,7 +82,6 @@ pub(crate) fn scrolling_in_an_application(
 
     let scrolling = match Scrolling::of(
         authorised,
-        machine.the_adapters(),
         grants,
         &machine.the_applications_installed_now(),
         strings,

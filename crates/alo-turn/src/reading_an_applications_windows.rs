@@ -3,8 +3,7 @@
 //!
 //! The fourth executor family on this machine, and the first whose steps are
 //! all somebody else's: `alo_adapters::ReadingWindows` asks the grants, then
-//! whether the application is here, then whether it has an adapter of its own,
-//! and only then is the tree opened; the walk is the one a person's own
+//! whether the application is here, and only then is the tree opened; the walk is the one a person's own
 //! `alo-app … read` takes, with the same bounds and a password field's contents
 //! never asked for. What this file adds is the order around it — the tree is
 //! opened **after** every refusal that needs no tree, and dropped when the read
@@ -68,7 +67,7 @@ impl TheWindowsShowed {
 ///
 /// The grants' own words for an application nobody granted;
 /// `alo-applications`' for one this machine does not have; the fallback's for
-/// one with an adapter of its own, for no window on the screen, for nothing on
+/// no window on the screen, for nothing on
 /// this machine to read windows through, and for an application that stopped
 /// answering. **Every one of them means nothing was read.**
 pub(crate) fn reading_an_applications_windows(
@@ -90,7 +89,6 @@ pub(crate) fn reading_an_applications_windows(
     // application's windows are never asked anything.
     let reading = match ReadingWindows::of(
         authorised,
-        machine.the_adapters(),
         grants,
         &machine.the_applications_installed_now(),
         strings,

@@ -6,7 +6,7 @@
 //!
 //! The steps are `alo_adapters::Opening`'s: the grants asked again at this
 //! moment — a terminal nobody allowed their agent is refused there, at every
-//! level (ADR 0111) — the application here, no adapter of its own, and then
+//! level (ADR 0111) — the application here, and then
 //! the item looked for again in the window as it is now. What this file adds
 //! is the order around it: the tree is opened **after** every refusal that
 //! needs no tree, for this one opening, and dropped when it ends.
@@ -72,7 +72,6 @@ pub(crate) fn opening_an_item_in_an_application(
 
     let opening = match Opening::of(
         authorised,
-        machine.the_adapters(),
         grants,
         &machine.the_applications_installed_now(),
         strings,

@@ -1,4 +1,4 @@
-//! Which adapters the accessibility fallback steps aside for.
+//! Which adapters an agent offered a list of verbs can reach an application through.
 
 #![expect(
     clippy::unwrap_used,
@@ -21,8 +21,7 @@ fn an_adapter_whose_verbs_are_not_offered_is_not_kept() {
     assert_eq!(kept.all().count(), 0);
 }
 
-/// **And an adapter whose verbs are offered is kept**, so the fallback still
-/// steps aside for it the day an agent is offered them.
+/// **And an adapter whose verbs are offered is kept.**
 #[test]
 fn an_adapter_whose_verbs_are_offered_is_kept() {
     let kept = shipped_adapters()

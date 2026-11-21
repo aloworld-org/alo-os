@@ -21,7 +21,6 @@ use alo_capability::{Authorised, Grants, Refused, Value};
 use alo_strings::{Filling, Said, Strings, Word};
 
 use crate::accessibility_tree::{AccessibilityTree, NodeAt, TreeFault};
-use crate::adapters::Adapters;
 use crate::fallback_reach::reached;
 use crate::fallback_verbs::{OPEN_MENU, THING};
 use crate::fallback_words as fallback;
@@ -65,15 +64,14 @@ impl OpeningAMenu {
     ///
     /// # Errors
     /// [`Refused`]: another verb's authority, the application not granted, not
-    /// installed, or with an adapter of its own.
+    /// installed.
     pub fn of(
         authorised: Authorised,
-        adapters: &Adapters,
         grants: &Grants,
         installed: &Installed,
         strings: &Strings,
     ) -> Result<Self, Refused> {
-        let reached = reached(authorised, OPEN_MENU, adapters, grants, installed, strings)?;
+        let reached = reached(authorised, OPEN_MENU, grants, installed, strings)?;
         let call = reached.authorised.call();
         let Some(Value::Name(name)) = call.value(THING) else {
             let said = strings.say(

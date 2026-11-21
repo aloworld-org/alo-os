@@ -111,15 +111,10 @@ impl Adapters {
     /// adapters an agent offered that list can actually reach an application
     /// through.
     ///
-    /// **This is what the accessibility fallback is held to**, and not every
-    /// adapter loaded. The fallback steps aside for an application with an
-    /// adapter because the adapter is a narrower, reviewed road into it
-    /// (`crate::fallback_reach`). An adapter none of whose verbs an agent is
-    /// offered is no road at all, and stepping aside for it leaves the
-    /// application with none. Found by reading on 2026-11-16: GNOME Text
-    /// Editor's adapter was loaded into every turn, its verbs were offered to
-    /// no agent, and so alo could neither read, press nor type in Text Editor
-    /// at any setting.
+    /// An adapter none of whose verbs an agent is offered is no road at all.
+    /// Until 2026-11-21 the accessibility fallback stepped aside for the
+    /// adapters this answers; `crate::fallback_reach` says why it no longer
+    /// does.
     #[must_use]
     pub fn whose_verbs_are_on(&self, verbs: &Verbs) -> Self {
         Self {

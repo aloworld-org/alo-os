@@ -29,7 +29,6 @@ use alo_capability::{Authorised, Grants, Refused, Value};
 use alo_strings::{Said, Strings};
 
 use crate::accessibility_tree::{AccessibilityTree, TreeFault};
-use crate::adapters::Adapters;
 use crate::fallback_reach::reached;
 use crate::fallback_verbs::{NAME, OPEN_ITEM};
 use crate::fallback_words::{NOT_THIS_VERB, VERB};
@@ -63,12 +62,11 @@ impl Opening {
     /// installed, or one with an adapter.
     pub fn of(
         authorised: Authorised,
-        adapters: &Adapters,
         grants: &Grants,
         installed: &Installed,
         strings: &Strings,
     ) -> Result<Self, Refused> {
-        let reached = reached(authorised, OPEN_ITEM, adapters, grants, installed, strings)?;
+        let reached = reached(authorised, OPEN_ITEM, grants, installed, strings)?;
         let call = reached.authorised.call();
         let Some(Value::Name(name)) = call.value(NAME) else {
             // A call of this verb that validated has a name; one that did not

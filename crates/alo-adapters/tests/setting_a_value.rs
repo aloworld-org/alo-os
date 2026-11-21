@@ -18,8 +18,8 @@ use std::collections::BTreeMap;
 use std::time::{Duration, SystemTime};
 
 use alo_adapters::{
-    AccessibilityTree, Adapters, Bounds, Facts, NodeAt, Running, SET_VALUE, Setting, States,
-    TreeFault, fallback_verbs,
+    AccessibilityTree, Bounds, Facts, NodeAt, Running, SET_VALUE, Setting, States, TreeFault,
+    fallback_verbs,
 };
 use alo_applications::{Application, Installed};
 use alo_capability::{
@@ -95,7 +95,6 @@ fn setting(name: &str, value: i64) -> Setting {
     let grants = granted();
     Setting::of(
         approved(&a_call(name, value), &grants),
-        &Adapters::default(),
         &grants,
         &Installed::holding([Application::called(MIXER, "Mixer").unwrap()]),
         &in_english(),
@@ -454,7 +453,6 @@ fn an_ungranted_application_is_refused_before_the_tree() {
     let authorised = approved(&a_call("Volume", 5), &grants);
     let refused = Setting::of(
         authorised,
-        &Adapters::default(),
         &Grants::default(),
         &Installed::holding([Application::called(MIXER, "Mixer").unwrap()]),
         &in_english(),

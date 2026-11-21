@@ -3,7 +3,7 @@
 //! refusal beside what it refuses.
 //!
 //! The adapter's part is the asking before any key goes: the grants, the
-//! application installed with no adapter of its own, and the place with the
+//! application installed, and the place with the
 //! keyboard never a password field or a terminal. Delivering the key is the
 //! compositor's, and `alo-turn`'s tests hold the order around both.
 
@@ -19,7 +19,7 @@ use std::time::{Duration, SystemTime};
 use alo_acting::AKey;
 use alo_adapters::fallback_verbs::{self, APPLICATION, KEY, PRESS_KEY};
 use alo_adapters::keys_words as words;
-use alo_adapters::{AccessibilityTree, Adapters, Facts, NodeAt, PressingAKey, Running, TreeFault};
+use alo_adapters::{AccessibilityTree, Facts, NodeAt, PressingAKey, Running, TreeFault};
 use alo_applications::{Application, Installed};
 use alo_capability::{
     Approvals, Authorised, Call, Effect, Given, Grant, Grantee, Grants, Proposal, Refused,
@@ -98,7 +98,6 @@ fn pressing(key: &str) -> PressingAKey {
     let grants = granting(&[BROWSER]);
     PressingAKey::of(
         approved(&a_key_call(key).unwrap(), &grants),
-        &Adapters::default(),
         &grants,
         &installed(),
         &in_english(),
@@ -259,13 +258,6 @@ fn an_application_not_granted_is_refused_before_any_window_is_asked() {
     let granted = granting(&[BROWSER]);
     let authorised = approved(&a_key_call("enter").unwrap(), &granted);
     assert!(
-        PressingAKey::of(
-            authorised,
-            &Adapters::default(),
-            &Grants::default(),
-            &installed(),
-            &in_english(),
-        )
-        .is_err()
+        PressingAKey::of(authorised, &Grants::default(), &installed(), &in_english(),).is_err()
     );
 }

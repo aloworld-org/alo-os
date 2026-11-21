@@ -34,8 +34,8 @@ use std::collections::BTreeMap;
 use std::time::{Duration, SystemTime};
 
 use alo_adapters::{
-    ACTIVATE_CONTROL, AccessibilityTree, Activating, Adapter, Adapters, Contents, Facts, Limit,
-    NodeAt, NotLoaded, READ_WINDOW, ReadingWindows, Role, Running, States, TreeFault, WorkingFully,
+    ACTIVATE_CONTROL, AccessibilityTree, Activating, Adapter, Contents, Facts, Limit, NodeAt,
+    NotLoaded, READ_WINDOW, ReadingWindows, Role, Running, States, TreeFault, WorkingFully,
     fallback_verbs, load, shipped_adapters,
 };
 use alo_applications::{Application, Installed};
@@ -540,16 +540,10 @@ fn a_window_is_read_within_its_grant_and_recorded() {
     let tree = the_desktop();
     let grants = granting(&[MAIL]);
     let authorised = Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap();
-    let read = ReadingWindows::of(
-        authorised,
-        &shipped_adapters().unwrap(),
-        &grants,
-        &installed(),
-        &strings,
-    )
-    .unwrap()
-    .read(&tree, &strings)
-    .unwrap();
+    let read = ReadingWindows::of(authorised, &grants, &installed(), &strings)
+        .unwrap()
+        .read(&tree, &strings)
+        .unwrap();
 
     let shown = read.shown();
     assert_eq!(shown.application(), MAIL);
@@ -617,16 +611,10 @@ fn a_password_fields_contents_are_never_asked_for() {
     let tree = the_desktop();
     let grants = granting(&[MAIL]);
     let authorised = Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap();
-    let read = ReadingWindows::of(
-        authorised,
-        &Adapters::default(),
-        &grants,
-        &installed(),
-        &strings,
-    )
-    .unwrap()
-    .read(&tree, &strings)
-    .unwrap();
+    let read = ReadingWindows::of(authorised, &grants, &installed(), &strings)
+        .unwrap()
+        .read(&tree, &strings)
+        .unwrap();
 
     let password = tree.named(":1.7", "Password");
     assert!(
@@ -645,16 +633,10 @@ fn a_password_fields_contents_are_never_asked_for() {
     // And pressing something in the same window asks it nothing either.
     let tree = the_desktop();
     let call = pressing(MAIL, "button", "Sign in");
-    Activating::of(
-        approved(&call, &grants),
-        &Adapters::default(),
-        &grants,
-        &installed(),
-        &strings,
-    )
-    .unwrap()
-    .press(&tree, WorkingFully::NothingMoreToTurnOn, &strings)
-    .unwrap();
+    Activating::of(approved(&call, &grants), &grants, &installed(), &strings)
+        .unwrap()
+        .press(&tree, WorkingFully::NothingMoreToTurnOn, &strings)
+        .unwrap();
     let password = tree.named(":1.7", "Password");
     assert!(!tree.asked().contains(&Asked::Text(password)));
 }
@@ -670,7 +652,6 @@ fn what_cannot_be_read_is_said_in_words() {
     let grants = granting(&[MAIL]);
     let read = ReadingWindows::of(
         Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
-        &Adapters::default(),
         &grants,
         &installed(),
         &strings,
@@ -730,7 +711,6 @@ fn what_cannot_be_read_is_said_in_words() {
     big.facts.get_mut(&window).unwrap().unlisted_children = true;
     let read = ReadingWindows::of(
         Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
-        &Adapters::default(),
         &grants,
         &installed(),
         &strings,
@@ -767,7 +747,6 @@ fn a_text_longer_than_is_read_at_once_says_it_was_cut_short() {
     let grants = granting(&[MAIL]);
     let read = ReadingWindows::of(
         Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
-        &Adapters::default(),
         &grants,
         &installed(),
         &strings,
@@ -808,7 +787,6 @@ fn a_text_longer_than_is_read_at_once_says_it_was_cut_short() {
 
     let pressed = Activating::of(
         approved(&pressing(MAIL, "button", "Send"), &grants),
-        &Adapters::default(),
         &grants,
         &installed(),
         &strings,
@@ -861,7 +839,6 @@ fn drop_downs_list_items_and_sliders_are_read_for_what_they_are() {
     let grants = granting(&[MAIL]);
     let read = ReadingWindows::of(
         Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
-        &Adapters::default(),
         &grants,
         &installed(),
         &strings,
@@ -941,7 +918,6 @@ fn a_nameless_drop_down_or_slider_is_shown_by_what_it_holds() {
     let grants = granting(&[MAIL]);
     let read = ReadingWindows::of(
         Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
-        &Adapters::default(),
         &grants,
         &installed(),
         &strings,
@@ -1004,16 +980,10 @@ fn a_press_does_what_its_card_says_and_nothing_it_says_it_leaves() {
     let tree = the_desktop();
     let grants = granting(&[MAIL]);
     let authorised = approved(&pressing(MAIL, "button", "Sign in"), &grants);
-    Activating::of(
-        authorised,
-        &shipped_adapters().unwrap(),
-        &grants,
-        &installed(),
-        &strings,
-    )
-    .unwrap()
-    .press(&tree, WorkingFully::NothingMoreToTurnOn, &strings)
-    .unwrap();
+    Activating::of(authorised, &grants, &installed(), &strings)
+        .unwrap()
+        .press(&tree, WorkingFully::NothingMoreToTurnOn, &strings)
+        .unwrap();
 
     let sign_in = tree.named(":1.7", "Sign in");
     let acts: Vec<Asked> = tree
@@ -1046,16 +1016,10 @@ fn one_approval_presses_the_control_it_names_once_and_is_recorded() {
         .unwrap();
     assert!(approvals.approve(id, noon()).is_err(), "answered twice");
 
-    let pressed = Activating::of(
-        authorised,
-        &shipped_adapters().unwrap(),
-        &grants,
-        &installed(),
-        &strings,
-    )
-    .unwrap()
-    .press(&tree, WorkingFully::NothingMoreToTurnOn, &strings)
-    .unwrap();
+    let pressed = Activating::of(authorised, &grants, &installed(), &strings)
+        .unwrap()
+        .press(&tree, WorkingFully::NothingMoreToTurnOn, &strings)
+        .unwrap();
     assert!(!pressed.unanswered());
     assert!(pressed.said(&strings).is_none());
 
@@ -1108,7 +1072,6 @@ fn a_menus_heading_is_a_menu_item_a_press_opens() {
     );
     let read = ReadingWindows::of(
         Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
-        &Adapters::default(),
         &grants,
         &installed(),
         &strings,
@@ -1131,7 +1094,6 @@ fn a_menus_heading_is_a_menu_item_a_press_opens() {
 
     let pressed = Activating::of(
         approved(&pressing(MAIL, "menu_item", "File"), &grants),
-        &Adapters::default(),
         &grants,
         &installed(),
         &strings,
@@ -1154,7 +1116,6 @@ fn the_control_is_found_again_at_the_moment_it_is_pressed() {
     let before = the_desktop();
     ReadingWindows::of(
         Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
-        &Adapters::default(),
         &grants,
         &installed(),
         &strings,
@@ -1167,16 +1128,10 @@ fn the_control_is_found_again_at_the_moment_it_is_pressed() {
     let sign_in = after.named(":1.7", "Sign in");
     "Sign out".clone_into(&mut after.facts.get_mut(&sign_in).unwrap().name);
     let call = pressing(MAIL, "button", "Sign in");
-    let refused = Activating::of(
-        approved(&call, &grants),
-        &Adapters::default(),
-        &grants,
-        &installed(),
-        &strings,
-    )
-    .unwrap()
-    .press(&after, WorkingFully::NothingMoreToTurnOn, &strings)
-    .unwrap_err();
+    let refused = Activating::of(approved(&call, &grants), &grants, &installed(), &strings)
+        .unwrap()
+        .press(&after, WorkingFully::NothingMoreToTurnOn, &strings)
+        .unwrap_err();
     assert_eq!(
         refused.said(&strings).text(),
         "org.example.Mail shows no button named “Sign in” now, so nothing was pressed"
@@ -1198,7 +1153,6 @@ fn nothing_is_guessed_when_the_control_is_not_the_only_one() {
     let press = |tree: &ATree, name: &str| {
         Activating::of(
             approved(&pressing(MAIL, "button", name), &grants),
-            &Adapters::default(),
             &grants,
             &installed(),
             &strings,
@@ -1254,7 +1208,6 @@ fn a_long_list_off_the_screen_does_not_stop_a_press() {
     let press = |tree: &ATree| {
         Activating::of(
             approved(&pressing(MAIL, "button", "Extract"), &grants),
-            &Adapters::default(),
             &grants,
             &installed(),
             &strings,
@@ -1265,7 +1218,6 @@ fn a_long_list_off_the_screen_does_not_stop_a_press() {
     let read = |tree: &ATree| {
         ReadingWindows::of(
             Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
-            &Adapters::default(),
             &grants,
             &installed(),
             &strings,
@@ -1310,7 +1262,6 @@ fn as_many_things_on_the_screen_as_are_read_are_read_and_one_more_is_not() {
                 );
             ReadingWindows::of(
                 Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
-                &Adapters::default(),
                 &grants,
                 &installed(),
                 &strings,
@@ -1328,20 +1279,19 @@ fn as_many_things_on_the_screen_as_are_read_are_read_and_one_more_is_not() {
 
 /// **With no invocation the tree is never asked anything**, and neither is it
 /// asked while anything before it is refused: declaring the verbs, loading the
-/// adapters, proposing and approving, and every refusal of the grants, the
-/// installed list or an application's own adapter all happen with the tree
-/// untouched.
+/// adapters, proposing and approving, and every refusal of the grants or the
+/// installed list all happen with the tree untouched — and so does reaching an
+/// application that has an adapter of its own, which the fallback reaches too.
 #[test]
 fn with_no_invocation_the_tree_is_never_asked() {
     let strings = in_english();
     let tree = the_desktop();
     let grants = granting(&[MAIL, "org.gnome.TextEditor"]);
     let _ = fallback_verbs().unwrap();
-    let adapters = shipped_adapters().unwrap();
+    let _ = shipped_adapters().unwrap();
     let call = pressing(MAIL, "button", "Sign in");
     let authorised = approved(&call, &grants);
-    let activating =
-        Activating::of(authorised, &adapters, &grants, &installed(), &strings).unwrap();
+    let activating = Activating::of(authorised, &grants, &installed(), &strings).unwrap();
     assert_eq!(activating.application(), MAIL);
     assert!(tree.asked().is_empty(), "asked before anything was pressed");
     drop(activating);
@@ -1350,34 +1300,27 @@ fn with_no_invocation_the_tree_is_never_asked() {
         "asked by an authority dropped unused"
     );
 
-    // The text editor has an adapter of its own.
-    let refused = ReadingWindows::of(
+    // The text editor has an adapter of its own, and is reached all the same.
+    let reached = ReadingWindows::of(
         Authorised::read(&reading("org.gnome.TextEditor"), &agent(), &grants, noon()).unwrap(),
-        &adapters,
         &grants,
         &installed(),
         &strings,
-    )
-    .unwrap_err();
-    assert_eq!(
-        refused.said(&strings).text(),
-        "org.gnome.TextEditor has its own list of what the agent can do in it, so nothing was \
-         read or pressed in its windows instead"
     );
+    assert!(reached.is_ok());
     assert!(tree.asked().is_empty());
 }
 
 /// **Every refusal is recorded in the words a person reads, and nothing is
 /// pressed**: not granted (identically whether installed or not), a grant
-/// revoked between approval and pressing, an expired grant, not installed, an
-/// application with its own adapter, a person's own application, another
+/// revoked between approval and pressing, an expired grant, not installed, a
+/// person's own application, another
 /// verb's authority, no window, nothing to read windows through, an
 /// application that does not answer while read, no such control, greyed out,
 /// not pressable, and the application saying it did not press.
 #[test]
 fn every_refusal_is_recorded_and_nothing_is_pressed() {
     let strings = in_english();
-    let adapters = shipped_adapters().unwrap();
     let mut record = Record::default();
     let mut keep = |refused: &Refused| {
         record.keep(Entry::refused(refused, &agent(), &strings, noon()));
@@ -1414,8 +1357,7 @@ fn every_refusal_is_recorded_and_nothing_is_pressed() {
     let authorised = approved(&pressing(MAIL, "button", "Sign in"), &grants);
     let id = grants.active_at(noon()).next().unwrap().id;
     assert!(grants.revoke(id));
-    let revoked =
-        Activating::of(authorised, &adapters, &grants, &installed(), &strings).unwrap_err();
+    let revoked = Activating::of(authorised, &grants, &installed(), &strings).unwrap_err();
     keep(&revoked);
 
     // Expired by the time it would run.
@@ -1442,7 +1384,6 @@ fn every_refusal_is_recorded_and_nothing_is_pressed() {
     let grants = granting(&[MAIL]);
     let not_installed = ReadingWindows::of(
         Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
-        &adapters,
         &grants,
         &Installed::nothing(),
         &strings,
@@ -1465,7 +1406,6 @@ fn every_refusal_is_recorded_and_nothing_is_pressed() {
     // Another verb's authority.
     let another = Activating::of(
         Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
-        &adapters,
         &grants,
         &installed(),
         &strings,
@@ -1486,7 +1426,6 @@ fn every_refusal_is_recorded_and_nothing_is_pressed() {
     let press_on = |tree: &ATree, kind: &str, name: &str| {
         Activating::of(
             approved(&pressing(MAIL, kind, name), &grants),
-            &adapters,
             &grants,
             &installed(),
             &strings,
@@ -1557,7 +1496,6 @@ fn every_refusal_is_recorded_and_nothing_is_pressed() {
     // A read refused by the tree is recorded the same way.
     let no_window = ReadingWindows::of(
         Authorised::read(&reading(MAIL), &agent(), &grants, noon()).unwrap(),
-        &adapters,
         &grants,
         &installed(),
         &strings,
@@ -1584,7 +1522,6 @@ fn an_unanswered_press_is_recorded_as_run_and_said_as_not_known() {
     let tree = the_desktop().pressing_answers(Err(TreeFault::DidNotAnswer));
     let pressed = Activating::of(
         approved(&pressing(MAIL, "check_box", "Remember me"), &grants),
-        &Adapters::default(),
         &grants,
         &installed(),
         &strings,
@@ -1602,4 +1539,33 @@ fn an_unanswered_press_is_recorded_as_run_and_said_as_not_known() {
     let mut record = Record::default();
     record.keep(Entry::ran(&pressed.into_authorised(), &strings));
     assert!(record.everything().next().unwrap().happened().ran());
+}
+
+/// **The fallback reaches an application that has an adapter too**, for every
+/// adapter alo OS ships (`docs/contracts/app-adapters.md`, *Amended
+/// 2026-11-06*, point 1: *alo is offered an adapter's verbs **and** the
+/// fallback's verbs over the same application, under the same grant*). A test
+/// of the rule rather than of Text Editor: an adapter added tomorrow is held
+/// to it the day it ships.
+#[test]
+fn an_application_with_an_adapter_is_reached_by_the_fallback_too() {
+    let strings = in_english();
+    let adapters = shipped_adapters().unwrap();
+    let applications: Vec<&str> = adapters.all().map(|adapter| adapter.application).collect();
+    assert!(!applications.is_empty(), "no shipped adapter to hold to it");
+    let grants = granting(&applications);
+    let installed = Installed::holding(
+        applications
+            .iter()
+            .map(|application| Application::called(application, "An application").unwrap()),
+    );
+    for application in applications {
+        let reading = Authorised::read(&reading(application), &agent(), &grants, noon()).unwrap();
+        let reached = ReadingWindows::of(reading, &grants, &installed, &strings);
+        assert!(
+            reached.is_ok(),
+            "{application}: {:?}",
+            reached.map_err(|refused| refused.said(&strings).text().to_owned())
+        );
+    }
 }

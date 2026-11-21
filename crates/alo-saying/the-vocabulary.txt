@@ -101,7 +101,6 @@ adapters.fallback.choose.too-much-to-be-sure	{application} shows more than can b
 adapters.fallback.did-not-answer-pressing	{application} did not answer in time, so whether the {kind} named “{name}” was pressed is not known
 adapters.fallback.did-not-answer-reading	{application} did not answer in time, so nothing was read or pressed in it
 adapters.fallback.did-not-press	{application} did not press the {kind} named “{name}”
-adapters.fallback.has-its-own	{application} has its own list of what the agent can do in it, so nothing was read or pressed in its windows instead
 adapters.fallback.kind.button	button
 adapters.fallback.kind.check-box	check box
 adapters.fallback.kind.link	link

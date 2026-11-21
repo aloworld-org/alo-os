@@ -27,7 +27,6 @@ use alo_capability::{Authorised, Grants, Refused, Value};
 use alo_strings::{Said, Strings};
 
 use crate::accessibility_tree::AccessibilityTree;
-use crate::adapters::Adapters;
 use crate::by_their_hand::pressed;
 use crate::fallback_reach::reached;
 use crate::fallback_verbs::{ACTIVATE_CONTROL, KIND, NAME};
@@ -80,23 +79,14 @@ impl Activating {
     ///
     /// # Errors
     /// [`Refused`], carrying the call: another verb's authority, the
-    /// application not granted (the grants' own words) or not installed, or an
-    /// application with an adapter of its own.
+    /// application not granted (the grants' own words) or not installed.
     pub fn of(
         authorised: Authorised,
-        adapters: &Adapters,
         grants: &Grants,
         installed: &Installed,
         strings: &Strings,
     ) -> Result<Self, Refused> {
-        let reached = reached(
-            authorised,
-            ACTIVATE_CONTROL,
-            adapters,
-            grants,
-            installed,
-            strings,
-        )?;
+        let reached = reached(authorised, ACTIVATE_CONTROL, grants, installed, strings)?;
         let call = reached.authorised.call();
         let kind = match call.value(KIND) {
             Some(Value::Choice { chosen, .. }) => Pressable::called(chosen),

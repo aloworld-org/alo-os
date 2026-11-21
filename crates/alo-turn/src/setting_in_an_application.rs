@@ -4,7 +4,7 @@
 //! at full access (added 2026-11-17, the owner's *"Yes do all"*).
 //!
 //! The steps are `alo_adapters::Setting`'s: the grants asked again at this
-//! moment, the application here, no adapter of its own, and then the control
+//! moment, the application here, and then the control
 //! looked for again in the window as it is now, its own range asked, and a
 //! number outside it refused before anything moves. What this file adds is
 //! the order around it: the tree is opened **after** every refusal that needs
@@ -100,7 +100,6 @@ pub(crate) fn setting_in_an_application(
 
     let setting = match Setting::of(
         authorised,
-        machine.the_adapters(),
         grants,
         &machine.the_applications_installed_now(),
         strings,

@@ -49,7 +49,7 @@
 //! ([`mod@fallback_verbs`]): `accessible.read_window`, a read of what an
 //! application's windows show, and `accessible.activate_control`, a change that
 //! presses one control named by its kind and the name it shows. Both reach only a
-//! granted application with no adapter of its own ([`ReadingWindows`],
+//! granted application, with an adapter of its own or none ([`ReadingWindows`],
 //! [`Activating`]); both walk the application's tree at that moment and keep
 //! nothing ([`walking`]); **neither ever asks a password field for its
 //! contents**, and neither can ask where anything is on the screen

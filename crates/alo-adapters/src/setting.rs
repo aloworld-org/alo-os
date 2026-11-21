@@ -29,7 +29,6 @@ use alo_capability::{Authorised, Grants, Refused, Value};
 use alo_strings::{Said, Strings};
 
 use crate::accessibility_tree::{AccessibilityTree, NodeAt, TreeFault};
-use crate::adapters::Adapters;
 use crate::fallback_reach::reached;
 use crate::fallback_verbs::{NAME, SET_VALUE, VALUE};
 use crate::fallback_words::{NOT_THIS_VERB, VERB};
@@ -62,12 +61,11 @@ impl Setting {
     /// application not granted or not installed, or one with an adapter.
     pub fn of(
         authorised: Authorised,
-        adapters: &Adapters,
         grants: &Grants,
         installed: &Installed,
         strings: &Strings,
     ) -> Result<Self, Refused> {
-        let reached = reached(authorised, SET_VALUE, adapters, grants, installed, strings)?;
+        let reached = reached(authorised, SET_VALUE, grants, installed, strings)?;
         let call = reached.authorised.call();
         let name = match call.value(NAME) {
             Some(Value::Name(name)) => Some(name.clone()),

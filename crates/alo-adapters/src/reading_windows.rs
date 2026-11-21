@@ -13,7 +13,6 @@ use alo_capability::{Authorised, Grants, Refused};
 use alo_strings::Strings;
 
 use crate::accessibility_tree::AccessibilityTree;
-use crate::adapters::Adapters;
 use crate::fallback_reach::reached;
 use crate::fallback_verbs::READ_WINDOW;
 use crate::shown::Shown;
@@ -35,23 +34,14 @@ impl ReadingWindows {
     ///
     /// # Errors
     /// [`Refused`], carrying the call: another verb's authority, the
-    /// application not granted (the grants' own words) or not installed, or an
-    /// application with an adapter of its own.
+    /// application not granted (the grants' own words) or not installed.
     pub fn of(
         authorised: Authorised,
-        adapters: &Adapters,
         grants: &Grants,
         installed: &Installed,
         strings: &Strings,
     ) -> Result<Self, Refused> {
-        let reached = reached(
-            authorised,
-            READ_WINDOW,
-            adapters,
-            grants,
-            installed,
-            strings,
-        )?;
+        let reached = reached(authorised, READ_WINDOW, grants, installed, strings)?;
         Ok(Self {
             authorised: reached.authorised,
             application: reached.application,

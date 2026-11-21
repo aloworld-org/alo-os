@@ -21,7 +21,7 @@ use std::time::{Duration, SystemTime};
 use alo_adapters::fallback_verbs::{self, APPLICATION, NAME, SCROLL_PAGE, SCROLL_TO, TO, TOWARD};
 use alo_adapters::scrolling_words as words;
 use alo_adapters::{
-    AccessibilityTree, Adapters, Edge, Facts, NodeAt, Running, Scrolling, TYPE_TEXT, TreeFault,
+    AccessibilityTree, Edge, Facts, NodeAt, Running, Scrolling, TYPE_TEXT, TreeFault,
 };
 use alo_applications::{Application, Installed};
 use alo_capability::{
@@ -120,7 +120,6 @@ fn scrolling(call: &Call) -> Scrolling {
     let grants = granting(&[READER]);
     Scrolling::of(
         approved(call, &grants),
-        &Adapters::default(),
         &grants,
         &installed(),
         &in_english(),
@@ -509,16 +508,7 @@ fn another_applications_window_is_never_scrolled() {
 fn an_application_not_granted_is_refused_before_any_window_is_asked() {
     let granted = granting(&[READER]);
     let authorised = approved(&to_call("Chapter 3"), &granted);
-    assert!(
-        Scrolling::of(
-            authorised,
-            &Adapters::default(),
-            &Grants::default(),
-            &installed(),
-            &in_english(),
-        )
-        .is_err()
-    );
+    assert!(Scrolling::of(authorised, &Grants::default(), &installed(), &in_english(),).is_err());
 }
 
 #[test]
@@ -538,7 +528,6 @@ fn another_verbs_authority_does_not_scroll() {
     assert!(
         Scrolling::of(
             approved(&call, &grants),
-            &Adapters::default(),
             &grants,
             &installed(),
             &in_english(),
