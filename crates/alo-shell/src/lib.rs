@@ -377,6 +377,7 @@ mod a_link_is_opened;
 /// inside it, worked out once for the draw and for a press.
 /// What a press on the Dock does: the decision, with no act in it.
 mod a_press_on_the_dock;
+mod a_window_alo_opened;
 mod a_window_that_grows_is_placed_again;
 mod a_window_the_person_opened;
 mod an_application_is_started;
