@@ -189,7 +189,8 @@ fn every_band_is_pressed_through_one_road() {
         .find(|(name, _)| name == "a_band_is_pressed.rs")
         .expect("the one press road has a file");
     assert!(
-        one.iter().any(|line| line.contains("fn a_bands_control_is_pressed(")),
+        one.iter()
+            .any(|line| line.contains("fn a_bands_control_is_pressed(")),
         "the one press road lost its one function"
     );
 }

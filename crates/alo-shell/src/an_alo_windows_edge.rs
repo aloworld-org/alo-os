@@ -20,15 +20,18 @@
 use std::time::Instant;
 
 use alo_put_aside::AlosOwnWindow;
-use smithay::utils::{Logical, Physical, Point, Rectangle, Size};
+#[cfg(test)]
+use smithay::utils::Logical;
+use smithay::utils::{Physical, Rectangle, Size};
 
 use crate::an_edge_in_its_displays_units::{
     a_point_in_the_edges_units, a_window_in_the_edges_units,
 };
 use crate::the_bands_over_alos_windows::AlosBand;
-use crate::window_edge::{OnTheEdge, WindowEdge};
+#[cfg(test)]
+use crate::window_edge::WindowEdge;
 use crate::window_edge_picture::{EdgePicture, OverTheEdge};
-use crate::window_edge_pointing::{UnderThePointer, pointing_at, what_is_under};
+use crate::window_edge_pointing::pointing_at;
 
 /// The edge over a window drawn at `window` on the display, laid out at
 /// `scale` per cent in `room`, **with its controls** — the geometry a test

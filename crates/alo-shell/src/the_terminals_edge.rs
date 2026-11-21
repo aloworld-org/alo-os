@@ -46,7 +46,7 @@
 //! at once when the shell is idle, after a question when a command is running.
 
 use alo_put_aside::AlosOwnWindow;
-use smithay::utils::{Logical, Physical, Point, Rectangle, Size};
+use smithay::utils::{Physical, Rectangle, Size};
 
 use crate::Server;
 use crate::an_edge_in_its_displays_units::{
@@ -54,9 +54,8 @@ use crate::an_edge_in_its_displays_units::{
 };
 use crate::the_bands_over_alos_windows::AlosBand;
 use crate::which_band::ABand;
-use crate::window_edge::{OnTheEdge, WindowEdge};
 use crate::window_edge_picture::{EdgePicture, OverTheEdge};
-use crate::window_edge_pointing::{UnderThePointer, pointing_at, what_is_under};
+use crate::window_edge_pointing::pointing_at;
 
 /// The terminal's band, as `crate::the_bands_over_alos_windows` knows it.
 const THE_TERMINAL: AlosBand = AlosBand::Its(AlosOwnWindow::TheTerminal);

@@ -148,6 +148,12 @@ fn alt_f4_closes_an_application_whose_band_has_no_close() {
     );
     firefox.sync();
     other.sync();
-    assert_eq!(firefox.events.close_requests, 1, "it was not asked to close");
-    assert_eq!(other.events.close_requests, 0, "the window behind was asked");
+    assert_eq!(
+        firefox.events.close_requests, 1,
+        "it was not asked to close"
+    );
+    assert_eq!(
+        other.events.close_requests, 0,
+        "the window behind was asked"
+    );
 }

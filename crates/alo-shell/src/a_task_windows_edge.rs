@@ -39,20 +39,20 @@
 //! Until 2026-10-28 a press was read against the edge laid out at 100, so on a
 //! 200 per cent display Close was drawn where a press did not find it.
 
-use smithay::utils::{Logical, Physical, Point, Rectangle, Size};
+use smithay::utils::Size;
+#[cfg(test)]
+use smithay::utils::{Logical, Rectangle};
 
 use crate::Server;
 use crate::an_edge_in_its_displays_units::{
     a_point_in_the_edges_units, a_window_in_the_edges_units,
 };
 use crate::the_bands_over_alos_windows::AlosBand;
-use crate::the_tasks_a_person_opened::WhichTask;
 use crate::which_band::ABand;
-use crate::window_edge::OnTheEdge;
 #[cfg(test)]
 use crate::window_edge::WindowEdge;
 use crate::window_edge_picture::{EdgePicture, OverTheEdge};
-use crate::window_edge_pointing::{UnderThePointer, pointing_at, what_is_under};
+use crate::window_edge_pointing::pointing_at;
 
 /// The edge above one task window **with its controls**, in `room` — the
 /// geometry a test reads where they would be. The machine never lays one out
