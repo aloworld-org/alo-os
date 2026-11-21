@@ -31,7 +31,7 @@
 
 use alo_acting::{
     Answer, AnsweredTheChooser, Opened, Pictured, Request, ToAnswerAFileChooser, ToOpenAFile,
-    ToPicture, ToType, Typed,
+    ToPicture, ToType, ToWorkIn, Typed, Worked, Working,
 };
 
 /// Whatever can put one request to the compositor and read one answer.
@@ -111,6 +111,23 @@ pub trait TheDoorTheCompositorServes {
         Err(NotAtTheDoor::NoCompositor)
     }
 
+    /// Begin `work-in-their-window` or `work-in-alos-copy` on the door
+    /// (`alo_acting::working_in`) and read its first answer. **The one act
+    /// on this door that holds its connection**, for as long as alo works,
+    /// because the line it puts up is up for exactly that long; an adapter's
+    /// verb holds it while its one message goes
+    /// (`crate::acting_through_an_adapter`).
+    ///
+    /// **No compositor by default**, as for [`Self::typing`], so a door that
+    /// does not know this act lets alo work nowhere.
+    ///
+    /// # Errors
+    /// [`NotAtTheDoor`], as for [`Self::asking`].
+    fn working_in(&mut self, asked: &ToWorkIn) -> Result<Box<dyn WhileAloWorks>, NotAtTheDoor> {
+        let _ = asked;
+        Err(NotAtTheDoor::NoCompositor)
+    }
+
     /// Put `click-at` to the compositor — one click at one point of the
     /// window in front, given as thousandths of it (ADR 0147, amended
     /// 2026-11-17) — and wait for its one word.
@@ -127,6 +144,19 @@ pub trait TheDoorTheCompositorServes {
         let _ = asked;
         Err(NotAtTheDoor::NoCompositor)
     }
+}
+
+/// **alo at work in one application**, as the door answered it: the first
+/// answer, and `done` when the work is over.
+pub trait WhileAloWorks {
+    /// What the door answered when the work was asked for.
+    fn answered(&self) -> Working;
+
+    /// The work is over: say `done` and read what was sent while it lasted.
+    ///
+    /// # Errors
+    /// [`NotAtTheDoor`] when the door went away first.
+    fn done(self: Box<Self>) -> Result<Worked, NotAtTheDoor>;
 }
 
 /// Why the compositor was not asked.

@@ -216,11 +216,25 @@ pub const COULD_NOT_ASK_THE_RECORD: Word = Word::saying(
     "Shown to a person whose agent asked what the record says was done to one of their files      and was not answered. Usually the file the record is kept in could not be read. It does      not say that nothing was done to the file — nothing was found out either way, which is      what this sentence has to leave open.",
 );
 
+/// **An adapter's verb reaches the person's own window, and at this setting
+/// alo works only in its own copy of that application** — said before the
+/// card, so nothing is asked (`crate::before_an_adapters_card`). An
+/// application with no copy of its own is told
+/// `alo_capability::words::NO_COPY_OF_ITS_OWN` instead, the sentence every
+/// other road says for it.
+pub const AN_ADAPTER_REACHES_YOUR_WINDOW: Word = Word::saying(
+    "turn.an-adapter-reaches-your-window",
+    "alo works in its own copy of {application} at this setting, and what was asked reaches your own {application} window, so nothing was asked of it. To let alo do this, choose “alo may work in your own window” in Settings → What alo can use",
+)
+.noting(
+    "Told to the person, before anything is asked of them, when alo wanted to use what an application offers alo directly and that would act in the person's own window. {application} is the application's name, such as Firefox. The words in quotation marks are the name of a choice in Settings, and \"What alo can use\" is the name of the Settings page it is on: use exactly the translations those have there.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 8] = [
+pub const EVERY_WORD: [Word; 9] = [
     TURN_CLOSED,
     NOT_BOUNDED,
     NOT_GRANTED_HERE,
@@ -229,6 +243,7 @@ pub const EVERY_WORD: [Word; 8] = [
     COULD_NOT_INSTALL_HERE,
     COULD_NOT_LOOK_AT_THE_CATALOGUE,
     COULD_NOT_ASK_THE_RECORD,
+    AN_ADAPTER_REACHES_YOUR_WINDOW,
 ];
 
 /// Why this crate's own list could not be declared.

@@ -36,7 +36,7 @@ use alo_strings::Word;
 
 use crate::adapter::Adapter;
 use crate::adapter_arg::{AdapterArg, Kind};
-use crate::adapter_verb::{AdapterVerb, Reaches, Sends};
+use crate::adapter_verb::{AdapterVerb, Reaches, Sends, WhatItDoes};
 use crate::invocation::{DBusMethod, Invocation, Part};
 use crate::mechanism::Mechanism;
 
@@ -120,8 +120,42 @@ pub const NEW_WINDOW_BY_HAND: Word = Word::saying(
      item, so use the words that application shows in this language.",
 );
 
+/// What opening a document changes, on the card.
+pub const OPEN_DOCUMENT_CHANGES: Word = Word::saying(
+    "adapters.text-editor.open-document.changes",
+    "GNOME Text Editor shows this document in your own Text Editor",
+)
+.noting(
+    "Said on the approval card under the action, as what it changes. GNOME Text Editor is the \
+     application's name and is not translated.",
+);
+
+/// What opening a document leaves alone, on the card.
+pub const OPEN_DOCUMENT_LEAVES: Word = Word::saying(
+    "adapters.text-editor.open-document.leaves",
+    "The document itself is not changed, and nothing is saved",
+)
+.noting("Said on the approval card under the action, as what it leaves alone.");
+
+/// What a new window changes, on the card.
+pub const NEW_WINDOW_CHANGES: Word = Word::saying(
+    "adapters.text-editor.new-window.changes",
+    "GNOME Text Editor opens one new, empty window",
+)
+.noting(
+    "Said on the approval card under the action, as what it changes. GNOME Text Editor is the \
+     application's name and is not translated.",
+);
+
+/// What a new window leaves alone, on the card.
+pub const NEW_WINDOW_LEAVES: Word = Word::saying(
+    "adapters.text-editor.new-window.leaves",
+    "No document is opened, changed or saved",
+)
+.noting("Said on the approval card under the action, as what it leaves alone.");
+
 /// Every word this adapter declares its verbs with.
-pub const WORDS: [Word; 7] = [
+pub const WORDS: [Word; 11] = [
     OPEN_DOCUMENT_PURPOSE,
     OPEN_DOCUMENT_DOCUMENT,
     OPEN_DOCUMENT_SENTENCE,
@@ -129,6 +163,10 @@ pub const WORDS: [Word; 7] = [
     NEW_WINDOW_PURPOSE,
     NEW_WINDOW_SENTENCE,
     NEW_WINDOW_BY_HAND,
+    OPEN_DOCUMENT_CHANGES,
+    OPEN_DOCUMENT_LEAVES,
+    NEW_WINDOW_CHANGES,
+    NEW_WINDOW_LEAVES,
 ];
 
 /// GNOME Text Editor, as an adapter.
@@ -153,6 +191,10 @@ pub const TEXT_EDITOR: Adapter = Adapter {
             reaches: Reaches::Over(&[DOCUMENT]),
             sentence: OPEN_DOCUMENT_SENTENCE,
             by_hand: Some(OPEN_DOCUMENT_BY_HAND),
+            says: Some(WhatItDoes {
+                changes: OPEN_DOCUMENT_CHANGES,
+                leaves: OPEN_DOCUMENT_LEAVES,
+            }),
             carried_out: Invocation::DBus(DBusMethod {
                 object: OBJECT,
                 interface: INTERFACE,
@@ -170,6 +212,10 @@ pub const TEXT_EDITOR: Adapter = Adapter {
             reaches: Reaches::OnlyItsApplication,
             sentence: NEW_WINDOW_SENTENCE,
             by_hand: Some(NEW_WINDOW_BY_HAND),
+            says: Some(WhatItDoes {
+                changes: NEW_WINDOW_CHANGES,
+                leaves: NEW_WINDOW_LEAVES,
+            }),
             carried_out: Invocation::DBus(DBusMethod {
                 object: OBJECT,
                 interface: INTERFACE,

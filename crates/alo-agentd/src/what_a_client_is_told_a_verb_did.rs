@@ -137,5 +137,9 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
         WhatAVerbDid::AKeyWasPressed(pressed) => {
             Done::of_a_key(pressed.application(), pressed.key().named())
         }
+        // One adapter's verb, 2026-11-21.
+        WhatAVerbDid::AnAdapterVerbRan(ran) => {
+            Done::of_an_adapter_verb(ran.verb(), ran.application(), ran.unanswered())
+        }
     }
 }

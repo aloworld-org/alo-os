@@ -31,7 +31,7 @@ use std::time::{Duration, SystemTime};
 use alo_adapters::{
     Adapter, AdapterArg, AdapterVerb, Adapters, Argument, DBusMethod, Delivers, Driving,
     Invocation, Kind, Mechanism, Message, NotDelivered, NotLoaded, ONLY_ITS_APPLICATION, Part,
-    Reaches, Sends, TEXT_EDITOR, adapter_verbs, load, shipped_adapters,
+    Reaches, Sends, TEXT_EDITOR, WhatItDoes, adapter_verbs, load, shipped_adapters,
 };
 use alo_applications::{Application, Installed};
 use alo_capability::{
@@ -150,7 +150,17 @@ const SENTENCE: Word = Word::saying("adapters.test.sentence", "do it to {which}"
 const SENTENCE_NONE: Word = Word::saying("adapters.test.sentence-none", "do it");
 const BY_HAND: Word = Word::saying("adapters.test.by-hand", "do it yourself");
 const UNDECLARED: Word = Word::saying("adapters.test.undeclared", "a word nobody declared");
-const WORDS: [Word; 5] = [PURPOSE, WHICH, SENTENCE, SENTENCE_NONE, BY_HAND];
+const CHANGES: Word = Word::saying("adapters.test.changes", "one thing is done");
+const LEAVES: Word = Word::saying("adapters.test.leaves", "nothing else is touched");
+const WORDS: [Word; 7] = [
+    PURPOSE,
+    WHICH,
+    SENTENCE,
+    SENTENCE_NONE,
+    BY_HAND,
+    CHANGES,
+    LEAVES,
+];
 
 /// A method that passes every check.
 const OPEN: DBusMethod = DBusMethod {
@@ -174,6 +184,10 @@ const A_SOUND_VERB: AdapterVerb = AdapterVerb {
     reaches: Reaches::Over(&["which"]),
     sentence: SENTENCE,
     by_hand: Some(BY_HAND),
+    says: Some(WhatItDoes {
+        changes: CHANGES,
+        leaves: LEAVES,
+    }),
     carried_out: Invocation::DBus(OPEN),
 };
 
@@ -396,6 +410,30 @@ fn screenshots_and_synthetic_input_are_refused_and_so_is_what_is_not_carried_out
             }
         );
     }
+}
+
+/// **A change that does not say what it changes and leaves alone is refused**
+/// (the owner, 2026-11-01: both are on the card), with the verb named; and a
+/// read that says either is refused by the verb contract.
+#[test]
+fn a_change_that_says_not_what_it_changes_is_refused() {
+    static SILENT: [AdapterVerb; 1] = [AdapterVerb {
+        says: None,
+        ..A_SOUND_VERB
+    }];
+    static WITHOUT: Adapter = with_verb(&SILENT);
+    assert_eq!(
+        load(&WITHOUT).unwrap_err(),
+        NotLoaded::SaysNotWhatItChanges {
+            verb: "drawing.open_drawing".to_owned()
+        }
+    );
+    static A_READ_THAT_SAYS: [AdapterVerb; 1] = [AdapterVerb {
+        effect: Effect::Read,
+        ..A_SOUND_VERB
+    }];
+    static READS: Adapter = with_verb(&A_READ_THAT_SAYS);
+    assert!(matches!(load(&READS).unwrap_err(), NotLoaded::Verb { .. }));
 }
 
 /// **A verb with no by-hand road is refused** (ADR 0009), with the verb named.

@@ -85,7 +85,7 @@ machine runs. `crates/alo-adapters/src/text_editor.rs` is the worked example.
 | `releases` | The release series it supports — `50` covers `50.1` and `50.2`. At least one. |
 | `mechanism` | `api`, `accessibility`, `dbus` or `synthetic`. |
 | `words` | Every word its verbs are declared with. A word used and not listed is refused, because it would reach a person as a key. |
-| `verbs` | Each with `name`, `purpose`, `effect`, `sends`, typed `args`, `reaches`, `sentence`, `by_hand` and `carried_out`. |
+| `verbs` | Each with `name`, `purpose`, `effect`, `sends`, typed `args`, `reaches`, `sentence`, `by_hand`, `says` and `carried_out`. `says` (added 2026-11-21, when an adapter's verbs were first offered to alo) is what a change changes and what it leaves alone, one sentence each, said on the card (the owner's decision of 2026-11-01); a change without it is refused, and a read has none. |
 
 A verb is known on the machine's list as `adapter.verb` — `text_editor.open_document`.
 

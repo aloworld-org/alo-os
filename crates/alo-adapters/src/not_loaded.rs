@@ -168,6 +168,14 @@ pub enum NotLoaded {
         /// The verb.
         verb: String,
     },
+    /// A change that does not say what it changes and what it leaves alone.
+    #[error(
+        "say what {verb} changes and what it leaves alone — a person reads both on the card before approving it"
+    )]
+    SaysNotWhatItChanges {
+        /// The verb.
+        verb: String,
+    },
     /// A word the adapter uses and does not declare.
     #[error(
         "{verb} is declared with {key}, which {adapter} does not declare — it would reach a person as a key"

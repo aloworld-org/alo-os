@@ -360,6 +360,18 @@ pub enum Done {
         /// `down`, `left` or `right`.
         key: String,
     },
+    /// One adapter's verb was carried out over its application's own
+    /// interface (`text_editor.open_document`), or sent to an application
+    /// that did not answer. Added 2026-11-21, additively.
+    AdapterVerbRan {
+        /// The verb, by its name on the machine's list.
+        verb: String,
+        /// The application it went to, by its identifier.
+        application: String,
+        /// Whether the application did not answer, so whether it did it is
+        /// not known.
+        unanswered: bool,
+    },
     /// One approved text was typed into one field and nothing was saved
     /// (`accessible.type_without_saving`). Added 2026-11-17, additively; the
     /// text is not carried back, as for [`Done::Typed`].
@@ -879,6 +891,17 @@ impl Done {
         }
     }
 
+    /// What an adapter's verb answered, as it goes on the wire — taking its
+    /// parts, for [`Done::of_a_press`]'s reason.
+    #[must_use]
+    pub fn of_an_adapter_verb(verb: &str, application: &str, unanswered: bool) -> Self {
+        Self::AdapterVerbRan {
+            verb: verb.to_owned(),
+            application: application.to_owned(),
+            unanswered,
+        }
+    }
+
     /// What one of the six file verbs answered, as it goes on the wire.
     #[must_use]
     pub fn of_a_file_verb(answer: &Answer) -> Self {
@@ -1031,6 +1054,9 @@ impl Done {
             Self::MenuOpened { unanswered, .. } => *unanswered,
             // **A key leaves nothing out**: it was pressed once, as approved.
             Self::KeyPressed { .. } => false,
+            // **An adapter's verb leaves out whether it was done** only where
+            // the application did not answer, as a press does.
+            Self::AdapterVerbRan { unanswered, .. } => *unanswered,
             // **A typing that saves nothing** leaves out only what did not read
             // back: nothing was to be saved.
             Self::TypedWithoutSaving { read_back, .. } => !*read_back,

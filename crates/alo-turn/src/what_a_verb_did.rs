@@ -31,6 +31,7 @@ use alo_record::WhatTouchedIt;
 use alo_software::{Installed, WhatTheCatalogueHolds};
 
 use crate::acting_on_an_application::Reached;
+use crate::acting_through_an_adapter::AnAdapterVerbRan;
 use crate::choosing_in_an_application::AChoiceMade;
 use crate::choosing_on_the_file_chooser::AFileChosen;
 use crate::opening_a_file_in_an_application::AFileOpened;
@@ -117,6 +118,9 @@ pub enum WhatAVerbDid {
     /// One key of the closed list was pressed in an application's window
     /// (`accessible.press_key`, 2026-11-17).
     AKeyWasPressed(AKeyPressed),
+    /// One adapter's verb was carried out over the application's own
+    /// interface, or sent to one that did not answer (2026-11-21).
+    AnAdapterVerbRan(AnAdapterVerbRan),
 }
 
 impl WhatAVerbDid {
@@ -185,7 +189,8 @@ impl WhatAVerbDid {
             | Self::SomethingWasChosen(_)
             | Self::AnItemWasOpened(_)
             | Self::AMenuWasOpened(_)
-            | Self::AKeyWasPressed(_) => None,
+            | Self::AKeyWasPressed(_)
+            | Self::AnAdapterVerbRan(_) => None,
         }
     }
 
@@ -213,7 +218,8 @@ impl WhatAVerbDid {
             | Self::SomethingWasChosen(_)
             | Self::AnItemWasOpened(_)
             | Self::AMenuWasOpened(_)
-            | Self::AKeyWasPressed(_) => None,
+            | Self::AKeyWasPressed(_)
+            | Self::AnAdapterVerbRan(_) => None,
         }
     }
 
@@ -237,7 +243,8 @@ impl WhatAVerbDid {
             | Self::SomethingWasChosen(_)
             | Self::AnItemWasOpened(_)
             | Self::AMenuWasOpened(_)
-            | Self::AKeyWasPressed(_) => None,
+            | Self::AKeyWasPressed(_)
+            | Self::AnAdapterVerbRan(_) => None,
         }
     }
 
@@ -261,7 +268,8 @@ impl WhatAVerbDid {
             | Self::SomethingWasChosen(_)
             | Self::AnItemWasOpened(_)
             | Self::AMenuWasOpened(_)
-            | Self::AKeyWasPressed(_) => None,
+            | Self::AKeyWasPressed(_)
+            | Self::AnAdapterVerbRan(_) => None,
         }
     }
 
@@ -285,7 +293,8 @@ impl WhatAVerbDid {
             | Self::SomethingWasChosen(_)
             | Self::AnItemWasOpened(_)
             | Self::AMenuWasOpened(_)
-            | Self::AKeyWasPressed(_) => None,
+            | Self::AKeyWasPressed(_)
+            | Self::AnAdapterVerbRan(_) => None,
         }
     }
 
@@ -363,7 +372,8 @@ impl WhatAVerbDid {
             | Self::SomethingWasChosen(_)
             | Self::AnItemWasOpened(_)
             | Self::AMenuWasOpened(_)
-            | Self::AKeyWasPressed(_) => None,
+            | Self::AKeyWasPressed(_)
+            | Self::AnAdapterVerbRan(_) => None,
         }
     }
 }
@@ -413,6 +423,12 @@ impl From<AnItemOpened> for WhatAVerbDid {
 impl From<AChoiceMade> for WhatAVerbDid {
     fn from(chosen: AChoiceMade) -> Self {
         Self::SomethingWasChosen(chosen)
+    }
+}
+
+impl From<AnAdapterVerbRan> for WhatAVerbDid {
+    fn from(ran: AnAdapterVerbRan) -> Self {
+        Self::AnAdapterVerbRan(ran)
     }
 }
 

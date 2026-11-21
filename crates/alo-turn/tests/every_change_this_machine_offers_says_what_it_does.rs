@@ -22,6 +22,7 @@
 //! | `accessible.open_menu` | `crates/alo-adapters/tests/opening_a_things_menu.rs` |
 //! | `accessible.press_key` | `crates/alo-adapters/tests/pressing_a_key.rs` |
 //! | `accessible.type_without_saving` | `crates/alo-adapters/tests/typing_into_a_field.rs`, `crates/alo-turn/src/typing_into_an_application_tests.rs` |
+//! | `text_editor.open_document`, `text_editor.new_window` | `crates/alo-adapters/tests/the_reference_adapter_on_a_real_bus.rs` (the message each becomes, on a real bus), `crates/alo-turn/src/acting_through_an_adapter_tests.rs` |
 //!
 //! This file is the other half: a change added to the list the daemon offers
 //! without its two sentences fails here, and a change added with them fails
@@ -33,7 +34,7 @@
 )]
 
 /// The change verbs the table above names.
-const HELD: [&str; 21] = [
+const HELD: [&str; 23] = [
     "rename_file",
     "move_file",
     "archive_folder",
@@ -55,6 +56,8 @@ const HELD: [&str; 21] = [
     "accessible.open_menu",
     "accessible.press_key",
     "accessible.type_without_saving",
+    "text_editor.open_document",
+    "text_editor.new_window",
 ];
 
 #[test]

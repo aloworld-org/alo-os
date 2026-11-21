@@ -614,6 +614,10 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> Option<alo_pro
         alo_turn::WhatAVerbDid::AKeyWasPressed(pressed) => {
             alo_protocol::Done::of_a_key(pressed.application(), pressed.key().named())
         }
+        // One adapter's verb, 2026-11-21.
+        alo_turn::WhatAVerbDid::AnAdapterVerbRan(ran) => {
+            alo_protocol::Done::of_an_adapter_verb(ran.verb(), ran.application(), ran.unanswered())
+        }
     })
 }
 

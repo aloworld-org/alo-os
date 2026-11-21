@@ -66,8 +66,10 @@ exposes typed verbs and never accepts code.
 constants in `crates/alo-adapters` (`src/text_editor.rs` is the worked
 example), and it ships only once it is added to `shipped_adapters()` in
 `crates/alo-adapters/src/verbs.rs` and merged here. A person can then use its
-verbs from the terminal with `alo-app`; alo itself is not yet offered them when
-asked (`crates/alo-turn/src/machine.rs`, *the_verbs_a_whole_machine_offers*).
+verbs from the terminal with `alo-app`, and alo is offered them when asked
+(`crates/alo-turn/src/machine.rs`, *the_verbs_a_whole_machine_offers*), each
+change approved on its card. Every change verb says what it changes and what
+it leaves alone (`says`), or it does not load.
 
 **ADR 0160 records the road that replaces this, and it is not built yet.** An
 application written in any language will carry its adapter as a signed file

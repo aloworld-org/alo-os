@@ -247,10 +247,14 @@ adapters.not-carried-out.not-built	What was approved could not be put to {applic
 adapters.not-carried-out.not-there	{application} could not be reached, so nothing was done in it
 adapters.not-carried-out.refused	{application} refused what was approved, and nothing was done in it
 adapters.text-editor.new-window.by-hand	In GNOME Text Editor, open its menu and choose New Window
+adapters.text-editor.new-window.changes	GNOME Text Editor opens one new, empty window
+adapters.text-editor.new-window.leaves	No document is opened, changed or saved
 adapters.text-editor.new-window.purpose	open a new, empty GNOME Text Editor window
 adapters.text-editor.new-window.sentence	open a new GNOME Text Editor window
 adapters.text-editor.open-document.by-hand	In GNOME Text Editor, choose Open and pick the document
+adapters.text-editor.open-document.changes	GNOME Text Editor shows this document in your own Text Editor
 adapters.text-editor.open-document.document	the document to open
+adapters.text-editor.open-document.leaves	The document itself is not changed, and nothing is saved
 adapters.text-editor.open-document.purpose	open a document in GNOME Text Editor
 adapters.text-editor.open-document.sentence	open {document} in GNOME Text Editor
 adapting.delete-the-adapter	delete what these documents taught
@@ -2394,6 +2398,7 @@ terminal.window.title	Terminal
 their-folders.not-a-name-a-folder-can-have	One of the folder names cannot be used as a folder. The machine made the others and left this one out
 their-folders.the-disk-would-not	This machine would not make one of the folders. The person's home folder may be full, or may not be theirs to write in
 their-folders.the-record-was-not-written	The folders were made, and the note saying which folder is which was not. Applications will fall back to looking for English names
+turn.an-adapter-reaches-your-window	alo works in its own copy of {application} at this setting, and what was asked reaches your own {application} window, so nothing was asked of it. To let alo do this, choose “alo may work in your own window” in Settings → What alo can use
 turn.closed	this turn has stopped, because what happened on it could not be written down
 turn.could-not-ask-the-record	your agent could not be told what was done to that file: the record could not be read. Nothing was changed by asking, and asking again is safe
 turn.could-not-install-here	nothing was installed: this machine could not carry the installation out, and the fault is in alo OS rather than in anything you or your agent asked for — ask whoever set this machine up to look at it

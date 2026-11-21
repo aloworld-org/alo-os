@@ -14,4 +14,8 @@ workspace = true
 # What an application is, and the four verbs this door carries out. The names
 # and the arguments are that crate's; nothing here invents one.
 alo-applications = { path = "../alo-applications" }
+# Where the person lets alo work, and which applications have a copy of their
+# own for alo: the two halves of `where_alo_may_work`'s one answer.
+alo-capability = { path = "../alo-capability" }
+alo-launching = { path = "../alo-launching" }
 thiserror = { workspace = true }

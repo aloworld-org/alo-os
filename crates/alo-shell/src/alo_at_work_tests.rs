@@ -649,3 +649,36 @@ fn what_cannot_be_counted_is_sending_for_the_whole_time() {
     machine.looked(3);
     assert!(machine.working.what_is_sending().is_empty());
 }
+
+/// **The seam: a turn's question before an adapter's card is the desktop's
+/// answer to its work**, for every setting and every adapter alo OS ships.
+/// Both sides are the real ones: `alo_turn::before_an_adapters_card` as a turn
+/// asks it, and this desktop's `taken_in` answering `work-in-their-window`, so
+/// a card a person approves is never one the desktop then refuses, and a
+/// refusal before the card is never one the desktop would have let through.
+#[test]
+fn a_turns_question_before_an_adapters_card_is_the_desktops_answer() {
+    let adapters = alo_adapters::shipped_adapters().unwrap();
+    let mut looked = 0;
+    for chosen in AloInApplications::ALL {
+        for adapter in adapters.all() {
+            for verb in adapter.verbs {
+                let name = format!("{}.{}", adapter.name, verb.name);
+                let turn = alo_turn::before_an_adapters_card::before_an_adapters_card(
+                    &name, &adapters, chosen,
+                );
+                let mut machine = Machine::new(true);
+                machine.chosen = chosen;
+                let alo = machine.asked(adapter.application, Where::InTheirWindow, 0);
+                let desktop = next(&alo);
+                assert_eq!(
+                    turn == alo_turn::before_an_adapters_card::BeforeTheCard::MayGo,
+                    desktop == "showing",
+                    "{chosen:?} {name}: the turn said {turn:?} and the desktop {desktop}"
+                );
+                looked += 1;
+            }
+        }
+    }
+    assert!(looked > 0, "no adapter's verb was looked at");
+}

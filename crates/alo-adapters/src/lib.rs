@@ -143,7 +143,7 @@ pub use accessibility_tree::{AccessibilityTree, Bounds, Edge, Facts, NodeAt, Run
 pub use activating::{Activating, PRESSING, Pressed};
 pub use adapter::Adapter;
 pub use adapter_arg::{AdapterArg, Kind, Offer};
-pub use adapter_verb::{AdapterVerb, ONLY_ITS_APPLICATION, Reaches, Sends};
+pub use adapter_verb::{AdapterVerb, ONLY_ITS_APPLICATION, Reaches, Sends, WhatItDoes};
 pub use adapters::Adapters;
 pub use by_their_hand::{PressedByHand, Unpressed, press_by_hand, read_by_hand};
 pub use choosing::{Choosing, Chosen, ToChoose};
