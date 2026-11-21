@@ -1499,3 +1499,13 @@ question.
   nothing, and its answer is dropped when the turn ends.
 - Nothing about a change waiting for the person changes: a Stop never approves
   or declines one.
+
+## Amended 2026-11-21 — an adapter's verb answers `adapter-verb-ran`
+
+*Additive: no answer that existed changes.* When a turn carries out one of an
+adapter's verbs (`text_editor.open_document`), `did` carries
+`{"adapter-verb-ran":{"verb":"text_editor.open_document","application":"org.gnome.TextEditor","unanswered":false}}`:
+the verb by its name on the machine's list, the application by its identifier,
+and whether the application did not answer, in which case the message was sent
+under the approval and whether it did the thing is not known
+(`alo_protocol::Done::of_an_adapter_verb`).

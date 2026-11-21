@@ -129,6 +129,10 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
         alo_turn::WhatAVerbDid::AKeyWasPressed(pressed) => {
             Done::of_a_key(pressed.application(), pressed.key().named())
         }
+        // One adapter's verb, 2026-11-21.
+        alo_turn::WhatAVerbDid::AnAdapterVerbRan(ran) => {
+            Done::of_an_adapter_verb(ran.verb(), ran.application(), ran.unanswered())
+        }
     }
 }
 

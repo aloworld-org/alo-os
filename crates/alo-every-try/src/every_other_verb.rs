@@ -45,6 +45,10 @@ use crate::the_set::NotTheSet;
 /// The file the reading, renaming and record requests name, in Documents.
 pub const NOTES: &str = "notes.txt";
 
+/// Text Editor's adapter's two verbs, by their names on the machine's list.
+const OPEN_DOCUMENT: &str = "text_editor.open_document";
+const NEW_WINDOW: &str = "text_editor.new_window";
+
 /// What [`NOTES`] says, when it is read.
 pub const WHAT_THE_NOTES_SAY: &str = "Buy bread and call Anna on Friday.";
 
@@ -208,6 +212,11 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         .to_owned();
     let files = shipped
         .the(Role::FileManager)
+        .application()
+        .identifier()
+        .to_owned();
+    let editor = shipped
+        .the(Role::TextEditor)
         .application()
         .identifier()
         .to_owned();
@@ -839,6 +848,30 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         )
         .expecting(fallback_verbs::APPLICATION, browser.as_str()),
     );
+    // **Text Editor's adapter** (2026-11-21, ADR 0160's first step). Opening a
+    // file in it has two correct roads — the adapter's own verb, and
+    // `open_file_in_application`, which every application has — and either
+    // opens the file for the person (the coordinator, 2026-11-21: a choice
+    // between two correct verbs is not a failure).
+    let ran = |verb: &str| Done::of_an_adapter_verb(verb, &editor, false);
+    let in_its_own_way = ARequest::asking(
+        "open a document in Text Editor",
+        format!("Open {NOTES} from my {documents_named} folder in Text Editor."),
+        vec![
+            Step::of(OPEN_DOCUMENT, Answered::With(ran(OPEN_DOCUMENT)))
+                .expecting(alo_adapters::text_editor::DOCUMENT, written(&notes)),
+        ],
+    )
+    .or_by_another_road(vec![
+        Step::of(OPEN_FILE_IN_APPLICATION, Answered::AFileOpened)
+            .expecting(APPLICATION, editor.as_str())
+            .expecting(PATH, written(&notes)),
+    ]);
+    let a_new_window = ARequest::asking(
+        "open a new Text Editor window",
+        "Open a new Text Editor window.",
+        vec![Step::of(NEW_WINDOW, Answered::With(ran(NEW_WINDOW)))],
+    );
     Ok(vec![
         listing,
         reading,
@@ -861,5 +894,7 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         a_menu,
         a_key,
         typing_without_saving,
+        in_its_own_way,
+        a_new_window,
     ])
 }

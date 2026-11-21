@@ -365,6 +365,13 @@ impl<'a, 'm> Turning<'a, 'm> {
         if let Err(refused) = the_typing_that_saves_is_for_a_document(&call, self.machine) {
             return self.stopped_under(refused, grants, now);
         }
+        // **And that an adapter's verb may reach the person's own window** at
+        // the setting they chose, asked with the desktop's own function
+        // (`before_an_adapters_card`), so no card asks a person to approve
+        // something the desktop would refuse.
+        if let Err(refused) = crate::before_an_adapters_card::may_an_adapters_call_go(&call, self.machine) {
+            return self.stopped_under(refused, grants, now);
+        }
         let id = self.approvals.propose(proposal);
         self.became.push((id.as_u64(), Became::Waiting));
         Ok(id)

@@ -122,6 +122,17 @@ impl AtTheCompositorsDoor {
 }
 
 impl TheDoorTheCompositorServes for AtTheCompositorsDoor {
+    /// `work-in-…`, held for as long as alo works
+    /// (`crate::while_alo_works_at_the_door`).
+    fn working_in(
+        &mut self,
+        asked: &alo_acting::ToWorkIn,
+    ) -> Result<Box<dyn alo_turn::WhileAloWorks>, NotAtTheDoor> {
+        let talking = self.knocking()?;
+        crate::while_alo_works_at_the_door::AtWork::begun(talking, asked)
+            .map(|work| Box::new(work) as Box<dyn alo_turn::WhileAloWorks>)
+    }
+
     fn asking(&mut self, request: &Request) -> Result<Answer, NotAtTheDoor> {
         let mut talking = self.knocking()?;
         let said = format!("{}\n", request.written());

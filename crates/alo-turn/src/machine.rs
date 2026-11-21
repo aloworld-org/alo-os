@@ -71,8 +71,9 @@
 //! turn would be a list that could not change under it. Nothing here reads a
 //! clock either, as everywhere else in this workspace.
 
+use alo_adapters::{Adapters, Delivers};
 use alo_applications::Installed;
-use alo_capability::Verbs;
+use alo_capability::{AloInApplications, Verbs};
 use alo_egress::{EgressPolicy, Indicator};
 use alo_files::{Resolving, file_verbs};
 use alo_record::Entry;
@@ -182,6 +183,18 @@ pub struct Machine<'a> {
     /// (`crate::the_windows_on_the_screen`). `None` exactly when the door is,
     /// because the two verbs arrive with the application acts or not at all.
     windows: Option<&'a mut dyn TheWindowsOnTheScreen>,
+    /// The adapters whose verbs are on `verbs`, which an adapter's call is
+    /// carried out through (`crate::acting_through_an_adapter`). Empty on a
+    /// machine that offers no adapter's verb.
+    adapters: Adapters,
+    /// The person's session bus, which an adapter's one message goes over.
+    /// `None` on a machine that was not given one, where an adapter's
+    /// approved call is refused in words and nothing is sent.
+    bus: Option<&'a dyn Delivers>,
+    /// Where the person lets alo work in applications, read from their own
+    /// file at each ask, as the desktop reads it
+    /// (`crate::before_an_adapters_card`).
+    where_alo_works: Option<&'a dyn Fn() -> AloInApplications>,
     /// What publishing a folder runs on, on a machine that offers it.
     ///
     /// **`None` and `publish_to_github_pages` are absent together**, as with
@@ -291,7 +304,7 @@ pub struct WhatAnApplicationVerbNeeds<'a> {
 /// an agent told about a verb the machine does not have asks for it and is
 /// refused, in words, with the refusal written down.
 ///
-/// # The accessibility fallback's two, and not the adapters' own
+/// # The accessibility fallback's verbs, and the adapters' own
 ///
 /// Since 2026-11-12 the list ends with `accessible.read_window` and
 /// `accessible.activate_control`, since 2026-11-13 `accessible.type_text`, and
@@ -299,11 +312,12 @@ pub struct WhatAnApplicationVerbNeeds<'a> {
 /// `accessible.set_value`, `accessible.choose_option`, `accessible.select_item`
 /// and `accessible.open_item`
 /// (`alo_adapters::fallback_verbs`), which this
-/// machine carries out through [`TheWindowsOnTheScreen`]. **An adapter's own
-/// verbs — `text_editor.open_document` — are not on it**: they are carried out
-/// over the application's own interface on the session bus, nothing here
-/// reaches that yet, and a verb on this list with nothing behind it is an
-/// approval that does nothing.
+/// machine carries out through [`TheWindowsOnTheScreen`]. **Since 2026-11-21
+/// every shipped adapter's verbs are on it too** — `text_editor.open_document`
+/// and `text_editor.new_window` — carried out over the application's own
+/// interface on the session bus (`crate::acting_through_an_adapter`). Until
+/// then they were not, because nothing here reached that bus, and a verb on
+/// this list with nothing behind it is an approval that does nothing.
 ///
 /// # Errors
 /// [`TheVerbsWouldNotDeclare`], naming the family that refused — including two
@@ -322,6 +336,10 @@ pub fn the_verbs_a_whole_machine_offers() -> Result<Verbs, TheVerbsWouldNotDecla
     alo_record::declare_verbs_into(&mut verbs)?;
     alo_adapters::fallback_verbs::declare_into(&mut verbs)?;
     alo_publishing::verbs::declare_into(&mut verbs)?;
+    // **And every adapter alo OS ships** (2026-11-21, ADR 0160's first
+    // step), carried out over the application's own interface on the
+    // person's session bus by `crate::acting_through_an_adapter`.
+    alo_adapters::shipped_adapters()?.declare_into(&mut verbs)?;
     Ok(verbs)
 }
 
@@ -356,6 +374,9 @@ impl<'a> Machine<'a> {
             reaching_the_compositor: None,
             knowing_how_it_starts: None,
             windows: None,
+            adapters: Adapters::default(),
+            bus: None,
+            where_alo_works: None,
             publishing: None,
             opening: None,
             bound: Bound::Nobodys,
@@ -418,6 +439,9 @@ impl<'a> Machine<'a> {
             reaching_the_compositor: None,
             knowing_how_it_starts: None,
             windows: None,
+            adapters: Adapters::default(),
+            bus: None,
+            where_alo_works: None,
             publishing: None,
             opening: None,
             bound,
@@ -508,6 +532,9 @@ impl<'a> Machine<'a> {
             reaching_the_compositor: None,
             knowing_how_it_starts: None,
             windows: None,
+            adapters: Adapters::default(),
+            bus: None,
+            where_alo_works: None,
             publishing: Some(publishing),
             opening: None,
             bound: Bound::Nobodys,
@@ -559,6 +586,9 @@ impl<'a> Machine<'a> {
         // **The same list an agent is told about**, read from one place so the
         // two cannot drift in which families they include.
         let verbs = the_verbs_a_whole_machine_offers()?;
+        // **The adapters an agent offered this list can reach an application
+        // through**, which are the ones its verbs are carried out by.
+        let adapters = alo_adapters::shipped_adapters()?.whose_verbs_are_on(&verbs);
         Ok(Self {
             verbs,
             strings,
@@ -569,6 +599,9 @@ impl<'a> Machine<'a> {
             reaching_the_compositor: Some(applications.door),
             knowing_how_it_starts: Some(applications.starting),
             windows: Some(applications.windows),
+            adapters,
+            bus: None,
+            where_alo_works: None,
             publishing: Some(software.publishing),
             opening: None,
             bound: software.bound,
@@ -659,6 +692,40 @@ impl<'a> Machine<'a> {
     /// those are two things it holds at once.
     pub(crate) fn resolving(&self) -> &'a dyn Resolving {
         self.resolving
+    }
+
+    /// **This machine, with the person's session bus**, which an adapter's
+    /// one message goes over. Without it an approved adapter call is refused
+    /// in words and nothing is sent.
+    #[must_use]
+    pub fn with_the_persons_session_bus(mut self, bus: &'a dyn Delivers) -> Self {
+        self.bus = Some(bus);
+        self
+    }
+
+    /// **This machine, reading where the person lets alo work** in
+    /// applications, from their own file at each ask. Without it, the answer
+    /// is [`AloInApplications::WHEN_UNREADABLE`]: alo's own copy only.
+    #[must_use]
+    pub fn reading_where_alo_works(mut self, read: &'a dyn Fn() -> AloInApplications) -> Self {
+        self.where_alo_works = Some(read);
+        self
+    }
+
+    /// The adapters whose verbs this machine carries out.
+    pub(crate) const fn the_adapters(&self) -> &Adapters {
+        &self.adapters
+    }
+
+    /// The person's session bus, where this machine was given one.
+    pub(crate) fn the_session_bus(&self) -> Option<&'a dyn Delivers> {
+        self.bus
+    }
+
+    /// Where the person lets alo work in applications, **now**.
+    pub(crate) fn where_alo_works_now(&self) -> AloInApplications {
+        self.where_alo_works
+            .map_or(AloInApplications::WHEN_UNREADABLE, |read| read())
     }
 
     /// **This machine, knowing the person's home folder**: where a file a
@@ -1035,6 +1102,10 @@ mod tests {
             "accessible.type_without_saving",
             // `alo-publishing`'s one, added 2026-11-13: Demo 2's second road.
             "publish_to_github_pages",
+            // GNOME Text Editor's adapter, offered to alo since 2026-11-21
+            // (ADR 0160's first step): until then only `alo-app` reached it.
+            "text_editor.open_document",
+            "text_editor.new_window",
         ];
         for name in every_verb {
             assert!(
@@ -1054,6 +1125,28 @@ mod tests {
             !told.contains(&"arrange_application"),
             "a verb with no road is offered to an agent: {told:?}"
         );
+    }
+
+    /// **Every verb of every adapter alo OS ships is offered to alo**, which is
+    /// the rule, not Text Editor: an adapter added tomorrow whose verbs a turn
+    /// is not offered is the gap `docs/features.md` names (*alo is offered an
+    /// adapter's verbs when a person asks*), and this fails for it.
+    #[test]
+    fn every_shipped_adapters_verbs_are_offered() {
+        let offered = the_verbs_a_whole_machine_offers().expect("every verb declares");
+        let adapters = alo_adapters::shipped_adapters().expect("the shipped adapters load");
+        let mut seen = 0;
+        for adapter in adapters.all() {
+            for verb in adapter.verbs {
+                let name = format!("{}.{}", adapter.name, verb.name);
+                assert!(
+                    offered.of(&name).is_some(),
+                    "{name} is a shipped adapter's verb and alo is not offered it"
+                );
+                seen += 1;
+            }
+        }
+        assert!(seen > 0, "no shipped adapter verb was looked at");
     }
 
     /// **The offered list is the list this machine can carry out**, which is

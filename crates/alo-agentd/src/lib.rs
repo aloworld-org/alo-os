@@ -325,7 +325,11 @@ pub mod running_as_administrator;
 #[cfg(target_os = "linux")]
 pub mod saying_it_was_done_without_asking;
 #[cfg(target_os = "linux")]
+mod the_persons_session_bus;
+#[cfg(target_os = "linux")]
 pub mod what_files_open_with_here;
+#[cfg(target_os = "linux")]
+mod while_alo_works_at_the_door;
 /// What the kernel says about this machine's interfaces. **`alo-interfaces`'
 /// reader, re-exported** so every `crate::route_messages` path in this service
 /// reads as it did: the reader moved into a crate of its own on 2026-10-30 so

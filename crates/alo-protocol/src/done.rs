@@ -360,6 +360,18 @@ pub enum Done {
         /// `down`, `left` or `right`.
         key: String,
     },
+    /// One adapter's verb was carried out over its application's own
+    /// interface (`text_editor.open_document`), or sent to an application
+    /// that did not answer. Added 2026-11-21, additively.
+    AdapterVerbRan {
+        /// The verb, by its name on the machine's list.
+        verb: String,
+        /// The application it went to, by its identifier.
+        application: String,
+        /// Whether the application did not answer, so whether it did it is
+        /// not known.
+        unanswered: bool,
+    },
     /// One approved text was typed into one field and nothing was saved
     /// (`accessible.type_without_saving`). Added 2026-11-17, additively; the
     /// text is not carried back, as for [`Done::Typed`].
@@ -876,6 +888,17 @@ impl Done {
         Self::KeyPressed {
             application: application.to_owned(),
             key: key.to_owned(),
+        }
+    }
+
+    /// What an adapter's verb answered, as it goes on the wire — taking its
+    /// parts, for [`Done::of_a_press`]'s reason.
+    #[must_use]
+    pub fn of_an_adapter_verb(verb: &str, application: &str, unanswered: bool) -> Self {
+        Self::AdapterVerbRan {
+            verb: verb.to_owned(),
+            application: application.to_owned(),
+            unanswered,
         }
     }
 

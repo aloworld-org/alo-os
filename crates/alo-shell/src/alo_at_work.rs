@@ -355,10 +355,11 @@ impl WorkingInApplications {
             // **The person's window only where their setting lets alo in**: the
             // word alo sent is a request, and the setting is the answer. At the
             // default that is an application with no copy of its own.
+            // The one answer a turn also asks before an adapter's card
+            // (`alo_acting::alo_may_work_in_their_window`), so the two cannot
+            // disagree.
             Where::InTheirWindow
-                if !chosen.may_work_in_their_window_of(alo_launching::has_a_copy_of_its_own(
-                    &work.application,
-                )) =>
+                if !alo_acting::alo_may_work_in_their_window(chosen, &work.application) =>
             {
                 work.say(Working::NotChosen.written());
                 return;

@@ -81,6 +81,7 @@ pub mod said_of_a_band;
 pub mod said_of_publishing;
 pub mod said_on_the_log;
 pub mod typing_into;
+pub mod where_alo_may_work;
 pub mod working_in;
 
 pub use acting::Acting;
@@ -105,4 +106,5 @@ pub use typing_into::{
     AKey, MAY_TYPE_INTO, NotToType, PRESS_IN, SAVE_IN, TYPE_INTO, ToType, Typed,
     the_first_untypable,
 };
+pub use where_alo_may_work::{alo_may_work_in_their_window, has_a_copy_of_its_own};
 pub use working_in::{NotToWorkIn, ToWorkIn, Where, Worked, Working};
