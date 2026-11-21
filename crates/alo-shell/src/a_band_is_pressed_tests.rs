@@ -34,7 +34,7 @@ use smithay::backend::input::{ButtonState, KeyState};
 use crate::Server;
 use crate::access_action::Pressed;
 use crate::every_kind_of_band_testing::{
-    every_kind, on_the_band, opened, the_pointer_at, where_it_is,
+    Kind, every_kind, on_the_band, opened, the_pointer_at, where_it_is,
 };
 use crate::the_bands_over_alos_windows::AlosBand;
 use crate::which_band::ABand;
