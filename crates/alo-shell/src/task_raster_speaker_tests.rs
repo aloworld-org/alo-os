@@ -99,9 +99,53 @@ fn drawn(said: &[WhatWasSaid<'_>], scale: DisplayScale) -> Vec<Inked> {
     .inked
 }
 
-/// Whether any pixel of `ink` is exactly `colour`.
-fn has(ink: &Inked, colour: [u8; 3]) -> bool {
-    ink.pixels.contains(&colour)
+/// How far `point` is from the line that runs from `ground` to `ink`: a pixel
+/// of words in `ink` on `ground` is a blend of the two, and lies on it.
+fn off_the_line(point: [u8; 3], ground: [u8; 3], ink: [u8; 3]) -> f64 {
+    let (p, g, c) = (
+        point.map(f64::from),
+        ground.map(f64::from),
+        ink.map(f64::from),
+    );
+    let along: Vec<f64> = c.iter().zip(&g).map(|(c, g)| c - g).collect();
+    let here: Vec<f64> = p.iter().zip(&g).map(|(p, g)| p - g).collect();
+    let length: f64 = along.iter().map(|d| d * d).sum();
+    let how_far =
+        (here.iter().zip(&along).map(|(h, d)| h * d).sum::<f64>() / length).clamp(0.0, 1.0);
+    here.iter()
+        .zip(&along)
+        .map(|(h, d)| (h - how_far * d).powi(2))
+        .sum()
+}
+
+/// Whether `ink` is written in alo's teal rather than the window's navy, on
+/// `ground`: its most inked pixel lies nearer the blend towards teal.
+///
+/// **Asked of the blend, not of one exact pixel.** The first version looked for
+/// a pixel exactly teal, and CI's run found none in *alo* at Label/Medium: a
+/// short word in small type may have no pixel wholly covered.
+fn is_teal(ink: &Inked, ground: [u8; 3], palette: &crate::task_look::TaskPalette) -> bool {
+    let away = |p: &[u8; 3]| -> f64 {
+        p.iter()
+            .zip(&ground)
+            .map(|(p, g)| (f64::from(*p) - f64::from(*g)).powi(2))
+            .sum()
+    };
+    ink.pixels
+        .iter()
+        .max_by(|a, b| away(a).total_cmp(&away(b)))
+        .is_some_and(|most| {
+            off_the_line(*most, ground, palette.alo) < off_the_line(*most, ground, palette.ink)
+        })
+}
+
+/// The ground a block's words are written on: the window's surface under
+/// alo's reply, `bg/cool` in a bubble.
+fn the_ground_of(kind: WhoseBlock, palette: &crate::task_look::TaskPalette) -> [u8; 3] {
+    match kind {
+        WhoseBlock::Alos => palette.surface,
+        WhoseBlock::ThePersons | WhoseBlock::AnAccount => palette.cool,
+    }
 }
 
 /// **The rule**: each message has a label of its own, at the left of its words
@@ -109,9 +153,9 @@ fn has(ink: &Inked, colour: [u8; 3]) -> bool {
 /// and an account has none.
 #[test]
 fn every_message_in_a_task_conversation_carries_its_speakers_label() {
-    let teal = crate::task_look::TaskPalette::of(a_look())
-        .expect("a palette")
-        .alo;
+    let palette = crate::task_look::TaskPalette::of(a_look()).expect("a palette");
+    let teal =
+        |ink: &Inked, kind: WhoseBlock| is_teal(ink, the_ground_of(kind, &palette), &palette);
     let said = a_conversation();
     let messages = said.iter().filter(|one| is_a_message(one.whose)).count();
 
@@ -170,7 +214,7 @@ fn every_message_in_a_task_conversation_carries_its_speakers_label() {
                 });
             if !is_a_message(kind) {
                 assert!(
-                    group.iter().all(|one| !has(one, teal)),
+                    group.iter().all(|one| !teal(one, kind)),
                     "at {scale:?}: an account of what was done carries alo's label"
                 );
                 continue;
@@ -193,13 +237,13 @@ fn every_message_in_a_task_conversation_carries_its_speakers_label() {
                     words.area
                 );
                 assert_eq!(
-                    has(label, teal),
+                    teal(label, kind),
                     kind == WhoseBlock::Alos,
                     "at {scale:?}: {kind:?}'s label is {}teal, and only alo's is",
-                    if has(label, teal) { "" } else { "not " }
+                    if teal(label, kind) { "" } else { "not " }
                 );
                 assert!(
-                    !has(words, teal),
+                    !teal(words, kind),
                     "at {scale:?}: {kind:?}'s words are drawn in teal"
                 );
                 // **The room under it is the design's**: 6 under *You*, 8
