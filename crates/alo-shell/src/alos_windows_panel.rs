@@ -100,32 +100,6 @@ impl crate::Server {
         ))
     }
 
-    /// Minimise on this window: into the right-hand panel, still running.
-    pub(crate) fn alos_window_goes_aside(&mut self, which: AlosBand) {
-        match which {
-            AlosBand::Its(window) => self.this_alo_window_is_asked_to_go_aside(window),
-            AlosBand::ATask(task) => self.this_task_is_asked_to_go_aside(task),
-        }
-    }
-
-    /// Close on this window, by the road its Close button takes.
-    pub(crate) fn alos_window_closes(&mut self, which: AlosBand) {
-        match which {
-            AlosBand::Its(alo_put_aside::AlosOwnWindow::TheTerminal) => {
-                let _ = self.the_person_closes_the_terminal();
-            }
-            AlosBand::Its(alo_put_aside::AlosOwnWindow::Settings) => {
-                self.the_person_closes_settings();
-            }
-            AlosBand::Its(alo_put_aside::AlosOwnWindow::TheRecord) => {
-                self.the_person_closes_the_record();
-            }
-            AlosBand::ATask(task) => {
-                let _ = self.the_person_closes_a_task(task);
-            }
-        }
-    }
-
     /// Do what a choice in the panel says, to whichever window's panel it is.
     ///
     /// **A refusal changes nothing and is counted, never swallowed**, on

@@ -20,15 +20,18 @@
 use std::time::Instant;
 
 use alo_put_aside::AlosOwnWindow;
-use smithay::utils::{Logical, Physical, Point, Rectangle, Size};
+#[cfg(test)]
+use smithay::utils::Logical;
+use smithay::utils::{Physical, Rectangle, Size};
 
 use crate::an_edge_in_its_displays_units::{
     a_point_in_the_edges_units, a_window_in_the_edges_units,
 };
 use crate::the_bands_over_alos_windows::AlosBand;
-use crate::window_edge::{OnTheEdge, WindowEdge};
+#[cfg(test)]
+use crate::window_edge::WindowEdge;
 use crate::window_edge_picture::{EdgePicture, OverTheEdge};
-use crate::window_edge_pointing::{UnderThePointer, pointing_at, what_is_under};
+use crate::window_edge_pointing::pointing_at;
 
 /// The edge over a window drawn at `window` on the display, laid out at
 /// `scale` per cent in `room`, **with its controls** — the geometry a test
@@ -110,49 +113,6 @@ pub(crate) fn its_picture(
         output,
         scale,
     )
-}
-
-/// What a press at `at`, in the display's pixels, is on, on the band over
-/// `which` drawn at `window` — [`None`] off it. A control is found only while
-/// the band shows it.
-pub(crate) fn what_a_press_is_on(
-    server: &crate::Server,
-    (which, window): (AlosOwnWindow, Rectangle<i32, Physical>),
-    at: Point<i32, Logical>,
-) -> Option<OnItsEdge> {
-    let scale = server.the_scale_an_edge_is_measured_at();
-    let edge = server.alos_band_as_pressed(
-        AlosBand::Its(which),
-        a_window_in_the_edges_units(window, scale),
-        server.the_room_an_edge_is_clamped_in(),
-    );
-    what_a_press_on_this_edge_is_on(&edge, a_point_in_the_edges_units(at, scale))
-}
-
-/// What a press at `at`, in the band's units, is on, on `edge`.
-pub(crate) fn what_a_press_on_this_edge_is_on(
-    edge: &WindowEdge,
-    at: Point<i32, Logical>,
-) -> Option<OnItsEdge> {
-    match what_is_under(edge, at)? {
-        UnderThePointer::Control(OnTheEdge::Close) => Some(OnItsEdge::Close),
-        UnderThePointer::Control(OnTheEdge::Minimise) => Some(OnItsEdge::Minimise),
-        UnderThePointer::Control(_)
-        | UnderThePointer::Drag
-        | UnderThePointer::TheEdgeAndNothingOnIt => Some(OnItsEdge::TheRest),
-    }
-}
-
-/// Where on one of alo's windows' edges a press is.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum OnItsEdge {
-    /// Close.
-    Close,
-    /// Minimise: the window goes into the right-hand panel
-    /// (`crate::alos_own_window_goes_aside`).
-    Minimise,
-    /// Anywhere else on it, which brings the window in front.
-    TheRest,
 }
 
 #[cfg(test)]

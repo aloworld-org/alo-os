@@ -39,20 +39,20 @@
 //! Until 2026-10-28 a press was read against the edge laid out at 100, so on a
 //! 200 per cent display Close was drawn where a press did not find it.
 
-use smithay::utils::{Logical, Physical, Point, Rectangle, Size};
+use smithay::utils::Size;
+#[cfg(test)]
+use smithay::utils::{Logical, Rectangle};
 
 use crate::Server;
 use crate::an_edge_in_its_displays_units::{
     a_point_in_the_edges_units, a_window_in_the_edges_units,
 };
 use crate::the_bands_over_alos_windows::AlosBand;
-use crate::the_tasks_a_person_opened::WhichTask;
 use crate::which_band::ABand;
-use crate::window_edge::OnTheEdge;
 #[cfg(test)]
 use crate::window_edge::WindowEdge;
 use crate::window_edge_picture::{EdgePicture, OverTheEdge};
-use crate::window_edge_pointing::{UnderThePointer, pointing_at, what_is_under};
+use crate::window_edge_pointing::pointing_at;
 
 /// The edge above one task window **with its controls**, in `room` — the
 /// geometry a test reads where they would be. The machine never lays one out
@@ -142,72 +142,6 @@ pub(crate) fn every_task_windows_edge(
             )
         })
         .collect()
-}
-
-impl Server {
-    /// Whether any task window's edge is under `at`, in the units
-    /// [`Self::a_press_on_a_task_windows_edge`] takes, without pressing it.
-    pub(crate) fn a_task_windows_edge_is_under(&self, at: Point<i32, Logical>) -> bool {
-        let room = self.the_room_an_edge_is_clamped_in();
-        let scale = self.the_scale_an_edge_is_measured_at();
-        let at = a_point_in_the_edges_units(at, scale);
-        self.the_task_windows_on_the_screen()
-            .into_iter()
-            .any(|(which, window)| {
-                let edge = self.alos_band_as_pressed(
-                    AlosBand::ATask(which),
-                    a_window_in_the_edges_units(window, scale),
-                    room,
-                );
-                what_is_under(&edge, at).is_some()
-            })
-    }
-
-    /// A press at `at`, offered to the task windows' edges, newest first.
-    ///
-    /// Answers whether one took it. **Anywhere on a task window's edge takes
-    /// the press**, Close or not: the edge is drawn over whatever is behind
-    /// it, so a press on it was never a press on that. Only Close does
-    /// anything.
-    pub(crate) fn a_press_on_a_task_windows_edge(&mut self, at: Point<i32, Logical>) -> bool {
-        let room = self.the_room_an_edge_is_clamped_in();
-        let scale = self.the_scale_an_edge_is_measured_at();
-        let at = a_point_in_the_edges_units(at, scale);
-        let open: Vec<(WhichTask, Rectangle<i32, Physical>)> =
-            self.the_task_windows_on_the_screen();
-        for (which, window) in open.into_iter().rev() {
-            let edge = self.alos_band_as_pressed(
-                AlosBand::ATask(which),
-                a_window_in_the_edges_units(window, scale),
-                room,
-            );
-            match what_is_under(&edge, at) {
-                None => {}
-                Some(UnderThePointer::Control(OnTheEdge::Close)) => {
-                    let _ = self.the_person_closes_a_task(which);
-                    return true;
-                }
-                // **Minimise: into the right-hand panel, still running.**
-                Some(UnderThePointer::Control(OnTheEdge::Minimise)) => {
-                    self.this_task_is_asked_to_go_aside(which);
-                    return true;
-                }
-                // **Window actions opens its panel, and pressed again closes
-                // it** (`crate::alos_windows_panel`).
-                Some(UnderThePointer::Control(OnTheEdge::WindowActions)) => {
-                    self.the_menu_was_opened_on_the_band(
-                        &ABand::Alos(AlosBand::ATask(which)),
-                        crate::the_edge_takes_the_keyboard::ByWhat::ThePointer,
-                    );
-                    return true;
-                }
-                Some(UnderThePointer::Drag | UnderThePointer::TheEdgeAndNothingOnIt) => {
-                    return true;
-                }
-            }
-        }
-        false
-    }
 }
 
 #[cfg(test)]

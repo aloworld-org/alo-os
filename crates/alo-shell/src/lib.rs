@@ -192,6 +192,7 @@ pub mod the_window_panels_field;
 /// What reads the pictures alo takes of a window, chosen in Settings.
 mod who_reads_pictures_in_settings;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
+mod a_band_is_pressed;
 mod a_reader_presses;
 mod a_reader_presses_in_settings;
 pub use a_reader_presses::WhatAReaderPressCameTo;
@@ -1077,8 +1078,10 @@ pub use booting::{
 pub use capture_flatten::{NotFlattened, burnt_in};
 pub use giving_alo_an_application_it_asked_for::the_grants_for_the_session_go;
 pub use the_application_sheet::{HowLongForAnApplication, OnTheApplicationSheet};
+pub use the_bands_over_alos_windows::AlosBand;
 pub use the_file_chooser::OnTheFileChooser;
 pub use the_github_sheet::OnTheGitHubSheet;
+pub use which_band::ABand;
 // `DesktopFrame::capturing` is a public field of this type, so without these a
 // caller outside this crate could only ever pass `None` — the capture tools were
 // drawable by this crate and by nobody else, including the fixture whose whole

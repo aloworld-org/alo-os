@@ -53,11 +53,16 @@ const CLICK: &str = "click";
 /// application is named by a string.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Pressed {
-    /// Close on this task window's edge.
-    CloseTheTask(WhichTask),
-    /// Minimise on this task window's edge: into the right-hand panel, still
-    /// running.
-    MinimiseTheTask(WhichTask),
+    /// **This control on the band over this window**, for every kind of
+    /// window: an application's, the terminal, Settings, the record or a task
+    /// window. Carried out by the one road a pointer's press takes
+    /// (`crate::a_band_is_pressed`).
+    OnABand {
+        /// Whose band.
+        band: crate::which_band::ABand,
+        /// Which of its controls.
+        control: crate::window_edge::OnTheEdge,
+    },
     /// This control on the Dock, named by what the Dock holds there rather
     /// than by where it is, so a press reaches the application it was heard
     /// as and never whatever has since moved into its place.
@@ -97,6 +102,22 @@ pub enum Pressed {
     /// This on Settings, named by what it is rather than where it is drawn,
     /// and carried out as a click on it is (`crate::a_reader_presses_in_settings`).
     InSettings(InSettings),
+}
+
+impl Pressed {
+    /// `control` on the band over this task window.
+    #[must_use]
+    pub const fn on_a_task_window(
+        which: WhichTask,
+        control: crate::window_edge::OnTheEdge,
+    ) -> Self {
+        Self::OnABand {
+            band: crate::which_band::ABand::Alos(
+                crate::the_bands_over_alos_windows::AlosBand::ATask(which),
+            ),
+            control,
+        }
+    }
 }
 
 /// **What a reader pressed on Settings** — what a click on it can land on.

@@ -18,10 +18,9 @@
 //! confirmation open or not; Escape is the key that closes a confirmation
 //! first, and keeps doing so.
 
-use smithay::utils::{Logical, Physical, Point, Rectangle};
+use smithay::utils::{Physical, Rectangle};
 
-use crate::an_alo_windows_edge::{OnItsEdge, WhatItShows, its_picture, what_a_press_is_on};
-use crate::which_window_is_in_front::AKindOfWindow;
+use crate::an_alo_windows_edge::{WhatItShows, its_picture};
 
 impl crate::Server {
     /// Where the record's body is seen on the display, while it is open here
@@ -57,13 +56,6 @@ impl crate::Server {
         )
     }
 
-    /// Whether the record's edge is under `at`, in the display's pixels.
-    pub(crate) fn the_records_edge_is_under(&self, at: Point<i32, Logical>) -> bool {
-        self.where_the_records_body_is_seen().is_some_and(|body| {
-            what_a_press_is_on(self, (alo_put_aside::AlosOwnWindow::TheRecord, body), at).is_some()
-        })
-    }
-
     /// **The person closed the record window**, by its edge's Close or by
     /// Alt+F4 (`crate::a_chord_closes_alos_own_window`): one road, so the two
     /// cannot disagree. A Put back confirmation that is open goes with it, and
@@ -73,30 +65,6 @@ impl crate::Server {
         self.the_records_places = None;
         self.where_the_records_body_was_drawn = None;
         self.the_record_on_the_plane = None;
-    }
-
-    /// A press at `at`, in the display's pixels, offered to the record's edge.
-    /// Close shuts the window; anywhere else on the edge brings it in front.
-    pub(crate) fn a_press_on_the_records_edge(&mut self, at: Point<i32, Logical>) -> bool {
-        let Some(body) = self.where_the_records_body_is_seen() else {
-            return false;
-        };
-        match what_a_press_is_on(self, (alo_put_aside::AlosOwnWindow::TheRecord, body), at) {
-            None => false,
-            Some(OnItsEdge::Close) => {
-                self.the_person_closes_the_record();
-                true
-            }
-            Some(OnItsEdge::Minimise) => {
-                self.this_alo_window_is_asked_to_go_aside(alo_put_aside::AlosOwnWindow::TheRecord);
-                true
-            }
-            Some(OnItsEdge::TheRest) => {
-                self.the_composer.it_gave_the_keyboard_up();
-                self.the_person_went_to(AKindOfWindow::TheRecord);
-                true
-            }
-        }
     }
 }
 

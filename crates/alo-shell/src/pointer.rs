@@ -328,7 +328,10 @@ impl Server {
             // confirmation and anywhere on it — the window's own.
             if in_front_here == Some(crate::which_window_is_in_front::AKindOfWindow::TheRecord) {
                 if let Some(at) = self.where_the_pointer_is_in_logical_pixels()
-                    && self.a_press_on_the_records_edge(at)
+                    && self.a_press_on_the_band_over_alos(
+                        crate::which_window_is_in_front::AKindOfWindow::TheRecord,
+                        at,
+                    )
                 {
                     return Ok(false);
                 }
@@ -338,7 +341,10 @@ impl Server {
             }
             if in_front_here == Some(crate::which_window_is_in_front::AKindOfWindow::Settings) {
                 if let Some(at) = self.where_the_pointer_is_in_logical_pixels()
-                    && self.a_press_on_the_settings_edge(at)
+                    && self.a_press_on_the_band_over_alos(
+                        crate::which_window_is_in_front::AKindOfWindow::Settings,
+                        at,
+                    )
                 {
                     return Ok(false);
                 }
@@ -350,7 +356,10 @@ impl Server {
                 // **A task window's edge before the window**: it is drawn
                 // above the task window, so a press on it is the edge's.
                 if let Some(at) = self.where_the_pointer_is_in_logical_pixels()
-                    && self.a_press_on_a_task_windows_edge(at)
+                    && self.a_press_on_the_band_over_alos(
+                        crate::which_window_is_in_front::AKindOfWindow::TaskWindows,
+                        at,
+                    )
                 {
                     return Ok(false);
                 }
@@ -372,7 +381,10 @@ impl Server {
                 // **Its edge first**, which carries Close, and then the
                 // question closing asks, whose two buttons are drawn on it.
                 if let Some(at) = self.where_the_pointer_is_in_logical_pixels()
-                    && self.a_press_on_the_terminals_edge(at)
+                    && self.a_press_on_the_band_over_alos(
+                        crate::which_window_is_in_front::AKindOfWindow::TheTerminal,
+                        at,
+                    )
                 {
                     return Ok(false);
                 }

@@ -300,7 +300,10 @@ fn a_closed_windows_edge_is_gone() {
         "the control: Close closed it"
     );
     assert!(
-        !server.a_press_on_a_task_windows_edge((close.loc.x + 1, close.loc.y + 1).into()),
+        !server.a_press_on_the_band_over_alos(
+            crate::which_window_is_in_front::AKindOfWindow::TaskWindows,
+            (close.loc.x + 1, close.loc.y + 1).into()
+        ),
         "the edge of a closed window still took a press"
     );
 }

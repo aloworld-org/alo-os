@@ -83,7 +83,16 @@ impl Server {
                     .surfaces
                     .keyboard_root()
                     .ok_or(ShortcutDispatchError::NoFocusedWindow)?;
-                self.request_window_close(&root)?;
+                // **What its band's Close does, through the one road**
+                // (`crate::a_band_is_pressed`). Not through the band's list of
+                // controls: an application that draws its own Close has none on
+                // alo's band, and Alt+F4 still closes it.
+                if let crate::a_band_is_pressed::ClosingCameTo::TheApplicationWasAsked(Err(
+                    refused,
+                )) = self.this_bands_window_closes(&crate::which_band::ABand::App(root))
+                {
+                    return Err(refused.into());
+                }
             }
             other => return Err(ShortcutDispatchError::Unsupported(other)),
         }

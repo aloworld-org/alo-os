@@ -46,7 +46,7 @@
 //! at once when the shell is idle, after a question when a command is running.
 
 use alo_put_aside::AlosOwnWindow;
-use smithay::utils::{Logical, Physical, Point, Rectangle, Size};
+use smithay::utils::{Physical, Rectangle, Size};
 
 use crate::Server;
 use crate::an_edge_in_its_displays_units::{
@@ -54,9 +54,8 @@ use crate::an_edge_in_its_displays_units::{
 };
 use crate::the_bands_over_alos_windows::AlosBand;
 use crate::which_band::ABand;
-use crate::window_edge::{OnTheEdge, WindowEdge};
 use crate::window_edge_picture::{EdgePicture, OverTheEdge};
-use crate::window_edge_pointing::{UnderThePointer, pointing_at, what_is_under};
+use crate::window_edge_pointing::pointing_at;
 
 /// The terminal's band, as `crate::the_bands_over_alos_windows` knows it.
 const THE_TERMINAL: AlosBand = AlosBand::Its(AlosOwnWindow::TheTerminal);
@@ -71,18 +70,6 @@ impl Server {
             return None;
         }
         self.where_the_terminal_is
-    }
-
-    /// The terminal's edge as a press finds it, laid out at `scale` per cent
-    /// in `room` where the terminal is drawn now: its controls only while its
-    /// band shows them. [`None`] with no terminal drawn.
-    fn the_terminals_edge(&self, room: Size<i32, Logical>, scale: u32) -> Option<WindowEdge> {
-        let window = self.where_the_terminal_is_seen()?;
-        Some(self.alos_band_as_pressed(
-            THE_TERMINAL,
-            a_window_in_the_edges_units(window, scale),
-            room,
-        ))
     }
 
     /// The terminal's edge as a picture for this display: `output` its size in
@@ -150,60 +137,6 @@ impl Server {
             output,
             scale,
         )
-    }
-
-    /// Whether the terminal's edge is under `at`, in the display's pixels,
-    /// without pressing it.
-    pub(crate) fn the_terminals_edge_is_under(&self, at: Point<i32, Logical>) -> bool {
-        let scale = self.the_scale_an_edge_is_measured_at();
-        self.the_terminals_edge(self.the_room_an_edge_is_clamped_in(), scale)
-            .is_some_and(|edge| {
-                what_is_under(&edge, a_point_in_the_edges_units(at, scale)).is_some()
-            })
-    }
-
-    /// A press at `at`, in the display's pixels, offered to the terminal's
-    /// edge. Answers whether the edge took it.
-    ///
-    /// **Anywhere on the edge takes the press**, as on a task window's: the
-    /// strip is drawn over whatever is behind it. Only Close does anything, and
-    /// a press anywhere on the edge brings the terminal in front.
-    pub(crate) fn a_press_on_the_terminals_edge(&mut self, at: Point<i32, Logical>) -> bool {
-        let scale = self.the_scale_an_edge_is_measured_at();
-        let Some(edge) = self.the_terminals_edge(self.the_room_an_edge_is_clamped_in(), scale)
-        else {
-            return false;
-        };
-        match what_is_under(&edge, a_point_in_the_edges_units(at, scale)) {
-            None => false,
-            Some(UnderThePointer::Control(OnTheEdge::Close)) => {
-                let _ = self.the_person_closes_the_terminal();
-                true
-            }
-            // **Minimise: into the right-hand panel, still running**
-            // (`crate::alos_own_window_goes_aside`).
-            Some(UnderThePointer::Control(OnTheEdge::Minimise)) => {
-                self.this_alo_window_is_asked_to_go_aside(AlosOwnWindow::TheTerminal);
-                true
-            }
-            // **Window actions opens its panel, and pressed again closes it**
-            // (`crate::alos_windows_panel`).
-            Some(UnderThePointer::Control(OnTheEdge::WindowActions)) => {
-                self.the_menu_was_opened_on_the_band(
-                    &ABand::Alos(THE_TERMINAL),
-                    crate::the_edge_takes_the_keyboard::ByWhat::ThePointer,
-                );
-                true
-            }
-            Some(UnderThePointer::Drag | UnderThePointer::TheEdgeAndNothingOnIt) => {
-                self.the_composer.it_gave_the_keyboard_up();
-                self.the_keyboard_is_now_in(None);
-                self.the_person_went_to(
-                    crate::which_window_is_in_front::AKindOfWindow::TheTerminal,
-                );
-                true
-            }
-        }
     }
 }
 

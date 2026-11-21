@@ -759,11 +759,24 @@ fn a_reader_finds_close_on_each_task_window_and_presses_it() {
     let reader = session.reader();
     let mut closes = Vec::new();
     for (window, under) in &found {
-        // **Minimise, then Close** — a task window goes into the right-hand
-        // panel, still running (design `23:2`).
-        let [(_, minimise), (at, facts)] = under.as_slice() else {
-            panic!("{window}: a reader found {under:?} under it, not Minimise and Close");
+        // **Window actions, Minimise, then Close** — a task window goes into
+        // the right-hand panel, still running (design `23:2`), and its panel
+        // is pressed by the one road since 2026-11-21.
+        let [(_, actions), (_, minimise), (at, facts)] = under.as_slice() else {
+            panic!(
+                "{window}: a reader found {under:?} under it, not Window actions, Minimise and Close"
+            );
         };
+        assert_eq!(
+            actions.name,
+            strings
+                .say(
+                    &alo_access::words::WINDOW_ACTIONS.key(),
+                    &Filling::nothing()
+                )
+                .text(),
+            "{window}: its first control is not called Window actions"
+        );
         assert_eq!(
             minimise.name,
             strings
@@ -798,7 +811,13 @@ fn a_reader_finds_close_on_each_task_window_and_presses_it() {
     // **A running task's Close is pressed and the task stays open.**
     assert!(reader.act(&closes[1], 0).expect("the bus answered"));
     let pressed = bus.pressed();
-    assert_eq!(pressed, [Pressed::CloseTheTask(working)]);
+    assert_eq!(
+        pressed,
+        [Pressed::on_a_task_window(
+            working,
+            alo_shell::OnTheEdge::Close
+        )]
+    );
     assert_eq!(
         server.a_reader_pressed(pressed[0].clone()),
         WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::Asked)
@@ -808,7 +827,11 @@ fn a_reader_finds_close_on_each_task_window_and_presses_it() {
     // **A finished task's Close closes it**, and the reader is told so.
     assert!(reader.act(&closes[0], 0).expect("the bus answered"));
     let pressed = bus.pressed();
-    assert_eq!(pressed, [Pressed::CloseTheTask(done)], "one press, once");
+    assert_eq!(
+        pressed,
+        [Pressed::on_a_task_window(done, alo_shell::OnTheEdge::Close)],
+        "one press, once"
+    );
     assert_eq!(
         server.a_reader_pressed(pressed[0].clone()),
         WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::Closed)
