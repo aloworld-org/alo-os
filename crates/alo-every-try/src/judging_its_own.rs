@@ -78,7 +78,7 @@ pub fn judging_its_own(
     );
     let mut said = summary_counting(&tallied, own, asked_of);
     let flagged = the_flagged_of_its_own(&tallied, own, reached);
-    if !flagged.is_empty() && THE_CONFIRMING_TRIES > 0 {
+    if !flagged.is_empty() {
         let again = tallying_at(
             level,
             &set.clone()

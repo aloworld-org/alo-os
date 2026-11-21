@@ -120,6 +120,12 @@ fn the_ratchet_on_twenty_is_every_try() {
     let (counted, tried, _) = judged(&[tries(9, 1), tries(10, 0)], true);
     assert_eq!(tried, 20);
     assert_eq!(counted, Counted::ItsOwnSlipped);
-    let (counted, tried, _) = judged(&[tries(10, 0)], true);
+    let (counted, tried, said) = judged(&[tries(10, 0)], true);
     assert_eq!((counted, tried), (Counted::ItsOwnHeld, 10));
+    assert!(
+        said.contains("Held to every try at this level"),
+        "the summary says why: {said}"
+    );
+    let (_, _, said) = judged(&[tries(10, 0)], false);
+    assert!(!said.contains("Held to every try"), "{said}");
 }
