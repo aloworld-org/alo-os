@@ -1184,7 +1184,8 @@ pub(crate) fn picture(
         badges: &badges,
         badge: palette.badge,
         wells: &wells,
-        well_is: palette.badge,
+        // The composer's field, in the design's own fill for it.
+        well_is: palette.field,
         panel: band,
         fill: palette.dock,
         edge: palette.edge,
