@@ -144,18 +144,23 @@ fn hashed(picture: &super::DockPicture) -> u64 {
 #[test]
 fn at_one_hundred_the_whole_dock_draws_the_bytes_it_drew_before() {
     const BEFORE: [(Edge, u64); 2] = [(Edge::Bottom, BOTTOM_BEFORE), (Edge::Left, LEFT_BEFORE)];
-    for (edge, before) in BEFORE {
-        let now = hashed(&drawn(
+    // Both edges drawn before either is judged, so a change that moves both
+    // is told about both in one run.
+    let now = BEFORE.map(|(edge, _)| {
+        (
             edge,
-            SPARSE,
-            DisplayScale::ONE,
-            &crate::what_the_dock_has_open::MORE_APPS,
-        ));
-        assert_eq!(
-            now, before,
-            "the {edge:?} Dock at 100 drew {now:#018x}, before {before:#018x}"
-        );
-    }
+            hashed(&drawn(
+                edge,
+                SPARSE,
+                DisplayScale::ONE,
+                &crate::what_the_dock_has_open::MORE_APPS,
+            )),
+        )
+    });
+    assert_eq!(
+        now, BEFORE,
+        "the Docks at 100 drew {now:#018x?}, before {BEFORE:#018x?}"
+    );
 }
 
 /// The hash of the bottom Dock before this change. See the test above.
