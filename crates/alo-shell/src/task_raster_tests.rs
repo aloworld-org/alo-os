@@ -1149,6 +1149,7 @@ fn march() -> crate::task_text::ATouchedRow {
     crate::task_text::ATouchedRow::of(
         &alo_changing::Touched::Path("/home/anna/Invoices/march.pdf".to_owned()),
         Some(std::path::Path::new("/home/anna")),
+        &std::collections::BTreeMap::new(),
     )
 }
 
@@ -1199,14 +1200,26 @@ fn where_a_file_is_is_written_from_home() {
     let outside = crate::task_text::ATouchedRow::of(
         &alo_changing::Touched::Path("/srv/shared/report.pdf".to_owned()),
         Some(std::path::Path::new("/home/anna")),
+        &std::collections::BTreeMap::new(),
     );
     assert_eq!(outside.where_it_is, "/srv/shared/report.pdf");
+    // **An application by what a person calls it** (2026-11-20: a card named
+    // `com.vscodium.codium`), and by its identifier only where nothing names it.
+    let called: std::collections::BTreeMap<String, String> =
+        [("org.gnome.TextEditor".to_owned(), "Text Editor".to_owned())].into();
     let editor = crate::task_text::ATouchedRow::of(
         &alo_changing::Touched::Application("org.gnome.TextEditor".to_owned()),
         Some(std::path::Path::new("/home/anna")),
+        &called,
     );
-    assert_eq!(editor.name, "org.gnome.TextEditor");
+    assert_eq!(editor.name, "Text Editor");
     assert!(editor.where_it_is.is_empty() && !editor.is_a_path);
+    let unnamed = crate::task_text::ATouchedRow::of(
+        &alo_changing::Touched::Application("org.example.Nothing".to_owned()),
+        None,
+        &called,
+    );
+    assert_eq!(unnamed.name, "org.example.Nothing");
 
     let with = with_the_approved_card_touching(&[editor]);
     let without = with_the_approved_card(None);

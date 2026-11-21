@@ -243,7 +243,8 @@ pub struct TheAnswerBetween<'a> {
 /// One row on an approval card naming something the change touches.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ATouchedRow {
-    /// Its own name: the file's or folder's, or the application's identifier.
+    /// Its own name: the file's or folder's, or what a person calls the
+    /// application — its identifier only where no entry names it.
     pub name: String,
     /// Where it is: the path from the person's home, `Presentations / Launch
     /// presentation.odp` as the frame draws it, or the whole path outside it.
@@ -255,9 +256,16 @@ pub struct ATouchedRow {
 
 impl ATouchedRow {
     /// The row for one thing a change touches, with `home` the person's home
-    /// folder where the session knows it.
+    /// folder where the session knows it, and `called` what each application
+    /// is called in the person's language, by identifier
+    /// (`crate::Server::what_each_is_called`, which a window's band names it
+    /// by too).
     #[must_use]
-    pub fn of(touched: &alo_changing::Touched, home: Option<&std::path::Path>) -> Self {
+    pub fn of(
+        touched: &alo_changing::Touched,
+        home: Option<&std::path::Path>,
+        called: &std::collections::BTreeMap<String, String>,
+    ) -> Self {
         match touched {
             alo_changing::Touched::Path(path) => {
                 let at = std::path::Path::new(path);
@@ -278,8 +286,10 @@ impl ATouchedRow {
                     is_a_path: true,
                 }
             }
+            // **By what a person calls it**, never `com.vscodium.codium` where
+            // its entry names it (2026-11-20).
             alo_changing::Touched::Application(id) => Self {
-                name: id.clone(),
+                name: called.get(id).cloned().unwrap_or_else(|| id.clone()),
                 where_it_is: String::new(),
                 is_a_path: false,
             },

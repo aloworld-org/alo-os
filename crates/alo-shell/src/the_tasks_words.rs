@@ -246,18 +246,19 @@ impl TheTasksWords {
 
     /// **And what the change waiting touches**, as rows on the asking task's
     /// card — one per file, folder or application, named and placed from
-    /// `home` (`crate::task_text::ATouchedRow`). Nothing for a task that is
-    /// not asking.
+    /// `home` (`crate::task_text::ATouchedRow`), each application by what
+    /// `called` says a person calls it. Nothing for a task that is not asking.
     pub(crate) fn with_what_the_change_touches(
         mut self,
         touches: &[alo_changing::Touched],
         home: Option<&std::path::Path>,
+        called: &std::collections::BTreeMap<String, String>,
     ) -> Self {
         for one in &mut self.each {
             if one.answers_after.is_some() {
                 one.touches = touches
                     .iter()
-                    .map(|it| crate::task_text::ATouchedRow::of(it, home))
+                    .map(|it| crate::task_text::ATouchedRow::of(it, home, called))
                     .collect();
             }
         }

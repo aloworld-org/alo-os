@@ -2203,6 +2203,7 @@ impl LoopInput for TheDesktopLane<'_> {
                 .settings_places
                 .as_ref()
                 .and_then(crate::SettingsPlaces::home),
+            &server.what_each_is_called,
         );
         let the_task_windows = the_tasks_words.as_displayed();
         // **And every open task's card, said**, for the panel to draw the ones
