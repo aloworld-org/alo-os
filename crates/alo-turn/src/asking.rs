@@ -265,7 +265,10 @@ impl Turning<'_, '_> {
         }
         // The only other place `held` is read: an agent's next request is put
         // to a model in the product's own words (ADR 0037), wherever it goes.
-        let question = Question::asked(&held.shown(self.machine().verbs(), asked), of_model)?;
+        // **What this turn offers now**, not every verb the machine has: the
+        // screen road only once a read found a window that describes nothing.
+        let offered = self.the_verbs_offered_now();
+        let question = Question::asked(&held.shown(&offered, asked), of_model)?;
         let question = match picture {
             Some(png) => question.about_a_picture(png),
             None => question,
@@ -309,6 +312,7 @@ impl Turning<'_, '_> {
                     Held::ToTheEnvelope => Some(
                         crate::the_shape_a_provider_is_held_to::the_envelope_a_turn_on(
                             self.machine(),
+                            &offered,
                         ),
                     ),
                 };

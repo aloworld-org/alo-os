@@ -746,7 +746,8 @@ impl Done {
                 .collect(),
             not_all_read: shown.not_all_read(),
             told: told.to_vec(),
-            describes_nothing: false,
+            describes_nothing: alo_adapters::a_picture_may_be_taken::a_picture_may_be_taken(shown)
+                .is_ok(),
         }
     }
 

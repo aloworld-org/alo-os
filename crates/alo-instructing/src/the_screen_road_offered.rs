@@ -18,8 +18,18 @@ pub const THE_SCREEN_ROAD: [&str; 1] = [crate::working_in_an_application::PICTUR
 /// and otherwise all but the screen road's.
 #[must_use]
 pub fn the_verbs_offered(verbs: &Verbs, a_window_described_nothing: bool) -> Verbs {
-    let _ = a_window_described_nothing;
-    verbs.clone()
+    if a_window_described_nothing {
+        return verbs.clone();
+    }
+    let mut offered = Verbs::default();
+    for verb in verbs
+        .all()
+        .filter(|verb| !THE_SCREEN_ROAD.contains(&verb.name()))
+    {
+        // A verb already in one list cannot collide in a list made of them.
+        let _ = offered.declare(verb.clone());
+    }
+    offered
 }
 
 #[cfg(test)]

@@ -867,7 +867,10 @@ mod tests {
             &mut record,
         )
         .unwrap();
-        let envelope = crate::the_shape_a_provider_is_held_to::the_envelope_a_turn_on(&machine);
+        let envelope = crate::the_shape_a_provider_is_held_to::the_envelope_a_turn_on(
+            &machine,
+            machine.verbs(),
+        );
         let written = envelope.to_string();
         assert!(
             written.contains(r#""enum":["acme-apps","flathub"]"#),

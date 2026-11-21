@@ -821,6 +821,13 @@ compositor's `picture-of` (`application-door.md`), and read by
 |---|---|
 | `application` (an application), `question` (text: what the picture is to answer, in the person's words, put to the reader with it) | *take a picture of the {application} window and have it read, to answer: {question}* |
 
+- **Offered only once a read in that turn found a window that describes nothing**
+  (the owner, 2026-11-20: the screen road is for the applications alo cannot
+  read). Until then a turn is neither told the verb nor allowed it in the shape
+  its answer is held to, and a new turn starts without it. `accessible.read_window`
+  answers `describes-nothing` for such windows, and one function,
+  `alo_instructing::the_verbs_offered`, builds the offer for the daemon's turn and
+  for the agent alike.
 - **A change.** At *ask each time* each picture waits for one approval and one
   approval takes one picture; at full access it is taken at once and recorded
   the same way.
