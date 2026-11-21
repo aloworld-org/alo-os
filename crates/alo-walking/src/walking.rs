@@ -201,6 +201,11 @@ impl Walking {
                 drawn,
                 within,
             } => self.the_edge(machine, check, picture, *drawn, *within)?,
+            Step::PressUntilTheKeyboardIsOn {
+                chord,
+                name,
+                at_most,
+            } => self.press_until_the_keyboard_is_on(machine, chord, name, *at_most, pace)?,
             Step::OnlyWithFor { variable, steps } => {
                 if *steps > 0 && secret(variable).is_none_or(|it| it.is_empty()) {
                     self.skipping = Some((
@@ -544,6 +549,7 @@ fn check_name(step: &Step) -> Option<String> {
         | Step::ExpectNoLine { check, .. }
         | Step::TheEdge { check, .. } => Some(check.clone()),
         Step::Pointer(pointing) => pointing.check().map(str::to_owned),
+        Step::PressUntilTheKeyboardIsOn { name, .. } => Some(by_name::the_check_for(name)),
         _ => None,
     }
 }
@@ -559,6 +565,9 @@ mod the_pointer;
 
 #[path = "walking_the_edge.rs"]
 mod the_edge;
+
+#[path = "walking_by_name.rs"]
+mod by_name;
 
 #[cfg(test)]
 #[path = "walking_tests.rs"]

@@ -351,6 +351,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             scope_note: "Permissions and model choices apply to this task.",
                             files: &files,
                             how_many_files: "",
+                            you: "",
+                            alo: "",
                         },
                         said: said.to_vec(),
                         scroll: alo_tasks::TheScroll::at_the_newest(),

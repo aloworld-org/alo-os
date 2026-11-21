@@ -161,14 +161,19 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
     // the turn found a window that describes nothing
     // (`crate::the_screen_road_offered`): told to every turn, this pulled the
     // model off pressing a named button (2026-11-20), and told to none the
-    // picture request fell to 15 and 14 of 20.
+    // picture request fell to 15 and 14 of 20. **Its last clause** names the
+    // misses of runs 44847510069, 44848242304 and 44841136524: a screenshot
+    // command, the photo's file read or searched for, and the verb written as
+    // a run line.
     if verbs.of(PICTURE_WINDOW).is_some() {
         acts.push(format!(
             "when {READ_WINDOW} answered that a window shows no text and names nothing and that \
              a picture of it can be read — a game, a photo, a drawing canvas — you have not seen \
              that window: your next step is {PICTURE_WINDOW} for its application, with what the \
              person wants to know as its question, once, even when the person only asked what it \
-             shows, and never an answer about it before the picture is read"
+             shows, and never an answer about it before the picture is read; it is a change you \
+             propose, never a run line, and no screenshot command and no image file stands in \
+             for it"
         ));
     }
     format!(

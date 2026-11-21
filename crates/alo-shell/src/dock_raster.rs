@@ -916,6 +916,35 @@ pub(crate) fn a_focus_ring(
     )
 }
 
+/// **Whether a window is open behind this slot**, which is the one question the
+/// open mark asks, for every kind of slot: an application with its own icon or
+/// with its first letter, and alo's own Settings and Applications.
+///
+/// **Matched on what the slot is, not on how it is drawn**, so no way of drawing
+/// a slot can lose its mark. Every kind named with no catch-all: a new one is a
+/// compile error here. A slot is matched to its own row by its application or by
+/// its action — never by `app()` alone, which would match two native rows as
+/// two `None`s.
+pub(crate) fn a_window_is_open_behind(
+    place: &alo_dock::places::APlace,
+    on_the_dock: &[OnTheDock],
+) -> bool {
+    use alo_dock::places::WhatIsHere;
+    match place.what() {
+        WhatIsHere::Application(app) => on_the_dock
+            .iter()
+            .any(|one| one.app() == Some(app) && one.is_open()),
+        WhatIsHere::ANativeAction(action) => on_the_dock
+            .iter()
+            .any(|one| one.native() == Some(*action) && one.is_open()),
+        WhatIsHere::TheOverflow
+        | WhatIsHere::TheDivider
+        | WhatIsHere::TheComposer
+        | WhatIsHere::ShowAll
+        | WhatIsHere::History => false,
+    }
+}
+
 /// Where one slot's 48 × 48 target sits on the screen.
 ///
 /// **Centred across the bar's thickness, `along` down its edge** — the rule
@@ -1184,7 +1213,8 @@ pub(crate) fn picture(
         badges: &badges,
         badge: palette.badge,
         wells: &wells,
-        well_is: palette.badge,
+        // The composer's field, in the design's own fill for it.
+        well_is: palette.field,
         panel: band,
         fill: palette.dock,
         edge: palette.edge,
@@ -1265,6 +1295,41 @@ pub(crate) fn picture(
         // command, and the composer's for the field. `APlace::across` has
         // always been a field rather than a constant and this is why.
         let its_width = scale.px(place.across());
+        // **The mark that says this slot has a window open**, pushed before
+        // anything below decides how the slot itself is drawn — an icon, a
+        // letter or one of alo's own drawings — because every arm of that
+        // decision but the letter's ends in `continue`. Until 2026-11-20 this
+        // was pushed after it, and every application with an icon had no mark.
+        //
+        // Measured on the design file's `Open window indicator` — `348:23886`
+        // on the top Dock, `348:23686` on the left one, the same rectangle in
+        // both: 4 × 3, centred across the slot and flush to its bottom. **It
+        // does not rotate with the edge**: a Dock down the left side puts the
+        // mark under each icon exactly as a Dock along the bottom does, which
+        // is a measurement rather than an assumption — both variants were read.
+        //
+        // **Pinned but not open gets nothing**, which is the whole of the
+        // distinction the design calls *open indicators distinguish pinned from
+        // open*, and it is told by **width** rather than by colour.
+        //
+        // **The 12-wide focused mark is not drawn**, and this is where it would
+        // go. `alo_dock::OnTheDock` has no notion of focus — it knows pinned,
+        // open, and how many windows are put aside — and the shell's keyboard
+        // focus is a `WlSurface` that nothing maps back to an application here.
+        // Drawing the open mark for a focused application is the honest subset:
+        // it is never wrong, it is incomplete, and `A_FOCUSED_MARK_IS_WIDE` is
+        // declared and unused until something can answer the question.
+        if a_window_is_open_behind(place, on_the_dock) {
+            let wide = scale.px(alo_dock::measures::AN_OPEN_MARK_IS_WIDE);
+            let tall = scale.px(alo_dock::measures::A_RUNNING_MARK_IS_TALL);
+            solids.push(Solid {
+                area: alo_drawing::area::Area::new(
+                    (left + (its_width - wide) / 2, top + icon - tall).into(),
+                    (wide, tall).into(),
+                ),
+                colour: palette.ink,
+            });
+        }
         // **An application's initial on its badge, or the control's mark on the
         // bar.** The slot is the same size either way — ADR 0101 makes the
         // overflow one application slot — and what is in it is not: a letter
@@ -1394,46 +1459,6 @@ pub(crate) fn picture(
             ground,
             ink,
         );
-        // **The mark that says this application has a window open.**
-        //
-        // Measured on the design file's `Open window indicator` — `348:23886`
-        // on the top Dock, `348:23686` on the left one, the same rectangle in
-        // both: 4 × 3, centred across the slot and flush to its bottom. **It
-        // does not rotate with the edge**: a Dock down the left side puts the
-        // mark under each icon exactly as a Dock along the bottom does, which
-        // is a measurement rather than an assumption — both variants were read.
-        //
-        // **Pinned but not open gets nothing**, which is the whole of the
-        // distinction the design calls *open indicators distinguish pinned from
-        // open*, and it is told by **width** rather than by colour.
-        //
-        // **The 12-wide focused mark is not drawn**, and this is where it would
-        // go. `alo_dock::OnTheDock` has no notion of focus — it knows pinned,
-        // open, and how many windows are put aside — and the shell's keyboard
-        // focus is a `WlSurface` that nothing maps back to an application here.
-        // Drawing the open mark for a focused application is the honest subset:
-        // it is never wrong, it is incomplete, and `A_FOCUSED_MARK_IS_WIDE` is
-        // declared and unused until something can answer the question.
-        // **A native entry never gets one**, and not as a special case: it has
-        // no windows, so `is_open` is false for it and the `any` below finds
-        // nothing. The `place.app()` guard is what keeps the comparison from
-        // matching two `None`s — which would mark every native entry as open
-        // the moment another one existed.
-        if place.app().is_some_and(|here| {
-            on_the_dock
-                .iter()
-                .any(|one| one.app() == Some(here) && one.is_open())
-        }) {
-            let wide = scale.px(alo_dock::measures::AN_OPEN_MARK_IS_WIDE);
-            let tall = scale.px(alo_dock::measures::A_RUNNING_MARK_IS_TALL);
-            solids.push(Solid {
-                area: alo_drawing::area::Area::new(
-                    (left + (icon - wide) / 2, top + icon - tall).into(),
-                    (wide, tall).into(),
-                ),
-                colour: palette.ink,
-            });
-        }
         // **Centred on the letter's own rendered bounds, both ways.**
         //
         // `centred` now hands back a box trimmed to the ink actually in it, so
@@ -1510,7 +1535,8 @@ pub(crate) fn picture(
                 what,
                 if typing { room } else { field.size.w },
                 Metrics::new(size as f32, size as f32),
-                palette.badge,
+                // On the field's own colour, which is what is under them.
+                palette.field,
                 palette.ink,
             );
             let x = if from_the_left {
@@ -1599,6 +1625,10 @@ pub(crate) fn picture(
         the_name: None,
     })
 }
+
+#[cfg(test)]
+#[path = "dock_open_marks_tests.rs"]
+mod open_marks_tests;
 
 #[cfg(test)]
 #[expect(
@@ -3219,3 +3249,7 @@ mod tests {
 #[cfg(test)]
 #[path = "dock_raster_scale_tests.rs"]
 mod scale_tests;
+
+#[cfg(test)]
+#[path = "dock_composer_field_tests.rs"]
+mod composer_field_tests;

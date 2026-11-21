@@ -190,6 +190,15 @@ pub struct Call {
     /// written exactly as it always was.
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     the_machine_read: BTreeMap<String, String>,
+    /// **What a person calls each application this call names**, by
+    /// identifier, as the machine read it from the application's own entry
+    /// ([`Call::naming_applications`]) — so a sentence says *VSCodium* where
+    /// the value is `com.vscodium.codium`. Never a model's words, and never
+    /// the value: what runs, and what a grant is asked about, is still the
+    /// identifier. Written down with the call, so the record can say what the
+    /// person approved; left out when empty.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    called: BTreeMap<String, String>,
     /// What names what every call of this verb changes, where the verb says
     /// (`Verb::changing`). **Not recorded**: it is the verb's, not this
     /// call's, and the record keeps what ran.
@@ -268,6 +277,7 @@ impl Call {
             asks,
             sentence: verb.sentence().key().clone(),
             the_machine_read: BTreeMap::new(),
+            called: BTreeMap::new(),
             changes: verb.what_it_changes().map(Word::key),
             leaves: verb.what_it_leaves().map(Word::key),
         })
@@ -316,6 +326,32 @@ impl Call {
                 .filter(|(name, _)| !self.values.contains_key(*name))
                 .map(|(name, value)| ((*name).to_owned(), value.clone()))
                 .collect(),
+            ..self
+        }
+    }
+
+    /// The same call, with **each application it names said by what a person
+    /// calls it**, where `called` gives a name — the entry's `Name`, in their
+    /// language where it has one. An application `called` names nothing keeps
+    /// its identifier in the sentence, because that is all there is.
+    ///
+    /// **Only how the sentence says it.** The call's values are untouched, so
+    /// what runs, what a grant is asked about and what the record keeps as
+    /// having run are still the identifier. On 2026-11-20 a booted machine
+    /// told a person *open /home/alo/hello.txt in com.vscodium.codium*; a
+    /// person knows that application as VSCodium.
+    #[must_use]
+    pub fn naming_applications(self, called: &dyn Fn(&str) -> Option<String>) -> Self {
+        let mut named = self.called;
+        for value in self.values.values() {
+            if let Value::Application(identifier) = value
+                && let Some(name) = called(identifier).filter(|name| !name.trim().is_empty())
+            {
+                named.insert(identifier.clone(), name);
+            }
+        }
+        Self {
+            called: named,
             ..self
         }
     }
@@ -399,6 +435,15 @@ impl Call {
                 (None, Value::Text(_)) => filling.and_said(
                     argument.clone(),
                     &strings.say(&words::THE_TEXT_BELOW.key(), &Filling::nothing()),
+                ),
+                // **An application by what a person calls it**, where the
+                // machine read a name for it (`Call::naming_applications`).
+                (None, Value::Application(identifier)) => filling.and(
+                    argument.clone(),
+                    self.called
+                        .get(identifier)
+                        .cloned()
+                        .unwrap_or_else(|| value.describe()),
                 ),
                 (None, _) => filling.and(argument.clone(), value.describe()),
             };
@@ -1084,6 +1129,65 @@ mod tests {
         let said = instead.sentence(&strings).into_text();
         assert!(said.contains("/home/anna/Invoices/march.pdf"), "{said}");
         assert!(!said.contains("/somewhere/else.pdf"), "{said}");
+    }
+
+    /// The sentence of a verb that opens an application.
+    const OPENING_SENTENCE: Word = Word::saying("testing.naming.sentence", "open {application}");
+
+    /// A call opening the application with this identifier.
+    fn opening(identifier: &str) -> Call {
+        use crate::{Arg, Effect, Requires, Takes, Verb};
+        let verb = Verb::checked(
+            "open_application",
+            Word::saying("testing.naming.purpose", "open an application"),
+            Effect::Change,
+            vec![Arg::taking(
+                "application",
+                Word::saying("testing.naming.application", "the application"),
+                Takes::Application,
+            )],
+            Requires::nothing_because("a test verb that is never run"),
+            OPENING_SENTENCE,
+        )
+        .unwrap();
+        Call::of(&verb, &[("application", Given::text(identifier))]).unwrap()
+    }
+
+    /// **A sentence names an application by what a person calls it**, where
+    /// the machine read a name — *open VSCodium*, never *open
+    /// com.vscodium.codium* — while the call still carries, runs on and is
+    /// asked about by its identifier.
+    #[test]
+    fn a_sentence_names_an_application_by_what_a_person_calls_it() {
+        let strings = speaking_also(&[OPENING_SENTENCE]);
+        let vscodium =
+            |identifier: &str| (identifier == "com.vscodium.codium").then(|| "VSCodium".to_owned());
+        let named = opening("com.vscodium.codium").naming_applications(&vscodium);
+        assert_eq!(named.sentence(&strings).text(), "open VSCodium");
+        assert_eq!(
+            named.value("application"),
+            Some(&Value::Application("com.vscodium.codium".to_owned())),
+            "the name took the identifier's place in what runs"
+        );
+        assert_eq!(named.asks(), opening("com.vscodium.codium").asks());
+        let written = serde_json::to_string(&named).unwrap();
+        assert!(written.contains("com.vscodium.codium"), "{written}");
+        assert!(written.contains("VSCodium"), "{written}");
+
+        // **An application nothing names keeps its identifier**, which is all
+        // there is, and a blank name is no name.
+        let unnamed = opening("org.example.Nothing").naming_applications(&vscodium);
+        assert_eq!(
+            unnamed.sentence(&strings).text(),
+            "open org.example.Nothing"
+        );
+        let blank = opening("com.vscodium.codium").naming_applications(&|_| Some("  ".to_owned()));
+        assert_eq!(blank.sentence(&strings).text(), "open com.vscodium.codium");
+        // **And a call never named says what it always said.**
+        assert_eq!(
+            opening("com.vscodium.codium").sentence(&strings).text(),
+            "open com.vscodium.codium"
+        );
     }
 
     /// The test words and these, in English.

@@ -45,11 +45,9 @@ use std::process::ExitCode;
 
 use alo_capability::Verbs;
 use alo_every_try::compared_with_its_base::{compared, summary_of, the_flagged, verdict_of};
-use alo_every_try::counted::tallying_its_own;
-use alo_every_try::counted::{
-    counted, counted_with, summary_counting, the_flagged_of_its_own, with_more,
-};
+use alo_every_try::counted::{counted, summary_counting};
 use alo_every_try::its_own::{ItsOwn, its_own_against, owns_the_whole_set};
+use alo_every_try::judging_its_own::judging_its_own;
 use alo_every_try::the_bar::THE_BAR;
 use alo_every_try::the_bar::THE_CONFIRMING_TRIES;
 use alo_every_try::the_declaration::{Declared, THE_FILE};
@@ -208,6 +206,22 @@ fn the_record_against_its_base(set: &TheSet) -> Result<Reached, String> {
             each.join("; ")
         ))
     }
+}
+
+/// Append `text` to the file the variable `name` names, if it names one.
+fn appending(name: &str, text: &str) -> Result<(), String> {
+    let to = said(name, "");
+    if to.is_empty() {
+        return Ok(());
+    }
+    let failed = |why: std::io::Error| format!("{to} could not be written: {why}");
+    std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&to)
+        .map_err(failed)?
+        .write_all(text.as_bytes())
+        .map_err(failed)
 }
 
 /// Append `text` to the file the run named for what it measured, if any.
@@ -416,56 +430,41 @@ fn running() -> Result<u8, String> {
             (summary(&tallied, &asked_of), verdict(&tallied).exit_code())
         }
         Some(own) => {
-            let mut tallied = tallying_its_own(
+            let judgement = judging_its_own(
                 level,
                 &set,
                 own,
-                // **The bar's tries**, not the variable's, so the bar is one
-                // declared setting (`alo_every_try::the_bar`).
-                (THE_BAR.tries(), others),
+                others,
+                &|named| record.has(level, named),
                 &verbs,
                 &strings,
                 &mut asking,
                 &mut telling,
+                &asked_of,
             );
-            let mut written = summary_counting(&tallied, own, &asked_of);
-            // **Flag, then confirm** (approved 2026-11-20): what slipped on
-            // the first tries is tried again, and the verdict is on both.
-            let flagged = the_flagged_of_its_own(&tallied, own, &|named| record.has(level, named));
-            if !flagged.is_empty() && THE_CONFIRMING_TRIES > 0 {
-                let again = tallying_at(
-                    level,
-                    &set.clone()
-                        .retaining(|request| flagged.iter().any(|named| named == request.named())),
-                    THE_CONFIRMING_TRIES,
-                    &verbs,
-                    &strings,
-                    &mut asking,
-                    &mut telling,
-                );
-                tallied = with_more(tallied, again);
-                written.push_str(&format!(
-                    "\n### After {THE_CONFIRMING_TRIES} more tries of what was flagged\n\n"
-                ));
-                written.push_str(&summary_counting(&tallied, own, &asked_of));
+            writing_what_was_measured(&Measured::of(level, judgement.tallied()).written())?;
+            // **What is to be compared with the base**, for the workflow to
+            // try there (`ALO_EVERY_TRY_AGAINST_BASE`): each level, request and
+            // how many tries the change took, so the base takes as many.
+            if judgement.counted() == alo_every_try::counted::Counted::ToCompareWithItsBase {
+                let lines: String = judgement
+                    .to_compare_with_its_base()
+                    .iter()
+                    .map(|named| {
+                        let tries = judgement
+                            .tallied()
+                            .iter()
+                            .find(|one| one.request().named() == named.as_str())
+                            .map_or(0, |one| one.tries().len());
+                        format!(
+                            "{}\t{named}\t{tries}\n",
+                            what_each_has_reached::the_name_of(level)
+                        )
+                    })
+                    .collect();
+                appending("ALO_EVERY_TRY_AGAINST_BASE", &lines)?;
             }
-            writing_what_was_measured(&Measured::of(level, &tallied).written())?;
-            let held_to_every_try: Vec<&str> = own
-                .iter()
-                .map(|one| one.named())
-                .filter(|named| record.has(level, named))
-                .collect();
-            if !held_to_every_try.is_empty() {
-                written.push_str(&format!(
-                    "\nHeld to every try at this level, because each once took every try \
-                     here (`what-each-request-has-reached.txt`): {}.\n",
-                    held_to_every_try.join(", ")
-                ));
-            }
-            (
-                written,
-                counted_with(&tallied, own, &|named| record.has(level, named)).exit_code(),
-            )
+            (judgement.said().to_owned(), judgement.counted().exit_code())
         }
     };
     written.push_str(&format!(

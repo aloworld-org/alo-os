@@ -330,3 +330,27 @@ fn the_bar_is_said_for_the_workflow() {
     assert_eq!(output.status.code(), Some(0), "{}", said(&output));
     assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "10 10");
 }
+
+/// **Both sides must have been measured**: a base that measured nothing is
+/// refused rather than read as every request being new, and a change that
+/// measured nothing is not a pass.
+#[test]
+fn compare_needs_both_the_change_and_its_base_measured() {
+    let measured = a_file("compare-one-side.txt");
+    let empty = a_file("compare-empty.txt");
+    std::fs::write(&measured, "measured\tfull-access\tlist a folder\t10\t10\n")
+        .expect("it is written");
+    std::fs::write(&empty, "").expect("it is written");
+    let output = ran(the_check().arg("compare").arg(&measured).arg(&empty));
+    assert_eq!(output.status.code(), Some(2), "{}", said(&output));
+    assert!(
+        said(&output).contains("base measured nothing"),
+        "{}",
+        said(&output)
+    );
+    let output = ran(the_check().arg("compare").arg(&empty).arg(&measured));
+    assert_eq!(output.status.code(), Some(2), "{}", said(&output));
+    for file in [measured, empty] {
+        let _ = std::fs::remove_file(&file);
+    }
+}

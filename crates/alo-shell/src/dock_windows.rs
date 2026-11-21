@@ -250,7 +250,7 @@ impl crate::Server {
     /// a machine with no saved pins should show anyway.
     #[must_use]
     pub fn what_the_dock_holds(&self, pinned: &alo_dock::Holding) -> Vec<alo_dock::OnTheDock> {
-        pinned.showing(&self.the_windows_the_dock_sees())
+        self.with_alos_own_windows(pinned.showing(&self.the_windows_the_dock_sees()))
     }
 
     /// The entries *More apps* shows, in the order it shows them.
@@ -266,7 +266,34 @@ impl crate::Server {
     /// the two are one walk and cannot come to disagree.
     #[must_use]
     pub fn what_more_apps_holds(&self, pinned: &alo_dock::Holding) -> Vec<alo_dock::OnTheDock> {
-        pinned.in_the_overview(&self.the_windows_the_dock_sees())
+        self.with_alos_own_windows(pinned.in_the_overview(&self.the_windows_the_dock_sees()))
+    }
+
+    /// The rows, each of alo's own entries told whether its window is open.
+    ///
+    /// **Both lists above come through here**, so the bar and *More apps* mark
+    /// an open Settings or market as they mark an open application: the
+    /// design's open mark is under every slot with a window open, and these two
+    /// windows are the shell's own rather than ones `alo_dock::Windows` holds.
+    fn with_alos_own_windows(&self, rows: Vec<alo_dock::OnTheDock>) -> Vec<alo_dock::OnTheDock> {
+        rows.into_iter()
+            .map(|row| {
+                let open = row
+                    .native()
+                    .is_some_and(|action| self.the_window_it_opens_is_open(action));
+                row.with_alos_own_window_open(open)
+            })
+            .collect()
+    }
+
+    /// Whether the window one of alo's own entries opens is open, on any Place
+    /// and aside or not — as an application with every window put aside is
+    /// still open. Every action named, so a third is a compile error here.
+    const fn the_window_it_opens_is_open(&self, action: alo_dock::ANativeAction) -> bool {
+        match action {
+            alo_dock::ANativeAction::Settings => self.settings.is_open(),
+            alo_dock::ANativeAction::Applications => self.market.is_open(),
+        }
     }
 
     /// Who is on **this person's** Dock: [`Self::what_the_dock_holds`] asked

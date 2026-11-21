@@ -517,6 +517,27 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         .expecting(fallback_verbs::APPLICATION, browser.as_str())
         .expecting(fallback_verbs::TO, FURTHER_DOWN),
     ])
+    // **And the heading read on the screen, then scrolled to by name anyway**:
+    // the machine answers a scroll to a thing already on the screen
+    // (`alo_adapters::scrolling`, *already on the screen*), so this reaches
+    // the same place. Run 44807502026: three of the four misses at 10 tries
+    // were that scroll, after the whole of the road above.
+    .or_by_another_road(vec![
+        Step::of(
+            READ_WINDOW,
+            Answered::With(Done::of_a_window_read(&the_page, &[])),
+        )
+        .expecting(fallback_verbs::APPLICATION, browser.as_str())
+        .a_look(),
+        a_page_down(&browser),
+        the_window_read_again(&the_page_further_down, &browser),
+        Step::of(
+            SCROLL_TO,
+            Answered::With(Done::of_a_scroll(&browser, FURTHER_DOWN, false, true)),
+        )
+        .expecting(fallback_verbs::APPLICATION, browser.as_str())
+        .expecting(fallback_verbs::TO, FURTHER_DOWN),
+    ])
     // **Reading the window again after is aside of the road**: the model is
     // told to, and the machine answers it.
     .or_looking_at(the_window_read_again(&the_page, &browser));
@@ -861,7 +882,11 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             )
             .expecting(fallback_verbs::APPLICATION, browser.as_str())
             .expecting(fallback_verbs::FIELD, SEARCH)
-            .expecting(fallback_verbs::TEXT, SEARCHED_FOR),
+            .expecting(fallback_verbs::TEXT, SEARCHED_FOR)
+            // **The search box is one line**, so typing that saves is refused
+            // there before the card, as the machine refuses it since
+            // 2026-11-20 (`crate::typing_that_saves_a_field`).
+            .a_one_line_field(),
         ],
     )
     .or_looking_at(

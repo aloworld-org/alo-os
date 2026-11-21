@@ -70,6 +70,9 @@
 /// Whether a slider or number box a move names is in the window, before the
 /// card.
 pub mod a_control_to_set;
+/// Typing that saves is for a document, not a one-line field: refused before
+/// the card and when it runs.
+pub mod a_one_line_field;
 /// Whether a picture of an application's windows may be taken (ADR 0147 §1).
 pub mod a_picture_may_be_taken;
 #[cfg(target_os = "linux")]
@@ -135,6 +138,7 @@ mod whose_connection;
 pub mod words;
 
 pub use a_control_to_set::not_there_to_set;
+pub use a_one_line_field::{a_one_line_field_said, a_one_line_field_to_save};
 #[cfg(target_os = "linux")]
 pub use accessibility_bus::AccessibleSession;
 pub use accessibility_tree::{AccessibilityTree, Bounds, Edge, Facts, NodeAt, Running, TreeFault};

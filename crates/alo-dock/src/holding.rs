@@ -47,9 +47,11 @@ use crate::windows::Windows;
 /// One thing on the Dock.
 ///
 /// **An application or a native action**, since the owner's ruling of
-/// 2026-10-12. A native row has no windows and never will, so every count below
-/// answers zero for it — which is true rather than a special case, and is why
-/// the membership rule needs no arm for it.
+/// 2026-10-12. A native row has none of the windows [`Windows`] holds, so it is
+/// built with every count at zero and the membership rule needs no arm for it.
+/// The one window it can have is alo's own — Settings, or the market — which
+/// the shell knows about and this crate does not, and the shell says so with
+/// [`OnTheDock::with_alos_own_window_open`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OnTheDock {
     /// Which thing.
@@ -127,6 +129,28 @@ impl OnTheDock {
     #[must_use]
     pub const fn how_many_put_aside(&self) -> usize {
         self.put_aside
+    }
+
+    /// This row, told whether **the window of alo's own that it opens** is open.
+    ///
+    /// A native row is built with no windows, because Settings and the market
+    /// are the compositor's own surfaces and not windows [`Windows`] holds. The
+    /// shell knows whether they are open and says so here, so an open entry of
+    /// alo's is open on the Dock exactly as an open application is, and is
+    /// marked as one (`348:23886`, *Open window indicator*).
+    ///
+    /// **An application's row comes back unchanged**, whatever `open` says: its
+    /// windows are counted from [`Windows`], and a second count from anywhere
+    /// else would be two answers to one question.
+    #[must_use]
+    pub fn with_alos_own_window_open(self, open: bool) -> Self {
+        match self.what {
+            ADockEntry::Native(_) => Self {
+                windows: usize::from(open),
+                ..self
+            },
+            ADockEntry::Application(_) => self,
+        }
     }
 
     /// Whether this application belongs on the Dock at all.
@@ -670,6 +694,15 @@ mod tests {
             its_row.belongs_on_the_dock(),
             "a native entry the person pinned was dropped by the membership rule"
         );
+
+        // **Told its window is open, it is open; told not, it is not.**
+        let opened = its_row.clone().with_alos_own_window_open(true);
+        assert!(
+            opened.is_open(),
+            "Settings' window is open and its row is not"
+        );
+        assert_eq!(opened.how_many_windows(), 1);
+        assert!(!opened.with_alos_own_window_open(false).is_open());
         // And the application beside it is still an ordinary row, so this
         // cannot pass by every row having become native.
         assert_eq!(row(&shown, 1).app().map(AppId::name), Some("Browser"));

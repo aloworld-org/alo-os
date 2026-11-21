@@ -41,13 +41,21 @@ const AGENT: &str = "@typing";
 /// What alo is approved to type.
 const THE_TEXT: &str = "<p>\n\thello, 日本\n</p>\n";
 
-/// Showing and editable; and with the keyboard.
-const EDITABLE: u32 = (1 << 25) | (1 << 7);
+/// `ATSPI_STATE_MULTI_LINE` and `_SINGLE_LINE`.
+const MULTI_LINE: u32 = 1 << 17;
+const SINGLE_LINE: u32 = 1 << 26;
+
+/// Showing, editable and of many lines, as VSCodium's editor says it is
+/// (`docs/autonomy/updates/how-alo-can-type-into-an-application.md`); and
+/// with the keyboard.
+const EDITABLE: u32 = (1 << 25) | (1 << 7) | MULTI_LINE;
 const FOCUSED: u32 = EDITABLE | (1 << 12);
 
 /// How the field is, as a test arranges it.
 #[derive(Clone)]
 struct TheField {
+    /// Its name, and the name the typing is given.
+    name: &'static str,
     role: u32,
     states: u32,
     takes_text: bool,
@@ -65,6 +73,7 @@ struct TheField {
 impl TheField {
     fn an_editor() -> Self {
         Self {
+            name: "index.html",
             role: 79,
             states: FOCUSED,
             takes_text: false,
@@ -72,6 +81,15 @@ impl TheField {
             rewrites_what_is_put_in: false,
             text: Rc::new(RefCell::new(String::new())),
             opened: Rc::new(Cell::new(0)),
+        }
+    }
+
+    /// A search box: an entry of one line, with the keyboard.
+    fn a_search_box() -> Self {
+        Self {
+            name: "Search",
+            states: (1 << 25) | (1 << 7) | (1 << 12) | SINGLE_LINE,
+            ..Self::an_editor()
         }
     }
 }
@@ -111,7 +129,7 @@ impl AccessibilityTree for ATree {
                 1 << 25,
                 vec![at("/field")],
             )),
-            "/field" => Ok(facts(self.0.role, "index.html", self.0.states, Vec::new())),
+            "/field" => Ok(facts(self.0.role, self.0.name, self.0.states, Vec::new())),
             _ => Err(TreeFault::Vanished),
         }
     }
@@ -251,6 +269,8 @@ struct Ran {
     asked: Vec<String>,
     entries: usize,
     opened: usize,
+    /// The cards waiting once the typing was proposed, before any answer.
+    waiting: usize,
 }
 
 /// Propose typing `THE_TEXT` into `index.html`, and approve it once — or
@@ -321,9 +341,35 @@ fn typing_once_by(
     )
 }
 
-/// The one body: `verb` into `application`, under `terminal`, answered as
-/// `approve`.
+/// `verb` into `application`, under `terminal`, answered as `approve`.
 fn typing_once_as(
+    verb: &str,
+    application: &str,
+    terminal: ATerminalForTheAgent,
+    field: TheField,
+    whose: Typed,
+    rewriting: fn(&str) -> String,
+    approve: Answering,
+) -> Ran {
+    typing_once_granting(
+        application,
+        verb,
+        application,
+        terminal,
+        field,
+        whose,
+        rewriting,
+        approve,
+    )
+}
+
+/// The one body, with `granted` the application the agent was granted.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "a test's one body, each argument a thing a test varies"
+)]
+fn typing_once_granting(
+    granted: &str,
     verb: &str,
     application: &str,
     terminal: ATerminalForTheAgent,
@@ -343,6 +389,8 @@ fn typing_once_as(
         asked: asked.clone(),
     };
     let opened = field.opened.clone();
+    let name = field.name;
+    let mut waiting = 0;
     let mut windows = TheWindows(field);
     let mut indicator = Indicator::default();
     let mut record = Record::default();
@@ -375,7 +423,7 @@ fn typing_once_as(
         grants.grant(
             Grant::checked_for_when(
                 &Grantee::named(AGENT),
-                Reach::Application(application.to_owned()),
+                Reach::Application(granted.to_owned()),
                 noon(),
                 hour(),
                 terminal,
@@ -394,7 +442,7 @@ fn typing_once_as(
         };
         let given = [
             ("application", Given::text(application)),
-            (the_field, Given::text("index.html")),
+            (the_field, Given::text(name)),
             ("text", Given::text(THE_TEXT)),
         ];
         match approve {
@@ -416,7 +464,15 @@ fn typing_once_as(
             }
             Answering::Approving | Answering::Declining => {
                 let id = turning.proposing(verb, &given, &grants, hour(), noon());
-                assert_eq!(opened.get(), 0, "a proposal opened the tree");
+                waiting = turning.waiting_at(noon()).count();
+                // **Typing that saves reads the window once before the card**,
+                // to see it is not aimed at a one-line field (2026-11-20);
+                // typing that does not save never does.
+                assert!(
+                    opened.get() <= usize::from(verb == TYPE_TEXT),
+                    "a proposal opened the tree {} times",
+                    opened.get()
+                );
                 assert!(asked.borrow().is_empty(), "a proposal asked the compositor");
                 match id {
                     Err(refused) => Err(refused),
@@ -435,6 +491,7 @@ fn typing_once_as(
         asked,
         entries,
         opened: opened.get(),
+        waiting,
     }
 }
 
@@ -463,7 +520,8 @@ fn one_approval_types_once_by_keys_reads_back_and_saves() {
             format!("save-in {EDITOR}"),
         ]
     );
-    assert_eq!(ran.opened, 1);
+    // Once before the card, to see it is no one-line field; once to type.
+    assert_eq!(ran.opened, 2);
     assert_eq!(ran.entries, 1);
 }
 
@@ -574,10 +632,11 @@ fn keys_are_never_sent_to_a_field_without_the_keyboard() {
 }
 
 #[test]
-fn a_declined_typing_opens_nothing_and_asks_nothing() {
+fn a_declined_typing_types_nothing_and_asks_nothing() {
     let ran = typing_once(TheField::an_editor(), Typed::MayType, as_it_is, false);
     assert!(ran.answered.is_ok());
-    assert_eq!(ran.opened, 0);
+    // Read once before the card, to see it is no one-line field; never again.
+    assert_eq!(ran.opened, 1);
     assert!(ran.asked.is_empty());
     assert_eq!(ran.entries, 1);
 }
@@ -856,4 +915,135 @@ fn typing_without_saving_into_the_persons_own_window_is_refused_at_either_level(
         );
         assert_eq!(ran.entries, 1, "{answering:?}");
     }
+}
+
+/// What a refusal said, in English.
+fn said(answered: &Result<Option<crate::WhatAVerbDid>, NotDone>) -> String {
+    match answered {
+        Err(NotDone::Refused(refused)) => refused.said(&in_english()).text().to_owned(),
+        _ => String::new(),
+    }
+}
+
+/// What typing that saves into a search box named *Search* is refused in.
+fn a_search_box_refused() -> String {
+    alo_adapters::a_one_line_field_said(EDITOR, "Search", &in_english())
+        .text()
+        .to_owned()
+}
+
+/// **Typing that saves, aimed at a search box, is refused before the card**
+/// at ask each time (the owner, 2026-11-20): saving there would save the web
+/// page. The words name the typing that does not save, no card waits, nothing
+/// is typed or asked of the compositor, and the refusal is recorded.
+#[test]
+fn typing_that_saves_into_a_search_box_is_refused_before_the_card() {
+    let ran = typing_once(TheField::a_search_box(), Typed::MayType, as_it_is, true);
+    assert!(
+        matches!(ran.answered, Err(NotDone::Refused(_))),
+        "a search box was typed into and saved: {:?}",
+        ran.answered
+    );
+    let said = said(&ran.answered);
+    assert_eq!(said, a_search_box_refused());
+    assert!(said.contains(alo_adapters::TYPE_WITHOUT_SAVING), "{said}");
+    assert_eq!(
+        ran.waiting, 0,
+        "a card was left for a save that must not happen"
+    );
+    assert!(
+        ran.asked.is_empty(),
+        "the compositor was asked: {:?}",
+        ran.asked
+    );
+    assert_eq!(ran.opened, 1, "the window was read once, before the card");
+    assert_eq!(ran.entries, 1, "the refusal is recorded");
+}
+
+/// **And at full access, in the same words**, before anything is typed.
+#[test]
+fn typing_that_saves_into_a_search_box_is_refused_at_full_access_in_the_same_words() {
+    let ran = typing_once_by(
+        TYPE_TEXT,
+        TheField::a_search_box(),
+        Typed::MayType,
+        as_it_is,
+        Answering::AtFullAccess,
+    );
+    assert!(
+        matches!(ran.answered, Err(NotDone::Refused(_))),
+        "a search box was typed into and saved at full access: {:?}",
+        ran.answered
+    );
+    assert_eq!(said(&ran.answered), a_search_box_refused());
+    assert!(
+        ran.asked.is_empty(),
+        "the compositor was asked: {:?}",
+        ran.asked
+    );
+    assert_eq!(ran.entries, 1, "the refusal is recorded");
+}
+
+/// **A document of many lines is still proposed, typed and saved**, at both
+/// levels — VSCodium's editor, an entry that says it is many lines.
+#[test]
+fn typing_that_saves_into_a_document_is_still_proposed_and_typed_at_both_levels() {
+    for answering in [Answering::Approving, Answering::AtFullAccess] {
+        let ran = typing_once_by(
+            TYPE_TEXT,
+            TheField::an_editor(),
+            Typed::MayType,
+            as_it_is,
+            answering,
+        );
+        let did = ran.answered.unwrap().expect("carried out");
+        let typed = did.typed().expect("a text was typed");
+        assert!(typed.saved(), "{answering:?}");
+        assert_eq!(
+            ran.asked,
+            [
+                format!("type-into {EDITOR} {}", THE_TEXT.len()),
+                format!("save-in {EDITOR}"),
+            ],
+            "{answering:?}"
+        );
+    }
+    let proposed = typing_once(TheField::an_editor(), Typed::MayType, as_it_is, false);
+    assert_eq!(proposed.waiting, 1, "no card was asked for a document");
+}
+
+/// **Typing without saving is never refused for a search box**, and never
+/// reads the window before its card: the field is what it is for.
+#[test]
+fn typing_without_saving_into_a_search_box_is_proposed_and_typed() {
+    let ran = typing_once_by(
+        alo_adapters::TYPE_WITHOUT_SAVING,
+        TheField::a_search_box(),
+        Typed::MayType,
+        as_it_is,
+        Answering::Approving,
+    );
+    let did = ran.answered.unwrap().expect("carried out");
+    assert!(did.typed().is_some_and(|typed| !typed.saved()));
+    assert_eq!(ran.opened, 1, "read only when it ran");
+}
+
+/// **An application nobody granted is refused without the window being
+/// read**: the grants are asked before the look for a one-line field.
+#[test]
+fn typing_into_an_application_nobody_granted_never_reads_its_window() {
+    let ran = typing_once_granting(
+        "org.example.Elsewhere",
+        TYPE_TEXT,
+        EDITOR,
+        ATerminalForTheAgent::NotAtAll,
+        TheField::a_search_box(),
+        Typed::MayType,
+        as_it_is,
+        Answering::Approving,
+    );
+    assert!(ran.answered.is_err(), "{:?}", ran.answered);
+    assert_eq!(ran.opened, 0, "a window nobody granted was read");
+    assert_eq!(ran.waiting, 0);
+    assert!(ran.asked.is_empty());
 }

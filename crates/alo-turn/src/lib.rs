@@ -167,6 +167,7 @@ mod a_question_that_leaves_this_machine;
 mod acting_on_an_application;
 pub mod answering_for;
 pub mod answers;
+mod applications_named_as_a_person_calls_them;
 pub mod arriving;
 mod as_a_double_click_would;
 pub mod asking;
@@ -228,6 +229,7 @@ mod the_sentence_is_about_something;
 pub mod the_shape_a_provider_is_held_to;
 #[cfg(test)]
 mod the_shape_a_provider_is_held_to_tests;
+mod the_typing_that_saves_is_for_a_document;
 pub mod the_verbs_would_not_declare;
 mod the_windows_on_the_screen;
 pub mod turning;

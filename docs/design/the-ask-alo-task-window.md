@@ -173,6 +173,15 @@ are Label/Medium; the `alo task · Work` line and the shared-file count are
 Label/Small; message bodies are Body/Large; activity lines are Body/Medium. The
 processing destination is **12 / 22 Regular**, which matches no named style.
 
+**The two speaker labels are not the same style, measured 2026-11-20.** A read
+of `417:27689` (the conversation of *Working*, `417:27666`) gives *alo*
+(`417:27695`) in Label/Medium, `accent/default`, 8 above the reply; and *You*
+(`417:27692`) in **Label/Small**, 11 / 16, `text/primary`, inside the bubble 16
+from its top and 6 above the words. The sentence above, which says Label/Medium
+for both, was written from the export's style list and not from the node. The
+window draws what the node says: `alo_tasks::measures::UNDER_YOUR_LABEL` and
+`UNDER_ALOS_LABEL`, and `crate::task_raster`'s `the_speakers_label`.
+
 **Bold, headings and code inside alo's answers** are drawn in styles from
 this table — the owner's decision of 2026-10-28, in
 [emphasis-in-alos-answers.md](emphasis-in-alos-answers.md).

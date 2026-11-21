@@ -156,3 +156,17 @@ nonsense
     .expect_err("a line of no kind");
     assert!(refused.to_string().contains("at line 3"), "{refused}");
 }
+
+/// **What was measured says how many tries the model could not be asked**, and
+/// a line from before it said so reads as none.
+#[test]
+fn what_was_measured_counts_the_tries_not_asked() {
+    let measured = Measured::read("measured\tfull-access\topen it\t7\t10\t3\n").expect("it reads");
+    assert_eq!(measured.not_asked().collect::<Vec<_>>(), [3]);
+    assert_eq!(
+        Measured::read(&measured.written()).expect("it reads"),
+        measured
+    );
+    let older = Measured::read("measured\tfull-access\topen it\t7\t10\n").expect("it reads");
+    assert_eq!(older.not_asked().collect::<Vec<_>>(), [0]);
+}

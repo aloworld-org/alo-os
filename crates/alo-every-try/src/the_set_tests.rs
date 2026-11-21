@@ -45,7 +45,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 29);
+    assert_eq!(THE_VERSION, 35);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -352,12 +352,16 @@ fn scrolling_down_until_a_heading_shows_may_go_a_page_at_a_time() {
         .expect("the set scrolls to a thing");
     let verbs = |road: &[Step]| road.iter().map(Step::verb).collect::<Vec<_>>();
     assert_eq!(verbs(request.road()), [READ_WINDOW, SCROLL_TO]);
-    let [read, named] = request.other_roads() else {
-        panic!("two other roads: {:?}", request.other_roads());
+    let [read, named, read_and_named] = request.other_roads() else {
+        panic!("three other roads: {:?}", request.other_roads());
     };
     assert_eq!(verbs(read), [READ_WINDOW, SCROLL_PAGE, READ_WINDOW]);
     assert_eq!(verbs(named), [READ_WINDOW, SCROLL_PAGE, SCROLL_TO]);
-    for other in [read, named] {
+    assert_eq!(
+        verbs(read_and_named),
+        [READ_WINDOW, SCROLL_PAGE, READ_WINDOW, SCROLL_TO]
+    );
+    for other in [read, named, read_and_named] {
         assert!(
             other
                 .iter()
@@ -637,6 +641,79 @@ fn a_slider_named_wrongly_is_refused_before_the_card_and_the_try_goes_on() {
     }
 }
 
+/// **Typing that saves, aimed at the search box, is refused before the card**,
+/// as the machine refuses it at both levels since 2026-11-20 (the owner:
+/// saving there would save the web page) — in words that name the typing that
+/// does not save; a try that then types without saving takes the road, said to
+/// have been refused first. Typing that saves and then answering is not the
+/// road.
+#[test]
+fn typing_that_saves_into_the_search_box_is_refused_and_the_try_goes_on() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, the_words};
+    use alo_adapters::fallback_verbs::{
+        APPLICATION, FIELD, NAME, TEXT, TYPE_TEXT, TYPE_WITHOUT_SAVING,
+    };
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "type into a search box without saving")
+        .expect("the set has it");
+    let typing = request
+        .road()
+        .iter()
+        .find(|step| step.verb() == TYPE_WITHOUT_SAVING)
+        .expect("the road types without saving");
+    assert!(typing.is_a_one_line_field());
+    let expected = |argument: &str| {
+        typing
+            .expected()
+            .iter()
+            .find(|(arg, _)| *arg == argument)
+            .map(|(_, is)| is.clone())
+            .expect("the road names it")
+    };
+    let (browser, search, text) = (expected(APPLICATION), expected(FIELD), expected(TEXT));
+    let saving = proposing(
+        TYPE_TEXT,
+        &[(APPLICATION, &browser), (NAME, &search), (TEXT, &text)],
+    );
+    let not_saving = proposing(
+        TYPE_WITHOUT_SAVING,
+        &[(APPLICATION, &browser), (FIELD, &search), (TEXT, &text)],
+    );
+    let answer = answering("I typed it into the search box.");
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let try_these = |lines: &[String]| {
+            let mut model = Writing::these(lines);
+            let tried = one_try_at(
+                level,
+                request,
+                set.may_reach(),
+                &the_verbs(),
+                &the_words(),
+                &mut model,
+            );
+            (tried, model.shown)
+        };
+        let (went_on, shown) = try_these(&[saving.clone(), not_saving.clone(), answer.clone()]);
+        assert_eq!(went_on.went(), &Went::TheRoad, "{level:?}: {went_on:?}");
+        assert_eq!(went_on.refused_before_asking(), 1, "{level:?}");
+        assert!(
+            shown.get(1).is_some_and(|second| {
+                second.contains("is a one-line field") && second.contains(TYPE_WITHOUT_SAVING)
+            }),
+            "{level:?}: the refusal is shown: {shown:?}"
+        );
+        // **The refusal case**: typing that saves and then answering is not
+        // the road.
+        let (stopped, _) = try_these(&[saving.clone(), answer.clone()]);
+        assert!(!stopped.took_the_road(), "{level:?}: {stopped:?}");
+    }
+}
+
 /// **A file named by a path where nothing is is refused as the machine
 /// refuses it**, and the try goes on: a read of a path that names nothing is
 /// answered by `alo_files::Touching` with *there is nothing at …*, at both
@@ -784,4 +861,210 @@ fn a_path_through_home_is_the_same_file_at_full_access() {
         &[elsewhere, typing.clone(), answer.clone()],
     );
     assert!(!wrong.took_the_road(), "{wrong:?}");
+}
+
+/// **A call the machine turns away as it is written is refused in its words,
+/// and the try goes on**: a booted machine builds every call through
+/// `Verbs::call` before anything else (`alo_turn::Turning::calling`), turns a
+/// text with nothing in it away there, at both levels, and the agent's loop
+/// reads the refusal as a step (`alo_agentd`'s `not_done`). Runs 44793910551,
+/// 44803684908 and 44793268747: the model sent `accessible.type_text` with an
+/// empty text to the Reload button in five tries, and the check ended each
+/// where the machine would have answered.
+#[test]
+fn a_call_turned_away_as_written_is_refused_and_the_try_goes_on() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, the_words};
+    use alo_adapters::fallback_verbs::{ACTIVATE_CONTROL, APPLICATION, KIND, NAME};
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "press a button in an application")
+        .expect("the set has it");
+    let pressing = request
+        .road()
+        .iter()
+        .find(|step| step.verb() == ACTIVATE_CONTROL)
+        .expect("the road presses");
+    let expected = |argument: &str| {
+        pressing
+            .expected()
+            .iter()
+            .find(|(arg, _)| *arg == argument)
+            .map(|(_, is)| is.clone())
+            .expect("the road names it")
+    };
+    let (browser, kind, reload) = (expected(APPLICATION), expected(KIND), expected(NAME));
+    let nothing_typed = proposing(
+        TYPE_TEXT,
+        &[(APPLICATION, &browser), (NAME, &reload), (TEXT, "")],
+    );
+    let press = proposing(
+        ACTIVATE_CONTROL,
+        &[(APPLICATION, &browser), (KIND, &kind), (NAME, &reload)],
+    );
+    let answer = answering("Reload is pressed.");
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let try_these = |lines: &[String]| {
+            let mut model = Writing::these(lines);
+            let tried = one_try_at(
+                level,
+                request,
+                set.may_reach(),
+                &the_verbs(),
+                &the_words(),
+                &mut model,
+            );
+            (tried, model.shown)
+        };
+        let (went_on, shown) = try_these(&[nothing_typed.clone(), press.clone(), answer.clone()]);
+        assert_eq!(went_on.went(), &Went::TheRoad, "{level:?}: {went_on:?}");
+        assert_eq!(went_on.refused_before_asking(), 1, "{level:?}");
+        let said = alo_capability::CallError::Argument(alo_capability::ArgError::Empty {
+            argument: TEXT.to_owned(),
+        })
+        .said(&the_words())
+        .into_text();
+        assert!(
+            shown.get(1).is_some_and(|second| second.contains(&said)),
+            "{level:?}: the machine's own refusal is shown, {said:?}: {shown:?}"
+        );
+        // **The refusal cases**: turned away and then answering is not the
+        // road, and a call the machine takes, on another verb, still leaves it.
+        let (stopped, _) = try_these(&[nothing_typed.clone(), answer.clone()]);
+        assert!(!stopped.took_the_road(), "{level:?}: {stopped:?}");
+        let typed = proposing(
+            TYPE_TEXT,
+            &[(APPLICATION, &browser), (NAME, &reload), (TEXT, "x")],
+        );
+        let (wrong_verb, _) = try_these(&[typed, press.clone(), answer.clone()]);
+        assert!(!wrong_verb.took_the_road(), "{level:?}: {wrong_verb:?}");
+    }
+}
+
+/// **A call turned away leaves the try on the road it was on**: the refusal is
+/// not a step, so a request with another road that the refused verb would
+/// have parted onto is still held to its own, and the next correct step
+/// passes (the rule #1393 set for every refusal before asking).
+#[test]
+fn a_call_turned_away_leaves_the_try_on_its_road() {
+    use crate::a_road::Answered;
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, the_words};
+    use alo_adapters::fallback_verbs::{ACTIVATE_CONTROL, APPLICATION, KIND, NAME};
+
+    let set = the_set().expect("the set builds");
+    let firefox = "org.mozilla.firefox";
+    let press = || {
+        Step::of(ACTIVATE_CONTROL, Answered::TypedAndSaved)
+            .expecting(APPLICATION, firefox)
+            .expecting(NAME, "Reload")
+    };
+    let typing = || {
+        Step::of(TYPE_TEXT, Answered::TypedAndSaved)
+            .expecting(APPLICATION, firefox)
+            .expecting(NAME, "Reload")
+    };
+    let request = ARequest::asking("press", "Press Reload in Firefox.", vec![press()])
+        .or_by_another_road(vec![typing()]);
+    let nothing_typed = proposing(
+        TYPE_TEXT,
+        &[(APPLICATION, firefox), (NAME, "Reload"), (TEXT, "")],
+    );
+    let pressed = proposing(
+        ACTIVATE_CONTROL,
+        &[(APPLICATION, firefox), (KIND, "button"), (NAME, "Reload")],
+    );
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let tried = one_try_at(
+            level,
+            &request,
+            set.may_reach(),
+            &the_verbs(),
+            &the_words(),
+            &mut Writing::these(&[
+                nothing_typed.clone(),
+                pressed.clone(),
+                answering("Pressed."),
+            ]),
+        );
+        assert_eq!(tried.went(), &Went::TheRoad, "{level:?}: {tried:?}");
+        assert_eq!(tried.refused_before_asking(), 1, "{level:?}");
+        assert!(!tried.by_the_other_road(), "{level:?}: {tried:?}");
+    }
+}
+
+/// **A heading read on the screen and then scrolled to by name reaches the same
+/// place**: the machine answers a scroll to a thing already on the screen
+/// (`alo_adapters::scrolling`, *already on the screen*, or scrolled), so a try
+/// that pages down, reads the heading there, and scrolls to it anyway takes
+/// the road, by another road. Run 44807502026 (10 tries on main): three of the
+/// four misses were that scroll, after the whole of the other road.
+#[test]
+fn a_heading_read_on_the_screen_may_still_be_scrolled_to_by_name() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::every_other_verb::FURTHER_DOWN;
+    use crate::testing::{Writing, answering, proposing, reading, the_words};
+    use alo_adapters::fallback_verbs::{APPLICATION, SCROLL_PAGE, SCROLL_TO, TO, TOWARD};
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "scroll to a named thing in an application")
+        .expect("the set scrolls to a thing");
+    let browser = request
+        .road()
+        .first()
+        .and_then(|look| {
+            look.expected()
+                .iter()
+                .find(|(arg, _)| *arg == APPLICATION)
+                .map(|(_, is)| is.clone())
+        })
+        .expect("the look names its application");
+    let page = proposing(SCROLL_PAGE, &[(APPLICATION, &browser), (TOWARD, "down")]);
+    let look = reading(READ_WINDOW, &[(APPLICATION, &browser)]);
+    let to = |name: &str| proposing(SCROLL_TO, &[(APPLICATION, &browser), (TO, name)]);
+    let answer = answering("The heading Downloads is on the screen.");
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let try_these = |lines: &[String]| {
+            one_try_at(
+                level,
+                request,
+                set.may_reach(),
+                &the_verbs(),
+                &the_words(),
+                &mut Writing::these(lines),
+            )
+        };
+        let scrolled_anyway =
+            try_these(&[page.clone(), look.clone(), to(FURTHER_DOWN), answer.clone()]);
+        assert_eq!(
+            scrolled_anyway.went(),
+            &Went::TheRoad,
+            "{level:?}: {scrolled_anyway:?}"
+        );
+        let read_it = try_these(&[page.clone(), look.clone(), answer.clone()]);
+        assert_eq!(read_it.went(), &Went::TheRoad, "{level:?}: {read_it:?}");
+        // **The refusal cases**: scrolling to something else, or scrolling to
+        // it twice, is not the road.
+        let elsewhere = try_these(&[
+            page.clone(),
+            look.clone(),
+            to("Getting started"),
+            answer.clone(),
+        ]);
+        assert!(!elsewhere.took_the_road(), "{level:?}: {elsewhere:?}");
+        let twice = try_these(&[
+            page.clone(),
+            look.clone(),
+            to(FURTHER_DOWN),
+            to(FURTHER_DOWN),
+            answer.clone(),
+        ]);
+        assert!(!twice.took_the_road(), "{level:?}: {twice:?}");
+    }
 }
