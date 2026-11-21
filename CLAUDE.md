@@ -463,6 +463,31 @@ cannot demonstrate.
   rather than left in a diff. **A screenshot is not a specification** —
   take the numbers off the frames and record them, because a layout
   matched by eye is a layout nobody can check.
+- **A rule applies everywhere it is true, not where it was fixed.**
+  *The owner, 2026-11-21: "Laws, designs should be applied to all the
+  applications not just one that we are working on, please add it and
+  we do not want to see that error again."* A law, a design decision or
+  an owner's answer binds **every** application, window and surface it
+  describes: alo's own and every one a person installs, not the one in
+  front of the lane that wrote the fix.
+
+  So a fix is written against the rule, not the example. It finds every
+  place the rule reaches and either sends them all through one declared
+  function or names each exception and why. Its test is a test **of the
+  rule**, one that fails for any place that breaks it: *no sentence a
+  person sees names a raw application id where a name exists*, not *the
+  Dolphin card says Papers*. A fix that covers some places is reported
+  as **fixed for those places only**, never as fixed.
+
+  **When a person sees the same fault twice, the first fix failed.** The
+  second fix carries the check that would have caught it everywhere, and
+  an entry in `docs/misreadings/` saying why the first one did not.
+
+  *Written after the owner's screenshot of 2026-11-21: application ids
+  had been replaced by names on the file-manager card alone (#1393) and
+  were still raw in alo's other sentences; and a window lay on top of
+  another although the canvas promises one never does. Both had been
+  reported as fixed.*
 - **Nothing is built to one screen size.** The design's frames are
   1440×960 and no machine is obliged to be. Every layout is derived
   from the display it is on — its size, its scale, its orientation —

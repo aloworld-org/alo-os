@@ -61,6 +61,10 @@ struct ATasksWords {
     files: Vec<String>,
     /// How many files are shared, as a sentence.
     how_many_files: String,
+    /// Who said a person's message, above its words.
+    you: String,
+    /// Who said alo's reply, above its words.
+    alo: String,
     /// What was said, oldest first.
     said: Vec<(alo_tasks::WhoseBlock, MarkedWords)>,
     /// Which of `said` carries the two answers: the latest proposal, while
@@ -167,6 +171,8 @@ impl TheTasksWords {
                     // rather than invented.
                     files: Vec::new(),
                     how_many_files: String::new(),
+                    you: say(alo_tasks::words::SPEAKER_YOU),
+                    alo: say(alo_tasks::words::SPEAKER_ALO),
                     said: task
                         .conversation()
                         .each()
@@ -246,18 +252,19 @@ impl TheTasksWords {
 
     /// **And what the change waiting touches**, as rows on the asking task's
     /// card — one per file, folder or application, named and placed from
-    /// `home` (`crate::task_text::ATouchedRow`). Nothing for a task that is
-    /// not asking.
+    /// `home` (`crate::task_text::ATouchedRow`), each application by what
+    /// `called` says a person calls it. Nothing for a task that is not asking.
     pub(crate) fn with_what_the_change_touches(
         mut self,
         touches: &[alo_changing::Touched],
         home: Option<&std::path::Path>,
+        called: &std::collections::BTreeMap<String, String>,
     ) -> Self {
         for one in &mut self.each {
             if one.answers_after.is_some() {
                 one.touches = touches
                     .iter()
-                    .map(|it| crate::task_text::ATouchedRow::of(it, home))
+                    .map(|it| crate::task_text::ATouchedRow::of(it, home, called))
                     .collect();
             }
         }
@@ -323,6 +330,8 @@ impl TheTasksWords {
                     scope_note: &one.scope_note,
                     files: &one.files,
                     how_many_files: &one.how_many_files,
+                    you: &one.you,
+                    alo: &one.alo,
                 },
                 // Built here so the frame borrows these strings rather than
                 // copying them, which is why the bundle has to outlive it.

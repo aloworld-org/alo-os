@@ -40,6 +40,15 @@ const TERMINAL: u32 = 60;
 const EDITABLE: u32 = (1 << 25) | (1 << 7);
 const FOCUSED: u32 = EDITABLE | (1 << 12);
 
+/// `ATSPI_STATE_MULTI_LINE` and `_SINGLE_LINE`: VSCodium's editor is an
+/// `ENTRY` that says `MULTI_LINE`, its search box one that says `SINGLE_LINE`
+/// (`docs/autonomy/updates/how-alo-can-type-into-an-application.md`).
+const MULTI_LINE: u32 = 1 << 17;
+const SINGLE_LINE: u32 = 1 << 26;
+
+/// VSCodium's editor, as the tree shows it: an entry of many lines.
+const AN_EDITOR: u32 = FOCUSED | MULTI_LINE;
+
 fn noon() -> SystemTime {
     SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000)
 }
@@ -282,7 +291,7 @@ fn the_verb_is_a_change_over_a_granted_application_and_takes_text() {
 fn the_named_editor_with_the_keyboard_is_found_and_says_it_does_not_take_text_directly() {
     let tree = ATree::of(
         "index.html - VSCodium",
-        vec![a(ENTRY, "index.html", FOCUSED)],
+        vec![a(ENTRY, "index.html", AN_EDITOR)],
     );
     let field = typing("index.html", "x")
         .the_field(&tree, &in_english())
@@ -315,7 +324,7 @@ fn an_unnamed_document_in_a_window_titled_with_the_name_is_found() {
 fn the_field_with_the_keyboard_in_a_window_titled_with_the_name_is_found() {
     let tree = ATree::of(
         "hello.txt - VSCodium",
-        vec![a(ENTRY, "Editor content", FOCUSED)],
+        vec![a(ENTRY, "Editor content", AN_EDITOR)],
     );
     let field = typing("hello.txt", "x")
         .the_field(&tree, &in_english())
@@ -324,7 +333,7 @@ fn the_field_with_the_keyboard_in_a_window_titled_with_the_name_is_found() {
 
     let tree = ATree::of(
         "hello.txt - VSCodium",
-        vec![a(ENTRY, "Editor content", EDITABLE)],
+        vec![a(ENTRY, "Editor content", EDITABLE | MULTI_LINE)],
     );
     assert!(
         typing("hello.txt", "x")
@@ -355,8 +364,8 @@ fn of_two_fields_of_that_name_the_one_with_the_keyboard_is_found() {
     let tree = ATree::of(
         "x",
         vec![
-            a(ENTRY, "index.html", EDITABLE),
-            a(ENTRY, "index.html", FOCUSED),
+            a(ENTRY, "index.html", EDITABLE | MULTI_LINE),
+            a(ENTRY, "index.html", AN_EDITOR),
         ],
     );
     let field = typing("index.html", "x")
@@ -463,7 +472,7 @@ fn an_application_that_says_it_did_not_take_the_text_is_refused() {
 
 #[test]
 fn a_text_that_reads_back_differently_is_not_saved() {
-    let mut editor = a(ENTRY, "index.html", FOCUSED);
+    let mut editor = a(ENTRY, "index.html", AN_EDITOR);
     // What an editor that indents and closes brackets on its own shows.
     editor.text = "function f() {\n        x\n}}";
     let tree = ATree::of("index.html - VSCodium", vec![editor]);
@@ -492,15 +501,26 @@ fn a_name_that_means_no_field_is_refused_with_what_is_there() {
     let said = said(&refused);
     assert!(said.contains("“Document”"), "{said}");
     assert!(said.contains("“hello.txt - VSCodium”"), "{said}");
-    assert!(said.contains("“Search”"), "{said}");
-    // **And every name it says is one typing takes.**
+    // **And every name it says is one this typing takes**: typing that saves
+    // does not take the search box, so it is not said; typing that does not
+    // save takes both, and says both.
+    assert!(
+        !said.contains("“Search”"),
+        "a one-line field is offered to typing that saves: {said}"
+    );
     assert!(
         typing("hello.txt - VSCodium", "x")
             .the_field(&tree, &in_english())
             .is_ok()
     );
+    let unsaved = typing_without_saving("Document", "x")
+        .the_field(&tree, &in_english())
+        .unwrap_err();
+    let unsaved = self::said(&unsaved);
+    assert!(unsaved.contains("“Search”"), "{unsaved}");
+    assert!(unsaved.contains("“hello.txt - VSCodium”"), "{unsaved}");
     assert!(
-        typing("Search", "x")
+        typing_without_saving("Search", "x")
             .the_field(&tree, &in_english())
             .is_ok()
     );
@@ -690,10 +710,11 @@ fn each_typing_says_a_read_back_that_failed_in_its_own_words() {
     let filling =
         alo_strings::Filling::of("application", EDITOR.to_owned()).and("name", "Search".to_owned());
     let words = |word: alo_strings::Word| strings.say(&word.key(), &filling).text().to_owned();
-    let mut field = a(ENTRY, "Search", FOCUSED);
+    // Many lines, so typing that saves takes it as typing that does not does.
+    let mut field = a(ENTRY, "Search", AN_EDITOR);
     field.text = "something else";
     let differs = ATree::of("Search - VSCodium", vec![field]);
-    let unreadable = ATree::of("Search - VSCodium", vec![a(ENTRY, "Search", FOCUSED)]);
+    let unreadable = ATree::of("Search - VSCodium", vec![a(ENTRY, "Search", AN_EDITOR)]);
     unreadable.texts.borrow_mut().clear();
     for (tree, saving, word) in [
         (
@@ -726,4 +747,102 @@ fn each_typing_says_a_read_back_that_failed_in_its_own_words() {
         let refused = typing.read_back(tree, &found, &strings).unwrap_err();
         assert_eq!(said(&refused), words(word), "saving: {saving}");
     }
+}
+
+/// What typing that saves into a one-line field is refused in, for `name`.
+fn a_one_line_field_refused(name: &str) -> String {
+    alo_adapters::a_one_line_field_said(EDITOR, name, &in_english())
+        .text()
+        .to_owned()
+}
+
+/// **Typing that saves is refused for a one-line field** (the owner,
+/// 2026-11-20): a search box, an entry that says nothing about its lines, and
+/// a `TEXT` that says `SINGLE_LINE` — in words that name the typing that does
+/// not save, and with nothing put in. Typing that does not save still takes
+/// each of them.
+#[test]
+fn typing_that_saves_is_refused_for_a_one_line_field_and_typing_without_saving_is_not() {
+    for (role, states) in [
+        (ENTRY, FOCUSED | SINGLE_LINE),
+        (ENTRY, FOCUSED),
+        (TEXT, FOCUSED | SINGLE_LINE),
+    ] {
+        let tree = ATree::of("Welcome - VSCodium", vec![a(role, "Search", states)]);
+        let refused = typing("Search", "alo OS")
+            .the_field(&tree, &in_english())
+            .unwrap_err();
+        let said = said(&refused);
+        assert_eq!(said, a_one_line_field_refused("Search"), "{role}");
+        assert!(said.contains("accessible.type_without_saving"), "{said}");
+        assert!(said.contains("nothing was typed"), "{said}");
+        assert_eq!(
+            alo_adapters::a_one_line_field_to_save(&tree, EDITOR, "Search", &in_english())
+                .map(|said| said.text().to_owned()),
+            Some(said),
+            "the card would be asked where the typing refuses: {role}"
+        );
+        assert!(
+            typing_without_saving("Search", "alo OS")
+                .the_field(&tree, &in_english())
+                .is_ok(),
+            "{role}"
+        );
+        assert_eq!(*tree.inserted.borrow(), 0, "{role}");
+    }
+}
+
+/// **A document is typed into as it always was**: VSCodium's editor, an
+/// `ENTRY` of many lines, and GNOME Text Editor's `TEXT` that says nothing
+/// about its lines — and nothing is refused before the card for either.
+#[test]
+fn a_document_of_many_lines_is_still_typed_into_and_saved() {
+    for (role, states) in [(ENTRY, AN_EDITOR), (TEXT, FOCUSED), (TEXT, AN_EDITOR)] {
+        let tree = ATree::of("hello.txt - VSCodium", vec![a(role, "hello.txt", states)]);
+        let typing = typing("hello.txt", "x");
+        assert!(typing.saves());
+        assert!(typing.the_field(&tree, &in_english()).is_ok(), "{role}");
+        assert_eq!(
+            alo_adapters::a_one_line_field_to_save(&tree, EDITOR, "hello.txt", &in_english()),
+            None,
+            "{role}"
+        );
+    }
+}
+
+/// **Before the card, only what was seen is refused**: a name meaning no
+/// place, or two, a password field — refused in its own words when it runs —
+/// and an application that is not there are each left to the typing.
+#[test]
+fn before_the_card_nothing_unseen_is_refused() {
+    let search = || a(ENTRY, "Search", FOCUSED | SINGLE_LINE);
+    let strings = in_english();
+    let one = ATree::of("Welcome - VSCodium", vec![search()]);
+    assert_eq!(
+        alo_adapters::a_one_line_field_to_save(&one, EDITOR, "Address", &strings),
+        None
+    );
+    assert_eq!(
+        alo_adapters::a_one_line_field_to_save(&one, "org.example.Payroll", "Search", &strings),
+        None
+    );
+    let two = ATree::of(
+        "Welcome - VSCodium",
+        vec![
+            a(ENTRY, "Search", EDITABLE | SINGLE_LINE),
+            a(ENTRY, "Search", EDITABLE | SINGLE_LINE),
+        ],
+    );
+    assert_eq!(
+        alo_adapters::a_one_line_field_to_save(&two, EDITOR, "Search", &strings),
+        None
+    );
+    let secret = ATree::of(
+        "Sign in",
+        vec![a(PASSWORD, "Password", FOCUSED | SINGLE_LINE)],
+    );
+    assert_eq!(
+        alo_adapters::a_one_line_field_to_save(&secret, EDITOR, "Password", &strings),
+        None
+    );
 }

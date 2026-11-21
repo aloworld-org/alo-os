@@ -262,3 +262,43 @@ fn the_next_answer_spends_what_alo_took() {
         assert_eq!(server.alo_took_the_keys, None, "card: {card}");
     }
 }
+
+/// **The card taking the keys back brings the view to its task window**, so the
+/// person sees the card and not whatever the view travelled to. Main's walk of
+/// #1409's own branch at 3f778b0d (run 44782793742): the keys came back
+/// (journal 1130.22 s), but alo's opening had taken the view to VSCodium, and
+/// the card's task window stayed out of sight while an older, finished task
+/// window near VSCodium was what showed (picture 94; picture 93 had the card's
+/// window in view). Held here through the Place: the card's task is on the
+/// second Place, the person is looking at the first, and the card brings them
+/// to the second — the same road Super+Tab takes to a task window.
+#[test]
+fn the_card_taking_the_keys_back_brings_the_view_to_its_task() {
+    let (_runtime, mut server, which) = a_server_where_alo_opened_a_file(true);
+    let Some(second) = alo_canvas::Place::FIRST.next() else {
+        unreachable!("there is a second Place");
+    };
+    server.tasks_mut().new_windows_open_on(second);
+    let view = smithay::utils::Rectangle::new((0, 0).into(), (1280, 800).into());
+    server.tasks_mut().put_whatever_has_nowhere_to_be(
+        view,
+        alo_strings::Direction::LeftToRight,
+        &[],
+        100,
+    );
+    assert_eq!(
+        server.tasks().the_place_of(which),
+        Some(second),
+        "the control: the card's task is on the second Place"
+    );
+    server.surfaces.place = alo_canvas::Place::FIRST;
+
+    server.what_alo_took_goes_back_with_the_seat_on(which, Some(WindowId::numbered(7)));
+
+    assert_eq!(server.the_task_with_the_keyboard, Some(which));
+    assert_eq!(
+        server.the_place_now(),
+        second,
+        "the card took the keys and left the view where its window is not"
+    );
+}

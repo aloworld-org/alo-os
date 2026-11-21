@@ -378,6 +378,9 @@ pub struct Server {
     /// Enter by the lane that holds the person's words
     /// (`crate::a_click_reaches_settings`).
     pub(crate) a_click_waits_for_settings: Option<crate::SettingsPress>,
+    /// **What Settings last said its keyboard was on**, by the name it draws
+    /// (`crate::settings_says_where_the_keyboard_is`).
+    pub(crate) said_in_settings: Option<String>,
     /// Where the record window is **on the canvas** — its corner — and which
     /// Place it is on, while it is open (`crate::record_on_the_plane`).
     pub(crate) the_record_on_the_plane: Option<(
@@ -997,6 +1000,7 @@ impl Server {
             settings_as_drawn: None,
             the_settings_number: crate::window_number::reserve(),
             a_click_waits_for_settings: None,
+            said_in_settings: None,
             the_record_on_the_plane: None,
             how_big_the_record_was: smithay::utils::Size::from((0, 0)),
             the_records_number: crate::window_number::reserve(),

@@ -263,6 +263,7 @@ adapters.fallback.type-text.no-such-field	{application} shows no field or docume
 adapters.fallback.type-text.no-such-field-but-these	{application} shows no field or document named “{name}” now, so nothing was typed. It shows: {there}
 adapters.fallback.type-text.not-alos-copy.what-alo-can-use	That {application} window is yours, not alo's own copy, so nothing was typed. To let alo type in your own windows, choose “alo may work in your own window” in Settings → What alo can use
 adapters.fallback.type-text.not-in-front	“{name}” in {application} does not have the keyboard, so nothing was typed. alo types only where the keyboard is: bring the window forward and click in it first
+adapters.fallback.type-text.one-line-field	“{name}” in {application} is a one-line field, such as a search box. This typing saves after it types, and saving there would save the whole window's page, so nothing was typed. To type into a field without saving, use {verb}
 adapters.fallback.type-text.password-field	“{name}” in {application} is a password field, and alo never types into one, so nothing was typed
 adapters.fallback.type-text.purpose	type a text into a field or a document in an application's window, and save it
 adapters.fallback.type-text.read-back-differs	What “{name}” in {application} shows now is not exactly the text you approved, so it was not saved. Look at the window, and undo with Ctrl+Z if you want it gone
@@ -2365,6 +2366,8 @@ tasks.rail.name	alo task, {state}: {task}
 tasks.rail.needs-you	Needs you
 tasks.rail.stopped	Stopped
 tasks.rail.working	Working
+tasks.speaker.alo	alo
+tasks.speaker.you	You
 tasks.status.complete	Complete
 tasks.status.not-confirmed	Stop requested · not confirmed
 tasks.status.stopped	Stopped

@@ -202,3 +202,150 @@ fn the_verdict_and_what_is_flagged() {
     );
     assert_eq!(verdict_of(&worse), Counted::ItsOwnSlipped);
 }
+
+/// What `good` tries on the road and then a provider that runs out measured,
+/// of ten: the model is asked by a script with only `good` tries' lines.
+fn running_out_after(good: usize) -> Measured {
+    use crate::testing::{Writing, answering, proposing, the_verbs, the_words};
+    use alo_applications::verbs::{APPLICATION, OPEN_APPLICATION};
+
+    let set = crate::the_set::the_set()
+        .expect("the set builds")
+        .retaining(|request| request.named() == "open an application by name");
+    let lines: Vec<String> = (0..good)
+        .flat_map(|_| {
+            [
+                proposing(OPEN_APPLICATION, &[(APPLICATION, "org.mozilla.firefox")]),
+                answering("Firefox is open."),
+            ]
+        })
+        .collect();
+    let mut model = Writing::these(&lines);
+    let tallied = crate::tallied::tallying_at(
+        crate::a_try::TheLevel::FullAccess,
+        &set,
+        10,
+        &the_verbs(),
+        &the_words(),
+        &mut model,
+        &mut |_, _, _| {},
+    );
+    Measured::of(crate::a_try::TheLevel::FullAccess, &tallied)
+}
+
+/// **A provider that runs out on the change** (the coordinator, 2026-11-20:
+/// the check failed open on #1423's run 44854527313): a try the model could
+/// not be asked makes the comparison not measured, which fails the check.
+#[test]
+fn a_provider_that_runs_out_on_the_change_is_not_measured() {
+    let rows = compared(
+        &running_out_after(0),
+        &running_out_after(10),
+        &Reached::default(),
+    );
+    assert_eq!(rows[0].judged(), &Judged::NotMeasured);
+    assert_eq!(verdict_of(&rows), Counted::NotMeasured);
+    assert_ne!(verdict_of(&rows).exit_code(), 0);
+    let one_short = compared(
+        &running_out_after(9),
+        &running_out_after(10),
+        &Reached::default(),
+    );
+    assert_eq!(
+        one_short[0].judged(),
+        &Judged::NotMeasured,
+        "one try unasked is enough"
+    );
+}
+
+/// **And on the base**: a base the model could not be asked is no base to be
+/// compared with.
+#[test]
+fn a_provider_that_runs_out_on_the_base_is_not_measured() {
+    let rows = compared(
+        &running_out_after(10),
+        &running_out_after(0),
+        &Reached::default(),
+    );
+    assert_eq!(rows[0].judged(), &Judged::NotMeasured);
+    assert_eq!(verdict_of(&rows), Counted::NotMeasured);
+}
+
+/// **And on both**: nought of ten beside nought of ten is not "no worse than
+/// its base" — it is nothing measured. This is the run that went green.
+#[test]
+fn a_provider_that_runs_out_on_both_is_not_measured() {
+    let rows = compared(
+        &running_out_after(0),
+        &running_out_after(0),
+        &Reached::default(),
+    );
+    assert_eq!(rows[0].judged(), &Judged::NotMeasured);
+    assert_eq!(verdict_of(&rows), Counted::NotMeasured);
+    assert_ne!(verdict_of(&rows).exit_code(), 0);
+}
+
+/// **And in the confirm round**: a first round measured and a second that ran
+/// out add up to a comparison not measured.
+#[test]
+fn a_provider_that_runs_out_in_the_confirm_round_is_not_measured() {
+    let first = Measured::read(&running_out_after(8).written()).expect("it reads");
+    let both: String = first.written() + &running_out_after(0).written();
+    let base: String = running_out_after(10).written() + &running_out_after(10).written();
+    let rows = compared(
+        &Measured::read(&both).expect("it reads"),
+        &Measured::read(&base).expect("it reads"),
+        &Reached::default(),
+    );
+    assert_eq!(rows[0].change().1, 20);
+    assert_eq!(rows[0].judged(), &Judged::NotMeasured);
+}
+
+/// **A refused try is shown as refused, never as a wrong one**: the summary
+/// says how many tries the model could not be asked on each side, and a base
+/// refused alone is "not measured", never "better" or "worse".
+#[test]
+fn the_summary_shows_the_tries_not_asked_on_each_side() {
+    let rows = compared(
+        &running_out_after(10),
+        &running_out_after(4),
+        &Reached::default(),
+    );
+    assert_eq!(rows[0].judged(), &Judged::NotMeasured);
+    assert!(!rows[0].judged().blocks(), "not worse");
+    let said = super::summary_of(&rows, "a scripted model");
+    assert!(said.contains("6 not asked"), "{said}");
+    assert!(said.contains("Nothing was decided yet"), "{said}");
+}
+
+/// A side the model was asked on every try says nothing of tries not asked.
+#[test]
+fn a_side_asked_every_try_says_none_not_asked() {
+    let rows = compared(
+        &running_out_after(10),
+        &running_out_after(10),
+        &Reached::default(),
+    );
+    let said = super::summary_of(&rows, "a scripted model");
+    assert!(!said.contains("not asked)"), "{said}");
+}
+
+/// **An own request, compared with its base on twenty** (2026-11-20): weak on
+/// the base, it may stay weak, no worse by four; at the floor on the base, it
+/// must keep it.
+#[test]
+fn an_own_request_on_twenty_is_judged_against_its_base() {
+    assert_eq!(
+        judged(&[(L, "search", 15, 20)], &[(L, "search", 16, 20)]),
+        Judged::Held,
+        "weak on its base and no worse"
+    );
+    assert_eq!(
+        judged(&[(L, "search", 12, 20)], &[(L, "search", 16, 20)]),
+        Judged::ClearlyWorse
+    );
+    assert_eq!(
+        judged(&[(L, "search", 15, 20)], &[(L, "search", 18, 20)]),
+        Judged::BelowTheBarWhereItsBaseMetIt
+    );
+}

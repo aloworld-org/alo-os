@@ -398,6 +398,8 @@ fn a_task_window_over_everything(
             scope_note: "Permissions and model choices apply to this task.",
             files: &[],
             how_many_files: "",
+            you: "",
+            alo: "",
         },
         said: Vec::new(),
         scroll: alo_tasks::TheScroll::at_the_newest(),

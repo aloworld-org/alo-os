@@ -204,6 +204,7 @@ impl crate::SaysWhatAFileOpensWith for AsThisMachineSays {
         match identifier {
             FILES => Some("Dolphin".to_owned()),
             PAPERS => Some("Papers".to_owned()),
+            EDITOR => Some("VSCodium".to_owned()),
             _ => None,
         }
     }
@@ -1024,4 +1025,94 @@ fn no_card_names_an_application_by_its_identifier_where_it_has_a_name() {
     assert!(reverse_dns(
         "open a.pdf in org.gnome.Papers, as Dolphin would"
     ));
+}
+
+/// Whether `said` holds a reverse-DNS identifier such as
+/// `com.vscodium.codium`: a word of three or more dotted parts beginning with a
+/// letter. A path holds slashes, so a path to a file is not one.
+fn names_an_identifier(said: &str) -> bool {
+    said.split(|it: char| it.is_whitespace() || it == ',' || it == '/')
+        .any(|word| word.matches('.').count() >= 2 && word.starts_with(char::is_alphabetic))
+}
+
+/// **No sentence a person reads names an application by its identifier where
+/// it has a name — at ask each time**: the card says *open … in VSCodium*,
+/// while the door is still asked about `com.vscodium.codium`. The booted
+/// machine of 2026-11-20 said *open /home/alo/hello.txt in
+/// com.vscodium.codium*.
+#[test]
+fn the_card_names_the_application_as_a_person_calls_it() {
+    let card = RefCell::new(String::new());
+    let ran = on_a_machine(
+        Arranged::in_the_file_manager(Ok(PAPERS)),
+        |turning, grants, file| {
+            let id = turning.proposing(
+                OPEN_FILE_IN_APPLICATION,
+                &given(EDITOR, file),
+                grants,
+                hour(),
+                noon(),
+            )?;
+            *card.borrow_mut() = the_card(turning);
+            turning.approving(id, grants, noon()).map(Some)
+        },
+    );
+    assert!(ran.answered.is_ok(), "{:?}", ran.answered);
+    let card = card.into_inner();
+    assert_eq!(card, format!("open {} in VSCodium", ran.file.display()));
+    assert!(
+        !names_an_identifier(&card),
+        "the card names an identifier: {card}"
+    );
+    assert_eq!(
+        ran.asked.first().map(|it| it.application().identifier()),
+        Some(EDITOR),
+        "the name took the identifier's place in what ran"
+    );
+    assert_eq!(ran.asked.len(), 1, "one approval, one opening");
+    // **And the check itself can fail**: the sentence of 2026-11-20 is caught.
+    assert!(names_an_identifier(
+        "open /home/alo/hello.txt in com.vscodium.codium"
+    ));
+}
+
+/// **And at full access**, in the sentence the person is told it was done
+/// without asking.
+#[test]
+fn the_sentence_done_without_asking_names_the_application_as_a_person_calls_it() {
+    let arranged = Arranged {
+        full_access: true,
+        granted_too: Vec::new(),
+        the_editor: false,
+        the_folder: false,
+        ..Arranged::in_the_file_manager(Ok(PAPERS))
+    };
+    let sentence = RefCell::new(String::new());
+    let ran = on_a_machine(arranged, |turning, grants, file| {
+        let changed = turning.changing(
+            OPEN_FILE_IN_APPLICATION,
+            &given(EDITOR, file),
+            grants,
+            hour(),
+            &mut |_| None,
+            noon(),
+        )?;
+        let crate::Changed::Done {
+            did,
+            sentence: said,
+        } = changed
+        else {
+            panic!("a change at full access waited: {changed:?}");
+        };
+        *sentence.borrow_mut() = said.into_text();
+        Ok(Some(did))
+    });
+    assert!(ran.answered.is_ok(), "{:?}", ran.answered);
+    let sentence = sentence.into_inner();
+    assert_eq!(sentence, format!("open {} in VSCodium", ran.file.display()));
+    assert!(!names_an_identifier(&sentence), "{sentence}");
+    assert_eq!(
+        ran.asked.first().map(|it| it.application().identifier()),
+        Some(EDITOR)
+    );
 }

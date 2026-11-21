@@ -61,19 +61,9 @@ impl SaysWhatAFileOpensWith for WhatFilesOpenWithHere<'_> {
     }
 
     fn called(&self, identifier: &str) -> Option<String> {
-        // **In the person's language first**, as a window's band names it
-        // (`alo_installed::what_they_are_called`), then the entry's own name.
-        let tags: Vec<&str> = self.strings.chain().iter().map(|it| it.tag()).collect();
-        if let Some(name) =
-            alo_installed::what_they_are_called(&self.entries, &tags).remove(identifier)
-        {
-            return Some(name);
-        }
-        let (installed, _) = alo_installed::read_with_what_they_open(&self.entries);
-        installed
-            .knows(identifier)
-            .and_then(alo_applications::Application::name)
-            .map(|called| called.shown(self.strings))
+        // **The one answer to what a person calls an application**, which the
+        // egress corner names it by too (`alo_installed::what_a_person_calls_it`).
+        alo_installed::what_a_person_calls_it(&self.entries, self.strings, identifier)
     }
 
     fn opens_with(&self, file: &Path) -> Result<String, NothingOpensIt> {

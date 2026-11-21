@@ -80,6 +80,17 @@ pub enum Step {
         /// than being waited past.
         a_retry_may_pass: bool,
     },
+    /// **Press `chord` until Settings says its keyboard is on the row or field
+    /// called `name`** (`alo_acting::said_in_settings`), at most `at_most`
+    /// times — a row found by the name it draws, never by counting rows.
+    PressUntilTheKeyboardIsOn {
+        /// The key pressed each time.
+        chord: Chord,
+        /// The name Settings draws on the row or field wanted.
+        name: String,
+        /// The most presses before it fails.
+        at_most: usize,
+    },
     /// The log says none of these phrases for a whole time.
     ExpectNoLine {
         /// What the check is called in the report.
@@ -343,6 +354,17 @@ impl Walk {
             since,
             within,
             a_retry_may_pass: true,
+        })
+    }
+
+    /// Then press `chord` until Settings says its keyboard is on `name`, at
+    /// most `at_most` times — a row or field found by the name Settings draws.
+    #[must_use]
+    pub fn press_until_the_keyboard_is_on(self, chord: &Chord, name: &str, at_most: usize) -> Self {
+        self.then(Step::PressUntilTheKeyboardIsOn {
+            chord: chord.clone(),
+            name: name.to_owned(),
+            at_most,
         })
     }
 

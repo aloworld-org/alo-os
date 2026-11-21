@@ -120,6 +120,10 @@ impl crate::Server {
             )
         {
             self.this_task_took_the_keyboard(which);
+            // **And the view goes to it**, as Super+Tab's does: alo's opening
+            // took the view to the window it opened, and a card out of sight is
+            // a card the person cannot see (run 44782793742, picture 94).
+            let _travelled = self.the_view_goes_to_this_task(which);
             eprintln!(
                 "alo-shell: the card came in front of the window alo opened, with the keys it took"
             );

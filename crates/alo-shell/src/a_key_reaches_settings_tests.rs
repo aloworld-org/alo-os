@@ -290,3 +290,86 @@ fn a_code_outside_evdev_is_refused_without_touching_the_window() {
 fn the_chord_that_opens_settings_is_still_shipped() {
     assert!(Shortcuts::shipped().chord_for(Action::Settings).is_some());
 }
+
+/// Tab.
+const KEY_TAB: u32 = 15;
+/// Home.
+const KEY_HOME: u32 = 102;
+
+/// **Settings says on the journal which row and which field the keyboard moves
+/// to, by the name it draws** — the name a reader is told, from the same
+/// declared word the screen draws (`alo_acting::said_in_settings`), so a walk
+/// can find *Add a provider* by its name rather than by counting rows. Main's
+/// walk at 9ced5c40 (run 44851000278) counted five Downs to it, landed on
+/// *alo* (picture 54) because a provider added by #1410 brought a row and its
+/// button, and saved nothing it meant to. **In the form it names the field,
+/// never what was typed into it.**
+#[test]
+fn settings_says_where_the_keyboard_went_by_the_name_it_draws() {
+    let machine = a_persons_machine("where-the-keyboard-went");
+    // **The words the page draws, providers' among them**, as the desktop
+    // loads them: without them a row is named by its key.
+    let strings = crate::settings_testing::settings_words();
+    let (_runtime, mut server) = a_session("where-the-keyboard-went");
+    server.the_settings_places_are(machine.places.clone());
+    server.settings = machine.opened();
+    // **Read at the clock the shell reads it at**: the window keeps where its
+    // keyboard is as a place among rows that can depend on the time, and the
+    // shell reads the tree at the real one.
+    let now = std::time::SystemTime::now;
+
+    // Into the page, then down until the keyboard is on Add a provider.
+    tapped(&mut server, KEY_TAB, &strings);
+    tapped(&mut server, KEY_HOME, &strings);
+    for _ in 0..64 {
+        if server.settings.focused(now()) == Some(SettingsRow::AddAProvider) {
+            break;
+        }
+        tapped(&mut server, KEY_DOWN, &strings);
+    }
+    assert_eq!(
+        server.settings.focused(now()),
+        Some(SettingsRow::AddAProvider),
+        "the control: the keyboard reached Add a provider"
+    );
+    assert_eq!(
+        server.said_in_settings.as_deref(),
+        Some(alo_acting::said_in_settings::ADD_A_PROVIDER),
+        "Settings did not say the keyboard is on Add a provider"
+    );
+
+    // Into the form: its first field, then a letter typed, then the next.
+    tapped(&mut server, KEY_ENTER, &strings);
+    assert_eq!(
+        server.said_in_settings.as_deref(),
+        Some(alo_acting::said_in_settings::NAME)
+    );
+    tapped(&mut server, KEY_Q, &strings);
+    assert_eq!(
+        server.said_in_settings.as_deref(),
+        Some(alo_acting::said_in_settings::NAME),
+        "what was typed reached the journal, or the field's name changed"
+    );
+    tapped(&mut server, KEY_TAB, &strings);
+    assert_eq!(
+        server.said_in_settings.as_deref(),
+        Some(alo_acting::said_in_settings::ADDRESS)
+    );
+}
+
+/// **The words Settings draws are the names the walk finds them by**: one
+/// declaration, read by both.
+#[test]
+fn the_providers_words_are_the_names_said_in_settings() {
+    use crate::the_providers_words as w;
+    use alo_acting::said_in_settings as said;
+    // **The English each word declares**, which every language's text is
+    // translated from.
+    let english = |word: &alo_strings::Word| word.says();
+    assert_eq!(english(&w::ADDING_A_PROVIDER), said::ADD_A_PROVIDER);
+    assert_eq!(english(&w::ITS_NAME), said::NAME);
+    assert_eq!(english(&w::ITS_ADDRESS), said::ADDRESS);
+    assert_eq!(english(&w::ITS_KEY), said::KEY);
+    assert_eq!(english(&w::ITS_MODEL), said::MODEL);
+    assert_eq!(english(&w::ITS_NEEDS_NO_KEY), said::NEEDS_NO_KEY);
+}

@@ -56,6 +56,8 @@ fn a_card_scrolled(
             scope_note: "Permissions and model choices apply to this task.",
             files: &[],
             how_many_files: "",
+            you: "",
+            alo: "",
         },
         said: vec![crate::task_text::WhatWasSaid {
             whose: alo_tasks::WhoseBlock::AnAccount,

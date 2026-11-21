@@ -204,6 +204,21 @@ pub(crate) struct DesktopPalette {
     /// behalf. A badge says *this application has no artwork*, which is not alo
     /// doing anything.
     pub(crate) badge: [u8; 3],
+    /// The ground of the composer's field on the Dock, where a person types to
+    /// alo.
+    ///
+    /// **`#F5F6F7` in the light appearance**, the design's fill for it
+    /// (`349:25790` on the edge Dock, `I321:17430;74:53` on the bottom one;
+    /// `docs/design/the-docks-visual-specification.md`, *The composer*). It is
+    /// not one of the palette's named roles: the design gives it as a fill and
+    /// no variable, so it is declared here beside the code that draws it, as
+    /// the badge's dark value is. It is close to [`Self::badge`]'s `#EEF2F4`
+    /// and is not it — the Dock drew the badge's colour here until 2026-11-20.
+    ///
+    /// **Dark and high contrast keep what they drew before**, the badge's: the
+    /// design measures no dark value for the field, and at high contrast the
+    /// ground is the window's own for the reason the badge's is.
+    pub(crate) field: [u8; 3],
     /// Ink for words that stand in for something a person has not typed.
     ///
     /// The search field's invitation, and nothing else yet. **Quieter than
@@ -266,6 +281,13 @@ impl DesktopPalette {
                     Scheme::Dark => A_BADGE_ON_DARK,
                 },
             },
+            field: match contrast {
+                Contrast::High => contrast.ground(scheme),
+                Contrast::AsDesigned => match scheme {
+                    Scheme::Light => THE_COMPOSERS_FIELD,
+                    Scheme::Dark => A_BADGE_ON_DARK,
+                },
+            },
             badge_ink: match contrast {
                 Contrast::High => contrast.ink(scheme),
                 Contrast::AsDesigned => match scheme {
@@ -295,7 +317,7 @@ impl DesktopPalette {
 
     /// Every colour this palette offers.
     #[cfg(test)]
-    pub(crate) const fn offers(self) -> [[u8; 3]; 7] {
+    pub(crate) const fn offers(self) -> [[u8; 3]; 8] {
         [
             self.ground,
             self.dock,
@@ -304,6 +326,7 @@ impl DesktopPalette {
             self.edge,
             self.badge,
             self.badge_ink,
+            self.field,
         ]
     }
 }
@@ -314,6 +337,10 @@ impl DesktopPalette {
 /// theme only and says so, so the dark half of a semantic pair lives beside the
 /// code that needs it until that file gains a measured dark mode.
 const A_BADGE_ON_DARK: [u8; 3] = [0x24, 0x37, 0x46];
+
+/// The composer's field in the light appearance: the design's `#F5F6F7`. See
+/// [`DesktopPalette::field`].
+const THE_COMPOSERS_FIELD: [u8; 3] = [0xF5, 0xF6, 0xF7];
 
 /// The initial's colour on a dark desktop. The owner's value of the same day.
 const AN_INITIAL_ON_DARK: [u8; 3] = [0xF7, 0xF9, 0xFA];

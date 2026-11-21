@@ -1176,6 +1176,7 @@ dependencies = [
  "alo-applications",
  "alo-launching",
  "alo-opening",
+ "alo-strings",
 ]
 
 [[package]]

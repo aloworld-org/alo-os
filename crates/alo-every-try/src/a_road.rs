@@ -81,6 +81,9 @@ pub struct Step {
     /// Whether the window shows no other control of this kind, so a name the
     /// road does not expect names nothing there.
     the_only_one: bool,
+    /// Whether the place this step types into is a one-line field, so typing
+    /// that saves is refused there before anybody is asked.
+    one_line: bool,
 }
 
 impl Step {
@@ -95,7 +98,24 @@ impl Step {
             look: false,
             again: false,
             the_only_one: false,
+            one_line: false,
         }
+    }
+
+    /// **And the place it types into is a one-line field**, such as a search
+    /// box: typing that saves (`accessible.type_text`) aimed at it is refused
+    /// before anybody is asked, in the machine's words, and the try goes on
+    /// from the refusal (`crate::typing_that_saves_a_field`).
+    #[must_use]
+    pub const fn a_one_line_field(mut self) -> Self {
+        self.one_line = true;
+        self
+    }
+
+    /// Whether the place it types into is a one-line field.
+    #[must_use]
+    pub const fn is_a_one_line_field(&self) -> bool {
+        self.one_line
     }
 
     /// **And the window shows no other control of its kind**: a name other
