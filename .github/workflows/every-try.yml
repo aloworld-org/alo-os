@@ -235,6 +235,7 @@ jobs:
           ALO_EVERY_TRY_MODEL: gpt-4o-mini
           MODE: ${{ steps.own.outputs.mode }}
           WHOLE_TRIES: ${{ inputs.tries || '5' }}
+          BASE: ${{ steps.own.outputs.base }}
           ALO_EVERY_TRY_ONLY: ${{ inputs.only || '' }}
         run: |
           # A change that owns nothing, or only raised the record, needs no
@@ -261,13 +262,47 @@ jobs:
           # the daemon told the person it did (docs/contracts/asking-socket.md).
           # Either failing fails the check.
           failed=0
+          against=0
+          export ALO_EVERY_TRY_AGAINST_BASE="$RUNNER_TEMP/against-base.txt"
           for level in full-access ask-each-time; do
             echo "## At $level" >> "$GITHUB_STEP_SUMMARY"
             code=0
             set -o pipefail
             ALO_EVERY_TRY_LEVEL="$level" ALO_EVERY_TRY_SUMMARY="$GITHUB_STEP_SUMMARY" target/release/alo-every-try 2>&1 | tee "$RUNNER_TEMP/change-$level.log" || code=$?
-            if [ "$code" -ne 0 ]; then failed=$code; fi
+            # 3: an own request below the bar on all its tries, to be judged
+            # against its base (the coordinator, 2026-11-20).
+            if [ "$code" -eq 3 ]; then against=1; elif [ "$code" -ne 0 ]; then failed=$code; fi
           done
+          if [ "$against" -eq 1 ] && [ "$failed" -eq 0 ]; then
+            # **An own request below the floor, compared with its base**: the
+            # base's own check tries each the same number of times, and the
+            # pair is judged as a whole-set change is — no clear drop, the floor
+            # where the base met it, and the ratchet.
+            t="$RUNNER_TEMP"
+            cp target/release/alo-every-try "$t/change-check"
+            git worktree add --detach "$t/base" "$BASE"
+            cargo build --release --locked -p alo-every-try --manifest-path "$t/base/Cargo.toml" --target-dir target
+            cp target/release/alo-every-try "$t/base-check"
+            : > "$t/base-own.txt"
+            while IFS=$'\t' read -r level named count; do
+              ALO_EVERY_TRY_LEVEL="$level" ALO_EVERY_TRY_TRIES="$count" ALO_EVERY_TRY_ONLY="$named" \
+                ALO_EVERY_TRY_BEFORE= ALO_EVERY_TRY_REACHED_BEFORE= ALO_EVERY_TRY_MEASURED="$t/base-own.txt" \
+                "$t/base-check" >> "$t/base-own.log" 2>&1 || true
+            done < "$t/against-base.txt"
+            awk -F'\t' 'NR==FNR { want[$1 FS $2] = 1; next } ($2 FS $3) in want' \
+              "$t/against-base.txt" "$ALO_EVERY_TRY_MEASURED" > "$t/change-own.txt"
+            echo "### Its own requests below the bar, compared with its base" >> "$GITHUB_STEP_SUMMARY"
+            failed=0
+            ALO_EVERY_TRY_SUMMARY="$GITHUB_STEP_SUMMARY" "$t/change-check" compare "$t/change-own.txt" "$t/base-own.txt" || failed=$?
+            # A base whose check predates counting tries not asked is read from
+            # its log: any such try makes the comparison not measured.
+            if grep -q "could not ask the model" "$t/base-own.log" 2>/dev/null; then
+              echo "**Nothing was measured** on the base: the model could not be asked on some of its tries." | tee -a "$GITHUB_STEP_SUMMARY"
+              failed=2
+            fi
+          elif [ "$against" -eq 1 ]; then
+            echo "A request of this change's own is to be compared with its base, but another level already failed, so the base was not asked." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
           exit "$failed"
 
       # **Compare with main** (the owner, 2026-11-20): a change that owns the

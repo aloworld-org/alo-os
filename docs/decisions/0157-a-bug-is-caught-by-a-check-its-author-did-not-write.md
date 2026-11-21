@@ -127,6 +127,17 @@ forever*, honestly, as this is written:
     of eighteen where the base had eighteen, twenty where the record holds it.
     Both settings are in `crates/alo-every-try/src/the_bar.rs`;
     `crates/alo-every-try/src/compared_with_its_base.rs` is the rule.
+  - **An own request already weak on its base is compared with it too**
+    (the coordinator, 2026-11-20, keeping the owner's two decisions
+    consistent). A change's own request below the floor on its twenty tries
+    is tried on the base as many times; if the base met the floor, the
+    change must too, and if the base was below it, the request may stay
+    below, no worse by four of twenty. The ratchet still blocks outright.
+    Why: #1412 makes the window read say whether a slider can be moved, so
+    it owns every request that reads a window, among them the search box,
+    weak on main and fixed separately (#1413). Held to the floor absolutely,
+    a fix was blocked for a fault it did not cause — the deadlock the owner
+    chose "Compare with main" to end.
 
 The figures above are single runs on 2026-11-15. The two workflows are what
 measure them again.

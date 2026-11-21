@@ -91,21 +91,24 @@ fn a_flag_then_a_confirm_that_passes() {
 }
 
 /// **A flag, then a confirm that fails**: 8 of 10, then 7 of 10 — 15 of 20 is
-/// below the floor of 18.
+/// below the floor of 18, so it is not a pass: it goes to its base, to be
+/// judged against it (exit 3).
 #[test]
 fn a_flag_then_a_confirm_that_fails() {
     let (counted, tried, said) = judged(&[tries(8, 2), tries(7, 3)], false);
     assert_eq!(tried, 20);
-    assert_eq!(counted, Counted::ItsOwnSlipped);
+    assert_eq!(counted, Counted::ToCompareWithItsBase);
+    assert_ne!(counted.exit_code(), 0);
     assert!(said.contains("15 of 20"), "{said}");
 }
 
-/// **The floor on twenty**: 17 of 20 slips, 18 holds.
+/// **The floor on twenty**: 17 of 20 is below it and goes to its base; 18
+/// holds.
 #[test]
 fn the_floor_on_twenty_is_eighteen() {
     assert_eq!(
         judged(&[tries(8, 2), tries(9, 1)], false).0,
-        Counted::ItsOwnSlipped
+        Counted::ToCompareWithItsBase
     );
     assert_eq!(
         judged(&[tries(8, 2), tries(10, 0)], false).0,
@@ -128,4 +131,56 @@ fn the_ratchet_on_twenty_is_every_try() {
     );
     let (_, _, said) = judged(&[tries(10, 0)], false);
     assert!(!said.contains("Held to every try"), "{said}");
+}
+
+/// Judge `OPENING` and say which of its own are to be compared with the base.
+fn to_compare(rounds: &[Vec<String>], reached: bool) -> (Counted, Vec<String>) {
+    let lines: Vec<String> = rounds.iter().flatten().cloned().collect();
+    let mut model = Writing::these(&lines);
+    let judgement = judging_its_own(
+        TheLevel::FullAccess,
+        &the_one(),
+        &mine(),
+        0,
+        &|_| reached,
+        &the_verbs(),
+        &the_words(),
+        &mut model,
+        &mut |_, _, _| {},
+        "a scripted model",
+    );
+    (
+        judgement.counted(),
+        judgement.to_compare_with_its_base().to_vec(),
+    )
+}
+
+/// **An own request below the floor on twenty is compared with its base**
+/// (the coordinator, 2026-11-20): it may be weak on the base too — the search
+/// box, for a change that only read windows better — so it is not blocked
+/// yet; it is named, to be tried on the base and judged as a whole-set change
+/// is.
+#[test]
+fn an_own_request_below_the_floor_on_twenty_is_compared_with_its_base() {
+    let (counted, named) = to_compare(&[tries(8, 2), tries(7, 3)], false);
+    assert_eq!(counted, Counted::ToCompareWithItsBase);
+    assert_eq!(counted.exit_code(), 3, "neither a pass nor a fail yet");
+    assert_eq!(named, [OPENING.to_owned()]);
+}
+
+/// **The ratchet still blocks outright**: a request recorded at every try is
+/// not rescued by a weak base.
+#[test]
+fn a_broken_ratchet_is_not_compared_with_its_base() {
+    let (counted, named) = to_compare(&[tries(9, 1), tries(9, 1)], true);
+    assert_eq!(counted, Counted::ItsOwnSlipped);
+    assert!(named.is_empty());
+}
+
+/// Held on twenty needs no base.
+#[test]
+fn held_on_twenty_needs_no_base() {
+    let (counted, named) = to_compare(&[tries(8, 2), tries(10, 0)], false);
+    assert_eq!(counted, Counted::ItsOwnHeld);
+    assert!(named.is_empty());
 }
