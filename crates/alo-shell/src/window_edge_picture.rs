@@ -92,6 +92,14 @@ pub struct EdgePicture {
     whole: String,
     /// How many of the band's controls this picture draws: none at rest.
     controls_drawn: usize,
+    /// Whose band this is, once the one drawing road says
+    /// (`crate::a_band_is_drawn`).
+    band: Option<crate::which_band::ABand>,
+    /// Where the band is on the display, in its pixels — [`None`] for a
+    /// picture of alo's border alone, its band off the screen.
+    on_the_display: Option<Rectangle<i32, Physical>>,
+    /// Each control drawn and where, in the display's pixels: empty at rest.
+    controls_on_the_display: Vec<(crate::window_edge::OnTheEdge, Rectangle<i32, Physical>)>,
 }
 
 /// The title's type: SemiBold 14 on 19. `11:32`.
@@ -143,6 +151,9 @@ impl EdgePicture {
                     inked: words,
                     whole: String::new(),
                     controls_drawn: 0,
+                    band: None,
+                    on_the_display: None,
+                    controls_on_the_display: Vec::new(),
                 }
             });
         }
@@ -312,6 +323,16 @@ impl EdgePicture {
             inked,
             whole,
             controls_drawn,
+            band: None,
+            on_the_display: Some(region),
+            controls_on_the_display: if controls_drawn > 0 {
+                edge.controls
+                    .iter()
+                    .map(|control| (control.does, into_pixels(control.target, scale)))
+                    .collect()
+            } else {
+                Vec::new()
+            },
         })
     }
 
@@ -321,6 +342,33 @@ impl EdgePicture {
     #[must_use]
     pub(crate) const fn how_many_controls_are_drawn(&self) -> usize {
         self.controls_drawn
+    }
+
+    /// The same picture, said to be `band`'s.
+    #[must_use]
+    pub(crate) fn of_the_band(mut self, band: crate::which_band::ABand) -> Self {
+        self.band = Some(band);
+        self
+    }
+
+    /// Whose band this is, where the one drawing road said.
+    #[must_use]
+    pub(crate) const fn whose(&self) -> Option<&crate::which_band::ABand> {
+        self.band.as_ref()
+    }
+
+    /// Where the band is on the display, in its pixels.
+    #[must_use]
+    pub(crate) const fn where_it_is_on_the_display(&self) -> Option<Rectangle<i32, Physical>> {
+        self.on_the_display
+    }
+
+    /// Each control drawn and where, in the display's pixels.
+    #[must_use]
+    pub(crate) fn where_its_controls_are_on_the_display(
+        &self,
+    ) -> &[(crate::window_edge::OnTheEdge, Rectangle<i32, Physical>)] {
+        &self.controls_on_the_display
     }
 
     /// The same picture, said to belong to this window.
