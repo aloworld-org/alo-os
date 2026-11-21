@@ -307,24 +307,28 @@ const KEY_HOME: u32 = 102;
 #[test]
 fn settings_says_where_the_keyboard_went_by_the_name_it_draws() {
     let machine = a_persons_machine("where-the-keyboard-went");
-    let strings = words();
+    // **The words the page draws, providers' among them**, as the desktop
+    // loads them: without them a row is named by its key.
+    let strings = crate::settings_testing::settings_words();
     let (_runtime, mut server) = a_session("where-the-keyboard-went");
     server.the_settings_places_are(machine.places.clone());
     server.settings = machine.opened();
+    // **Read at the clock the shell reads it at**: the window keeps where its
+    // keyboard is as a place among rows that can depend on the time, and the
+    // shell reads the tree at the real one.
+    let now = std::time::SystemTime::now;
 
     // Into the page, then down until the keyboard is on Add a provider.
     tapped(&mut server, KEY_TAB, &strings);
     tapped(&mut server, KEY_HOME, &strings);
     for _ in 0..64 {
-        if server.settings.focused(crate::settings_testing::noon())
-            == Some(SettingsRow::AddAProvider)
-        {
+        if server.settings.focused(now()) == Some(SettingsRow::AddAProvider) {
             break;
         }
         tapped(&mut server, KEY_DOWN, &strings);
     }
     assert_eq!(
-        server.settings.focused(crate::settings_testing::noon()),
+        server.settings.focused(now()),
         Some(SettingsRow::AddAProvider),
         "the control: the keyboard reached Add a provider"
     );
@@ -359,12 +363,9 @@ fn settings_says_where_the_keyboard_went_by_the_name_it_draws() {
 fn the_providers_words_are_the_names_said_in_settings() {
     use crate::the_providers_words as w;
     use alo_acting::said_in_settings as said;
-    let english = |word: &alo_strings::Word| {
-        words()
-            .say(&word.key(), &alo_strings::Filling::nothing())
-            .text()
-            .to_owned()
-    };
+    // **The English each word declares**, which every language's text is
+    // translated from.
+    let english = |word: &alo_strings::Word| word.says();
     assert_eq!(english(&w::ADDING_A_PROVIDER), said::ADD_A_PROVIDER);
     assert_eq!(english(&w::ITS_NAME), said::NAME);
     assert_eq!(english(&w::ITS_ADDRESS), said::ADDRESS);

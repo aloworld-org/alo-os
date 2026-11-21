@@ -45,7 +45,12 @@ impl crate::Server {
         if let Some(name) = &now
             && now != self.said_in_settings
         {
-            eprintln!("{}", alo_acting::said_in_settings::the_keyboard_is_on(name));
+            // **The whole line is `alo_acting`'s**: a Settings file words
+            // nothing of its own (`tests/settings_source.rs`), so it is written
+            // as declared there, with no format of this file's.
+            let mut line = alo_acting::said_in_settings::the_keyboard_is_on(name);
+            line.push('\n');
+            let _ = std::io::Write::write_all(&mut std::io::stderr(), line.as_bytes());
         }
         self.said_in_settings = now;
     }

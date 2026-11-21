@@ -360,6 +360,7 @@ fn the_settings_files() -> Vec<(String, Vec<(usize, String)>)> {
             "settings_places.rs",
             "settings_pointed_at.rs",
             "settings_raster.rs",
+            "settings_says_where_the_keyboard_is.rs",
             "settings_seat.rs",
             "settings_shell_integration.rs",
             "settings_side_column_scrolls.rs",
