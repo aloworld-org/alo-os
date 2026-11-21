@@ -121,14 +121,15 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
         &mut Turning<'m, 't>,
         &mut crate::the_bracket_this_turn_takes::TheTurnsBracket,
         &crate::running_a_command::CommandsHere,
+        &mut Questions,
     )> {
         match self {
             Self::ATurn {
                 turning,
                 bracket,
                 commands,
-                ..
-            } => Some((turning, bracket, *commands)),
+                questions,
+            } => Some((turning, bracket, *commands, questions)),
             Self::Nobody(_) | Self::TheNetwork { .. } => None,
         }
     }

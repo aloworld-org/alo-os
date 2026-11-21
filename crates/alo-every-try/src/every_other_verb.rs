@@ -21,7 +21,7 @@ use std::time::SystemTime;
 use alo_acting::{AKey, Acting};
 use alo_adapters::fallback_verbs::{
     self, ACTIVATE_CONTROL, CHOOSE_OPTION, KEY, KIND, NAME, OPEN_ITEM, OPEN_MENU, OPTION,
-    PRESS_KEY, READ_WINDOW, SCROLL_PAGE, SCROLL_TO, SELECT_ITEM, SET_VALUE, TOWARD,
+    PICTURE_WINDOW, PRESS_KEY, READ_WINDOW, SCROLL_PAGE, SCROLL_TO, SELECT_ITEM, SET_VALUE, TOWARD,
     TYPE_WITHOUT_SAVING, VALUE,
 };
 use alo_adapters::scrolling::Toward;
@@ -71,6 +71,11 @@ pub const ZOOMED: i64 = 200;
 
 /// The title of the image viewer's window the setting request reads.
 pub const THE_PICTURE: &str = "holiday.jpg";
+
+/// What the reader the person chose says the picture open in the image viewer
+/// shows, as the picture request's machine answers it.
+pub const WHAT_THE_READER_SAW: &str = "A photograph of a beach at sunset, with two people walking by the water near the centre \
+     (0.5, 0.6). No text and no buttons are in the window.";
 
 /// The option the choosing request names, in the document viewer's
 /// [`ZOOM`] drop-down.
@@ -579,6 +584,58 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         ],
     )
     .or_looking_at(the_window_read_again(&the_viewers_window, &viewer));
+    // **A picture, 2026-11-17** (ADR 0147 §1): the image viewer's window
+    // names nothing but its title, so after the read the only way to know what
+    // it shows is to have a picture of it read.
+    let the_canvas = Shown::of(
+        viewer.clone(),
+        vec![ShownWindow::titled(
+            THE_PICTURE.to_owned(),
+            vec![Seen::of(OnScreen::Canvas, String::new(), None, 1)],
+        )],
+        false,
+    );
+    // **What the machine tells of such a window**, in its own words: no text
+    // to read, and — pictures being on for it and a reader chosen, as on the
+    // machine this set is asked on — that a picture of it can be read.
+    let strings = alo_strings::Strings::of(
+        alo_adapters::words::adapter_words()
+            .map_err(|why| NotTheSet::because(format!("{why:?}")))?,
+    );
+    let told_of_the_canvas = vec![
+        strings
+            .say(
+                &alo_adapters::picture_words::A_PICTURE_CAN_BE_READ.key(),
+                &alo_strings::Filling::of(
+                    alo_adapters::fallback_words::APPLICATION,
+                    viewer.clone(),
+                ),
+            )
+            .into_text(),
+    ];
+    let picturing = ARequest::asking(
+        "have a picture of a window that describes nothing read",
+        "What does the photo open in Loupe show?",
+        vec![
+            Step::of(
+                READ_WINDOW,
+                Answered::With(Done::of_a_window_read(&the_canvas, &told_of_the_canvas)),
+            )
+            .expecting(fallback_verbs::APPLICATION, viewer.as_str())
+            // **A look**: the picture verb asks the tree itself, so a
+            // picture asked for first is refused where the window can be read.
+            .a_look(),
+            Step::of(
+                PICTURE_WINDOW,
+                Answered::With(Done::of_a_picture(
+                    &viewer,
+                    (1280, 800),
+                    Ok(WHAT_THE_READER_SAW.to_owned()),
+                )),
+            )
+            .expecting(fallback_verbs::APPLICATION, viewer.as_str()),
+        ],
+    );
     let papers = shipped
         .the(Role::DocumentViewer)
         .application()
@@ -836,5 +893,6 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
         a_menu,
         a_key,
         typing_without_saving,
+        picturing,
     ])
 }

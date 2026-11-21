@@ -185,6 +185,47 @@ impl Turning<'_, '_> {
             places,
             now,
             Held::InWords,
+            None,
+        )
+    }
+
+    /// **Have one picture read in words** (ADR 0147 §4): `asked` and the PNG,
+    /// put together to the reader the person chose, through the one road every
+    /// question takes — the order, the indicator and the record exactly as for
+    /// a question in words.
+    ///
+    /// Only a provider or a service on this machine asked in the
+    /// OpenAI-compatible way can carry a picture. The runtime and a machine
+    /// down the corridor cannot, and are refused with **nothing sent**
+    /// (`alo_asking::Miswired::NoRoomForAPicture`): a caller says so in words
+    /// before it gets here.
+    ///
+    /// # Errors
+    /// [`NoAnswer`], as [`Self::asking`] answers it.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "the six `asking` takes and the picture; bundling them would be a type made \
+                  only to be taken apart on the next line"
+    )]
+    pub fn reading_a_picture(
+        &mut self,
+        asked: &str,
+        picture: std::sync::Arc<[u8]>,
+        of_model: &str,
+        answering: Answering,
+        answers: &Answers<'_>,
+        places: &Places<'_>,
+        now: SystemTime,
+    ) -> Result<Answer, NoAnswer> {
+        self.putting(
+            asked,
+            of_model,
+            answering,
+            answers,
+            places,
+            now,
+            Held::InWords,
+            Some(picture),
         )
     }
 
@@ -211,13 +252,27 @@ impl Turning<'_, '_> {
         places: &Places<'_>,
         now: SystemTime,
         held: Held,
+        picture: Option<std::sync::Arc<[u8]>>,
     ) -> Result<Answer, NoAnswer> {
         if self.is_closed() {
             return Err(NoAnswer::TurnClosed);
         }
+        // **Only the two OpenAI-shaped roads carry a picture**; the words
+        // alone would be answered by a model that never saw it.
+        let carries_a_picture = matches!(answers, Answers::Provider(_) | Answers::Service(_));
+        if picture.is_some() && !carries_a_picture {
+            return Err(alo_asking::Miswired::NoRoomForAPicture.into());
+        }
         // The only other place `held` is read: an agent's next request is put
         // to a model in the product's own words (ADR 0037), wherever it goes.
-        let question = Question::asked(&held.shown(self.machine().verbs(), asked), of_model)?;
+        // **What this turn offers now**, not every verb the machine has: the
+        // screen road only once a read found a window that describes nothing.
+        let offered = self.the_verbs_offered_now();
+        let question = Question::asked(&held.shown(&offered, asked), of_model)?;
+        let question = match picture {
+            Some(png) => question.about_a_picture(png),
+            None => question,
+        };
         // Cloned rather than borrowed: the indicator and the record are reached
         // through the same machine this borrows from, and an agent's name is a
         // short string beside a question that is about to cross a network.
@@ -257,6 +312,7 @@ impl Turning<'_, '_> {
                     Held::ToTheEnvelope => Some(
                         crate::the_shape_a_provider_is_held_to::the_envelope_a_turn_on(
                             self.machine(),
+                            &offered,
                         ),
                     ),
                 };
@@ -657,6 +713,67 @@ mod tests {
         assert!(indicator.is_quiet());
         assert_eq!(how_many(&record, Only::Egress), 0);
         assert_eq!(how_many(&record, Only::ByAnAgent), 1);
+    }
+
+    /// **A picture goes with its question to a service asked the OpenAI way**,
+    /// in the same request: the reader is shown the window.
+    #[test]
+    fn a_picture_is_carried_to_a_service_with_its_question() {
+        let (url, server) = serving(AN_ANSWER, 200);
+        let service = a_service(&url);
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+
+        let answer = on_a_machine(&mut record, &mut indicator, |turning| {
+            turning.reading_a_picture(
+                SUBLET,
+                std::sync::Arc::from(&b"PNG-OF-A-WINDOW"[..]),
+                "a-model",
+                permitting(InferenceSource::ThisMachine),
+                &Answers::Service(Served::at(&service, None).unwrap()),
+                &Places::under(&SourcePolicy::Anywhere),
+                noon(),
+            )
+        });
+
+        assert!(answer.is_ok(), "{answer:?}");
+        let sent = server.join().unwrap();
+        assert!(sent.contains(SUBLET), "{sent}");
+        assert!(
+            sent.contains("image_url"),
+            "the picture was not sent: {sent}"
+        );
+    }
+
+    /// **A picture is never put to a road that cannot carry one**: the runtime
+    /// would answer the words about a window it never saw, so nothing is asked.
+    #[test]
+    fn a_picture_is_never_put_to_the_runtime() {
+        let runtime = Stub::answering("this should never be reached");
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+
+        let answer = on_a_machine(&mut record, &mut indicator, |turning| {
+            turning.reading_a_picture(
+                SUBLET,
+                std::sync::Arc::from(&b"PNG-OF-A-WINDOW"[..]),
+                "a-model",
+                permitting(InferenceSource::ThisMachine),
+                &Answers::Runtime(&runtime),
+                &Places::under(&SourcePolicy::Anywhere),
+                noon(),
+            )
+        });
+
+        assert!(
+            matches!(
+                answer,
+                Err(NoAnswer::Miswired(alo_asking::Miswired::NoRoomForAPicture))
+            ),
+            "{answer:?}"
+        );
+        assert_eq!(runtime.times_asked(), 0, "the runtime was asked");
+        assert!(indicator.is_quiet());
     }
 
     /// **The rule in force refuses it, and the refusal is written down** — in

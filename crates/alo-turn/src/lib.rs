@@ -197,6 +197,9 @@ mod opening_a_menu_in_an_application_tests;
 mod opening_an_item_in_an_application;
 #[cfg(test)]
 mod opening_an_item_in_an_application_tests;
+mod picturing_an_applications_window;
+#[cfg(test)]
+mod picturing_an_applications_window_tests;
 pub mod places;
 mod pressing_a_control;
 mod pressing_a_key_in_an_application;
@@ -220,6 +223,7 @@ pub mod the_applications_here;
 pub mod the_bracket_a_turn_takes;
 mod the_control_to_set_is_there;
 mod the_door_the_compositor_serves;
+mod the_screen_road_as_chosen;
 mod the_sentence_is_about_something;
 pub mod the_shape_a_provider_is_held_to;
 #[cfg(test)]
@@ -266,6 +270,7 @@ pub use naming_an_application::{as_the_catalogue_names_it, as_this_machine_names
 pub use opening_a_file_in_an_application::AFileOpened;
 pub use opening_a_menu_in_an_application::AMenuOpened;
 pub use opening_an_item_in_an_application::AnItemOpened;
+pub use picturing_an_applications_window::APictureTaken;
 pub use places::Places;
 pub use pressing_a_control::AControlPressed;
 pub use pressing_a_key_in_an_application::AKeyPressed;
@@ -276,6 +281,7 @@ pub use setting_in_an_application::AValueSet;
 pub use shortening::{Shortened, Shortening};
 pub use the_applications_here::{SaysWhatIsInstalled, TheApplicationsHere};
 pub use the_door_the_compositor_serves::{NotAtTheDoor, TheDoorTheCompositorServes};
+pub use the_screen_road_as_chosen::TheScreenRoadAsChosen;
 pub use the_verbs_would_not_declare::TheVerbsWouldNotDeclare;
 pub use the_windows_on_the_screen::TheWindowsOnTheScreen;
 pub use turning::Turning;

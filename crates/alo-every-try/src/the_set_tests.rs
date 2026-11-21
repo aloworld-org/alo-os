@@ -79,6 +79,7 @@ fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
             "open a thing's right-click menu in an application",
             "press a key in an application",
             "type into a search box without saving",
+            "have a picture of a window that describes nothing read",
             "answer the file chooser",
         ]
     );
