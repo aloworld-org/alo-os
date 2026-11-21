@@ -198,8 +198,13 @@ fn a_task_windows_band_draws_no_controls_at_rest() {
         .map(|(_, window)| window)
         .expect("the task window is on the screen");
     let mut drawn = |server: &Server| {
-        let pictures =
-            crate::a_task_windows_edge::every_task_windows_edge(server, &mut fonts, A_DISPLAY, 100);
+        let pictures = crate::a_task_windows_edge::every_task_windows_edge(
+            server,
+            &mut fonts,
+            &crate::approval_testing::words(),
+            A_DISPLAY,
+            100,
+        );
         assert_eq!(pictures.len(), 1, "the control: one band drawn");
         pictures
             .iter()

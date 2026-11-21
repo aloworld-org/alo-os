@@ -2799,6 +2799,7 @@ impl LoopInput for TheDesktopLane<'_> {
         let edges = crate::every_windows_edge::every_windows_edge(
             server,
             self.labels,
+            self.strings,
             this_display.1,
             server.the_scale_an_edge_is_drawn_at(u32::from(this_display.0)),
         );
@@ -2811,6 +2812,7 @@ impl LoopInput for TheDesktopLane<'_> {
         let task_edges = crate::a_task_windows_edge::every_task_windows_edge(
             server,
             &mut self.labels.fonts,
+            self.strings,
             this_display.1,
             server.the_scale_an_edge_is_drawn_at(u32::from(this_display.0)),
         );
@@ -2947,6 +2949,7 @@ impl LoopInput for TheDesktopLane<'_> {
             let its_edges = crate::every_windows_edge::every_windows_edge(
                 server,
                 self.labels,
+                self.strings,
                 (size.w, size.h),
                 server.the_scale_an_edge_is_drawn_at(u32::from(its_scale)),
             );

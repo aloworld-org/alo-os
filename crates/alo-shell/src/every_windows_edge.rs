@@ -47,131 +47,34 @@ use crate::window_edge_picture::EdgePicture;
 /// actually is, and asking each window afterwards is what makes the reveal this
 /// window's own answer rather than a literal. A frame that asked without
 /// telling would draw the previous frame's reveal.
+///
+/// **Each band is drawn by the one function every band is**,
+/// `Server::the_band_drawn` (`crate::a_band_is_drawn`).
 pub(crate) fn every_windows_edge(
     server: &mut crate::Server,
     labels: &mut crate::WindowControlLabels,
+    says: &alo_strings::Strings,
     output: (i32, i32),
     scale: u32,
 ) -> Vec<EdgePicture> {
     server.the_edges_were_told_where_the_pointer_is();
-    let now = std::time::Instant::now();
-    let room = crate::window_edge::the_usable_output(
-        smithay::utils::Size::from((output.0, output.1)),
-        scale,
-    );
     let open: Vec<_> = server.mapped_surfaces().cloned().collect();
-    open.iter()
+    open.into_iter()
         .filter_map(|surface| {
-            let window = server.the_window_a_band_hangs_from(surface, scale);
-            // **Laid out with its controls while any of them is still to be
-            // seen**, so a fade out has something to draw. What a press
-            // reaches is asked separately, of the reveal itself
-            // (`crate::a_press_on_an_edge`), so a control fading out is drawn
-            // and is not pressed.
-            let how_shown = server.how_shown_its_controls_are(surface, now);
-            let edge = crate::window_edge::edge_of(
-                window,
-                server.who_draws_the_header_of(surface),
-                how_shown > 0 || server.is_this_windows_edge_revealed(surface),
-                room,
-            );
-            let title = server.the_name_of(surface);
-            let application = server.the_application_on_the_band(surface);
-            let keyboard = server.where_the_keyboard_is_on_this_windows_edge(surface);
-            let pointing = server.what_this_edge_is_pointing_at_on(
-                &edge,
-                keyboard.what_the_painter_shows(),
-                scale,
-            );
-            let menu = keyboard.the_menu().and_then(|in_the_menu| {
-                crate::window_menu::the_menu_of(&edge, server.how_this_window_is(surface), room)
-                    .map(|menu| (menu, in_the_menu.on()))
-            });
-            let hovered_in_the_menu = menu.as_ref().and_then(|(menu, _)| {
-                server
-                    .where_the_pointer_is_in_logical_pixels()
-                    .map(|at| {
-                        crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale)
-                    })
-                    .and_then(|at| menu.what_is_under(at))
-                    .map(|row| row.does)
-            });
-            // **alo, while it is at work in this window and in no other**
-            // (`crate::alo_in_a_window`), round the whole card: band and window.
-            let alo_here = server.alo_in_this_window(surface);
-            let card = edge.region.merge(window);
-            let stop_pointed_at = crate::alos_band_in_a_window::the_band_of(window)
-                .zip(server.where_the_pointer_is_in_logical_pixels())
-                .is_some_and(|(band, at)| {
-                    band.stop.contains(
-                        crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale),
-                    )
-                });
-            let picture = EdgePicture::of(
-                &edge,
-                crate::window_edge_picture::OverTheEdge {
-                    menu: menu.as_ref().map(|(menu, on)| {
-                        (
-                            menu,
-                            crate::window_menu_paint::PointingAtTheMenu {
-                                hovered: hovered_in_the_menu,
-                                focused: *on,
-                                // Where Left or Right in hand would put it,
-                                // drawn without moving anything.
-                                preview: server.the_preview_of(
-                                    surface,
-                                    on.or(hovered_in_the_menu),
-                                    scale,
-                                ),
-                            },
-                        )
-                    }),
-                    field: server.what_is_typed_in_the_window_field(surface),
-                    showing: the_reason_to_show_a_tooltip(server, &edge, keyboard, scale),
-                    alo: alo_here
-                        .as_ref()
-                        .map(|here| crate::alos_band_in_a_window::AlosBand {
-                            here,
-                            card,
-                            window,
-                            stop_pointed_at,
-                        }),
-                },
-                crate::window_edge_picture::TheWindow {
-                    title: crate::the_name_on_the_band::the_title_to_show(&title),
-                    application: application.as_deref(),
-                    look: crate::window_edge_look::WhichLook::of(
-                        server.is_the_window_typing_goes_to(surface),
-                    ),
-                    // **No line or shadow round a band out over full
-                    // screen**: there is no window card to draw it round,
-                    // only the band laid over the application's top.
-                    body: (!server.is_its_band_out_over_full_screen(surface)).then_some(window),
-                    laid_over: server.is_its_band_out_over_full_screen(surface),
-                    controls: crate::window_edge_paint::HowTheControlsLook {
-                        pointing,
-                        open: keyboard.the_menu().is_some(),
-                        how_shown,
-                        look: crate::window_edge_look::WhichLook::of(
-                            server.is_the_window_typing_goes_to(surface),
-                        ),
-                    },
-                },
+            let picture = server.the_band_drawn(
+                &crate::which_band::ABand::App(surface.clone()),
+                says,
                 &mut labels.fonts,
-                output,
-                scale,
+                (output, scale),
             )?;
             // **alo's border was drawn round this window**, so the corner may
             // leave its copy's sending to the border (the owner, 2026-11-15:
             // *the border is enough*). Only a border drawn counts: a picture
-            // left off the screen above returned before this.
-            if alo_here.as_ref().is_some_and(|here| {
-                here.wears == crate::alo_in_a_window::Wears::TheBorder
-                    && here.how != crate::alo_in_a_window::HowAloIsHere::WaitingForThePerson
-            }) {
-                server.alos_border_was_drawn_round(surface);
+            // left off the screen returned before this.
+            if server.alo_wears_its_border_round(&surface) {
+                server.alos_border_was_drawn_round(&surface);
             }
-            Some(picture.on_the_window(surface.clone()))
+            Some(picture)
         })
         .collect()
 }
@@ -183,7 +86,7 @@ mod tests;
 /// Why a tooltip is shown on this band: the pointer on its band or a control,
 /// or the keyboard on it — and nothing while the panel is open, which says
 /// everything a tooltip would.
-fn the_reason_to_show_a_tooltip(
+pub(crate) fn the_reason_to_show_a_tooltip(
     server: &crate::Server,
     edge: &crate::window_edge::WindowEdge,
     keyboard: crate::window_edge_keys::TheKeyboardOnTheEdge,

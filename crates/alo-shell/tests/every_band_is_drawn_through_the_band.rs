@@ -9,17 +9,17 @@
 //! to it, and each road said *shown, all the way* as a constant. So this reads
 //! `src/` and holds the roads, rather than a list kept beside them:
 //!
-//! 1. **Exactly four files draw a band** (`EdgePicture::of`): the
-//!    applications' (`every_windows_edge.rs`), alo's own windows'
-//!    (`an_alo_windows_edge.rs`, `the_terminals_edge.rs`) and the task
-//!    windows' (`a_task_windows_edge.rs`). A fifth is a new road and has to be
-//!    added here on purpose.
+//! 1. **Exactly one file draws a band** (`EdgePicture::of`):
+//!    `a_band_is_drawn.rs`, for every kind of window. Until 2026-11-21 four
+//!    did, one per kind. The files that place a band in a frame's layers ask
+//!    it (`.the_band_drawn(`).
 //! 2. **No road says how shown its controls are as a constant**: `ALL_THE_WAY`
 //!    is named only by the fade and the reveal, and no `how_shown:` is a
 //!    number.
-//! 3. **alo's three roads ask the band's reveal**
+//! 3. **The one drawing road asks the band's reveal**
 //!    (`crate::the_bands_over_alos_windows`), which is told by the same function
-//!    every application's band is.
+//!    every application's band is; and **one press road** carries out every
+//!    control (`a_band_is_pressed.rs`).
 //! 4. **The old strip is never drawn on a booted machine.**
 //!    `window_control_paint.rs` — 32 × 32 boxes with a pressed look, from
 //!    before the specification — still draws for the nested development
@@ -93,19 +93,28 @@ fn the_files_saying(needle: &str) -> Vec<String> {
         .collect()
 }
 
-/// **Four roads draw a band, and no more.**
+/// **One file draws a band, for every window.** Until 2026-11-21 four did,
+/// one per kind of window, and a fix to one reached that kind only.
 #[test]
-fn exactly_four_files_draw_a_band() {
+fn exactly_one_file_draws_a_band() {
     assert_eq!(
         the_files_saying("EdgePicture::of("),
-        vec![
-            "a_task_windows_edge.rs",
-            "an_alo_windows_edge.rs",
-            "every_windows_edge.rs",
-            "the_terminals_edge.rs",
-        ],
-        "a band is drawn by a road this test does not know"
+        vec!["a_band_is_drawn.rs"],
+        "a band is drawn by a road beside the one drawing road"
     );
+    let roads = the_files_saying(".the_band_drawn(");
+    for kind in [
+        "a_task_windows_edge.rs",
+        "every_windows_edge.rs",
+        "record_edge.rs",
+        "settings_edge.rs",
+        "the_terminals_edge.rs",
+    ] {
+        assert!(
+            roads.iter().any(|it| it == kind),
+            "{kind} no longer draws its band through the one drawing road"
+        );
+    }
 }
 
 /// **Nothing draws controls shown as a constant.**
@@ -127,14 +136,10 @@ fn no_road_draws_its_controls_shown_as_a_constant() {
     }
 }
 
-/// **alo's own windows' bands ask the reveal every band is told by.**
+/// **The one drawing road asks the reveal every band is told by.**
 #[test]
 fn alos_roads_ask_the_bands_reveal() {
-    for road in [
-        "a_task_windows_edge.rs",
-        "an_alo_windows_edge.rs",
-        "the_terminals_edge.rs",
-    ] {
+    for road in ["a_band_is_drawn.rs"] {
         let (_, code) = every_source_file()
             .into_iter()
             .find(|(name, _)| name == road)
