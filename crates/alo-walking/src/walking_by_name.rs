@@ -33,6 +33,7 @@ impl Walking {
         &mut self,
         machine: &mut impl Machine,
         chord: &Chord,
+        _saying: &str,
         name: &str,
         at_most: usize,
         pace: Pace,

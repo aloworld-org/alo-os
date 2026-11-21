@@ -76,6 +76,7 @@ fn the_key_is_typed_only_from_its_secret_after_its_gate() {
         walk.secrets(),
         vec![
             crate::in_every_shipped_application::EVERY_APPLICATION,
+            crate::installing_an_application::INSTALLING,
             THE_PROVIDER_KEY
         ]
     );
@@ -196,6 +197,10 @@ fn the_sections_alo_is_asked_in_are_independent() {
             "every application at full access",
             "VSCodium at ask each time",
             "the Papers sheet at ask each time",
+            // Launch item 6: an application installed by the person, and one
+            // installed by alo, each needing only the providers.
+            "Kate from the market",
+            "Kooha installed by alo",
         ]
     );
     let needs: Vec<Vec<String>> = sections.into_iter().map(|(_, needs)| needs).collect();
@@ -214,6 +219,8 @@ fn the_sections_alo_is_asked_in_are_independent() {
             vec![providers()],
             vec![providers()],
             vec![providers(), "VSCodium at ask each time".to_owned()],
+            vec![providers()],
+            vec![providers()],
         ]
     );
 }

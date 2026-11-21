@@ -36,6 +36,7 @@ pub mod booting;
 pub mod every_windows_band;
 pub mod frame;
 pub mod in_every_shipped_application;
+pub mod installing_an_application;
 pub mod keys;
 pub mod machine;
 pub mod pointer_moves;

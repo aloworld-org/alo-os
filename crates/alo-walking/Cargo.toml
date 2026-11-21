@@ -26,6 +26,9 @@ alo-acting = { path = "../alo-acting" }
 # `alo-cursors` for, never with a picture somebody saved.
 alo-appearance = { path = "../alo-appearance" }
 alo-cursors = { path = "../alo-cursors" }
+# **The word the Dock draws on the market's entry**, so the walk finds that
+# slot by the name the shell says it by, read from where the Dock reads it.
+alo-dock = { path = "../alo-dock" }
 # **Where the level and the grant are in Settings**, counted from the lists
 # Settings draws them from rather than from a number somebody counted once.
 alo-capability = { path = "../alo-capability" }

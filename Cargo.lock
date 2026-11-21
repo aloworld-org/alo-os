@@ -2203,6 +2203,7 @@ dependencies = [
  "alo-applications",
  "alo-capability",
  "alo-cursors",
+ "alo-dock",
  "alo-picking",
  "alo-software",
  "image",
