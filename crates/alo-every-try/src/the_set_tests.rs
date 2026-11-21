@@ -45,7 +45,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 34);
+    assert_eq!(THE_VERSION, 37);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -1065,5 +1065,94 @@ fn a_heading_read_on_the_screen_may_still_be_scrolled_to_by_name() {
             answer.clone(),
         ]);
         assert!(!twice.took_the_road(), "{level:?}: {twice:?}");
+    }
+}
+
+/// **A search for the file it opened is a read the machine answers**: the walk
+/// makes `hello.txt` in the person's home, so a search there for it finds it,
+/// and the try must still type and save. Run 44793910551: one try at full
+/// access searched for it after opening it, and the check ended the try where
+/// the machine would have answered. A search anywhere else, or for another
+/// name, is not one the machine's answer here describes, and leaves the road.
+#[test]
+fn writing_in_vscodium_may_search_for_its_file_and_must_still_type() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, reading, the_words};
+    use alo_adapters::fallback_verbs::{APPLICATION as IN, NAME};
+    use alo_applications::opening_a_file::PATH;
+    use alo_applications::verbs::APPLICATION;
+    use alo_files::verbs::{FIND_IN_FOLDER, FOLDER, MOST, NAMED};
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "write in VSCodium")
+        .expect("the set has it");
+    let editor = request
+        .road()
+        .first()
+        .and_then(|open| {
+            open.expected()
+                .iter()
+                .find(|(arg, _)| *arg == APPLICATION)
+                .map(|(_, is)| is.clone())
+        })
+        .expect("the open names its application");
+    let file = format!("{THE_HOME}/{THE_FILE}");
+    let open = proposing(
+        OPEN_FILE_IN_APPLICATION,
+        &[(APPLICATION, &editor), (PATH, &file)],
+    );
+    // **As the model asked it**, with a number for `most`.
+    let searching = |folder: &str| {
+        reading(
+            FIND_IN_FOLDER,
+            &[(FOLDER, folder), (NAMED, THE_FILE), (MOST, "1")],
+        )
+        .replace(r#""is":"1""#, r#""is":1"#)
+    };
+    let search = searching(THE_HOME);
+    let elsewhere = searching(&format!("{THE_HOME}/Documents"));
+    let typing = proposing(
+        TYPE_TEXT,
+        &[(IN, &editor), (NAME, THE_FILE), (TEXT, THE_TEXT)],
+    );
+    let answer = answering("It is written and saved.");
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let try_these = |lines: &[String]| {
+            let mut model = Writing::these(lines);
+            let tried = one_try_at(
+                level,
+                request,
+                set.may_reach(),
+                &the_verbs(),
+                &the_words(),
+                &mut model,
+            );
+            (tried, model.shown)
+        };
+        let (searched, shown) =
+            try_these(&[open.clone(), search.clone(), typing.clone(), answer.clone()]);
+        assert_eq!(searched.went(), &Went::TheRoad, "{level:?}: {searched:?}");
+        assert_eq!(searched.looked_aside(), 1, "{level:?}");
+        assert!(
+            shown.iter().any(|line| line.contains(&file)),
+            "{level:?}: the search finds the file: {shown:?}"
+        );
+        // **The refusal cases**: searching and then answering is not typing,
+        // and a search the machine's answer does not describe is off the road.
+        let (only_searched, _) = try_these(&[open.clone(), search.clone(), answer.clone()]);
+        assert!(
+            !only_searched.took_the_road(),
+            "{level:?}: {only_searched:?}"
+        );
+        let (wandered, _) = try_these(&[
+            open.clone(),
+            elsewhere.clone(),
+            typing.clone(),
+            answer.clone(),
+        ]);
+        assert!(!wandered.took_the_road(), "{level:?}: {wandered:?}");
     }
 }
