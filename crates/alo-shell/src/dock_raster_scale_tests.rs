@@ -172,7 +172,13 @@ fn at_one_hundred_the_whole_dock_draws_the_bytes_it_drew_before() {
 }
 
 /// The hash of the bottom Dock before this change. See the test above.
-const BOTTOM_BEFORE: u64 = 0x4827_adf7_3434_8602;
+///
+/// **Retaken on 2026-11-20, on purpose and once, from CI's run**: the
+/// composer's field and the ground of its words became the design's
+/// `#F5F6F7` (`dock_composer_field_tests` holds what changed). It was
+/// `0x4827_adf7_3434_8602`, and the left Dock's below was
+/// `0xc443_f861_4e9e_6c8c`.
+const BOTTOM_BEFORE: u64 = 0x5a40_6f9a_f8ff_268b;
 /// The hash of the left Dock.
 ///
 /// **Retaken on 2026-10-29, on purpose and once**: a Dock down a side now
@@ -180,7 +186,7 @@ const BOTTOM_BEFORE: u64 = 0x4827_adf7_3434_8602;
 /// (`crate::dock_history_mark`), so its bytes changed and only there. It was
 /// `0x6225_a4d4_ebf9_1906`; the bottom Dock's hash above, which keeps the
 /// word, did not move.
-const LEFT_BEFORE: u64 = 0xc443_f861_4e9e_6c8c;
+const LEFT_BEFORE: u64 = 0x293f_4a2b_2be8_34e7;
 
 /// Whether `dense` is `sparse` doubled, allowing one pixel along the bar.
 ///
