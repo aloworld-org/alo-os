@@ -97,10 +97,11 @@ fn a_dense_display_draws_the_same_line_twice_as_many_pixels_thick() {
     assert_ne!(pixel(&bands, 197, mid_y).expect("left")[3], 255);
 }
 
-/// **The focused window stands further off the canvas**: below it, at the
-/// same distance, its shadow is darker than an unfocused window's.
+/// **Every window has the same shadow**, whether or not it has the keyboard —
+/// the owner, 2026-11-21, *"Only the title softens"*. Until then a focused
+/// window's shadow was the deeper one.
 #[test]
-fn the_focused_windows_shadow_is_deeper_below_it() {
+fn every_window_casts_the_same_shadow_below_it() {
     let window = dolphin();
     let below = (window.loc.x + 360, window.loc.y + window.size.h + 12);
     let alpha = |look| {
@@ -113,9 +114,9 @@ fn the_focused_windows_shadow_is_deeper_below_it() {
     };
     let (high, low) = (alpha(WhichLook::Focused), alpha(WhichLook::NotFocused));
     assert!(high > 0 && low > 0, "{high} {low}");
-    assert!(
-        high > low,
-        "focused {high} is not deeper than unfocused {low}"
+    assert_eq!(
+        high, low,
+        "a window without the keyboard casts another shadow than the one with it"
     );
 }
 
