@@ -45,11 +45,9 @@ use std::process::ExitCode;
 
 use alo_capability::Verbs;
 use alo_every_try::compared_with_its_base::{compared, summary_of, the_flagged, verdict_of};
-use alo_every_try::counted::tallying_its_own;
-use alo_every_try::counted::{
-    counted, counted_with, summary_counting, the_flagged_of_its_own, with_more,
-};
+use alo_every_try::counted::{counted, summary_counting};
 use alo_every_try::its_own::{ItsOwn, its_own_against, owns_the_whole_set};
+use alo_every_try::judging_its_own::judging_its_own;
 use alo_every_try::the_bar::THE_BAR;
 use alo_every_try::the_bar::THE_CONFIRMING_TRIES;
 use alo_every_try::the_declaration::{Declared, THE_FILE};
@@ -416,56 +414,20 @@ fn running() -> Result<u8, String> {
             (summary(&tallied, &asked_of), verdict(&tallied).exit_code())
         }
         Some(own) => {
-            let mut tallied = tallying_its_own(
+            let judgement = judging_its_own(
                 level,
                 &set,
                 own,
-                // **The bar's tries**, not the variable's, so the bar is one
-                // declared setting (`alo_every_try::the_bar`).
-                (THE_BAR.tries(), others),
+                others,
+                &|named| record.has(level, named),
                 &verbs,
                 &strings,
                 &mut asking,
                 &mut telling,
+                &asked_of,
             );
-            let mut written = summary_counting(&tallied, own, &asked_of);
-            // **Flag, then confirm** (approved 2026-11-20): what slipped on
-            // the first tries is tried again, and the verdict is on both.
-            let flagged = the_flagged_of_its_own(&tallied, own, &|named| record.has(level, named));
-            if !flagged.is_empty() && THE_CONFIRMING_TRIES > 0 {
-                let again = tallying_at(
-                    level,
-                    &set.clone()
-                        .retaining(|request| flagged.iter().any(|named| named == request.named())),
-                    THE_CONFIRMING_TRIES,
-                    &verbs,
-                    &strings,
-                    &mut asking,
-                    &mut telling,
-                );
-                tallied = with_more(tallied, again);
-                written.push_str(&format!(
-                    "\n### After {THE_CONFIRMING_TRIES} more tries of what was flagged\n\n"
-                ));
-                written.push_str(&summary_counting(&tallied, own, &asked_of));
-            }
-            writing_what_was_measured(&Measured::of(level, &tallied).written())?;
-            let held_to_every_try: Vec<&str> = own
-                .iter()
-                .map(|one| one.named())
-                .filter(|named| record.has(level, named))
-                .collect();
-            if !held_to_every_try.is_empty() {
-                written.push_str(&format!(
-                    "\nHeld to every try at this level, because each once took every try \
-                     here (`what-each-request-has-reached.txt`): {}.\n",
-                    held_to_every_try.join(", ")
-                ));
-            }
-            (
-                written,
-                counted_with(&tallied, own, &|named| record.has(level, named)).exit_code(),
-            )
+            writing_what_was_measured(&Measured::of(level, judgement.tallied()).written())?;
+            (judgement.said().to_owned(), judgement.counted().exit_code())
         }
     };
     written.push_str(&format!(
