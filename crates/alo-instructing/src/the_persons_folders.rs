@@ -250,6 +250,15 @@ impl ThePersonsFolders {
             ". Write it out in full wherever the person says their home or ~: a path that \
              starts with ~ is refused.",
         );
+        // **A file in the home is directly in it** (2026-11-20): asked to open
+        // *hello.txt in my home folder*, `gpt-4o-mini` opened
+        // `~/Documents/hello.txt` (every-try, runs 44837607484 and
+        // 44832270663).
+        text.push_str(" A file they say is in their home folder is directly in it: ");
+        text.push_str(&self.home);
+        text.push_str(
+            "/notes.txt, never inside one of their folders unless they name that folder.",
+        );
         if !self.folders.is_empty() {
             text.push_str(" Their own folders, under the names they have on this computer:\n");
             for (role, at) in &self.folders {
@@ -336,6 +345,19 @@ mod tests {
         );
         assert!(told.contains("/Users/name"), "{told}");
         assert!(told.contains("does not allow reaching it"), "{told}");
+    }
+
+    /// **A file the person says is in their home is directly in it**, said
+    /// with the home itself: asked to open *hello.txt in my home folder*,
+    /// `gpt-4o-mini` opened `~/Documents/hello.txt` (every-try, runs 44837607484
+    /// and 44832270663, 2026-11-20).
+    #[test]
+    fn a_file_in_the_home_is_said_to_be_directly_in_it() {
+        let told = annas().told();
+        assert!(
+            told.contains("A file they say is in their home folder is directly in it: /var/home/anna/notes.txt"),
+            "{told}"
+        );
     }
 
     /// **The whole text a turn shows carries the home**, before what may be

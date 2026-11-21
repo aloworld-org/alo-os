@@ -116,7 +116,7 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
             "to bring a thing with a name — a heading, a file, a button — onto the screen, \
              {SCROLL_TO} with that name, once, even when the person says \"scroll down until\" \
              it shows, since {READ_WINDOW} answers only what is on the screen; and {SCROLL_PAGE} \
-             only to read on when nothing ahead has a name you know; then {READ_WINDOW} again"
+             only to read on when nothing ahead has a name you know; then {READ_WINDOW} again, \n             and never say a thing is on the screen until a read of the window shows it"
         ));
     }
     if verbs.of(SET_VALUE).is_some() {
@@ -281,6 +281,15 @@ mod tests {
             "{told}"
         );
         assert!(told.contains("only what is on the screen"), "{told}");
+        // **A thing is said to be on the screen only once a read shows it**:
+        // after pages down, `gpt-4o-mini` answered *"The heading Downloads is
+        // now on the screen"* without reading the window (every-try, runs
+        // 44839984824 and 44815319268, 2026-11-20; not the scroll's answer,
+        // run 44821039957).
+        assert!(
+            told.contains("never say a thing is on the screen until a read of the window shows it"),
+            "{told}"
+        );
     }
     /// **Where typing that saves nothing is offered, `type_text` is told as the
     /// typing that saves**, a key only as one the person names, and a control
