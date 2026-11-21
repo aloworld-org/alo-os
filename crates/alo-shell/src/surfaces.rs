@@ -677,6 +677,31 @@ impl XdgShellHandler for Surfaces {
         });
     }
     fn toplevel_destroyed(&mut self, surface: ToplevelSurface) {
+        // **A window that was on the screen and has gone is said closed**, in
+        // the walk's words (`alo_acting::said_of_a_band`): an application is
+        // asked to close and closes itself, so this is the moment it did.
+        let was_mapped = self
+            .windows
+            .iter()
+            .any(|w| w.surface == surface && w.mapped);
+        if was_mapped {
+            let app_id =
+                smithay::wayland::compositor::with_states(surface.wl_surface(), |states| {
+                    states
+                        .data_map
+                        .get::<smithay::wayland::shell::xdg::XdgToplevelSurfaceData>()
+                        .and_then(|data| data.lock().ok())
+                        .and_then(|state| state.app_id.clone())
+                })
+                .unwrap_or_default();
+            eprintln!(
+                "{}",
+                alo_acting::said_of_a_band::a_window_was_closed(
+                    alo_acting::said_of_a_band::TheKind::Application,
+                    &app_id,
+                )
+            );
+        }
         self.windows.retain(|w| w.surface != surface);
     }
     fn new_popup(&mut self, surface: PopupSurface, positioner: PositionerState) {

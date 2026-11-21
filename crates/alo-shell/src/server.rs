@@ -647,6 +647,9 @@ pub struct Server {
     /// What the journal was last told the bands over alo's own windows draw
     /// (`crate::the_bands_drawn_are_said`).
     pub(crate) what_the_bands_said: crate::the_bands_drawn_are_said::WhatTheBandsSaid,
+    /// Where every band was last said to be drawn, and its controls
+    /// (`crate::the_bands_say_where_they_are`).
+    pub(crate) where_the_bands_were_said: Vec<crate::the_bands_say_where_they_are::SaidOfOneBand>,
     /// Where the keyboard is on each window's edge.
     ///
     /// §6 of `docs/design/the-external-window-edge.md`, and the sibling of
@@ -1079,6 +1082,7 @@ impl Server {
             alos_bands: Vec::new(),
             alos_windows_placed: Vec::new(),
             what_the_bands_said: crate::the_bands_drawn_are_said::WhatTheBandsSaid::default(),
+            where_the_bands_were_said: Vec::new(),
             keyboard_on_edges: Vec::new(),
             asked_to_bring_back: Vec::new(),
             the_task_card_open: None,

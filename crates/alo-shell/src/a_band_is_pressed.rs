@@ -55,6 +55,15 @@ pub(crate) enum PressedBy {
 }
 
 impl PressedBy {
+    /// Who pressed, as the walk's line says it (`alo_acting::said_of_a_band`).
+    const fn as_the_line_says_it(self) -> alo_acting::said_of_a_band::PressedBy {
+        match self {
+            Self::ThePointer => alo_acting::said_of_a_band::PressedBy::Pointer,
+            Self::AReader => alo_acting::said_of_a_band::PressedBy::Reader,
+            Self::TheKeys => alo_acting::said_of_a_band::PressedBy::Keys,
+        }
+    }
+
     /// Where focus goes in a panel this press opens: a pointer leaves no ring,
     /// a reader and the keys are put somewhere they can be seen and heard.
     const fn as_the_panel_takes_it(self) -> ByWhat {
@@ -131,7 +140,20 @@ impl Server {
         if !has.contains(&control) {
             return WhatThePressDid::NoSuchControl;
         }
-        match control {
+        // **Said in the journal, from the one road**, so a walk on a booted
+        // machine reads what every press came to in the same words
+        // (`alo_acting::said_of_a_band`).
+        let (kind, id) = self.the_kind_and_id_of(band);
+        eprintln!(
+            "{}",
+            alo_acting::said_of_a_band::a_bands_control_was_pressed(
+                kind,
+                &id,
+                crate::the_bands_say_where_they_are::the_word_for(control),
+                by.as_the_line_says_it(),
+            )
+        );
+        let did = match control {
             OnTheEdge::Close => WhatThePressDid::Closing(self.this_bands_window_closes(band)),
             OnTheEdge::Minimise => {
                 self.this_bands_window_goes_aside(band);
@@ -141,7 +163,27 @@ impl Server {
                 self.the_menu_was_opened_on_the_band(band, by.as_the_panel_takes_it());
                 WhatThePressDid::ThePanel
             }
+        };
+        let said = match &did {
+            WhatThePressDid::ThePanel => (self.whose_bands_panel_is_open().as_ref() == Some(band))
+                .then(|| alo_acting::said_of_a_band::the_window_panel_opened_for(kind, &id)),
+            WhatThePressDid::WentAside => Some(alo_acting::said_of_a_band::a_window_was_put_aside(
+                kind, &id,
+            )),
+            // **An application is said closed when its window goes**, not when
+            // it is asked: it may ask about unsaved work and stay
+            // (`crate::surfaces`' `toplevel_destroyed`).
+            WhatThePressDid::Closing(
+                ClosingCameTo::Closed
+                | ClosingCameTo::TheTerminal(WhatClosingDid::Closed)
+                | ClosingCameTo::ATask(WhatClosingCameTo::Closed),
+            ) => Some(alo_acting::said_of_a_band::a_window_was_closed(kind, &id)),
+            WhatThePressDid::Closing(_) | WhatThePressDid::NoSuchControl => None,
+        };
+        if let Some(line) = said {
+            eprintln!("{line}");
         }
+        did
     }
 
     /// **Close, for every kind of window**: the door its own Close and

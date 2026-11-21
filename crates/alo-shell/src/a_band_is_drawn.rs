@@ -293,10 +293,11 @@ impl Server {
             output,
             scale,
         )?;
-        Some(match band {
+        let picture = match band {
             ABand::App(surface) => picture.on_the_window(surface.clone()),
             ABand::Alos(_) => picture,
-        })
+        };
+        Some(picture.of_the_band(band.clone()))
     }
 }
 
