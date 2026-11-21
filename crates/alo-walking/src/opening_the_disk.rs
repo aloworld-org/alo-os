@@ -26,7 +26,8 @@
 
 use std::time::Duration;
 
-use crate::step::Walk;
+use crate::keys::Chord;
+use crate::step::{Since, Walk};
 
 /// The environment variable holding the walk disk's passphrase.
 pub const THE_DISK_PASSPHRASE: &str = "ALO_WALK_DISK_PASSPHRASE";
@@ -37,7 +38,19 @@ pub const BEFORE_THE_PROMPT: Duration = Duration::from_secs(30);
 /// The walk, with the disk opened first when its passphrase is set.
 #[must_use]
 pub fn the_disk_is_opened(walk: Walk) -> Walk {
-    walk
+    let minutes = |it: u64| Duration::from_secs(it * 60);
+    walk.section_only_with(THE_DISK_PASSPHRASE, |it| {
+        it.expect_line("the initramfs starts", "Run /init", Since::Boot, minutes(5))
+            .wait(BEFORE_THE_PROMPT)
+            .type_secret(THE_DISK_PASSPHRASE)
+            .press(Chord::key("ret"))
+            .expect_line(
+                "the disk opens and its root mounts",
+                "BTRFS info (device dm-",
+                Since::Boot,
+                minutes(3),
+            )
+    })
 }
 
 #[cfg(test)]

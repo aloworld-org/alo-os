@@ -5,6 +5,9 @@
 //!
 //! Every key below was read from the code it reaches, not remembered:
 //!
+//! - **An encrypted disk is opened first** (`crate::opening_the_disk`), when
+//!   the walk is given its passphrase; the sign-in screen is drawn only once
+//!   the root is mounted.
 //! - **The first-start overview**: Tab moves the ring between the list and
 //!   Continue, and Enter on Continue accepts what the overview names
 //!   (`alo_shell::the_first_start`). A machine whose clock names no region is
@@ -48,6 +51,7 @@ use std::time::Duration;
 use alo_acting::said_in_settings as said;
 
 use crate::keys::Chord;
+use crate::opening_the_disk::the_disk_is_opened;
 use crate::settling::Settling;
 use crate::step::{Since, Walk};
 
@@ -68,7 +72,7 @@ pub fn the_first_walk() -> Walk {
     let look = Settling::UNDER_KVM;
     let minutes = |it: u64| Duration::from_secs(it * 60);
     let tab = Chord::key("tab");
-    let walk = Walk::named("first-start")
+    let walk = the_disk_is_opened(Walk::named("first-start"))
         .expect_line(
             "the sign-in screen goes up",
             "the sign-in screen is going up",
