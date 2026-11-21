@@ -746,6 +746,11 @@ mod tests {
     /// A counter cannot hand the same number out twice however the kernel
     /// behaves, which removes this binary's own tests as a source of the
     /// collisions.
+    ///
+    /// **Within one process, and nothing more.** nextest runs each test in a
+    /// process of its own, where every counter starts at the same number, so
+    /// these tests run one at a time in the `ports-from-a-counter` group
+    /// (`.config/nextest.toml`, held by `tests/ports_from_a_counter_take_turns.rs`).
     fn a_free_port() -> u16 {
         /// Above the range a machine hands out for itself, and above the block
         /// `crate::listeners`' helper walks, so the two never meet.
