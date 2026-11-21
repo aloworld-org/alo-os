@@ -365,8 +365,10 @@ Asked whether a new window may open under the right-hand panel of windows
 put aside, the owner answered **"Windows open clear of it."** So the room a
 window alo places lands in is now the view **above the Dock and clear of the
 panel's column**: left of it, or right of it on a screen read right to left.
-This holds for applications' windows and for alo's own — Settings, the record
-and alo's terminal. A window too wide for what is left is asked to be
+This holds for applications' windows and for alo's own — Settings, the record,
+alo's terminal and, since 2026-11-20, alo's task windows, which until then were
+sized and placed against the whole view and reached under the Dock
+(`crates/alo-shell/src/the_task_windows_find_room.rs`). A window too wide for what is left is asked to be
 narrower, **never narrower than the application says it can be**; one that
 cannot be narrow enough is placed at the room's start so its strip is on the
 screen. `crates/alo-shell/src/the_room_alo_places_a_window_in.rs`.
