@@ -198,20 +198,28 @@ fn every_message_in_a_task_conversation_carries_its_speakers_label() {
             } else {
                 how_many
             };
-            let group = by_where
+            // **Told apart by side as well as by count**: the person's two
+            // messages and alo's two make columns of the same size, and the
+            // first version of this test took whichever came first. A
+            // person's request is on the right, alo's reply on the left.
+            let columns = by_where
                 .iter()
-                .map(|(_, group)| group)
-                .find(|group| group.len() == wanted && wanted > 0)
-                .unwrap_or_else(|| {
-                    panic!(
-                        "at {scale:?}: no column of {wanted} pieces for {kind:?}; the columns \
+                .filter(|(_, group)| group.len() == wanted && wanted > 0);
+            let column = if kind == WhoseBlock::ThePersons {
+                columns.max_by_key(|(at, _)| *at)
+            } else {
+                columns.min_by_key(|(at, _)| *at)
+            };
+            let group = column.map(|(_, group)| group).unwrap_or_else(|| {
+                panic!(
+                    "at {scale:?}: no column of {wanted} pieces for {kind:?}; the columns \
                          hold {:?}",
-                        by_where
-                            .iter()
-                            .map(|(_, group)| group.len())
-                            .collect::<Vec<_>>()
-                    )
-                });
+                    by_where
+                        .iter()
+                        .map(|(_, group)| group.len())
+                        .collect::<Vec<_>>()
+                )
+            });
             if !is_a_message(kind) {
                 assert!(
                     group.iter().all(|one| !teal(one, kind)),
