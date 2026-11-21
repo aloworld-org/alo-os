@@ -444,6 +444,27 @@ operation of everything`. The verb presses the same one key once in the window
 that has the keyboard; the approval is what an agent needs, because it is the
 agent choosing to press it.
 
+### accessible.picture_window
+
+**By hand:** a person looks at the window, and takes a picture of it themselves
+when they want one — `Capture & export a window`. The verb takes one picture of
+the window in front, only where the person switched *Pictures and keys* on for
+that application and chose who reads the pictures, and has it read in words;
+the approval is what an agent needs, because it is the agent choosing to look
+and, where the reader is a service, to send the picture to it.
+
+### accessible.click_at
+
+**By hand:** a person clicks where they want in the window, with the mouse or
+the keyboard's pointer keys — `Sticky keys, slow keys, and keyboard-only
+operation of everything`. The verb clicks once on one thing in the window in
+front, described as a person sees it — the reader the person chose finds where
+it is, and alo clicks there only when it finds exactly one — and only where
+the person switched *Pictures and keys* on for that application and chose who
+reads the pictures; the approval is what an agent needs, because it is the
+agent choosing what to click, the picture goes to the reader, and alo cannot
+know for certain what it pressed.
+
 ### set_the_scheme
 
 **By hand:** a person opens the appearance pane of `Settings, as one place` and

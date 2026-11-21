@@ -28,7 +28,15 @@ pub trait TheModel {
     /// # Errors
     /// What went wrong reaching it: a provider that did not answer is not a
     /// model that chose wrongly, and is counted apart.
-    fn answering(&mut self, shown: &str, strings: &Strings) -> Result<ToAnAgent, String>;
+    ///
+    /// `offered` is what the turn offers at that moment, which its answer is
+    /// held to (`alo_instructing::the_verbs_offered`).
+    fn answering(
+        &mut self,
+        shown: &str,
+        strings: &Strings,
+        offered: &Verbs,
+    ) -> Result<ToAnAgent, String>;
 }
 
 /// How a try ended.
@@ -237,6 +245,8 @@ pub fn one_try_at(
         refused_before_asking: 0,
         skipped_looks: 0,
         on_the_other: None,
+        the_screen_road_open: false,
+        where_nothing_is_named: Vec::new(),
     };
     let mut after = Vec::new();
     let happened = loop {
@@ -386,6 +396,11 @@ struct Recording<'a> {
     /// Which of the request's other roads the try is held to, from where it
     /// parted from the road; [`None`] on the request's own road.
     on_the_other: Option<usize>,
+    /// Whether a read in this try was answered with windows that describe
+    /// nothing, which opens the screen road for the rest of it.
+    the_screen_road_open: bool,
+    /// The applications whose windows such a read found to name nothing.
+    where_nothing_is_named: Vec<String>,
 }
 
 /// Why the loop is stopped once the road is left: the try is over.
@@ -393,12 +408,39 @@ const THE_TRY_IS_OVER: &str = "the try left the road, so nothing more is asked";
 
 impl TheDoor for Recording<'_> {
     fn asking(&mut self, request: &FromAnAgent) -> Result<ToAnAgent, NotAnswered> {
+        let answer = self.answering_one(request);
+        // **A read of windows that describe nothing opens the screen road**,
+        // as the agent reads it off the same answer.
+        if let Ok(ToAnAgent::Did(done)) = &answer
+            && let Some(application) = done.the_application_that_describes_nothing()
+        {
+            self.the_screen_road_open = true;
+            if !self
+                .where_nothing_is_named
+                .iter()
+                .any(|one| one == application)
+            {
+                self.where_nothing_is_named.push(application.to_owned());
+            }
+        }
+        answer
+    }
+}
+
+impl Recording<'_> {
+    /// One request answered, before what it opens is noted.
+    fn answering_one(&mut self, request: &FromAnAgent) -> Result<ToAnAgent, NotAnswered> {
         if let FromAnAgent::Ask { question, .. } = request {
             // **As the daemon shows it**: trimmed, and passed on unwrapped
             // because it already begins with the product's own words
             // (`alo_turn::next_request`'s `Held::shown`).
             self.asked += 1;
-            let answered = self.model.answering(question.trim(), self.strings);
+            // **Held to what the turn offers now**, by the agent's own reading
+            // of the steps so far (`alo_agent::the_screen_road_is_open`).
+            let offered = alo_instructing::the_verbs_offered(self.verbs, self.the_screen_road_open);
+            let answered = self
+                .model
+                .answering(question.trim(), self.strings, &offered);
             if let Ok(ToAnAgent::Answered { text, .. }) = &answered {
                 self.said_last = Some(text.clone());
             }
@@ -521,6 +563,23 @@ impl TheDoor for Recording<'_> {
                 // **As the machine answers a call that does not form**: turned
                 // away before anything else, at both levels, in its own words
                 // — whatever verb it named (`crate::turned_away`).
+                // **As the machine answers a control named where nothing is
+                // named**: refused before any card, in its own words, and the
+                // try goes on (`alo_adapters::where_nothing_is_named`).
+                let mut where_nothing_is_named =
+                    crate::named_where_nothing_is::as_the_request_shows(self.request);
+                where_nothing_is_named.extend(self.where_nothing_is_named.iter().cloned());
+                if let Some(refused) = crate::named_where_nothing_is::refused(
+                    request,
+                    self.verbs,
+                    &self.machine,
+                    &where_nothing_is_named,
+                    self.strings,
+                ) {
+                    self.refused_before_asking += 1;
+                    self.on_the_other = was_on;
+                    return Ok(refused);
+                }
                 if let Some(refused) = crate::turned_away::turned_away(
                     request,
                     self.verbs,

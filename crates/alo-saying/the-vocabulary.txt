@@ -98,6 +98,28 @@ adapters.fallback.choose.no-such-item	{application} shows no item named “{name
 adapters.fallback.choose.no-such-option	The drop-down “{name}” in {application} lists no option “{option}”, so nothing was chosen
 adapters.fallback.choose.not-seen-chosen	alo asked {application} to choose “{name}”, and the window does not show it chosen yet. Look at the window before going on
 adapters.fallback.choose.too-much-to-be-sure	{application} shows more than can be read at once, so whether “{name}” is the only one is not known, and nothing was chosen
+adapters.fallback.click-at.across-a-pairing	alo never clicks by position in a window on this computer for another computer, so nothing was clicked in {application}
+adapters.fallback.click-at.application	the application whose window is clicked
+adapters.fallback.click-at.describes-itself	{application} names what is in its window, so alo presses things there by their names and clicked nothing by position
+adapters.fallback.click-at.no-click	This machine could not click in {application} just now, so nothing was clicked
+adapters.fallback.click-at.not-alos-copy	That {application} window is yours, not alo's own copy, so nothing was clicked. To let alo work in your own windows, choose “alo may work in your own window” in Settings → What alo can use
+adapters.fallback.click-at.not-in-front	No window of {application} has the keyboard, so nothing was clicked. alo clicks only in the window in front: bring it forward first
+adapters.fallback.click-at.not-known	alo clicked in {application}, and nothing in its window visibly changed, so what the click did is not known
+adapters.fallback.click-at.not-switched-on	alo cannot click inside {application}: pictures and keys are off for it, so nothing was clicked. To let alo use pictures of its window and click in it, switch on “Pictures and keys” for {application} in Settings → What alo can use
+adapters.fallback.click-at.password-field	A window of {application} has a password field, and alo never clicks by position in one, so nothing was clicked
+adapters.fallback.click-at.the-person-is-pressing	You are holding a button down, so alo clicked nothing in {application} rather than press into what you are doing
+adapters.fallback.click-by-description.changes	Has the reader you chose find that thing in a picture of the application's window that has the keyboard, then clicks once at its centre, as a person clicking there would, and takes a picture again to see what changed. alo cannot know for certain what it pressed.
+adapters.fallback.click-by-description.clicked-there	alo clicked {across}% across and {down}% down the {application} window, where the reader found “{description}”
+adapters.fallback.click-by-description.description	the one thing to click, described as a person sees it in the window, such as the words on it: the Start race button
+adapters.fallback.click-by-description.leaves	Nothing is clicked where the reader finds no such thing, or more than one. No other window is clicked, nothing is dragged or held down, and nothing is clicked in a terminal or in a window with a password field.
+adapters.fallback.click-by-description.more-than-once	The reader found more than one thing like “{description}” in the {application} window, so nothing was clicked. Describe the one meant more closely
+adapters.fallback.click-by-description.names-nothing	This window of {application} names none of its controls, so nothing called “{name}” can be found in it. Read its windows, then click the thing by describing what it looks like
+adapters.fallback.click-by-description.no-one-reads	alo cannot click inside {application}: nobody has been chosen to read pictures of its window, so nothing could find where to click, and nothing was clicked. To choose, open “Who reads the pictures” in Settings → What alo can use
+adapters.fallback.click-by-description.not-found	The reader found nothing like “{description}” in the {application} window, so nothing was clicked
+adapters.fallback.click-by-description.not-understood	The reader's answer did not say where “{description}” is in the {application} window, so nothing was clicked
+adapters.fallback.click-by-description.purpose	click once on one thing in the window of an application that describes nothing alo can read, such as a button in a game, described as a person sees it: the reader the person chose finds where it is in a picture of that window, and alo clicks there
+adapters.fallback.click-by-description.sentence	click “{description}” in {application}
+adapters.fallback.click-by-description.where-is-it	This is a picture of one window of the application {application}. Find in it: {description}. Answer with one line and nothing else: how many things in the picture match that, then, only if exactly one does, where its centre is as two whole numbers from 0 to 100 — how many per cent of the way across from the left edge, then down from the top edge. For example: 1 50 40 for one match, 0 for none, 2 for two.
 adapters.fallback.did-not-answer-pressing	{application} did not answer in time, so whether the {kind} named “{name}” was pressed is not known
 adapters.fallback.did-not-answer-reading	{application} did not answer in time, so nothing was read or pressed in it
 adapters.fallback.did-not-press	{application} did not press the {kind} named “{name}”
@@ -147,6 +169,21 @@ adapters.fallback.open-menu.password-field	“{name}” in {application} is a pa
 adapters.fallback.open-menu.purpose	open the menu a right-click would open on one thing in an application's window, named as the application names it, so that one of its items can be chosen
 adapters.fallback.open-menu.sentence	open the right-click menu of “{thing}” in {application}
 adapters.fallback.open-menu.too-much	{application} shows more than alo can read at once, so alo could not be sure which “{name}” was meant, and no menu was opened
+adapters.fallback.picture-window.a-picture-can-be-read	Nothing in {application}'s windows can be read in words, so what they show has not been seen yet. You let alo use pictures of it: the next step is a picture of its window, read in words
+adapters.fallback.picture-window.across-a-pairing	alo never takes a picture of a window on this computer for another computer, so no picture of {application} was taken
+adapters.fallback.picture-window.application	the application whose window is pictured
+adapters.fallback.picture-window.changes	Takes one picture of the application's window that has the keyboard, and has it read by whoever you chose under “Who reads the pictures” in Settings → What alo can use. If that is a service, the picture is sent to it.
+adapters.fallback.picture-window.describes-itself	{application} describes what its window shows, so alo reads its words instead and took no picture
+adapters.fallback.picture-window.leaves	No other window is in the picture, nothing is pressed or typed, the picture is not kept once it is read, and a window with a password field is never pictured.
+adapters.fallback.picture-window.no-one-reads	alo cannot see inside {application}: nobody has been chosen to read pictures of its window, so no picture was taken. To choose, open “Who reads the pictures” in Settings → What alo can use
+adapters.fallback.picture-window.no-picture	This machine could not take a picture of {application} just now, so none was taken
+adapters.fallback.picture-window.not-alos-copy	That {application} window is yours, not alo's own copy, so no picture was taken. To let alo work in your own windows, choose “alo may work in your own window” in Settings → What alo can use
+adapters.fallback.picture-window.not-in-front	No window of {application} has the keyboard, so no picture was taken. alo takes a picture only of the window in front: bring it forward first
+adapters.fallback.picture-window.not-switched-on	alo cannot see inside {application}: it describes nothing alo can read, and pictures are off for it, so no picture was taken. To let alo use pictures of its window, switch on “Pictures and keys” for {application} in Settings → What alo can use
+adapters.fallback.picture-window.password-field	A window of {application} has a password field, and alo never takes a picture of one, so no picture was taken
+adapters.fallback.picture-window.purpose	take one picture of the window of an application that describes nothing alo can read, such as a game, and have it read in words by whoever the person chose to read pictures
+adapters.fallback.picture-window.question	what the picture is to answer, in the person's own words
+adapters.fallback.picture-window.sentence	take a picture of the {application} window and have it read, to answer: {question}
 adapters.fallback.press-key.application	the application whose window the key is pressed in
 adapters.fallback.press-key.changes	Presses that one key once in the application's window that has the keyboard, as a person pressing it would.
 adapters.fallback.press-key.down	the down arrow

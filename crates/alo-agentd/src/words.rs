@@ -582,7 +582,10 @@ pub fn agentd_words() -> Result<Vocabulary, WordsError> {
 /// nothing is replaced, because a key means one string and whoever declared it
 /// first said what that string is.
 pub fn declare_into(vocabulary: &mut Vocabulary) -> Result<(), WordsError> {
-    for word in EVERY_WORD {
+    for word in EVERY_WORD
+        .iter()
+        .chain(crate::reading_a_picture_words::EVERY_WORD.iter())
+    {
         vocabulary.says(word.phrase()?)?;
     }
     Ok(())
@@ -679,7 +682,10 @@ mod tests {
     /// The list can be declared, which is what anything loading it does.
     #[test]
     fn this_crate_can_declare_its_own_words() {
-        assert_eq!(agentd_words().unwrap().how_many(), EVERY_WORD.len());
+        assert_eq!(
+            agentd_words().unwrap().how_many(),
+            EVERY_WORD.len() + crate::reading_a_picture_words::EVERY_WORD.len()
+        );
     }
 
     /// **None of the three names anything alo OS rents.** `alo-saying` asks

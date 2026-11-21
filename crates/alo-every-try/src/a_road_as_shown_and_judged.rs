@@ -25,6 +25,7 @@ fn a_step(step: &Step) -> String {
         verb,
         expecting,
         fields,
+        described,
         answered,
         look,
         again,
@@ -41,6 +42,9 @@ fn a_step(step: &Step) -> String {
     }
     for (argument, place) in fields {
         let _ = write!(line, "; the field {argument} names {place:?}");
+    }
+    for (argument, words) in described {
+        let _ = write!(line, "; {argument} describes what {words:?} names");
     }
     let _ = write!(line, "; answered {answered:?}");
     if *look {

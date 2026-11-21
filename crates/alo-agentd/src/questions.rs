@@ -371,6 +371,14 @@ impl Questions {
         self.bound.by_an_organisation()
     }
 
+    /// The rule a question is under, whoever set it, **by value**, for
+    /// [`Questions::road_out`]'s reason: a picture's reader is prepared
+    /// beside a turn that borrows this (`crate::reading_a_picture`).
+    #[must_use]
+    pub fn the_rule(&self) -> SourcePolicy {
+        self.bound.policy().clone()
+    }
+
     /// Which keyring a key would be asked of, taken before a turn borrows this.
     ///
     /// `None` means *the person this process runs as*, which is production and
@@ -587,6 +595,27 @@ mod tests {
             TheBound::Nobodys,
             WhoseKeyring::Nobodys,
         )
+    }
+
+    /// **The rule a picture's reader is asked under is the bound's**, whoever
+    /// set it, and no bound is *anywhere*.
+    #[test]
+    fn the_rule_is_the_bounds() {
+        let under = |bound| {
+            Questions::of_a_session(
+                None,
+                None,
+                Catalogue::built_in().unwrap(),
+                bound,
+                WhoseKeyring::Nobodys,
+            )
+            .the_rule()
+        };
+        assert_eq!(
+            under(TheBound::ThePersons(SourcePolicy::ThisMachineOnly)),
+            SourcePolicy::ThisMachineOnly
+        );
+        assert_eq!(under(TheBound::Nobodys), SourcePolicy::Anywhere);
     }
 
     /// **A machine nobody has configured answers no questions**, and reaching

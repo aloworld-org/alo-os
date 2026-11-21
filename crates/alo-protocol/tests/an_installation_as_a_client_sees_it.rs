@@ -129,6 +129,19 @@ fn as_a_client_sees_it(did: &alo_turn::WhatAVerbDid) -> Done {
         alo_turn::WhatAVerbDid::AKeyWasPressed(pressed) => {
             Done::of_a_key(pressed.application(), pressed.key().named())
         }
+        alo_turn::WhatAVerbDid::APictureWasTaken(taken) => {
+            alo_protocol::Done::of_a_picture_not_read(taken.application(), taken.size())
+        }
+        alo_turn::WhatAVerbDid::AClickWasMade(made) => alo_protocol::Done::of_a_click(
+            made.application(),
+            made.description(),
+            made.changed(),
+            None,
+        ),
+        // A click still to be found was not made, and is told as nothing read.
+        alo_turn::WhatAVerbDid::AThingIsToBeFound(thing) => {
+            alo_protocol::Done::of_a_click(thing.application(), thing.description(), false, None)
+        }
     }
 }
 

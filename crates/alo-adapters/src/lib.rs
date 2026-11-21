@@ -89,6 +89,8 @@ pub mod bus_names;
 pub mod by_their_hand;
 pub mod choosing;
 pub mod choosing_words;
+pub mod click_words;
+pub mod clicking_at;
 pub mod delivering;
 pub mod driving;
 pub mod driving_by_hand;
@@ -112,6 +114,8 @@ pub mod nothing_to_read;
 pub mod opening;
 pub mod opening_a_menu;
 pub mod opening_words;
+pub mod picture_words;
+pub mod picturing_a_window;
 pub mod places_for_text;
 pub mod pressable;
 pub mod pressing_a_key;
@@ -131,6 +135,8 @@ pub mod typing_without_saving_words;
 pub mod typing_words;
 pub mod verbs;
 pub mod walking;
+pub mod where_a_thing_is;
+pub mod where_nothing_is_named;
 #[cfg(target_os = "linux")]
 mod whose_connection;
 pub mod words;
@@ -147,12 +153,14 @@ pub use adapter_verb::{AdapterVerb, ONLY_ITS_APPLICATION, Reaches, Sends};
 pub use adapters::Adapters;
 pub use by_their_hand::{PressedByHand, Unpressed, press_by_hand, read_by_hand};
 pub use choosing::{Choosing, Chosen, ToChoose};
+pub use clicking_at::ClickingAt;
 pub use delivering::{Delivers, NotDelivered};
 pub use driving::{Driven, Driving};
 pub use driving_by_hand::{DrivenByHand, NotDrivenByHand, drive_by_hand};
 pub use fallback_verbs::{
-    ACTIVATE_CONTROL, CHOOSE_OPTION, OPEN_ITEM, OPEN_MENU, PRESS_KEY, READ_WINDOW, SCROLL_PAGE,
-    SCROLL_TO, SELECT_ITEM, SET_VALUE, TYPE_TEXT, TYPE_WITHOUT_SAVING, fallback_verbs,
+    ACTIVATE_CONTROL, CHOOSE_OPTION, CLICK_AT, OPEN_ITEM, OPEN_MENU, PICTURE_WINDOW, PRESS_KEY,
+    READ_WINDOW, SCROLL_PAGE, SCROLL_TO, SELECT_ITEM, SET_VALUE, TYPE_TEXT, TYPE_WITHOUT_SAVING,
+    fallback_verbs,
 };
 pub use invocation::{DBusMethod, Invocation, Part};
 pub use loading::{Loaded, load};
@@ -167,6 +175,7 @@ pub use not_walked::NotWalked;
 pub use nothing_to_read::nothing_to_read;
 pub use opening::{Opened, Opening};
 pub use opening_a_menu::{MenuOpened, OpeningAMenu};
+pub use picturing_a_window::{PicturingAWindow, a_picture_could_say_more};
 pub use pressable::Pressable;
 pub use pressing_a_key::PressingAKey;
 pub use reading_windows::{ReadingWindows, WindowsRead};

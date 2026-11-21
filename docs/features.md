@@ -1161,7 +1161,16 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   desktop — **cannot be driven reliably by any mechanism**, and alo says so
   rather than guessing — unless the person has switched on, for that
   application, alo acting on pictures of its window, told that *alo may press
-  the wrong thing*. **Off by default.**
+  the wrong thing*. **Off by default.** *Built 2026-11-17, not walked:* **alo takes one picture of such a window**
+  (`accessible.picture_window`) where the person switched it on for that
+  application and chose who reads the pictures, and only the reader's words
+  reach alo's model; the person's own model on this computer cannot be handed a
+  picture yet, and alo says so. *Built 2026-11-21, not walked:* **alo clicks
+  once on one thing in such a window, described as a person sees it**
+  (`accessible.click_at`, the owner: *"Yes, click by description"*): after the
+  person's OK the reader they chose is asked where it is, through the same
+  road and indicator, and alo clicks only where exactly one is found. Nothing
+  is ever dragged.
   **The person also chooses what reads those pictures**, in Settings → What
   alo can use, under *Pictures and keys*: **no one** (as a machine arrives:
   alo takes no picture and says it cannot see inside the application, and

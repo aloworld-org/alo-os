@@ -393,3 +393,30 @@ fn a_field_the_machine_would_not_find_is_another_value() {
         })
     );
 }
+
+/// **A description names a thing by its words**, whatever sentence, case,
+/// quotes or spacing they come in — and not by words that only look alike.
+#[test]
+fn a_description_names_a_thing_by_its_words() {
+    use super::a_description_names;
+    for described in [
+        "Start race",
+        "the Start race button",
+        "the “Start Race” button",
+        "START  RACE",
+        "button labelled 'Start race' in the middle",
+    ] {
+        assert!(a_description_names(described, "Start race"), "{described}");
+    }
+    for described in [
+        "Options",
+        "Start",
+        "the race",
+        "Restart race",
+        "Start racing",
+        "",
+    ] {
+        assert!(!a_description_names(described, "Start race"), "{described}");
+    }
+    assert!(!a_description_names("Start race", ""));
+}

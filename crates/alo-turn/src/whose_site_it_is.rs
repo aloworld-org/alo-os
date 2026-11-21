@@ -67,6 +67,40 @@ impl Turning<'_, '_> {
         // And every application it names said by what a person calls it
         // (`crate::applications_named_as_a_person_calls_them`), at both levels.
         let offered = self.naming_its_applications(offered);
+        // **A control named where nothing is named is refused before any
+        // card**, in words that send alo to a picture
+        // (`alo_adapters::where_nothing_is_named`), at both levels.
+        // **And asked of the windows themselves when the guess arrives**, with
+        // no read first needed: a tree opened for this one question and dropped,
+        // only for an application alo may use pictures and keys in.
+        let mut nothing_named = self.where_nothing_is_named().to_vec();
+        if let Some(application) =
+            alo_adapters::where_nothing_is_named::the_application_named(&offered)
+            && !nothing_named.contains(&application)
+            // **Only where the screen road could follow**: pictures and keys on
+            // for that application, so a tree is opened before a card only
+            // where the refusal's advice can be taken.
+            && self.machine().the_screen_road_now().0.allows(&application)
+            && let Some(windows) = self.machine().the_windows_on_the_screen()
+            && let Ok(tree) = windows.opening()
+            && alo_adapters::where_nothing_is_named::the_windows_name_nothing(
+                tree.as_ref(),
+                &application,
+            )
+        {
+            nothing_named.push(application);
+        }
+        let strings = self.machine().strings();
+        if let Some(said) = alo_adapters::where_nothing_is_named::named_where_nothing_is_named(
+            &offered,
+            &nothing_named,
+            strings,
+        ) {
+            let refused = alo_capability::Refused::worded_elsewhere(offered, said);
+            let entry = Entry::refused(&refused, self.grantee(), strings, now);
+            self.writing_down(entry)?;
+            return Err(NotDone::Refused(refused));
+        }
         if offered.verb() != alo_publishing::PUBLISH_TO_GITHUB_PAGES {
             return Ok(offered);
         }

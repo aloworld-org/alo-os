@@ -47,7 +47,7 @@ use crate::a_road::{ARequest, Answered, Step};
 
 /// The version of the set. Up by one for every change to a request, a road or
 /// the machine.
-pub const THE_VERSION: u32 = 37;
+pub const THE_VERSION: u32 = 38;
 
 /// The person's home on the machine the walk boots: Fedora's atomic layout
 /// puts homes under `/var/home`, measured on 2026-11-10
@@ -250,10 +250,19 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
     let their_folders =
         ThePersonsFolders::of(home, folders.iter().map(|(role, at)| (*role, at.as_path())))
             .ok_or_else(|| NotTheSet(format!("{THE_HOME} is not a home a line may name")))?;
-    let installed = TheApplicationsInstalled::of(shipped.every().iter().map(|pinned| {
-        let identifier = pinned.application().identifier();
-        (identifier, names.name_of(identifier))
-    }));
+    // **And the game**, from the catalogue, so a window that describes nothing
+    // is one the machine has (`crate::every_other_verb::the_game`).
+    let (game, game_named) = crate::every_other_verb::the_game()?;
+    let installed = TheApplicationsInstalled::of(
+        shipped
+            .every()
+            .iter()
+            .map(|pinned| {
+                let identifier = pinned.application().identifier();
+                (identifier, names.name_of(identifier))
+            })
+            .chain(std::iter::once((game.as_str(), Some(game_named.as_str())))),
+    );
     let may_reach = WhatItMayReach::nothing()
         .in_this_home(Some(their_folders))
         .at_full_access(true)

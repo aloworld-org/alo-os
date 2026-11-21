@@ -276,6 +276,8 @@ path = "src/main.rs"
 workspace = true
 
 [dev-dependencies]
+# The data URL a picture is sent to its reader as, read back in its test.
+base64 = "0.22"
 # A person's home and undo folder, for the bracket's tests. A temporary
 # directory is not a subvolume, so every bracket in those tests is *not* taken —
 # which is the case they are about; `alo-turn` measures a real one as root.

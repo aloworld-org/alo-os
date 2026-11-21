@@ -64,6 +64,14 @@ pub const OPEN_ITEM: &str = "accessible.open_item";
 /// The verb that presses one key of a closed list (2026-11-17).
 pub const PRESS_KEY: &str = "accessible.press_key";
 
+/// The verb that takes one picture of a window that describes nothing and has
+/// it read in words (2026-11-17, ADR 0147 §1).
+pub const PICTURE_WINDOW: &str = "accessible.picture_window";
+
+/// The verb that clicks once at a point of such a window, in per cent of it
+/// (2026-11-17, the owner: "Allow clicking by position").
+pub const CLICK_AT: &str = "accessible.click_at";
+
 /// The verb that types into a field and saves nothing (2026-11-17).
 pub const TYPE_WITHOUT_SAVING: &str = "accessible.type_without_saving";
 
@@ -151,6 +159,32 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
         acts.push(format!(
             "to press Enter, Escape, Tab or an arrow where the keyboard is, only when the person \
              names that key, {PRESS_KEY}"
+        ));
+    }
+    // **Told only once the picture is offered**, which is only after a read in
+    // the turn found a window that describes nothing
+    // (`crate::the_screen_road_offered`): told to every turn, this pulled the
+    // model off pressing a named button (2026-11-20), and told to none the
+    // picture request fell to 15 and 14 of 20.
+    if verbs.of(PICTURE_WINDOW).is_some() {
+        acts.push(format!(
+            "when {READ_WINDOW} answered that a window shows no text and names nothing and that \
+             a picture of it can be read — a game, a photo, a drawing canvas — you have not seen \
+             that window: your next step is {PICTURE_WINDOW} for its application, with what the \
+             person wants to know as its question, once, even when the person only asked what it \
+             shows, and never an answer about it before the picture is read"
+        ));
+    }
+    // **A click by description, only where nothing has a name** (ADR 0147,
+    // amended 2026-11-17 and 2026-11-21: *"Yes, click by description"*): a
+    // named control is still pressed by its name, and the model never gives a
+    // point — the reader the person chose finds the thing.
+    if verbs.of(CLICK_AT).is_some() {
+        acts.push(format!(
+            "to start, press or choose something in a window whose read says a picture of it can \
+             be read — a game, a photo, a drawing — never a guessed name, since nothing there has \
+             one: {CLICK_AT} once for its application, describing that one thing as a person sees \
+             it, such as the words on it; alo finds where it is and clicks there"
         ));
     }
     format!(
@@ -255,6 +289,26 @@ mod tests {
         assert!(told.contains(PRESS_KEY), "{told}");
         assert!(told.contains("Never send a run line"), "{told}");
         assert!(!told.contains(TYPE_WITHOUT_SAVING), "{told}");
+
+        // **Told only where the picture is offered**, which the turn decides
+        // (`crate::the_verbs_offered`).
+        assert!(!told.contains(PICTURE_WINDOW), "{told}");
+        verbs
+            .declare(named(PICTURE_WINDOW, Effect::Change))
+            .unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(told.contains(PICTURE_WINDOW), "{told}");
+        assert!(
+            !working_in_an_application(&crate::the_verbs_offered(&verbs, false))
+                .contains(PICTURE_WINDOW)
+        );
+        assert!(!told.contains(CLICK_AT), "{told}");
+        verbs.declare(named(CLICK_AT, Effect::Change)).unwrap();
+        let told = working_in_an_application(&verbs);
+        assert!(told.contains(CLICK_AT), "{told}");
+        assert!(
+            !working_in_an_application(&crate::the_verbs_offered(&verbs, false)).contains(CLICK_AT)
+        );
 
         verbs
             .declare(named(TYPE_WITHOUT_SAVING, Effect::Change))

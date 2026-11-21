@@ -1083,6 +1083,15 @@ about, and like `installed`'s it is not put through the name filter the paths
 above go through: it is already held to its own shape by
 `alo_applications::Application`.
 
+`windows-showed` carries `describes-nothing`, `true` where the windows read show no text, name nothing and hold no password field (added **additively on 2026-11-20**; absent is `false`). It opens the screen road for the rest of that turn: the agent offers `accessible.picture_window` only after one (`alo_instructing::the_verbs_offered`, the same function the daemon holds its answer to).
+
+`picture-read` (added **additively on 2026-11-17**, `accessible.picture_window`)
+carries `application`, the picture's `wide` and `tall` in pixels, and either
+`read` — what the reader the person chose said the window shows — or
+`not-read`, the sentence saying why it was not read. **The picture itself is
+never on this wire**: it goes only to the reader, from the daemon, as an egress
+the indicator shows. One with neither field was read by nothing.
+
 `sandboxed` is on the wire rather than left to be derived. A client marking an
 unsandboxed application is handed the fact, because a client that forgot to ask
 would quietly tell a person something untrue about their own machine.

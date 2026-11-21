@@ -137,5 +137,20 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
         WhatAVerbDid::AKeyWasPressed(pressed) => {
             Done::of_a_key(pressed.application(), pressed.key().named())
         }
+        // A picture is never carried: `crate::reading_a_picture` has it read
+        // first, and one that reaches here was read by nothing.
+        WhatAVerbDid::APictureWasTaken(taken) => {
+            Done::of_a_picture_not_read(taken.application(), taken.size())
+        }
+        WhatAVerbDid::AClickWasMade(made) => {
+            Done::of_a_click(made.application(), made.description(), made.changed(), None)
+        }
+        // **A click still to be found is never told from here**: both roads that
+        // approve a change hand it to `crate::clicking_where_it_is` first, and
+        // the turn writes one never found down as refused when it ends. Were it
+        // reached, it is told as a click whose outcome is not known.
+        WhatAVerbDid::AThingIsToBeFound(thing) => {
+            Done::of_a_click(thing.application(), thing.description(), false, None)
+        }
     }
 }

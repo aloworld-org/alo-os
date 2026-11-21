@@ -149,6 +149,18 @@ pub struct Turning<'a, 'm> {
     /// that asks (the owner's decision of 2026-11-16). Told to the person's
     /// door only (`alo_protocol::FromAPerson::Wanted`), never to the agent.
     wanted: Vec<String>,
+    /// Whether a read in this turn found a window that describes nothing —
+    /// what opens the screen road for the rest of it
+    /// ([`Turning::the_verbs_offered_now`]). Never carried into another turn.
+    a_window_described_nothing: bool,
+    /// The applications whose windows a read in this turn found to name
+    /// nothing, by identifier: a control named in one is refused before any
+    /// card (`alo_adapters::where_nothing_is_named`).
+    where_nothing_is_named: Vec<String>,
+    /// An approved click by description whose point the reader has not yet
+    /// given (`crate::finding_where_to_click`): the approval waits here, and
+    /// nowhere outside the turn.
+    the_click_to_find: Option<crate::clicking_in_an_applications_window::AClickToFind>,
 }
 
 impl<'a, 'm> Turning<'a, 'm> {
@@ -185,6 +197,9 @@ impl<'a, 'm> Turning<'a, 'm> {
             became: Vec::new(),
             kept_as: None,
             wanted: Vec::new(),
+            a_window_described_nothing: false,
+            where_nothing_is_named: Vec::new(),
+            the_click_to_find: None,
         })
     }
 
@@ -219,6 +234,9 @@ impl<'a, 'm> Turning<'a, 'm> {
             became: Vec::new(),
             kept_as: None,
             wanted: Vec::new(),
+            a_window_described_nothing: false,
+            where_nothing_is_named: Vec::new(),
+            the_click_to_find: None,
         })
     }
 
@@ -256,7 +274,20 @@ impl<'a, 'm> Turning<'a, 'm> {
     ) -> Result<WhatAVerbDid, NotDone> {
         self.still_open()?;
         let call = self.calling_by_name(verb, given, grants, now)?;
-        self.reading_call(call, grants, now)
+        let read = self.reading_call(call, grants, now)?;
+        // **A read of windows that describe nothing opens the screen road**
+        // for the rest of this turn — by the picture's own rule, as the read
+        // the agent is told says it (`alo_protocol::Done::of_a_window_read`).
+        if let Some(showed) = read.the_windows_showed()
+            && alo_adapters::a_picture_may_be_taken::a_picture_may_be_taken(showed.shown()).is_ok()
+        {
+            self.a_window_described_nothing = true;
+            let application = showed.shown().application().to_owned();
+            if !self.where_nothing_is_named.contains(&application) {
+                self.where_nothing_is_named.push(application);
+            }
+        }
+        Ok(read)
     }
 
     /// The read, from the call onwards: the grants, the boundary, the record.
@@ -274,6 +305,33 @@ impl<'a, 'm> Turning<'a, 'm> {
             Err(refused) => return self.stopped_under(refused, grants, now),
         };
         self.running(authorised, grants, now)
+    }
+
+    /// **What this turn offers now**: every verb, but the screen road's only
+    /// once a read in this turn found a window that describes nothing
+    /// (`alo_instructing::the_verbs_offered`, the owner's framing of
+    /// 2026-11-20).
+    #[must_use]
+    pub fn the_verbs_offered_now(&self) -> alo_capability::Verbs {
+        alo_instructing::the_verbs_offered(self.machine.verbs(), self.a_window_described_nothing)
+    }
+
+    /// The applications whose windows a read in this turn found to name
+    /// nothing.
+    pub(crate) fn where_nothing_is_named(&self) -> &[String] {
+        &self.where_nothing_is_named
+    }
+
+    /// The machine this turn's verbs come from, when they come from another.
+    pub(crate) const fn origin(&self) -> Option<&Origin> {
+        self.origin.as_ref()
+    }
+
+    /// The approved click by description waiting for its point, if one is.
+    pub(crate) const fn the_click_to_find(
+        &mut self,
+    ) -> &mut Option<crate::clicking_in_an_applications_window::AClickToFind> {
+        &mut self.the_click_to_find
     }
 
     /// A change, put to a person in one sentence.
@@ -421,6 +479,12 @@ impl<'a, 'm> Turning<'a, 'm> {
         grants: &Grants,
         now: SystemTime,
     ) -> Result<WhatAVerbDid, NotDone> {
+        // **A click by description runs in two halves** under this one
+        // approval (`crate::finding_where_to_click`): the first ends with what
+        // the reader is to find, and its entry is written by the second.
+        if authorised.verb() == alo_adapters::CLICK_AT {
+            return self.readying_a_click(authorised, grants);
+        }
         // **A change that changes nothing here carries no place either** — a
         // publication — so the record never offers *Put back* beside a folder
         // already on the internet (ADR 0110 §2), whatever a caller kept.
@@ -542,7 +606,11 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// machine is one — so that the next turn can begin on the same borrow.
     /// The turn is consumed exactly as by `ending`, and for the same reason.
     #[must_use]
-    pub fn ended(self, grants: &mut Grants) -> (bool, &'a mut Machine<'m>) {
+    pub fn ended(mut self, grants: &mut Grants) -> (bool, &'a mut Machine<'m>) {
+        // **A click still waiting for its point is written down as never
+        // made** (`crate::finding_where_to_click`); a record that would not
+        // take it has closed the turn already, and there is nothing more to say.
+        let _ = self.a_click_never_found();
         let Self { turn, machine, .. } = self;
         (turn.ending(grants), machine)
     }
@@ -1055,7 +1123,7 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// This entry, stamped *at full access* when `grants` — the list this
     /// moment was decided against — gave this turn's agent full access
     /// (ADR 0149), and unchanged otherwise.
-    fn as_the_level_was(&self, entry: Entry, grants: &Grants) -> Entry {
+    pub(crate) fn as_the_level_was(&self, entry: Entry, grants: &Grants) -> Entry {
         if grants.has_full_access(self.turn.grantee()) {
             entry.at_full_access()
         } else {

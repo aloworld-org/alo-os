@@ -528,19 +528,48 @@ fn putting(
     waiting: Duration,
     vouching: Option<Vouching<'_>>,
 ) -> Result<String, WentWrong> {
-    let sent = Sent {
-        model: question.of().to_owned(),
-        messages: vec![Message {
-            role: THE_PERSON.to_owned(),
-            content: question.text().to_owned(),
-        }],
-        stream: false,
-    };
     // Serialised here, compactly, so that the bytes a proof is made over are
     // the bytes on the wire; `send_json` would serialise again on its own
     // terms (`docs/quirks.md`, ureq 3.4.0).
-    let body = serde_json::to_vec(&sent).map_err(|_| WentWrong::NothingUsable)?;
+    let body = match question.picture() {
+        None => serde_json::to_vec(&Sent {
+            model: question.of().to_owned(),
+            messages: vec![Message {
+                role: THE_PERSON.to_owned(),
+                content: question.text().to_owned(),
+            }],
+            stream: false,
+        }),
+        Some(png) => serde_json::to_vec(&with_a_picture(question, png)),
+    }
+    .map_err(|_| WentWrong::NothingUsable)?;
     sending(endpoint, key, &body, waiting, to, through, vouching)
+}
+
+/// **A question about one picture, in the convention's own shape**: one
+/// message from the person whose content is the words, then the picture as a
+/// `data:` URL of its PNG (ADR 0147 §4).
+///
+/// Only ever sent, for [`HeldToAGrammar`]'s reason, and only by [`putting`]:
+/// a question held to a grammar or a schema is an agent's next request and
+/// never carries a picture.
+fn with_a_picture(question: &Question, png: &[u8]) -> serde_json::Value {
+    use base64::Engine as _;
+    let url = format!(
+        "data:image/png;base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(png)
+    );
+    serde_json::json!({
+        "model": question.of(),
+        "messages": [{
+            "role": THE_PERSON,
+            "content": [
+                {"type": "text", "text": question.text()},
+                {"type": "image_url", "image_url": {"url": url}},
+            ],
+        }],
+        "stream": false,
+    })
 }
 
 /// **Put the question, and hold every token of the answer to `grammar`.**
@@ -871,6 +900,49 @@ fn answers_url(endpoint: &str) -> String {
 )]
 mod tests {
     use super::*;
+
+    /// **A question about a picture is sent with it**, as the convention's
+    /// content parts: the words, then the PNG as a data URL — and a question
+    /// with none is the plain message it always was.
+    #[test]
+    fn a_question_about_a_picture_carries_it_as_a_data_url() {
+        use base64::Engine as _;
+        let png: std::sync::Arc<[u8]> = std::sync::Arc::from(&b"\x89PNG-a-window"[..]);
+        let question = Question::asked("what does it show?", "a-model")
+            .unwrap()
+            .about_a_picture(std::sync::Arc::clone(&png));
+        assert_eq!(question.picture(), Some(&png[..]));
+        let sent = with_a_picture(&question, question.picture().unwrap());
+        assert_eq!(sent.get("model").and_then(|m| m.as_str()), Some("a-model"));
+        assert_eq!(
+            sent.get("stream").and_then(serde_json::Value::as_bool),
+            Some(false)
+        );
+        let parts = sent
+            .pointer("/messages/0/content")
+            .and_then(serde_json::Value::as_array)
+            .unwrap();
+        assert_eq!(parts.len(), 2);
+        assert_eq!(
+            parts
+                .first()
+                .and_then(|p| p.pointer("/text"))
+                .and_then(|t| t.as_str()),
+            Some("what does it show?")
+        );
+        let url = format!(
+            "data:image/png;base64,{}",
+            base64::engine::general_purpose::STANDARD.encode(&png[..])
+        );
+        assert_eq!(
+            parts
+                .get(1)
+                .and_then(|p| p.pointer("/image_url/url"))
+                .and_then(|u| u.as_str()),
+            Some(url.as_str())
+        );
+        assert_eq!(Question::asked("hello", "m").unwrap().picture(), None);
+    }
 
     /// Where a URL would connect, resolved the way a caller resolves it: before
     /// the request, and handed in rather than looked up inside (ADR 0020).

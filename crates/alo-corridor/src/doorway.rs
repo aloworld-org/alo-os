@@ -614,6 +614,21 @@ fn as_the_asking_machine_sees_it(did: &alo_turn::WhatAVerbDid) -> Option<alo_pro
         alo_turn::WhatAVerbDid::AKeyWasPressed(pressed) => {
             alo_protocol::Done::of_a_key(pressed.application(), pressed.key().named())
         }
+        // **A picture is never taken across a pairing** (ADR 0147 §1), so this
+        // arm is unreachable; and were it reached, the picture would not cross.
+        alo_turn::WhatAVerbDid::APictureWasTaken(taken) => {
+            alo_protocol::Done::of_a_picture_not_read(taken.application(), taken.size())
+        }
+        alo_turn::WhatAVerbDid::AClickWasMade(made) => alo_protocol::Done::of_a_click(
+            made.application(),
+            made.description(),
+            made.changed(),
+            None,
+        ),
+        // **A click is never readied across a pairing** (`alo_turn`'s first half
+        // refuses one from another machine), so this arm is unreachable; and were
+        // it reached, nothing was clicked, and nothing is said to have been.
+        alo_turn::WhatAVerbDid::AThingIsToBeFound(_) => return None,
     })
 }
 

@@ -255,9 +255,9 @@ pub fn the_envelope_naming_the_verbs_and_places(verbs: &Verbs, places: &[String]
 /// with an installation's source held to the places it may install from now.
 /// The one place `asking.rs` takes the schema from, so the test that holds
 /// this holds what a provider is sent.
-pub(crate) fn the_envelope_a_turn_on(machine: &crate::machine::Machine<'_>) -> Value {
-    the_envelope_naming_the_verbs_and_places(
-        machine.verbs(),
-        &machine.the_places_a_model_may_name(),
-    )
+pub(crate) fn the_envelope_a_turn_on(
+    machine: &crate::machine::Machine<'_>,
+    offered: &Verbs,
+) -> Value {
+    the_envelope_naming_the_verbs_and_places(offered, &machine.the_places_a_model_may_name())
 }
