@@ -44,7 +44,7 @@ fn a_band_is_said_when_it_appears_moves_and_goes() {
     let (lines, now) = what_changed(&[], vec![the_terminal(100, Vec::new())]);
     assert_eq!(lines.len(), 1, "{lines:?}");
     assert_eq!(
-        read_a_band_is_drawn(&lines[0]),
+        lines.first().and_then(|line| read_a_band_is_drawn(line)),
         Some((
             TheKind::Terminal,
             "terminal".to_owned(),
@@ -84,8 +84,10 @@ fn a_bands_controls_are_said_when_they_appear() {
     let (_, now) = what_changed(&[], vec![the_terminal(100, Vec::new())]);
     let (lines, now) = what_changed(&now, vec![the_terminal(100, its_three(100))]);
     assert_eq!(lines.len(), 1, "{lines:?}");
-    let (kind, id, controls) =
-        read_a_bands_controls_are_drawn(&lines[0]).expect("the walk reads the line back");
+    let (kind, id, controls) = lines
+        .first()
+        .and_then(|line| read_a_bands_controls_are_drawn(line))
+        .expect("the walk reads the line back");
     assert_eq!((kind, id.as_str()), (TheKind::Terminal, "terminal"));
     assert_eq!(
         controls
@@ -94,7 +96,10 @@ fn a_bands_controls_are_said_when_they_appear() {
             .collect::<Vec<_>>(),
         ["Window actions", "Minimise", "Close"]
     );
-    assert_eq!(controls[2].1, at(678, 51, 44, 44));
+    assert_eq!(
+        controls.get(2).map(|(_, at)| *at),
+        Some(at(678, 51, 44, 44))
+    );
 
     let (lines, _) = what_changed(&now, vec![the_terminal(100, its_three(100))]);
     assert!(lines.is_empty(), "controls still shown were said again");

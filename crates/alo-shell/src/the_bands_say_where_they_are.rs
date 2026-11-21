@@ -165,5 +165,9 @@ impl crate::Server {
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
 #[path = "the_bands_say_where_they_are_tests.rs"]
 mod tests;
