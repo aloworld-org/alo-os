@@ -178,7 +178,12 @@ jobs:
     # own gate runs on the free standard runner; the queue's gate, the one that
     # decides what becomes `main`, keeps the 16-core runner so landing stays
     # fast.
-    runs-on: ${{ github.event_name == 'merge_group' && 'alo-16-core' || 'ubuntu-24.04' }}
+    #
+    # **Stopped on 2026-11-21, by the owner's word** ("Can you first stop the
+    # rented machine"): every gate, the queue's included, is back on the free
+    # standard runner. The runner stays defined in the organisation so it can be
+    # used again by changing this one line.
+    runs-on: ubuntu-24.04
     # A cold build of this workspace is tens of minutes; a warm one is minutes.
     # This is above the cold figure and under the queue's own eighty-minute
     # timeout (ruleset 24109151), so a genuinely stuck run is killed before the
