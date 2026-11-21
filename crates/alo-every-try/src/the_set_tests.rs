@@ -45,7 +45,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 25);
+    assert_eq!(THE_VERSION, 29);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -689,4 +689,98 @@ fn reading_a_file_goes_on_from_a_path_where_nothing_is() {
         let (stopped, _) = try_these(&[garbled.clone(), answer.clone()]);
         assert!(!stopped.took_the_road(), "{level:?}: {stopped:?}");
     }
+}
+
+/// **A path through `/home` is the same place at full access**: on this image
+/// `/home` is a link to `/var/home` (`image/usr/lib/tmpfiles.d/alo.conf`, the
+/// walk of 2026-10-26 in `alo_capability::Grant::really`), every path verb
+/// resolves what it is given through every link (`alo_files::Touching`), and
+/// full access answers every path (`alo_capability::full_access`). So at full
+/// access a booted machine opens `/home/alo/hello.txt` as the file the walk
+/// made, and the check takes it as that file. At ask each time the grants are
+/// asked about the path as it was written, so it is held as before.
+#[test]
+fn a_path_through_home_is_the_same_file_at_full_access() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, reading, the_words};
+    use alo_adapters::fallback_verbs::{APPLICATION as IN, NAME};
+    use alo_applications::opening_a_file::PATH;
+    use alo_applications::verbs::APPLICATION;
+    use alo_files::verbs::{FILE, READ_FILE};
+
+    let set = the_set().expect("the set builds");
+    let named = |called: &str| {
+        set.requests()
+            .iter()
+            .find(|request| request.named() == called)
+            .expect("the set has it")
+    };
+    let writing = named("write in VSCodium");
+    let editor = writing
+        .road()
+        .first()
+        .and_then(|open| {
+            open.expected()
+                .iter()
+                .find(|(arg, _)| *arg == APPLICATION)
+                .map(|(_, is)| is.clone())
+        })
+        .expect("the open names its application");
+    let through_the_link = format!("/home/alo/{THE_FILE}");
+    let open = proposing(
+        OPEN_FILE_IN_APPLICATION,
+        &[(APPLICATION, &editor), (PATH, &through_the_link)],
+    );
+    let typing = proposing(
+        TYPE_TEXT,
+        &[(IN, &editor), (NAME, THE_FILE), (TEXT, THE_TEXT)],
+    );
+    let answer = answering("It is written and saved.");
+    let try_at = |level: TheLevel, request: &ARequest, lines: &[String]| {
+        one_try_at(
+            level,
+            request,
+            set.may_reach(),
+            &the_verbs(),
+            &the_words(),
+            &mut Writing::these(lines),
+        )
+    };
+    let opened = try_at(
+        TheLevel::FullAccess,
+        writing,
+        &[open.clone(), typing.clone(), answer.clone()],
+    );
+    assert_eq!(opened.went(), &Went::TheRoad, "{opened:?}");
+    assert_eq!(opened.refused_before_asking(), 0, "{opened:?}");
+    let read = try_at(
+        TheLevel::FullAccess,
+        named("read a file"),
+        &[
+            reading(READ_FILE, &[(FILE, "/home/alo/Documents/notes.txt")]),
+            answering("It says to buy bread and call Anna on Friday."),
+        ],
+    );
+    assert_eq!(read.went(), &Went::TheRoad, "{read:?}");
+    // **The refusal cases**: at ask each time it is held as before, and a
+    // path that is not the link's is not taken for the file.
+    let asked = try_at(
+        TheLevel::AskEachTime,
+        writing,
+        &[open.clone(), typing.clone(), answer.clone()],
+    );
+    assert!(!asked.took_the_road(), "{asked:?}");
+    let elsewhere = proposing(
+        OPEN_FILE_IN_APPLICATION,
+        &[
+            (APPLICATION, &editor),
+            (PATH, &format!("/homes/alo/{THE_FILE}")),
+        ],
+    );
+    let wrong = try_at(
+        TheLevel::FullAccess,
+        writing,
+        &[elsewhere, typing.clone(), answer.clone()],
+    );
+    assert!(!wrong.took_the_road(), "{wrong:?}");
 }
