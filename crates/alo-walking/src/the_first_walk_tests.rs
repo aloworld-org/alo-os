@@ -345,9 +345,9 @@ fn a_provider_that_needs_no_key_is_added_before_the_gate() {
         "the switch was not pressed with Space just before the form was pictured"
     );
     assert!(
-        !before
-            .iter()
-            .any(|step| matches!(step, Step::TypeSecret(_))),
+        !before.iter().any(
+            |step| matches!(step, Step::TypeSecret(variable) if *variable == THE_PROVIDER_KEY)
+        ),
         "a key was typed for a service that needs none"
     );
 }
@@ -359,7 +359,7 @@ fn said_as_keys(steps: &[Step]) -> Vec<String> {
         .filter_map(|step| match step {
             Step::Press(chord) => Some(chord.the_key().to_owned()),
             Step::Type(text) => Some(format!("type {text}")),
-            Step::TypeSecret(_) => Some("type the secret".to_owned()),
+            Step::TypeSecret(variable) => Some(format!("type the secret {variable}")),
             Step::PressUntilTheKeyboardIsOn { name, .. } => Some(format!("until {name}")),
             _ => None,
         })
@@ -416,9 +416,9 @@ fn the_provider_with_a_key_is_one_row_further_down_and_past_the_switch() {
         "Add a provider is not found by its name before the form"
     );
     assert_eq!(
-        the_keys_after("type the secret", 3),
+        the_keys_after(&format!("type the secret {THE_PROVIDER_KEY}"), 3),
         vec![
-            "type the secret".to_owned(),
+            format!("type the secret {THE_PROVIDER_KEY}"),
             format!("until {}", said::MODEL),
             "type gpt-4o-mini".to_owned(),
         ]

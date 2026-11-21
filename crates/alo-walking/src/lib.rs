@@ -38,6 +38,7 @@ pub mod frame;
 pub mod in_every_shipped_application;
 pub mod keys;
 pub mod machine;
+pub mod opening_the_disk;
 pub mod pointer_moves;
 pub mod qemu;
 pub mod qmp;
