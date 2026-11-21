@@ -170,6 +170,7 @@ pub(crate) fn the_key_settings_took(
             // `None` means no form is open, and only then does the window see
             // the press at all.
             if server.a_key_fills_in_the_provider(press.filling).is_some() {
+                server.settings_says_where_the_keyboard_went(strings);
                 return Ok(());
             }
             // **A chord reaches its action from Settings too** (ADR 0145): a
@@ -186,6 +187,9 @@ pub(crate) fn the_key_settings_took(
                 return Ok(());
             }
             the_press_is_carried_out(server, press, strings);
+            // **And where the keyboard went, by the name it draws**, so a walk
+            // finds a row by its name (`crate::settings_says_where_the_keyboard_is`).
+            server.settings_says_where_the_keyboard_went(strings);
             Ok(())
         }
         // A release, a repeat, and a code this keyboard has that evdev does

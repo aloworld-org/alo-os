@@ -27,14 +27,18 @@
 //! is not a reassurance to put on a screen: a sentence promising safety is a
 //! sentence somebody has to keep.
 
+// **The names a walk finds these by are declared once, there**, so the words
+// drawn and the names looked for cannot drift apart.
+use alo_acting::said_in_settings as said;
 use alo_strings::{Vocabulary, VocabularyError, Word, WordError};
 
 /// The heading above the four fields.
-pub const ADDING_A_PROVIDER: Word = Word::saying("shell.provider.adding", "Add a provider").noting(
-    "The heading over the form where a person adds a service that answers their questions \
+pub const ADDING_A_PROVIDER: Word = Word::saying("shell.provider.adding", said::ADD_A_PROVIDER)
+    .noting(
+        "The heading over the form where a person adds a service that answers their questions \
          — an AI provider they already have an account with. A short instruction, the way a \
          button is worded.",
-);
+    );
 
 /// The line under the heading, saying what happens.
 pub const WHAT_TO_DO_WITH_IT: Word = Word::saying(
@@ -48,25 +52,25 @@ pub const WHAT_TO_DO_WITH_IT: Word = Word::saying(
 );
 
 /// The first field.
-pub const ITS_NAME: Word = Word::saying("shell.provider.name", "Name").noting(
+pub const ITS_NAME: Word = Word::saying("shell.provider.name", said::NAME).noting(
     "The label beside the field where a person types what to call this provider. It is their \
      own name for it and appears when it answers them. One or two words.",
 );
 
 /// The second field.
-pub const ITS_ADDRESS: Word = Word::saying("shell.provider.address", "Address").noting(
+pub const ITS_ADDRESS: Word = Word::saying("shell.provider.address", said::ADDRESS).noting(
     "The label beside the field where a person types the web address of the provider's \
      interface — the base address, such as https://api.example.com. One or two words.",
 );
 
 /// The third field.
-pub const ITS_KEY: Word = Word::saying("shell.provider.key", "Key").noting(
+pub const ITS_KEY: Word = Word::saying("shell.provider.key", said::KEY).noting(
     "The label beside the field where a person pastes the secret key their provider gave them. \
      What they type here is shown as dots. One or two words.",
 );
 
 /// The fourth field.
-pub const ITS_MODEL: Word = Word::saying("shell.provider.model", "Model").noting(
+pub const ITS_MODEL: Word = Word::saying("shell.provider.model", said::MODEL).noting(
     "The label beside the field where a person types which model to ask for, exactly as their \
      provider names it. One or two words.",
 );
@@ -78,8 +82,8 @@ pub const ITS_MODEL: Word = Word::saying("shell.provider.model", "Model").noting
 /// `docs/features.md` promises *a compatible API … using the credentials that
 /// provider requires*, and for these that is none. Off until the person turns
 /// it on, because almost every hosted service needs one.
-pub const ITS_NEEDS_NO_KEY: Word =
-    Word::saying("shell.provider.needs-no-key", "This service needs no key").noting(
+pub const ITS_NEEDS_NO_KEY: Word = Word::saying("shell.provider.needs-no-key", said::NEEDS_NO_KEY)
+    .noting(
         "The label beside an on/off switch in the form that adds a provider, straight after the \
          field for the key. The person turns it on for a service that asks for no secret key, \
          such as a program running on their own computer or on their own network. Short, like \

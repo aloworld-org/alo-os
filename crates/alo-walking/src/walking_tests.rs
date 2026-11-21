@@ -806,3 +806,69 @@ fn a_check_that_does_not_allow_a_retry_fails_on_the_first_line() {
         report.as_text()
     );
 }
+
+/// A machine whose Settings says the keyboard moved to `names`, one every four
+/// seconds from the third — later than one read of the log after a press, so
+/// each press sees its own line.
+fn settings_saying(names: &[&str]) -> PicturesAndLines {
+    names.iter().enumerate().fold(
+        PicturesAndLines::showing(screens()),
+        |machine, (at, name)| {
+            machine.saying(
+                Duration::from_secs(3 + 4 * u64::try_from(at).unwrap_or(0)),
+                &alo_acting::said_in_settings::the_keyboard_is_on(name),
+            )
+        },
+    )
+}
+
+/// **A row is found by its name**: Down is pressed until Settings says the
+/// keyboard is on *Add a provider*, and no more.
+#[test]
+fn a_row_is_found_by_its_name() {
+    let mut machine = settings_saying(&["alo", alo_acting::said_in_settings::ADD_A_PROVIDER]);
+    let walked = Walk::named("w").mark().press_until_the_keyboard_is_on(
+        &Chord::key("down"),
+        alo_acting::said_in_settings::ADD_A_PROVIDER,
+        8,
+    );
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![(
+            "the keyboard is on \"Add a provider\"".to_owned(),
+            Verdict::Passed
+        )],
+        "{}",
+        report.as_text()
+    );
+    assert_eq!(machine.keys_pressed(), vec!["down", "down"]);
+}
+
+/// **But a row never named fails**, after the presses it was given, saying
+/// where the keyboard went instead.
+#[test]
+fn a_row_never_named_fails_saying_where_the_keyboard_went() {
+    let mut machine = settings_saying(&["alo", "Not at all"]);
+    let walked = Walk::named("w").mark().press_until_the_keyboard_is_on(
+        &Chord::key("down"),
+        alo_acting::said_in_settings::ADD_A_PROVIDER,
+        3,
+    );
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![(
+            "the keyboard is on \"Add a provider\"".to_owned(),
+            Verdict::Failed
+        )],
+        "{}",
+        report.as_text()
+    );
+    assert!(
+        report.as_text().contains("Not at all"),
+        "{}",
+        report.as_text()
+    );
+    assert_eq!(machine.keys_pressed().len(), 3);
+}

@@ -45,6 +45,8 @@
 
 use std::time::Duration;
 
+use alo_acting::said_in_settings as said;
+
 use crate::keys::Chord;
 use crate::settling::Settling;
 use crate::step::{Since, Walk};
@@ -209,6 +211,14 @@ pub const THE_TERMINAL_MAXIMISED: &str =
 pub const A_PROVIDER_THAT_NEEDS_NO_KEY_SAVED: &str =
     "alo-desktop: a provider that needs no key was saved";
 
+/// The most Downs a row of *alo and AI* is looked for with: more than the page
+/// has rows, so only a row that is not there fails.
+const ROWS_AT_MOST: usize = 24;
+
+/// The most Tabs a field of the provider's form is looked for with: more than
+/// the form has fields.
+const FIELDS_AT_MOST: usize = 8;
+
 /// Then add a provider that needs no key, the way a person adds a runtime of
 /// their own on this computer: the key left empty, the switch after it turned
 /// on with Space, and Enter.
@@ -220,23 +230,25 @@ pub const A_PROVIDER_THAT_NEEDS_NO_KEY_SAVED: &str =
 /// is what answers the sections after it.
 fn then_a_provider_that_needs_no_key(walk: Walk) -> Walk {
     let look = Settling::UNDER_KVM;
-    let tab = Chord::key("tab");
+    let (tab, down) = (Chord::key("tab"), Chord::key("down"));
     walk.press(Chord::key("esc"))
         .press(Chord::with("meta_l", "i"))
         .look("settings-for-a-provider-that-needs-no-key", look)
         .press(Chord::key("home"))
+        // Into the page, then **down to the row by its name**, never by
+        // counting (`alo_acting::said_in_settings`).
         .press(tab.clone())
-        .press_times(&Chord::key("down"), 4)
+        .mark()
+        .press_until_the_keyboard_is_on(&down, said::ADD_A_PROVIDER, ROWS_AT_MOST)
         .look("on-add-a-provider-that-needs-no-key", look)
         .press(Chord::key("ret"))
         .type_text("On this computer")
-        .press(tab.clone())
+        .press_until_the_keyboard_is_on(&tab, said::ADDRESS, FIELDS_AT_MOST)
         .type_text("http://127.0.0.1:11434")
         // Past the key, left empty, to the switch.
-        .press(tab.clone())
-        .press(tab.clone())
+        .press_until_the_keyboard_is_on(&tab, said::NEEDS_NO_KEY, FIELDS_AT_MOST)
         .press(Chord::key("spc"))
-        .press(tab)
+        .press_until_the_keyboard_is_on(&tab, said::MODEL, FIELDS_AT_MOST)
         .type_text("llama3.2")
         .look("the-keyless-provider-form", look)
         .mark()
@@ -254,28 +266,29 @@ fn then_a_provider_that_needs_no_key(walk: Walk) -> Walk {
 /// nothing at all without it.
 fn then_the_provider(walk: Walk) -> Walk {
     let look = Settling::UNDER_KVM;
-    let tab = Chord::key("tab");
+    let (tab, down) = (Chord::key("tab"), Chord::key("down"));
     let walk = walk
         .only_with(THE_PROVIDER_KEY)
         .press(Chord::key("esc"))
         .press(Chord::with("meta_l", "i"))
         .look("settings-again", look)
         .press(Chord::key("home"))
+        // **Down to the row by its name**: five Downs, counted after the
+        // provider that needs no key, landed on *alo* (run 44851000278,
+        // picture 54), because that provider brings a row and its button.
         .press(tab.clone())
-        // **Five, not four, since the provider that needs no key**: it is
-        // a row of its own under *my provider*, above *Add a provider*.
-        .press_times(&Chord::key("down"), 5)
+        .mark()
+        .press_until_the_keyboard_is_on(&down, said::ADD_A_PROVIDER, ROWS_AT_MOST)
         .look("on-add-a-provider", look)
         .press(Chord::key("ret"))
         .look("the-provider-form", look)
         .type_text("openai")
-        .press(tab.clone())
+        .press_until_the_keyboard_is_on(&tab, said::ADDRESS, FIELDS_AT_MOST)
         .type_text("https://api.openai.com")
-        .press(tab.clone())
+        .press_until_the_keyboard_is_on(&tab, said::KEY, FIELDS_AT_MOST)
         .type_secret(THE_PROVIDER_KEY)
-        .press(tab.clone())
         // Past the switch that says a service needs no key, left off.
-        .press(tab)
+        .press_until_the_keyboard_is_on(&tab, said::MODEL, FIELDS_AT_MOST)
         .type_text("gpt-4o-mini")
         .look("the-provider-form-filled", look)
         .press(Chord::key("ret"))
