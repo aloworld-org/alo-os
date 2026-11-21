@@ -58,10 +58,23 @@ Beyond the gate:
 
 ## Adapters
 
-Writing an adapter for an application is the most useful contribution available,
-and it does not require touching the system. Read
-`docs/contracts/app-adapters.md` — especially the rule that an adapter exposes
-typed verbs and never accepts code.
+Writing an adapter for an application is the most useful contribution available.
+Read `docs/contracts/app-adapters.md` first — especially the rule that an adapter
+exposes typed verbs and never accepts code.
+
+**Today an adapter is a change to alo OS itself.** It is written in Rust, as
+constants in `crates/alo-adapters` (`src/text_editor.rs` is the worked
+example), and it ships only once it is added to `shipped_adapters()` in
+`crates/alo-adapters/src/verbs.rs` and merged here. A person can then use its
+verbs from the terminal with `alo-app`; alo itself is not yet offered them when
+asked (`crates/alo-turn/src/machine.rs`, *the_verbs_a_whole_machine_offers*).
+
+**ADR 0160 records the road that replaces this, and it is not built yet.** An
+application written in any language will carry its adapter as a signed file
+inside its own package, signed with a key its maker registers with alo, and
+alo will check that file with the same refusals — no script, no "run anything" —
+without anybody changing alo OS. Until that lands, an adapter is a pull request
+to this repository.
 
 ## Commits and branches
 

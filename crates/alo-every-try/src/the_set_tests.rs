@@ -45,7 +45,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 37);
+    assert_eq!(THE_VERSION, 38);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -1155,4 +1155,281 @@ fn writing_in_vscodium_may_search_for_its_file_and_must_still_type() {
         ]);
         assert!(!wandered.took_the_road(), "{level:?}: {wandered:?}");
     }
+}
+
+/// **A button moved as though it were a slider is refused before the card**,
+/// as the machine refuses a move of a slider or number box the window does not
+/// show (#1391, `alo_turn`'s `the_control_to_set_is_there`), at both levels,
+/// in the move's own words — and a try that then presses it takes the road,
+/// said to have been refused first. Runs 44793910551 and 44793268747: the model
+/// sent `accessible.set_value` to Reload three times, and the check ended each
+/// try where the machine would have answered.
+#[test]
+fn a_button_moved_as_a_slider_is_refused_before_the_card_and_the_try_goes_on() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, the_words};
+    use alo_adapters::fallback_verbs::{
+        ACTIVATE_CONTROL, APPLICATION, KIND, NAME, SET_VALUE, VALUE,
+    };
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "press a button in an application")
+        .expect("the set has it");
+    let pressing = request
+        .road()
+        .iter()
+        .find(|step| step.verb() == ACTIVATE_CONTROL)
+        .expect("the road presses");
+    let expected = |argument: &str| {
+        pressing
+            .expected()
+            .iter()
+            .find(|(arg, _)| *arg == argument)
+            .map(|(_, is)| is.clone())
+            .expect("the road names it")
+    };
+    let (browser, kind, reload) = (expected(APPLICATION), expected(KIND), expected(NAME));
+    let moved = proposing(
+        SET_VALUE,
+        &[(APPLICATION, &browser), (NAME, &reload), (VALUE, "1")],
+    )
+    .replace(r#""is":"1""#, r#""is":1"#);
+    let press = proposing(
+        ACTIVATE_CONTROL,
+        &[(APPLICATION, &browser), (KIND, &kind), (NAME, &reload)],
+    );
+    let answer = answering("Reload is pressed.");
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let try_these = |lines: &[String]| {
+            let mut model = Writing::these(lines);
+            let tried = one_try_at(
+                level,
+                request,
+                set.may_reach(),
+                &the_verbs(),
+                &the_words(),
+                &mut model,
+            );
+            (tried, model.shown)
+        };
+        let (went_on, shown) = try_these(&[moved.clone(), press.clone(), answer.clone()]);
+        assert_eq!(went_on.went(), &Went::TheRoad, "{level:?}: {went_on:?}");
+        assert_eq!(went_on.refused_before_asking(), 1, "{level:?}");
+        let refusal = format!("shows no slider or number box named “{reload}” now");
+        assert!(
+            shown.get(1).is_some_and(|second| second.contains(&refusal)),
+            "{level:?}: the refusal is shown: {shown:?}"
+        );
+        // **The refusal case**: moving it and then answering is not the road.
+        let (stopped, _) = try_these(&[moved.clone(), answer.clone()]);
+        assert!(!stopped.took_the_road(), "{level:?}: {stopped:?}");
+    }
+}
+
+/// **Only a name its window shows no slider of is refused**: on the slider's
+/// own request the slider the window shows is not, another name is, and on
+/// the pressing request the button is.
+#[test]
+fn a_move_is_refused_only_where_the_window_shows_no_slider_of_that_name() {
+    use crate::as_the_machine_names::AsTheMachineNames;
+    use crate::no_such_control::not_a_slider_the_window_shows;
+    use crate::testing::{proposing, read, the_words};
+    use alo_adapters::fallback_verbs::{APPLICATION, NAME, SET_VALUE, VALUE};
+
+    let set = the_set().expect("the set builds");
+    let named = |called: &str| {
+        set.requests()
+            .iter()
+            .find(|request| request.named() == called)
+            .expect("the set has it")
+    };
+    let machine = AsTheMachineNames::of(set.may_reach());
+    let refused = |request: &crate::a_road::ARequest, application: &str, name: &str| {
+        let moved = proposing(
+            SET_VALUE,
+            &[(APPLICATION, application), (NAME, name), (VALUE, "100")],
+        )
+        .replace(r#""is":"100""#, r#""is":100"#);
+        not_a_slider_the_window_shows(request, &read(&moved), &the_verbs(), &machine, &the_words())
+            .is_some()
+    };
+    let slider = named("move a slider in an application");
+    let moving = slider
+        .road()
+        .iter()
+        .find(|step| step.verb() == SET_VALUE)
+        .expect("the road moves the slider");
+    let expected = |argument: &str| {
+        moving
+            .expected()
+            .iter()
+            .find(|(arg, _)| *arg == argument)
+            .map(|(_, is)| is.clone())
+            .expect("the road names it")
+    };
+    let (viewer, zoom) = (expected(APPLICATION), expected(NAME));
+    assert!(
+        !refused(slider, &viewer, &zoom),
+        "the slider the window shows"
+    );
+    assert!(refused(slider, &viewer, &format!("{zoom} slider")));
+    assert!(refused(
+        named("press a button in an application"),
+        "org.mozilla.firefox",
+        "Reload"
+    ));
+    assert!(
+        !refused(named("read a file"), "org.mozilla.firefox", "Reload"),
+        "a request that reads no window of it knows nothing of its sliders"
+    );
+}
+
+/// **A slider move refused leaves the try on the road it was on**: the
+/// refusal is not a step, so a request with another road that the refused
+/// verb would have parted onto is still held to its own, and the next correct step
+/// passes (the rule #1393 set for every refusal before asking).
+#[test]
+fn a_slider_move_refused_leaves_the_try_on_its_road() {
+    use crate::a_road::Answered;
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, the_words};
+    use alo_adapters::fallback_verbs::{
+        ACTIVATE_CONTROL, APPLICATION, KIND, NAME, READ_WINDOW as READ, SET_VALUE, VALUE,
+    };
+    use alo_adapters::{Role as OnScreen, Seen, Shown, ShownWindow};
+
+    let set = the_set().expect("the set builds");
+    let firefox = "org.mozilla.firefox";
+    let press = || {
+        Step::of(ACTIVATE_CONTROL, Answered::TypedAndSaved)
+            .expecting(APPLICATION, firefox)
+            .expecting(NAME, "Reload")
+    };
+    // **Its window, read whole, shows Reload and no slider**, so a move of
+    // Reload is refused before the card (`crate::no_such_control`).
+    let shown = Shown::of(
+        firefox.to_owned(),
+        vec![ShownWindow::titled(
+            "Mozilla Firefox".to_owned(),
+            vec![Seen::of(OnScreen::Button, "Reload".to_owned(), None, 1)],
+        )],
+        false,
+    );
+    let look = || {
+        Step::of(
+            READ,
+            Answered::With(alo_protocol::Done::of_a_window_read(&shown, &[])),
+        )
+        .expecting(APPLICATION, firefox)
+        .a_look()
+    };
+    let moving = || {
+        Step::of(SET_VALUE, Answered::TypedAndSaved)
+            .expecting(APPLICATION, firefox)
+            .expecting(NAME, "Zoom")
+    };
+    let request = ARequest::asking("press", "Press Reload in Firefox.", vec![look(), press()])
+        .or_by_another_road(vec![look(), moving()]);
+    let nothing_typed = proposing(
+        SET_VALUE,
+        &[(APPLICATION, firefox), (NAME, "Reload"), (VALUE, "1")],
+    )
+    .replace(r#""is":"1""#, r#""is":1"#);
+    let pressed = proposing(
+        ACTIVATE_CONTROL,
+        &[(APPLICATION, firefox), (KIND, "button"), (NAME, "Reload")],
+    );
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let tried = one_try_at(
+            level,
+            &request,
+            set.may_reach(),
+            &the_verbs(),
+            &the_words(),
+            &mut Writing::these(&[
+                nothing_typed.clone(),
+                pressed.clone(),
+                answering("Pressed."),
+            ]),
+        );
+        assert_eq!(tried.went(), &Went::TheRoad, "{level:?}: {tried:?}");
+        assert_eq!(tried.refused_before_asking(), 1, "{level:?}");
+        assert!(!tried.by_the_other_road(), "{level:?}: {tried:?}");
+    }
+}
+
+/// **A window of another application, or one not read whole, says nothing of
+/// this one's sliders**: a move is refused only on what the machine would
+/// read before the card — the application's own window, read whole.
+#[test]
+fn a_move_is_judged_only_on_its_own_window_read_whole() {
+    use crate::a_road::Answered;
+    use crate::as_the_machine_names::AsTheMachineNames;
+    use crate::no_such_control::not_a_slider_the_window_shows;
+    use crate::testing::{proposing, read, the_words};
+    use alo_adapters::fallback_verbs::{APPLICATION, NAME, SET_VALUE, VALUE};
+    use alo_adapters::{Role as OnScreen, Seen, Shown, ShownWindow};
+
+    let set = the_set().expect("the set builds");
+    let machine = AsTheMachineNames::of(set.may_reach());
+    let firefox = "org.mozilla.firefox";
+    let a_read_of = |whole: bool| {
+        let shown = Shown::of(
+            firefox.to_owned(),
+            vec![ShownWindow::titled(
+                "Mozilla Firefox".to_owned(),
+                vec![Seen::of(OnScreen::Button, "Reload".to_owned(), None, 1)],
+            )],
+            !whole,
+        );
+        ARequest::asking(
+            "a window",
+            "Press Reload in Firefox.",
+            vec![
+                Step::of(
+                    READ_WINDOW,
+                    Answered::With(alo_protocol::Done::of_a_window_read(&shown, &[])),
+                )
+                .a_look(),
+                Step::of(
+                    alo_adapters::fallback_verbs::ACTIVATE_CONTROL,
+                    Answered::TypedAndSaved,
+                ),
+            ],
+        )
+    };
+    let moved = |application: &str| {
+        read(
+            &proposing(
+                SET_VALUE,
+                &[(APPLICATION, application), (NAME, "Reload"), (VALUE, "1")],
+            )
+            .replace(r#""is":"1""#, r#""is":1"#),
+        )
+    };
+    let refused = |request: &ARequest, application: &str| {
+        not_a_slider_the_window_shows(
+            request,
+            &moved(application),
+            &the_verbs(),
+            &machine,
+            &the_words(),
+        )
+        .is_some()
+    };
+    assert!(
+        refused(&a_read_of(true), firefox),
+        "its own window, read whole"
+    );
+    assert!(
+        !refused(&a_read_of(false), firefox),
+        "a window not read whole may hold a slider of that name"
+    );
+    assert!(
+        !refused(&a_read_of(true), "org.gnome.Papers"),
+        "another application's window says nothing of this one"
+    );
 }

@@ -430,9 +430,15 @@ fn the_declaration_names_its_scheme() {
     use super::Scheme;
 
     let written = declared_with(&the_verbs()).written();
-    assert!(written.contains("\nfingerprints\t2\n"), "{written}");
+    assert!(written.contains("\nfingerprints\t3\n"), "{written}");
     assert_eq!(
         Declared::read(&written).expect("it reads").scheme(),
+        Scheme::AsSent
+    );
+    assert_eq!(
+        Declared::read("fingerprints\t2\nevery-turn\tabc\n")
+            .expect("it reads")
+            .scheme(),
         Scheme::WhatIsShown
     );
     assert_eq!(
@@ -442,7 +448,7 @@ fn the_declaration_names_its_scheme() {
         Scheme::First,
         "a file that names no scheme is the first"
     );
-    assert!(Declared::read("fingerprints\t3\nevery-turn\tabc\n").is_err());
+    assert!(Declared::read("fingerprints\t4\nevery-turn\tabc\n").is_err());
 }
 
 /// **The first scheme still tells things apart**, so a base declared in it is
@@ -451,22 +457,64 @@ fn the_declaration_names_its_scheme() {
 fn the_first_scheme_tells_every_verb_and_request_apart() {
     use super::Scheme;
 
-    let first = Declared::by_the_scheme(
-        &the_set().expect("the set builds"),
-        &the_verbs(),
-        Scheme::First,
-    )
-    .expect("declares");
-    let requests: std::collections::BTreeSet<&str> =
-        first.requests().iter().map(|one| one.line()).collect();
-    assert_eq!(requests.len(), first.requests().len(), "a line per request");
-    let verbs: std::collections::BTreeSet<&str> = the_verbs()
-        .all()
-        .filter_map(|verb| first.verb(verb.name()))
-        .collect();
-    assert_eq!(verbs.len(), the_verbs().len(), "a line per verb");
+    // **And the second**, which a base declared before answers were written
+    // as sent is read in.
+    for scheme in [Scheme::First, Scheme::WhatIsShown] {
+        let first =
+            Declared::by_the_scheme(&the_set().expect("the set builds"), &the_verbs(), scheme)
+                .expect("declares");
+        let requests: std::collections::BTreeSet<&str> =
+            first.requests().iter().map(|one| one.line()).collect();
+        assert_eq!(
+            requests.len(),
+            first.requests().len(),
+            "a line per request, {scheme:?}"
+        );
+        let verbs: std::collections::BTreeSet<&str> = the_verbs()
+            .all()
+            .filter_map(|verb| first.verb(verb.name()))
+            .collect();
+        assert_eq!(
+            verbs.len(),
+            the_verbs().len(),
+            "a line per verb, {scheme:?}"
+        );
+        assert!(
+            first.requests().iter().all(|one| one.line().len() == 16),
+            "each a fingerprint, {scheme:?}"
+        );
+    }
+}
+
+/// **A request's answer is fingerprinted as the model is sent it** (found by
+/// another lane on #1412, 2026-11-21): a field the protocol leaves out when it
+/// is empty (`skip_serializing_if`) is not in what the model reads, so it
+/// must not be in the fingerprint. The `{:?}` form printed every
+/// `None`, and three empty fields on a thing shown moved the line of every
+/// request that reads a window.
+#[test]
+fn an_answer_is_fingerprinted_as_it_is_sent() {
+    let set = the_set().expect("the set builds");
+    for request in set.requests() {
+        let told = request.as_shown_and_judged();
+        assert!(
+            !told.contains("None,") && !told.contains("None }"),
+            "{} is told by a field the model is not sent: {told}",
+            request.named()
+        );
+    }
+    let scrolling = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "scroll a page in an application")
+        .expect("in the set");
+    let first = scrolling.road().first().expect("a road");
+    let crate::a_road::Answered::With(done) = first.answered() else {
+        panic!("the window read answers with what was done");
+    };
+    let sent = serde_json::to_string(done).expect("it is sent");
     assert!(
-        first.requests().iter().all(|one| one.line().len() == 16),
-        "each a fingerprint"
+        scrolling.as_shown_and_judged().contains(&sent),
+        "the answer as sent: {sent}"
     );
 }
