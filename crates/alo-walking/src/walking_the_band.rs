@@ -82,9 +82,11 @@ impl Walking {
         let start = machine.elapsed();
         loop {
             // **The latest line about this band decides**: drawn where, or no
-            // longer drawn.
+            // longer drawn — read from the whole journal, not the last mark,
+            // because the shell says a band once per change and a band that
+            // has not moved says nothing new (run 44915943010).
             let mut latest: Option<Result<(String, OnTheScreen, String), String>> = None;
-            for line in the_log::all_with(&machine.log()?, self.mark, &phrases) {
+            for line in the_log::all_with(&machine.log()?, 0, &phrases) {
                 if let Some((said_kind, said_id, at)) = said::read_a_band_is_drawn(&line) {
                     if answers(kind, id, said_kind, &said_id) {
                         latest = Some(Ok((said_id, at, line)));
@@ -176,7 +178,9 @@ impl Walking {
         let phrases = [said::A_BANDS_CONTROLS_ARE_DRAWN.to_owned()];
         let start = machine.elapsed();
         loop {
-            let latest = the_log::all_with(&machine.log()?, self.mark, &phrases)
+            // From the whole journal too: the latest controls line is where
+            // they are, however long ago it was said.
+            let latest = the_log::all_with(&machine.log()?, 0, &phrases)
                 .into_iter()
                 .filter_map(|line| {
                     let (said_kind, said_id, controls) =

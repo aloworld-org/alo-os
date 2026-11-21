@@ -165,18 +165,25 @@ impl AKind {
                 at: Target::Middle,
             })
             .look_as_it_settles(&format!("band-{label}-at-rest"), look);
-        let mut pictures = std::iter::once(format!("band-{label}-revealed")).chain(
-            ["for-close", "for-minimise"]
-                .iter()
-                .map(|what| format!("band-{label}-pointed-{what}")),
-        );
-        let mut next = || pictures.next().unwrap_or_default();
+        // **The first pointing is the controls revealed; each after it is
+        // named for the control pressed next** (run 44915943010 named
+        // Settings' Minimise picture for Close, handing names out in turn).
+        let mut revealed = false;
+        let mut next = |name: &str| {
+            if revealed {
+                let what = name.to_lowercase().replace(' ', "-");
+                format!("band-{label}-pointed-for-{what}")
+            } else {
+                revealed = true;
+                format!("band-{label}-revealed")
+            }
+        };
         let mut walk = walk;
         if self.controls.contains(&band::WINDOW_ACTIONS) {
             walk = self
                 .pressing(
                     walk,
-                    &next(),
+                    &next(band::WINDOW_ACTIONS),
                     band::WINDOW_ACTIONS,
                     band::THE_WINDOW_PANEL_OPENED_FOR,
                 )
@@ -184,13 +191,18 @@ impl AKind {
                 .look(&format!("band-{label}-the-panel-closed"), look);
         }
         if self.controls.contains(&band::CLOSE) {
-            walk = self.pressing(walk, &next(), band::CLOSE, band::A_WINDOW_WAS_CLOSED);
+            walk = self.pressing(
+                walk,
+                &next(band::CLOSE),
+                band::CLOSE,
+                band::A_WINDOW_WAS_CLOSED,
+            );
         }
         if self.controls.contains(&band::MINIMISE) {
             let opened = (self.open)(walk.mark(), &format!("{label}-again"));
             walk = self.pressing(
                 opened,
-                &next(),
+                &next(band::MINIMISE),
                 band::MINIMISE,
                 band::A_WINDOW_WAS_PUT_ASIDE,
             );
@@ -246,10 +258,12 @@ fn the_record(walk: Walk, _: &str) -> Walk {
 }
 
 /// A task window: alo asked something, which nothing answers before a provider
-/// is added — and the window is there all the same.
+/// is added — and the window is there all the same. **The ask's look may find
+/// the screen as it was**: Super+A puts a caret in the Dock's field and
+/// nothing else (run 44915943010, picture 73), as the launcher does.
 fn a_task(walk: Walk, picture: &str) -> Walk {
     walk.press(Chord::with("meta_l", "a"))
-        .look(
+        .look_as_it_settles(
             &format!("band-{picture}-the-bar"),
             Settling::UNDER_KVM.at_most(Duration::from_secs(60)),
         )

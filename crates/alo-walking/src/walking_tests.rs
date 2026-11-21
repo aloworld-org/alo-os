@@ -1066,3 +1066,25 @@ fn a_task_window_is_found_whatever_its_number() {
     let report = walk(&mut machine, &walked, &nothing_set, QUICK);
     assert!(report.passed(), "{}", report.as_text());
 }
+
+/// **A band is pointed at again by its latest line, however long ago it was
+/// said**: the shell says a band is drawn once per change, so a band that has
+/// not moved says nothing new after a later mark. Main's walk at 418a226e (run
+/// 44915943010) pointed at Dolphin's and the terminal's bands, pressed Window
+/// actions (the panel opened), marked, and then found "nothing said the band
+/// is drawn" for the same, unmoved band.
+#[test]
+fn a_band_is_pointed_at_again_by_its_latest_line() {
+    use alo_acting::said_of_a_band::TheKind;
+    let (_, lines) = the_terminals_band();
+    let mut machine = a_screen_saying_at_once(&lines);
+    let walked = Walk::named("w")
+        .mark()
+        .point_at_the_band(TheKind::Terminal, "terminal", Duration::from_secs(30))
+        .wait(Duration::from_secs(5))
+        .mark()
+        .point_at_the_band(TheKind::Terminal, "terminal", Duration::from_secs(30));
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert!(report.passed(), "{}", report.as_text());
+    assert_eq!(machine.pointed, vec![(420, 73), (420, 73)]);
+}
