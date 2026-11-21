@@ -133,7 +133,7 @@ pub enum WhatAVerbDid {
     /// chose is to find, and the picture to find it in. Nothing is clicked
     /// yet; the daemon asks the reader and hands its answer to
     /// `Turning::clicking_where_it_was_found` (`crate::finding_where_to_click`).
-    AThingIsToBeFound(AThingToFind),
+    AThingIsToBeFound(Box<AThingToFind>),
 }
 
 impl WhatAVerbDid {
@@ -351,9 +351,9 @@ impl WhatAVerbDid {
     /// What the reader is to find before a click, when a click waits for its
     /// point.
     #[must_use]
-    pub const fn thing_to_find(&self) -> Option<&AThingToFind> {
+    pub fn thing_to_find(&self) -> Option<&AThingToFind> {
         match self {
-            Self::AThingIsToBeFound(thing) => Some(thing),
+            Self::AThingIsToBeFound(thing) => Some(thing.as_ref()),
             _ => None,
         }
     }

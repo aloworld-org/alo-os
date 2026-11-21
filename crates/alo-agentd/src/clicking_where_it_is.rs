@@ -53,17 +53,24 @@ fn where_it_is(
     strings: &Strings,
     now: SystemTime,
 ) -> Result<String, alo_strings::Said> {
-    let _ = (thing, turning, questions, road, now);
-    Err(strings.say(
-        &alo_adapters::click_words::NO_CLICK.key(),
-        &alo_strings::Filling::nothing(),
-    ))
+    let asked =
+        alo_adapters::where_a_thing_is::the_question(thing.named(), thing.description(), strings)
+            .into_text();
+    crate::reading_a_picture::asking_the_reader(
+        thing.before(),
+        &asked,
+        turning,
+        questions,
+        road,
+        strings,
+        now,
+    )
 }
 
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
-    clippy::panic,
+    clippy::indexing_slicing,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 #[path = "clicking_where_it_is_tests.rs"]

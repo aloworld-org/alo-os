@@ -45,9 +45,10 @@ impl Turning<'_, '_> {
         match readying_a_click(self.machine(), authorised, grants, origin.as_ref()) {
             Ok((ready, thing)) => {
                 *self.the_click_to_find() = Some(ready.decided_at_full_access(at_full_access));
-                Ok(WhatAVerbDid::AThingIsToBeFound(thing))
+                Ok(WhatAVerbDid::AThingIsToBeFound(Box::new(thing)))
             }
-            Err((entry, not_done)) => {
+            Err(refused) => {
+                let (entry, not_done) = *refused;
                 let entry = self.as_the_level_was(entry, grants);
                 self.writing_down(entry)?;
                 Err(not_done)

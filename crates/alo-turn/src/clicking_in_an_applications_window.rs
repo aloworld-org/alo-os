@@ -41,7 +41,7 @@
 
 use alo_acting::{Clicked, Pictured, ToClick, ToPicture};
 use alo_adapters::click_words as words;
-use alo_adapters::where_a_thing_is::{self, NotFound};
+use alo_adapters::where_a_thing_is;
 use alo_adapters::{ClickingAt, NotWalked, TreeFault};
 use alo_applications::Application;
 use alo_capability::{Authorised, Grants, Refused, Value};
@@ -154,7 +154,7 @@ pub struct AClickMade {
     at: (u8, u8),
     /// The window as pictured after the click, not yet read — where a
     /// picture could be taken.
-    after: Option<APictureTaken>,
+    after: Option<Box<APictureTaken>>,
     /// Whether the window visibly changed: `false` where the picture after is
     /// the same as the one before, or there is no picture after.
     changed: bool,
@@ -181,8 +181,8 @@ impl AClickMade {
 
     /// The picture after the click, for its reader.
     #[must_use]
-    pub const fn after(&self) -> Option<&APictureTaken> {
-        self.after.as_ref()
+    pub fn after(&self) -> Option<&APictureTaken> {
+        self.after.as_deref()
     }
 
     /// Whether the window visibly changed. **`false` is *not known***, never
@@ -221,9 +221,9 @@ fn refusing<T>(
     agent: &alo_capability::Grantee,
     machine: &Machine<'_>,
     refused: Refused,
-) -> Result<T, (Entry, NotDone)> {
+) -> Result<T, Box<(Entry, NotDone)>> {
     let entry = Entry::refused(&refused, agent, machine.strings(), authorised_at);
-    Err((entry, NotDone::Refused(refused)))
+    Err(Box::new((entry, NotDone::Refused(refused))))
 }
 
 /// **The first half**: every check, and the picture before — or the refusal,
@@ -233,7 +233,7 @@ pub(crate) fn readying_a_click(
     authorised: Authorised,
     grants: &Grants,
     origin: Option<&Origin>,
-) -> Result<(AClickToFind, AThingToFind), (Entry, NotDone)> {
+) -> Result<(AClickToFind, AThingToFind), Box<(Entry, NotDone)>> {
     let strings = machine.strings();
     let at = authorised.at();
     let agent = authorised.under().clone();
@@ -332,19 +332,92 @@ pub(crate) fn clicking_where_it_was_found(
     ready: AClickToFind,
     read: Result<String, Said>,
 ) -> (Entry, Result<AClickMade, NotDone>) {
-    let _ = (
-        &ready.application,
-        &ready.before,
-        &read,
-        where_a_thing_is::found,
-    );
-    let _: Option<NotFound> = None;
     let strings = machine.strings();
-    let refused = ready.clicking.refused(words::NO_CLICK, strings);
-    let authorised = ready.clicking.into_authorised();
-    let entry = Entry::refused(&refused, authorised.under(), strings, authorised.at());
-    let _ = (Clicked::Clicked, ToClick::at);
-    (entry, Err(NotDone::Refused(refused)))
+    let AClickToFind {
+        clicking,
+        application,
+        before,
+        ..
+    } = ready;
+    let refusing = |clicking: ClickingAt, refused: Refused| {
+        let authorised = clicking.into_authorised();
+        let entry = Entry::refused(&refused, authorised.under(), strings, authorised.at());
+        (entry, Err(NotDone::Refused(refused)))
+    };
+    // **No reader could be asked** — the person's own model cannot read
+    // pictures yet — so nothing can say where, and nothing is clicked.
+    let read = match read {
+        Ok(read) => read,
+        Err(said) => {
+            let refused = clicking.refused_saying(said);
+            return refusing(clicking, refused);
+        }
+    };
+    // **Exactly one found gives a point**; anything else clicks nothing.
+    let (across, down) = match where_a_thing_is::found(&read) {
+        Ok(point) => point,
+        Err(why) => {
+            let said = why.said(clicking.named(), clicking.description(), strings);
+            let refused = clicking.refused_saying(said);
+            return refusing(clicking, refused);
+        }
+    };
+    let per_mille = |per_cent: u8| u16::from(per_cent) * 10;
+    let Some(asked) = ToClick::at(application.clone(), per_mille(across), per_mille(down)) else {
+        let refused = clicking.refused(words::NO_CLICK, strings);
+        return refusing(clicking, refused);
+    };
+    let Some(door) = machine.at_the_compositors_door() else {
+        let refused = clicking.refused(words::NO_CLICK, strings);
+        return refusing(clicking, refused);
+    };
+    let word = match door.clicking(&asked).unwrap_or(Clicked::CouldNotClick) {
+        Clicked::Clicked => None,
+        Clicked::NotInFront => Some(words::NOT_IN_FRONT),
+        Clicked::NotAlosCopy => Some(words::NOT_ALOS_COPY),
+        Clicked::ThePersonIsPressing => Some(words::THE_PERSON_IS_PRESSING),
+        Clicked::CouldNotClick => Some(words::NO_CLICK),
+    };
+    if let Some(word) = word {
+        let refused = clicking.refused(word, strings);
+        return refusing(clicking, refused);
+    }
+    // **Read again after**, whatever it shows.
+    let after = a_picture(door, &application).ok().map(Box::new);
+    let changed = after
+        .as_ref()
+        .is_some_and(|after| after.png() != before.png());
+    let filled = Filling::of(
+        alo_adapters::fallback_words::APPLICATION,
+        clicking.named().to_owned(),
+    )
+    .and(
+        where_a_thing_is::DESCRIPTION,
+        clicking.description().to_owned(),
+    );
+    // **Where alo clicked is in the record**, as the reader found it, because
+    // afterwards nobody can say what was at that place.
+    let mut told = vec![
+        strings.say(
+            &words::CLICKED_THERE.key(),
+            &filled
+                .clone()
+                .and("across", across.to_string())
+                .and("down", down.to_string()),
+        ),
+    ];
+    if !changed {
+        told.push(strings.say(&words::NOT_KNOWN.key(), &filled));
+    }
+    let made = AClickMade {
+        application: clicking.application().to_owned(),
+        description: clicking.description().to_owned(),
+        at: (across, down),
+        after,
+        changed,
+    };
+    let entry = Entry::ran(&clicking.into_authorised(), strings).telling(&told);
+    (entry, Ok(made))
 }
 
 /// **A click whose point never came**: the approval was spent and nothing was

@@ -24,10 +24,10 @@ fn a_press_of(application: &str, name: &str) -> Call {
         .unwrap()
 }
 
-/// **Named where nothing is named: refused, in words that send alo to a
-/// picture**, naming the application and the name it gave.
+/// **Named where nothing is named: refused, in words that send alo to a click
+/// by description** (2026-11-21), naming the application and the name it gave.
 #[test]
-fn a_control_named_where_nothing_is_named_is_refused_with_the_road_to_a_picture() {
+fn a_control_named_where_nothing_is_named_is_refused_with_the_road_to_a_click() {
     let said = named_where_nothing_is_named(
         &a_press_of(GAME, "Start Race"),
         &[GAME.to_owned()],
@@ -41,7 +41,11 @@ fn a_control_named_where_nothing_is_named_is_refused_with_the_road_to_a_picture(
         )
         .into_text();
     assert_eq!(said.text(), expected);
-    assert!(said.text().contains("take a picture of them"), "{said}");
+    assert!(
+        said.text()
+            .contains("click the thing by describing what it looks like"),
+        "{said}"
+    );
 }
 
 /// **Every other call is left alone**: a window that names its controls,

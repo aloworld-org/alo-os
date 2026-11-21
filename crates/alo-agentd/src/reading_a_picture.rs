@@ -109,10 +109,6 @@ fn reading(
 ///
 /// `pub(crate)`, for `crate::clicking_where_it_is`, which asks where one
 /// described thing is.
-#[expect(
-    clippy::too_many_arguments,
-    reason = "the picture, the question, the turn that carries it and the four things the \n              road out is read from; a struct would exist only to be unpacked"
-)]
 pub(crate) fn asking_the_reader(
     taken: &APictureTaken,
     asked: &str,
@@ -173,7 +169,7 @@ pub(crate) fn asking_the_reader(
                 ThePlaceItIsPut::AProvider(hosted) => Answers::Provider(hosted),
                 ThePlaceItIsPut::AServiceHere(served) => Answers::Service(served),
             };
-            turning.reading_a_picture(&asked, png, &model, permission, &answers, &places, now)
+            turning.reading_a_picture(asked, png, &model, permission, &answers, &places, now)
         },
     );
     match prepared {

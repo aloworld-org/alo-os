@@ -807,7 +807,9 @@ fn nothing_is_clicked_between_the_approval_and_the_readers_answer() {
         let _ = turning.ending(grants);
         thing
     });
-    let thing = thing.expect("no click waits to be found after the OK");
+    let Some(thing) = thing else {
+        panic!("no click waits to be found after the OK")
+    };
     assert_eq!(thing.application(), GAME);
     assert_eq!(thing.description(), DESCRIBED);
     assert_eq!(thing.before().png(), a_png(BEFORE).as_slice());

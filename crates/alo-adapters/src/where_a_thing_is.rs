@@ -21,6 +21,7 @@
 use alo_strings::{Filling, Said, Strings, Word};
 
 use crate::click_words as words;
+use crate::fallback_verbs::THE_WHOLE_WAY;
 
 /// The name every click sentence fills with the application.
 pub const APPLICATION: &str = "application";
@@ -66,20 +67,60 @@ impl NotFound {
 /// the window of `application` (as a person calls it).
 #[must_use]
 pub fn the_question(application: &str, description: &str, strings: &Strings) -> Said {
-    let _ = (application, description);
-    strings.say(&words::WHERE_IS_IT.key(), &Filling::nothing())
+    strings.say(
+        &words::WHERE_IS_IT.key(),
+        &Filling::of(APPLICATION, application.to_owned()).and(DESCRIPTION, description.to_owned()),
+    )
 }
 
 /// The point the reader's `answer` gives, in whole per cent of the window:
 /// across, then down.
 ///
+/// **One line of whole numbers**, whatever is between them: a count, and
+/// after a count of one, two numbers from 0 to 100. A minus sign or a
+/// decimal point is not a whole number of per cent, and a second line is not
+/// the one line asked for.
+///
 /// # Errors
-/// [`NotFound`]: none found, more than one, or an answer that is not one line
-/// of whole numbers — a count, and after a count of one, two numbers from 0 to
-/// 100.
+/// [`NotFound`]: none found, more than one, or an answer that is not that one
+/// line.
 pub fn found(answer: &str) -> Result<(u8, u8), NotFound> {
-    let _ = answer;
-    Err(NotFound::Unreadable)
+    let mut lines = answer.lines().filter(|line| !line.trim().is_empty());
+    let (Some(line), None) = (lines.next(), lines.next()) else {
+        return Err(NotFound::Unreadable);
+    };
+    let said: Vec<char> = line.chars().collect();
+    let a_fraction = said
+        .windows(3)
+        .any(|three| matches!(three, [before, '.', after] if before.is_ascii_digit() && after.is_ascii_digit()));
+    let below_nothing = said
+        .windows(2)
+        .any(|two| matches!(two, ['-', after] if after.is_ascii_digit()));
+    if a_fraction || below_nothing {
+        return Err(NotFound::Unreadable);
+    }
+    let numbers: Option<Vec<u32>> = line
+        .split(|one: char| !one.is_ascii_digit())
+        .filter(|run| !run.is_empty())
+        .map(|run| run.parse().ok())
+        .collect();
+    let Some(numbers) = numbers else {
+        return Err(NotFound::Unreadable);
+    };
+    let per_cent = |number: u32| {
+        u8::try_from(number)
+            .ok()
+            .filter(|number| *number <= THE_WHOLE_WAY)
+    };
+    match numbers.as_slice() {
+        [0, ..] => Err(NotFound::Nowhere),
+        [1, across, down] => match (per_cent(*across), per_cent(*down)) {
+            (Some(across), Some(down)) => Ok((across, down)),
+            _ => Err(NotFound::Unreadable),
+        },
+        [1, ..] | [] => Err(NotFound::Unreadable),
+        [_, ..] => Err(NotFound::MoreThanOnce),
+    }
 }
 
 #[cfg(test)]
