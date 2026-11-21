@@ -890,6 +890,15 @@ fn a_screen_saying(lines: &[String]) -> PicturesAndLines {
     )
 }
 
+/// A machine the size of a walk's screen, saying every one of `lines` at the
+/// third second, together.
+fn a_screen_saying_at_once(lines: &[String]) -> PicturesAndLines {
+    lines.iter().fold(
+        PicturesAndLines::showing(vec![Frame::filled(1280, 800, [0, 0, 0])]),
+        |machine, line| machine.saying(Duration::from_secs(3), line),
+    )
+}
+
 /// The terminal's band, and its three controls.
 fn the_terminals_band() -> (alo_acting::said_of_a_band::OnTheScreen, Vec<String>) {
     use alo_acting::said_of_a_band::{self as band, OnTheScreen, TheKind};
@@ -960,12 +969,12 @@ fn a_band_not_on_the_screen_fails() {
     for said in [
         Vec::new(),
         vec![
-            lines[0].clone(),
+            lines.first().cloned().unwrap_or_default(),
             band::a_band_is_no_longer_drawn(TheKind::Terminal, "terminal"),
         ],
         vec![band::a_band_is_drawn(TheKind::Terminal, "terminal", off)],
     ] {
-        let mut machine = a_screen_saying(&said);
+        let mut machine = a_screen_saying_at_once(&said);
         let walked = Walk::named("w").mark().point_at_the_band(
             TheKind::Terminal,
             "terminal",

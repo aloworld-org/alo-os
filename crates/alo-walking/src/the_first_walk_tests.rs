@@ -185,7 +185,12 @@ fn the_sections_alo_is_asked_in_are_independent() {
     assert_eq!(
         names,
         vec![
-            "every window's band and controls",
+            "the band and controls of application",
+            "the band and controls of application-own-header",
+            "the band and controls of terminal",
+            "the band and controls of settings",
+            "the band and controls of record",
+            "the band and controls of task",
             "the providers",
             "VSCodium at full access",
             "every application at full access",
@@ -200,6 +205,11 @@ fn the_sections_alo_is_asked_in_are_independent() {
         vec![
             Vec::<String>::new(),
             Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
             vec![providers()],
             vec![providers()],
             vec![providers()],
@@ -209,10 +219,13 @@ fn the_sections_alo_is_asked_in_are_independent() {
 }
 
 /// **Every kind of window's band is found and its controls pressed**, by the
-/// lines the one band says (`alo_acting::said_of_a_band`): an application
-/// whose band the shell draws (Dolphin), the terminal, Settings, the record and
-/// a task window each have Window actions, Minimise and Close pressed; an
-/// application with its own header (Text Editor) has Window actions only. The
+/// lines the one band says (`alo_acting::said_of_a_band`), and **every control
+/// each kind has is pressed, and no other**: an application whose band the
+/// shell draws (Dolphin), the terminal and a task window have Window actions,
+/// Minimise and Close; Settings and the record, Minimise and Close — their
+/// pages lay out at one size, so nothing in the panel could place them (the
+/// window-controls lane, 2026-11-21); an application with its own header (Text
+/// Editor), Window actions only. The
 /// investigation of 2026-11-21 found the walk never pointed at or clicked a
 /// window control — *8 key presses and 0 button presses* — so a band that was
 /// not there at all, as Text Editor's was, was never seen.
@@ -221,7 +234,7 @@ fn every_kind_of_windows_band_is_found_and_its_controls_pressed() {
     use alo_acting::said_of_a_band::{self as band, TheKind};
     let steps = the_first_walk().steps().to_vec();
     let Some(from) = steps.iter().position(
-        |step| matches!(step, Step::Section { name, .. } if name == "every window's band and controls"),
+        |step| matches!(step, Step::Section { name, .. } if name.starts_with("the band and controls of")),
     ) else {
         unreachable!("the walk has no band section");
     };
@@ -251,35 +264,35 @@ fn every_kind_of_windows_band_is_found_and_its_controls_pressed() {
             _ => {}
         }
     }
-    let three = [band::WINDOW_ACTIONS, band::MINIMISE, band::CLOSE];
-    for (kind, id) in [
-        (TheKind::Application, "org.kde.dolphin"),
-        (TheKind::Terminal, "terminal"),
-        (TheKind::Settings, "settings"),
-        (TheKind::Record, "record"),
-        (TheKind::Task, "task"),
+    let three = vec![band::WINDOW_ACTIONS, band::MINIMISE, band::CLOSE];
+    let two = vec![band::MINIMISE, band::CLOSE];
+    for (kind, id, controls) in [
+        (TheKind::Application, "org.kde.dolphin", three.clone()),
+        (
+            TheKind::Application,
+            "org.gnome.TextEditor",
+            vec![band::WINDOW_ACTIONS],
+        ),
+        (TheKind::Terminal, "terminal", three.clone()),
+        (TheKind::Settings, "settings", two.clone()),
+        (TheKind::Record, "record", two),
+        (TheKind::Task, "task", three),
     ] {
         assert!(
             found.contains(&(kind, id.to_owned())),
             "the band of {kind:?} {id} is never found: {found:?}"
         );
-        for name in three {
-            assert!(
-                pressed.contains(&(kind, id.to_owned(), name.to_owned())),
-                "{name} is never pressed on {kind:?} {id}: {pressed:?}"
-            );
-        }
+        let mut its: Vec<&str> = pressed
+            .iter()
+            .filter(|(k, i, _)| *k == kind && i == id)
+            .map(|(_, _, name)| name.as_str())
+            .collect();
+        its.sort_unstable();
+        its.dedup();
+        let mut wanted = controls.clone();
+        wanted.sort_unstable();
+        assert_eq!(its, wanted, "{kind:?} {id}: the controls pressed");
     }
-    let editor: Vec<&str> = pressed
-        .iter()
-        .filter(|(kind, id, _)| *kind == TheKind::Application && id == "org.gnome.TextEditor")
-        .map(|(_, _, name)| name.as_str())
-        .collect();
-    assert_eq!(
-        editor,
-        vec![band::WINDOW_ACTIONS],
-        "Text Editor draws its own Minimise and Close; only Window actions is the band's"
-    );
     // **Before anything alo is asked**: the band section is the first.
     let first_section = steps
         .iter()
@@ -462,5 +475,36 @@ fn the_provider_is_added_by_names() {
         // One Tab goes into the page from the side column; no other is counted.
         assert_eq!(pressed("down"), 0, "{saved}: still counts Downs");
         assert!(pressed("tab") <= 1, "{saved}: still counts Tabs");
+    }
+}
+
+/// **Each kind of window keeps two pictures by a fixed name**, for the owner's
+/// before and after of the window controls (the window-controls lane,
+/// 2026-11-21): `band-<kind>-at-rest`, the pointer away, and
+/// `band-<kind>-revealed`, the pointer in the band before anything is pressed.
+#[test]
+fn each_kind_of_window_keeps_its_two_pictures_by_a_fixed_name() {
+    let looked: Vec<String> = the_first_walk()
+        .steps()
+        .iter()
+        .filter_map(|step| match step {
+            Step::Look { name, .. } => Some(name.clone()),
+            _ => None,
+        })
+        .collect();
+    for kind in [
+        "application",
+        "application-own-header",
+        "terminal",
+        "settings",
+        "record",
+        "task",
+    ] {
+        for picture in [
+            format!("band-{kind}-at-rest"),
+            format!("band-{kind}-revealed"),
+        ] {
+            assert!(looked.contains(&picture), "{picture} is never kept");
+        }
     }
 }

@@ -33,6 +33,7 @@
 pub mod a_place_on_the_screen;
 pub mod asking_for_an_application_at_each_ask;
 pub mod booting;
+pub mod every_windows_band;
 pub mod frame;
 pub mod in_every_shipped_application;
 pub mod keys;

@@ -52,6 +52,7 @@ pub fn walk(
         skipping: None,
         pointer: the_pointer::ThePointer::default(),
         edge: the_edge::TheEdge::default(),
+        band: the_band::TheBand::default(),
     };
     for step in walk.steps() {
         // **A section skipped without its variable**: its checks say so, and
@@ -114,6 +115,8 @@ struct Walking {
     pointer: the_pointer::ThePointer,
     /// What the walk knows about alo's edge round a window.
     edge: the_edge::TheEdge,
+    /// What the walk knows about the band it last pointed at, and its controls.
+    band: the_band::TheBand,
 }
 
 impl Walking {
@@ -206,6 +209,16 @@ impl Walking {
                 name,
                 at_most,
             } => self.press_until_the_keyboard_is_on(machine, chord, name, *at_most, pace)?,
+            Step::PointAtTheBand { kind, id, within } => {
+                self.point_at_the_band(machine, *kind, id, *within)?;
+            }
+            Step::TheControlsAre {
+                kind,
+                id,
+                names,
+                within,
+            } => self.the_controls_are(machine, *kind, id, names, *within)?,
+            Step::ClickTheControl { name } => self.click_the_control(machine, name)?,
             Step::OnlyWithFor { variable, steps } => {
                 if *steps > 0 && secret(variable).is_none_or(|it| it.is_empty()) {
                     self.skipping = Some((
@@ -550,6 +563,13 @@ fn check_name(step: &Step) -> Option<String> {
         | Step::TheEdge { check, .. } => Some(check.clone()),
         Step::Pointer(pointing) => pointing.check().map(str::to_owned),
         Step::PressUntilTheKeyboardIsOn { name, .. } => Some(by_name::the_check_for(name)),
+        Step::PointAtTheBand { kind, id, .. } => {
+            Some(the_band::the_band_is_on_the_screen(*kind, id))
+        }
+        Step::TheControlsAre {
+            kind, id, names, ..
+        } => Some(the_band::the_controls_are(*kind, id, names)),
+        Step::ClickTheControl { name } => Some(the_band::it_is_pressed(name)),
         _ => None,
     }
 }
@@ -568,6 +588,9 @@ mod the_edge;
 
 #[path = "walking_by_name.rs"]
 mod by_name;
+
+#[path = "walking_the_band.rs"]
+mod the_band;
 
 #[cfg(test)]
 #[path = "walking_tests.rs"]
