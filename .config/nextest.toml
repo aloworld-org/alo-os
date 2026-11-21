@@ -61,6 +61,17 @@ max-threads = 1
 [test-groups.one-machine-one-device]
 max-threads = 1
 
+# **One counter of ports, one test at a time.** `alo-agentd`'s `listeners.rs`
+# and `responding.rs` hand their tests ports from a counter that starts at a
+# fixed number, which is unique within one process and nothing more. nextest
+# runs each test in a process of its own, so two of them at once are handed the
+# same port. Measured on 2026-11-21, when the gate moved to a 16-core runner:
+# `Address already in use` in four of five failed gate runs that morning.
+# `crates/alo-agentd/tests/ports_from_a_counter_take_turns.rs` fails when a file
+# with such a counter is not in this group.
+[test-groups.ports-from-a-counter]
+max-threads = 1
+
 [profile.default]
 # Never stop at the first failing target. Four runs on this machine once found
 # four faults serially that one run found together.
@@ -84,6 +95,10 @@ slow-timeout = { period = "180s", terminate-after = 10 }
 [[profile.default.overrides]]
 filter = 'package(alo-cameras)'
 test-group = 'one-machine-one-device'
+
+[[profile.default.overrides]]
+filter = '(binary_id(=alo-agentd) and (test(/^listeners::tests::/) + test(/^responding::tests::/)))'
+test-group = 'ports-from-a-counter'
 
 [[profile.default.overrides]]
 filter = 'package(alo-converting) + package(alo-measuring) + package(alo-image)'
@@ -117,6 +132,10 @@ slow-timeout = { period = "180s", terminate-after = 10 }
 [[profile.gates.overrides]]
 filter = 'package(alo-cameras)'
 test-group = 'one-machine-one-device'
+
+[[profile.gates.overrides]]
+filter = '(binary_id(=alo-agentd) and (test(/^listeners::tests::/) + test(/^responding::tests::/)))'
+test-group = 'ports-from-a-counter'
 
 [[profile.gates.overrides]]
 filter = 'package(alo-converting) + package(alo-measuring) + package(alo-image)'
