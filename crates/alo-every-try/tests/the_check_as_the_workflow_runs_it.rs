@@ -155,3 +155,64 @@ fn declare_writes_what_the_code_offers() {
     );
     let _ = std::fs::remove_file(&to);
 }
+
+/// **The ratchet's record may not be lowered**: a base whose record says a
+/// request still in the set reached every try, beside a change whose record
+/// does not, fails before anybody is asked — even when the change owns no
+/// request.
+#[test]
+fn a_record_lowered_against_its_base_fails_without_asking_anybody() {
+    let before = a_file("reached-before.txt");
+    std::fs::write(&before, "reached\tfull-access\tlist a folder\n").expect("it is written");
+    let output = ran(the_check()
+        .env("ALO_EVERY_TRY_BEFORE", the_committed())
+        .env("ALO_EVERY_TRY_REACHED_BEFORE", &before));
+    assert_ne!(output.status.code(), Some(0), "{}", said(&output));
+    assert!(said(&output).contains("list a folder"), "{}", said(&output));
+    assert!(said(&output).contains("lowered"), "{}", said(&output));
+    let _ = std::fs::remove_file(&before);
+}
+
+/// **`reached` raises the record from a measured run**, and only by what took
+/// every try.
+#[test]
+fn reached_raises_the_record_from_what_was_measured() {
+    let measured = a_file("measured.txt");
+    std::fs::write(
+        &measured,
+        "measured\task-each-time\tlist a folder\t10\t10\nmeasured\tfull-access\tread a file\t9\t10\n",
+    )
+    .expect("it is written");
+    let record = a_file("reached.txt");
+    std::fs::write(&record, "").expect("it is written");
+    let output = ran(the_check()
+        .arg("reached")
+        .arg(&measured)
+        .env("ALO_EVERY_TRY_REACHED_TO", &record));
+    assert_eq!(output.status.code(), Some(0), "{}", said(&output));
+    let written = std::fs::read_to_string(&record).expect("it was written");
+    assert!(
+        written.contains("reached\task-each-time\tlist a folder\n"),
+        "{written}"
+    );
+    assert!(!written.contains("read a file"), "{written}");
+    let _ = std::fs::remove_file(&measured);
+    let _ = std::fs::remove_file(&record);
+}
+
+/// **A line may go when its request has left the set**: dropping it is not a
+/// lowering, so a change owning nothing passes.
+#[test]
+fn a_line_for_a_request_gone_from_the_set_may_go() {
+    let before = a_file("reached-before-gone.txt");
+    std::fs::write(
+        &before,
+        "reached\tfull-access\ta request no longer in the set\n",
+    )
+    .expect("it is written");
+    let output = ran(the_check()
+        .env("ALO_EVERY_TRY_BEFORE", the_committed())
+        .env("ALO_EVERY_TRY_REACHED_BEFORE", &before));
+    assert_eq!(output.status.code(), Some(0), "{}", said(&output));
+    let _ = std::fs::remove_file(&before);
+}
