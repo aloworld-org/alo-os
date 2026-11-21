@@ -45,7 +45,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 30);
+    assert_eq!(THE_VERSION, 33);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -351,12 +351,16 @@ fn scrolling_down_until_a_heading_shows_may_go_a_page_at_a_time() {
         .expect("the set scrolls to a thing");
     let verbs = |road: &[Step]| road.iter().map(Step::verb).collect::<Vec<_>>();
     assert_eq!(verbs(request.road()), [READ_WINDOW, SCROLL_TO]);
-    let [read, named] = request.other_roads() else {
-        panic!("two other roads: {:?}", request.other_roads());
+    let [read, named, read_and_named] = request.other_roads() else {
+        panic!("three other roads: {:?}", request.other_roads());
     };
     assert_eq!(verbs(read), [READ_WINDOW, SCROLL_PAGE, READ_WINDOW]);
     assert_eq!(verbs(named), [READ_WINDOW, SCROLL_PAGE, SCROLL_TO]);
-    for other in [read, named] {
+    assert_eq!(
+        verbs(read_and_named),
+        [READ_WINDOW, SCROLL_PAGE, READ_WINDOW, SCROLL_TO]
+    );
+    for other in [read, named, read_and_named] {
         assert!(
             other
                 .iter()
@@ -915,5 +919,78 @@ fn a_call_turned_away_leaves_the_try_on_its_road() {
         assert_eq!(tried.went(), &Went::TheRoad, "{level:?}: {tried:?}");
         assert_eq!(tried.refused_before_asking(), 1, "{level:?}");
         assert!(!tried.by_the_other_road(), "{level:?}: {tried:?}");
+    }
+}
+
+/// **A heading read on the screen and then scrolled to by name reaches the same
+/// place**: the machine answers a scroll to a thing already on the screen
+/// (`alo_adapters::scrolling`, *already on the screen*, or scrolled), so a try
+/// that pages down, reads the heading there, and scrolls to it anyway takes
+/// the road, by another road. Run 44807502026 (10 tries on main): three of the
+/// four misses were that scroll, after the whole of the other road.
+#[test]
+fn a_heading_read_on_the_screen_may_still_be_scrolled_to_by_name() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::every_other_verb::FURTHER_DOWN;
+    use crate::testing::{Writing, answering, proposing, reading, the_words};
+    use alo_adapters::fallback_verbs::{APPLICATION, SCROLL_PAGE, SCROLL_TO, TO, TOWARD};
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "scroll to a named thing in an application")
+        .expect("the set scrolls to a thing");
+    let browser = request
+        .road()
+        .first()
+        .and_then(|look| {
+            look.expected()
+                .iter()
+                .find(|(arg, _)| *arg == APPLICATION)
+                .map(|(_, is)| is.clone())
+        })
+        .expect("the look names its application");
+    let page = proposing(SCROLL_PAGE, &[(APPLICATION, &browser), (TOWARD, "down")]);
+    let look = reading(READ_WINDOW, &[(APPLICATION, &browser)]);
+    let to = |name: &str| proposing(SCROLL_TO, &[(APPLICATION, &browser), (TO, name)]);
+    let answer = answering("The heading Downloads is on the screen.");
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let try_these = |lines: &[String]| {
+            one_try_at(
+                level,
+                request,
+                set.may_reach(),
+                &the_verbs(),
+                &the_words(),
+                &mut Writing::these(lines),
+            )
+        };
+        let scrolled_anyway =
+            try_these(&[page.clone(), look.clone(), to(FURTHER_DOWN), answer.clone()]);
+        assert_eq!(
+            scrolled_anyway.went(),
+            &Went::TheRoad,
+            "{level:?}: {scrolled_anyway:?}"
+        );
+        let read_it = try_these(&[page.clone(), look.clone(), answer.clone()]);
+        assert_eq!(read_it.went(), &Went::TheRoad, "{level:?}: {read_it:?}");
+        // **The refusal cases**: scrolling to something else, or scrolling to
+        // it twice, is not the road.
+        let elsewhere = try_these(&[
+            page.clone(),
+            look.clone(),
+            to("Getting started"),
+            answer.clone(),
+        ]);
+        assert!(!elsewhere.took_the_road(), "{level:?}: {elsewhere:?}");
+        let twice = try_these(&[
+            page.clone(),
+            look.clone(),
+            to(FURTHER_DOWN),
+            to(FURTHER_DOWN),
+            answer.clone(),
+        ]);
+        assert!(!twice.took_the_road(), "{level:?}: {twice:?}");
     }
 }
