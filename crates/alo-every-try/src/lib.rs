@@ -59,6 +59,7 @@ pub mod the_declaration;
 pub mod the_first_fingerprints;
 pub mod the_machine_answers;
 pub mod the_set;
+pub mod through_the_link;
 pub mod typing_that_saves_a_field;
 pub mod went_wrong;
 pub mod what_each_has_reached;
