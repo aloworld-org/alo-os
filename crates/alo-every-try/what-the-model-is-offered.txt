@@ -58,5 +58,5 @@ request	select a file in the file manager	9170bea06001523e	accessible.read_windo
 request	open a file in the file manager	b7c9fa5f2bd0ad99	accessible.read_window,accessible.open_item,open_file_in_application
 request	open a thing's right-click menu in an application	6f7dceb2523fa088	accessible.read_window,accessible.open_menu
 request	press a key in an application	7468e92326e37cf8	accessible.read_window,accessible.press_key
-request	type into a search box without saving	3e2a28cd8e62e5e4	accessible.read_window,accessible.type_without_saving
+request	type into a search box without saving	5a14b11857d85d5d	accessible.read_window,accessible.type_without_saving
 request	answer the file chooser	193f4148b094375c	choose_on_the_file_chooser

@@ -4,8 +4,8 @@
 //! What the model is shown: the person's words, the window offered with them
 //! (in the words a turn tells it), and what the machine answers at each step.
 //! How the road is judged: each step's verb, the values it expects, the places
-//! for text, whether it is a look, taken as often as asked or the only control
-//! of its kind, the reads aside of it, the other roads, and what is on the
+//! for text, whether it is a look, taken as often as asked, the only control
+//! of its kind or a one-line field, the reads aside of it, the other roads, and what is on the
 //! machine.
 //!
 //! **A field left at its default adds nothing**, so a change that adds a field
@@ -29,6 +29,7 @@ fn a_step(step: &Step) -> String {
         look,
         again,
         the_only_one,
+        one_line,
     } = step;
     let mut line = (*verb).to_owned();
     if !expecting.is_empty() {
@@ -50,6 +51,9 @@ fn a_step(step: &Step) -> String {
     }
     if *the_only_one {
         line.push_str("; the only control of its kind");
+    }
+    if *one_line {
+        line.push_str("; a one-line field");
     }
     line
 }

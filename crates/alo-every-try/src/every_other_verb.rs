@@ -804,7 +804,11 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             )
             .expecting(fallback_verbs::APPLICATION, browser.as_str())
             .expecting(fallback_verbs::FIELD, SEARCH)
-            .expecting(fallback_verbs::TEXT, SEARCHED_FOR),
+            .expecting(fallback_verbs::TEXT, SEARCHED_FOR)
+            // **The search box is one line**, so typing that saves is refused
+            // there before the card, as the machine refuses it since
+            // 2026-11-20 (`crate::typing_that_saves_a_field`).
+            .a_one_line_field(),
         ],
     )
     .or_looking_at(

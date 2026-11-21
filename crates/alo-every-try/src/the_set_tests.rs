@@ -45,7 +45,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 25);
+    assert_eq!(THE_VERSION, 26);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -632,6 +632,79 @@ fn a_slider_named_wrongly_is_refused_before_the_card_and_the_try_goes_on() {
         // **The refusal case**: naming it wrongly and then answering is not
         // the road.
         let (stopped, _) = try_these(&[as_said.clone(), answer.clone()]);
+        assert!(!stopped.took_the_road(), "{level:?}: {stopped:?}");
+    }
+}
+
+/// **Typing that saves, aimed at the search box, is refused before the card**,
+/// as the machine refuses it at both levels since 2026-11-20 (the owner:
+/// saving there would save the web page) — in words that name the typing that
+/// does not save; a try that then types without saving takes the road, said to
+/// have been refused first. Typing that saves and then answering is not the
+/// road.
+#[test]
+fn typing_that_saves_into_the_search_box_is_refused_and_the_try_goes_on() {
+    use crate::a_try::{TheLevel, Went, one_try_at};
+    use crate::testing::{Writing, answering, proposing, the_words};
+    use alo_adapters::fallback_verbs::{
+        APPLICATION, FIELD, NAME, TEXT, TYPE_TEXT, TYPE_WITHOUT_SAVING,
+    };
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| request.named() == "type into a search box without saving")
+        .expect("the set has it");
+    let typing = request
+        .road()
+        .iter()
+        .find(|step| step.verb() == TYPE_WITHOUT_SAVING)
+        .expect("the road types without saving");
+    assert!(typing.is_a_one_line_field());
+    let expected = |argument: &str| {
+        typing
+            .expected()
+            .iter()
+            .find(|(arg, _)| *arg == argument)
+            .map(|(_, is)| is.clone())
+            .expect("the road names it")
+    };
+    let (browser, search, text) = (expected(APPLICATION), expected(FIELD), expected(TEXT));
+    let saving = proposing(
+        TYPE_TEXT,
+        &[(APPLICATION, &browser), (NAME, &search), (TEXT, &text)],
+    );
+    let not_saving = proposing(
+        TYPE_WITHOUT_SAVING,
+        &[(APPLICATION, &browser), (FIELD, &search), (TEXT, &text)],
+    );
+    let answer = answering("I typed it into the search box.");
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let try_these = |lines: &[String]| {
+            let mut model = Writing::these(lines);
+            let tried = one_try_at(
+                level,
+                request,
+                set.may_reach(),
+                &the_verbs(),
+                &the_words(),
+                &mut model,
+            );
+            (tried, model.shown)
+        };
+        let (went_on, shown) = try_these(&[saving.clone(), not_saving.clone(), answer.clone()]);
+        assert_eq!(went_on.went(), &Went::TheRoad, "{level:?}: {went_on:?}");
+        assert_eq!(went_on.refused_before_asking(), 1, "{level:?}");
+        assert!(
+            shown.get(1).is_some_and(|second| {
+                second.contains("is a one-line field") && second.contains(TYPE_WITHOUT_SAVING)
+            }),
+            "{level:?}: the refusal is shown: {shown:?}"
+        );
+        // **The refusal case**: typing that saves and then answering is not
+        // the road.
+        let (stopped, _) = try_these(&[saving.clone(), answer.clone()]);
         assert!(!stopped.took_the_road(), "{level:?}: {stopped:?}");
     }
 }
