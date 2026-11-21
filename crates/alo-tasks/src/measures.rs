@@ -75,6 +75,19 @@ pub const GAP: u32 = 8;
 /// The padding inside a message bubble, an activity block or an approval card.
 pub const INSIDE_A_BLOCK: u32 = 16;
 
+/// Between *You* and the person's words under it, inside the bubble.
+///
+/// Measured on `417:27691` *Request*: a column with a gap of 6, the label
+/// Label/Small (11 / 16) at 16 down and the words at 38. **Not [`GAP`]**:
+/// alo's reply has 8 there and the person's message has 6.
+pub const UNDER_YOUR_LABEL: u32 = 6;
+
+/// Between *alo* and alo's words under it.
+///
+/// Measured on `417:27694` *alo response*: a column with a gap of 8, the label
+/// Label/Medium (13 / 18) at the top and the words at 26.
+pub const UNDER_ALOS_LABEL: u32 = 8;
+
 /// How wide a person's own request is drawn.
 ///
 /// **Narrower than alo's reply on purpose**: a person's words are right aligned

@@ -429,11 +429,21 @@ fn the_words_are_drawn_and_an_empty_window_draws_none() {
     // plus a label per chip and one per thing said. Written as the sum because
     // the first version of this test said *eleven* from a miscount of the
     // seven, and a magic total cannot say which part of it moved.
+    // And one speaker's label per message: *You* and *alo*, never an account's.
     let fixed = 7;
+    let labels = said
+        .iter()
+        .filter(|one| {
+            matches!(
+                one.whose,
+                alo_tasks::WhoseBlock::ThePersons | alo_tasks::WhoseBlock::Alos
+            )
+        })
+        .count();
     assert_eq!(
         spoken.inked.len(),
-        fixed + files.len() + said.len(),
-        "the window drew {} pieces and {fixed} + {} + {} were given to it",
+        fixed + files.len() + said.len() + labels,
+        "the window drew {} pieces and {fixed} + {} + {} + {labels} were given to it",
         spoken.inked.len(),
         files.len(),
         said.len()
