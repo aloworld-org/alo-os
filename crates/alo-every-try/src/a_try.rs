@@ -516,6 +516,19 @@ impl TheDoor for Recording<'_> {
                     self.on_the_other = was_on;
                     return Ok(ToAnAgent::refused(said));
                 }
+                // **As the machine answers a call that does not form**: turned
+                // away before anything else, at both levels, in its own words
+                // — whatever verb it named (`crate::turned_away`).
+                if let Some(refused) = crate::turned_away::turned_away(
+                    request,
+                    self.verbs,
+                    &self.machine,
+                    self.strings,
+                ) {
+                    self.refused_before_asking += 1;
+                    self.on_the_other = was_on;
+                    return Ok(refused);
+                }
                 // **As the machine answers a file named where there is none**:
                 // refused, with where one of that name is in the home itself
                 // (`alo_files::Touching::of_looking_in`), as often as it is
