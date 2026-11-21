@@ -47,22 +47,6 @@ pub(crate) struct WhatTheBandSays {
 }
 
 impl Server {
-    /// Every band that may be drawn on a display now: each application's
-    /// window, then alo's own windows that wear one, in the order
-    /// `crate::the_bands_over_alos_windows` lists them.
-    #[must_use]
-    pub(crate) fn every_band(&self) -> Vec<ABand> {
-        self.mapped_surfaces()
-            .cloned()
-            .map(ABand::App)
-            .chain(
-                self.alos_windows_with_a_band()
-                    .into_iter()
-                    .map(|(which, _)| ABand::Alos(which)),
-            )
-            .collect()
-    }
-
     /// Where `band`'s window is, in the band's units at `scale`. [`None`]
     /// for one of alo's windows that is not drawn on the display now.
     #[must_use]
