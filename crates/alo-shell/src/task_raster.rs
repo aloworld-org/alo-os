@@ -1333,7 +1333,7 @@ pub(crate) fn furniture(
         &[],
         AStyle::Label,
         palette.surface,
-        if words.alo_is_working {
+        if words.status_is.is_alo_at_work() {
             palette.alo
         } else {
             palette.ink
@@ -1789,6 +1789,11 @@ mod closing_tests;
 #[cfg(test)]
 #[path = "task_raster_speaker_tests.rs"]
 mod speaker_tests;
+
+/// Every status, drawn as its pill.
+#[cfg(test)]
+#[path = "task_raster_status_tests.rs"]
+mod status_tests;
 
 /// **Where each text's box starts on its card, and how tall its words are** —
 /// under the rows naming what the change touches, each after what is said

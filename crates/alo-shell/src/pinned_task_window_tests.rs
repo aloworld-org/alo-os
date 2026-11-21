@@ -52,7 +52,7 @@ fn a_task_window_draws_the_pixels_it_drew_before() {
         title: "Prepare the launch presentation",
         kind: "alo task \u{b7} Work",
         status: "alo is working",
-        alo_is_working: true,
+        status_is: alo_tasks::TheStatus::AloIsWorking,
         model: "SmolLM2 1.7B",
         destination: "On this computer",
         invitation: "Reply to alo or change the direction\u{2026}",

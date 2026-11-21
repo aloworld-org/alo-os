@@ -42,7 +42,7 @@ pub(super) fn the_words(files: &[String]) -> crate::task_text::TheWordsInATaskWi
         title: "Prepare the launch presentation",
         kind: "alo task \u{b7} Work",
         status: "alo is working",
-        alo_is_working: true,
+        status_is: alo_tasks::TheStatus::AloIsWorking,
         model: "SmolLM2 1.7B",
         destination: "On this computer",
         invitation: "Reply to alo or change the direction\u{2026}",
@@ -381,7 +381,7 @@ fn the_words_are_drawn_and_an_empty_window_draws_none() {
         title: "",
         kind: "",
         status: "",
-        alo_is_working: false,
+        status_is: alo_tasks::TheStatus::Complete,
         model: "",
         destination: "",
         invitation: "",
@@ -526,7 +526,7 @@ fn a_persons_words_are_drawn_further_right_than_alos() {
         title: "",
         kind: "",
         status: "",
-        alo_is_working: false,
+        status_is: alo_tasks::TheStatus::Complete,
         model: "",
         destination: "",
         invitation: "",
@@ -1141,7 +1141,11 @@ fn the_status_is_teal_only_while_alo_is_working() {
     let mut drawn = |working: bool| {
         let words = crate::task_text::TheWordsInATaskWindow {
             status: "Complete",
-            alo_is_working: working,
+            status_is: if working {
+                alo_tasks::TheStatus::AloIsWorking
+            } else {
+                alo_tasks::TheStatus::Complete
+            },
             ..the_words(&files)
         };
         furniture(
