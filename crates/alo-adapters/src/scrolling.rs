@@ -30,7 +30,6 @@ use alo_capability::{Authorised, Grants, Offered, Refused, Takes, Value};
 use alo_strings::{Filling, Said, Strings, Word};
 
 use crate::accessibility_tree::{AccessibilityTree, Edge, NodeAt, TreeFault};
-use crate::adapters::Adapters;
 use crate::fallback_reach::reached;
 use crate::fallback_verbs::{SCROLL_PAGE, SCROLL_TO, TO, TOWARD};
 use crate::fallback_words as fallback;
@@ -148,10 +147,9 @@ impl Scrolling {
     ///
     /// # Errors
     /// [`Refused`]: another verb's authority, the application not granted, not
-    /// installed, or with an adapter of its own.
+    /// installed.
     pub fn of(
         authorised: Authorised,
-        adapters: &Adapters,
         grants: &Grants,
         installed: &Installed,
         strings: &Strings,
@@ -161,7 +159,7 @@ impl Scrolling {
         } else {
             SCROLL_TO
         };
-        let reached = reached(authorised, verb, adapters, grants, installed, strings)?;
+        let reached = reached(authorised, verb, grants, installed, strings)?;
         let call = reached.authorised.call();
         let asked = if verb == SCROLL_TO {
             match call.value(TO) {

@@ -39,7 +39,6 @@ use alo_capability::{Authorised, Grants, Refused, Value};
 use alo_strings::{Said, Strings};
 
 use crate::accessibility_tree::{AccessibilityTree, NodeAt, TreeFault};
-use crate::adapters::Adapters;
 use crate::choosing_words as words;
 use crate::fallback_reach::reached;
 use crate::fallback_verbs::{CHOOSE_OPTION, NAME, OPTION, SELECT_ITEM};
@@ -116,7 +115,6 @@ impl Choosing {
     /// application not granted or not installed, or one with an adapter.
     pub fn of(
         authorised: Authorised,
-        adapters: &Adapters,
         grants: &Grants,
         installed: &Installed,
         strings: &Strings,
@@ -126,7 +124,7 @@ impl Choosing {
         } else {
             CHOOSE_OPTION
         };
-        let reached = reached(authorised, verb, adapters, grants, installed, strings)?;
+        let reached = reached(authorised, verb, grants, installed, strings)?;
         let call = reached.authorised.call();
         let named = |argument| match call.value(argument) {
             Some(Value::Name(name)) => Some(name.clone()),

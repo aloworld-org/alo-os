@@ -17,8 +17,7 @@ use std::collections::BTreeMap;
 use std::time::{Duration, SystemTime};
 
 use alo_adapters::{
-    AccessibilityTree, Adapters, Facts, NodeAt, Running, TYPE_TEXT, TreeFault, Typing,
-    fallback_verbs,
+    AccessibilityTree, Facts, NodeAt, Running, TYPE_TEXT, TreeFault, Typing, fallback_verbs,
 };
 use alo_applications::{Application, Installed};
 use alo_capability::{
@@ -117,7 +116,6 @@ fn typing(name: &str, text: &str) -> Typing {
     let grants = granting(&[EDITOR]);
     Typing::of(
         approved(&typing_call(name, text), &grants),
-        &Adapters::default(),
         &grants,
         &installed(),
         &in_english(),
@@ -667,7 +665,6 @@ fn typing_without_saving_takes_the_same_text_and_says_nothing_is_saved() {
     let grants = granting(&[EDITOR]);
     let unsaved = Typing::of(
         approved(&call, &grants),
-        &Adapters::default(),
         &grants,
         &installed(),
         &in_english(),
@@ -693,7 +690,6 @@ fn typing_without_saving(name: &str, text: &str) -> Typing {
     let grants = granting(&[EDITOR]);
     Typing::of(
         approved(&call, &grants),
-        &Adapters::default(),
         &grants,
         &installed(),
         &in_english(),

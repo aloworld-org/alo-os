@@ -16,7 +16,7 @@ use std::collections::BTreeMap;
 use std::time::{Duration, SystemTime};
 
 use alo_adapters::{
-    AccessibilityTree, Adapters, Facts, NodeAt, OPEN_ITEM, Opening, Running, States, TreeFault,
+    AccessibilityTree, Facts, NodeAt, OPEN_ITEM, Opening, Running, States, TreeFault,
     fallback_verbs,
 };
 use alo_applications::{Application, Installed};
@@ -95,7 +95,6 @@ fn opening(item: &str) -> Opening {
     let grants = granted();
     Opening::of(
         approved(&a_call(item), &grants),
-        &Adapters::default(),
         &grants,
         &installed(),
         &in_english(),
@@ -293,12 +292,6 @@ fn an_application_that_says_no_is_refused_and_one_that_does_not_answer_is_not_kn
 fn an_ungranted_application_is_refused_before_the_tree() {
     let grants = granted();
     let authorised = approved(&a_call("a.txt"), &grants);
-    let refused = Opening::of(
-        authorised,
-        &Adapters::default(),
-        &Grants::default(),
-        &installed(),
-        &in_english(),
-    );
+    let refused = Opening::of(authorised, &Grants::default(), &installed(), &in_english());
     assert!(refused.is_err(), "{refused:?}");
 }

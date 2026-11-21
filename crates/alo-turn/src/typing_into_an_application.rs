@@ -7,7 +7,7 @@
 //! The order, and why each step is where it is:
 //!
 //! 1. `alo_adapters::Typing::of` — the grants asked again **now**, the
-//!    application installed, no adapter of its own; refused before any tree.
+//!    application installed; refused before any tree.
 //! 2. The tree opened for this one typing, and the field found again in it as
 //!    the windows are now (`Typing::the_field`): one field of that name,
 //!    never a password field, never a terminal.
@@ -157,7 +157,6 @@ pub(crate) fn typing_into_an_application(
 
     let typing = match Typing::of(
         authorised,
-        machine.the_adapters(),
         grants,
         &machine.the_applications_installed_now(),
         strings,

@@ -162,18 +162,6 @@ pub const NOT_THIS_VERB: Word = Word::saying(
      thing an agent can do and is not translated.",
 );
 
-/// The application has an adapter of its own.
-pub const HAS_ITS_OWN: Word = Word::saying(
-    "adapters.fallback.has-its-own",
-    "{application} has its own list of what the agent can do in it, so nothing was read or \
-     pressed in its windows instead",
-)
-.noting(
-    "Said when the agent tried to read or press something in an application that has its own, \
-     narrower list of things an agent may do. {application} is its identifier and is not \
-     translated. Nothing happened.",
-);
-
 /// No window of the application is on the screen.
 pub const NO_WINDOW: Word = Word::saying(
     "adapters.fallback.no-window",
@@ -444,7 +432,7 @@ pub const PRESS_LEAVES: Word = Word::saying(
 .noting("Shown beside the sentence about what the press changes. Held to it by a test.");
 
 /// Every word the fallback declares.
-pub const EVERY_WORD: [Word; 42] = [
+pub const EVERY_WORD: [Word; 41] = [
     READ_PURPOSE,
     READ_APPLICATION,
     READ_SENTENCE,
@@ -463,7 +451,6 @@ pub const EVERY_WORD: [Word; 42] = [
     A_TAB,
     A_LINK,
     NOT_THIS_VERB,
-    HAS_ITS_OWN,
     NO_WINDOW,
     NO_SUCH_WINDOW,
     MORE_THAN_ONE_WINDOW,

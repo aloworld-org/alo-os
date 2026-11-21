@@ -18,7 +18,7 @@ use std::time::{Duration, SystemTime};
 
 use alo_adapters::fallback_verbs::{self, APPLICATION, OPEN_MENU, THING};
 use alo_adapters::menu_words as words;
-use alo_adapters::{AccessibilityTree, Adapters, Facts, NodeAt, OpeningAMenu, Running, TreeFault};
+use alo_adapters::{AccessibilityTree, Facts, NodeAt, OpeningAMenu, Running, TreeFault};
 use alo_applications::{Application, Installed};
 use alo_capability::{
     Approvals, Authorised, Call, Effect, Given, Grant, Grantee, Grants, Proposal, Refused,
@@ -99,7 +99,6 @@ fn opening(name: &str) -> OpeningAMenu {
     let grants = granting();
     OpeningAMenu::of(
         approved(&menu_call(name), &grants),
-        &Adapters::default(),
         &grants,
         &installed(),
         &in_english(),
@@ -309,14 +308,7 @@ fn an_application_that_says_no_is_refused_and_one_that_does_not_answer_is_said()
 fn an_application_not_granted_is_refused_before_any_window_is_asked() {
     let authorised = approved(&menu_call("notes.txt"), &granting());
     assert!(
-        OpeningAMenu::of(
-            authorised,
-            &Adapters::default(),
-            &Grants::default(),
-            &installed(),
-            &in_english(),
-        )
-        .is_err()
+        OpeningAMenu::of(authorised, &Grants::default(), &installed(), &in_english(),).is_err()
     );
 }
 

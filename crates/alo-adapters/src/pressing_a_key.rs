@@ -22,7 +22,6 @@ use alo_capability::{Authorised, Grants, Offered, Refused, Takes, Value};
 use alo_strings::{Filling, Strings, Word};
 
 use crate::accessibility_tree::{AccessibilityTree, TreeFault};
-use crate::adapters::Adapters;
 use crate::fallback_reach::reached;
 use crate::fallback_verbs::{KEY, PRESS_KEY};
 use crate::fallback_words as fallback;
@@ -72,15 +71,14 @@ impl PressingAKey {
     ///
     /// # Errors
     /// [`Refused`]: another verb's authority, the application not granted, not
-    /// installed, or with an adapter of its own.
+    /// installed.
     pub fn of(
         authorised: Authorised,
-        adapters: &Adapters,
         grants: &Grants,
         installed: &Installed,
         strings: &Strings,
     ) -> Result<Self, Refused> {
-        let reached = reached(authorised, PRESS_KEY, adapters, grants, installed, strings)?;
+        let reached = reached(authorised, PRESS_KEY, grants, installed, strings)?;
         let call = reached.authorised.call();
         let key = match call.value(KEY) {
             Some(Value::Choice { chosen, .. }) => AKey::called(chosen),

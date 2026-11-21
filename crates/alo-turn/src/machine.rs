@@ -71,7 +71,6 @@
 //! turn would be a list that could not change under it. Nothing here reads a
 //! clock either, as everywhere else in this workspace.
 
-use alo_adapters::Adapters;
 use alo_applications::Installed;
 use alo_capability::Verbs;
 use alo_egress::{EgressPolicy, Indicator};
@@ -183,11 +182,6 @@ pub struct Machine<'a> {
     /// (`crate::the_windows_on_the_screen`). `None` exactly when the door is,
     /// because the two verbs arrive with the application acts or not at all.
     windows: Option<&'a mut dyn TheWindowsOnTheScreen>,
-    /// The adapters alo OS ships, which the fallback is held to: an application
-    /// with an adapter of its own is reached through that adapter
-    /// (`alo_adapters::fallback_reach`). Empty on a machine that offers neither
-    /// accessibility verb, where nothing asks.
-    adapters: Adapters,
     /// What publishing a folder runs on, on a machine that offers it.
     ///
     /// **`None` and `publish_to_github_pages` are absent together**, as with
@@ -362,7 +356,6 @@ impl<'a> Machine<'a> {
             reaching_the_compositor: None,
             knowing_how_it_starts: None,
             windows: None,
-            adapters: Adapters::default(),
             publishing: None,
             opening: None,
             bound: Bound::Nobodys,
@@ -425,7 +418,6 @@ impl<'a> Machine<'a> {
             reaching_the_compositor: None,
             knowing_how_it_starts: None,
             windows: None,
-            adapters: Adapters::default(),
             publishing: None,
             opening: None,
             bound,
@@ -516,7 +508,6 @@ impl<'a> Machine<'a> {
             reaching_the_compositor: None,
             knowing_how_it_starts: None,
             windows: None,
-            adapters: Adapters::default(),
             publishing: Some(publishing),
             opening: None,
             bound: Bound::Nobodys,
@@ -568,12 +559,6 @@ impl<'a> Machine<'a> {
         // **The same list an agent is told about**, read from one place so the
         // two cannot drift in which families they include.
         let verbs = the_verbs_a_whole_machine_offers()?;
-        // **Only the adapters this list can reach an application through.**
-        // The fallback steps aside for an application with an adapter, and an
-        // adapter none of whose verbs is on `verbs` is no road at all: holding
-        // it here would leave that application with none (Text Editor, until
-        // 2026-11-16).
-        let adapters = alo_adapters::shipped_adapters()?.whose_verbs_are_on(&verbs);
         Ok(Self {
             verbs,
             strings,
@@ -584,7 +569,6 @@ impl<'a> Machine<'a> {
             reaching_the_compositor: Some(applications.door),
             knowing_how_it_starts: Some(applications.starting),
             windows: Some(applications.windows),
-            adapters,
             publishing: Some(software.publishing),
             opening: None,
             bound: software.bound,
@@ -635,13 +619,6 @@ impl<'a> Machine<'a> {
         self.windows
             .as_deref_mut()
             .map(|windows| windows as &mut dyn TheWindowsOnTheScreen)
-    }
-
-    /// The adapters alo OS ships, which the accessibility fallback is held to.
-    ///
-    /// `pub(crate)`, for the same two callers.
-    pub(crate) const fn the_adapters(&self) -> &Adapters {
-        &self.adapters
     }
 
     /// What an agent may ask for on this machine.

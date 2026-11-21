@@ -7,8 +7,7 @@
 //! both is `alo_turn`'s.
 //!
 //! - [`Typing::of`] asks everything the fallback asks before the tree is
-//!   touched: the grants at this moment, the application installed, no
-//!   adapter of its own.
+//!   touched: the grants at this moment and the application installed.
 //! - [`Typing::the_field`] looks for the field **then**, in the windows as they
 //!   are: exactly one showing field or document of the approved name (of several,
 //!   the one with the keyboard, where exactly one has it) — never a
@@ -26,7 +25,6 @@ use alo_strings::{Filling, Strings, Word};
 
 use crate::a_one_line_field::a_one_line_field_said;
 use crate::accessibility_tree::{AccessibilityTree, NodeAt, TreeFault};
-use crate::adapters::Adapters;
 use crate::fallback_reach::reached;
 use crate::fallback_verbs::{FIELD, NAME, TEXT, TYPE_TEXT, TYPE_WITHOUT_SAVING};
 use crate::fallback_words as fallback;
@@ -71,10 +69,9 @@ impl Typing {
     ///
     /// # Errors
     /// [`Refused`]: another verb's authority, the application not granted, not
-    /// installed, or with an adapter of its own.
+    /// installed.
     pub fn of(
         authorised: Authorised,
-        adapters: &Adapters,
         grants: &Grants,
         installed: &Installed,
         strings: &Strings,
@@ -87,7 +84,7 @@ impl Typing {
         } else {
             TYPE_WITHOUT_SAVING
         };
-        let reached = reached(authorised, verb, adapters, grants, installed, strings)?;
+        let reached = reached(authorised, verb, grants, installed, strings)?;
         let call = reached.authorised.call();
         // **The field is `name` for `type_text` and `field` for typing that
         // saves nothing** (`crate::fallback_verbs::FIELD`).

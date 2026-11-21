@@ -7,7 +7,7 @@
 //! The order, and why each step is where it is:
 //!
 //! 1. `alo_adapters::PressingAKey::of` — the grants asked again **now**, the
-//!    application installed, no adapter of its own; refused before any window
+//!    application installed; refused before any window
 //!    is looked at.
 //! 2. The tree opened for this one press: the place with the keyboard must be
 //!    neither a password field nor a terminal.
@@ -71,7 +71,6 @@ pub(crate) fn pressing_a_key_in_an_application(
 
     let pressing = match PressingAKey::of(
         authorised,
-        machine.the_adapters(),
         grants,
         &machine.the_applications_installed_now(),
         strings,

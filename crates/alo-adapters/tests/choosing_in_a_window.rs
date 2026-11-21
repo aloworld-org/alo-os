@@ -19,8 +19,8 @@ use std::collections::BTreeMap;
 use std::time::{Duration, SystemTime};
 
 use alo_adapters::{
-    AccessibilityTree, Adapters, CHOOSE_OPTION, Choosing, Facts, NodeAt, Running, SELECT_ITEM,
-    States, TreeFault, fallback_verbs,
+    AccessibilityTree, CHOOSE_OPTION, Choosing, Facts, NodeAt, Running, SELECT_ITEM, States,
+    TreeFault, fallback_verbs,
 };
 use alo_applications::{Application, Installed};
 use alo_capability::{
@@ -102,7 +102,6 @@ fn choosing_option(drop_down: &str, option: &str) -> Choosing {
     );
     Choosing::of(
         approved(&call, &grants),
-        &Adapters::default(),
         &grants,
         &installed(),
         &in_english(),
@@ -121,7 +120,6 @@ fn selecting(item: &str) -> Choosing {
     );
     Choosing::of(
         approved(&call, &grants),
-        &Adapters::default(),
         &grants,
         &installed(),
         &in_english(),
@@ -641,12 +639,6 @@ fn an_ungranted_application_is_refused_before_the_tree() {
         ],
     );
     let authorised = approved(&call, &grants);
-    let refused = Choosing::of(
-        authorised,
-        &Adapters::default(),
-        &Grants::default(),
-        &installed(),
-        &in_english(),
-    );
+    let refused = Choosing::of(authorised, &Grants::default(), &installed(), &in_english());
     assert!(refused.is_err(), "{refused:?}");
 }

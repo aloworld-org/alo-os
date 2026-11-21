@@ -3,7 +3,7 @@
 //! the sentence *press the {kind} named “{name}” in {application}*.
 //!
 //! The steps are `alo_adapters::Activating`'s: the grants asked again at this
-//! moment, the application here, no adapter of its own, and then the control
+//! moment, the application here, and then the control
 //! looked for again in the window as it is now — exactly one usable control of
 //! that kind and that name, or nothing is pressed. It is the
 //! one press a person's own `alo-app … press` makes too, so alo is refused for
@@ -98,7 +98,6 @@ pub(crate) fn pressing_a_control(
 
     let activating = match Activating::of(
         authorised,
-        machine.the_adapters(),
         grants,
         &machine.the_applications_installed_now(),
         strings,

@@ -5,7 +5,7 @@
 //! at once, recorded the same way.
 //!
 //! The steps are `alo_adapters::OpeningAMenu`'s: the grants asked again now,
-//! the application here, no adapter of its own; then the thing found on the
+//! the application here; then the thing found on the
 //! screen by its exact name, never a password field, and its own menu action
 //! done once. The tree is opened after every refusal that needs no tree, for
 //! this one act, and dropped when it ends. A terminal is reached only where the
@@ -72,7 +72,6 @@ pub(crate) fn opening_a_menu_in_an_application(
 
     let opening = match OpeningAMenu::of(
         authorised,
-        machine.the_adapters(),
         grants,
         &machine.the_applications_installed_now(),
         strings,
