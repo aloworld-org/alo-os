@@ -42,7 +42,7 @@ pub(super) fn the_words(files: &[String]) -> crate::task_text::TheWordsInATaskWi
         title: "Prepare the launch presentation",
         kind: "alo task \u{b7} Work",
         status: "alo is working",
-        alo_is_working: true,
+        status_is: alo_tasks::TheStatus::AloIsWorking,
         model: "SmolLM2 1.7B",
         destination: "On this computer",
         invitation: "Reply to alo or change the direction\u{2026}",
@@ -381,7 +381,7 @@ fn the_words_are_drawn_and_an_empty_window_draws_none() {
         title: "",
         kind: "",
         status: "",
-        alo_is_working: false,
+        status_is: alo_tasks::TheStatus::Complete,
         model: "",
         destination: "",
         invitation: "",
@@ -526,7 +526,7 @@ fn a_persons_words_are_drawn_further_right_than_alos() {
         title: "",
         kind: "",
         status: "",
-        alo_is_working: false,
+        status_is: alo_tasks::TheStatus::Complete,
         model: "",
         destination: "",
         invitation: "",
@@ -1090,23 +1090,31 @@ fn the_line_beside_the_answers_is_on_the_canvas() {
     );
 }
 
-/// **alo's mark is drawn**, in its teal, which nothing else in the panel is.
-/// The control is the card the closing question keeps, which draws none.
+/// **alo's mark is drawn**, in its teal. The control is the card the closing
+/// question keeps, which draws none.
+///
+/// **Counted, not merely found, since 2026-11-21**: the window's status is now
+/// the design's pill, and *alo is working* carries alo's own mark in teal on
+/// its soft teal — so teal is already in the panel of both, and what the card
+/// adds is more of it.
 #[test]
 fn alos_mark_is_drawn_on_the_approved_card() {
-    let teal =
-        |panel: &crate::painted::Washed| {
-            panel.pixels.as_chunks::<4>().0.iter().any(|&[r, g, b, _]| {
+    let teal = |panel: &crate::painted::Washed| {
+        panel
+            .pixels
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .filter(|&&[r, g, b, _]| {
                 g > r.saturating_add(40) && b > r.saturating_add(40) && g < 200
             })
-        };
+            .count()
+    };
+    let control = teal(&with_a_card(None, true).panel);
+    let approved = teal(&with_the_approved_card(None).panel);
     assert!(
-        !teal(&with_a_card(None, true).panel),
-        "the control: something teal was already in the panel"
-    );
-    assert!(
-        teal(&with_the_approved_card(None).panel),
-        "alo's mark was not drawn"
+        approved > control,
+        "alo's mark was not drawn: {approved} teal pixels with it, {control} without"
     );
 }
 
@@ -1141,7 +1149,11 @@ fn the_status_is_teal_only_while_alo_is_working() {
     let mut drawn = |working: bool| {
         let words = crate::task_text::TheWordsInATaskWindow {
             status: "Complete",
-            alo_is_working: working,
+            status_is: if working {
+                alo_tasks::TheStatus::AloIsWorking
+            } else {
+                alo_tasks::TheStatus::Complete
+            },
             ..the_words(&files)
         };
         furniture(

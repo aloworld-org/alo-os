@@ -52,7 +52,7 @@ fn a_task_window_draws_the_pixels_it_drew_before() {
         title: "Prepare the launch presentation",
         kind: "alo task \u{b7} Work",
         status: "alo is working",
-        alo_is_working: true,
+        status_is: alo_tasks::TheStatus::AloIsWorking,
         model: "SmolLM2 1.7B",
         destination: "On this computer",
         invitation: "Reply to alo or change the direction\u{2026}",
@@ -110,35 +110,41 @@ fn a_task_window_draws_the_pixels_it_drew_before() {
 /// changed). They were `0xe109_587a_4b8c_7858`, `0xeed9_0760_a7b9_7eed`,
 /// `0x3800_b84c_10d5_0178`, `0x19c2_ae70_b293_980f`, `0x7b16_9fc0_1527_7d38` and
 /// `0xc640_4fdc_b598_5bb7`.
+///
+/// **And on 2026-11-21, once, from CI's run of the change**, when the status
+/// became the design's pill (`task_raster_status_tests` holds what changed).
+/// They were `0x0b43_bb12_7e5b_5e73`, `0x7cef_7565_0e29_8d7c`,
+/// `0x7f36_ba0e_d32e_0325`, `0x1389_6157_0b65_3440`, `0x8ef4_708b_d334_3a8e` and
+/// `0xe260_b862_37d6_04d3`.
 const BEFORE: [Drawn; 6] = [
     Drawn {
         scale: 100,
         text: 100,
-        hash: 0x0b43_bb12_7e5b_5e73,
+        hash: 0xb564_1717_1a62_b5d1,
     },
     Drawn {
         scale: 100,
         text: 125,
-        hash: 0x7cef_7565_0e29_8d7c,
+        hash: 0x8892_2a2c_c2da_8325,
     },
     Drawn {
         scale: 150,
         text: 100,
-        hash: 0x7f36_ba0e_d32e_0325,
+        hash: 0xbabb_d3ba_6cd9_731f,
     },
     Drawn {
         scale: 150,
         text: 125,
-        hash: 0x1389_6157_0b65_3440,
+        hash: 0xfb31_faee_c567_fee8,
     },
     Drawn {
         scale: 200,
         text: 100,
-        hash: 0x8ef4_708b_d334_3a8e,
+        hash: 0x6e9f_23e8_504d_595f,
     },
     Drawn {
         scale: 200,
         text: 125,
-        hash: 0xe260_b862_37d6_04d3,
+        hash: 0x4099_5737_7ca1_7796,
     },
 ];

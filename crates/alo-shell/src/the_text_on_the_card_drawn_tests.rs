@@ -49,7 +49,7 @@ fn a_card_scrolled(
             title: "write hello in VSCodium",
             kind: "alo task",
             status: "Waiting for your permission",
-            alo_is_working: false,
+            status_is: alo_tasks::TheStatus::Complete,
             model: "",
             destination: "on this computer",
             invitation: "Reply to alo or change the direction\u{2026}",

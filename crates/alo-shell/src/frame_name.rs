@@ -143,6 +143,15 @@ impl crate::Server {
             .mapped_surfaces()
             .map(|frame| (self.the_name_of(frame), self.who_draws_the_header_of(frame)))
             .collect();
+        let bands: Vec<(crate::which_band::ABand, crate::Decorations)> = self
+            .mapped_surfaces()
+            .map(|frame| {
+                (
+                    crate::which_band::ABand::App(frame.clone()),
+                    self.who_draws_the_header_of(frame),
+                )
+            })
+            .collect();
         // Each task window on the screen and its title, which is the
         // person's own request (`alo_tasks::ATask::in_the_panel`).
         let tasks: Vec<(crate::the_tasks_a_person_opened::WhichTask, String)> = self
@@ -179,7 +188,16 @@ impl crate::Server {
             // **And the Bar's matches under the Dock's field**, while they
             // rise from it (the owner's decision of 2026-11-11).
             .with_the_bars_matches(strings, &self.the_bars_matches_as_read(strings))
-            .with_the_frames_open(strings, &frames, turned_on);
+            .with_the_frames_open(strings, &frames, turned_on)
+            // **And every control on their bands pressable**, by the road a
+            // pointer's press takes (`crate::a_band_is_pressed`).
+            .with_the_frames_bands_pressable(&bands)
+            // **And alo's own windows that wear a band**, each with its band.
+            .with_alos_own_windows_open(
+                strings,
+                &self.alos_own_windows_as_read(strings),
+                turned_on,
+            );
         let tree = match open_panel {
             Some((frame, met)) => tree.with_a_windows_panel_open(strings, frame, &met),
             None => tree,

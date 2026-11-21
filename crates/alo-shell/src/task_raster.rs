@@ -198,6 +198,65 @@ fn the_speakers_label<'a>(
     (!label.words.is_empty()).then_some(label)
 }
 
+/// The icon a status's pill draws before its words.
+#[derive(Debug, Clone, Copy)]
+enum AStatusIcon {
+    /// alo's own mark, the approval card's file.
+    AlosMark,
+    /// One of the status's own pieces of artwork.
+    Its(crate::the_status_icons::AStatusIcon),
+}
+
+/// A status's pill: its ground, its words' colour, and its icon with that
+/// icon's size and colour.
+type TheStatusPill = ([u8; 3], [u8; 3], Option<AnIconInAPill>);
+
+/// One icon in a status's pill: which, at what size, in what colour.
+type AnIconInAPill = (AStatusIcon, u32, [u8; 3]);
+
+/// **How each status's pill is drawn**: its ground, its words' colour, and its
+/// icon with that icon's size and colour, as the approved frames draw them —
+/// `549:45` *alo is working* (alo's mark, 12, on `accent/soft`, all in teal),
+/// `549:154` *Waiting for your permission* (a clock, 16, `text/primary` on
+/// `bg/cool`), `549:280` *Complete* (a circled tick, 16, in
+/// `status/positive`, words `text/primary` on `bg/cool`).
+///
+/// **Every status named with no catch-all.** *Stopping…*, *Stopped* and *Stop
+/// requested · not confirmed* have no frame: they are the same pill on
+/// `bg/cool` with their words in `text/primary` and **no icon**, rather than an
+/// icon the design never drew. A frame for any of them changes one arm here.
+const fn the_status_pill(status: alo_tasks::TheStatus, palette: &TaskPalette) -> TheStatusPill {
+    use crate::the_status_icons::AStatusIcon as Its;
+    match status {
+        alo_tasks::TheStatus::AloIsWorking => (
+            palette.alo_soft,
+            palette.alo,
+            Some((AStatusIcon::AlosMark, m::ALOS_STATUS_MARK_IS, palette.alo)),
+        ),
+        alo_tasks::TheStatus::WaitingForYou => (
+            palette.cool,
+            palette.ink,
+            Some((
+                AStatusIcon::Its(Its::TheClock),
+                m::A_STATUS_ICON_IS,
+                palette.ink,
+            )),
+        ),
+        alo_tasks::TheStatus::Complete => (
+            palette.cool,
+            palette.ink,
+            Some((
+                AStatusIcon::Its(Its::TheCircledTick),
+                m::A_STATUS_ICON_IS,
+                palette.positive,
+            )),
+        ),
+        alo_tasks::TheStatus::Stopping
+        | alo_tasks::TheStatus::Stopped
+        | alo_tasks::TheStatus::StopNotConfirmed => (palette.cool, palette.ink, None),
+    }
+}
+
 /// The heading's own figures, measured off the design's frame.
 ///
 /// Not in `alo_tasks::measures` because they are this raster's arrangement of
@@ -926,6 +985,46 @@ pub(crate) fn furniture(
         });
     }
 
+    // **The status's pill**, measured while the font system is free and placed
+    // from the row's right-hand padding (`549:154`): 12 inside each end, the
+    // icon, 8, then the words, 32 tall and centred in the heading. Its ground is
+    // one of the panel's own rounded grounds, so its ends are round.
+    let (the_pills_ground, the_statuss_ink, the_statuss_icon) =
+        the_status_pill(words.status_is, &palette);
+    let the_statuss_words_are = if words.status.is_empty() {
+        0
+    } else {
+        logical(crate::painted_text::how_wide_as(
+            fonts,
+            words.status,
+            AStyle::Label.metrics(measure),
+            &AStyle::Label.attrs(),
+        )) + 2
+    };
+    let before_the_words = m::INSIDE_A_STATUS
+        + the_statuss_icon.map_or(0, |(_, size, _)| size + m::BESIDE_A_STATUS_ICON);
+    let the_pill_is_wide =
+        (before_the_words + the_statuss_words_are + m::INSIDE_A_STATUS).min(THE_STATUS_IS_WIDE);
+    let the_pills_left = rows
+        .heading
+        .wide
+        .saturating_sub(m::BESIDE_A_ROW + the_pill_is_wide);
+    let the_pills_top =
+        rows.heading.from_the_top + m::THE_HEADING_IS_TALL.saturating_sub(m::A_STATUS_IS_TALL) / 2;
+    if !words.status.is_empty() {
+        let (x, y) = inside(the_pills_left, the_pills_top);
+        grounds.push(crate::dock_surface::AGround {
+            well: AWell {
+                at: Rectangle::new(
+                    (x, y).into(),
+                    (px(the_pill_is_wide), px(m::A_STATUS_IS_TALL)).into(),
+                ),
+                corner: m::A_STATUS_CORNER,
+            },
+            colour: the_pills_ground,
+        });
+    }
+
     let mut panel = a_panel(
         at,
         palette.surface,
@@ -952,6 +1051,41 @@ pub(crate) fn furniture(
     .ok_or(NoTaskPicture::TooSmall(TooSmall::NotTallEnough {
         the_least: alo_tasks::layout::the_least_height(),
     }))?;
+
+    // **The status's icon**, in its slot at the start of the pill, the
+    // artwork's own box centred in it at the display's scale, as the card's
+    // ticks are drawn.
+    if let Some((icon, size, ink)) = the_statuss_icon.filter(|_| !words.status.is_empty()) {
+        let shape = match icon {
+            AStatusIcon::AlosMark => crate::the_approval_cards_icons::ACardsIcon::TheMark.shape(),
+            AStatusIcon::Its(its) => its.shape(),
+        };
+        if let Some(shape) = shape {
+            let (wide, tall) = shape.its_box();
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "an icon is a few dozen pixels at any display's scale"
+            )]
+            let (iw, ih) = (
+                (f64::from(wide) * scale.factor()).round() as i32,
+                (f64::from(tall) * scale.factor()).round() as i32,
+            );
+            let slot = px(size);
+            let (x, y) = inside(
+                the_pills_left + m::INSIDE_A_STATUS,
+                the_pills_top + m::A_STATUS_IS_TALL.saturating_sub(size) / 2,
+            );
+            crate::inking_a_shape::ink_a_shape(
+                &mut panel,
+                shape,
+                Rectangle::new(
+                    (x + (slot - iw) / 2, y + (slot - ih) / 2).into(),
+                    (iw, ih).into(),
+                ),
+                ink,
+            );
+        }
+    }
 
     // **The model's name and its arrow, centred together in their control** —
     // the design's `Model` is a row with 8 inside each end and 8 between, its
@@ -1324,28 +1458,19 @@ pub(crate) fn furniture(
         false,
         None,
     );
-    // **The status in teal while alo is working, and only then**, which is the
-    // caller's wording and this crate's colour: ADR 0067's teal marks alo
-    // acting. *Complete* was drawn teal too until 2026-11-01; the approved
-    // design draws it, and *Waiting for your permission*, in navy.
+    // **The status's words, in its pill**: teal while alo is working and only
+    // then, which is the caller's wording and this crate's colour — ADR 0067's
+    // teal marks alo acting — on the pill's own ground, after its icon.
     write(
         words.status,
         &[],
         AStyle::Label,
-        palette.surface,
-        if words.alo_is_working {
-            palette.alo
-        } else {
-            palette.ink
-        },
-        // **In its own column on the right**, which is what the design draws
-        // and what stops it painting over the title.
-        rows.heading
-            .wide
-            .saturating_sub(m::BESIDE_A_ROW + THE_STATUS_IS_WIDE),
-        (rows.heading.from_the_top, m::THE_HEADING_IS_TALL),
-        THE_STATUS_IS_WIDE,
-        true,
+        the_pills_ground,
+        the_statuss_ink,
+        the_pills_left + before_the_words,
+        (the_pills_top, m::A_STATUS_IS_TALL),
+        the_pill_is_wide.saturating_sub(before_the_words + m::INSIDE_A_STATUS),
+        false,
         None,
     );
 
@@ -1789,6 +1914,11 @@ mod closing_tests;
 #[cfg(test)]
 #[path = "task_raster_speaker_tests.rs"]
 mod speaker_tests;
+
+/// Every status, drawn as its pill.
+#[cfg(test)]
+#[path = "task_raster_status_tests.rs"]
+mod status_tests;
 
 /// **Where each text's box starts on its card, and how tall its words are** —
 /// under the rows naming what the change touches, each after what is said

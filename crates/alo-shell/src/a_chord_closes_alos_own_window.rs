@@ -41,6 +41,7 @@
 //! *This makes an existing promise true, because Alt+F4 is listed and
 //! designed as closing the window, and alo's windows are windows.*
 
+use alo_put_aside::AlosOwnWindow;
 use alo_shortcuts::{Action, Chord, Shortcuts};
 
 impl crate::Server {
@@ -59,19 +60,25 @@ impl crate::Server {
         }
         // In the order `crate::a_chord_goes_round_every_window` asks where the
         // keyboard is, so the two cannot disagree about which window that is.
-        if self.settings_is_taking_the_keys() {
-            self.the_person_closes_settings();
-            return true;
-        }
-        if self.the_record_is_taking_the_keys() {
-            self.the_person_closes_the_record();
-            return true;
-        }
-        if self.the_terminal_is_taking_the_keys() {
-            let _ = self.the_person_closes_the_terminal();
-            return true;
-        }
-        false
+        let holding = if self.settings_is_taking_the_keys() {
+            AlosOwnWindow::Settings
+        } else if self.the_record_is_taking_the_keys() {
+            AlosOwnWindow::TheRecord
+        } else if self.the_terminal_is_taking_the_keys() {
+            AlosOwnWindow::TheTerminal
+        } else {
+            return false;
+        };
+        // **What its band's Close does, through the one road**
+        // (`crate::a_band_is_pressed`).
+        let _ = self.a_bands_control_is_pressed(
+            &crate::which_band::ABand::Alos(crate::the_bands_over_alos_windows::AlosBand::Its(
+                holding,
+            )),
+            crate::window_edge::OnTheEdge::Close,
+            crate::a_band_is_pressed::PressedBy::TheKeys,
+        );
+        true
     }
 }
 

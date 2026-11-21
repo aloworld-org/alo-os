@@ -12,8 +12,8 @@ use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 use crate::the_bands_over_alos_windows::AlosBand;
 
 /// The window a band hangs over.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) enum ABand {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ABand {
     /// An application's window.
     App(WlSurface),
     /// One of alo's own windows.

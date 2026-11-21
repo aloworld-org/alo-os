@@ -452,11 +452,11 @@ impl ReadAloudTree {
     ///
     /// # Its controls are asked the same question as a frame's
     ///
-    /// `what_a_reader_is_told(Decorations::ATaskWindow)`, which is Minimise and
-    /// Close — the same answer `crate::a_task_windows_edge` draws from,
-    /// so what is heard and what is drawn cannot disagree. Each control that
-    /// closes a window carries [`Pressed::CloseTheTask`], so a reader's press
-    /// reaches the window it is under and no other.
+    /// `what_a_reader_is_told(Decorations::ATaskWindow)` — the same answer
+    /// its band draws from, so what is heard and what is drawn cannot
+    /// disagree. Each control carries [`Pressed::OnABand`] for this window, so
+    /// a reader's press reaches the window it is under and no other, by the road
+    /// a pointer's press takes (`crate::a_band_is_pressed`).
     ///
     /// # Order
     ///
@@ -493,27 +493,116 @@ impl ReadAloudTree {
                     attributes: Vec::new(),
                 },
             );
-            // **Window actions is not in a task window's tree yet**: a reader's
-            // press has no road to its panel (`Pressed` has none), and a node a
-            // reader can find and not press is worse than none. The panel is
-            // reached with Alt+F3, which a reader's keyboard has.
-            for control in what_a_reader_is_told(Decorations::ATaskWindow)
-                .into_iter()
-                .filter(|control| control.does != Some(alo_shortcuts::Action::WindowOptions))
-            {
-                let press = match control.does {
-                    Some(alo_shortcuts::Action::CloseWindow) => Some(Pressed::CloseTheTask(*which)),
-                    Some(alo_shortcuts::Action::MinimiseWindow) => {
-                        Some(Pressed::MinimiseTheTask(*which))
-                    }
-                    _ => None,
-                };
-                let node = Node {
-                    press,
-                    ..of_control(strings, control, turned_on)
-                };
-                self.push(window, node);
+            // **Every control on its band, Window actions included**, each
+            // pressed by the one road (`crate::a_band_is_pressed`).
+            self.its_bands_controls(
+                window,
+                &crate::which_band::ABand::Alos(
+                    crate::the_bands_over_alos_windows::AlosBand::ATask(*which),
+                ),
+                Decorations::ATaskWindow,
+                (strings, turned_on),
+            );
+        }
+        self
+    }
+
+    /// The controls on the band over one window, under that window's node,
+    /// each pressable by the one road a pointer's press takes.
+    fn its_bands_controls(
+        &mut self,
+        window: usize,
+        band: &crate::which_band::ABand,
+        decorations: Decorations,
+        (strings, turned_on): (&Strings, &TurnedOn),
+    ) {
+        let controls = crate::window_edge_reading::the_controls_of(decorations);
+        for (control, told) in controls.into_iter().zip(what_a_reader_is_told(decorations)) {
+            let node = Node {
+                press: Some(Pressed::OnABand {
+                    band: band.clone(),
+                    control,
+                }),
+                ..of_control(strings, told, turned_on)
+            };
+            self.push(window, node);
+        }
+    }
+
+    /// **Every application window's band can be pressed by a reader**, as the
+    /// pointer presses it: `bands` is each window in the order
+    /// [`Self::with_the_frames_open`] was given, with what its band carries.
+    ///
+    /// Until 2026-11-21 these controls were told and could not be pressed.
+    #[must_use]
+    pub(crate) fn with_the_frames_bands_pressable(
+        mut self,
+        bands: &[(crate::which_band::ABand, Decorations)],
+    ) -> Self {
+        let Some(list) = self.the_windows_open() else {
+            return self;
+        };
+        let frames = self
+            .nodes
+            .get(list)
+            .map(|node| node.children.clone())
+            .unwrap_or_default();
+        for (frame, (band, decorations)) in frames.into_iter().zip(bands) {
+            let children = self
+                .nodes
+                .get(frame)
+                .map(|node| node.children.clone())
+                .unwrap_or_default();
+            let controls = crate::window_edge_reading::the_controls_of(*decorations);
+            for (child, control) in children.into_iter().zip(controls) {
+                if let Some(node) = self.nodes.get_mut(child) {
+                    node.press = Some(Pressed::OnABand {
+                        band: band.clone(),
+                        control,
+                    });
+                }
             }
+        }
+        self
+    }
+
+    /// **alo's own windows that wear a band** — the terminal, Settings and the
+    /// record — among the windows open, each named by its title, with every
+    /// control on its band pressable by the one road a pointer's press takes.
+    /// Until 2026-11-21 a reader was told none of them was open.
+    #[must_use]
+    pub(crate) fn with_alos_own_windows_open(
+        mut self,
+        strings: &Strings,
+        windows: &[(alo_put_aside::AlosOwnWindow, String)],
+        turned_on: &TurnedOn,
+    ) -> Self {
+        let Some(list) = self.the_windows_open() else {
+            return self;
+        };
+        for (which, title) in windows {
+            let window = self.push(
+                list,
+                Node {
+                    path: String::new(),
+                    role: access_roles::number_of(alo_access::Role::ListItem),
+                    name: title.clone(),
+                    states: access_roles::words_of(alo_access::State::CanBeUsed, None),
+                    announced: false,
+                    parent: list,
+                    children: Vec::new(),
+                    description: String::new(),
+                    press: None,
+                    attributes: Vec::new(),
+                },
+            );
+            let band = crate::the_bands_over_alos_windows::AlosBand::Its(*which);
+            self.its_bands_controls(
+                window,
+                &crate::which_band::ABand::Alos(band),
+                band.decorations(),
+                (strings, turned_on),
+            );
         }
         self
     }

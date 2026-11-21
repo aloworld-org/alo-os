@@ -16,6 +16,7 @@
 
 use std::time::Duration;
 
+use alo_acting::said_of_a_band::TheKind;
 use alo_cursors::CursorIcon;
 
 use crate::a_place_on_the_screen::Target;
@@ -90,6 +91,37 @@ pub enum Step {
         name: String,
         /// The most presses before it fails.
         at_most: usize,
+    },
+    /// **Point at the middle of a window's band, where the shell says it is
+    /// drawn** (`alo_acting::said_of_a_band`) — failing where nothing says so,
+    /// where a later line says it is no longer drawn, or where it is drawn off
+    /// the screen. `"task"` answers to any task window, whose number is a
+    /// place in a list that moves.
+    PointAtTheBand {
+        /// Which kind of window.
+        kind: TheKind,
+        /// Its id, as the line says it.
+        id: String,
+        /// The longest it waits for the line.
+        within: Duration,
+    },
+    /// **The band's controls are these, every one and no other**, by the names
+    /// the line says them by, read once the pointer is in the band.
+    TheControlsAre {
+        /// Which kind of window.
+        kind: TheKind,
+        /// Its id.
+        id: String,
+        /// The controls, in their English source words.
+        names: Vec<String>,
+        /// The longest it waits for the line.
+        within: Duration,
+    },
+    /// **Press the control called `name` in the middle of where it is drawn**,
+    /// as the last controls line read said.
+    ClickTheControl {
+        /// The control, in its English source words.
+        name: String,
     },
     /// The log says none of these phrases for a whole time.
     ExpectNoLine {
@@ -365,6 +397,42 @@ impl Walk {
             chord: chord.clone(),
             name: name.to_owned(),
             at_most,
+        })
+    }
+
+    /// Then point at the middle of `kind`'s band, `id`, where the shell says it
+    /// is drawn, waiting `within` for the line.
+    #[must_use]
+    pub fn point_at_the_band(self, kind: TheKind, id: &str, within: Duration) -> Self {
+        self.then(Step::PointAtTheBand {
+            kind,
+            id: id.to_owned(),
+            within,
+        })
+    }
+
+    /// Then check the band's controls are `names`, every one and no other.
+    #[must_use]
+    pub fn the_controls_are(
+        self,
+        kind: TheKind,
+        id: &str,
+        names: &[&str],
+        within: Duration,
+    ) -> Self {
+        self.then(Step::TheControlsAre {
+            kind,
+            id: id.to_owned(),
+            names: names.iter().map(|name| (*name).to_owned()).collect(),
+            within,
+        })
+    }
+
+    /// Then press the control called `name` where it is drawn.
+    #[must_use]
+    pub fn click_the_control(self, name: &str) -> Self {
+        self.then(Step::ClickTheControl {
+            name: name.to_owned(),
         })
     }
 

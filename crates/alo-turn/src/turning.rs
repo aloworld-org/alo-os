@@ -1067,6 +1067,8 @@ impl<'a, 'm> Turning<'a, 'm> {
         now: SystemTime,
     ) -> Result<T, NotDone> {
         let refused = worded_here(refused, self.origin.as_ref(), self.machine.strings());
+        // **Why, on the journal, in kind** (`crate::said_of_a_refusal`).
+        eprintln!("alo-agentd: {}", crate::said_of_a_refusal::said(&refused));
         let entry = Entry::refused(&refused, self.turn.grantee(), self.machine.strings(), now);
         self.writing_down(entry)?;
         Err(NotDone::Refused(refused))
@@ -1082,6 +1084,8 @@ impl<'a, 'm> Turning<'a, 'm> {
         now: SystemTime,
     ) -> Result<T, NotDone> {
         let refused = worded_here(refused, self.origin.as_ref(), self.machine.strings());
+        // **Why, on the journal, in kind** (`crate::said_of_a_refusal`).
+        eprintln!("alo-agentd: {}", crate::said_of_a_refusal::said(&refused));
         let entry = Entry::refused(&refused, self.turn.grantee(), self.machine.strings(), now);
         let entry = self.as_the_level_was(entry, grants);
         self.writing_down(entry)?;

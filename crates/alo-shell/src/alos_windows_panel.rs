@@ -16,7 +16,6 @@ use crate::the_bands_over_alos_windows::AlosBand;
 use crate::which_band::ABand;
 use crate::window_edge::{WindowEdge, edge_of};
 use crate::window_menu::{HowTheWindowIs, WhatARowDoes, WindowMenu, the_menu_of};
-use crate::window_menu_paint::PointingAtTheMenu;
 
 impl crate::Server {
     /// Where this one of alo's windows is drawn, in the band's units at the
@@ -67,63 +66,6 @@ impl crate::Server {
             None
         };
         Some((edge, menu))
-    }
-
-    /// The panel over this band as the frame draws it, against the band the
-    /// frame laid out, with what the pointer and the keyboard are on and the
-    /// preview of the choice in hand — [`None`] while its panel is shut.
-    #[must_use]
-    pub(crate) fn the_panel_drawn_over(
-        &self,
-        which: AlosBand,
-        edge: &WindowEdge,
-        (room, scale): (smithay::utils::Size<i32, Logical>, u32),
-    ) -> Option<(WindowMenu, PointingAtTheMenu)> {
-        let in_the_menu = self
-            .where_the_keyboard_is_on_this_band(&ABand::Alos(which))
-            .the_menu()?;
-        let menu = the_menu_of(edge, self.how_alos_window_is(which), room)?;
-        let hovered = self
-            .where_the_pointer_is_in_logical_pixels()
-            .map(|at| crate::an_edge_in_its_displays_units::a_point_in_the_edges_units(at, scale))
-            .and_then(|at| menu.what_is_under(at))
-            .map(|row| row.does);
-        let focused = in_the_menu.on();
-        let preview = self.the_preview_of_alos(which, focused.or(hovered), scale);
-        Some((
-            menu,
-            PointingAtTheMenu {
-                hovered,
-                focused,
-                preview,
-            },
-        ))
-    }
-
-    /// Minimise on this window: into the right-hand panel, still running.
-    pub(crate) fn alos_window_goes_aside(&mut self, which: AlosBand) {
-        match which {
-            AlosBand::Its(window) => self.this_alo_window_is_asked_to_go_aside(window),
-            AlosBand::ATask(task) => self.this_task_is_asked_to_go_aside(task),
-        }
-    }
-
-    /// Close on this window, by the road its Close button takes.
-    pub(crate) fn alos_window_closes(&mut self, which: AlosBand) {
-        match which {
-            AlosBand::Its(alo_put_aside::AlosOwnWindow::TheTerminal) => {
-                let _ = self.the_person_closes_the_terminal();
-            }
-            AlosBand::Its(alo_put_aside::AlosOwnWindow::Settings) => {
-                self.the_person_closes_settings();
-            }
-            AlosBand::Its(alo_put_aside::AlosOwnWindow::TheRecord) => {
-                self.the_person_closes_the_record();
-            }
-            AlosBand::ATask(task) => {
-                let _ = self.the_person_closes_a_task(task);
-            }
-        }
     }
 
     /// Do what a choice in the panel says, to whichever window's panel it is.

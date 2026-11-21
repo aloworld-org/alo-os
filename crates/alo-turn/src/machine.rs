@@ -743,6 +743,19 @@ impl<'a> Machine<'a> {
         self.opening
     }
 
+    /// **What a person calls the application with this identifier**, for any
+    /// sentence a person reads: its entry's name in their language, by
+    /// #1393's lookup (`SaysWhatAFileOpensWith::called`) — and its identifier
+    /// only where no entry names it, or this machine was not told. Every
+    /// sentence the turn writes about an application asks this
+    /// (`crate::applications_named_as_a_person_calls_them`).
+    pub(crate) fn what_a_person_calls(&self, identifier: &str) -> String {
+        self.opening
+            .and_then(|names| names.called(identifier))
+            .filter(|name| !name.trim().is_empty())
+            .unwrap_or_else(|| identifier.to_owned())
+    }
+
     /// What a verb's work runs inside.
     ///
     /// `pub(crate)`, and the only caller is `carrying.rs`: a boundary is

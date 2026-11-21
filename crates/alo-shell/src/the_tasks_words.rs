@@ -47,8 +47,8 @@ struct ATasksWords {
     kind: String,
     /// What is happening in it.
     status: String,
-    /// Whether that is alo at work.
-    alo_is_working: bool,
+    /// Which status that is.
+    status_is: alo_tasks::TheStatus,
     /// Which model answers.
     model: String,
     /// Where the processing happens.
@@ -149,7 +149,7 @@ impl TheTasksWords {
                         .unwrap_or_default(),
                     kind: say(alo_tasks::words::A_TASK),
                     status: say(task.what_is_happening()),
-                    alo_is_working: task.what_is_happening() == alo_tasks::words::ALO_IS_WORKING,
+                    status_is: task.its_status(),
                     // **The name of the model the person chose, as they
                     // wrote it** — *what the person configured; nothing is
                     // branded*, the owner's decision of 2026-10-31. Recorded on
@@ -323,7 +323,7 @@ impl TheTasksWords {
                     title: &one.title,
                     kind: &one.kind,
                     status: &one.status,
-                    alo_is_working: one.alo_is_working,
+                    status_is: one.status_is,
                     model: &one.model,
                     destination: &one.destination,
                     invitation: &one.invitation,

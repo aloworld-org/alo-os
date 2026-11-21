@@ -636,6 +636,11 @@ mod tests {
     /// what does the binding — but the window is now against the rest of the
     /// machine rather than against this binary's own tests, which is where the
     /// collisions were coming from.
+    ///
+    /// **Within one process, and nothing more.** nextest runs each test in a
+    /// process of its own, where every counter starts at the same number, so
+    /// these tests run one at a time in the `ports-from-a-counter` group
+    /// (`.config/nextest.toml`, held by `tests/ports_from_a_counter_take_turns.rs`).
     fn a_free_port() -> u16 {
         /// Above the range a machine hands out for itself, so the counter is
         /// not walking through ports the kernel is also assigning.

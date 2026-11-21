@@ -142,14 +142,14 @@ pub struct TheWordsInATaskWindow<'a> {
     pub kind: &'a str,
     /// What is happening — *alo is working*, *Waiting for your permission*.
     pub status: &'a str,
-    /// Whether that is alo at work, which is the one status drawn in teal.
+    /// Which status that is, which decides how its pill is drawn.
     ///
-    /// **Teal is alo acting and nothing else** (ADR 0067). *Complete* and
+    /// **Teal is alo acting and nothing else** (ADR 0067): only
+    /// [`alo_tasks::TheStatus::AloIsWorking`] is drawn in it. *Complete* and
     /// *Waiting for your permission* are drawn in navy, as the designs the
-    /// owner approved draw them (`alo-window-complete`, and the waiting
-    /// frame): a finished task is not alo acting, and a waiting one is waiting
-    /// for the person.
-    pub alo_is_working: bool,
+    /// owner approved draw them (`549:261` and `549:135`): a finished task is
+    /// not alo acting, and a waiting one is waiting for the person.
+    pub status_is: alo_tasks::TheStatus,
     /// Which model answers.
     pub model: &'a str,
     /// Where the processing happens — *On this computer*.

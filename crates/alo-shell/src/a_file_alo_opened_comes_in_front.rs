@@ -75,6 +75,9 @@ impl Server {
         let Ok(app) = alo_dock::AppId::named(application) else {
             return;
         };
+        // **And placed as a window the person opened is**, where a new window
+        // comes (`crate::a_window_alo_opened`).
+        self.alo_started(app.clone(), now);
         self.alo_opened_a_file_in
             .retain(|awaited| awaited.app != app);
         if self.alo_opened_a_file_in.len() >= AT_MOST_WAITED_FOR {

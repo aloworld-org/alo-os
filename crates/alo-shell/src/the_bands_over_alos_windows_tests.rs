@@ -141,7 +141,10 @@ fn a_hidden_close_on_the_terminal_is_not_pressed() {
     .expect("the control: Close where it would be revealed")
     .target;
     // **Pressed without a frame between**, so the band is still at rest.
-    assert!(server.a_press_on_the_terminals_edge((close.loc.x + 22, close.loc.y + 22).into()));
+    assert!(server.a_press_on_the_band_over_alos(
+        crate::which_window_is_in_front::AKindOfWindow::TheTerminal,
+        (close.loc.x + 22, close.loc.y + 22).into()
+    ));
     assert!(
         server.alos_own_terminal().is_some() && server.the_question_closing_asks().is_none(),
         "a press reached a Close nobody could see"
@@ -195,8 +198,13 @@ fn a_task_windows_band_draws_no_controls_at_rest() {
         .map(|(_, window)| window)
         .expect("the task window is on the screen");
     let mut drawn = |server: &Server| {
-        let pictures =
-            crate::a_task_windows_edge::every_task_windows_edge(server, &mut fonts, A_DISPLAY, 100);
+        let pictures = crate::a_task_windows_edge::every_task_windows_edge(
+            server,
+            &mut fonts,
+            &crate::approval_testing::words(),
+            A_DISPLAY,
+            100,
+        );
         assert_eq!(pictures.len(), 1, "the control: one band drawn");
         pictures
             .iter()

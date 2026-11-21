@@ -24,13 +24,16 @@
 //! source-over compositing, one rectangle at a time, which is what a picture
 //! with an alpha channel needs and all it needs.
 //!
-//! # Why the badge stays underneath
+//! # No circle is under an icon
 //!
-//! The badge is not erased before the icon lands on it. Most application icons
-//! are opaque squares and cover it completely; the ones that are not — a
-//! rounded icon, one with a transparent border — are **meant** to show the
-//! badge behind them, because that circle is what gives every slot on the Dock
-//! the same silhouette. Clearing it first would make those icons float.
+//! **The owner's decision of 2026-11-21**: an application's icon stands on the
+//! Dock's own ground, as the design draws it, and the circle is only the mark of
+//! an application with **no** icon. So `crate::dock_raster` draws no badge
+//! where it composites a picture, and a rounded icon's transparent corners show
+//! the Dock behind them. Until that day this section said the opposite — that
+//! the badge was kept underneath on purpose, to give every slot one
+//! silhouette — and the Dock drew a grey circle behind every real icon.
+//! `crate::dock_badges_tests` holds the rule on the bar and in *More apps*.
 
 use smithay::utils::{Physical, Rectangle};
 
@@ -97,7 +100,7 @@ pub(crate) fn pictures_onto(
 /// one at the other.
 ///
 /// A fully transparent source leaves the target exactly as it was, which is
-/// what keeps the badge visible around a rounded icon.
+/// what lets the Dock's own ground show round a rounded icon.
 fn over(target: &mut [u8], source: &[u8]) {
     // **Four bytes at a time and never an index**, which the lints ask for and
     // which is right in a compositor besides: a slice that was not four long

@@ -192,8 +192,12 @@ pub mod the_window_panels_field;
 /// What reads the pictures alo takes of a window, chosen in Settings.
 mod who_reads_pictures_in_settings;
 pub use a_provider_is_added_in_settings::WhyNotSaved;
+mod a_band_is_drawn;
+mod a_band_is_pressed;
 mod a_reader_presses;
 mod a_reader_presses_in_settings;
+#[cfg(all(test, target_os = "linux"))]
+mod every_kind_of_band_testing;
 pub use a_reader_presses::WhatAReaderPressCameTo;
 /// A file alo was approved to open comes in front, in the window alo may type
 /// into, with the keyboard (2026-11-14).
@@ -377,6 +381,7 @@ mod a_link_is_opened;
 /// inside it, worked out once for the draw and for a press.
 /// What a press on the Dock does: the decision, with no act in it.
 mod a_press_on_the_dock;
+mod a_window_alo_opened;
 mod a_window_that_grows_is_placed_again;
 mod a_window_the_person_opened;
 mod an_application_is_started;
@@ -725,6 +730,8 @@ mod the_nearest_empty_space;
 mod the_record_drawn_on_the_canvas;
 /// The room a maximised or full-screen window fills, display by display.
 mod the_room_a_window_fills;
+/// The clock and the circled tick on a task window's status.
+mod the_status_icons;
 /// Task windows opened into a full view find room as other windows do.
 mod the_task_windows_find_room;
 mod the_terminals_face;
@@ -1076,8 +1083,10 @@ pub use booting::{
 pub use capture_flatten::{NotFlattened, burnt_in};
 pub use giving_alo_an_application_it_asked_for::the_grants_for_the_session_go;
 pub use the_application_sheet::{HowLongForAnApplication, OnTheApplicationSheet};
+pub use the_bands_over_alos_windows::AlosBand;
 pub use the_file_chooser::OnTheFileChooser;
 pub use the_github_sheet::OnTheGitHubSheet;
+pub use which_band::ABand;
 // `DesktopFrame::capturing` is a public field of this type, so without these a
 // caller outside this crate could only ever pass `None` — the capture tools were
 // drawable by this crate and by nobody else, including the fixture whose whole

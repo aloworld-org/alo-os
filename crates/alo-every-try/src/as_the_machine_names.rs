@@ -13,7 +13,7 @@ use std::time::SystemTime;
 
 use alo_applications::Installed;
 use alo_applications::application::Application;
-use alo_capability::{Given, Grantee, Grants, Verbs};
+use alo_capability::{Call, Given, Grantee, Grants, Verbs};
 use alo_instructing::{TheApplicationsInstalled, WhatItMayReach};
 
 /// The agent a try's grants are asked about.
@@ -61,6 +61,21 @@ impl AsTheMachineNames {
             grants,
             grantee,
         }
+    }
+
+    /// **`call`, with each application it names said as that machine's person
+    /// calls it** — as a booted machine says it on the card, in the line done
+    /// without asking and in what the model is told was done
+    /// (`alo_turn`'s `applications_named_as_a_person_calls_them`), so a try
+    /// is shown what the model is shown there.
+    #[must_use]
+    pub fn naming_its_applications(&self, call: Call, strings: &alo_strings::Strings) -> Call {
+        call.naming_applications(&|identifier| {
+            self.installed
+                .knows(identifier)
+                .and_then(Application::name)
+                .map(|called| called.shown(strings))
+        })
     }
 
     /// `given`, for `verb`, as that machine names an application.

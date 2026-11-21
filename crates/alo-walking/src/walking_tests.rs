@@ -872,3 +872,197 @@ fn a_row_never_named_fails_saying_where_the_keyboard_went() {
     );
     assert_eq!(machine.keys_pressed().len(), 3);
 }
+
+/// A machine the size of a walk's screen, saying `lines` one every four
+/// seconds from the third.
+fn a_screen_saying(lines: &[String]) -> PicturesAndLines {
+    lines.iter().enumerate().fold(
+        PicturesAndLines::showing(vec![
+            Frame::filled(1280, 800, [0, 0, 0]),
+            Frame::filled(1280, 800, [9, 9, 9]),
+        ]),
+        |machine, (at, line)| {
+            machine.saying(
+                Duration::from_secs(3 + 4 * u64::try_from(at).unwrap_or(0)),
+                line,
+            )
+        },
+    )
+}
+
+/// A machine the size of a walk's screen, saying every one of `lines` at the
+/// third second, together.
+fn a_screen_saying_at_once(lines: &[String]) -> PicturesAndLines {
+    lines.iter().fold(
+        PicturesAndLines::showing(vec![Frame::filled(1280, 800, [0, 0, 0])]),
+        |machine, line| machine.saying(Duration::from_secs(3), line),
+    )
+}
+
+/// The terminal's band, and its three controls.
+fn the_terminals_band() -> (alo_acting::said_of_a_band::OnTheScreen, Vec<String>) {
+    use alo_acting::said_of_a_band::{self as band, OnTheScreen, TheKind};
+    let at = |x: i32| OnTheScreen {
+        x,
+        y: 51,
+        w: 44,
+        h: 44,
+    };
+    let drawn = OnTheScreen {
+        x: 100,
+        y: 46,
+        w: 640,
+        h: 54,
+    };
+    (
+        drawn,
+        vec![
+            band::a_band_is_drawn(TheKind::Terminal, "terminal", drawn),
+            band::a_bands_controls_are_drawn(
+                TheKind::Terminal,
+                "terminal",
+                &[
+                    (band::WINDOW_ACTIONS, at(580)),
+                    (band::MINIMISE, at(628)),
+                    (band::CLOSE, at(676)),
+                ],
+            ),
+        ],
+    )
+}
+
+/// **A band is found where the shell says it is drawn, and pointed at in its
+/// middle; its controls are read, and a control is pressed in its middle.**
+#[test]
+fn a_band_is_found_and_its_control_pressed_where_they_are_drawn() {
+    use alo_acting::said_of_a_band::{self as band, TheKind};
+    let (_, lines) = the_terminals_band();
+    let mut machine = a_screen_saying(&lines);
+    let walked = Walk::named("w")
+        .mark()
+        .point_at_the_band(TheKind::Terminal, "terminal", Duration::from_secs(30))
+        .the_controls_are(
+            TheKind::Terminal,
+            "terminal",
+            &[band::WINDOW_ACTIONS, band::MINIMISE, band::CLOSE],
+            Duration::from_secs(30),
+        )
+        .click_the_control(band::CLOSE);
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert!(report.passed(), "{}", report.as_text());
+    assert_eq!(
+        machine.pointed,
+        vec![(420, 73), (698, 73)],
+        "the band's middle, then Close's"
+    );
+    assert_eq!(machine.buttons, vec![true, false]);
+}
+
+/// **A band nothing says is drawn fails**, and so does one said and then no
+/// longer drawn, and one drawn off the screen: three ways the band is not on
+/// the screen at all, which is what Text Editor's was.
+#[test]
+fn a_band_not_on_the_screen_fails() {
+    use alo_acting::said_of_a_band::{self as band, OnTheScreen, TheKind};
+    let (drawn, lines) = the_terminals_band();
+    let off = OnTheScreen { x: 2000, ..drawn };
+    for said in [
+        Vec::new(),
+        vec![
+            lines.first().cloned().unwrap_or_default(),
+            band::a_band_is_no_longer_drawn(TheKind::Terminal, "terminal"),
+        ],
+        vec![band::a_band_is_drawn(TheKind::Terminal, "terminal", off)],
+    ] {
+        let mut machine = a_screen_saying_at_once(&said);
+        let walked = Walk::named("w").mark().point_at_the_band(
+            TheKind::Terminal,
+            "terminal",
+            Duration::from_secs(20),
+        );
+        let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+        assert_eq!(
+            verdicts(&report),
+            vec![(
+                "the band of terminal \"terminal\" is on the screen".to_owned(),
+                Verdict::Failed
+            )],
+            "{said:?}\n{}",
+            report.as_text()
+        );
+        assert!(machine.pointed.is_empty(), "pointed at a band not there");
+    }
+}
+
+/// **The controls must be the ones expected, every one**: Minimise missing
+/// fails, and a control not drawn cannot be pressed.
+#[test]
+fn a_control_missing_fails_and_cannot_be_pressed() {
+    use alo_acting::said_of_a_band::{self as band, OnTheScreen, TheKind};
+    let (drawn, _) = the_terminals_band();
+    let at = OnTheScreen {
+        x: 580,
+        y: 51,
+        w: 44,
+        h: 44,
+    };
+    let lines = vec![
+        band::a_band_is_drawn(TheKind::Terminal, "terminal", drawn),
+        band::a_bands_controls_are_drawn(
+            TheKind::Terminal,
+            "terminal",
+            &[(band::WINDOW_ACTIONS, at)],
+        ),
+    ];
+    let mut machine = a_screen_saying(&lines);
+    let walked = Walk::named("w")
+        .mark()
+        .point_at_the_band(TheKind::Terminal, "terminal", Duration::from_secs(30))
+        .the_controls_are(
+            TheKind::Terminal,
+            "terminal",
+            &[band::WINDOW_ACTIONS, band::MINIMISE, band::CLOSE],
+            Duration::from_secs(30),
+        );
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report).last().map(|(_, verdict)| *verdict),
+        Some(Verdict::Failed),
+        "{}",
+        report.as_text()
+    );
+
+    let mut machine = a_screen_saying(&lines);
+    let walked = Walk::named("w")
+        .mark()
+        .point_at_the_band(TheKind::Terminal, "terminal", Duration::from_secs(30))
+        .click_the_control(band::MINIMISE);
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report).last().map(|(_, verdict)| *verdict),
+        Some(Verdict::Failed),
+        "{}",
+        report.as_text()
+    );
+    assert!(
+        machine.buttons.is_empty(),
+        "a control not drawn was pressed"
+    );
+}
+
+/// **A task window is found by its kind, whatever its number**: the walk
+/// cannot know which task the shell numbers it, so `"task"` answers to any
+/// `"task <n>"`.
+#[test]
+fn a_task_window_is_found_whatever_its_number() {
+    use alo_acting::said_of_a_band::{self as band, TheKind};
+    let (drawn, _) = the_terminals_band();
+    let lines = vec![band::a_band_is_drawn(TheKind::Task, "task 3", drawn)];
+    let mut machine = a_screen_saying(&lines);
+    let walked =
+        Walk::named("w")
+            .mark()
+            .point_at_the_band(TheKind::Task, "task", Duration::from_secs(30));
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert!(report.passed(), "{}", report.as_text());
+}

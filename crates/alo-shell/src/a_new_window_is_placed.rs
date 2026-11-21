@@ -103,9 +103,13 @@
 //!   about. A window with room in view opens exactly where it did before.
 //! - **the person chose it** — `Server::when_there_is_no_room`, *glide to empty
 //!   space* unless they chose *open in front*, which is rule 5 unchanged.
-//! - **the person opened it** — `Server::the_person_opened_this_one`. Rule 8:
-//!   a window an application or alo opens in the background never moves the
-//!   camera, so it keeps rule 5's answer and the view stays where it is.
+//! - **the person or alo opened it** — `Server::the_person_opened_this_one`
+//!   or `Server::alo_opened_this_one`. **One rule for both** since the owner's
+//!   answer of 2026-11-21 (`crate::a_window_alo_opened`): a window alo opens
+//!   goes to empty space as the person's does, and the view moves to it.
+//!   Rule 8 still holds for a window **nobody asked for** — one an
+//!   application opens by itself — which keeps rule 5's answer, and the view
+//!   stays where it is.
 //!
 //! **Placed against where the view is going**, not where it is mid-glide: a
 //! second window opened while the first glide is still moving is placed in
@@ -294,7 +298,11 @@ impl Server {
             // opening, with no room in view, glides to the nearest empty space
             // where they kept the default. Asked whatever the choice, because a
             // window is the person's once and the record of it is spent here.
-            let theirs = self.the_person_opened_this_one(&surface);
+            let the_persons = self.the_person_opened_this_one(&surface);
+            // **And alo's, by the same rule** (the owner, 2026-11-21). Both are
+            // asked, because each spends its own record of the window.
+            let alos = self.alo_opened_this_one(&surface, frame.now);
+            let theirs = the_persons || alos;
             let point = self.where_this_window_goes(&surface, wanted, theirs, &frame);
             if crate::place_unless_already_placed(&surface, point) {
                 crate::a_window_that_grows_is_placed_again::alo_placed_it(&surface, wanted, theirs);
@@ -403,7 +411,8 @@ impl Server {
     }
 
     /// **Where one window of `wanted` size goes** on this frame: rules 3 to 7,
-    /// and where there is no room and `theirs`, the person's choice.
+    /// and where there is no room and `theirs` — the person or alo opened it —
+    /// the person's choice.
     pub(crate) fn where_this_window_goes(
         &mut self,
         surface: &WlSurface,

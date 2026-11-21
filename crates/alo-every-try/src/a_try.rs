@@ -484,6 +484,7 @@ impl Recording<'_> {
                 self.strings,
             ) {
                 Ok(call) => {
+                    let call = self.machine.naming_its_applications(call, self.strings);
                     let answered = answering(looked.answered(), &call, self.strings);
                     Ok(self.as_the_level_answers(answered, &call))
                 }
@@ -546,6 +547,7 @@ impl Recording<'_> {
         ) {
             Ok(call) => {
                 self.taken += 1;
+                let call = self.machine.naming_its_applications(call, self.strings);
                 let answered = answering(step.answered(), &call, self.strings);
                 Ok(self.as_the_level_answers(answered, &call))
             }
@@ -769,6 +771,7 @@ impl Recording<'_> {
                 .map(|call| (aside, call))
         })?;
         self.looked_aside += 1;
+        let call = self.machine.naming_its_applications(call, self.strings);
         Some(answering(aside.answered(), &call, self.strings))
     }
 }
