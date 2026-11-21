@@ -508,3 +508,33 @@ fn each_kind_of_window_keeps_its_two_pictures_by_a_fixed_name() {
         }
     }
 }
+
+/// **The launcher's look may find the screen as it was**: Super+Space puts a
+/// caret in the Dock's *Find, open, or ask…* field and changes nothing else, so
+/// a look that needed a change failed after 60 s and stopped the section before
+/// its application opened (walk of #1440's branch, run 44900882154, picture
+/// 49). The band's own line, which follows, is what proves the application
+/// opened.
+#[test]
+fn the_launchers_look_may_find_the_screen_as_it_was() {
+    let launcher_looks: Vec<bool> = the_first_walk()
+        .steps()
+        .iter()
+        .filter_map(|step| match step {
+            Step::Look {
+                name,
+                may_be_as_it_was,
+                ..
+            } if name.ends_with("-the-launcher") => Some(*may_be_as_it_was),
+            _ => None,
+        })
+        .collect();
+    assert!(
+        !launcher_looks.is_empty(),
+        "the walk never opens the launcher"
+    );
+    assert!(
+        launcher_looks.iter().all(|it| *it),
+        "a launcher's look still needs the screen to change: {launcher_looks:?}"
+    );
+}
