@@ -552,6 +552,20 @@ impl TheDoor for Recording<'_> {
                     self.refused_before_asking += 1;
                     return Ok(refused);
                 }
+                // **As the machine answers a move of a slider its window does
+                // not show**, on a road that moves none: refused before the
+                // card, at both levels (`crate::no_such_control`).
+                if let Some(refused) = crate::no_such_control::not_a_slider_the_window_shows(
+                    self.request,
+                    request,
+                    self.verbs,
+                    &self.machine,
+                    self.strings,
+                ) {
+                    self.refused_before_asking += 1;
+                    self.on_the_other = was_on;
+                    return Ok(refused);
+                }
                 // **As the machine answers a path where nothing is**, where the
                 // request says what is there: refused before anybody is asked,
                 // and counted as such (`crate::nothing_is_there`).
