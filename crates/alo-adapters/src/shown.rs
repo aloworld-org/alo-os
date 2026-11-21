@@ -84,6 +84,12 @@ pub struct Seen {
     /// The number it holds, for a slider or a meter, as the application gives
     /// it.
     value: Option<String>,
+    /// Whether it can be moved, for a thing that holds a number: a slider or a
+    /// number box can, a progress bar or a meter cannot.
+    movable: Option<bool>,
+    /// The least and the most it may be set to, for a thing that can be
+    /// moved, as the application says — each written as `value` is.
+    range: Option<(String, String)>,
 }
 
 impl Seen {
@@ -108,7 +114,45 @@ impl Seen {
             cut_short: false,
             selected: None,
             value: None,
+            movable: None,
+            range: None,
         }
+    }
+
+    /// The same thing, going from `least` to `most` — written as the shortest
+    /// decimals that are those numbers, and nothing where either is not
+    /// finite.
+    #[must_use]
+    pub fn ranged(mut self, range: Option<(f64, f64)>) -> Self {
+        self.range = range
+            .filter(|(least, most)| least.is_finite() && most.is_finite())
+            .map(|(least, most)| (least.to_string(), most.to_string()));
+        self
+    }
+
+    /// **How far it goes**: the least and the most it may be set to, for a
+    /// thing that can be moved, where the application said.
+    #[must_use]
+    pub fn goes_from_to(&self) -> Option<(&str, &str)> {
+        self.range
+            .as_ref()
+            .map(|(least, most)| (least.as_str(), most.as_str()))
+    }
+
+    /// The same thing, said to be movable or not — for a thing that holds a
+    /// number, and [`None`] for anything else.
+    #[must_use]
+    pub fn movable(mut self, movable: Option<bool>) -> Self {
+        self.movable = movable;
+        self
+    }
+
+    /// **Whether it can be moved**, for a thing that holds a number: a slider
+    /// or a number box can, a progress bar or a meter cannot. [`None`] for a
+    /// thing that holds no number.
+    #[must_use]
+    pub fn can_be_moved(&self) -> Option<bool> {
+        self.movable
     }
 
     /// The same thing, selected or not.
