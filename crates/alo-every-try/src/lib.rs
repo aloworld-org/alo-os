@@ -60,6 +60,7 @@ pub mod the_first_fingerprints;
 pub mod the_machine_answers;
 pub mod the_set;
 pub mod through_the_link;
+pub mod turned_away;
 pub mod went_wrong;
 pub mod what_each_has_reached;
 pub mod words_for_the_answers;
