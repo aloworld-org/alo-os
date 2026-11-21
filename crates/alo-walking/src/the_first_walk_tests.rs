@@ -314,3 +314,56 @@ fn the_provider_with_a_key_is_one_row_further_down_and_past_the_switch() {
         vec!["type the secret", "tab", "tab", "type gpt-4o-mini"]
     );
 }
+
+/// **The provider is added by names, never by counting rows or Tabs**: Down
+/// until the keyboard is on *Add a provider*, and Tab until it is on each
+/// field. Main's walk at 9ced5c40 (run 44851000278) counted five Downs, landed
+/// on *alo* (picture 54), and every question afterwards went nowhere.
+#[test]
+fn the_provider_is_added_by_names() {
+    use alo_acting::said_in_settings as said;
+    let steps = the_first_walk().steps().to_vec();
+    let found: Vec<&str> = steps
+        .iter()
+        .filter_map(|step| match step {
+            Step::PressUntilTheKeyboardIsOn { name, .. } => Some(name.as_str()),
+            _ => None,
+        })
+        .collect();
+    for name in [said::ADD_A_PROVIDER, said::ADDRESS, said::KEY, said::MODEL] {
+        assert!(
+            found.contains(&name),
+            "{name} is not found by name: {found:?}"
+        );
+    }
+    let at = |name: &str| {
+        steps
+            .iter()
+            .position(|it| matches!(it, Step::Look { name: n, .. } if n == name))
+    };
+    // Both providers the walk adds: the one that needs no key (#1410), and
+    // the one with a key.
+    for (opened, saved) in [
+        (
+            "settings-for-a-provider-that-needs-no-key",
+            "the-keyless-provider-saved",
+        ),
+        ("settings-again", "the-provider-saved"),
+    ] {
+        let (Some(from), Some(to)) = (at(opened), at(saved)) else {
+            unreachable!("the walk does not add the provider {saved}");
+        };
+        let Some(adding) = steps.get(from..to) else {
+            unreachable!("{saved} comes before {opened}");
+        };
+        let pressed = |key: &str| {
+            adding
+                .iter()
+                .filter(|it| **it == Step::Press(crate::keys::Chord::key(key)))
+                .count()
+        };
+        // One Tab goes into the page from the side column; no other is counted.
+        assert_eq!(pressed("down"), 0, "{saved}: still counts Downs");
+        assert!(pressed("tab") <= 1, "{saved}: still counts Tabs");
+    }
+}
