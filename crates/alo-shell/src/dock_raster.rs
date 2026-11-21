@@ -1601,6 +1601,10 @@ pub(crate) fn picture(
 }
 
 #[cfg(test)]
+#[path = "dock_open_marks_tests.rs"]
+mod open_marks_tests;
+
+#[cfg(test)]
 #[expect(
     clippy::unwrap_used,
     clippy::expect_used,
