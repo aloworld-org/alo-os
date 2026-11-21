@@ -17,6 +17,7 @@
 use std::collections::BTreeSet;
 
 use crate::a_try::TheLevel;
+use crate::a_try::Went;
 use crate::tallied::Tallied;
 use crate::the_bar::THE_BAR;
 
@@ -89,8 +90,9 @@ fn a_level(named: &str, what: &'static str, line: usize) -> Result<String, NotRe
 /// road, and of how many.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Measured {
-    /// Each request: its level's name, its name, on the road, tried.
-    each: Vec<(String, String, usize, usize)>,
+    /// Each request: its level's name, its name, on the road, tried, and how
+    /// many of those tries the model could not be asked.
+    each: Vec<(String, String, usize, usize, usize)>,
 }
 
 impl Measured {
@@ -106,6 +108,10 @@ impl Measured {
                         one.request().named().to_owned(),
                         one.on_the_road(),
                         one.tries().len(),
+                        one.tries()
+                            .iter()
+                            .filter(|tried| matches!(tried.went(), Went::NotAnswered(_)))
+                            .count(),
                     )
                 })
                 .collect(),
@@ -116,7 +122,12 @@ impl Measured {
     pub fn each(&self) -> impl Iterator<Item = (&str, &str, usize, usize)> {
         self.each
             .iter()
-            .map(|(level, named, on, of)| (level.as_str(), named.as_str(), *on, *of))
+            .map(|(level, named, on, of, _)| (level.as_str(), named.as_str(), *on, *of))
+    }
+
+    /// How many tries of each measurement the model could not be asked.
+    pub fn not_asked(&self) -> impl Iterator<Item = usize> {
+        self.each.iter().map(|(_, _, _, _, not_asked)| *not_asked)
     }
 
     /// As its file holds it.
@@ -124,7 +135,9 @@ impl Measured {
     pub fn written(&self) -> String {
         self.each
             .iter()
-            .map(|(level, named, on, of)| format!("measured\t{level}\t{named}\t{on}\t{of}\n"))
+            .map(|(level, named, on, of, not_asked)| {
+                format!("measured\t{level}\t{named}\t{on}\t{of}\t{not_asked}\n")
+            })
             .collect()
     }
 
@@ -141,10 +154,19 @@ impl Measured {
                 line,
                 why: why.to_owned(),
             };
-            let ["measured", level, named, on, of] = fields.as_slice() else {
-                return Err(refused(
-                    "a line is `measured`, a level, a request and two counts",
-                ));
+            // **The tries not asked**, since 2026-11-20; a line from before
+            // then names none, and the workflow reads the run's own log for
+            // those (`every-try.yml`).
+            let (level, named, on, of, not_asked) = match fields.as_slice() {
+                ["measured", level, named, on, of] => (*level, *named, *on, *of, "0"),
+                ["measured", level, named, on, of, not_asked] => {
+                    (*level, *named, *on, *of, *not_asked)
+                }
+                _ => {
+                    return Err(refused(
+                        "a line is `measured`, a level, a request and two or three counts",
+                    ));
+                }
             };
             let count = |said: &str| {
                 said.parse::<usize>()
@@ -152,9 +174,10 @@ impl Measured {
             };
             each.push((
                 a_level(level, WHAT, line)?,
-                (*named).to_owned(),
+                named.to_owned(),
                 count(on)?,
                 count(of)?,
+                count(not_asked)?,
             ));
         }
         Ok(Self { each })
@@ -216,7 +239,7 @@ impl Reached {
     /// ever taken away.
     #[must_use]
     pub fn raised_by(mut self, measured: &Measured) -> Self {
-        for (level, named, on, of) in &measured.each {
+        for (level, named, on, of, _) in &measured.each {
             if *of >= THE_BAR.tries() && on == of {
                 self.at.insert((level.clone(), named.clone()));
             }

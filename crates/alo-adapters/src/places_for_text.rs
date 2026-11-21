@@ -22,8 +22,41 @@ pub(crate) const FOCUSED: u32 = 12;
 /// `ATSPI_STATE_SHOWING`.
 pub(crate) const SHOWING: u32 = 25;
 
+/// `ATSPI_STATE_MULTI_LINE`.
+pub const MULTI_LINE: u32 = 17;
+
+/// `ATSPI_STATE_SINGLE_LINE` — 26, between `SHOWING` and `STALE` in
+/// `atspi-constants.h`'s `AtspiStateType`, read 2026-11-20.
+pub const SINGLE_LINE: u32 = 26;
+
 /// `ATSPI_ROLE_TERMINAL`.
 pub(crate) const TERMINAL: u32 = 60;
+
+/// `ATSPI_ROLE_TEXT`: a text of no stated shape, which GTK gives a whole
+/// document (GNOME Text Editor's) as well as a one-line field.
+const PLAIN_TEXT: u32 = 61;
+
+/// **Whether a place for text is a one-line field** — a search box, an
+/// address bar, a number box — and not a document: so typing that saves
+/// afterwards (`accessible.type_text`) is not aimed at one, where saving would
+/// save the web page around it (the owner, 2026-11-20).
+///
+/// Read from the accessibility tree alone, never from an application's name,
+/// and **the state the application gives wins over the role**: Chromium makes
+/// both a search box and VSCodium's editor an `ENTRY`, and tells them apart
+/// only by `SINGLE_LINE` and `MULTI_LINE`
+/// (`docs/autonomy/updates/how-alo-can-type-into-an-application.md`). So:
+/// a document role is never one; `MULTI_LINE` is never one; `SINGLE_LINE` on a
+/// text field always is; and with neither state, an `ENTRY` or a spin button
+/// is (the roles AT-SPI describes as a field), while a plain `TEXT` is not
+/// said to be — it may be a whole document.
+#[must_use]
+pub fn is_one_line(role: u32, states: &[u32]) -> bool {
+    if Role::of_the_tree(role) != Role::TextField || holds(states, MULTI_LINE) {
+        return false;
+    }
+    holds(states, SINGLE_LINE) || role != PLAIN_TEXT
+}
 
 /// The class Chromium gives the field a web terminal (xterm.js) types
 /// through — VSCodium's built-in terminal, measured 2026-11-13.
@@ -206,8 +239,15 @@ pub fn the_ones_meant<'p>(places: &'p [APlaceForText], name: &str) -> Vec<&'p AP
 /// is in front: the titles of an application's other windows are the names
 /// of the person's other files, and are not said. Nothing where no place
 /// has the keyboard.
+///
+/// **For typing that `saves`, no one-line field** ([`is_one_line`]): that
+/// typing refuses one, so naming it would send a model to a refusal.
 #[must_use]
-pub fn what_is_there(tree: &dyn AccessibilityTree, places: &[APlaceForText]) -> Vec<String> {
+pub fn what_is_there(
+    tree: &dyn AccessibilityTree,
+    places: &[APlaceForText],
+    saves: bool,
+) -> Vec<String> {
     let Some(in_front) = places.iter().find(|place| place.has_the_keyboard()) else {
         return Vec::new();
     };
@@ -228,7 +268,9 @@ pub fn what_is_there(tree: &dyn AccessibilityTree, places: &[APlaceForText]) -> 
         let [one] = meant.as_slice() else {
             continue;
         };
-        if one.at != place.at || why_typing_refuses(tree, &one.at, one.role, &one.states).is_some()
+        if one.at != place.at
+            || why_typing_refuses(tree, &one.at, one.role, &one.states).is_some()
+            || (saves && is_one_line(one.role, &one.states))
         {
             continue;
         }

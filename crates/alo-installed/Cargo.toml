@@ -18,6 +18,9 @@ alo-launching = { path = "../alo-launching" }
 # The kinds a declaration is read into, which this crate names only in its tests
 # and in what it hands back; the type is alo-opening's.
 alo-opening = { path = "../alo-opening" }
+# The language a person reads, for the name a sentence calls an application by
+# (`what_a_person_calls_it`).
+alo-strings = { path = "../alo-strings" }
 
 [lints]
 workspace = true

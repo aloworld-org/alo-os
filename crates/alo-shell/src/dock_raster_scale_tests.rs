@@ -144,22 +144,41 @@ fn hashed(picture: &super::DockPicture) -> u64 {
 #[test]
 fn at_one_hundred_the_whole_dock_draws_the_bytes_it_drew_before() {
     const BEFORE: [(Edge, u64); 2] = [(Edge::Bottom, BOTTOM_BEFORE), (Edge::Left, LEFT_BEFORE)];
-    for (edge, before) in BEFORE {
-        let now = hashed(&drawn(
+    // Both edges drawn before either is judged, so a change that moves both
+    // is told about both in one run.
+    let now = BEFORE.map(|(edge, _)| {
+        (
             edge,
-            SPARSE,
-            DisplayScale::ONE,
-            &crate::what_the_dock_has_open::MORE_APPS,
-        ));
-        assert_eq!(
-            now, before,
-            "the {edge:?} Dock at 100 drew {now:#018x}, before {before:#018x}"
-        );
-    }
+            hashed(&drawn(
+                edge,
+                SPARSE,
+                DisplayScale::ONE,
+                &crate::what_the_dock_has_open::MORE_APPS,
+            )),
+        )
+    });
+    // **On one line**, because the gate shows a failure's first lines only, and
+    // a pretty-printed list was cut before its first number.
+    let said: Vec<String> = now
+        .iter()
+        .map(|(edge, hash)| format!("{edge:?} {hash:#018x}"))
+        .collect();
+    assert_eq!(
+        now,
+        BEFORE,
+        "the Docks at 100 drew {}; before, {BOTTOM_BEFORE:#018x} and {LEFT_BEFORE:#018x}",
+        said.join(", ")
+    );
 }
 
 /// The hash of the bottom Dock before this change. See the test above.
-const BOTTOM_BEFORE: u64 = 0x4827_adf7_3434_8602;
+///
+/// **Retaken on 2026-11-20, on purpose and once, from CI's run**: the
+/// composer's field and the ground of its words became the design's
+/// `#F5F6F7` (`dock_composer_field_tests` holds what changed). It was
+/// `0x4827_adf7_3434_8602`, and the left Dock's below was
+/// `0xc443_f861_4e9e_6c8c`.
+const BOTTOM_BEFORE: u64 = 0x5a40_6f9a_f8ff_268b;
 /// The hash of the left Dock.
 ///
 /// **Retaken on 2026-10-29, on purpose and once**: a Dock down a side now
@@ -167,7 +186,7 @@ const BOTTOM_BEFORE: u64 = 0x4827_adf7_3434_8602;
 /// (`crate::dock_history_mark`), so its bytes changed and only there. It was
 /// `0x6225_a4d4_ebf9_1906`; the bottom Dock's hash above, which keeps the
 /// word, did not move.
-const LEFT_BEFORE: u64 = 0xc443_f861_4e9e_6c8c;
+const LEFT_BEFORE: u64 = 0x293f_4a2b_2be8_34e7;
 
 /// Whether `dense` is `sparse` doubled, allowing one pixel along the bar.
 ///

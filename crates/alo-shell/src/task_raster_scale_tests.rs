@@ -109,6 +109,10 @@ fn hashed(window: &TaskPicture) -> u64 {
 /// (`crate::the_reply_boxs_icons`): it was `0xeb6a_85d1_d119_4c7d` before.
 /// `task_raster_icons_tests` holds what changed; this holds that nothing else
 /// changes unnoticed from here on.
+///
+/// **And again on 2026-11-20, once, from CI's run of the change**, when each
+/// message gained its speaker's label (`task_raster_speaker_tests` holds what
+/// changed): it was `0xe109_587a_4b8c_7858` before.
 #[test]
 fn at_one_hundred_the_window_draws_the_bytes_it_drew_before() {
     let now = hashed(&drawn(as_drawn(), DisplayScale::ONE));
@@ -119,7 +123,7 @@ fn at_one_hundred_the_window_draws_the_bytes_it_drew_before() {
 }
 
 /// The hash of the window before this change. See the test above.
-const BEFORE: u64 = 0xe109_587a_4b8c_7858;
+const BEFORE: u64 = 0x0b43_bb12_7e5b_5e73;
 
 /// **At 200 the panel and its shadow are exactly twice**, the window measures
 /// the same conversation in the same logical units, and every word is there

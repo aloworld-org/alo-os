@@ -124,6 +124,21 @@ pub const A_TERMINAL: Word = Word::saying(
      alo use a terminal in Settings lets it read the terminal and press its buttons, never type.",
 );
 
+/// A one-line field, such as a search box: this typing saves afterwards, and
+/// saving there would save the page around it. `{verb}` is the typing that
+/// does not save.
+pub const A_ONE_LINE_FIELD: Word = Word::saying(
+    "adapters.fallback.type-text.one-line-field",
+    "“{name}” in {application} is a one-line field, such as a search box. This typing saves \
+     after it types, and saving there would save the whole window's page, so nothing was \
+     typed. To type into a field without saving, use {verb}",
+)
+.noting(
+    "Said, before anything is asked or typed, when the agent asks to type and save into a \
+     one-line field such as a search box rather than a document. {verb} is the name of the \
+     agent's other typing ability, which types without saving: it is not translated.",
+);
+
 /// The field does not have the keyboard.
 pub const NOT_IN_FRONT: Word = Word::saying(
     "adapters.fallback.type-text.not-in-front",
@@ -184,7 +199,7 @@ pub const CANNOT_READ_BACK: Word = Word::saying(
 .noting("Said when the text was typed and could not be checked.");
 
 /// Every word typing declares.
-pub const EVERY_WORD: [Word; 20] = [
+pub const EVERY_WORD: [Word; 21] = [
     TYPE_PURPOSE,
     TYPE_APPLICATION,
     TYPE_NAME,
@@ -198,6 +213,7 @@ pub const EVERY_WORD: [Word; 20] = [
     MORE_THAN_ONE_FIELD,
     A_PASSWORD_FIELD,
     A_TERMINAL,
+    A_ONE_LINE_FIELD,
     NOT_IN_FRONT,
     NOT_ALOS_COPY,
     NO_KEYBOARD,

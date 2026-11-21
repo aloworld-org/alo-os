@@ -12,7 +12,8 @@
 //! - [`Typing::the_field`] looks for the field **then**, in the windows as they
 //!   are: exactly one showing field or document of the approved name (of several,
 //!   the one with the keyboard, where exactly one has it) — never a
-//!   password field, never a terminal — and says whether it has the keyboard
+//!   password field, never a terminal, and for typing that saves never a
+//!   one-line field (`crate::a_one_line_field`) — and says whether it has the keyboard
 //!   and whether it takes text through the tree.
 //! - [`Typing::put_in`] is the direct road: the text inserted at the field's
 //!   caret through `EditableText`.
@@ -23,13 +24,14 @@ use alo_applications::Installed;
 use alo_capability::{Authorised, Grants, Refused, Value};
 use alo_strings::{Filling, Strings, Word};
 
+use crate::a_one_line_field::a_one_line_field_said;
 use crate::accessibility_tree::{AccessibilityTree, NodeAt, TreeFault};
 use crate::adapters::Adapters;
 use crate::fallback_reach::reached;
 use crate::fallback_verbs::{FIELD, NAME, TEXT, TYPE_TEXT, TYPE_WITHOUT_SAVING};
 use crate::fallback_words as fallback;
 use crate::places_for_text::{
-    FOCUSED, TypingRefuses, holds, the_ones_meant, the_places_for_text, what_is_there,
+    FOCUSED, TypingRefuses, holds, is_one_line, the_ones_meant, the_places_for_text, what_is_there,
     why_typing_refuses,
 };
 use crate::typing_without_saving_words as unsaved;
@@ -172,8 +174,8 @@ impl Typing {
     ///
     /// # Errors
     /// [`Refused`] in the words a person is told: no field of that name
-    /// showing, more than one, a password field, a terminal, or a tree that
-    /// could not be read.
+    /// showing, more than one, a password field, a terminal, a one-line field
+    /// for typing that saves, or a tree that could not be read.
     pub fn the_field(
         &self,
         tree: &dyn AccessibilityTree,
@@ -187,7 +189,7 @@ impl Typing {
             // name one that is (the owner, 2026-11-15, relayed): the places'
             // own names, and the window's title for those with none.
             [] => {
-                let there = what_is_there(tree, &places);
+                let there = what_is_there(tree, &places, self.saves);
                 if there.is_empty() {
                     return Err(self.refused(words::NO_SUCH_FIELD, None, strings));
                 }
@@ -212,6 +214,16 @@ impl Typing {
                 return Err(self.refused(words::NO_SUCH_FIELD, None, strings));
             }
             None => {}
+        }
+        // **Typing that saves is for a document** (the owner, 2026-11-20): in a
+        // one-line field the save would save the page around it. Said in the
+        // words the card would have been refused in
+        // (`crate::a_one_line_field`), so both levels say the same.
+        if self.saves && is_one_line(role, &states) {
+            return Err(Refused::worded_elsewhere(
+                self.authorised.call().clone(),
+                a_one_line_field_said(&self.application, &self.name, strings),
+            ));
         }
         Ok(TheField {
             has_the_keyboard: holds(&states, FOCUSED),

@@ -98,6 +98,7 @@ use crate::machine::Machine;
 use crate::refusing::NotDone;
 use crate::the_control_to_set_is_there::the_control_to_set_is_there;
 use crate::the_sentence_is_about_something::the_sentence_is_about_something;
+use crate::the_typing_that_saves_is_for_a_document::the_typing_that_saves_is_for_a_document;
 use crate::what_a_verb_did::WhatAVerbDid;
 
 /// A turn that is under way.
@@ -355,6 +356,13 @@ impl<'a, 'm> Turning<'a, 'm> {
         // grants above allowed the application, so no card asks a person to
         // approve a move that cannot happen (`the_control_to_set_is_there`).
         if let Err(refused) = the_control_to_set_is_there(&call, self.machine) {
+            return self.stopped_under(refused, grants, now);
+        }
+        // **And that typing which saves is aimed at a document**, not a
+        // one-line field whose save would save the page around it — read the
+        // same way, after the same grants
+        // (`the_typing_that_saves_is_for_a_document`).
+        if let Err(refused) = the_typing_that_saves_is_for_a_document(&call, self.machine) {
             return self.stopped_under(refused, grants, now);
         }
         let id = self.approvals.propose(proposal);

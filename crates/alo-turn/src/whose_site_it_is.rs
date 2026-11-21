@@ -64,6 +64,9 @@ impl Turning<'_, '_> {
         // And a file opened *in* a file manager, as a double-click there would
         // open it (`crate::as_a_double_click_would`), at both levels.
         let offered = self.as_a_double_click_would(offered, grants, now)?;
+        // And every application it names said by what a person calls it
+        // (`crate::applications_named_as_a_person_calls_them`), at both levels.
+        let offered = self.naming_its_applications(offered);
         if offered.verb() != alo_publishing::PUBLISH_TO_GITHUB_PAGES {
             return Ok(offered);
         }

@@ -631,6 +631,7 @@ mod settings_places;
 /// What a press on Settings points at, and where the keyboard goes.
 mod settings_pointed_at;
 mod settings_raster;
+mod settings_says_where_the_keyboard_is;
 mod settings_seat;
 mod settings_shell_integration;
 /// Where Settings' side column is scrolled, and the wheel over it.
