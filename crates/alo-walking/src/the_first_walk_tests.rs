@@ -155,11 +155,13 @@ fn the_maximise_check_reads_from_alt_f3() {
     );
 }
 
-/// **The four sections alo is asked in**: each starts from its own Escape and
-/// sets its own level and grants, so a failure in one does not stop the next —
-/// full-access VSCodium, every application, ask-each-time VSCodium and the
-/// Papers sheet, in that order — **except the Papers sheet, which needs
-/// ask-each-time VSCodium.** A failure there leaves its turn waiting on a card,
+/// **The sections, in order**: every window's band and controls first, so no
+/// later failure can leave it not reached (the coordinator, 2026-11-21); then
+/// the providers, which every section alo is asked in needs; then the four
+/// sections alo is asked in. Each starts from its own Escape and sets its own
+/// level and grants, so a failure in one does not stop the next — **except the
+/// Papers sheet, which also needs ask-each-time VSCodium.** A failure there
+/// leaves its turn waiting on a card,
 /// and `alo-agentd` serves one turn at a time (`serving.rs`: *a second agent
 /// arriving while a turn is under way is refused in words and closed*), so the
 /// Papers ask then fails on a broken pipe that says nothing about Papers (runs
@@ -183,6 +185,8 @@ fn the_sections_alo_is_asked_in_are_independent() {
     assert_eq!(
         names,
         vec![
+            "every window's band and controls",
+            "the providers",
             "VSCodium at full access",
             "every application at full access",
             "VSCodium at ask each time",
@@ -190,15 +194,97 @@ fn the_sections_alo_is_asked_in_are_independent() {
         ]
     );
     let needs: Vec<Vec<String>> = sections.into_iter().map(|(_, needs)| needs).collect();
+    let providers = || "the providers".to_owned();
     assert_eq!(
         needs,
         vec![
             Vec::<String>::new(),
             Vec::new(),
-            Vec::new(),
-            vec!["VSCodium at ask each time".to_owned()],
+            vec![providers()],
+            vec![providers()],
+            vec![providers()],
+            vec![providers(), "VSCodium at ask each time".to_owned()],
         ]
     );
+}
+
+/// **Every kind of window's band is found and its controls pressed**, by the
+/// lines the one band says (`alo_acting::said_of_a_band`): an application
+/// whose band the shell draws (Dolphin), the terminal, Settings, the record and
+/// a task window each have Window actions, Minimise and Close pressed; an
+/// application with its own header (Text Editor) has Window actions only. The
+/// investigation of 2026-11-21 found the walk never pointed at or clicked a
+/// window control — *8 key presses and 0 button presses* — so a band that was
+/// not there at all, as Text Editor's was, was never seen.
+#[test]
+fn every_kind_of_windows_band_is_found_and_its_controls_pressed() {
+    use alo_acting::said_of_a_band::{self as band, TheKind};
+    let steps = the_first_walk().steps().to_vec();
+    let Some(from) = steps.iter().position(
+        |step| matches!(step, Step::Section { name, .. } if name == "every window's band and controls"),
+    ) else {
+        unreachable!("the walk has no band section");
+    };
+    let Some(to) = steps
+        .iter()
+        .position(|step| matches!(step, Step::Section { name, .. } if name == "the providers"))
+    else {
+        unreachable!("the walk has no providers' section");
+    };
+    let Some(section) = steps.get(from..to) else {
+        unreachable!("the providers come before the bands");
+    };
+    let mut found: Vec<(TheKind, String)> = Vec::new();
+    let mut pressed: Vec<(TheKind, String, String)> = Vec::new();
+    let mut at: Option<(TheKind, String)> = None;
+    for step in section {
+        match step {
+            Step::PointAtTheBand { kind, id, .. } => {
+                found.push((*kind, id.clone()));
+                at = Some((*kind, id.clone()));
+            }
+            Step::ClickTheControl { name } => {
+                if let Some((kind, id)) = &at {
+                    pressed.push((*kind, id.clone(), name.clone()));
+                }
+            }
+            _ => {}
+        }
+    }
+    let three = [band::WINDOW_ACTIONS, band::MINIMISE, band::CLOSE];
+    for (kind, id) in [
+        (TheKind::Application, "org.kde.dolphin"),
+        (TheKind::Terminal, "terminal"),
+        (TheKind::Settings, "settings"),
+        (TheKind::Record, "record"),
+        (TheKind::Task, "task"),
+    ] {
+        assert!(
+            found.contains(&(kind, id.to_owned())),
+            "the band of {kind:?} {id} is never found: {found:?}"
+        );
+        for name in three {
+            assert!(
+                pressed.contains(&(kind, id.to_owned(), name.to_owned())),
+                "{name} is never pressed on {kind:?} {id}: {pressed:?}"
+            );
+        }
+    }
+    let editor: Vec<&str> = pressed
+        .iter()
+        .filter(|(kind, id, _)| *kind == TheKind::Application && id == "org.gnome.TextEditor")
+        .map(|(_, _, name)| name.as_str())
+        .collect();
+    assert_eq!(
+        editor,
+        vec![band::WINDOW_ACTIONS],
+        "Text Editor draws its own Minimise and Close; only Window actions is the band's"
+    );
+    // **Before anything alo is asked**: the band section is the first.
+    let first_section = steps
+        .iter()
+        .position(|step| matches!(step, Step::Section { .. }));
+    assert_eq!(first_section, Some(from));
 }
 
 /// **A provider that needs no key is added on every walk**, before the gate
