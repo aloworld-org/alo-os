@@ -98,7 +98,8 @@ pub use disks::{Disk, Disks, Standing};
 pub use ended::{Ended, Refusal, Remains};
 pub use environment::{
     EVERY_FILE_IT_NEEDS, NotStaged, Released, THE_CHOICE, THE_CHOICE_BEGINS, THE_DIRECTORY,
-    THE_LIST, THE_RELEASED_LIST, TheEnvironment, sha256_hex, the_choice_beside_what_is_there,
+    THE_LIST, THE_RELEASED_LIST, TheEnvironment, sha256_hex, the_choice,
+    the_choice_beside_what_is_there,
 };
 pub use erasing_consent::erasing;
 pub use fast_startup::FastStartup;
