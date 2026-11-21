@@ -74,7 +74,10 @@ fn no_file_declares_a_second_band_height() {
             }
         }
     }
-    assert!(seen > 100, "the control: this read {seen} files, not the crate");
+    assert!(
+        seen > 100,
+        "the control: this read {seen} files, not the crate"
+    );
     assert!(
         second.is_empty(),
         "a band height is declared as a number of its own: {second:#?}"
