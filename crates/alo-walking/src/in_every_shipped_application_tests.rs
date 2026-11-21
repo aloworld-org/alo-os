@@ -247,3 +247,34 @@ fn text_editors_typing_may_pass_after_a_retry() {
         "the Text Editor typing check does not allow a retry"
     );
 }
+
+/// **Dolphin's first read may pass after a retry**, and only Dolphin's: main's
+/// walk at 55241c02 (run 44242727940) read Dolphin's window 1.1 s after it
+/// opened and was told *not done* (927.12 s), and read it again 1.2 s later,
+/// *done, and it showed text* (928.28 s). Counted apart, the failed read in its
+/// evidence. The coordinator's decision of 2026-11-20; every other application's
+/// read is still judged on its first line.
+#[test]
+fn dolphins_first_read_may_pass_after_a_retry() {
+    let walk = at_full_access(Walk::named("w"));
+    let reads: Vec<(String, bool)> = walk
+        .steps()
+        .iter()
+        .filter_map(|step| match step {
+            Step::ExpectLine {
+                check,
+                a_retry_may_pass,
+                ..
+            } if check.starts_with("alo reads ") => Some((check.clone(), *a_retry_may_pass)),
+            _ => None,
+        })
+        .collect();
+    assert!(!reads.is_empty(), "the walk reads no window");
+    for (check, allowed) in &reads {
+        assert_eq!(
+            *allowed,
+            check == &format!("alo reads {DOLPHIN}'s window"),
+            "{check}"
+        );
+    }
+}
