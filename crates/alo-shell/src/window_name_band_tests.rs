@@ -36,7 +36,7 @@ fn the_band_is_the_width_of_the_frame_and_forty_eight_tall() {
 /// changing the band instead of the comment, this fails.
 #[test]
 fn the_band_is_not_the_minimum_that_must_stay_reachable() {
-    assert_eq!(BAND_IS_TALL, 48);
+    assert_eq!(BAND_IS_TALL, crate::window_edge::THE_REGION_IS_TALL);
     assert_eq!(A_USABLE_HANDLE.1, 24.0);
     assert!(
         f64::from(BAND_IS_TALL) > A_USABLE_HANDLE.1,

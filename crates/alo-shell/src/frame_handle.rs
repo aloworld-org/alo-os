@@ -27,19 +27,22 @@ use smithay::{
     utils::{Logical, Point, Rectangle},
 };
 
-/// How thick the band is on the glass, in pixels.
+/// How thick the band is on the glass, in pixels: **the band every window is
+/// drawn with**, `crate::window_edge::THE_REGION_IS_TALL` (54, `11:31` of
+/// `docs/design/the-window-controls.md`).
 ///
-/// **Forty-eight, because `docs/design/the-canvas-in-numbers.md` says so** — read
-/// off the design file itself, Figma node `70:29`, rather than derived from
-/// anything in this repository. `crates/alo-shell/tests/the_frame_in_numbers.rs`
-/// holds this constant to that document, so the two cannot part again.
+/// It was 48 until 2026-11-21, the name band of
+/// `docs/design/the-canvas-in-numbers.md`, while the band itself was drawn 54:
+/// the resize grips are asked before the band, so the top 6 of the drawn band
+/// resized the window instead of moving it, and two tests held one band to two
+/// heights. Derived now, so the two cannot part
+/// (`tests/the_band_is_one_height.rs`).
 ///
-/// It was 32 for a day, reasoned out of a native window control's width, with a
-/// paragraph here explaining why 32 was the sensible number. The document had
-/// carried 48 since before that paragraph was written. A number a design file
-/// already gives is not a number to derive, and nothing was checking, so being
-/// wrong cost nothing at the time and would have cost a frame's whole feel later.
-pub(crate) const THE_NAMES_BAND: f64 = 48.0;
+/// Before that it was 32 for a day, reasoned out of a native window control's
+/// width while the document already said 48. A number the design gives is not
+/// a number to derive.
+// `as`, because a const cannot call `f64::from`; 54 is exact in an f64.
+pub(crate) const THE_NAMES_BAND: f64 = crate::window_edge::THE_REGION_IS_TALL as f64;
 
 /// How thick the band is, for the test that holds it to the design file.
 ///

@@ -5,6 +5,11 @@ frame `70:29` of `nDxyF5Ho9oC4RObjVzwBNJ`. Values, not a description of a
 picture, so that whoever builds the canvas builds what was drawn and whoever
 rebuilds it later gets the same answer.
 
+**Replaced in part.** The frame's name band, its corner radius and its
+border are replaced by [the window controls](the-window-controls.md): one
+54-tall band and one card for every window. The rows below say which are
+replaced. Read that note, not this table, for anything about a window's band.
+
 **This is a reading, not a source.** `docs/design/palette.toml` is the source
 for the six colours the system is built out of, and a test holds the Rust
 constants to it. Nothing yet holds *these* to anything, which is the gap named
@@ -14,12 +19,12 @@ at the end.
 
 | | |
 |---|---|
-| **Name band** | **48 px tall**, the full width of the frame, at its top |
+| ~~Name band~~ | **Replaced.** Was *48 px tall, the full width of the frame, at its top*. Since the owner's specification of 2026-11-09 the band is **54** tall, above the window: [the window controls](the-window-controls.md), `11:31`. The crate held both until 2026-11-21 |
 | **Resize edge** | a **6 px** band down the right side and along the bottom |
 | **Resize corner** | **24 × 24** at the bottom right |
-| Corner radius | `radius/md` = **12** for a frame, `radius/sm` = **8** for controls inside it |
+| ~~Corner radius~~ | **Replaced** for a window: the card is **16** round at its outer corners (the window controls, `11:30`; the owner, 2026-11-21). Was `radius/md` = 12 for a frame, `radius/sm` = 8 for controls inside it |
 | Surface | `bg/surface` **#FFFFFF** |
-| Border | `border/default` **#E7EBEF** |
+| ~~Border~~ | **Replaced** for a window: one line `#d9dfd9` round the card (`11:30`). Was `border/default` #E7EBEF |
 
 The name band is what a frame is dragged by, and the 6 px edge and the corner
 are what it is resized by — with the double-headed arrow over the second and
