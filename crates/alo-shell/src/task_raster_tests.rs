@@ -881,13 +881,20 @@ fn scrolled_back_the_start_of_the_conversation_is_drawn() {
     )
     .expect("the design's size");
     let (top, _) = the_conversations_view(at);
-    // The request's words, inside its bubble's padding at the top of the view.
-    let the_requests_words = top + i32::try_from(alo_tasks::measures::INSIDE_A_BLOCK).expect("16");
+    // The request, inside its bubble's padding at the top of the view: its
+    // speaker's label first, since 2026-11-20, and its words under the label.
+    let the_request_starts = top + i32::try_from(alo_tasks::measures::INSIDE_A_BLOCK).expect("16");
     let at_the_top = |picture: &TaskPicture| {
         picture
             .inked
             .iter()
-            .any(|one| one.area.loc.y == the_requests_words)
+            .find(|one| one.area.loc.y == the_request_starts)
+            .is_some_and(|label| {
+                picture.inked.iter().any(|words| {
+                    words.area.loc.x == label.area.loc.x
+                        && words.area.loc.y >= label.area.loc.y + label.area.size.h
+                })
+            })
     };
     assert!(
         !at_the_top(&at_the_newest),

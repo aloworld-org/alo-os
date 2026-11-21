@@ -117,6 +117,7 @@ fn every_message_in_a_task_conversation_carries_its_speakers_label() {
 
     for scale in [DisplayScale::ONE, DisplayScale::of_per_cent(200)] {
         let inked = drawn(&said, scale);
+        let mut labels_tall: Vec<(WhoseBlock, i32)> = Vec::new();
         assert_eq!(
             inked.len(),
             said.len() + messages,
@@ -201,7 +202,40 @@ fn every_message_in_a_task_conversation_carries_its_speakers_label() {
                     !has(words, teal),
                     "at {scale:?}: {kind:?}'s words are drawn in teal"
                 );
+                // **The room under it is the design's**: 6 under *You*, 8
+                // under *alo*, measured on `417:27691` and `417:27694`.
+                let under = scale.px(if kind == WhoseBlock::Alos {
+                    alo_tasks::measures::UNDER_ALOS_LABEL
+                } else {
+                    alo_tasks::measures::UNDER_YOUR_LABEL
+                });
+                assert_eq!(
+                    words.area.loc.y - (label.area.loc.y + label.area.size.h),
+                    under,
+                    "at {scale:?}: {kind:?}'s label at {:?} and its words at {:?} are not the \
+                     design's room apart",
+                    label.area,
+                    words.area
+                );
+                labels_tall.push((kind, label.area.size.h));
             }
         }
+        // **And the two labels are the two styles**: *You* in Label/Small,
+        // shorter than *alo* in Label/Medium.
+        let tallest = |of: WhoseBlock| {
+            labels_tall
+                .iter()
+                .filter(|(kind, _)| *kind == of)
+                .map(|(_, tall)| *tall)
+                .max()
+                .unwrap_or(0)
+        };
+        assert!(
+            tallest(WhoseBlock::ThePersons) < tallest(WhoseBlock::Alos),
+            "at {scale:?}: You is {} tall and alo {}, so they are not Label/Small and \
+             Label/Medium",
+            tallest(WhoseBlock::ThePersons),
+            tallest(WhoseBlock::Alos)
+        );
     }
 }
