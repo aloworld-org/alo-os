@@ -74,6 +74,14 @@ jobs:
   walk:
     runs-on: ubuntu-24.04
     timeout-minutes: 240
+    # **The secret the walk disk is made with, and the one the walk types at
+    # the disk's prompt when it starts** (ADR 0054; the owner, 2026-11-21:
+    # encrypted unless the person turns it off). It belongs to a disk that
+    # exists for one job and is thrown away, so it is written here rather than
+    # kept as a secret: it protects nothing. `alo-walking` reads it by this name,
+    # and does nothing at boot when it is unset.
+    env:
+      ALO_WALK_DISK_PASSPHRASE: alo-walk-disk-opens
     steps:
       - uses: actions/checkout@v4
 
@@ -131,19 +139,72 @@ jobs:
           sudo podman image prune -f > /dev/null
           df -h /
 
+      # **The disk is encrypted, the way ADR 0054 encrypts an install**: the
+      # root is LUKS2, a recovery key is enrolled beside the secret, and the
+      # install is handed the opened volume (`install to-filesystem`), which is
+      # the road ADR 0054's measurement 2 names. Until 2026-11-21 this was one
+      # `install to-disk`, a plain btrfs root, so every walk booted a machine
+      # that was not the product.
+      #
+      # The table is the one bootc's own whole-disk install makes, and with its
+      # names: an ESP, `/boot` on its own (the loader cannot read an encrypted
+      # one), and the root. The tools are the image's own (cryptsetup,
+      # systemd-cryptenroll, mkfs), configured and not patched. The loop device
+      # is made out here, because a node made after a container starts does not
+      # appear inside it, and `/dev` is handed in. `DM_DISABLE_UDEV` because
+      # nothing in the container answers for udev, so device-mapper makes
+      # `/dev/mapper/alo` itself.
+      #
+      # **The recovery key stays on this runner**, in `walk/`, which is not
+      # kept: it belongs to a disk that is thrown away with the job, and a walk
+      # that tries the forgotten-password road reads it from there.
       - name: Write the walk disk
         run: |
           start=$(date +%s)
           mkdir -p walk
           truncate -s 20G walk/alo.raw
+          sfdisk --quiet walk/alo.raw <<'TABLE'
+          label: gpt
+          size=512MiB, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B, name=EFI-SYSTEM
+          size=1GiB, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name=boot
+          type=4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709, name=root
+          TABLE
+          loop=$(sudo losetup --find --show --partscan walk/alo.raw)
+          sudo udevadm settle
+          cat > walk/encrypt.sh <<'SCRIPT'
+          set -euo pipefail
+          loop="$1"
+          mkdir -p /run/cryptsetup
+          mkfs.fat -F 32 -n EFI-SYSTEM "${loop}p1"
+          mkfs.ext4 -q -L boot "${loop}p2"
+          printf '%s' "$ALO_WALK_DISK_PASSPHRASE" | cryptsetup luksFormat --type luks2 --batch-mode --key-file=- "${loop}p3"
+          PASSWORD="$ALO_WALK_DISK_PASSPHRASE" systemd-cryptenroll --recovery-key "${loop}p3" > /output/recovery-key
+          printf '%s' "$ALO_WALK_DISK_PASSPHRASE" | cryptsetup open --key-file=- "${loop}p3" alo
+          mkfs.btrfs -q -L root /dev/mapper/alo
+          mkdir -p /run/alo-os-root
+          mount /dev/mapper/alo /run/alo-os-root
+          mkdir -p /run/alo-os-root/boot
+          mount "${loop}p2" /run/alo-os-root/boot
+          mkdir -p /run/alo-os-root/boot/efi
+          mount "${loop}p1" /run/alo-os-root/boot/efi
+          luks=$(cryptsetup luksUUID "${loop}p3")
+          bootc install to-filesystem --karg rd.luks.uuid="$luks" /run/alo-os-root
+          umount -R /run/alo-os-root
+          cryptsetup close alo
+          SCRIPT
           sudo podman run --rm --privileged --pid=host \
             --security-opt label=type:unconfined_t \
+            -v /dev:/dev \
             -v /var/lib/containers:/var/lib/containers \
             -v "$PWD/walk":/output \
+            -e ALO_WALK_DISK_PASSPHRASE="$ALO_WALK_DISK_PASSPHRASE" \
+            -e DM_DISABLE_UDEV=1 \
             localhost/alo-os:walk \
-            bootc install to-disk --via-loopback --wipe \
-              --filesystem btrfs /output/alo.raw
-          sudo chown "$(id -u):$(id -g)" walk/alo.raw
+            bash /output/encrypt.sh "$loop"
+          sudo losetup --detach "$loop"
+          rm walk/encrypt.sh
+          echo "The walk disk's root is LUKS2, with a recovery key enrolled beside the walk's own secret." | tee -a "$GITHUB_STEP_SUMMARY"
+          sudo chown "$(id -u):$(id -g)" walk/alo.raw walk/recovery-key
           echo "The disk was written in $(( $(date +%s) - start )) s, $(du -h walk/alo.raw | cut -f1) of it used." | tee -a "$GITHUB_STEP_SUMMARY"
           sudo podman rmi localhost/alo-os:walk > /dev/null || true
           cp /usr/share/OVMF/OVMF_VARS_4M.fd walk/vars.fd
