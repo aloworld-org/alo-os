@@ -66,7 +66,13 @@ impl ReadAloudTree {
         let Some(window) = self
             .nodes()
             .iter()
-            .find(|node| node.press == Some(Pressed::CloseTheTask(which)))
+            .find(|node| {
+                node.press
+                    == Some(Pressed::on_a_task_window(
+                        which,
+                        crate::window_edge::OnTheEdge::Close,
+                    ))
+            })
             .map(|node| node.parent)
         else {
             return self;

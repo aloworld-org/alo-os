@@ -20,6 +20,10 @@ use crate::closing_a_task_window::WhatClosingCameTo;
 /// What a reader's press came to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WhatAReaderPressCameTo {
+    /// A band's control did what a pointer's press on it does.
+    ABandDidIt,
+    /// Nothing: that band is not drawn now, or has no such control.
+    NothingOnABand,
     /// A task window's Close was pressed, and this is what closing it came to.
     ATaskWindow(WhatClosingCameTo),
     /// A task window's Minimise was pressed: it goes into the right-hand
@@ -54,13 +58,7 @@ impl Server {
     /// A screen reader pressed `pressed` on the tree this machine published.
     pub fn a_reader_pressed(&mut self, pressed: Pressed) -> WhatAReaderPressCameTo {
         match pressed {
-            Pressed::CloseTheTask(which) => {
-                WhatAReaderPressCameTo::ATaskWindow(self.the_person_closes_a_task(which))
-            }
-            Pressed::MinimiseTheTask(which) => {
-                self.this_task_is_asked_to_go_aside(which);
-                WhatAReaderPressCameTo::ATaskGoesAside
-            }
+            Pressed::OnABand { band, control } => self.a_reader_pressed_on_a_band(&band, control),
             Pressed::OnTheDock(what) => self.a_reader_pressed_on_the_dock(&what),
             Pressed::OnTheOpenWithSheet { .. } | Pressed::OnTheFileChooser { .. } => {
                 WhatAReaderPressCameTo::NotTheServers
@@ -85,6 +83,58 @@ impl Server {
                 }
             }
             Pressed::InSettings(what) => self.a_reader_pressed_in_settings(&what),
+        }
+    }
+
+    /// A reader pressed `control` on the band over `band`'s window: **the one
+    /// road a pointer's press takes** (`crate::a_band_is_pressed`).
+    ///
+    /// **Held to a band drawn now**, as a press on the Dock is: a tree is a
+    /// moment old by the time it is pressed, and a window that closed in that
+    /// moment is not closed again, nor another in its place.
+    fn a_reader_pressed_on_a_band(
+        &mut self,
+        band: &crate::which_band::ABand,
+        control: crate::window_edge::OnTheEdge,
+    ) -> WhatAReaderPressCameTo {
+        let drawn_now = match band {
+            crate::which_band::ABand::App(surface) => {
+                self.mapped_surfaces().any(|it| it == surface)
+            }
+            crate::which_band::ABand::Alos(which) => self
+                .alos_windows_with_a_band()
+                .iter()
+                .any(|(it, _)| it == which),
+        };
+        if !drawn_now {
+            return WhatAReaderPressCameTo::NothingOnABand;
+        }
+        match self.a_bands_control_is_pressed(
+            band,
+            control,
+            crate::a_band_is_pressed::PressedBy::AReader,
+        ) {
+            crate::a_band_is_pressed::WhatThePressDid::NoSuchControl => {
+                WhatAReaderPressCameTo::NothingOnABand
+            }
+            crate::a_band_is_pressed::WhatThePressDid::Closing(
+                crate::a_band_is_pressed::ClosingCameTo::ATask(came_to),
+            ) => WhatAReaderPressCameTo::ATaskWindow(came_to),
+            crate::a_band_is_pressed::WhatThePressDid::WentAside
+                if matches!(
+                    band,
+                    crate::which_band::ABand::Alos(
+                        crate::the_bands_over_alos_windows::AlosBand::ATask(_)
+                    )
+                ) =>
+            {
+                WhatAReaderPressCameTo::ATaskGoesAside
+            }
+            crate::a_band_is_pressed::WhatThePressDid::Closing(_)
+            | crate::a_band_is_pressed::WhatThePressDid::WentAside
+            | crate::a_band_is_pressed::WhatThePressDid::ThePanel => {
+                WhatAReaderPressCameTo::ABandDidIt
+            }
         }
     }
 

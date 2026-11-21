@@ -158,15 +158,39 @@ fn every_task_window_carries_its_own_minimise_and_close() {
             (
                 "tidy my invoices".to_owned(),
                 vec![
-                    (minimise(), Some(Pressed::MinimiseTheTask(first))),
-                    (close(), Some(Pressed::CloseTheTask(first)))
+                    (
+                        minimise(),
+                        Some(Pressed::on_a_task_window(
+                            first,
+                            crate::window_edge::OnTheEdge::Minimise
+                        ))
+                    ),
+                    (
+                        close(),
+                        Some(Pressed::on_a_task_window(
+                            first,
+                            crate::window_edge::OnTheEdge::Close
+                        ))
+                    )
                 ]
             ),
             (
                 "explain an invoice".to_owned(),
                 vec![
-                    (minimise(), Some(Pressed::MinimiseTheTask(second))),
-                    (close(), Some(Pressed::CloseTheTask(second)))
+                    (
+                        minimise(),
+                        Some(Pressed::on_a_task_window(
+                            second,
+                            crate::window_edge::OnTheEdge::Minimise
+                        ))
+                    ),
+                    (
+                        close(),
+                        Some(Pressed::on_a_task_window(
+                            second,
+                            crate::window_edge::OnTheEdge::Close
+                        ))
+                    )
                 ]
             ),
         ]
@@ -192,7 +216,10 @@ fn a_readers_close_closes_a_finished_task() {
     finished(&mut server, which);
 
     assert_eq!(
-        server.a_reader_pressed(Pressed::CloseTheTask(which)),
+        server.a_reader_pressed(Pressed::on_a_task_window(
+            which,
+            crate::window_edge::OnTheEdge::Close
+        )),
         WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::Closed)
     );
     assert!(!server.tasks().is_open(which), "the window did not close");
@@ -201,7 +228,10 @@ fn a_readers_close_closes_a_finished_task() {
         "a reader is still told it is open"
     );
     assert_eq!(
-        server.a_reader_pressed(Pressed::CloseTheTask(which)),
+        server.a_reader_pressed(Pressed::on_a_task_window(
+            which,
+            crate::window_edge::OnTheEdge::Close
+        )),
         WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::NothingToClose),
         "pressing it again closed something"
     );
@@ -233,7 +263,10 @@ fn a_readers_close_never_answers_a_waiting_change() {
     );
 
     assert_eq!(
-        server.a_reader_pressed(Pressed::CloseTheTask(which)),
+        server.a_reader_pressed(Pressed::on_a_task_window(
+            which,
+            crate::window_edge::OnTheEdge::Close
+        )),
         WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::Asked)
     );
     assert!(server.tasks().is_open(which), "a waiting task was closed");
@@ -256,7 +289,10 @@ fn a_readers_close_leaves_a_running_task_open() {
     );
 
     assert_eq!(
-        server.a_reader_pressed(Pressed::CloseTheTask(which)),
+        server.a_reader_pressed(Pressed::on_a_task_window(
+            which,
+            crate::window_edge::OnTheEdge::Close
+        )),
         WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::Asked)
     );
     assert!(server.tasks().is_open(which), "a running task was closed");

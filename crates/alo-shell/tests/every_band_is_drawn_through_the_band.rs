@@ -144,9 +144,10 @@ fn alos_roads_ask_the_bands_reveal() {
             "{road} draws a band without asking whether it is revealed"
         );
         assert!(
-            code.iter()
+            !code
+                .iter()
                 .any(|line| line.contains("alos_band_as_pressed(")),
-            "{road} finds a press on a band without asking whether it is revealed"
+            "{road} finds a press on its band itself, beside the one press road"
         );
     }
     let (_, reveals) = every_source_file()
@@ -156,6 +157,40 @@ fn alos_roads_ask_the_bands_reveal() {
     assert!(
         reveals.iter().any(|line| line.contains("a_band_is_told(")),
         "alo's bands are told by a rule of their own"
+    );
+}
+
+/// **One press road for every band.** Since 2026-11-21 a press on any band's
+/// control, by the pointer, a screen reader or a key, is carried out by
+/// `a_band_is_pressed.rs` and nowhere else, so a fix to what a control does
+/// reaches every kind of window. Held two ways: only that file asks where a
+/// press lands on alo's bands, and no file matches a press on one named
+/// control to an action of its own (`Control(OnTheEdge::Close) =>`), which is
+/// the shape each of the six old roads had.
+#[test]
+fn every_band_is_pressed_through_one_road() {
+    assert_eq!(
+        the_files_saying("alos_band_as_pressed("),
+        vec!["a_band_is_pressed.rs", "the_bands_over_alos_windows.rs"],
+        "a press on alo's band is found by a road beside the one press road"
+    );
+    for (name, code) in every_source_file() {
+        for line in &code {
+            assert!(
+                !(line.contains("UnderThePointer::Control(OnTheEdge::")
+                    || line.contains("ItRuns(OnTheEdge::Close)")
+                    || line.contains("ItRuns(OnTheEdge::Minimise)")),
+                "{name} carries out one named control itself: {line}"
+            );
+        }
+    }
+    let (_, one) = every_source_file()
+        .into_iter()
+        .find(|(name, _)| name == "a_band_is_pressed.rs")
+        .expect("the one press road has a file");
+    assert!(
+        one.iter().any(|line| line.contains("fn a_bands_control_is_pressed(")),
+        "the one press road lost its one function"
     );
 }
 

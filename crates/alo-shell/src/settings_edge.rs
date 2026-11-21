@@ -66,13 +66,6 @@ impl crate::Server {
         )
     }
 
-    /// Whether Settings' edge is under `at`, in the display's pixels.
-    pub(crate) fn the_settings_edge_is_under(&self, at: Point<i32, Logical>) -> bool {
-        self.where_settings_is_seen().is_some_and(|window| {
-            what_a_press_is_on(self, (alo_put_aside::AlosOwnWindow::Settings, window), at).is_some()
-        })
-    }
-
     /// **The person closed Settings**, by its edge's Close or by Alt+F4
     /// (`crate::a_chord_closes_alos_own_window`): one road, so the two cannot
     /// disagree about what closing gives up.
@@ -84,31 +77,6 @@ impl crate::Server {
         self.settings.close();
         self.settings_on_the_plane = None;
         self.settings_as_drawn = None;
-    }
-
-    /// A press at `at`, in the display's pixels, offered to Settings' edge.
-    /// Answers whether the edge took it: Close shuts Settings, anywhere else
-    /// on it brings Settings in front.
-    pub(crate) fn a_press_on_the_settings_edge(&mut self, at: Point<i32, Logical>) -> bool {
-        let Some(window) = self.where_settings_is_seen() else {
-            return false;
-        };
-        match what_a_press_is_on(self, (alo_put_aside::AlosOwnWindow::Settings, window), at) {
-            None => false,
-            Some(OnItsEdge::Close) => {
-                self.the_person_closes_settings();
-                true
-            }
-            Some(OnItsEdge::Minimise) => {
-                self.this_alo_window_is_asked_to_go_aside(alo_put_aside::AlosOwnWindow::Settings);
-                true
-            }
-            Some(OnItsEdge::TheRest) => {
-                self.the_composer.it_gave_the_keyboard_up();
-                self.the_person_went_to(AKindOfWindow::Settings);
-                true
-            }
-        }
     }
 }
 

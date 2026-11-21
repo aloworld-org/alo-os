@@ -9,7 +9,10 @@ use crate::the_tasks_a_person_opened::WhichTask;
 fn close() -> (Pressable, mpsc::Receiver<Pressed>) {
     let (to, from) = mpsc::channel();
     let pressable = Pressable {
-        pressed: Pressed::CloseTheTask(WhichTask::numbered(0)),
+        pressed: Pressed::on_a_task_window(
+            WhichTask::numbered(0),
+            crate::window_edge::OnTheEdge::Close,
+        ),
         said: "Close".to_owned(),
         to,
     };
@@ -23,7 +26,10 @@ fn a_press_is_handed_over_exactly_once() {
     assert!(pressable.do_action(0), "the press was not accepted");
     assert_eq!(
         from.try_iter().collect::<Vec<_>>(),
-        [Pressed::CloseTheTask(WhichTask::numbered(0))]
+        [Pressed::on_a_task_window(
+            WhichTask::numbered(0),
+            crate::window_edge::OnTheEdge::Close
+        )]
     );
 }
 
