@@ -153,6 +153,33 @@ mod tests {
         );
     }
 
+    /// **An installation is said too, by the application it installs**, so a
+    /// walk can check alo installed what it was asked for — and what it did
+    /// not: no walk had ever seen `install_application` run (the launch audit
+    /// of 2026-11-21, item 6), and nothing on the journal said whether it had.
+    #[test]
+    fn an_installation_is_named_by_the_application_it_installs() {
+        let verbs = alo_software::software_verbs().unwrap();
+        let call = Call::of(
+            verbs.of(alo_software::INSTALL_APPLICATION).unwrap(),
+            &[
+                ("application", Given::text("io.github.seadve.Kooha")),
+                ("source", Given::text("flathub")),
+            ],
+        )
+        .unwrap();
+        let agent = Grantee::named("@alo");
+        let grants = Grants::default().at_full_access_for(&agent);
+        let installing = Authorised::at_full_access(&call, &agent, &grants, noon()).unwrap();
+        assert_eq!(
+            about(&installing),
+            Some((
+                alo_software::INSTALL_APPLICATION.to_owned(),
+                "io.github.seadve.Kooha".to_owned()
+            ))
+        );
+    }
+
     /// **A verb that does not act in an application says nothing**, so the
     /// journal is not filled with every file read.
     #[test]
