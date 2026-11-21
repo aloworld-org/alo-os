@@ -14,7 +14,6 @@ use alo_egress::Indicator;
 use alo_models::{Provider, Secret, SourcePolicy};
 use alo_protocol::ToAnAgent;
 use alo_strings::Strings;
-use serde_json::Value;
 use std::io::Write as _;
 use std::path::PathBuf;
 
@@ -34,7 +33,9 @@ pub struct AtAProvider {
     /// The model, as the provider names it.
     model: String,
     /// The shape its answers are held to, a turn's own.
-    held_to: Value,
+    /// The places the machine installs from; what one question is held to is
+    /// what the turn offers then (`alo_instructing::the_verbs_offered`).
+    places: Vec<String>,
     /// This run's indicator, which every question is on while it is away.
     indicator: Indicator,
     /// How many times the provider was asked.
@@ -46,23 +47,23 @@ pub struct AtAProvider {
 
 impl AtAProvider {
     /// `model` at `provider`, asked with `key`, its answers held to the shape
-    /// a turn holds them to for `verbs`, on a machine installing from `places`.
+    /// a turn holds them to — what it offers at each question, handed to
+    /// [`TheModel::answering`] — on a machine installing from `places`.
+    /// `_verbs` is the machine's whole list, kept in the signature its callers
+    /// already use.
     #[must_use]
     pub fn asking(
         provider: Provider,
         key: Secret,
         model: &str,
-        verbs: &Verbs,
+        _verbs: &Verbs,
         places: &[String],
     ) -> Self {
         Self {
             provider,
             key,
             model: model.to_owned(),
-            held_to:
-                alo_turn::the_shape_a_provider_is_held_to::the_envelope_naming_the_verbs_and_places(
-                    verbs, places,
-                ),
+            places: places.to_vec(),
             indicator: Indicator::default(),
             calls: 0,
             shown_to: None,
@@ -126,7 +127,12 @@ impl AtAProvider {
     /// **What went wrong is said by its kind alone**, never by what the
     /// provider sent back: a refused key's reply quotes part of the key, and
     /// GitHub masks only the whole of it.
-    fn once(&mut self, question: &Question, strings: &Strings) -> Attempted<ToAnAgent> {
+    fn once(
+        &mut self,
+        question: &Question,
+        strings: &Strings,
+        offered: &Verbs,
+    ) -> Attempted<ToAnAgent> {
         let hosted = Hosted::provider(&self.provider, Some(&self.key));
         let policy = SourcePolicy::Anywhere;
         let Ok(answering) = Answering::chosen(hosted.named_source(), &policy) else {
@@ -142,7 +148,10 @@ impl AtAProvider {
             &mut self.indicator,
             std::time::SystemTime::now(),
             &to,
-            self.held_to.clone(),
+            alo_turn::the_shape_a_provider_is_held_to::the_envelope_naming_the_verbs_and_places(
+                offered,
+                &self.places,
+            ),
         );
         match asked {
             Ok(asked) => {
@@ -186,12 +195,17 @@ impl AtAProvider {
 }
 
 impl TheModel for AtAProvider {
-    fn answering(&mut self, shown: &str, strings: &Strings) -> Result<ToAnAgent, String> {
+    fn answering(
+        &mut self,
+        shown: &str,
+        strings: &Strings,
+        offered: &Verbs,
+    ) -> Result<ToAnAgent, String> {
         let question =
             Question::asked(shown, &self.model).map_err(|_| "nothing could be asked".to_owned())?;
         self.writing_down(shown)?;
         asking_until_answered(
-            &mut || self.once(&question, strings),
+            &mut || self.once(&question, strings, offered),
             &mut std::thread::sleep,
         )
     }

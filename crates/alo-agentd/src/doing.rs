@@ -136,6 +136,7 @@ fn carried_out(
             verb,
             &asked.given(),
             turning,
+            questions,
             grants,
             commands,
             strings,

@@ -137,5 +137,13 @@ pub(crate) fn as_a_client_sees_it(did: &WhatAVerbDid, now: SystemTime) -> Done {
         WhatAVerbDid::AKeyWasPressed(pressed) => {
             Done::of_a_key(pressed.application(), pressed.key().named())
         }
+        // A picture is never carried: `crate::reading_a_picture` has it read
+        // first, and one that reaches here was read by nothing.
+        WhatAVerbDid::APictureWasTaken(taken) => {
+            Done::of_a_picture_not_read(taken.application(), taken.size())
+        }
+        WhatAVerbDid::AClickWasMade(made) => {
+            Done::of_a_click(made.application(), made.at(), made.changed(), None)
+        }
     }
 }

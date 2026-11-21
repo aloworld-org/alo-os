@@ -109,6 +109,8 @@ pub fn read(line: &str) -> FromAnAgent {
 pub struct Writing {
     lines: Vec<String>,
     pub shown: Vec<String>,
+    /// The verbs each question was held to, by name.
+    pub held_to: Vec<Vec<String>>,
 }
 
 impl Writing {
@@ -116,13 +118,21 @@ impl Writing {
         Self {
             lines: lines.iter().rev().cloned().collect(),
             shown: Vec::new(),
+            held_to: Vec::new(),
         }
     }
 }
 
 impl TheModel for Writing {
-    fn answering(&mut self, shown: &str, strings: &Strings) -> Result<ToAnAgent, String> {
+    fn answering(
+        &mut self,
+        shown: &str,
+        strings: &Strings,
+        offered: &alo_capability::Verbs,
+    ) -> Result<ToAnAgent, String> {
         self.shown.push(shown.to_owned());
+        self.held_to
+            .push(offered.all().map(|verb| verb.name().to_owned()).collect());
         let line = self
             .lines
             .pop()
@@ -140,7 +150,12 @@ impl TheModel for Writing {
 pub struct Down;
 
 impl TheModel for Down {
-    fn answering(&mut self, _shown: &str, _strings: &Strings) -> Result<ToAnAgent, String> {
+    fn answering(
+        &mut self,
+        _shown: &str,
+        _strings: &Strings,
+        _offered: &alo_capability::Verbs,
+    ) -> Result<ToAnAgent, String> {
         Err("nothing answered".to_owned())
     }
 }
