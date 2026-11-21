@@ -386,6 +386,12 @@ pub struct Server {
     /// **What Settings last said its keyboard was on**, by the name it draws
     /// (`crate::settings_says_where_the_keyboard_is`).
     pub(crate) said_in_settings: Option<String>,
+    /// **What the Dock last said its keyboard was on**, by the slot's name
+    /// (`crate::the_road_to_the_market_is_said`).
+    pub(crate) said_on_the_dock: Option<String>,
+    /// **What the market last said its keyboard was on**, by the catalogue's
+    /// identifier (`crate::the_road_to_the_market_is_said`).
+    pub(crate) said_in_the_market: Option<String>,
     /// Where the record window is **on the canvas** — its corner — and which
     /// Place it is on, while it is open (`crate::record_on_the_plane`).
     pub(crate) the_record_on_the_plane: Option<(
@@ -1010,6 +1016,8 @@ impl Server {
             the_settings_number: crate::window_number::reserve(),
             a_click_waits_for_settings: None,
             said_in_settings: None,
+            said_on_the_dock: None,
+            said_in_the_market: None,
             the_record_on_the_plane: None,
             how_big_the_record_was: smithay::utils::Size::from((0, 0)),
             the_records_number: crate::window_number::reserve(),

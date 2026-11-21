@@ -159,6 +159,9 @@ fn it_runs_after_every_merge_to_main_and_by_hand() {
             // The person's second box (2026-11-16): ask alo in every shipped
             // application. An input, not a trigger.
             "every_application:",
+            // The fourth (2026-11-21): a person installs an application from
+            // the market and alo installs one when asked (launch item 6).
+            "installing:",
             // The third (2026-11-17): build the image from the branch the
             // walk was started on, to measure it before it merges.
             "image_from_this_branch:"

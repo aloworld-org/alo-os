@@ -22,7 +22,12 @@ use crate::what_a_verb_did::WhatAVerbDid;
 
 /// The verbs alo acts in an application by: each one names the application in
 /// its `application` argument.
-const IN_AN_APPLICATION: [&str; 16] = [
+///
+/// **And `install_application`**, which names the application it installs in
+/// the same argument: not an act *in* it, but the one a walk most needs to see
+/// done or not done before it acts in it (the launch audit of 2026-11-21).
+const IN_AN_APPLICATION: [&str; 17] = [
+    alo_software::INSTALL_APPLICATION,
     "open_application",
     "focus_application",
     "close_application",
@@ -149,6 +154,33 @@ mod tests {
             Some((
                 alo_adapters::READ_WINDOW.to_owned(),
                 "org.kde.dolphin".to_owned()
+            ))
+        );
+    }
+
+    /// **An installation is said too, by the application it installs**, so a
+    /// walk can check alo installed what it was asked for — and what it did
+    /// not: no walk had ever seen `install_application` run (the launch audit
+    /// of 2026-11-21, item 6), and nothing on the journal said whether it had.
+    #[test]
+    fn an_installation_is_named_by_the_application_it_installs() {
+        let verbs = alo_software::software_verbs().unwrap();
+        let call = Call::of(
+            verbs.of(alo_software::INSTALL_APPLICATION).unwrap(),
+            &[
+                ("application", Given::text("io.github.seadve.Kooha")),
+                ("source", Given::text("flathub")),
+            ],
+        )
+        .unwrap();
+        let agent = Grantee::named("@alo");
+        let grants = Grants::default().at_full_access_for(&agent);
+        let installing = Authorised::at_full_access(&call, &agent, &grants, noon()).unwrap();
+        assert_eq!(
+            about(&installing),
+            Some((
+                alo_software::INSTALL_APPLICATION.to_owned(),
+                "io.github.seadve.Kooha".to_owned()
             ))
         );
     }

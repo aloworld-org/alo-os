@@ -2014,9 +2014,7 @@ impl LoopInput for TheDesktopLane<'_> {
                 )),
             };
             if let Some(why) = refused {
-                server
-                    .market
-                    .it_was_refused(listed.application().identifier(), why);
+                server.the_market_is_told_it_was_refused(listed.application().identifier(), why);
             }
         }
         // **And whatever has become of the installations already going.**
@@ -2032,10 +2030,10 @@ impl LoopInput for TheDesktopLane<'_> {
         };
         for what in became {
             match what.outcome {
-                Ok(installed) => server
-                    .market
-                    .it_arrived(installed.application().identifier()),
-                Err(why) => server.market.it_was_refused(&what.identifier, why),
+                Ok(installed) => {
+                    server.the_market_is_told_it_arrived(installed.application().identifier())
+                }
+                Err(why) => server.the_market_is_told_it_was_refused(&what.identifier, why),
             }
         }
         // **And whatever the daemon said to the person's answers** since the

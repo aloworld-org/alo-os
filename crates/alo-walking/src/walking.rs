@@ -206,9 +206,12 @@ impl Walking {
             } => self.the_edge(machine, check, picture, *drawn, *within)?,
             Step::PressUntilTheKeyboardIsOn {
                 chord,
+                saying,
                 name,
                 at_most,
-            } => self.press_until_the_keyboard_is_on(machine, chord, name, *at_most, pace)?,
+            } => {
+                self.press_until_the_keyboard_is_on(machine, chord, saying, name, *at_most, pace)?;
+            }
             Step::PointAtTheBand { kind, id, within } => {
                 self.point_at_the_band(machine, *kind, id, *within)?;
             }

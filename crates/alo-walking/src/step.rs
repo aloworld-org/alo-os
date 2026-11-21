@@ -84,9 +84,14 @@ pub enum Step {
     /// **Press `chord` until Settings says its keyboard is on the row or field
     /// called `name`** (`alo_acting::said_in_settings`), at most `at_most`
     /// times — a row found by the name it draws, never by counting rows.
+    ///
+    /// **Or any line of the same shape**, `<saying> "<name>"`: the Dock's slot
+    /// and the market's card (`alo_acting::said_in_the_market`).
     PressUntilTheKeyboardIsOn {
         /// The key pressed each time.
         chord: Chord,
+        /// The phrase the line begins with, before the quoted name.
+        saying: String,
         /// The name Settings draws on the row or field wanted.
         name: String,
         /// The most presses before it fails.
@@ -395,6 +400,26 @@ impl Walk {
     pub fn press_until_the_keyboard_is_on(self, chord: &Chord, name: &str, at_most: usize) -> Self {
         self.then(Step::PressUntilTheKeyboardIsOn {
             chord: chord.clone(),
+            saying: alo_acting::said_in_settings::IN_SETTINGS_THE_KEYBOARD_IS_ON.to_owned(),
+            name: name.to_owned(),
+            at_most,
+        })
+    }
+
+    /// Then press `chord` until a line `<saying> "<name>"` is said, at most
+    /// `at_most` times — the Dock's slot or the market's card found by its
+    /// name (`alo_acting::said_in_the_market`), as a Settings row is.
+    #[must_use]
+    pub fn press_until_it_says(
+        self,
+        chord: &Chord,
+        saying: &str,
+        name: &str,
+        at_most: usize,
+    ) -> Self {
+        self.then(Step::PressUntilTheKeyboardIsOn {
+            chord: chord.clone(),
+            saying: saying.to_owned(),
             name: name.to_owned(),
             at_most,
         })

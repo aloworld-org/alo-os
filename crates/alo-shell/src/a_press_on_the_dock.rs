@@ -730,6 +730,9 @@ impl crate::Server {
         // carries the argument and what an untold seat costs.
         let already = self.what_this_machine_has.clone();
         self.market.opened(catalogue, already);
+        // **Said on the journal, with the card it opens on**
+        // (`crate::the_road_to_the_market_is_said`).
+        self.the_market_says_it_opened();
     }
 
     /// Close the overflow list, if it is open.

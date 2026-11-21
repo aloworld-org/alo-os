@@ -1066,3 +1066,64 @@ fn a_task_window_is_found_whatever_its_number() {
     let report = walk(&mut machine, &walked, &nothing_set, QUICK);
     assert!(report.passed(), "{}", report.as_text());
 }
+
+/// A machine whose market says its keyboard moved to `identifiers`, and whose
+/// Settings says the last of them too — one every four seconds from the third.
+fn the_market_saying(identifiers: &[&str]) -> PicturesAndLines {
+    identifiers.iter().enumerate().fold(
+        PicturesAndLines::showing(screens()),
+        |machine, (at, identifier)| {
+            machine.saying(
+                Duration::from_secs(3 + 4 * u64::try_from(at).unwrap_or(0)),
+                &alo_acting::said_in_the_market::in_the_market_the_keyboard_is_on(identifier),
+            )
+        },
+    )
+}
+
+/// **A card is found by the phrase its line begins with**, not only a
+/// Settings row: Down is pressed until the market says Kate, and no more.
+#[test]
+fn a_card_in_the_market_is_found_by_its_name() {
+    let mut machine = the_market_saying(&["org.gimp.GIMP", "org.kde.kate"]);
+    let walked = Walk::named("w").mark().press_until_it_says(
+        &Chord::key("down"),
+        alo_acting::said_in_the_market::IN_THE_MARKET_THE_KEYBOARD_IS_ON,
+        "org.kde.kate",
+        8,
+    );
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![(
+            "the keyboard is on \"org.kde.kate\"".to_owned(),
+            Verdict::Passed
+        )],
+        "{}",
+        report.as_text()
+    );
+    assert_eq!(machine.keys_pressed(), vec!["down", "down"]);
+}
+
+/// **A line with another phrase does not answer**, even naming the same
+/// thing: Settings saying *Applications* is not the Dock saying it.
+#[test]
+fn a_line_with_another_phrase_does_not_answer() {
+    let mut machine = settings_saying(&["Applications", "Applications"]);
+    let walked = Walk::named("w").mark().press_until_it_says(
+        &Chord::key("tab"),
+        alo_acting::said_in_the_market::ON_THE_DOCK_THE_KEYBOARD_IS_ON,
+        "Applications",
+        2,
+    );
+    let report = walk(&mut machine, &walked, &nothing_set, QUICK);
+    assert_eq!(
+        verdicts(&report),
+        vec![(
+            "the keyboard is on \"Applications\"".to_owned(),
+            Verdict::Failed
+        )],
+        "{}",
+        report.as_text()
+    );
+}

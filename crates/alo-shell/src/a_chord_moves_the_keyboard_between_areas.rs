@@ -64,6 +64,9 @@ impl crate::Server {
             Some(AnArea::TheDock) => Some(0),
             _ => None,
         };
+        // **And which slot it landed on, by name**, so a walk finds the
+        // market's entry by its name (`crate::the_road_to_the_market_is_said`).
+        self.the_dock_says_where_the_keyboard_went();
     }
 
     /// **Escape leaves**, which is the last of the four keys
