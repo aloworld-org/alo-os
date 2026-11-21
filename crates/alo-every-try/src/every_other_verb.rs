@@ -704,7 +704,7 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
     ];
     let clicking = ARequest::asking(
         "click by position where a picture of a window showed a thing",
-        format!("In {THE_GAME}, start a race."),
+        format!("{THE_GAME} is open on the menu. Start a race in it."),
         vec![
             Step::of(
                 READ_WINDOW,

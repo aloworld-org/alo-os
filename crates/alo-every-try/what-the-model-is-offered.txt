@@ -62,5 +62,5 @@ request	open a thing's right-click menu in an application	6f7dceb2523fa088	acces
 request	press a key in an application	7468e92326e37cf8	accessible.read_window,accessible.press_key
 request	type into a search box without saving	3e2a28cd8e62e5e4	accessible.read_window,accessible.type_without_saving
 request	have a picture of a window that describes nothing read	f2b7a1fb621fb79d	accessible.read_window,accessible.picture_window
-request	click by position where a picture of a window showed a thing	affe74a91d9aef1e	accessible.read_window,accessible.picture_window,accessible.click_at
+request	click by position where a picture of a window showed a thing	9231fd227d5f7dc4	accessible.read_window,accessible.picture_window,accessible.click_at
 request	answer the file chooser	193f4148b094375c	choose_on_the_file_chooser
