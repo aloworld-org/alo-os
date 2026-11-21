@@ -8,6 +8,7 @@ use alo_instructing::TheWindowOffered;
 
 #[path = "a_road_as_shown_and_judged.rs"]
 mod as_shown_and_judged;
+pub use as_shown_and_judged::TheAnswerWritten;
 
 /// What the machine answers when a step is taken — as a booted machine at full
 /// access would, written by [`crate::the_machine_answers`].

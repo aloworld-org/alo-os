@@ -77,6 +77,9 @@ pub enum Scheme {
     /// Until 2026-11-20: a request by the raw text of its definition
     /// (`crate::the_first_fingerprints`). Its files name no scheme.
     First,
+    /// Since 2026-11-21: as [`Scheme::WhatIsShown`], with each answer
+    /// fingerprinted as the model is sent it rather than as Rust prints it.
+    AsSent,
     /// A request by what the model is shown and how its road is judged, a verb
     /// by what it is told and what a call of it is judged by.
     WhatIsShown,
@@ -89,6 +92,7 @@ impl Scheme {
         match self {
             Self::First => 1,
             Self::WhatIsShown => 2,
+            Self::AsSent => 3,
         }
     }
 }
@@ -221,6 +225,11 @@ pub fn a_verbs_line(verb: &Verb, envelope: &Value) -> String {
     ))
 }
 
+/// One request's line in the second scheme: each answer as Rust prints it.
+fn a_requests_line_as_printed(request: &ARequest) -> String {
+    fingerprint(&request.as_shown_and_judged_with(crate::a_road::TheAnswerWritten::AsPrinted))
+}
+
 /// **The line for one request**: what the model is shown and how its road is
 /// judged (`ARequest::as_shown_and_judged`), so a field every request leaves
 /// at its default changes no line.
@@ -250,7 +259,7 @@ impl Declared {
     /// [`NotTheSet`], when two requests share a name and could not be told
     /// apart.
     pub fn of(set: &TheSet, verbs: &Verbs) -> Result<Self, NotTheSet> {
-        Self::by_the_scheme(set, verbs, Scheme::WhatIsShown)
+        Self::by_the_scheme(set, verbs, Scheme::AsSent)
     }
 
     /// What `set` and `verbs` offer the model, fingerprinted in `scheme`.
@@ -263,7 +272,8 @@ impl Declared {
                 crate::the_first_fingerprints::a_verbs_line,
                 crate::the_first_fingerprints::a_requests_line,
             ),
-            Scheme::WhatIsShown => (a_verbs_line, a_requests_line),
+            Scheme::WhatIsShown => (a_verbs_line, a_requests_line_as_printed),
+            Scheme::AsSent => (a_verbs_line, a_requests_line),
         };
         let envelope =
             alo_turn::the_shape_a_provider_is_held_to::the_envelope_naming_the_verbs_and_places(
@@ -318,7 +328,7 @@ impl Declared {
         requests: &[(&str, &str, &[&str])],
     ) -> Self {
         Self {
-            scheme: Scheme::WhatIsShown,
+            scheme: Scheme::AsSent,
             every_turn: every_turn.to_owned(),
             verbs: verbs
                 .iter()
@@ -421,6 +431,7 @@ impl Declared {
                 ["fingerprints", which] => {
                     let named = match *which {
                         "2" => Scheme::WhatIsShown,
+                        "3" => Scheme::AsSent,
                         _ => {
                             return Err(refused(
                                 number,
