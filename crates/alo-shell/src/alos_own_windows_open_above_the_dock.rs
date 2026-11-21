@@ -1,6 +1,7 @@
 //! **alo's own windows open in the room the Dock and the put-aside panel
-//! leave**, as an application's window does: Settings, the record and alo's
-//! terminal.
+//! leave**, as an application's window does: Settings, the record, alo's
+//! terminal and, since 2026-11-20, alo's task windows
+//! (`crate::the_task_windows_find_room`).
 //!
 //! `docs/design/where-a-new-window-opens.md`, amended 2026-11-12: *a window alo
 //! places lands wholly in the room the Dock leaves*; amended 2026-11-01:

@@ -28,6 +28,10 @@ pub enum Counted {
     /// A request of its own slipped on the first tries: flagged, to be tried
     /// again and judged on both rounds — not a verdict yet.
     ToConfirm,
+    /// A request of its own is below the bar on all its tries, and is to be
+    /// tried on the base and judged against it (`crate::compared_with_its_base`):
+    /// not a verdict yet.
+    ToCompareWithItsBase,
     /// A request of its own was not tried enough, or the model could not be
     /// asked often enough, to say.
     NotMeasured,
@@ -42,6 +46,7 @@ impl Counted {
             Self::NothingOfItsOwn | Self::ItsOwnHeld => 0,
             Self::ItsOwnSlipped => 1,
             Self::NotMeasured | Self::ToConfirm => 2,
+            Self::ToCompareWithItsBase => 3,
         }
     }
 }
@@ -85,7 +90,7 @@ pub fn counted(tallied: &[Tallied], own: &[ItsOwn]) -> Counted {
 /// `reached` every try before; not measured when it was tried fewer times, or
 /// when the tries the model could not be asked would have decided it; slipped
 /// otherwise.
-fn what_one_says(tallied: &Tallied, reached: bool) -> Counted {
+pub(crate) fn what_one_says(tallied: &Tallied, reached: bool) -> Counted {
     let tries = tallied.tries().len();
     let on_the_road = tallied.on_the_road();
     let not_asked = tallied
@@ -138,6 +143,11 @@ pub fn summary_counting(tallied: &[Tallied], own: &[ItsOwn], asked_of: &str) -> 
         Counted::ItsOwnSlipped => {
             "**The check did not pass**: a request of this change's own took the road fewer \
              than 9 of every 10 tries.\n\n"
+        }
+        Counted::ToCompareWithItsBase => {
+            "**To be compared with its base**: a request of this change's own is below the bar \n             on all its tries, and is tried on the base to see whether it was already.
+
+"
         }
         Counted::ToConfirm => {
             "**Flagged**: a request of this change's own slipped on these tries, and is tried \n             again; the verdict is on both rounds.

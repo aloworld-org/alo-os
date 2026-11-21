@@ -9,6 +9,12 @@
 //! other windows; this hands it them, and the person's choice, and moves the
 //! view where it says. A task window opens only for something the person asked
 //! for, so this asks every time.
+//!
+//! **In the room the Dock and the put-aside panel leave**, as every other window
+//! alo places is (`crate::alos_own_windows_open_above_the_dock`, the amendments
+//! of 2026-11-12 and 2026-11-13). Until 2026-11-20 a task window was the one
+//! window still placed against the whole view: on the owner's screenshot of
+//! that day its reply field lay under the Dock.
 
 use smithay::utils::{Logical, Rectangle, Size};
 
@@ -21,6 +27,10 @@ impl crate::Server {
         reading: alo_strings::Direction,
         display_scale: u16,
     ) -> usize {
+        // **The room, not the view**: down to the Dock's top and clear of the
+        // panel's column, where they were last drawn — the one room every
+        // window alo places is sized and placed in.
+        let view = self.the_room_an_alo_window_opens_in(view);
         // **Each with the title strip above it**, at this display's scale
         // (`crate::a_window_and_its_strip`), so a task window opened beneath
         // another does not cover the other's strip.
@@ -46,3 +56,7 @@ impl crate::Server {
         placed
     }
 }
+
+#[cfg(test)]
+#[path = "the_task_windows_find_room_tests.rs"]
+mod tests;

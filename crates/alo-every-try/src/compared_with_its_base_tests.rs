@@ -317,3 +317,35 @@ fn the_summary_shows_the_tries_not_asked_on_each_side() {
     assert!(said.contains("6 not asked"), "{said}");
     assert!(said.contains("Nothing was decided yet"), "{said}");
 }
+
+/// A side the model was asked on every try says nothing of tries not asked.
+#[test]
+fn a_side_asked_every_try_says_none_not_asked() {
+    let rows = compared(
+        &running_out_after(10),
+        &running_out_after(10),
+        &Reached::default(),
+    );
+    let said = super::summary_of(&rows, "a scripted model");
+    assert!(!said.contains("not asked)"), "{said}");
+}
+
+/// **An own request, compared with its base on twenty** (2026-11-20): weak on
+/// the base, it may stay weak, no worse by four; at the floor on the base, it
+/// must keep it.
+#[test]
+fn an_own_request_on_twenty_is_judged_against_its_base() {
+    assert_eq!(
+        judged(&[(L, "search", 15, 20)], &[(L, "search", 16, 20)]),
+        Judged::Held,
+        "weak on its base and no worse"
+    );
+    assert_eq!(
+        judged(&[(L, "search", 12, 20)], &[(L, "search", 16, 20)]),
+        Judged::ClearlyWorse
+    );
+    assert_eq!(
+        judged(&[(L, "search", 15, 20)], &[(L, "search", 18, 20)]),
+        Judged::BelowTheBarWhereItsBaseMetIt
+    );
+}
