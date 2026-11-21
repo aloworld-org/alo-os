@@ -70,6 +70,7 @@ impl crate::Server {
         }
         let from = self.which_slot_on_the_bar.unwrap_or(0).min(how_many - 1);
         self.which_slot_on_the_bar = Some(where_tab_goes(from, pressed, how_many));
+        self.the_dock_says_where_the_keyboard_went();
         true
     }
 
