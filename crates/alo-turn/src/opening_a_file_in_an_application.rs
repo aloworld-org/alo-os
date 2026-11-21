@@ -147,6 +147,9 @@ pub(crate) fn opening_a_file_in_an_application(
         ));
     };
     let identifier = application.identifier().to_owned();
+    // **Named as a person calls it** in every sentence below; the identifier
+    // stays what is asked of the door and what the answer carries.
+    let named = machine.what_a_person_calls(&identifier);
 
     // Step 2. The file: granted, there, and really where the grant is.
     let touching = match Touching::of_looking_in(
@@ -166,7 +169,7 @@ pub(crate) fn opening_a_file_in_an_application(
         .real("path")
         .map(|real| real.as_path().to_path_buf())
     else {
-        return refused(said_about(strings, words::COULD_NOT_ASK, &identifier, ""));
+        return refused(said_about(strings, words::COULD_NOT_ASK, &named, ""));
     };
     let shown = file.display().to_string();
     let authorised = touching.into_authorised();
@@ -176,7 +179,7 @@ pub(crate) fn opening_a_file_in_an_application(
         return refused(said_about(
             strings,
             words::NOT_A_FILE_TO_HAND_OVER,
-            &identifier,
+            &named,
             &shown,
         ));
     };
@@ -203,7 +206,7 @@ pub(crate) fn opening_a_file_in_an_application(
             } else {
                 words::OPENED_IN_THEIR_WINDOW
             };
-            let mut told = vec![said_about(strings, where_it_opened, &identifier, &shown)];
+            let mut told = vec![said_about(strings, where_it_opened, &named, &shown)];
             // **And what was read of the window is on the record**, as every
             // read is: its title and the name typing goes into.
             if let Some((name, window)) = &types_into {
@@ -229,7 +232,7 @@ pub(crate) fn opening_a_file_in_an_application(
         Ok(Opened::NoCopyOfItsOwn) => {
             return refused(strings.say(
                 &alo_capability::words::NO_COPY_OF_ITS_OWN.key(),
-                &Filling::of("application", identifier.clone()),
+                &Filling::of("application", named.clone()),
             ));
         }
         Ok(Opened::TakesNoFile) => words::TAKES_NO_FILE,
@@ -238,7 +241,7 @@ pub(crate) fn opening_a_file_in_an_application(
         // same to a person**: nothing was opened. Which it was is a log's.
         Err(_) => words::COULD_NOT_ASK,
     };
-    refused(said_about(strings, why, &identifier, &shown))
+    refused(said_about(strings, why, &named, &shown))
 }
 
 /// How long an opened file's window is waited for, in front with the keyboard,

@@ -1116,3 +1116,52 @@ fn the_sentence_done_without_asking_names_the_application_as_a_person_calls_it()
         Some(EDITOR)
     );
 }
+
+/// **What the record says was done, and every refusal the desktop answers,
+/// name the application as a person calls it** — the rule, for every sentence
+/// this verb writes, not only its card: *"VSCodium"*, never
+/// `com.vscodium.codium`, on a machine whose entries name it. Only *not
+/// installed* keeps the identifier, because nothing installed names it.
+#[test]
+fn every_sentence_this_verb_writes_names_the_application_as_a_person_calls_it() {
+    let named = |answering: Result<Opened, NotAtTheDoor>| Arranged {
+        answering,
+        ..Arranged::in_the_file_manager(Ok(PAPERS))
+    };
+    let ran = on_a_machine(named(Ok(Opened::InAlosCopy)), |turning, grants, file| {
+        proposed_and_approved(turning, grants, EDITOR, file)
+    });
+    assert_eq!(
+        ran.told,
+        [format!(
+            "{} was opened in alo's own copy of VSCodium",
+            ran.file.display()
+        )]
+    );
+    let ran = on_a_machine(named(Ok(Opened::InTheirWindow)), |turning, grants, file| {
+        proposed_and_approved(turning, grants, EDITOR, file)
+    });
+    assert!(
+        ran.told
+            .iter()
+            .all(|told| told.contains("of VSCodium") && !names_an_identifier(told)),
+        "{:?}",
+        ran.told
+    );
+    for answer in [
+        Ok(Opened::TakesNoFile),
+        Ok(Opened::NoCopyOfItsOwn),
+        Ok(Opened::CouldNotStart),
+        Err(NotAtTheDoor::NoCompositor),
+    ] {
+        let ran = on_a_machine(named(answer.clone()), |turning, grants, file| {
+            proposed_and_approved(turning, grants, EDITOR, file)
+        });
+        let Err(NotDone::Refused(refused)) = ran.answered else {
+            panic!("{answer:?} was not a refusal: {:?}", ran.answered);
+        };
+        let said = refused.said(&in_english()).text().to_owned();
+        assert!(said.contains("VSCodium"), "{answer:?} said {said:?}");
+        assert!(!names_an_identifier(&said), "{answer:?} said {said:?}");
+    }
+}

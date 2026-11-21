@@ -145,6 +145,9 @@ pub(crate) fn acting_on_an_application(
         return (entry, Err(NotDone::Refused(refused)));
     };
     let identifier = application.identifier().to_owned();
+    // **Named as a person calls it** in every sentence below; the identifier
+    // stays what the door is asked about.
+    let named = machine.what_a_person_calls(&identifier);
     let acting = acting_for(application.clone());
 
     // Step 2½, for `open` alone. **How it starts, read off its entry**, so an
@@ -160,14 +163,13 @@ pub(crate) fn acting_on_an_application(
             Some(Err(NoRoad::NothingStartsIt)) => {
                 let refused = Refused::worded_elsewhere(
                     call,
-                    said_about(strings, words::NOTHING_STARTS_IT, &identifier),
+                    said_about(strings, words::NOTHING_STARTS_IT, &named),
                 );
                 let entry = Entry::refused(&refused, &agent, strings, at);
                 return (entry, Err(NotDone::Refused(refused)));
             }
             Some(Err(NoRoad::NoEntry)) | None => {
-                let refused =
-                    Refused::worded_elsewhere(call, could_not_ask_about(strings, &identifier));
+                let refused = Refused::worded_elsewhere(call, could_not_ask_about(strings, &named));
                 let entry = Entry::refused(&refused, &agent, strings, at);
                 return (entry, Err(NotDone::Refused(refused)));
             }
@@ -191,9 +193,7 @@ pub(crate) fn acting_on_an_application(
             // the entry says how the application starts.
             let entry = Entry::ran(reaching.authorised(), strings);
             let entry = match road {
-                Some(road) => {
-                    entry.telling(&[said_about(strings, the_word_for(road), &identifier)])
-                }
+                Some(road) => entry.telling(&[said_about(strings, the_word_for(road), &named)]),
                 None => entry,
             };
             return (entry, Ok(Reached { acting }));
@@ -204,7 +204,7 @@ pub(crate) fn acting_on_an_application(
         // nothing was changed. Which it was belongs in a log.
         Err(_) => words::COULD_NOT_ASK,
     };
-    let refused = Refused::worded_elsewhere(call, said_about(strings, why, &identifier));
+    let refused = Refused::worded_elsewhere(call, said_about(strings, why, &named));
     let entry = Entry::refused(&refused, &agent, strings, at);
     (entry, Err(NotDone::Refused(refused)))
 }
