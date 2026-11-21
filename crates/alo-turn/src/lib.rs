@@ -168,6 +168,7 @@ mod acting_on_an_application;
 pub mod answering_for;
 pub mod answers;
 pub mod arriving;
+mod as_a_double_click_would;
 pub mod asking;
 mod asking_the_record;
 pub mod became;
@@ -238,9 +239,11 @@ pub mod unbounded;
 pub mod went_wrong_asking;
 pub mod went_wrong_installing;
 pub mod went_wrong_looking;
+mod what_a_file_opens_with;
 pub mod what_a_verb_did;
 mod while_alos_command_runs;
 mod whose_site_it_is;
+pub use what_a_file_opens_with::{NothingOpensIt, SaysWhatAFileOpensWith};
 pub mod words;
 
 #[cfg(test)]

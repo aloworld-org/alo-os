@@ -14,6 +14,10 @@
 //! ALO_EVERY_TRY_OTHER_TRIES=3                     # with BEFORE: tries of every other request
 //!   alo-every-try
 //!
+//! ALO_EVERY_TRY_REACHED_BEFORE=reached.txt         # the base's record of what each has reached
+//! ALO_EVERY_TRY_MEASURED=measured.txt              # with BEFORE: where what was measured is added
+//!
+//! alo-every-try reached <measured>...             # raise what-each-request-has-reached.txt
 //! alo-every-try declare [to]                      # write what-the-model-is-offered.txt again, or to `to`
 //! ```
 //!
@@ -38,9 +42,11 @@ use std::process::ExitCode;
 
 use alo_capability::Verbs;
 use alo_every_try::counted::tallying_its_own;
-use alo_every_try::counted::{counted, summary_counting};
+use alo_every_try::counted::{counted, counted_with, summary_counting};
 use alo_every_try::its_own::{ItsOwn, its_own_against};
+use alo_every_try::the_bar::THE_BAR;
 use alo_every_try::the_declaration::{Declared, THE_FILE};
+use alo_every_try::what_each_has_reached::{self, Measured, Reached};
 use alo_every_try::{
     ARequest, AtAProvider, TheLevel, TheSet, Tried, Verdict, Went, summary, tallying_at, the_set,
     verdict,
@@ -69,7 +75,20 @@ fn a_count(name: &str, otherwise: &str) -> Result<usize, String> {
 
 fn main() -> ExitCode {
     let mut arguments = std::env::args().skip(1);
-    if arguments.next().as_deref() == Some("declare") {
+    let first = arguments.next();
+    if first.as_deref() == Some("reached") {
+        return match raising(arguments.collect()) {
+            Ok(to) => {
+                println!("What each request has reached was written to {to}.");
+                ExitCode::SUCCESS
+            }
+            Err(why) => {
+                eprintln!("nothing was written: {why}");
+                ExitCode::FAILURE
+            }
+        };
+    }
+    if first.as_deref() == Some("declare") {
         return match declaring(arguments.next()) {
             Ok(to) => {
                 println!("What the model is offered was written to {to}.");
@@ -99,6 +118,77 @@ fn declaring(to: Option<String>) -> Result<String, String> {
     let to = to.unwrap_or_else(|| format!("{}/{THE_FILE}", env!("CARGO_MANIFEST_DIR")));
     std::fs::write(&to, declared.written()).map_err(|why| format!("{to}: {why}"))?;
     Ok(to)
+}
+
+/// **Raise the record of what each request has reached** from the measured
+/// files `from` (each run's `every-try-measured` artifact), writing it to
+/// `ALO_EVERY_TRY_REACHED_TO` or this crate's committed file, answering with
+/// where. Nothing is ever taken out of it.
+fn raising(from: Vec<String>) -> Result<String, String> {
+    if from.is_empty() {
+        return Err("name at least one file of what a run measured".to_owned());
+    }
+    let to = said(
+        "ALO_EVERY_TRY_REACHED_TO",
+        &format!(
+            "{}/{}",
+            env!("CARGO_MANIFEST_DIR"),
+            what_each_has_reached::THE_FILE
+        ),
+    );
+    let now = std::fs::read_to_string(&to).map_err(|why| format!("{to}: {why}"))?;
+    let mut record = Reached::read(&now).map_err(|why| why.to_string())?;
+    for file in &from {
+        let text = std::fs::read_to_string(file).map_err(|why| format!("{file}: {why}"))?;
+        record = record.raised_by(&Measured::read(&text).map_err(|why| why.to_string())?);
+    }
+    std::fs::write(&to, record.written()).map_err(|why| format!("{to}: {why}"))?;
+    Ok(to)
+}
+
+/// **The record may not be lowered**: the base's record, when the run was
+/// given it, against this change's, for the requests still in `set`.
+fn the_record_against_its_base(set: &TheSet) -> Result<Reached, String> {
+    let record =
+        Reached::read(what_each_has_reached::AS_COMMITTED).map_err(|why| why.to_string())?;
+    let before = said("ALO_EVERY_TRY_REACHED_BEFORE", "");
+    if before.is_empty() {
+        return Ok(record);
+    }
+    let text = std::fs::read_to_string(&before)
+        .map_err(|why| format!("the base's record {before} could not be read: {why}"))?;
+    let base = Reached::read(&text).map_err(|why| why.to_string())?;
+    let in_the_set = |named: &str| set.requests().iter().any(|one| one.named() == named);
+    let lowered = record.lowered_from(&base, &in_the_set);
+    if lowered.is_empty() {
+        Ok(record)
+    } else {
+        let each: Vec<String> = lowered
+            .iter()
+            .map(|(level, named)| format!("{named} at {level}"))
+            .collect();
+        Err(format!(
+            "what each request has reached was lowered, which no change may do: {}",
+            each.join("; ")
+        ))
+    }
+}
+
+/// Append `text` to the file the run named for what it measured, if any.
+fn writing_what_was_measured(text: &str) -> Result<(), String> {
+    let to = said("ALO_EVERY_TRY_MEASURED", "");
+    if to.is_empty() {
+        return Ok(());
+    }
+    let failed =
+        |why: std::io::Error| format!("what was measured could not be written to {to}: {why}");
+    std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&to)
+        .map_err(failed)?
+        .write_all(text.as_bytes())
+        .map_err(failed)
 }
 
 /// Append `written` to the summary file a run named, if it named one.
@@ -155,6 +245,9 @@ fn running() -> Result<u8, String> {
     let asked_of = format!("{model} at {endpoint}");
     let mut set = the_set().map_err(|why| why.to_string())?;
     let verbs = alo_turn::the_verbs_a_whole_machine_offers().map_err(|why| why.to_string())?;
+    // **Before anything else, the ratchet**: a record lowered against its base
+    // fails whatever the change owns.
+    let record = the_record_against_its_base(&set)?;
 
     // **A change that owns nothing is answered here**, before the key is read
     // and before anybody is asked.
@@ -208,15 +301,10 @@ fn running() -> Result<u8, String> {
     // **At which level a change is answered**: `full-access`, as before, or
     // `ask-each-time`, where each change is approved once and the turn goes on
     // from what the daemon told the person it did.
-    let level = match said("ALO_EVERY_TRY_LEVEL", "full-access").as_str() {
-        "full-access" => TheLevel::FullAccess,
-        "ask-each-time" => TheLevel::AskEachTime,
-        other => {
-            return Err(format!(
-                "ALO_EVERY_TRY_LEVEL is full-access or ask-each-time, not `{other}`"
-            ));
-        }
-    };
+    let named = said("ALO_EVERY_TRY_LEVEL", "full-access");
+    let level: TheLevel = what_each_has_reached::the_level_named(&named).ok_or(format!(
+        "ALO_EVERY_TRY_LEVEL is full-access or ask-each-time, not `{named}`"
+    ))?;
     println!(
         "Trying set {} against {asked_of}. This leaves the machine: every try asks the provider.",
         alo_every_try::THE_VERSION
@@ -232,6 +320,7 @@ fn running() -> Result<u8, String> {
                 &mut asking,
                 &mut telling,
             );
+            writing_what_was_measured(&Measured::of(level, &tallied).written())?;
             (summary(&tallied, &asked_of), verdict(&tallied).exit_code())
         }
         Some(own) => {
@@ -239,15 +328,31 @@ fn running() -> Result<u8, String> {
                 level,
                 &set,
                 own,
-                (tries, others),
+                // **The bar's tries**, not the variable's, so the bar is one
+                // declared setting (`alo_every_try::the_bar`).
+                (THE_BAR.tries(), others),
                 &verbs,
                 &strings,
                 &mut asking,
                 &mut telling,
             );
+            writing_what_was_measured(&Measured::of(level, &tallied).written())?;
+            let mut written = summary_counting(&tallied, own, &asked_of);
+            let held_to_every_try: Vec<&str> = own
+                .iter()
+                .map(|one| one.named())
+                .filter(|named| record.has(level, named))
+                .collect();
+            if !held_to_every_try.is_empty() {
+                written.push_str(&format!(
+                    "\nHeld to every try at this level, because each once took every try \
+                     here (`what-each-request-has-reached.txt`): {}.\n",
+                    held_to_every_try.join(", ")
+                ));
+            }
             (
-                summary_counting(&tallied, own, &asked_of),
-                counted(&tallied, own).exit_code(),
+                written,
+                counted_with(&tallied, own, &|named| record.has(level, named)).exit_code(),
             )
         }
     };
