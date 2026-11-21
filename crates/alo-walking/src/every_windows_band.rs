@@ -206,9 +206,13 @@ impl AKind {
 
 /// Open an application by its name, the way a person does: the launcher, its
 /// name typed, Enter.
+///
+/// **The launcher's look may find the screen as it was**: Super+Space puts a
+/// caret in the Dock's field and changes nothing else (run 44900882154,
+/// picture 49). The band's line that follows proves the application opened.
 fn by_the_launcher(walk: Walk, picture: &str, name: &str) -> Walk {
     walk.press(Chord::with("meta_l", "spc"))
-        .look(
+        .look_as_it_settles(
             &format!("band-{picture}-the-launcher"),
             Settling::UNDER_KVM.at_most(Duration::from_secs(60)),
         )
