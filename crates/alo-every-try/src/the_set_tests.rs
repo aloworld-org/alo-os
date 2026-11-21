@@ -1011,9 +1011,9 @@ fn a_guessed_name_where_nothing_is_named_is_refused_and_the_try_goes_on() {
             PICTURE_WINDOW,
             &[(APPLICATION, game), (QUESTION, "Where is Start race?")],
         ),
-        proposing(
-            CLICK_AT,
-            &[(APPLICATION, game), (ACROSS, "50"), (DOWN, "40")],
+        // **The point as numbers**, as a model writes a count.
+        format!(
+            r#"{{"format":1,"asks":{{"propose":{{"verb":"{CLICK_AT}","given":[{{"named":"{APPLICATION}","is":"{game}"}},{{"named":"{ACROSS}","is":50}},{{"named":"{DOWN}","is":40}}]}}}}}}"#
         ),
         answering("The race is starting."),
     ];

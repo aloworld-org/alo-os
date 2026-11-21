@@ -39,13 +39,23 @@ pub fn named_where_nothing_is_named(
     where_nothing_is_named: &[String],
     strings: &Strings,
 ) -> Option<Said> {
-    let _ = (call, where_nothing_is_named, strings, &words::NAMES_NOTHING);
-    let _ = (
-        APPLICATION,
-        |value: &Value| value.clone(),
-        Filling::nothing(),
-    );
-    None
+    let (_, naming) = THE_NAMED_CONTROL_VERBS
+        .iter()
+        .find(|(verb, _)| *verb == call.verb())?;
+    let Some(Value::Application(application)) = call.value(APPLICATION) else {
+        return None;
+    };
+    if !where_nothing_is_named.iter().any(|one| one == application) {
+        return None;
+    }
+    let name = match call.value(naming) {
+        Some(Value::Name(name) | Value::Text(name)) => name.clone(),
+        _ => String::new(),
+    };
+    Some(strings.say(
+        &words::NAMES_NOTHING.key(),
+        &Filling::of(crate::fallback_words::APPLICATION, application.clone()).and(NAME, name),
+    ))
 }
 
 #[cfg(test)]

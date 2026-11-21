@@ -33,7 +33,7 @@ fn a_control_named_where_nothing_is_named_is_refused_with_the_road_to_a_picture(
         &[GAME.to_owned()],
         &in_english(),
     )
-    .expect("refused");
+    .unwrap();
     let expected = in_english()
         .say(
             &words::NAMES_NOTHING.key(),
