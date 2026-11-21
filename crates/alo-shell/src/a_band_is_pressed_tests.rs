@@ -86,6 +86,13 @@ fn every_kind() -> Vec<Kind> {
 
 /// A session with a keyboard, a pointer and the shipped shortcuts.
 fn a_session(named: &str) -> (tempfile::TempDir, Server) {
+    // **A socket name of letters, digits and dashes**: a kind's `Debug` has
+    // brackets in it, which a Wayland socket name refuses.
+    let named: String = named
+        .chars()
+        .map(|it| if it.is_ascii_alphanumeric() { it } else { '-' })
+        .collect();
+    let named = named.as_str();
     let runtime = tempfile::tempdir().expect("a runtime directory of this test's own");
     std::fs::set_permissions(runtime.path(), std::fs::Permissions::from_mode(0o700))
         .expect("a private runtime directory");
