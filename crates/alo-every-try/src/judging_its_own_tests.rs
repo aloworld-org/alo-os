@@ -184,3 +184,68 @@ fn held_on_twenty_needs_no_base() {
     assert_eq!(counted, Counted::ItsOwnHeld);
     assert!(named.is_empty());
 }
+
+const CLOSING: &str = "close an application";
+
+/// Opening and closing, both the change's own, the model writing `rounds`.
+fn both_judged(rounds: &[Vec<String>], reached: &dyn Fn(&str) -> bool) -> (Counted, Vec<String>) {
+    let set = the_set()
+        .expect("the set builds")
+        .retaining(|request| [OPENING, CLOSING].contains(&request.named()));
+    let own = [
+        ItsOwn::because(OPENING, WhyItsOwn::ItsRoadChanged),
+        ItsOwn::because(CLOSING, WhyItsOwn::ItsRoadChanged),
+    ];
+    let lines: Vec<String> = rounds.iter().flatten().cloned().collect();
+    let mut model = Writing::these(&lines);
+    let judgement = judging_its_own(
+        TheLevel::FullAccess,
+        &set,
+        &own,
+        0,
+        reached,
+        &the_verbs(),
+        &the_words(),
+        &mut model,
+        &mut |_, _, _| {},
+        "a scripted model",
+    );
+    (
+        judgement.counted(),
+        judgement.to_compare_with_its_base().to_vec(),
+    )
+}
+
+/// The lines of `good` closing tries on the road and `bad` that run a command.
+fn closing(good: usize, bad: usize) -> Vec<String> {
+    use alo_applications::verbs::CLOSE_APPLICATION;
+    let on = || {
+        vec![
+            proposing(CLOSE_APPLICATION, &[(APPLICATION, "org.mozilla.firefox")]),
+            answering("Firefox is closed."),
+        ]
+    };
+    (0..good)
+        .flat_map(|_| on())
+        .chain((0..bad).map(|_| running("pkill firefox")))
+        .collect()
+}
+
+/// **Only what is below the floor goes to its base**: of two own requests, the
+/// one held on its tries is not named.
+#[test]
+fn only_an_own_request_below_the_floor_goes_to_its_base() {
+    let (counted, named) = both_judged(&[tries(8, 2), closing(10, 0), tries(7, 3)], &|_| false);
+    assert_eq!(counted, Counted::ToCompareWithItsBase);
+    assert_eq!(named, [OPENING.to_owned()]);
+}
+
+/// **A broken ratchet blocks though another request goes to its base**.
+#[test]
+fn a_broken_ratchet_blocks_though_another_goes_to_its_base() {
+    let (counted, _) = both_judged(
+        &[tries(9, 1), closing(8, 2), tries(9, 1), closing(7, 3)],
+        &|named| named == OPENING,
+    );
+    assert_eq!(counted, Counted::ItsOwnSlipped);
+}
