@@ -19,10 +19,12 @@
 //! rather than a nicety: a band a person cannot grab is a frame they cannot
 //! move, and `crate::canvas_never_lost` is the file that refuses that.
 //!
-//! # 48, and the 24 that is not it
+//! # 54, and the 24 that is not it
 //!
-//! The band is **48** logical pixels tall. Three sources, none of which says
-//! anything else:
+//! The band is **54** logical pixels tall since 2026-11-21, the one band every
+//! window is drawn with (`crate::window_edge::THE_REGION_IS_TALL`). Until then
+//! it was **48**, from three sources that the window controls' specification
+//! of 2026-11-09 replaced:
 //!
 //! - `canvas_never_lost_handle_tests.rs:20` — *a 300-pixel name band at the
 //!   origin, 48 tall*;
@@ -47,10 +49,11 @@
 
 use smithay::utils::{Logical, Rectangle, Size};
 
-/// How tall a frame's name band is, in logical pixels.
-///
-/// See this file's header for the three sources and for the 24 it is not.
-pub const BAND_IS_TALL: i32 = 48;
+/// How tall a frame's name band is, in logical pixels: **the band every window
+/// is drawn with**, `crate::window_edge::THE_REGION_IS_TALL`. It was 48 until
+/// 2026-11-21, from the sources this file's header names, which the window
+/// controls' specification of 2026-11-09 replaced with 54 (`11:31`).
+pub const BAND_IS_TALL: i32 = crate::window_edge::THE_REGION_IS_TALL;
 
 /// The smallest piece of the band that must stay uncovered for a frame to be
 /// movable: `alo_shell::canvas_never_lost::A_USABLE_HANDLE`, as whole pixels.

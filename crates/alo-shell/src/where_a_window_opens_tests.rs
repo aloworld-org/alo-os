@@ -104,7 +104,13 @@ fn it_overlaps_on_purpose_when_the_view_is_full() {
         Direction::LeftToRight,
         &[],
     );
-    assert_eq!(where_it_goes, Point::from((48, 48)));
+    assert_eq!(
+        where_it_goes,
+        Point::from((
+            crate::window_name_band::BAND_IS_TALL,
+            crate::window_name_band::BAND_IS_TALL
+        ))
+    );
     assert!(
         where_it_goes.y >= crate::window_name_band::BAND_IS_TALL,
         "the window underneath must keep its whole band uncovered"
