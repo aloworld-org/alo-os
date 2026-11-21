@@ -47,6 +47,33 @@ standing promises disagreed:
   **withdrawn by the owner** — law 5 lets the owner withdraw what was offered,
   and `docs/features.md` records it with these words.
 
+## The owner's two decisions, 2026-11-21
+
+Given while the root cause of the window controls breaking again was being
+found (`docs/misreadings/` and the investigation of that day). They bind every
+window, alo's own and every one a person installs (`CLAUDE.md`, *a rule applies
+everywhere it is true*). Relayed to this lane by the coordinator; the words are
+the coordinator's until the owner's own are quoted here.
+
+- **(a) One card for every window.** The band and the window are one card in the
+  2026-11-09 look, `11:30` of `XbSmsBYix0TrcQ0Qzaup64`: corner **16**, one line
+  `border/default` `#d9dfd9`, shadow `0 16 40` at 10 % of `#102a43`, and **no
+  seam** between the band and the content. An application's own pixels are
+  never cropped: only the card's outer corners round.
+- **(b) The band always shows the window's title and the application's name**,
+  on every window, an application that draws its own header and a task window
+  included.
+
+This replaces two earlier readings:
+
+- **The round-2 look of 2026-11-01** (`557:456`, `554:56`): a 32-tall strip with
+  corners of 10, a different ground, line and shadow for a window without the
+  keyboard, and a body line `border/strong`. `crate::window_edge_look` carried
+  it until this change.
+- **"Only where the shell carries the title"** (`crate::window_edge::edge_of`):
+  an application that drew its own header, and a task window, had a band with
+  no title on it.
+
 ## What the person sees
 
 ### The band, at rest (`11:2`)
@@ -54,7 +81,8 @@ standing promises disagreed:
 The title, then the application name in quieter text — **The next chapter ·
 Notes**. Both are visible whatever the pointer is doing; an inactive window's
 softens and stays readable. With no meaningful title, the application name only,
-never the same word twice. A long title is cut with an ellipsis before the area
+never the same word twice. **On every window** (the owner, 2026-11-21): an application that draws its own
+header and a task window carry them too. A long title is cut with an ellipsis before the area
 the controls take, so **revealing the controls never moves the title**, and the
 whole title is shown on hover or keyboard focus (the 2026-10-10 ruling, kept).
 
