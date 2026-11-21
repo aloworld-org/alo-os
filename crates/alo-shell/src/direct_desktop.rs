@@ -3296,6 +3296,16 @@ impl LoopInput for TheDesktopLane<'_> {
             record: records_edge.as_ref(),
             tasks: &task_edges,
         });
+        // **And where every band is, and its controls**, where that changed,
+        // for the walk to point at (`crate::the_bands_say_where_they_are`).
+        server.say_where_the_bands_are(
+            edges
+                .iter()
+                .chain(&task_edges)
+                .chain(terminal_edge.as_ref())
+                .chain(settings_edge.as_ref())
+                .chain(records_edge.as_ref()),
+        );
         // **The frame is drawn through the per-display road, with one display
         // on it.** `more-than-one-display-plan.md` task 4. This desk builds one
         // target today; `discover_every_atomic_output` is what will make it

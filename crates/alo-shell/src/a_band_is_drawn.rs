@@ -37,6 +37,11 @@ use crate::window_edge_picture::{EdgePicture, OverTheEdge, TheWindow};
 use crate::window_menu::{HowTheWindowIs, WhatARowDoes, WindowMenu, the_menu_of};
 use crate::window_menu_paint::{PointingAtTheMenu, ThePreview};
 
+/// **alo's name, as a task window's band says whose it is.** A name, so it
+/// is never translated, as the mark on a task's card is drawn
+/// (`crate::task_card_raster`).
+const ALOS_NAME: &str = "alo";
+
 /// What a band says: its window's title and its application's name.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct WhatTheBandSays {
@@ -85,6 +90,8 @@ impl Server {
                     .map(str::to_owned),
                 application: self.the_application_on_the_band(surface),
             },
+            // **Their title is their name, so it is said once** — the owner,
+            // 2026-11-21: *"Once: \"Settings\""*.
             ABand::Alos(AlosBand::Its(AlosOwnWindow::TheTerminal)) => WhatTheBandSays {
                 title: say(alo_terminal::words::TERMINAL),
                 application: None,
@@ -97,8 +104,18 @@ impl Server {
                 title: Some(crate::the_records_words::TheRecordsSentences::of(says).title),
                 application: None,
             },
-            // **A task window carries its title inside it**, today.
-            ABand::Alos(AlosBand::ATask(_)) => WhatTheBandSays::default(),
+            // **The person's request, then alo**: the owner, 2026-11-21,
+            // *"Request · alo"*. The request is the person's own words, never
+            // translated, as the task window draws them at its top.
+            ABand::Alos(AlosBand::ATask(which)) => WhatTheBandSays {
+                title: self
+                    .tasks()
+                    .the(*which)
+                    .map(|task| task.in_the_panel().request)
+                    .filter(|request| !request.trim().is_empty())
+                    .or_else(|| say(alo_tasks::words::A_TASK)),
+                application: Some(ALOS_NAME.to_owned()),
+            },
         }
     }
 
@@ -293,10 +310,11 @@ impl Server {
             output,
             scale,
         )?;
-        Some(match band {
+        let picture = match band {
             ABand::App(surface) => picture.on_the_window(surface.clone()),
             ABand::Alos(_) => picture,
-        })
+        };
+        Some(picture.of_the_band(band.clone()))
     }
 }
 

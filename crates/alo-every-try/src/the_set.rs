@@ -47,7 +47,7 @@ use crate::a_road::{ARequest, Answered, Step};
 
 /// The version of the set. Up by one for every change to a request, a road or
 /// the machine.
-pub const THE_VERSION: u32 = 36;
+pub const THE_VERSION: u32 = 38;
 
 /// The person's home on the machine the walk boots: Fedora's atomic layout
 /// puts homes under `/var/home`, measured on 2026-11-10
@@ -191,6 +191,22 @@ pub fn the_set() -> Result<TheSet, NotTheSet> {
             }),
         )
         .expecting(alo_files::verbs::FILE, format!("{THE_HOME}/{THE_FILE}")),
+    )
+    // **And so is a search of the home for it**, which finds it there, as the
+    // machine answers a search (`alo_files`): run 44793910551 had one try at
+    // full access search for the file after opening it, and the check ended
+    // the try where a booted machine would have answered.
+    .or_looking_at(
+        Step::of(
+            alo_files::verbs::FIND_IN_FOLDER,
+            Answered::With(alo_protocol::Done::Found {
+                files: vec![format!("{THE_HOME}/{THE_FILE}")],
+                could_not_be_named: 0,
+                cut_short: false,
+            }),
+        )
+        .expecting(alo_files::verbs::FOLDER, THE_HOME)
+        .expecting(alo_files::verbs::NAMED, THE_FILE),
     );
     let documents = home.join(Folder::Documents.xdg_name());
     let site = documents.join(THE_SITE);

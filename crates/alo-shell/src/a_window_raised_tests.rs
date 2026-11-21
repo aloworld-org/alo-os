@@ -52,13 +52,14 @@ fn not_one_pixel_lands_on_the_window() {
     }
 }
 
-/// **The line is one unit, just outside, in the look's colour**: `border/strong`
-/// round the focused window, `border/default` round every other.
+/// **The line is one unit, just outside, in the card's colour**,
+/// `border/default`, round every window whatever has the keyboard (the owner,
+/// 2026-11-21: *"Only the title softens"*).
 #[test]
 fn the_line_is_the_pixel_next_to_the_window_in_the_looks_colour() {
     let window = dolphin();
     for (look, colour) in [
-        (WhichLook::Focused, [0xCB, 0xD5, 0xE1]),
+        (WhichLook::Focused, [0xE7, 0xEB, 0xEF]),
         (WhichLook::NotFocused, [0xE7, 0xEB, 0xEF]),
     ] {
         let bands = round_the_window(window, 1.0, look, (1440, 960));
@@ -97,10 +98,11 @@ fn a_dense_display_draws_the_same_line_twice_as_many_pixels_thick() {
     assert_ne!(pixel(&bands, 197, mid_y).expect("left")[3], 255);
 }
 
-/// **The focused window stands further off the canvas**: below it, at the
-/// same distance, its shadow is darker than an unfocused window's.
+/// **Every window has the same shadow**, whether or not it has the keyboard —
+/// the owner, 2026-11-21, *"Only the title softens"*. Until then a focused
+/// window's shadow was the deeper one.
 #[test]
-fn the_focused_windows_shadow_is_deeper_below_it() {
+fn every_window_casts_the_same_shadow_below_it() {
     let window = dolphin();
     let below = (window.loc.x + 360, window.loc.y + window.size.h + 12);
     let alpha = |look| {
@@ -113,9 +115,9 @@ fn the_focused_windows_shadow_is_deeper_below_it() {
     };
     let (high, low) = (alpha(WhichLook::Focused), alpha(WhichLook::NotFocused));
     assert!(high > 0 && low > 0, "{high} {low}");
-    assert!(
-        high > low,
-        "focused {high} is not deeper than unfocused {low}"
+    assert_eq!(
+        high, low,
+        "a window without the keyboard casts another shadow than the one with it"
     );
 }
 

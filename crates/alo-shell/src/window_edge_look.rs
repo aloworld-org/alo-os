@@ -1,42 +1,47 @@
-//! How a window's edge and body look, focused and not: the colours and the
-//! figures that tell one window from another.
+//! How a window's card looks — the band and the window, as one card — and
+//! the one difference a window without the keyboard has.
 //!
-//! **The owner's answer of 2026-11-01**, from the board `557:456` (*How a person
-//! tells windows apart*) and the edge `554:56` (*Proposed / Window edge (title
-//! kept visible)*), each measured off the live file that day:
+//! **The owner's decisions of 2026-11-21** (`docs/design/the-window-controls.md`),
+//! quoted as the question and the label chosen:
 //!
-//! | | focused — the window your typing goes to | not focused |
-//! |---|---|---|
-//! | strip | `bg/surface` `#ffffff` | `bg/canvas` `#faf7f2` |
-//! | strip's edge | `border/strong` `#cbd5e1` | `border/default` `#e7ebef` |
-//! | title, icon, controls | `text/primary` `#102a43` | `text/muted` `#596b78` |
-//! | body's edge | `border/strong` | `border/default` |
-//! | body's shadow | `Elevation/Floating`: 16 down, 40 blur, −4 spread, 14 % | `Elevation/Quiet`: 8 down, 24 blur, 8 % |
+//! - *"For other apps' windows (VSCodium, Firefox...), should they also become
+//!   one card?"* — **"One card for all windows"**, in the 2026-11-09 look,
+//!   `11:30` of `XbSmsBYix0TrcQ0Qzaup64`: corner **16**, one line round it,
+//!   shadow `0 16 40` at 10 % of `#102a43`, no seam between band and content;
+//! - a window without the keyboard — **"Only the title softens"**: the same
+//!   card and the same shadow for every window, its title in `text/muted`.
 //!
-//! The strip is 32 tall with its top corners rounded at **10** (`554:25`). The
-//! shadow's colour is `#07131f` in both, which is `crate::dock_surface`'s.
+//! | | every window | the window the keys go to | every other |
+//! |---|---|---|---|
+//! | the band's ground | `bg/surface` | | |
+//! | the card's line | `border/default` | | |
+//! | the shadow | 16 down, 40 blur, no spread, 10 % of `text/primary` `#102a43` | | |
+//! | title and controls | | `text/primary` | `text/muted` |
 //!
-//! **Application content is never dimmed** — the owner's words, and the board's:
-//! *the application's own content is never dimmed, cropped or recoloured.* So
-//! every difference here is in what alo draws round a window, and nothing here
-//! touches a pixel the application drew.
+//! **The colours are the coordinator's reading, for the owner to overrule.**
+//! `11:30` binds no variables: its line `#d9dfd9` and ground `#fdfefc` are
+//! literals, drawn as the roles the 2026-11-09 reading mapped them to, so
+//! nothing outside windows changes.
 //!
-//! # `border/strong` is not one of the twelve roles
+//! # What this replaced
 //!
-//! `docs/design/figma-snapshot/variables.toml` records it as seen and
-//! unadopted, and `alo_appearance::Role` holds the twelve the owner approved on
-//! 2026-10-04. The owner approved the frames that use it on 2026-11-01, which
-//! is approval of this use rather than a thirteenth role; so it is named here,
-//! once, the way `crate::settings_palette` already names it, and not added to
-//! the palette.
+//! **The round-2 reading of 2026-11-01** (`557:456`, `554:56`): a strip with
+//! corners of 10; `bg/surface` and `border/strong` for the focused window and
+//! `bg/canvas` and `border/default` for every other; `Elevation/Floating`
+//! (16, 40, −4, 14 %) and `Elevation/Quiet` (8, 24, 8 %) shadows. One card for
+//! every window, whatever has the keyboard, replaced all of it.
+//!
+//! `border/strong` stays named here for the terminal's own frame
+//! (`crate::the_terminals_frame`), which is not yet drawn by the card.
 
 use alo_appearance::Role;
 
-/// `border/strong`, `#cbd5e1`: the focused window's edges.
+/// `border/strong`, `#cbd5e1`: the terminal's own frame's line while it has
+/// the keyboard, until the card draws that frame.
 pub(crate) const BORDER_STRONG: [u8; 3] = [0xCB, 0xD5, 0xE1];
 
-/// How round the strip's top corners are: `554:25`'s 10.
-pub(crate) const THE_STRIPS_CORNER: u32 = 10;
+/// How round the card's corners are: `11:30`'s 16.
+pub(crate) const THE_STRIPS_CORNER: u32 = 16;
 
 /// How thick every edge line is: one logical unit, scaled at the boundary.
 pub(crate) const A_LINE_IS: i32 = 1;
@@ -69,38 +74,27 @@ impl WhichLook {
             let it = role.colour();
             [it.red(), it.green(), it.blue()]
         };
-        match self {
-            Self::Focused => EdgeColours {
-                strip: rgb(Role::BgSurface),
-                edge: BORDER_STRONG,
-                ink: rgb(Role::TextPrimary),
-            },
-            Self::NotFocused => EdgeColours {
-                strip: rgb(Role::BgCanvas),
-                edge: rgb(Role::BorderDefault),
-                ink: rgb(Role::TextMuted),
-            },
+        // **One card for every window; only the title softens.**
+        EdgeColours {
+            strip: rgb(Role::BgSurface),
+            edge: rgb(Role::BorderDefault),
+            ink: rgb(match self {
+                Self::Focused => Role::TextPrimary,
+                Self::NotFocused => Role::TextMuted,
+            }),
         }
     }
 
     /// The shadow under this window's body.
     #[must_use]
     pub(crate) const fn shadow(self) -> AShadow {
-        match self {
-            // `Elevation/Floating`, as `557:213` draws it.
-            Self::Focused => AShadow {
-                falls: 16,
-                blurs: 40,
-                spreads: -4,
-                darkness: 36.0 / 255.0,
-            },
-            // `Elevation/Quiet`, as `557:149` draws it.
-            Self::NotFocused => AShadow {
-                falls: 8,
-                blurs: 24,
-                spreads: 0,
-                darkness: 0.08,
-            },
+        // **The same shadow for every window**: `11:30`'s `0 16 40` at 10 %.
+        let _ = self;
+        AShadow {
+            falls: 16,
+            blurs: 40,
+            spreads: 0,
+            darkness: 0.10,
         }
     }
 }
@@ -133,28 +127,37 @@ pub(crate) struct AShadow {
 mod tests {
     use super::*;
 
-    /// **The two looks are the board's, colour for colour.**
+    /// **One card for every window, and only the title softens** — the owner,
+    /// 2026-11-21. The ground and the line are the same whatever has the
+    /// keyboard; the ink is `text/primary` for the window the keys go to and
+    /// `text/muted` for every other.
     #[test]
-    fn the_two_looks_are_the_ones_the_owner_approved() {
-        let focused = WhichLook::Focused.colours();
-        assert_eq!(focused.strip, [0xFF, 0xFF, 0xFF]);
-        assert_eq!(focused.edge, [0xCB, 0xD5, 0xE1]);
-        assert_eq!(focused.ink, [0x10, 0x2A, 0x43]);
-        let quiet = WhichLook::NotFocused.colours();
-        assert_eq!(quiet.strip, [0xFA, 0xF7, 0xF2]);
-        assert_eq!(quiet.edge, [0xE7, 0xEB, 0xEF]);
-        assert_eq!(quiet.ink, [0x59, 0x6B, 0x78]);
+    fn every_window_wears_one_card_and_only_its_title_softens() {
+        let rgb = |role: Role| {
+            let it = role.colour();
+            [it.red(), it.green(), it.blue()]
+        };
+        let (focused, quiet) = (
+            WhichLook::Focused.colours(),
+            WhichLook::NotFocused.colours(),
+        );
+        assert_eq!((focused.strip, focused.edge), (quiet.strip, quiet.edge));
+        assert_eq!(focused.strip, rgb(Role::BgSurface));
+        assert_eq!(focused.edge, rgb(Role::BorderDefault));
+        assert_eq!(focused.ink, rgb(Role::TextPrimary));
+        assert_eq!(quiet.ink, rgb(Role::TextMuted));
     }
 
-    /// **A focused window is raised higher than one that is not**, which is the
-    /// whole of what the shadow is for.
+    /// **The same shadow for every window**, `11:30`'s `0 16 40` at 10 %, and
+    /// the card's corner of 16.
     #[test]
-    fn the_focused_window_stands_further_off_the_canvas() {
-        let (high, low) = (WhichLook::Focused.shadow(), WhichLook::NotFocused.shadow());
-        assert!(high.falls > low.falls && high.blurs > low.blurs);
-        assert!(high.darkness > low.darkness);
-        assert_eq!((high.falls, high.blurs, high.spreads), (16, 40, -4));
-        assert_eq!((low.falls, low.blurs, low.spreads), (8, 24, 0));
+    fn every_window_has_the_cards_shadow_and_corner() {
+        for look in [WhichLook::Focused, WhichLook::NotFocused] {
+            let shadow = look.shadow();
+            assert_eq!((shadow.falls, shadow.blurs, shadow.spreads), (16, 40, 0));
+            assert!((shadow.darkness - 0.10).abs() < f32::EPSILON);
+        }
+        assert_eq!(THE_STRIPS_CORNER, 16);
     }
 
     /// **Only the window with the keyboard is focused.**

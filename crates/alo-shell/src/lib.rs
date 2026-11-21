@@ -761,6 +761,7 @@ mod closing_the_terminal;
 mod the_ask_rows_line;
 mod the_bands_drawn_are_said;
 mod the_bands_over_alos_windows;
+mod the_bands_say_where_they_are;
 /// What a screen reader is told the Bar's matches are.
 mod the_bars_matches_as_read;
 mod the_closed_windows_notice;
