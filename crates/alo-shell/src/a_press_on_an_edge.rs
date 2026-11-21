@@ -198,14 +198,14 @@ impl crate::Server {
         let asked = std::mem::take(&mut self.asked_on_an_edge);
         for (surface, what) in asked {
             match what {
-                AskedOnTheBand::Control(OnTheEdge::Minimise) => {
-                    self.the_person_asked_to_put_aside(&surface);
-                }
-                AskedOnTheBand::Control(OnTheEdge::Close) => {
-                    let _ = self.request_window_close(&surface);
-                }
-                AskedOnTheBand::Control(OnTheEdge::WindowActions) => {
-                    self.the_menu_was_opened_on(&surface, ByWhat::ThePointer);
+                // **The one road every band's controls take**
+                // (`crate::a_band_is_pressed`).
+                AskedOnTheBand::Control(control) => {
+                    let _ = self.a_bands_control_is_pressed(
+                        &crate::which_band::ABand::App(surface),
+                        control,
+                        crate::a_band_is_pressed::PressedBy::ThePointer,
+                    );
                 }
                 AskedOnTheBand::OpenThePanel => {
                     if self.whose_panel_is_open().as_ref() != Some(&surface) {

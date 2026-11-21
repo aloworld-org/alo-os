@@ -798,7 +798,13 @@ fn a_reader_finds_close_on_each_task_window_and_presses_it() {
     // **A running task's Close is pressed and the task stays open.**
     assert!(reader.act(&closes[1], 0).expect("the bus answered"));
     let pressed = bus.pressed();
-    assert_eq!(pressed, [Pressed::CloseTheTask(working)]);
+    assert_eq!(
+        pressed,
+        [Pressed::on_a_task_window(
+            working,
+            alo_shell::OnTheEdge::Close
+        )]
+    );
     assert_eq!(
         server.a_reader_pressed(pressed[0].clone()),
         WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::Asked)
@@ -808,7 +814,11 @@ fn a_reader_finds_close_on_each_task_window_and_presses_it() {
     // **A finished task's Close closes it**, and the reader is told so.
     assert!(reader.act(&closes[0], 0).expect("the bus answered"));
     let pressed = bus.pressed();
-    assert_eq!(pressed, [Pressed::CloseTheTask(done)], "one press, once");
+    assert_eq!(
+        pressed,
+        [Pressed::on_a_task_window(done, alo_shell::OnTheEdge::Close)],
+        "one press, once"
+    );
     assert_eq!(
         server.a_reader_pressed(pressed[0].clone()),
         WhatAReaderPressCameTo::ATaskWindow(WhatClosingCameTo::Closed)

@@ -262,7 +262,10 @@ fn close_lands_at_every_zoom_and_scale() {
                 middle(close.loc.y, close.size.h),
             );
             assert!(
-                server.the_terminals_edge_is_under((x, y).into()),
+                server.alos_band_is_under(
+                    crate::which_window_is_in_front::AKindOfWindow::TheTerminal,
+                    (x, y).into()
+                ),
                 "at {scale} % and zoom {zoom}, nothing of the edge is under the middle of Close                  ({x}, {y})"
             );
             press_at(&mut server, x, y);

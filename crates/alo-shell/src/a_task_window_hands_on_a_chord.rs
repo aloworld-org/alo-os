@@ -83,15 +83,23 @@ impl Server {
         if names == Some(Action::CloseWindow)
             && let Some(which) = self.the_task_with_the_keyboard
         {
-            return match self.the_person_closes_a_task(which) {
-                crate::closing_a_task_window::WhatClosingCameTo::Closed
-                | crate::closing_a_task_window::WhatClosingCameTo::Asked => {
-                    WhatTheChordCameTo::Carried(Action::CloseWindow)
-                }
-                crate::closing_a_task_window::WhatClosingCameTo::StillRunning
-                | crate::closing_a_task_window::WhatClosingCameTo::NothingToClose => {
-                    WhatTheChordCameTo::Refused
-                }
+            // **What its band's Close does, through the one road**
+            // (`crate::a_band_is_pressed`).
+            let closing = self.a_bands_control_is_pressed(
+                &crate::which_band::ABand::Alos(
+                    crate::the_bands_over_alos_windows::AlosBand::ATask(which),
+                ),
+                crate::window_edge::OnTheEdge::Close,
+                crate::a_band_is_pressed::PressedBy::TheKeys,
+            );
+            return match closing {
+                crate::a_band_is_pressed::WhatThePressDid::Closing(
+                    crate::a_band_is_pressed::ClosingCameTo::ATask(
+                        crate::closing_a_task_window::WhatClosingCameTo::Closed
+                        | crate::closing_a_task_window::WhatClosingCameTo::Asked,
+                    ),
+                ) => WhatTheChordCameTo::Carried(Action::CloseWindow),
+                _ => WhatTheChordCameTo::Refused,
             };
         }
         let came_to = self.carry_out_a_chord(chord);

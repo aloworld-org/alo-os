@@ -238,19 +238,19 @@ impl crate::Server {
             .find(|kind| match kind {
                 AKindOfWindow::TaskWindows => {
                     self.the_task_window_under(on_the_screen).is_some()
-                        || self.a_task_windows_edge_is_under(on_an_edge)
+                        || self.alos_band_is_under(*kind, on_an_edge)
                 }
                 AKindOfWindow::TheTerminal => {
                     self.the_terminal_is_under(on_the_screen)
-                        || self.the_terminals_edge_is_under(on_an_edge)
+                        || self.alos_band_is_under(*kind, on_an_edge)
                 }
                 AKindOfWindow::Settings => {
                     self.settings_is_under(on_the_screen)
-                        || self.the_settings_edge_is_under(on_an_edge)
+                        || self.alos_band_is_under(*kind, on_an_edge)
                 }
                 AKindOfWindow::TheRecord => {
                     self.the_record_is_under(on_the_screen)
-                        || self.the_records_edge_is_under(on_an_edge)
+                        || self.alos_band_is_under(*kind, on_an_edge)
                 }
                 AKindOfWindow::Applications => {
                     self.the_window_under(location).is_some()

@@ -89,9 +89,14 @@ fn it_hangs_under_the_asking_tasks_window_and_no_other() {
         .unwrap();
     let window = tree.nodes()[card].parent;
     let closes = |which| {
-        tree.nodes()
-            .iter()
-            .any(|node| node.parent == window && node.press == Some(Pressed::CloseTheTask(which)))
+        tree.nodes().iter().any(|node| {
+            node.parent == window
+                && node.press
+                    == Some(Pressed::on_a_task_window(
+                        which,
+                        crate::window_edge::OnTheEdge::Close,
+                    ))
+        })
     };
     assert!(
         closes(typing),

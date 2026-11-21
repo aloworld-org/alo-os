@@ -117,16 +117,16 @@ impl Server {
         };
         let did = self.this_band_was_told_a_key(&band, key, &edge, menu.as_ref());
         match did {
-            WhatTheEdgeKeyDid::ItRuns(OnTheEdge::Minimise) => match &band {
-                ABand::App(surface) => self.the_person_asked_to_put_aside(surface),
-                ABand::Alos(which) => self.alos_window_goes_aside(*which),
-            },
-            WhatTheEdgeKeyDid::ItRuns(OnTheEdge::Close) => match &band {
-                ABand::App(surface) => {
-                    let _ = self.request_window_close(surface);
-                }
-                ABand::Alos(which) => self.alos_window_closes(*which),
-            },
+            // **The one road every band's controls take**
+            // (`crate::a_band_is_pressed`). Window actions is the keys' own:
+            // the panel already opened as the key was read.
+            WhatTheEdgeKeyDid::ItRuns(control @ (OnTheEdge::Minimise | OnTheEdge::Close)) => {
+                let _ = self.a_bands_control_is_pressed(
+                    &band,
+                    control,
+                    crate::a_band_is_pressed::PressedBy::TheKeys,
+                );
+            }
             WhatTheEdgeKeyDid::ARowRuns(does) => self.carry_out_the_row_on(&band, does),
             WhatTheEdgeKeyDid::ItRuns(OnTheEdge::WindowActions)
             | WhatTheEdgeKeyDid::TheKeyboardIsOn(_)
