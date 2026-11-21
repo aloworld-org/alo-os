@@ -93,3 +93,34 @@ fn every_kind_of_alo_window_obeys_always_show_window_controls() {
         );
     }
 }
+
+/// **Every kind of alo's window says its title on its band, and its
+/// application's name where that is not the same word** — the owner,
+/// 2026-11-21: *"Show title and app name"* on every window, *"Request · alo"*
+/// for a task window, and *"Once: \"Settings\""* for the windows whose title
+/// is their name.
+#[test]
+fn every_kind_of_alo_window_says_its_title_and_name() {
+    let words = crate::approval_testing::words();
+    for kind in every_kind() {
+        let it = opened(kind, &format!("band-says-{kind:?}"));
+        let says = it.server.what_the_band_says(&ABand::Alos(it.band), &words);
+        let title = says.title.clone().unwrap_or_default();
+        assert!(!title.trim().is_empty(), "{kind:?}'s band says no title");
+        match it.band {
+            crate::the_bands_over_alos_windows::AlosBand::ATask(_) => {
+                assert_eq!(
+                    (title.as_str(), says.application.as_deref()),
+                    ("tidy my invoices", Some("alo")),
+                    "a task window's band is not the request · alo"
+                );
+            }
+            crate::the_bands_over_alos_windows::AlosBand::Its(_) => {
+                assert_eq!(
+                    says.application, None,
+                    "{kind:?}'s name is drawn twice, as title and as application"
+                );
+            }
+        }
+    }
+}
