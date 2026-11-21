@@ -279,3 +279,22 @@ fn a_base_in_the_first_scheme_is_compared_in_that_scheme() {
         ["list a folder"]
     );
 }
+
+/// **A change owns the whole set** when what every turn is told changed or
+/// any verb did — and then it is compared with its base
+/// (`crate::compared_with_its_base`) — and not when only its own requests'
+/// roads did.
+#[test]
+fn which_changes_own_the_whole_set() {
+    let some = [ItsOwn::because("one", WhyItsOwn::ItsRoadChanged)];
+    assert!(!super::owns_the_whole_set(&some));
+    assert!(!super::owns_the_whole_set(&[]));
+    assert!(super::owns_the_whole_set(&[ItsOwn::because(
+        "one",
+        WhyItsOwn::EveryTurnIsShownAVerbOtherwise("a".to_owned())
+    )]));
+    assert!(super::owns_the_whole_set(&[ItsOwn::because(
+        "one",
+        WhyItsOwn::EveryTurnIsToldOtherwise
+    )]));
+}

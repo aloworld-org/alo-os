@@ -161,16 +161,18 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
              names that key, {PRESS_KEY}"
         ));
     }
-    // **A picture is the last resort** (ADR 0147 §1): told only after the
-    // read, for a window whose answer names nothing to act on.
+    // **Told only once the picture is offered**, which is only after a read in
+    // the turn found a window that describes nothing
+    // (`crate::the_screen_road_offered`): told to every turn, this pulled the
+    // model off pressing a named button (2026-11-20), and told to none the
+    // picture request fell to 15 and 14 of 20.
     if verbs.of(PICTURE_WINDOW).is_some() {
         acts.push(format!(
             "when {READ_WINDOW} answered that a window shows no text and names nothing and that \
              a picture of it can be read — a game, a photo, a drawing canvas — you have not seen \
-             that window: your next step is {PICTURE_WINDOW} for its application, with what the person wants \
-             to know as its question, once, even \
-             when the person only asked what it shows, and never an answer about it before the \
-             picture is read; never {PICTURE_WINDOW} for a window {READ_WINDOW} could read"
+             that window: your next step is {PICTURE_WINDOW} for its application, with what the \
+             person wants to know as its question, once, even when the person only asked what it \
+             shows, and never an answer about it before the picture is read"
         ));
     }
     // **A click by position only where a picture said where** (ADR 0147,
@@ -286,17 +288,25 @@ mod tests {
         assert!(told.contains("Never send a run line"), "{told}");
         assert!(!told.contains(TYPE_WITHOUT_SAVING), "{told}");
 
+        // **Told only where the picture is offered**, which the turn decides
+        // (`crate::the_verbs_offered`).
         assert!(!told.contains(PICTURE_WINDOW), "{told}");
         verbs
             .declare(named(PICTURE_WINDOW, Effect::Change))
             .unwrap();
         let told = working_in_an_application(&verbs);
         assert!(told.contains(PICTURE_WINDOW), "{told}");
-        assert!(told.contains("shows no text and names nothing"), "{told}");
+        assert!(
+            !working_in_an_application(&crate::the_verbs_offered(&verbs, false))
+                .contains(PICTURE_WINDOW)
+        );
         assert!(!told.contains(CLICK_AT), "{told}");
         verbs.declare(named(CLICK_AT, Effect::Change)).unwrap();
         let told = working_in_an_application(&verbs);
         assert!(told.contains(CLICK_AT), "{told}");
+        assert!(
+            !working_in_an_application(&crate::the_verbs_offered(&verbs, false)).contains(CLICK_AT)
+        );
 
         verbs
             .declare(named(TYPE_WITHOUT_SAVING, Effect::Change))

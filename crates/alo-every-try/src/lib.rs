@@ -46,6 +46,7 @@ pub mod a_try;
 pub mod answering_the_file_chooser;
 pub mod as_the_machine_names;
 pub mod at_the_provider;
+pub mod compared_with_its_base;
 pub mod counted;
 pub mod every_other_verb;
 pub mod its_own;
@@ -53,11 +54,14 @@ pub mod no_such_control;
 pub mod nothing_is_there;
 pub mod taking_a_step;
 pub mod tallied;
+pub mod the_bar;
 pub mod the_declaration;
 pub mod the_first_fingerprints;
 pub mod the_machine_answers;
 pub mod the_set;
+pub mod through_the_link;
 pub mod went_wrong;
+pub mod what_each_has_reached;
 pub mod words_for_the_answers;
 
 #[cfg(test)]

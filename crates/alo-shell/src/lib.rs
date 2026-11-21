@@ -329,6 +329,7 @@ mod the_application_sheets_words;
 /// A full-screen window's band, out of sight until the top edge is reached.
 mod the_band_over_full_screen;
 mod the_buttons_an_application_draws;
+mod the_card_comes_in_front_of_what_alo_opened;
 /// The file chooser: an application asked the person to choose a file to
 /// open or a place to save one. Public for the one type the door hands it.
 pub mod the_file_chooser;

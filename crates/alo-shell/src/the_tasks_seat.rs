@@ -17,6 +17,13 @@
 //! could press *Tab* then *Enter* — two ordinary keys — and approve a change
 //! they never read.
 //!
+//! **One narrow exception**, the owner, 2026-11-20: *"Yes, allow the narrow
+//! exception."* A card takes back keys alo's own opening of a file took from
+//! its task, only while nothing has moved them since
+//! (`crate::the_card_comes_in_front_of_what_alo_opened` has the four
+//! conditions; `docs/design/the-ask-alo-task-window.md` records them beside
+//! this rule).
+//!
 //! # Intercepted, exactly as the Bar is
 //!
 //! While a task window holds the keyboard every key is intercepted at the seat
@@ -159,7 +166,9 @@ impl Server {
     }
 
     /// This task window takes the keyboard — because the person just asked for
-    /// it. **Never because a question arrived in it.**
+    /// it. **Never because a question arrived in it**, except to take back keys
+    /// alo's own opening of a file took from it, with nothing moved since
+    /// (`crate::the_card_comes_in_front_of_what_alo_opened`).
     ///
     /// **And off the Dock**, if F6 had put it there: the Dock is asked for keys
     /// after a task window, so Enter would reach the task — but the Dock would

@@ -597,6 +597,27 @@ mod tests {
         )
     }
 
+    /// **The rule a picture's reader is asked under is the bound's**, whoever
+    /// set it, and no bound is *anywhere*.
+    #[test]
+    fn the_rule_is_the_bounds() {
+        let under = |bound| {
+            Questions::of_a_session(
+                None,
+                None,
+                Catalogue::built_in().unwrap(),
+                bound,
+                WhoseKeyring::Nobodys,
+            )
+            .the_rule()
+        };
+        assert_eq!(
+            under(TheBound::ThePersons(SourcePolicy::ThisMachineOnly)),
+            SourcePolicy::ThisMachineOnly
+        );
+        assert_eq!(under(TheBound::Nobodys), SourcePolicy::Anywhere);
+    }
+
     /// **A machine nobody has configured answers no questions**, and reaching
     /// that answer opened no file and probed no runtime — there was nothing
     /// named to open.

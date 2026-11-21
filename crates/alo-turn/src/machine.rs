@@ -89,6 +89,7 @@ use crate::the_door_the_compositor_serves::TheDoorTheCompositorServes;
 use crate::the_screen_road_as_chosen::TheScreenRoadAsChosen;
 use crate::the_verbs_would_not_declare::TheVerbsWouldNotDeclare;
 use crate::the_windows_on_the_screen::TheWindowsOnTheScreen;
+use crate::what_a_file_opens_with::SaysWhatAFileOpensWith;
 
 /// The verbs, the words, the resolver, the boundary, the indicator and the
 /// record: one machine's, shared by every turn on it.
@@ -198,6 +199,10 @@ pub struct Machine<'a> {
     /// (`crate::the_screen_road_as_chosen`). **`None` is no application and
     /// no one**: a machine told nothing takes no picture.
     screen_road: Option<&'a dyn TheScreenRoadAsChosen>,
+    /// What says which application a file opens with and which applications
+    /// open folders (`crate::what_a_file_opens_with`). `None` on a machine
+    /// that was not told, which opens a file in the application named.
+    opening: Option<&'a dyn SaysWhatAFileOpensWith>,
 }
 
 /// What a machine needs to carry out the installation verb.
@@ -365,6 +370,7 @@ impl<'a> Machine<'a> {
             adapters: Adapters::default(),
             publishing: None,
             screen_road: None,
+            opening: None,
             bound: Bound::Nobodys,
             bounding,
             indicator,
@@ -428,6 +434,7 @@ impl<'a> Machine<'a> {
             adapters: Adapters::default(),
             publishing: None,
             screen_road: None,
+            opening: None,
             bound,
             bounding,
             indicator,
@@ -519,6 +526,7 @@ impl<'a> Machine<'a> {
             adapters: Adapters::default(),
             publishing: Some(publishing),
             screen_road: None,
+            opening: None,
             bound: Bound::Nobodys,
             bounding,
             indicator,
@@ -587,6 +595,7 @@ impl<'a> Machine<'a> {
             adapters,
             publishing: Some(software.publishing),
             screen_road: None,
+            opening: None,
             bound: software.bound,
             bounding,
             indicator,
@@ -716,6 +725,22 @@ impl<'a> Machine<'a> {
     /// The person's home folder, where this machine was told it.
     pub(crate) fn the_persons_home(&self) -> Option<&std::path::Path> {
         self.the_persons_home.as_deref()
+    }
+
+    /// **This machine, knowing what a file opens with** — so a file opened
+    /// *in* a file manager opens where a double-click there would, in the
+    /// application its kind opens with (the owner, 2026-11-17;
+    /// `crate::as_a_double_click_would`). Without it, a file opens in the
+    /// application named.
+    #[must_use]
+    pub fn knowing_what_files_open_with(mut self, opening: &'a dyn SaysWhatAFileOpensWith) -> Self {
+        self.opening = Some(opening);
+        self
+    }
+
+    /// What says what a file opens with, where this machine was told.
+    pub(crate) fn what_files_open_with(&self) -> Option<&'a dyn SaysWhatAFileOpensWith> {
+        self.opening
     }
 
     /// What a verb's work runs inside.

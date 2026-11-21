@@ -55,8 +55,13 @@ fn ten_tries_is_what_its_own_take() {
 
 /// **The refusal case**: its own request at 8 of 10 fails the change.
 #[test]
-fn its_own_request_at_eight_of_ten_fails() {
-    let verdict = counted(&[tried("mine", 8, 2)], &[own("mine")]);
+fn its_own_request_at_eight_of_ten_is_flagged_and_at_sixteen_of_twenty_fails() {
+    // **Flag, then confirm** (approved 2026-11-20): on the first ten a slip is
+    // a flag, not a verdict — the request is tried ten more.
+    let flagged = counted(&[tried("mine", 8, 2)], &[own("mine")]);
+    assert_eq!(flagged, Counted::ToConfirm);
+    assert_eq!(flagged.exit_code(), 2, "a flag is not a pass");
+    let verdict = counted(&[tried("mine", 16, 4)], &[own("mine")]);
     assert_eq!(verdict, Counted::ItsOwnSlipped);
     assert_eq!(verdict.exit_code(), 1);
 }
@@ -72,7 +77,7 @@ fn its_own_request_at_nine_of_ten_passes() {
 #[test]
 fn one_of_its_own_slipping_fails_though_another_held() {
     let verdict = counted(
-        &[tried("mine", 10, 0), tried("also mine", 7, 3)],
+        &[tried("mine", 10, 0), tried("also mine", 14, 6)],
         &[own("mine"), own("also mine")],
     );
     assert_eq!(verdict, Counted::ItsOwnSlipped);
@@ -148,7 +153,7 @@ fn tries_the_model_was_not_asked_are_neither_a_pass_nor_a_slip() {
             .chain([not_answered()])
             .collect(),
     );
-    assert_eq!(counted(&[seven], &[own("mine")]), Counted::ItsOwnSlipped);
+    assert_eq!(counted(&[seven], &[own("mine")]), Counted::ToConfirm);
 }
 
 /// **A provider that is down is not a slip**: ten tries the model was never
@@ -209,13 +214,13 @@ fn more_than_ten_tries_are_held_to_nine_in_every_ten() {
 #[test]
 fn the_summary_names_what_was_counted_and_what_was_not() {
     let said = summary_counting(
-        &[tried("somebody else's", 0, 3), tried("mine", 8, 2)],
+        &[tried("somebody else's", 0, 3), tried("mine", 16, 4)],
         &[own("mine")],
         "a model",
     );
     assert!(said.contains("mine"), "{said}");
     assert!(
-        said.contains("| mine | its road changed | 8 of 10 |"),
+        said.contains("| mine | its road changed | 16 of 20 |"),
         "its own row reads its own tries, not another request's: {said}"
     );
     assert!(said.contains("somebody else's"), "{said}");
@@ -297,4 +302,67 @@ fn its_own_are_tried_ten_times_and_the_others_fewer() {
         &mut |_, _, _| {},
     );
     assert_eq!(only_its_own.len(), 1, "no tries for the others tries none");
+}
+
+/// **The ratchet** (the owner, 2026-11-20): an own request the record says has
+/// reached every try at a level must take the road on every try there; one
+/// that has not is held to the bar.
+#[test]
+fn its_own_request_that_reached_ten_must_score_ten() {
+    let reached = |named: &str| named == "at ten";
+    assert_eq!(
+        super::counted_with(&[tried("at ten", 9, 1)], &[own("at ten")], &reached),
+        Counted::ToConfirm,
+        "nine of ten is below what it reached: flagged"
+    );
+    assert_eq!(
+        super::counted_with(&[tried("at ten", 19, 1)], &[own("at ten")], &reached),
+        Counted::ItsOwnSlipped,
+        "nineteen of twenty is below what it reached"
+    );
+    assert_eq!(
+        super::counted_with(&[tried("at ten", 10, 0)], &[own("at ten")], &reached),
+        Counted::ItsOwnHeld
+    );
+    assert_eq!(
+        super::counted_with(&[tried("not yet", 9, 1)], &[own("not yet")], &reached),
+        Counted::ItsOwnHeld,
+        "one that has not reached ten is held to the bar"
+    );
+    let nine_and_one_unasked = Tallied::of(
+        ARequest::asking("at ten", "Open Firefox.", Vec::new()),
+        std::iter::repeat_with(|| tried("x", 1, 0).tries()[0].clone())
+            .take(9)
+            .chain([not_answered()])
+            .collect(),
+    );
+    assert_eq!(
+        super::counted_with(&[nine_and_one_unasked], &[own("at ten")], &reached),
+        Counted::NotMeasured,
+        "the one not asked could have made it ten"
+    );
+}
+
+/// **What is flagged is tried again, and the two rounds add up**: a change
+/// whose own request slips on the first ten is tried ten more, and judged on
+/// the twenty.
+#[test]
+fn a_flagged_request_is_tried_again_and_judged_on_both_rounds() {
+    let first = [tried("mine", 8, 2), tried("also mine", 10, 0)];
+    assert_eq!(
+        super::the_flagged_of_its_own(&first, &[own("mine"), own("also mine")], &|_| false),
+        ["mine".to_owned()]
+    );
+    let both = super::with_more(first.to_vec(), vec![tried("mine", 10, 0)]);
+    assert_eq!(both[0].tries().len(), 20);
+    assert_eq!(both[0].on_the_road(), 18);
+    assert_eq!(
+        both[1].tries().len(),
+        10,
+        "what was not flagged is as it was"
+    );
+    assert_eq!(
+        counted(&both, &[own("mine"), own("also mine")]),
+        Counted::ItsOwnHeld
+    );
 }

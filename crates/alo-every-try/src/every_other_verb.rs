@@ -26,8 +26,9 @@ use alo_adapters::fallback_verbs::{
 };
 use alo_adapters::scrolling::Toward;
 use alo_adapters::{Pressable, Role as OnScreen, Seen, Shown, ShownWindow};
+use alo_applications::opening_a_file::PATH;
 use alo_applications::verbs::{APPLICATION, CLOSE_APPLICATION, FOCUS_APPLICATION};
-use alo_applications::{AnsweringTo, Application, Installed};
+use alo_applications::{AnsweringTo, Application, Installed, OPEN_FILE_IN_APPLICATION};
 use alo_files::verbs::{
     ARCHIVE_FOLDER, FILE, FIND_IN_FOLDER, FOLDER, INTO, LIST_FOLDER, MOVE_FILE, NAMED, READ_FILE,
     RENAME_FILE,
@@ -633,13 +634,6 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .map_err(|why| NotTheSet::because(format!("{why:?}")))?,
     );
     let told_of_the_canvas = vec![
-        alo_adapters::nothing_to_read(
-            THE_PICTURE,
-            &viewer,
-            alo_adapters::WorkingFully::NothingMoreToTurnOn,
-            &strings,
-        )
-        .into_text(),
         strings
             .say(
                 &alo_adapters::picture_words::A_PICTURE_CAN_BE_READ.key(),
@@ -828,6 +822,24 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             .expecting(NAME, REPORT),
         ],
     )
+    // **Or by its path, in the file manager**, which the machine now opens as
+    // a double-click there would — in the application the file opens with
+    // (the owner, 2026-11-17; `alo_turn`'s `as_a_double_click_would`). The
+    // path must be the file's real one: a guessed one is refused below.
+    .or_by_another_road(vec![
+        Step::of(
+            READ_WINDOW,
+            Answered::With(Done::of_a_window_read(&the_folders_window, &[])),
+        )
+        .expecting(fallback_verbs::APPLICATION, files.as_str())
+        .a_look(),
+        Step::of(OPEN_FILE_IN_APPLICATION, Answered::AFileOpened)
+            .expecting(APPLICATION, files.as_str())
+            .expecting(
+                PATH,
+                written(&in_their(home, Folder::Downloads).join(REPORT)),
+            ),
+    ])
     .or_looking_at(the_window_read_again(&the_folders_window, &files))
     // **As a person asks it, 2026-11-17**: with Dolphin's window offered beside
     // the request, as *Help with this window* sends it (#1155), and on a

@@ -28,7 +28,15 @@ pub trait TheModel {
     /// # Errors
     /// What went wrong reaching it: a provider that did not answer is not a
     /// model that chose wrongly, and is counted apart.
-    fn answering(&mut self, shown: &str, strings: &Strings) -> Result<ToAnAgent, String>;
+    ///
+    /// `offered` is what the turn offers at that moment, which its answer is
+    /// held to (`alo_instructing::the_verbs_offered`).
+    fn answering(
+        &mut self,
+        shown: &str,
+        strings: &Strings,
+        offered: &Verbs,
+    ) -> Result<ToAnAgent, String>;
 }
 
 /// How a try ended.
@@ -237,6 +245,7 @@ pub fn one_try_at(
         refused_before_asking: 0,
         skipped_looks: 0,
         on_the_other: None,
+        the_screen_road_open: false,
     };
     let mut after = Vec::new();
     let happened = loop {
@@ -386,6 +395,9 @@ struct Recording<'a> {
     /// Which of the request's other roads the try is held to, from where it
     /// parted from the road; [`None`] on the request's own road.
     on_the_other: Option<usize>,
+    /// Whether a read in this try was answered with windows that describe
+    /// nothing, which opens the screen road for the rest of it.
+    the_screen_road_open: bool,
 }
 
 /// Why the loop is stopped once the road is left: the try is over.
@@ -393,12 +405,32 @@ const THE_TRY_IS_OVER: &str = "the try left the road, so nothing more is asked";
 
 impl TheDoor for Recording<'_> {
     fn asking(&mut self, request: &FromAnAgent) -> Result<ToAnAgent, NotAnswered> {
+        let answer = self.answering_one(request);
+        // **A read of windows that describe nothing opens the screen road**,
+        // as the agent reads it off the same answer.
+        if let Ok(ToAnAgent::Did(done)) = &answer
+            && done.a_window_that_describes_nothing()
+        {
+            self.the_screen_road_open = true;
+        }
+        answer
+    }
+}
+
+impl Recording<'_> {
+    /// One request answered, before what it opens is noted.
+    fn answering_one(&mut self, request: &FromAnAgent) -> Result<ToAnAgent, NotAnswered> {
         if let FromAnAgent::Ask { question, .. } = request {
             // **As the daemon shows it**: trimmed, and passed on unwrapped
             // because it already begins with the product's own words
             // (`alo_turn::next_request`'s `Held::shown`).
             self.asked += 1;
-            let answered = self.model.answering(question.trim(), self.strings);
+            // **Held to what the turn offers now**, by the agent's own reading
+            // of the steps so far (`alo_agent::the_screen_road_is_open`).
+            let offered = alo_instructing::the_verbs_offered(self.verbs, self.the_screen_road_open);
+            let answered = self
+                .model
+                .answering(question.trim(), self.strings, &offered);
             if let Ok(ToAnAgent::Answered { text, .. }) = &answered {
                 self.said_last = Some(text.clone());
             }
@@ -407,6 +439,15 @@ impl TheDoor for Recording<'_> {
                 NotAnswered::NotReached { why }
             });
         }
+        // **At full access, a path through `/home` is where its link leads**,
+        // as the machine resolves it (`crate::through_the_link`).
+        let resolved;
+        let request = if self.level == TheLevel::FullAccess {
+            resolved = crate::through_the_link::through_the_link(request, self.verbs);
+            &resolved
+        } else {
+            request
+        };
         self.chose.push(match request {
             FromAnAgent::Run { command } => format!("run: {command}"),
             other => other.verb().unwrap_or_default().to_owned(),
@@ -456,6 +497,10 @@ impl TheDoor for Recording<'_> {
         // **The other road, from where the two part** (`ARequest::or_by_another_road`):
         // a try that asks for the other road's next step where this road's
         // next step is something else is held to the other road from here.
+        // **Undone where the step that parted is refused before anybody is
+        // asked**: a refused call changed nothing, so the try is still where
+        // it was, on the road it was on.
+        let was_on = self.on_the_other;
         self.parting_for(asked);
         let road = self.the_road();
         // **A read aside of the road**, which the request declares and the
@@ -500,6 +545,7 @@ impl TheDoor for Recording<'_> {
                 // on from — counted, so a pass that needed one is seen.
                 if let WentWrong::RefusedBeforeAsking { said, .. } = &wrong {
                     self.refused_before_asking += 1;
+                    self.on_the_other = was_on;
                     return Ok(ToAnAgent::refused(said));
                 }
                 // **As the machine answers a file named where there is none**:
@@ -508,6 +554,7 @@ impl TheDoor for Recording<'_> {
                 // named wrongly — the machine sets no limit, and the turn's own
                 // bound on rounds is what ends a model that never listens.
                 if let Some(refused) = self.where_it_is(&wrong) {
+                    self.on_the_other = was_on;
                     return Ok(refused);
                 }
                 // **As the machine answers a slider the window does not show**:
@@ -535,6 +582,7 @@ impl TheDoor for Recording<'_> {
                     self.strings,
                 ) {
                     self.refused_before_asking += 1;
+                    self.on_the_other = was_on;
                     return Ok(refused);
                 }
                 self.wrong = Some(wrong);

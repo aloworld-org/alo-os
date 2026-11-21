@@ -524,6 +524,7 @@ applications.verb.open-application.purpose	start an application, so it is runnin
 applications.verb.open-application.sentence	open {application}
 applications.verb.open-file-in-application.argument.application	which application opens it
 applications.verb.open-file-in-application.argument.path	the file or folder to open
+applications.verb.open-file-in-application.as-a-file-manager-would	open {path} in {opens_in}, as {file_manager} would
 applications.verb.open-file-in-application.changes	Opens it in alo's own copy of the application, or in your own window if you chose that in Settings.
 applications.verb.open-file-in-application.leaves	The file is not changed, and no other window is moved or closed.
 applications.verb.open-file-in-application.purpose	open a file or folder in an application the person names

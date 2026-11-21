@@ -577,6 +577,8 @@ fn at_ask_each_time_one_approval_takes_exactly_one_picture_of_that_window() {
     });
     let taken = did.picture_taken().unwrap();
     assert_eq!(taken.application(), GAME);
+    // **And what it is to answer, as the call gave it**, for the reader.
+    assert_eq!(taken.question(), Some("Is a race on?"));
     assert_eq!(taken.png(), the_png().as_slice());
     assert_eq!(taken.size(), (WIDE, TALL));
     assert_eq!(
@@ -1044,4 +1046,74 @@ fn a_picture_asked_for_from_a_paired_machine_is_always_refused() {
         "the door was asked for a paired machine"
     );
     assert_eq!(asked.entries, 1, "the refusal was not written down");
+}
+
+/// Whether the picture verb is in what this turn offers now.
+fn offers_the_picture(turning: &Turning<'_, '_>) -> bool {
+    turning
+        .the_verbs_offered_now()
+        .of(alo_adapters::PICTURE_WINDOW)
+        .is_some()
+}
+
+/// Read the game's windows, inside the turn.
+fn reading_the_game(turning: &mut Turning<'_, '_>, grants: &Grants) {
+    turning
+        .reading(
+            alo_adapters::READ_WINDOW,
+            &[(APPLICATION, Given::text(GAME))],
+            grants,
+            noon(),
+        )
+        .unwrap();
+}
+
+/// **The screen road is offered only once a read in this turn has found a
+/// window that describes nothing** (the owner's framing, 2026-11-20: it is for
+/// the applications alo cannot read): not before any read, and not after a
+/// read of a window that describes itself.
+#[test]
+fn the_picture_is_offered_only_after_a_read_finds_a_window_that_describes_nothing() {
+    let ((before, after), _) = on_a_turn(ready(), the_game_is_granted, |turning, grants, _| {
+        let before = offers_the_picture(turning);
+        reading_the_game(turning, grants);
+        (before, offers_the_picture(turning))
+    });
+    assert!(!before, "offered before any read");
+    assert!(after, "not offered after a read that found nothing");
+
+    for shown in [Shown::ANamedButton, Shown::SomeText] {
+        let arranged = Arranged { shown, ..ready() };
+        let (after, _) = on_a_turn(arranged, the_game_is_granted, |turning, grants, _| {
+            reading_the_game(turning, grants);
+            offers_the_picture(turning)
+        });
+        assert!(
+            !after,
+            "offered after a read of a window that describes itself: {shown:?}"
+        );
+    }
+}
+
+/// **A new turn begins without it**, until a read in that turn finds such a
+/// window again.
+#[test]
+fn a_new_turn_does_not_offer_the_picture_until_its_own_read() {
+    let ((first, second_before, second_after), _) =
+        on_a_machine(ready(), the_game_is_granted, |machine, grants, _, there| {
+            let first = {
+                let mut turning =
+                    Turning::beginning(offering(there), AGENT, hour(), grants, machine).unwrap();
+                reading_the_game(&mut turning, grants);
+                offers_the_picture(&turning)
+            };
+            let mut turning =
+                Turning::beginning(offering(there), AGENT, hour(), grants, machine).unwrap();
+            let before = offers_the_picture(&turning);
+            reading_the_game(&mut turning, grants);
+            (first, before, offers_the_picture(&turning))
+        });
+    assert!(first);
+    assert!(!second_before, "a new turn kept the last turn's offer");
+    assert!(second_after);
 }

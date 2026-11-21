@@ -123,7 +123,12 @@ jobs:
             exit 1
           fi
           git show "$base:$file" > "$RUNNER_TEMP/before.txt"
-          if cmp -s "$RUNNER_TEMP/before.txt" "$file"; then
+          # **The ratchet's record** (what each request has reached), the
+          # base's beside the change's. A base from before the record is an
+          # empty one: nothing in it can be lowered.
+          record=crates/alo-every-try/what-each-request-has-reached.txt
+          git show "$base:$record" > "$RUNNER_TEMP/reached-before.txt" 2>/dev/null || : > "$RUNNER_TEMP/reached-before.txt"
+          if cmp -s "$RUNNER_TEMP/before.txt" "$file" && cmp -s "$RUNNER_TEMP/reached-before.txt" "$record"; then
             echo "This change alters nothing the model is offered: $file is the base's ($base), so it owns no request and nothing was tried." | tee -a "$GITHUB_STEP_SUMMARY"
             echo "mode=none" >> "$GITHUB_OUTPUT"
             exit 0
@@ -141,6 +146,7 @@ jobs:
             echo "mode=none" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          echo "base=$base" >> "$GITHUB_OUTPUT"
           echo "mode=own" >> "$GITHUB_OUTPUT"
 
       # The check's own tests first, the refusal cases among them: a check
@@ -165,8 +171,23 @@ jobs:
         if: steps.own.outputs.mode != 'none'
         run: cargo build --release --locked -p alo-every-try
 
+      # **Which way it goes**, from the check itself: `none`, `some` (its own
+      # requests, held to the bar) or `the-whole-set` (what every turn is told
+      # or a verb changed: compared with its base). The ratchet first — a
+      # record lowered against its base fails here, whichever way.
+      - name: Which way the check goes
+        id: way
+        if: steps.own.outputs.mode == 'own'
+        env:
+          ALO_EVERY_TRY_BEFORE: ${{ runner.temp }}/before.txt
+          ALO_EVERY_TRY_REACHED_BEFORE: ${{ runner.temp }}/reached-before.txt
+        run: |
+          way=$(target/release/alo-every-try owns)
+          echo "way=$way" >> "$GITHUB_OUTPUT"
+          echo "This change owns: $way." | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Try the requests against the real model
-        if: steps.own.outputs.mode != 'none'
+        if: steps.own.outputs.mode == 'whole' || steps.way.outputs.way == 'some'
         env:
           ALO_PROVIDER_KEY: ${{ secrets.ALO_WALK_PROVIDER_KEY }}
           ALO_EVERY_TRY_ENDPOINT: https://api.openai.com
@@ -175,19 +196,24 @@ jobs:
           WHOLE_TRIES: ${{ inputs.tries || '5' }}
           ALO_EVERY_TRY_ONLY: ${{ inputs.only || '' }}
         run: |
+          # A change that owns nothing, or only raised the record, needs no
+          # key: the check answers it before asking anybody, and says so.
           if [ -z "$ALO_PROVIDER_KEY" ]; then
-            echo "There is no provider key for this run (ALO_WALK_PROVIDER_KEY is not available here), so nothing was tried." | tee -a "$GITHUB_STEP_SUMMARY"
-            exit 1
+            echo "There is no provider key for this run (ALO_WALK_PROVIDER_KEY is not available here): anything that needs the model cannot be tried." | tee -a "$GITHUB_STEP_SUMMARY"
           fi
           if [ "$MODE" = own ]; then
-            # Its own ten times each; every other request three times,
-            # reported and not counted.
+            # Its own as many times as the bar says (`alo_every_try::the_bar`),
+            # and held to it, or to every try where the record says it once
+            # took every try; every other request three times, reported and
+            # not counted. What was measured is kept for `reached`.
             export ALO_EVERY_TRY_BEFORE="$RUNNER_TEMP/before.txt"
-            export ALO_EVERY_TRY_TRIES=10
+            export ALO_EVERY_TRY_REACHED_BEFORE="$RUNNER_TEMP/reached-before.txt"
+            export ALO_EVERY_TRY_MEASURED="$RUNNER_TEMP/every-try-measured.txt"
             export ALO_EVERY_TRY_OTHER_TRIES=3
             export ALO_EVERY_TRY_ONLY=
           else
             export ALO_EVERY_TRY_TRIES="$WHOLE_TRIES"
+            export ALO_EVERY_TRY_MEASURED="$RUNNER_TEMP/every-try-measured.txt"
           fi
           # **Both levels**: at full access a change is done without asking; at
           # ask each time it is approved once and the turn goes on from what
@@ -201,3 +227,76 @@ jobs:
             if [ "$code" -ne 0 ]; then failed=$code; fi
           done
           exit "$failed"
+
+      # **Compare with main** (the owner, 2026-11-20): a change that owns the
+      # whole set is tried, whole, beside its base, the bar's number of times
+      # at both levels, all four runs at once. A fault on those tries is a
+      # flag; each flagged request is tried the confirming number of times
+      # more on both sides, and the verdict is on the totals
+      # (`alo_every_try::compared_with_its_base`). The summary shows both
+      # rounds.
+      - name: Compare with its base
+        if: steps.way.outputs.way == 'the-whole-set'
+        env:
+          ALO_PROVIDER_KEY: ${{ secrets.ALO_WALK_PROVIDER_KEY }}
+          ALO_EVERY_TRY_ENDPOINT: https://api.openai.com
+          ALO_EVERY_TRY_MODEL: gpt-4o-mini
+          BASE: ${{ steps.own.outputs.base }}
+        run: |
+          set -u
+          t="$RUNNER_TEMP"
+          cp target/release/alo-every-try "$t/change-check"
+          git worktree add --detach "$t/base" "$BASE"
+          cargo build --release --locked -p alo-every-try --manifest-path "$t/base/Cargo.toml" --target-dir target
+          cp target/release/alo-every-try "$t/base-check"
+          read -r tries confirming < <("$t/change-check" the-bar)
+          # One side at one level: what it measured goes to its own file.
+          trying() {
+            side=$1; level=$2; count=$3; only=$4; round=$5
+            ALO_EVERY_TRY_LEVEL="$level" ALO_EVERY_TRY_TRIES="$count" ALO_EVERY_TRY_ONLY="$only" \
+              ALO_EVERY_TRY_MEASURED="$t/$side-$round-$level.txt" \
+              "$t/$side-check" > "$t/$side-$round-$level.log" 2>&1 || true
+          }
+          for level in full-access ask-each-time; do
+            trying change "$level" "$tries" "" first &
+            trying base "$level" "$tries" "" first &
+          done
+          wait
+          cat "$t"/change-first-*.txt > "$t/change.txt" 2>/dev/null || : > "$t/change.txt"
+          cat "$t"/base-first-*.txt > "$t/base.txt" 2>/dev/null || : > "$t/base.txt"
+          echo "### On the first $tries tries" >> "$GITHUB_STEP_SUMMARY"
+          code=0
+          ALO_EVERY_TRY_FLAGGED="$t/flagged.txt" ALO_EVERY_TRY_SUMMARY="$GITHUB_STEP_SUMMARY" \
+            "$t/change-check" compare "$t/change.txt" "$t/base.txt" || code=$?
+          if [ "$code" -eq 2 ] && [ -s "$t/flagged.txt" ]; then
+            # Each flagged request again, on both sides at once.
+            for side in change base; do
+              (
+                n=0
+                while IFS=$'\t' read -r level named; do
+                  n=$((n + 1))
+                  trying "$side" "$level" "$confirming" "$named" "confirm$n"
+                done < "$t/flagged.txt"
+              ) &
+            done
+            wait
+            cat "$t/change.txt" "$t"/change-confirm*.txt > "$t/change-all.txt" 2>/dev/null
+            cat "$t/base.txt" "$t"/base-confirm*.txt > "$t/base-all.txt" 2>/dev/null
+            cp "$t/change-all.txt" "$t/change.txt"
+            echo "### On $((tries + confirming)) tries, for what was flagged" >> "$GITHUB_STEP_SUMMARY"
+            code=0
+            ALO_EVERY_TRY_SUMMARY="$GITHUB_STEP_SUMMARY" \
+              "$t/change-check" compare "$t/change-all.txt" "$t/base-all.txt" || code=$?
+          fi
+          cp "$t/change.txt" "$t/every-try-measured.txt"
+          exit "$code"
+
+      # **What was measured, for raising the record**: download it and run
+      # `cargo run -p alo-every-try -- reached every-try-measured.txt`.
+      - name: Keep what was measured
+        if: always() && steps.own.outputs.mode != 'none'
+        uses: actions/upload-artifact@v4
+        with:
+          name: every-try-measured
+          path: ${{ runner.temp }}/every-try-measured.txt
+          if-no-files-found: ignore

@@ -154,6 +154,7 @@ use crate::surface::AtThePersonsDoor;
 use crate::terms::Terms;
 use crate::the_persons_windows::ThePersonsWindows;
 use crate::the_road_out::TheRoadOut;
+use crate::what_files_open_with_here::WhatFilesOpenWithHere;
 use crate::what_is_installed_here::WhatIsInstalledHere;
 use crate::wire::Wire;
 use crate::words::declare_into;
@@ -299,6 +300,18 @@ pub fn until_stopped(
         std::env::var_os(alo_choosing::CONFIG_HOME),
         std::env::var_os(alo_choosing::HOME),
     );
+    // **What a file opens with, and which applications open folders**, from the
+    // same entries and the person's own choices — so a file opened *in* a file
+    // manager opens where a double-click there would (the owner, 2026-11-17).
+    let what_files_open_with = WhatFilesOpenWithHere::in_these(
+        where_entries_are_here(),
+        alo_choosing::where_the_folder_is(
+            std::env::var_os(alo_choosing::CONFIG_HOME).as_deref(),
+            std::env::var_os(alo_choosing::HOME).as_deref(),
+        )
+        .map(|folder| folder.join(alo_applications::keeping::THE_FILE)),
+        strings,
+    );
     let mut machine = what_this_machine_can_carry_out(
         strings,
         &installing_with,
@@ -312,7 +325,8 @@ pub fn until_stopped(
         bounding,
         &mut indicator,
         kept,
-    )?;
+    )?
+    .knowing_what_files_open_with(&what_files_open_with);
     // What this machine holds about the other machines: what `src/main.rs`
     // read back off the disk, handed in as a value for the grants' reason,
     // and one lock over it — with the one way to write the list whole beside

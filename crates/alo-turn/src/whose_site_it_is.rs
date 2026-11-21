@@ -61,6 +61,9 @@ impl Turning<'_, '_> {
         // An application named by the name it shows is put in by its
         // identifier first (`crate::naming_an_application`).
         let offered = self.calling_by_name(verb, given, grants, now)?;
+        // And a file opened *in* a file manager, as a double-click there would
+        // open it (`crate::as_a_double_click_would`), at both levels.
+        let offered = self.as_a_double_click_would(offered, grants, now)?;
         if offered.verb() != alo_publishing::PUBLISH_TO_GITHUB_PAGES {
             return Ok(offered);
         }
