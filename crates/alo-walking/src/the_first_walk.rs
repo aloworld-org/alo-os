@@ -158,9 +158,23 @@ pub fn the_first_walk() -> Walk {
     // would notice about it, on the desktop and over applications alo did not
     // make (`crate::the_pointer_walk`).
     let walk = crate::the_pointer_walk::then_the_pointer(walk);
-    let walk = then_a_provider_that_needs_no_key(walk);
-    then_the_provider(walk)
+    // **Every window's band and controls, first among the sections** — a
+    // section for each kind, so one band failing does not hide the others,
+    // and before the long ones, so none can leave them not reached (the
+    // coordinator, 2026-11-21). They need no provider.
+    let walk = crate::every_windows_band::every_windows_band(walk);
+    // **The providers, a section of their own**, which every section alo is
+    // asked in needs: a section runs to the next, so without one of their own
+    // they would be inside the bands' and stopped by a band that failed.
+    let walk = walk.section(THE_PROVIDERS, &[], |walk| {
+        then_the_provider(then_a_provider_that_needs_no_key(walk))
+    });
+    then_alo_is_asked(walk)
 }
+
+/// The section that adds the providers, which every section alo is asked in
+/// needs.
+const THE_PROVIDERS: &str = "the providers";
 
 /// Then close Settings and open the terminal with the pointer nowhere near
 /// it, and check its band draws **no controls at rest**
@@ -267,8 +281,7 @@ fn then_a_provider_that_needs_no_key(walk: Walk) -> Walk {
 fn then_the_provider(walk: Walk) -> Walk {
     let look = Settling::UNDER_KVM;
     let (tab, down) = (Chord::key("tab"), Chord::key("down"));
-    let walk = walk
-        .only_with(THE_PROVIDER_KEY)
+    walk.only_with(THE_PROVIDER_KEY)
         .press(Chord::key("esc"))
         .press(Chord::with("meta_l", "i"))
         .look("settings-again", look)
@@ -292,28 +305,32 @@ fn then_the_provider(walk: Walk) -> Walk {
         .type_text("gpt-4o-mini")
         .look("the-provider-form-filled", look)
         .press(Chord::key("ret"))
-        .look("the-provider-saved", look);
+        .look("the-provider-saved", look)
+}
+
+/// Then the four sections alo is asked in, **each needing the providers**.
+fn then_alo_is_asked(walk: Walk) -> Walk {
     // **Four independent sections**, each starting from its own Escape and
     // setting its own level and grants, so a failure in one does not hide the
     // others: the walk still fails, and the report gives each its result.
-    // Only the last needs one before it, and names it in `needs`.
+    // Each needs the providers, and the last needs one before it too.
     //
     // With a provider, alo can be asked: Demo 2's second road, at full access.
     let walk = walk.section(
         "VSCodium at full access",
-        &[],
+        &[THE_PROVIDERS],
         crate::writing_in_vscodium::at_full_access,
     );
     // And then every other application a fresh machine ships, where asked for.
     let walk = walk.section(
         "every application at full access",
-        &[],
+        &[THE_PROVIDERS],
         crate::in_every_shipped_application::at_full_access,
     );
     // And then at *ask each time*, approving each change on its card.
     let walk = walk.section(
         "VSCodium at ask each time",
-        &[],
+        &[THE_PROVIDERS],
         crate::writing_in_vscodium_at_each_ask::at_each_ask,
     );
     // And then alo asks for an application nobody gave it, on the sheet,
@@ -324,7 +341,7 @@ fn then_the_provider(walk: Walk) -> Walk {
     // promise, and is not being built here.
     walk.section(
         "the Papers sheet at ask each time",
-        &["VSCodium at ask each time"],
+        &[THE_PROVIDERS, "VSCodium at ask each time"],
         crate::asking_for_an_application_at_each_ask::for_this_task,
     )
 }
