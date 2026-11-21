@@ -52,6 +52,12 @@ const AN_IDENTIFIER: &str = "{application} is the identifier this machine knows 
                              name a person would say — the name is shown beside it, not inside \
                              this sentence.";
 
+/// The same, for a sentence that names an application as a person calls it.
+const AN_APPLICATIONS_NAME: &str = "{application} is the application's name as its own entry \
+                                    gives it, in the reader's language where the entry has one, \
+                                    or its identifier, like org.blender.Blender, where nothing \
+                                    names it. It is never translated here.";
+
 // ---------------------------------------------------------------------------
 // What this crate says when it cannot reach an application.
 // ---------------------------------------------------------------------------
@@ -90,7 +96,7 @@ pub const NO_WINDOW: Word = Word::saying(
     "applications.no-window",
     "{application} has no window open here — open it first, or name one that is open",
 )
-.noting(AN_IDENTIFIER);
+.noting(AN_APPLICATIONS_NAME);
 
 /// The application was asked and has not done it.
 ///
@@ -101,7 +107,7 @@ pub const IT_DID_NOT: Word = Word::saying(
     "applications.it-did-not",
     "{application} was asked and has not done it — it may be waiting for an answer from you",
 )
-.noting(AN_IDENTIFIER);
+.noting(AN_APPLICATIONS_NAME);
 
 /// This machine could not ask the application at all.
 ///
@@ -112,7 +118,7 @@ pub const COULD_NOT_ASK: Word = Word::saying(
     "applications.could-not-ask",
     "this machine could not reach {application} — nothing was changed",
 )
-.noting(AN_IDENTIFIER);
+.noting(AN_APPLICATIONS_NAME);
 
 /// The record of an approved `open`: this application starts over the bus.
 ///
@@ -123,7 +129,8 @@ pub const STARTS_OVER_THE_BUS: Word = Word::saying(
     "{application} starts by being asked over the session bus, as its entry says",
 )
 .noting(
-    "{application} is an application's identifier and is never translated. Written in the \
+    "{application} is the application's name, or its identifier where nothing names it, and \
+     is never translated. Written in the \
      record beside an approved open: how this application is started when it is not already \
      running. \"The session bus\" is the desktop's own message system.",
 );
@@ -135,7 +142,8 @@ pub const STARTS_FROM_ITS_COMMAND: Word = Word::saying(
     "{application} starts from the command its own entry names, never from one alo wrote",
 )
 .noting(
-    "{application} is an application's identifier and is never translated. Written in the \
+    "{application} is the application's name, or its identifier where nothing names it, and \
+     is never translated. Written in the \
      record beside an approved open: the program that runs is the one the installed \
      application's own desktop entry names. \"alo\" is the agent's name and is never translated.",
 );
@@ -145,7 +153,7 @@ pub const NOTHING_STARTS_IT: Word = Word::saying(
     "applications.nothing-starts-it",
     "{application}'s entry gives this machine no way to start it — nothing was changed",
 )
-.noting(AN_IDENTIFIER);
+.noting(AN_APPLICATIONS_NAME);
 
 // ---------------------------------------------------------------------------
 // What could not join the list of what is installed — [`crate::NotAnApplication`].
@@ -728,7 +736,8 @@ pub const CHOSEN_ON_THE_FILE_CHOOSER: Word = Word::saying(
 )
 .noting(
     "Written in the record after alo answered the file chooser. {path} is the file and \
-     {application} the identifier of the app that asked; neither is translated.",
+     {application} the name of the app that asked, or its identifier where nothing names it; \
+     neither is translated.",
 );
 /// No file chooser was up.
 pub const NO_FILE_CHOOSER_UP: Word = Word::saying(
@@ -762,8 +771,8 @@ pub const OPENED_IN_ALOS_COPY: Word = Word::saying(
 )
 .noting(
     "Written in the record after alo opened a file. {path} is the file and {application} the \
-     application's identifier; neither is translated. \"alo\" is the agent's name and is never \
-     translated.",
+     application's name, or its identifier where nothing names it; neither is translated. \
+     \"alo\" is the agent's name and is never translated.",
 );
 /// The record of a file opened in the person's own window.
 pub const OPENED_IN_THEIR_WINDOW: Word = Word::saying(
@@ -772,8 +781,8 @@ pub const OPENED_IN_THEIR_WINDOW: Word = Word::saying(
 )
 .noting(
     "Written in the record after alo opened a file where the person had chosen to let alo work \
-     in their own window. {path} is the file and {application} the application's identifier; \
-     neither is translated.",
+     in their own window. {path} is the file and {application} the application's name, or its \
+     identifier where nothing names it; neither is translated.",
 );
 /// The record of where typing into a file alo opened goes, read from its
 /// window once it was in front, and told to alo's model.
@@ -791,14 +800,15 @@ pub const TAKES_NO_FILE: Word = Word::saying(
     "applications.takes-no-file",
     "{application}'s entry gives this machine no way to hand it a file — nothing was opened",
 )
-.noting(AN_IDENTIFIER);
+.noting(AN_APPLICATIONS_NAME);
 /// An application that could not be started with the file.
 pub const COULD_NOT_START_WITH_IT: Word = Word::saying(
     "applications.could-not-start-with-it",
     "{application} could not be started with {path} — nothing was opened",
 )
 .noting(
-    "{application} is an application's identifier and {path} a file on this machine; neither is \
+    "{application} is the application's name, or its identifier where nothing names it, and \
+     {path} a file on this machine; neither is \
      translated.",
 );
 /// A file this machine cannot name to an application at all.

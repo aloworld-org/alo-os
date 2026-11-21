@@ -217,3 +217,41 @@ fn the_catalogue_is_shown_under_the_kind_chosen() {
         catalogue.how_many()
     );
 }
+
+/// **The line done without asking names the application as a booted machine
+/// does**: *"… open /var/home/alo/hello.txt in VSCodium."* — what the model is
+/// shown there since every change is said with the names the machine read
+/// (`alo_turn`'s `applications_named_as_a_person_calls_them`). The identifier
+/// still travels in what was done.
+#[test]
+fn the_line_done_without_asking_names_the_application_as_the_machine_does() {
+    let words = the_words();
+    let named = crate::testing::the_machine().naming_its_applications(
+        call(
+            OPEN_FILE_IN_APPLICATION,
+            &[
+                (APPLICATION, EDITOR),
+                (
+                    alo_applications::opening_a_file::PATH,
+                    "/var/home/alo/hello.txt",
+                ),
+            ],
+        ),
+        &words,
+    );
+    let answer = answering(&Answered::AFileOpened, &named, &words);
+    let ToAnAgent::DoneWithoutAsking { did, said } = &answer else {
+        panic!("{answer:?}");
+    };
+    assert!(
+        said.text()
+            .contains("open /var/home/alo/hello.txt in VSCodium"),
+        "{}",
+        said.text()
+    );
+    assert!(!said.text().contains(EDITOR), "{}", said.text());
+    assert_eq!(
+        did,
+        &Done::of_an_application_act(alo_acting::OPEN_FILE, EDITOR)
+    );
+}

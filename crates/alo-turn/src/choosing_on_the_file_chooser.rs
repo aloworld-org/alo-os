@@ -146,7 +146,7 @@ pub(crate) fn choosing_on_the_file_chooser(
             let told = strings.say(
                 &words::CHOSEN_ON_THE_FILE_CHOOSER.key(),
                 &Filling::of("path", file.display().to_string())
-                    .and("application", identifier.clone()),
+                    .and("application", machine.what_a_person_calls(&identifier)),
             );
             let entry = Entry::ran(&authorised, strings).telling(&[told]);
             return (

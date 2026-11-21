@@ -13,6 +13,14 @@
 //! what runs, what the grants are asked about and what the record keeps as
 //! having run are still the identifier. A machine that was not told what
 //! applications are called says the identifier, as before.
+//!
+//! **And every sentence the executors write about an application** — what the
+//! record says was done, and every refusal — names it by the same
+//! `Machine::what_a_person_calls`: opening a file
+//! (`crate::opening_a_file_in_an_application`), opening, focusing and closing
+//! an application (`crate::acting_on_an_application`), and the file chooser
+//! (`crate::choosing_on_the_file_chooser`). The owner's rule of 2026-11-21:
+//! a rule applies everywhere it is true, not where it was fixed.
 
 use alo_capability::Call;
 
@@ -22,10 +30,8 @@ impl Turning<'_, '_> {
     /// `call`, with each application it names said by what a person calls it,
     /// where this machine can say.
     pub(crate) fn naming_its_applications(&mut self, call: Call) -> Call {
-        match self.machine().what_files_open_with() {
-            Some(names) => call.naming_applications(&|identifier| names.called(identifier)),
-            None => call,
-        }
+        let machine = self.machine();
+        call.naming_applications(&|identifier| Some(machine.what_a_person_calls(identifier)))
     }
 }
 
