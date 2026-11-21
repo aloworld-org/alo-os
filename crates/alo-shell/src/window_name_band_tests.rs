@@ -12,16 +12,16 @@ fn frame(w: i32, h: i32) -> Rectangle<i32, Logical> {
     Rectangle::new((0, 0).into(), Size::from((w, h)))
 }
 
-/// **The band is 48 tall and as wide as the frame.**
+/// **The band is the drawn band's height and as wide as the frame.**
 ///
 /// Width matters as much as height: *the name is also what it is dragged by*,
 /// so a band narrower than the frame would leave part of the top edge looking
 /// like a handle and not being one.
 #[test]
-fn the_band_is_the_width_of_the_frame_and_forty_eight_tall() {
+fn the_band_is_the_width_of_the_frame_and_the_drawn_bands_height() {
     let band = band_of(frame(936, 572)).expect("an ordinary frame has a band");
     assert_eq!(band.size.w, 936);
-    assert_eq!(band.size.h, 48);
+    assert_eq!(band.size.h, crate::window_edge::THE_REGION_IS_TALL);
     assert_eq!(
         band.loc,
         frame(936, 572).loc,
