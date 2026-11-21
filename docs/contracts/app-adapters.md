@@ -539,3 +539,24 @@ at full access is. What anyone building on it can rely on:
 **Measured: nothing yet.** Which toolkits' items offer `activate` from outside
 is unmeasured; the tests stand in a tree built from the published roles
 (`crates/alo-adapters/tests/opening_an_item.rs`).
+
+## Amended 2026-11-21 — an adapter will also arrive as a signed file inside its application
+
+*The owner's answer of 2026-11-21, asked how an application declares what it
+can do: "A signed file inside the app"
+([ADR 0160](../decisions/0160-the-ecosystem-is-the-main-focus-and-an-application-declares-what-alo-may-do.md)).
+Additive: nothing above changes meaning, and an adapter compiled into alo OS
+still loads.*
+
+An application's maker, writing in any language, will ship this contract's
+fields as **a file inside the application's own package**, signed with a key
+the maker registered with alo. alo loads it through the same `load`, and
+everything under *What is refused when an adapter is loaded* refuses it as it
+refuses a constant. *Distribution and trust* above is the rule it is held to: a
+file not signed by its maker's registered key does not load, and an unsigned
+one is permitted only explicitly, for development, never by default.
+
+**Not built, and not yet specified.** The file's format, where it lives in a
+package, and how its words reach a person in their own language are not
+decided. They are written into this contract **before** the loader is, because
+the first version a third party builds against is a public surface.
