@@ -161,7 +161,16 @@ concurrency:
 
 jobs:
   gate:
-    runs-on: ubuntu-24.04
+    # **On the organisation's 16-core runner since 2026-11-20, by the owner's
+    # decision** to rent GitHub's bigger machines rather than a server of our
+    # own. `alo-16-core` is a GitHub-hosted larger runner (Ubuntu 24.04, 16
+    # cores, 64 GB) in the Default group, which only alo-os may use; the
+    # organisation's Actions budget stops it at its monthly limit. A
+    # GitHub-hosted runner is wiped after every job, so a pull request from a
+    # fork cannot leave anything behind on it. The figures below were measured
+    # on `ubuntu-24.04`, the standard 4-core runner, and are kept as the
+    # baseline the new runner is measured against.
+    runs-on: alo-16-core
     # A cold build of this workspace is tens of minutes; a warm one is minutes.
     # This is above the cold figure and under the queue's own eighty-minute
     # timeout (ruleset 24109151), so a genuinely stuck run is killed before the

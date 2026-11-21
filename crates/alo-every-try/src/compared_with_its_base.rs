@@ -91,18 +91,6 @@ pub struct Row {
 }
 
 impl Row {
-    /// The level's name.
-    #[must_use]
-    pub fn level(&self) -> &str {
-        &self.level
-    }
-
-    /// The request.
-    #[must_use]
-    pub fn named(&self) -> &str {
-        &self.named
-    }
-
     /// How it was judged.
     #[must_use]
     pub const fn judged(&self) -> &Judged {
