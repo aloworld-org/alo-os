@@ -20,6 +20,8 @@ use crate::closing_a_task_window::WhatClosingCameTo;
 /// What a reader's press came to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WhatAReaderPressCameTo {
+    /// Nothing: that band is not drawn now, or has no such control.
+    NothingOnABand,
     /// A task window's Close was pressed, and this is what closing it came to.
     ATaskWindow(WhatClosingCameTo),
     /// A task window's Minimise was pressed: it goes into the right-hand
@@ -54,6 +56,7 @@ impl Server {
     /// A screen reader pressed `pressed` on the tree this machine published.
     pub fn a_reader_pressed(&mut self, pressed: Pressed) -> WhatAReaderPressCameTo {
         match pressed {
+            Pressed::OnABand { .. } => WhatAReaderPressCameTo::NothingOnABand,
             Pressed::CloseTheTask(which) => {
                 WhatAReaderPressCameTo::ATaskWindow(self.the_person_closes_a_task(which))
             }

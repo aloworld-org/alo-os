@@ -53,6 +53,16 @@ const CLICK: &str = "click";
 /// application is named by a string.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Pressed {
+    /// **This control on the band over this window**, for every kind of
+    /// window: an application's, the terminal, Settings, the record or a task
+    /// window. Carried out by the one road a pointer's press takes
+    /// (`crate::a_band_is_pressed`).
+    OnABand {
+        /// Whose band.
+        band: crate::which_band::ABand,
+        /// Which of its controls.
+        control: crate::window_edge::OnTheEdge,
+    },
     /// Close on this task window's edge.
     CloseTheTask(WhichTask),
     /// Minimise on this task window's edge: into the right-hand panel, still

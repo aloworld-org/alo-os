@@ -49,7 +49,7 @@ use crate::window_edge::{Decorations, WindowEdge, edge_of};
 
 /// Which of alo's windows a band hangs over.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum AlosBand {
+pub enum AlosBand {
     /// The terminal, Settings or the record.
     Its(AlosOwnWindow),
     /// One task window: the alo chat window a request opens.
