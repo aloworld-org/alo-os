@@ -40,6 +40,12 @@ impl WhichTask {
         self.0
     }
 
+    /// A task by its place, for a test that needs one without a list.
+    #[cfg(test)]
+    pub(crate) const fn numbered_for_a_test(at: usize) -> Self {
+        Self(at)
+    }
+
     /// The task at this place.
     ///
     /// **Only a test makes one of these**, which is why it is `cfg(test)`:
