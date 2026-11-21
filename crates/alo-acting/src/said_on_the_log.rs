@@ -121,6 +121,10 @@ pub fn alos_work_is_over_in_a_window_of(application: &str) -> String {
 /// with, said by the turn that carried it out.
 pub const ALO_IN_AN_APPLICATION: &str = "alo in an application:";
 
+/// The words a sentence about a call the turn refused begins with: the verb
+/// follows, then why, in kind — never a path or a sentence.
+pub const A_CALL_WAS_REFUSED: &str = "a call was refused:";
+
 /// What became of one act of alo's in an application, as the turn that
 /// carried it out says it: done, or not done.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
