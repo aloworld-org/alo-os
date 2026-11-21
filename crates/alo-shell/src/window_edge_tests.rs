@@ -202,11 +202,8 @@ fn alos_windows_carry_what_their_panels_can_reach() {
         does(Decorations::AlosOwnWindow),
         vec![OnTheEdge::Minimise, OnTheEdge::Close]
     );
-    assert_eq!(
-        edge_of(specimen(), Decorations::ATaskWindow, true, roomy()).title,
-        None
-    );
     for carries_its_title in [
+        Decorations::ATaskWindow,
         Decorations::AlosOwnWindow,
         Decorations::AlosOwnWindowThatIsPlaced,
     ] {
