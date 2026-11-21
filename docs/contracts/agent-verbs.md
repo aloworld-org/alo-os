@@ -866,6 +866,8 @@ person's**: no verb holds a button.
 - **A change.** At *ask each time* each click waits for one approval and one
   approval clicks once; at full access it clicks at once, and is recorded the
   same way.
+- **Offered only once a read in that turn found a window that describes nothing**,
+  as the picture is (`alo_instructing::the_verbs_offered`).
 - **The picture's rules, all of them**: *Pictures and keys* on for that
   application and somebody chosen to read pictures, read at the moment; never a
   window that describes itself (a control there is pressed by its name), never a

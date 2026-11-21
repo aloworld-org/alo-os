@@ -754,6 +754,8 @@ fn the_click_request_is_asked_of_the_game() {
             step.expected()
         );
     }
+}
+
 /// **A path through `/home` is the same place at full access**: on this image
 /// `/home` is a link to `/var/home` (`image/usr/lib/tmpfiles.d/alo.conf`, the
 /// walk of 2026-10-26 in `alo_capability::Grant::really`), every path verb

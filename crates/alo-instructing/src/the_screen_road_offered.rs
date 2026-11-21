@@ -12,7 +12,10 @@ use alo_capability::Verbs;
 
 /// The verbs of the screen road, offered only after a read found a window
 /// that describes nothing.
-pub const THE_SCREEN_ROAD: [&str; 1] = [crate::working_in_an_application::PICTURE_WINDOW];
+pub const THE_SCREEN_ROAD: [&str; 2] = [
+    crate::working_in_an_application::PICTURE_WINDOW,
+    crate::working_in_an_application::CLICK_AT,
+];
 
 /// What a turn offers of `verbs`: all of them once `a_window_described_nothing`,
 /// and otherwise all but the screen road's.
