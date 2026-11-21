@@ -225,6 +225,7 @@ mod the_sentence_is_about_something;
 pub mod the_shape_a_provider_is_held_to;
 #[cfg(test)]
 mod the_shape_a_provider_is_held_to_tests;
+mod the_typing_that_saves_is_for_a_document;
 pub mod the_verbs_would_not_declare;
 mod the_windows_on_the_screen;
 pub mod turning;

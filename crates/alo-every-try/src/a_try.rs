@@ -550,6 +550,22 @@ impl TheDoor for Recording<'_> {
                     self.strings,
                 ) {
                     self.refused_before_asking += 1;
+                    self.on_the_other = was_on;
+                    return Ok(refused);
+                }
+                // **As the machine answers typing that saves into a one-line
+                // field**: refused before the card, at both levels, and counted
+                // as such (`crate::typing_that_saves_a_field`).
+                if let Some(refused) = crate::typing_that_saves_a_field::typing_that_saves_a_field(
+                    step,
+                    &wrong,
+                    request,
+                    self.verbs,
+                    &self.machine,
+                    self.strings,
+                ) {
+                    self.refused_before_asking += 1;
+                    self.on_the_other = was_on;
                     return Ok(refused);
                 }
                 // **As the machine answers a path where nothing is**, where the

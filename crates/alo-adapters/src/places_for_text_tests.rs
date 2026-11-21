@@ -42,6 +42,70 @@ fn the_title_names_an_unnamed_place() {
     ));
 }
 
+/// The tree's two words of states, holding these.
+fn holding(states: &[u32]) -> Vec<u32> {
+    let mut words = vec![0_u32, 0];
+    for state in states {
+        if let Some(word) = words.get_mut(usize::try_from(state / 32).unwrap_or(0)) {
+            *word |= 1 << (state % 32);
+        }
+    }
+    words
+}
+
+/// `ATSPI_ROLE_SPIN_BUTTON`, `_TEXT`, `_ENTRY`, `_DOCUMENT_FRAME`,
+/// `_DOCUMENT_TEXT`, `_PASSWORD_TEXT`.
+const SPIN_BUTTON: u32 = 52;
+const TEXT: u32 = 61;
+const ENTRY: u32 = 79;
+const DOCUMENT_FRAME: u32 = 82;
+const DOCUMENT_TEXT: u32 = 94;
+const PASSWORD_TEXT: u32 = 40;
+
+/// **A search box, a number box and a `TEXT` that says it is one line are
+/// one-line fields** (the owner, 2026-11-20): typing that saves is not aimed
+/// at them.
+#[test]
+fn an_entry_and_a_single_line_text_are_one_line() {
+    let editable = [super::EDITABLE, super::SHOWING];
+    assert!(super::is_one_line(ENTRY, &holding(&editable)));
+    assert!(super::is_one_line(
+        ENTRY,
+        &holding(&[super::EDITABLE, super::SHOWING, super::SINGLE_LINE])
+    ));
+    assert!(super::is_one_line(SPIN_BUTTON, &holding(&editable)));
+    assert!(super::is_one_line(
+        TEXT,
+        &holding(&[super::EDITABLE, super::SINGLE_LINE])
+    ));
+}
+
+/// **A multi-line text and a document are not** — VSCodium's editor is an
+/// `ENTRY` that says `MULTI_LINE` (measured 2026-11-13), and GNOME Text
+/// Editor's document a `TEXT` — and a `TEXT` that says neither is not said to
+/// be one line. A password field is its own refusal, not this one.
+#[test]
+fn a_multi_line_text_and_a_document_are_not_one_line() {
+    let multi = holding(&[super::EDITABLE, super::MULTI_LINE]);
+    assert!(!super::is_one_line(TEXT, &multi));
+    assert!(!super::is_one_line(ENTRY, &multi));
+    assert!(!super::is_one_line(
+        ENTRY,
+        &holding(&[super::SINGLE_LINE, super::MULTI_LINE])
+    ));
+    assert!(!super::is_one_line(TEXT, &holding(&[super::EDITABLE])));
+    for document in [DOCUMENT_FRAME, DOCUMENT_TEXT] {
+        assert!(!super::is_one_line(
+            document,
+            &holding(&[super::EDITABLE, super::SINGLE_LINE])
+        ));
+    }
+    assert!(!super::is_one_line(
+        PASSWORD_TEXT,
+        &holding(&[super::SINGLE_LINE])
+    ));
+}
+
 /// A window holding one field and, beside it, a list of `rows` empty rows the
 /// search meets first.
 struct ALongList {
