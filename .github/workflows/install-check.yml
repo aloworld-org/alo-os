@@ -1,0 +1,160 @@
+# Install alo OS in virtual machines under KVM, by the boot environment a
+# person's computer restarts into, and say which road was proved.
+#
+# The launch list's first item is *it installs from a release page onto a PC,
+# without erasing what was there*. Until this workflow its evidence was one run
+# by hand, on 2026-09-20, of the second-disk road only, on a lane machine that
+# then had KVM. The lane machines now have neither KVM nor the disk for it; a
+# hosted runner has both.
+#
+# **Started by hand only.** It runs on no pull request and no merge, and
+# nothing requires it: one run takes a runner for hours, and what it measures —
+# the boot environment, the pinned release and the firmware — changes rarely.
+# So a result here is a measurement of one commit, once, and says so.
+#
+# **It publishes nothing.** No image is built, pushed or signed: the release is
+# the one `image/pinned.toml` already pins, pulled from the registry inside the
+# virtual machine and checked there. What it keeps is the test's own output and
+# each machine's serial log — never a disk.
+name: install-check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: install-check-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+
+      # The walk measured 86 GB free on this runner on 2026-11-14. Said on every
+      # run, so a smaller runner says so before the disks fill it.
+      - name: Say how much room the runner has
+        run: df -h /
+
+      # GitHub's own documented rule for KVM on its hosted Linux runners.
+      - name: Give this job the processor's virtualisation
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+          if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
+            echo "KVM: \`/dev/kvm\` is readable and writable by this job." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "KVM: \`/dev/kvm\` is not usable by this job, so nothing is installed." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      # The emulator and the firmware without Secure Boot, which the test asks
+      # the host for; `sfdisk`; and the libraries the workspace links, because
+      # the test's vocabulary check builds most of it.
+      - name: Install the emulator, its firmware, and the libraries the workspace links
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends \
+            qemu-system-x86 qemu-utils ovmf fdisk \
+            libwayland-dev libinput-dev libseat-dev libxkbcommon-dev \
+            libpixman-1-dev libegl1-mesa-dev libgbm-dev libudev-dev
+          qemu-system-x86_64 --version
+          podman --version
+          ls -l /usr/share/OVMF/OVMF_CODE_4M.fd /usr/share/OVMF/OVMF_VARS_4M.fd
+
+      - name: Say which release is installed, and which environment installs it
+        run: |
+          pinned() { sed -n "s/^$1 = \"\(.*\)\"$/\1/p" image/pinned.toml | head -1; }
+          {
+            echo "## What this run installs"
+            echo ""
+            echo "- **The release:** alo OS $(pinned version), \`$(pinned registry)@$(pinned digest)\`, as \`image/pinned.toml\` pins it at this commit. It is pulled from the registry inside each virtual machine and its signature is checked there. Nothing is built, pushed or signed by this run."
+            echo "- **The boot environment that installs it:** built from \`image/installing/Containerfile\` at \`$(git rev-parse HEAD)\` (\`$GITHUB_REF_NAME\`)."
+            echo "- **The machine:** qemu's q35 under KVM, with Fedora's OVMF enforcing Secure Boot under Microsoft's certificates. A virtual machine, not a PC."
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Build the test
+        run: cargo test --locked -p alo-installing --test installed_in_a_virtual_machine --no-run
+
+      # As root, because the test stages its disks in privileged containers that
+      # mount loop devices. The exit code is kept rather than ending the job
+      # here, so the logs are kept and the summary is written either way.
+      - name: Install in virtual machines, on both roads
+        id: tests
+        run: |
+          mkdir -p install-check
+          set +e
+          sudo -E env "PATH=$PATH" "HOME=$HOME" \
+            "CARGO_HOME=${CARGO_HOME:-$HOME/.cargo}" "RUSTUP_HOME=${RUSTUP_HOME:-$HOME/.rustup}" \
+            cargo test --locked -p alo-installing --test installed_in_a_virtual_machine \
+            -- --include-ignored --test-threads 1 2>&1 | tee install-check/tests.log
+          code=${PIPESTATUS[0]}
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "The tests ended with exit code $code."
+
+      - name: Say which road was proved
+        if: always()
+        run: |
+          log=install-check/tests.log
+          touch "$log"
+          verdict() {
+            if grep -aqE "^test $1 \.\.\. ok\s*$" "$log"; then echo ok
+            elif grep -aqE "^    $1\s*$" "$log" || grep -aqE "^test $1 \.\.\. FAILED" "$log"; then echo failed
+            else echo none; fi
+          }
+          road() {
+            case "$(verdict "$1")" in
+              ok) echo "**Proved.** $2" ;;
+              failed) echo "**Not proved: the test failed**, so nothing here shows this works. Why is below." ;;
+              *) echo "**Not proved: the test gave no verdict**: it did not run to an end. See the log." ;;
+            esac
+          }
+          {
+            echo "## Which road this run proved"
+            echo ""
+            echo "- **Second disk** (alo OS on an empty disk of its own; Windows' disk beside it is not written): $(road the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_service "The environment installed the release onto the empty second disk, the Windows-shaped first disk hashed the same before and after, and the second disk, started on its own, came up with alo-agentd running.")"
+            echo "- **Same disk, beside Windows** (the road for a computer with one disk): $(road the_environment_installs_beside_windows_on_its_own_disk_and_every_file_stays "The environment, given the choice the installer on Windows writes, installed into the space that installer made; Windows' reserved, NTFS and recovery partitions hashed the same; the person's files and Windows' loader read back byte for byte; and the computer, started again, came up in alo OS with alo-agentd running.")"
+            echo "- **Secure Boot is really enforced** in the machine both installs ran in: $(road a_loader_the_firmware_does_not_trust_is_refused "A staged loader with one byte changed was refused by the firmware, and nothing of alo OS ran.")"
+            echo "- **A release signed by another key writes nothing**: $(road a_release_signed_by_another_key_writes_nothing_and_says_so "The environment holding a key that is not the owner's refused the release, said so, and neither disk changed.")"
+            echo ""
+            echo "The test's own count: \`$(grep -a '^test result:' "$log" | tail -1)\`"
+            echo ""
+            echo "**Once, not forever.** This is one measurement of this commit in a virtual machine. Nothing runs it again unless somebody starts this workflow, and no real PC was involved."
+            if grep -aq '^---- .* stdout ----' "$log"; then
+              echo ""
+              echo "### Why, in the tests' own words"
+              echo ""
+              echo '```'
+              grep -a -A25 '^---- .* stdout ----' "$log" | head -150
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Each machine's serial log, which the tests keep and remove the disks
+      # beside: what the environment and the installed machine said.
+      - name: Keep the machines' serial logs
+        if: always()
+        run: |
+          mkdir -p install-check
+          sudo sh -c 'cp target/tmp/alo-installing-vm/*.log install-check/ 2>/dev/null || true'
+          sudo chown -R "$(id -u):$(id -g)" install-check
+          ls -la install-check
+          df -h /
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: install-check-logs
+          path: install-check/*.log
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: End as the tests ended
+        if: always()
+        run: exit "${{ steps.tests.outputs.code || 1 }}"

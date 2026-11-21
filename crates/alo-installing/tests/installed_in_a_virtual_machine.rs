@@ -12,6 +12,12 @@
 //!   owner's signature, writes the second disk and restarts; the first disk
 //!   hashes the same before and after; and the second disk, started on its own,
 //!   comes up with `alo-agentd` running;
+//! - [`the_environment_installs_beside_windows_on_its_own_disk_and_every_file_stays`]:
+//!   the road for a computer with one disk. The same environment, staged with
+//!   the choice the installer on Windows writes, installs into the space that
+//!   installer made beside an NTFS Windows volume; Windows' partitions hash the
+//!   same, the person's files and Windows' loader read back byte for byte, and
+//!   the computer started again comes up in alo OS with `alo-agentd` running;
 //! - [`a_release_signed_by_another_key_writes_nothing_and_says_so`]: the same
 //!   environment holding a key that is not the owner's refuses, says so on the
 //!   console in the vocabulary's words, and neither disk has a byte changed;
@@ -27,7 +33,11 @@
 //! Secure Boot firmware is taken out of the pinned base, and the release is
 //! pulled from `ghcr.io`. The install measured about twelve minutes
 //! on 2026-09-15 with hardware virtualisation; the whole test, with a cached
-//! build, about twenty.
+//! build, about twenty. The road beside Windows also installs `ntfsprogs` into
+//! a container of the base, to make Windows' volume and read its files back.
+//!
+//! **Where it runs:** `.github/workflows/install-check.yml`, started by hand,
+//! on a hosted runner with KVM. Nothing runs it on a pull request or a merge.
 //!
 //! **Hardware virtualisation is used where it works, and asked rather than
 //! assumed** ([`Processor`]): a host can show `/dev/kvm` with nothing behind it
@@ -425,11 +435,17 @@ fn the_firmware_is_taken_from_the_base() {
 /// A FAT partition holding the environment and the person's choice, as the
 /// program that stages it would write it.
 fn staged(environment: &Path) -> PathBuf {
-    std::fs::write(
-        environment.join("EFI/BOOT/chosen.cfg"),
-        format!("set alo_installing_to={THE_CHOSEN_DISK}\n"),
+    staged_choosing(
+        environment,
+        &format!("set alo_installing_to={THE_CHOSEN_DISK}\n"),
     )
-    .expect("the choice can be written");
+}
+
+/// The same partition, holding this choice: the file the installer on Windows
+/// writes beside the loader's configuration, word for word.
+fn staged_choosing(environment: &Path, choice: &str) -> PathBuf {
+    std::fs::write(environment.join("EFI/BOOT/chosen.cfg"), choice)
+        .expect("the choice can be written");
 
     let work = work();
     let copied = inside_the_stager(&work, environment);
@@ -989,13 +1005,44 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
         Some(&english("installing.restart-when-ready")),
     );
 
-    let told = said(&serial);
+    the_install_said_every_step(&said(&serial));
+    the_first_disk_is_unchanged(&windows, &before, "during the install");
+    assert!(
+        std::fs::metadata(&target)
+            .expect("the second disk")
+            .blocks()
+            > 0,
+        "nothing was written to the second disk"
+    );
+
+    // The installed disk, started on its own, with the sign-in stood in for.
+    let serial = work().join("installed.log");
+    drop(std::fs::remove_file(&serial));
+    let vars = variables(Firmware::SecureBoot, "installed-vars.fd");
+    let mut arguments = a_machine(processor, Firmware::SecureBoot, &vars, &serial);
+    arguments.extend(a_disk(&target, "alo-target", Some(1)));
+    arguments.extend(a_disk(&windows, "alo-windows", None));
+    arguments.extend(the_sign_in_stood_in_for());
+    powered_off(
+        started(&arguments),
+        processor.allowing(Duration::from_secs(20 * 60)),
+        &serial,
+        None,
+    );
+
+    the_services_are_running(&said(&serial));
+    the_first_disk_is_unchanged(&windows, &before, "when alo OS booted");
+}
+
+/// **The environment said every step of an install that finished, in order,
+/// with Secure Boot on, and no refusal.**
+fn the_install_said_every_step(told: &str) {
     assert!(
         told.contains("Secure boot enabled"),
         "the environment was not started with Secure Boot on"
     );
     said_in_order(
-        &told,
+        told,
         &[
             english("installing.starting"),
             english("installing.reading-the-choice"),
@@ -1019,23 +1066,14 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
             "the console said {refusal}"
         );
     }
-    the_first_disk_is_unchanged(&windows, &before, "during the install");
-    assert!(
-        std::fs::metadata(&target)
-            .expect("the second disk")
-            .blocks()
-            > 0,
-        "nothing was written to the second disk"
-    );
+}
 
-    // The installed disk, started on its own, with the sign-in stood in for.
-    let serial = work().join("installed.log");
-    drop(std::fs::remove_file(&serial));
-    let vars = variables(Firmware::SecureBoot, "installed-vars.fd");
-    let mut arguments = a_machine(processor, Firmware::SecureBoot, &vars, &serial);
-    arguments.extend(a_disk(&target, "alo-target", Some(1)));
-    arguments.extend(a_disk(&windows, "alo-windows", None));
-    arguments.extend(a_credential(
+/// The two credentials that stand in for a sign-in on an installed machine: a
+/// unit that says on the serial line what is running and why, then powers the
+/// machine off, and a drop-in that starts the person's session as a sign-in
+/// would. Nothing on the installed disk is changed to do it.
+fn the_sign_in_stood_in_for() -> Vec<String> {
+    let mut arguments = a_credential(
         "systemd.extra-unit.alo-vm-watching.service",
         "[Unit]\n\
          Description=What is running, said on the serial line for the installer's test\n\
@@ -1052,19 +1090,18 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
          ExecStartPost=/usr/bin/systemctl --no-block poweroff\n\
          StandardOutput=file:/dev/ttyS0\n\
          StandardError=file:/dev/ttyS0\n",
-    ));
+    );
     arguments.extend(a_credential(
         "systemd.unit-dropin.multi-user.target~alo-vm-watching",
         "[Unit]\nWants=user@1000.service alo-vm-watching.service\n",
     ));
-    powered_off(
-        started(&arguments),
-        processor.allowing(Duration::from_secs(20 * 60)),
-        &serial,
-        None,
-    );
+    arguments
+}
 
-    let told = said(&serial);
+/// **The installed machine, started on its own, came up with `alo-boundaryd`
+/// active and `alo-agentd` running**, as its watching unit said on the serial
+/// line — and when not, the failure carries the machine's own account of why.
+fn the_services_are_running(told: &str) {
     for unit in ["alo-boundaryd.service", "alo-agentd.service"] {
         let block = told
             .split("\n\n")
@@ -1082,10 +1119,598 @@ fn the_environment_installs_onto_the_second_disk_and_it_boots_to_the_agent_servi
                     || block.lines().any(|line| line == "SubState=running")),
             "{unit} is not running on the installed machine:\n{block}\n\nwhy, as the machine \
              said it:\n{}",
-            why_it_said(&told)
+            why_it_said(told)
         );
     }
-    the_first_disk_is_unchanged(&windows, &before, "when alo OS booted");
+}
+
+/// The disk alo OS is installed beside Windows on, as the machine names it.
+const BESIDE_DISK: &str = "virtio-alo-windows";
+
+/// The GPT type of a start-up area, the EFI system partition.
+const START_UP_AREA_TYPE: &str = "C12A7328-F81F-11D2-BA4B-00A0C93EC93B";
+
+/// The GPT type of a basic data partition: Windows' own volume, and both of
+/// the partitions the installer on Windows makes, which `New-Partition` gives
+/// this type.
+const BASIC_DATA_TYPE: &str = "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7";
+
+/// **The one disk of a computer that keeps Windows**, as the installer on
+/// Windows leaves it before the restart: Windows' four partitions, and the
+/// installer's two in the space a shrink of Windows freed.
+///
+/// Where each starts and how big it is, in mebibytes, its GPT type, and its
+/// name, **in the order the partition table numbers them**. The installer's two
+/// are numbered last, as `New-Partition` numbers them, but sit where the shrink
+/// freed space: straight after Windows' own volume and before its recovery
+/// partition, which is where they are on a real disk. So a write that strayed
+/// past the space alo OS was given lands in Windows' recovery partition, and is
+/// seen there.
+const BESIDE_WINDOWS: [(u64, u64, &str, &str); 6] = [
+    (1, 100, START_UP_AREA_TYPE, "EFI system partition"),
+    (
+        101,
+        16,
+        "E3C9E316-0B5C-4DB8-817D-F92DF00215AE",
+        "Microsoft reserved partition",
+    ),
+    (117, 1024, BASIC_DATA_TYPE, "Basic data partition"),
+    (
+        26_317,
+        512,
+        "DE94BBA4-06D1-4D40-A16A-BFD50179D6AC",
+        "Windows recovery",
+    ),
+    (1_141, 600, BASIC_DATA_TYPE, "Basic data partition"),
+    (1_741, 24_576, BASIC_DATA_TYPE, "Basic data partition"),
+];
+
+/// Where in [`BESIDE_WINDOWS`] the start-up area is: partition 1.
+const THE_START_UP_AREA_AT: usize = 0;
+
+/// Where Windows' own volume is: partition 3, NTFS, holding the person's files.
+const THE_WINDOWS_VOLUME_AT: usize = 2;
+
+/// Where the installer's staging area is: partition 5.
+const THE_AREA_AT: usize = 4;
+
+/// Where the space the installer made for alo OS is: partition 6.
+const THE_SPACE_AT: usize = 5;
+
+/// **Windows' own partitions, which nothing on this road may write**: its
+/// reserved partition, its volume and its recovery partition. The start-up area
+/// is not among them, because alo OS's loader is put into it beside Windows'
+/// own; what is kept there is Windows' files ([`START_UP_FILES`]).
+const WINDOWS_OWN: [usize; 3] = [1, 2, 3];
+
+/// The person's files on Windows' volume, at its root: each name, its size in
+/// bytes, and the seed of its bytes. A short one the volume keeps inside its own
+/// file table, and larger ones it keeps in runs of clusters across the volume.
+const WINDOWS_FILES: [(&str, u64, u64); 4] = [
+    ("A letter to the bank.txt", 612, 1),
+    ("Holiday photograph.jpg", 3 * MIB, 2),
+    ("Thesis.docx", 40 * MIB, 3),
+    ("pagefile.sys", 64 * MIB, 4),
+];
+
+/// Windows' own loader and its boot configuration, on the start-up area alo
+/// OS's loader goes beside: each path, its size in bytes, and the seed of its
+/// bytes.
+const START_UP_FILES: [(&str, u64, u64); 2] = [
+    ("EFI/Microsoft/Boot/bootmgfw.efi", MIB, 11),
+    ("EFI/Microsoft/Boot/BCD", 32 * 1024, 12),
+];
+
+/// The bytes of a file this test puts on Windows' disk, the same every run.
+fn known_bytes(size: u64, seed: u64) -> Vec<u8> {
+    let mut bytes =
+        vec![0_u8; usize::try_from(size).expect("a file this test makes fits in memory")];
+    Pattern(0x0a10_05a1_0be5_1de0 ^ seed.wrapping_mul(0x9e37_79b9_7f4a_7c15)).fill(&mut bytes);
+    bytes
+}
+
+/// **A container of the pinned base, with the work directory at `/work`**,
+/// removed when this is dropped — pass or fail, so a step that failed does not
+/// leave it running.
+struct InTheBase(&'static str);
+
+impl InTheBase {
+    /// Start one, by this name.
+    fn started(named: &'static str) -> Self {
+        drop(
+            Command::new("podman")
+                .args(["rm", "--force", named])
+                .output(),
+        );
+        ran(
+            "podman",
+            &[
+                "run",
+                "--detach",
+                "--privileged",
+                "--name",
+                named,
+                "--volume",
+                &format!("{}:/work", work().display()),
+                &the_base(),
+                "sleep",
+                "infinity",
+            ],
+        );
+        Self(named)
+    }
+
+    /// Run one program in it, to its end, failing the test if it failed.
+    fn run(&self, step: &[&str]) -> String {
+        let mut arguments = vec!["exec", self.0];
+        arguments.extend_from_slice(step);
+        ran("podman", &arguments)
+    }
+}
+
+impl Drop for InTheBase {
+    fn drop(&mut self) {
+        drop(
+            Command::new("podman")
+                .args(["rm", "--force", self.0])
+                .output(),
+        );
+    }
+}
+
+/// The files [`WINDOWS_FILES`] and [`START_UP_FILES`] name, written into the
+/// work directory for the base to copy onto the disk.
+fn the_files_to_keep() {
+    let files = work().join("beside-files");
+    drop(std::fs::remove_dir_all(&files));
+    let every = WINDOWS_FILES
+        .iter()
+        .map(|(name, size, seed)| (files.join("windows").join(name), *size, *seed))
+        .chain(
+            START_UP_FILES
+                .iter()
+                .map(|(path, size, seed)| (files.join("start-up").join(path), *size, *seed)),
+        );
+    for (at, size, seed) in every {
+        std::fs::create_dir_all(at.parent().expect("a file is in a directory"))
+            .expect("a directory can be made");
+        std::fs::write(&at, known_bytes(size, seed)).expect("a file can be written");
+    }
+}
+
+/// A file's bytes, written into the disk from this mebibyte on — leaving every
+/// mebibyte that is all zeros as the hole a new disk already is, so a file
+/// system of 24 gigabytes that is mostly empty costs what it holds.
+fn written_into(disk: &mut File, from: &Path, at_mebibyte: u64) {
+    let mut reading = File::open(from).expect("the partition's file opens");
+    let mut buffer = vec![0_u8; MIB as usize];
+    let mut offset = at_mebibyte * MIB;
+    loop {
+        let read = reading.read(&mut buffer).expect("a read");
+        if read == 0 {
+            break;
+        }
+        if buffer[..read].iter().any(|byte| *byte != 0) {
+            disk.seek(SeekFrom::Start(offset)).expect("a seek");
+            disk.write_all(&buffer[..read]).expect("a write");
+        }
+        offset += u64::try_from(read).expect("a read fits");
+    }
+}
+
+/// **The disk beside Windows**, laid out as [`BESIDE_WINDOWS`] says and filled
+/// as a computer keeping Windows has it: a FAT start-up area holding Windows'
+/// loader, a reserved partition and a recovery partition of known bytes, an NTFS
+/// volume holding the person's files, the staged environment, and the space for
+/// alo OS — formatted FAT32 and labelled as the installer labels it.
+///
+/// The file systems are made by the base's own tools (`mkfs.fat`, and
+/// `ntfsprogs`' `mkntfs` and `ntfscp`), in files of their own, and then written
+/// into the disk at their partitions' places.
+fn the_disk_beside_windows(staged: &Path) -> PathBuf {
+    the_files_to_keep();
+    let work = work();
+    for name in [
+        "beside-start-up.img",
+        "beside-windows.img",
+        "beside-space.img",
+    ] {
+        drop(std::fs::remove_file(work.join(name)));
+    }
+    File::create(work.join("beside-windows.img"))
+        .and_then(|file| file.set_len(BESIDE_WINDOWS[THE_WINDOWS_VOLUME_AT].1 * MIB))
+        .expect("Windows' volume can be made");
+
+    let kib = |index: usize| (BESIDE_WINDOWS[index].1 * 1024).to_string();
+    let base = InTheBase::started("alo-installing-vm-beside");
+    base.run(&["dnf", "install", "--assumeyes", "ntfsprogs"]);
+    base.run(&[
+        "mkfs.fat",
+        "-C",
+        "-F",
+        "32",
+        "-n",
+        "SYSTEM",
+        "/work/beside-start-up.img",
+        &kib(THE_START_UP_AREA_AT),
+    ]);
+    base.run(&["mkdir", "-p", "/tmp/start-up"]);
+    base.run(&[
+        "mount",
+        "-o",
+        "loop",
+        "/work/beside-start-up.img",
+        "/tmp/start-up",
+    ]);
+    base.run(&[
+        "cp",
+        "-r",
+        "/work/beside-files/start-up/.",
+        "/tmp/start-up/",
+    ]);
+    base.run(&["umount", "/tmp/start-up"]);
+    base.run(&[
+        "mkntfs",
+        "--force",
+        "--quick",
+        "--label",
+        "Windows",
+        "--partition-start",
+        &(BESIDE_WINDOWS[THE_WINDOWS_VOLUME_AT].0 * MIB / 512).to_string(),
+        "--sectors-per-track",
+        "63",
+        "--heads",
+        "255",
+        "/work/beside-windows.img",
+    ]);
+    for (name, _, _) in WINDOWS_FILES {
+        base.run(&[
+            "ntfscp",
+            "--force",
+            "/work/beside-windows.img",
+            &format!("/work/beside-files/windows/{name}"),
+            &format!("/{name}"),
+        ]);
+    }
+    base.run(&[
+        "mkfs.fat",
+        "-C",
+        "-F",
+        "32",
+        "-n",
+        alo_installing::THE_SPACE_THE_INSTALLER_MADE,
+        "/work/beside-space.img",
+        &kib(THE_SPACE_AT),
+    ]);
+    drop(base);
+
+    let disk = work.join("beside.raw");
+    drop(std::fs::remove_file(&disk));
+    let end = BESIDE_WINDOWS
+        .iter()
+        .map(|(start, size, _, _)| start + size)
+        .max()
+        .expect("the layout has partitions");
+    File::create(&disk)
+        .and_then(|file| file.set_len((end + 1) * MIB))
+        .expect("the disk can be made");
+    let mut layout = String::from("label: gpt\nfirst-lba: 2048\n");
+    for (start, size, kind, name) in BESIDE_WINDOWS {
+        layout.push_str(&format!(
+            "start={}, size={size}MiB, type={kind}, name=\"{name}\"\n",
+            start * MIB / 512
+        ));
+    }
+    let mut sfdisk = Command::new("sfdisk")
+        .arg(&disk)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .spawn()
+        .expect("sfdisk starts");
+    sfdisk
+        .stdin
+        .take()
+        .expect("sfdisk reads its layout")
+        .write_all(layout.as_bytes())
+        .expect("the layout is written");
+    assert!(
+        sfdisk.wait().expect("sfdisk ends").success(),
+        "sfdisk refused the layout:\n{layout}"
+    );
+
+    let mut file = OpenOptions::new()
+        .write(true)
+        .open(&disk)
+        .expect("the disk opens");
+    let start = |index: usize| BESIDE_WINDOWS[index].0;
+    written_into(
+        &mut file,
+        &work.join("beside-start-up.img"),
+        start(THE_START_UP_AREA_AT),
+    );
+    written_into(
+        &mut file,
+        &work.join("beside-windows.img"),
+        start(THE_WINDOWS_VOLUME_AT),
+    );
+    written_into(&mut file, staged, start(THE_AREA_AT));
+    written_into(
+        &mut file,
+        &work.join("beside-space.img"),
+        start(THE_SPACE_AT),
+    );
+    let mut pattern = Pattern(0x0a10_05a1_0be5_0002);
+    let mut buffer = vec![0_u8; MIB as usize];
+    for index in [1, 3] {
+        let (at, size, _, _) = BESIDE_WINDOWS[index];
+        file.seek(SeekFrom::Start(at * MIB)).expect("a seek");
+        for _ in 0..size {
+            pattern.fill(&mut buffer);
+            file.write_all(&buffer).expect("a write");
+        }
+    }
+    file.sync_all().expect("the disk is synced");
+    disk
+}
+
+/// The SHA-256 of one partition of the disk beside Windows.
+fn hashed_partition(disk: &Path, index: usize) -> Vec<u8> {
+    let (at, size, _, _) = BESIDE_WINDOWS[index];
+    let mut reading = File::open(disk).expect("the disk opens");
+    reading.seek(SeekFrom::Start(at * MIB)).expect("a seek");
+    let mut context = ring::digest::Context::new(&ring::digest::SHA256);
+    let mut buffer = vec![0_u8; MIB as usize];
+    for _ in 0..size {
+        reading.read_exact(&mut buffer).expect("a read");
+        context.update(&buffer);
+    }
+    context.finish().as_ref().to_vec()
+}
+
+/// One partition of the disk, copied into a file of its own, so that reading
+/// its files never mounts the disk itself.
+fn copied_out(disk: &Path, index: usize, into: &Path) {
+    let (at, size, _, _) = BESIDE_WINDOWS[index];
+    let mut reading = File::open(disk).expect("the disk opens");
+    reading.seek(SeekFrom::Start(at * MIB)).expect("a seek");
+    let mut writing = File::create(into).expect("the copy can be made");
+    std::io::copy(&mut reading.take(size * MIB), &mut writing).expect("the partition is copied");
+}
+
+/// What Windows has on the disk: the hash of each of its own partitions, and
+/// how the partition table describes each of its four.
+struct WindowsAsItWas {
+    /// The SHA-256 of each partition [`WINDOWS_OWN`] names, in that order.
+    hashes: Vec<Vec<u8>>,
+    /// The table's entries for Windows' four partitions: start, size, type,
+    /// identity and name.
+    entries: Vec<serde_json::Value>,
+}
+
+/// What Windows has on the disk now.
+fn windows_as_it_is(disk: &Path) -> WindowsAsItWas {
+    let table: serde_json::Value =
+        serde_json::from_str(&ran("sfdisk", &["--json", &disk.display().to_string()]))
+            .expect("sfdisk prints its table");
+    let windows_starts: Vec<u64> = BESIDE_WINDOWS[..4]
+        .iter()
+        .map(|(start, _, _, _)| start * MIB / 512)
+        .collect();
+    let entries: Vec<serde_json::Value> = table["partitiontable"]["partitions"]
+        .as_array()
+        .expect("the table has partitions")
+        .iter()
+        .filter(|entry| {
+            entry["start"]
+                .as_u64()
+                .is_some_and(|start| windows_starts.contains(&start))
+        })
+        .map(|entry| {
+            let mut entry = entry.clone();
+            // The file's own path, which the table prints as each partition's
+            // node, is not a fact about the partition.
+            if let Some(fields) = entry.as_object_mut() {
+                fields.remove("node");
+            }
+            entry
+        })
+        .collect();
+    WindowsAsItWas {
+        hashes: WINDOWS_OWN
+            .iter()
+            .map(|index| hashed_partition(disk, *index))
+            .collect(),
+        entries,
+    }
+}
+
+/// **Windows' own partitions are byte for byte what they were, and the table
+/// describes its four exactly as it did** — and when not, the failure names the
+/// partition.
+fn windows_is_unchanged(disk: &Path, was: &WindowsAsItWas, when: &str) {
+    let now = windows_as_it_is(disk);
+    for ((index, then), now) in WINDOWS_OWN.iter().zip(&was.hashes).zip(&now.hashes) {
+        assert!(
+            then == now,
+            "Windows' {} (partition {}) changed {when}",
+            BESIDE_WINDOWS[*index].3,
+            index + 1
+        );
+    }
+    assert_eq!(
+        was.entries.len(),
+        4,
+        "the table did not list Windows' four partitions to begin with: {:?}",
+        was.entries
+    );
+    assert_eq!(
+        was.entries, now.entries,
+        "the partition table describes Windows' partitions differently {when}"
+    );
+}
+
+/// **Every file the person had is there, byte for byte** — on Windows' volume,
+/// read with `ntfsprogs`' own reader, and Windows' loader on the start-up area —
+/// each read from a copy of its partition, never from the disk itself.
+fn every_file_is_there(disk: &Path, when: &str) {
+    let work = work();
+    let read = work.join("beside-read");
+    drop(std::fs::remove_dir_all(&read));
+    std::fs::create_dir_all(read.join("windows")).expect("a directory can be made");
+    copied_out(
+        disk,
+        THE_START_UP_AREA_AT,
+        &work.join("beside-start-up-read.img"),
+    );
+    copied_out(
+        disk,
+        THE_WINDOWS_VOLUME_AT,
+        &work.join("beside-windows-read.img"),
+    );
+
+    let base = InTheBase::started("alo-installing-vm-reading");
+    base.run(&["dnf", "install", "--assumeyes", "ntfsprogs"]);
+    base.run(&["mkdir", "-p", "/tmp/start-up"]);
+    base.run(&[
+        "mount",
+        "-o",
+        "loop,ro",
+        "/work/beside-start-up-read.img",
+        "/tmp/start-up",
+    ]);
+    for (path, _, _) in START_UP_FILES {
+        base.run(&[
+            "install",
+            "-D",
+            &format!("/tmp/start-up/{path}"),
+            &format!("/work/beside-read/start-up/{path}"),
+        ]);
+    }
+    base.run(&["umount", "/tmp/start-up"]);
+    for (name, _, _) in WINDOWS_FILES {
+        base.run(&[
+            "sh",
+            "-c",
+            &format!(
+                "ntfscat /work/beside-windows-read.img '/{name}' > '/work/beside-read/windows/{name}'"
+            ),
+        ]);
+    }
+    drop(base);
+
+    let every = WINDOWS_FILES
+        .iter()
+        .map(|(name, size, seed)| (read.join("windows").join(name), *size, *seed))
+        .chain(
+            START_UP_FILES
+                .iter()
+                .map(|(path, size, seed)| (read.join("start-up").join(path), *size, *seed)),
+        );
+    for (at, size, seed) in every {
+        let found = std::fs::read(&at)
+            .unwrap_or_else(|why| panic!("{} could not be read {when}: {why}", at.display()));
+        assert!(
+            found == known_bytes(size, seed),
+            "{} is not byte for byte what was put there, {when}: {} bytes read, {size} put there",
+            at.display(),
+            found.len()
+        );
+    }
+}
+
+/// **alo OS installed beside Windows on Windows' own disk, the road a computer
+/// with one disk takes, and nothing of Windows' lost**: the environment, started
+/// with Secure Boot on, says every step and installs into the space the
+/// installer made; Windows' reserved, volume and recovery partitions are byte for
+/// byte what they were, and so is the table's account of them; the person's
+/// files on Windows' NTFS volume and Windows' own loader read back byte for
+/// byte; and the computer, started again with the firmware's variables the
+/// install left, comes up in alo OS with `alo-agentd` running.
+///
+/// **The choice is staged by the installer's own writer**
+/// (`alo_installer::the_choice_beside_what_is_there`), so what the loader reads
+/// is what Windows writes rather than a line typed into this test, and what
+/// reaches the environment is whatever the loader really hands its kernel.
+#[test]
+#[ignore = "boots a virtual machine and pulls the release from the registry; run by name"]
+fn the_environment_installs_beside_windows_on_its_own_disk_and_every_file_stays() {
+    let _one = ONE_MACHINE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let _made = Leftovers::in_the_work_directory(&[
+        "environment",
+        "staged.img",
+        "beside.raw",
+        "beside-files",
+        "beside-start-up.img",
+        "beside-windows.img",
+        "beside-space.img",
+        "beside-read",
+        "beside-start-up-read.img",
+        "beside-windows-read.img",
+        "beside-vars.fd",
+    ]);
+    the_machine_can_run_this();
+    let processor = Processor::of_this_host();
+    the_firmware_is_taken_from_the_base();
+
+    let environment = the_environment_built();
+    let partition = |index: usize| {
+        alo_installing::PartitionName::named(&format!("{BESIDE_DISK}-part{}", index + 1))
+            .expect("a partition's name")
+    };
+    let choice = alo_installer::the_choice_beside_what_is_there(
+        &alo_installing::DiskName::named(BESIDE_DISK).expect("a disk's name"),
+        &partition(THE_SPACE_AT),
+        &partition(THE_START_UP_AREA_AT),
+    );
+    let disk = the_disk_beside_windows(&staged_choosing(&environment, &choice));
+    let before = windows_as_it_is(&disk);
+    every_file_is_there(&disk, "before the install");
+
+    // The install, started the way a firmware starts it. One set of firmware
+    // variables for both starts, as one computer has: the entry the install
+    // makes for alo OS is the one the second start finds.
+    let serial = work().join("beside-installing.log");
+    drop(std::fs::remove_file(&serial));
+    let vars = variables(Firmware::SecureBoot, "beside-vars.fd");
+    let restart_when_ready = english("installing.restart-when-ready");
+    let mut arguments = a_machine(processor, Firmware::SecureBoot, &vars, &serial);
+    arguments.extend(a_disk(&disk, "alo-windows", Some(1)));
+    powered_off(
+        started(&arguments),
+        processor.allowing(Duration::from_secs(60 * 60)),
+        &serial,
+        Some(&restart_when_ready),
+    );
+
+    the_install_said_every_step(&said(&serial));
+    windows_is_unchanged(&disk, &before, "during the install");
+    every_file_is_there(&disk, "after the install");
+
+    // The same computer started again, with the sign-in stood in for and no
+    // place in the order given: the firmware starts what the install left.
+    let serial = work().join("beside-installed.log");
+    drop(std::fs::remove_file(&serial));
+    let mut arguments = a_machine(processor, Firmware::SecureBoot, &vars, &serial);
+    arguments.extend(a_disk(&disk, "alo-windows", None));
+    arguments.extend(the_sign_in_stood_in_for());
+    powered_off(
+        started(&arguments),
+        processor.allowing(Duration::from_secs(20 * 60)),
+        &serial,
+        Some(&restart_when_ready),
+    );
+
+    let told = said(&serial);
+    assert!(
+        !told.contains(&english("installing.starting")),
+        "the computer started the installer again rather than alo OS; its serial line ends:\n{}",
+        &told[told.len().saturating_sub(4000)..]
+    );
+    the_services_are_running(&told);
+    windows_is_unchanged(&disk, &before, "when alo OS booted");
+    every_file_is_there(&disk, "after alo OS booted");
 }
 
 /// **The machine the install is measured in really enforces Secure Boot**: a
