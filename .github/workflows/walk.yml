@@ -56,6 +56,10 @@ on:
         description: "Then ask alo to do one thing in every application a fresh machine ships (needs the provider)"
         type: boolean
         default: false
+      installing:
+        description: "Then install an application from the market, and ask alo to install one, and work in each (needs the provider)"
+        type: boolean
+        default: false
       image_from_this_branch:
         description: "Build the image from the branch this walk is started on, not from main, to try it before it merges (never published)"
         type: boolean
@@ -157,6 +161,7 @@ jobs:
           # A word of its own, because the walk redacts every variable it reads
           # from what it keeps: `yes` would be cut out of every log line.
           ALO_WALK_EVERY_APPLICATION: ${{ inputs.every_application && 'alo-walk-every-application' || '' }}
+          ALO_WALK_INSTALLING: ${{ inputs.installing && 'alo-walk-installing' || '' }}
         run: |
           target/release/alo-walk \
             --disk walk/alo.raw \

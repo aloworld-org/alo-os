@@ -308,7 +308,7 @@ fn then_the_provider(walk: Walk) -> Walk {
         .look("the-provider-saved", look)
 }
 
-/// Then the four sections alo is asked in, **each needing the providers**.
+/// Then the six sections alo is asked in, **each needing the providers**.
 fn then_alo_is_asked(walk: Walk) -> Walk {
     // **Four independent sections**, each starting from its own Escape and
     // setting its own level and grants, so a failure in one does not hide the
@@ -339,10 +339,24 @@ fn then_alo_is_asked(walk: Walk) -> Walk {
     // one turn at a time, so this ask would fail on a broken pipe (runs
     // 44069105568 and 44161055698). A Stop shortcut would be a product
     // promise, and is not being built here.
-    walk.section(
+    let walk = walk.section(
         "the Papers sheet at ask each time",
         &[THE_PROVIDERS, "VSCodium at ask each time"],
         crate::asking_for_an_application_at_each_ask::for_this_task,
+    );
+    // **And an application installed, by the person and by alo** (launch
+    // item 6), each setting its own level and needing only the providers;
+    // both only with the walk's *installing* box
+    // (`crate::installing_an_application`).
+    let walk = walk.section(
+        "Kate from the market",
+        &[THE_PROVIDERS],
+        crate::installing_an_application::kate_from_the_market,
+    );
+    walk.section(
+        "Kooha installed by alo",
+        &[THE_PROVIDERS],
+        crate::installing_an_application::kooha_installed_by_alo,
     )
 }
 

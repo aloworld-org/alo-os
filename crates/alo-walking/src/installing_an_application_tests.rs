@@ -111,7 +111,7 @@ fn each_section_is_gated_on_installing_and_covers_itself() {
             steps.first(),
             Some(&Step::OnlyWithFor {
                 variable: INSTALLING,
-                steps: steps.len() - 1,
+                steps: steps.len().saturating_sub(1),
             })
         );
     }

@@ -162,6 +162,42 @@ mark on `main` is never this section's. The box's value is a word of its own
 (`alo-walk-every-application`), because the walk takes every variable it reads
 out of what it keeps.
 
+## An application installed, by the person and by alo, when asked for
+
+Launch item 6, *a person installs an application, and the agent can work with
+it*. Before this section, no walk had installed anything (the launch audit of
+2026-11-21). It runs last, only when the person ticks *Then install an
+application from the market, and ask alo to install one* (with the provider),
+in two sections that need only the providers
+(`crates/alo-walking/src/installing_an_application.rs`). Both applications are
+in the catalogue and a fresh machine ships neither, and neither needs an
+account: **Kate** (`org.kde.kate`, Qt) and **Kooha** (`io.github.seadve.Kooha`,
+GTK 4).
+
+**Kate from the market**, installed by the person:
+
+| # | Does | Checks |
+|---|---|---|
+| 1 | F6, then Tab until the Dock says `on the Dock the keyboard is on "Applications"`; Enter | `the market opened, listing <n> applications` |
+| 2 | Down until the market says `in the market the keyboard is on "org.kde.kate"`; Enter | `in the market a person asked to install "org.kde.kate"`, then **the first** `in the market an installation …` line says `arrived: "org.kde.kate"`. A `was not done: …: <why>` line fails the check at once, and its evidence says why |
+| 3 | *Running code* set to full trust; the person makes `kate.txt`; *Open the file kate.txt … in Kate, type exactly this text into it: Written by alo in Kate and then save it.* | the file opened in the person's window; `accessible.type_text in org.kde.kate, done, and saved`; **the file on disk holds the text** |
+
+**Kooha installed by alo**:
+
+| # | Does | Checks |
+|---|---|---|
+| 1 | *Running code* set to *Ask me each time*; *Install Kooha.*; Tab, Enter on the card (*Allow once*) | a card that types nothing; `alo in an application: install_application in io.github.seadve.Kooha, done` |
+| 2 | Full trust; *Open Kooha and tell me what its window shows.* | `open_application …, done`; `accessible.read_window …, done` |
+| 3 | *In Kooha, press one of its switches that turns an option on or off, and tell me which.* | `accessible.activate_control in io.github.seadve.Kooha, done` |
+
+The Dock's slot and the market's card are found **by name**, from the lines
+the shell writes (`alo_acting::said_in_the_market`), never by counting presses.
+The *Running code* level is still found by counting rows, as the Papers section
+finds it. **What a pass does not prove:** a press counts as *done* even when the
+application did not answer, so which switch moved has to be read off the
+pictures. Only Kate's file is checked from outside the machine. The box's
+value is `alo-walk-installing`.
+
 ## What a pass proves, and what it does not
 
 **A pass proves** that on that run, on that commit of `main`, the screens

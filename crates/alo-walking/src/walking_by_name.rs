@@ -33,13 +33,16 @@ impl Walking {
         &mut self,
         machine: &mut impl Machine,
         chord: &Chord,
-        _saying: &str,
+        saying: &str,
         name: &str,
         at_most: usize,
         pace: Pace,
     ) -> Result<(), MachineError> {
-        let wanted = alo_acting::said_in_settings::the_keyboard_is_on(name);
-        let phrases = [alo_acting::said_in_settings::IN_SETTINGS_THE_KEYBOARD_IS_ON.to_owned()];
+        // **`<saying> "<name>"`**, the shape every such line has: Settings'
+        // row (`alo_acting::said_in_settings`), and the Dock's slot and the
+        // market's card (`alo_acting::said_in_the_market`).
+        let wanted = format!("{saying} {name:?}");
+        let phrases = [saying.to_owned()];
         let mut seen = the_log::all_with(&machine.log()?, self.mark, &phrases).len();
         let mut went = Vec::new();
         for presses in 1..=at_most {
