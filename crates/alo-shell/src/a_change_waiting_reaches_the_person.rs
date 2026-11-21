@@ -433,7 +433,10 @@ impl crate::Server {
     ///
     /// **Here and not in the frame loop**, so that a test can prove what it
     /// never does: **it never touches the keyboard.** A question arriving is
-    /// not a reason to move it — see `crate::the_tasks_seat`.
+    /// not a reason to move it — see `crate::the_tasks_seat` — with one
+    /// exception: keys alo's own opening of a file took from this task, with
+    /// nothing moved since, are given back with the card
+    /// (`crate::the_card_comes_in_front_of_what_alo_opened`).
     ///
     /// Asked when an answer arrives rather than once a frame: a turn ends by
     /// answering or by leaving a change waiting, so this is the moment one can
@@ -499,6 +502,10 @@ impl crate::Server {
         if let Some(line) = waiting.said_on_the_log(arrived) {
             eprintln!("{line}");
         }
+        // **And a card in front of a window alo just opened comes in front of
+        // it**, taking back the keys alo's opening took from this task — and
+        // only those (`crate::the_card_comes_in_front_of_what_alo_opened`).
+        self.a_card_may_take_back_what_alo_took(which);
         // **And a reply the person sent while alo was answering goes now**,
         // with the conversation as it stands — unless what just arrived is a
         // change waiting for them, which keeps it held (ADR 0138).

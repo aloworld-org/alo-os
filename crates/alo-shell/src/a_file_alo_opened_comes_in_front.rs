@@ -110,6 +110,11 @@ impl Server {
                     // turn**: it wears the task at work from the moment it
                     // comes (`crate::the_window_alo_acts_in`).
                     let _ = self.alo_acts_in(&surface, awaited.app.name());
+                    // **What the keys are taken from is remembered**, so the
+                    // card that follows can come in front of this window
+                    // rather than rise behind it
+                    // (`crate::the_card_comes_in_front_of_what_alo_opened`).
+                    self.alo_takes_the_keys_to(crate::window_number::the_window_id_of(&surface));
                     let came = self.the_person_goes_to_this_window(&surface);
                     eprintln!(
                         "alo-shell: the window alo opened a file in, of {}, {}",

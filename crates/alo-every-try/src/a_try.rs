@@ -439,6 +439,15 @@ impl Recording<'_> {
                 NotAnswered::NotReached { why }
             });
         }
+        // **At full access, a path through `/home` is where its link leads**,
+        // as the machine resolves it (`crate::through_the_link`).
+        let resolved;
+        let request = if self.level == TheLevel::FullAccess {
+            resolved = crate::through_the_link::through_the_link(request, self.verbs);
+            &resolved
+        } else {
+            request
+        };
         self.chose.push(match request {
             FromAnAgent::Run { command } => format!("run: {command}"),
             other => other.verb().unwrap_or_default().to_owned(),

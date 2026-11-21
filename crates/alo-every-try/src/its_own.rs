@@ -127,6 +127,19 @@ pub fn its_own_against(
     Ok(its_own(&before, &after))
 }
 
+/// **Whether `own` is the whole set**, because what every turn is told or a
+/// verb changed: then the change is compared with its base
+/// (`crate::compared_with_its_base`) rather than held to the bar alone.
+#[must_use]
+pub fn owns_the_whole_set(own: &[ItsOwn]) -> bool {
+    own.iter().any(|one| {
+        matches!(
+            one.why(),
+            WhyItsOwn::EveryTurnIsToldOtherwise | WhyItsOwn::EveryTurnIsShownAVerbOtherwise(_)
+        )
+    })
+}
+
 #[cfg(test)]
 #[path = "its_own_tests.rs"]
 mod tests;
