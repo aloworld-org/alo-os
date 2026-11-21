@@ -972,6 +972,7 @@ dependencies = [
  "alo-applications",
  "alo-asking",
  "alo-capability",
+ "alo-context",
  "alo-egress",
  "alo-files",
  "alo-instructing",

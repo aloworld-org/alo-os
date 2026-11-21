@@ -93,6 +93,20 @@ pub fn a_change_asked_for(
         };
         turning.changing(verb, given, &grants, standing, &mut before, now)
     };
+    // **A click by description is found and made at once too**, at full
+    // access as after an OK (`crate::clicking_where_it_is`).
+    let changed = match changed {
+        Ok(Changed::Done { did, sentence }) => crate::clicking_where_it_is::found_and_clicked(
+            did,
+            turning,
+            questions,
+            crate::starting::the_screen_road(),
+            strings,
+            now,
+        )
+        .map(|did| Changed::Done { did, sentence }),
+        other => other,
+    };
     match changed {
         Ok(Changed::Done { did, sentence }) => {
             let kept = bracket.is_some_and(|bracket| bracket.taken_at().is_some());

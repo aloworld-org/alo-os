@@ -20,7 +20,7 @@ use std::time::SystemTime;
 
 use alo_acting::{AKey, Acting};
 use alo_adapters::fallback_verbs::{
-    self, ACROSS, ACTIVATE_CONTROL, CHOOSE_OPTION, CLICK_AT, DOWN, KEY, KIND, NAME, OPEN_ITEM,
+    self, ACTIVATE_CONTROL, CHOOSE_OPTION, CLICK_AT, DESCRIPTION, KEY, KIND, NAME, OPEN_ITEM,
     OPEN_MENU, OPTION, PICTURE_WINDOW, PRESS_KEY, READ_WINDOW, SCROLL_PAGE, SCROLL_TO, SELECT_ITEM,
     SET_VALUE, TOWARD, TYPE_WITHOUT_SAVING, VALUE,
 };
@@ -78,10 +78,19 @@ pub const THE_GAME_IDENTIFIER: &str = "net.supertuxkart.SuperTuxKart";
 /// The game, as a person says it and as its catalogue entry names it.
 pub const THE_GAME: &str = "SuperTuxKart";
 
-/// What the reader says the game's window shows, for the clicking request.
-pub const WHERE_THE_RACE_STARTS: &str = "The game's main menu fills the window, drawn by the game itself. A \
-     large button reading Start race is at 50% across and 40% down; one reading Options is at 50% \
-     across and 55% down.";
+/// What the click request asks to be clicked, by the words on it.
+pub const THE_RACE_BUTTON: &str = "Start race";
+
+/// **Where the reader the person chose finds the race button**, in the one
+/// line it is asked for (`alo_adapters::where_a_thing_is::found`): one match,
+/// 50% across and 40% down. It lives on the machine's side, and the model is
+/// never told it.
+pub const WHERE_THE_RACE_STARTS: &str = "1 50 40";
+
+/// What the reader says the game's window shows, where the model has a
+/// picture of it read first.
+pub const WHAT_THE_GAME_SHOWS: &str = "The game's main menu fills the window, drawn by the game \
+     itself. A large button reading Start race is in the middle; one reading Options is below it.";
 
 /// The game, as the catalogue lists it: its identifier and its name.
 ///
@@ -717,42 +726,56 @@ pub fn every_other_verb(home: &Path, shipped: &Shipped) -> Result<Vec<ARequest>,
             )
             .into_text(),
     ];
+    // **A click by description, 2026-11-21** (the owner: *"Yes, click by
+    // description"*): the road is the read, which opens the screen road, and a
+    // click describing the button. The reader the person chose finds it, on
+    // the machine's side, at [`WHERE_THE_RACE_STARTS`]; the model is told
+    // what was clicked and what the window shows after, never where.
+    let read_the_game = Step::of(
+        READ_WINDOW,
+        Answered::With(Done::of_a_window_read(&the_game_shown, &told_of_the_game)),
+    )
+    .expecting(fallback_verbs::APPLICATION, game.as_str())
+    // **A look**, as for the picture: the picture verb asks the tree.
+    .a_look();
+    // **The scripted reader finds the button once**, read by the machine's
+    // own reading of its answer: a set whose reader the machine would refuse
+    // does not build.
+    alo_adapters::where_a_thing_is::found(WHERE_THE_RACE_STARTS)
+        .map_err(|why| NotTheSet::because(format!("the race is not found: {why:?}")))?;
+    let click_the_race = Step::of(
+        CLICK_AT,
+        Answered::With(Done::of_a_click(
+            &game,
+            THE_RACE_BUTTON,
+            true,
+            Some(Ok(
+                "A track is being chosen: the race menu fills the window.".to_owned(),
+            )),
+        )),
+    )
+    .expecting(fallback_verbs::APPLICATION, game.as_str())
+    .expecting_a_description_naming(DESCRIPTION, THE_RACE_BUTTON);
     let clicking = ARequest::asking(
-        "click by position where a picture of a window showed a thing",
-        format!("{THE_GAME} is open on the menu. Start a race in it."),
-        vec![
-            Step::of(
-                READ_WINDOW,
-                Answered::With(Done::of_a_window_read(&the_game_shown, &told_of_the_game)),
-            )
-            .expecting(fallback_verbs::APPLICATION, game.as_str())
-            // **A look**, as for the picture: the picture verb asks the tree.
-            .a_look(),
-            Step::of(
-                PICTURE_WINDOW,
-                Answered::With(Done::of_a_picture(
-                    &game,
-                    (1280, 800),
-                    Ok(WHERE_THE_RACE_STARTS.to_owned()),
-                )),
-            )
-            .expecting(fallback_verbs::APPLICATION, game.as_str()),
-            Step::of(
-                CLICK_AT,
-                Answered::With(Done::of_a_click(
-                    &game,
-                    (50, 40),
-                    true,
-                    Some(Ok(
-                        "A track is being chosen: the race menu fills the window.".to_owned(),
-                    )),
-                )),
-            )
-            .expecting(fallback_verbs::APPLICATION, game.as_str())
-            .expecting(ACROSS, "50")
-            .expecting(DOWN, "40"),
-        ],
-    );
+        "click by description in a window that describes nothing",
+        format!("Click \"{THE_RACE_BUTTON}\" in {THE_GAME}."),
+        vec![read_the_game.clone(), click_the_race.clone()],
+    )
+    // **Or with a picture read first**, which the picture's own act tells a
+    // model to take after such a read; it clicks nothing and sends no point.
+    .or_by_another_road(vec![
+        read_the_game,
+        Step::of(
+            PICTURE_WINDOW,
+            Answered::With(Done::of_a_picture(
+                &game,
+                (1280, 800),
+                Ok(WHAT_THE_GAME_SHOWS.to_owned()),
+            )),
+        )
+        .expecting(fallback_verbs::APPLICATION, game.as_str()),
+        click_the_race,
+    ]);
     let papers = shipped
         .the(Role::DocumentViewer)
         .application()

@@ -182,7 +182,11 @@ building on the fallback, can rely on:
   agent's**. *Edited 2026-11-17 by ADR 0147's amendment of that date (the owner:
   "Allow clicking by position"):* **and alo's own click on the screen road**,
   inside that one window, read again after, never in a terminal, across a
-  pairing or in a window with a password field. No adapter declares either;
+  pairing or in a window with a password field. *Edited 2026-11-21 (the owner:
+  "Yes, click by description"):* alo names the thing it clicks as a person sees
+  it, and the reader the person chose finds where it is — **alo is never handed a
+  position by the model**, and clicks only where exactly one thing is found. No
+  adapter declares either;
 - **nothing is guessed.** A press is refused when no control of that kind and name
   is showing, when more than one is, when the window is too large to read whole,
   when the control is greyed out, and when it offers no way to be pressed from

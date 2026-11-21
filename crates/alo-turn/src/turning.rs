@@ -157,6 +157,10 @@ pub struct Turning<'a, 'm> {
     /// nothing, by identifier: a control named in one is refused before any
     /// card (`alo_adapters::where_nothing_is_named`).
     where_nothing_is_named: Vec<String>,
+    /// An approved click by description whose point the reader has not yet
+    /// given (`crate::finding_where_to_click`): the approval waits here, and
+    /// nowhere outside the turn.
+    the_click_to_find: Option<crate::clicking_in_an_applications_window::AClickToFind>,
 }
 
 impl<'a, 'm> Turning<'a, 'm> {
@@ -195,6 +199,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             wanted: Vec::new(),
             a_window_described_nothing: false,
             where_nothing_is_named: Vec::new(),
+            the_click_to_find: None,
         })
     }
 
@@ -231,6 +236,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             wanted: Vec::new(),
             a_window_described_nothing: false,
             where_nothing_is_named: Vec::new(),
+            the_click_to_find: None,
         })
     }
 
@@ -314,6 +320,18 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// nothing.
     pub(crate) fn where_nothing_is_named(&self) -> &[String] {
         &self.where_nothing_is_named
+    }
+
+    /// The machine this turn's verbs come from, when they come from another.
+    pub(crate) const fn origin(&self) -> Option<&Origin> {
+        self.origin.as_ref()
+    }
+
+    /// The approved click by description waiting for its point, if one is.
+    pub(crate) const fn the_click_to_find(
+        &mut self,
+    ) -> &mut Option<crate::clicking_in_an_applications_window::AClickToFind> {
+        &mut self.the_click_to_find
     }
 
     /// A change, put to a person in one sentence.
@@ -461,6 +479,12 @@ impl<'a, 'm> Turning<'a, 'm> {
         grants: &Grants,
         now: SystemTime,
     ) -> Result<WhatAVerbDid, NotDone> {
+        // **A click by description runs in two halves** under this one
+        // approval (`crate::finding_where_to_click`): the first ends with what
+        // the reader is to find, and its entry is written by the second.
+        if authorised.verb() == alo_adapters::CLICK_AT {
+            return self.readying_a_click(authorised, grants);
+        }
         // **A change that changes nothing here carries no place either** — a
         // publication — so the record never offers *Put back* beside a folder
         // already on the internet (ADR 0110 §2), whatever a caller kept.
@@ -582,7 +606,11 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// machine is one — so that the next turn can begin on the same borrow.
     /// The turn is consumed exactly as by `ending`, and for the same reason.
     #[must_use]
-    pub fn ended(self, grants: &mut Grants) -> (bool, &'a mut Machine<'m>) {
+    pub fn ended(mut self, grants: &mut Grants) -> (bool, &'a mut Machine<'m>) {
+        // **A click still waiting for its point is written down as never
+        // made** (`crate::finding_where_to_click`); a record that would not
+        // take it has closed the turn already, and there is nothing more to say.
+        let _ = self.a_click_never_found();
         let Self { turn, machine, .. } = self;
         (turn.ending(grants), machine)
     }
@@ -1095,7 +1123,7 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// This entry, stamped *at full access* when `grants` — the list this
     /// moment was decided against — gave this turn's agent full access
     /// (ADR 0149), and unchanged otherwise.
-    fn as_the_level_was(&self, entry: Entry, grants: &Grants) -> Entry {
+    pub(crate) fn as_the_level_was(&self, entry: Entry, grants: &Grants) -> Entry {
         if grants.has_full_access(self.turn.grantee()) {
             entry.at_full_access()
         } else {

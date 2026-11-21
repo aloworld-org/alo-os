@@ -68,7 +68,7 @@ pub fn read_if_a_picture(
         });
         return Some(Done::of_a_click(
             made.application(),
-            made.at(),
+            made.description(),
             made.changed(),
             read,
         ));
@@ -81,6 +81,41 @@ pub fn read_if_a_picture(
 /// The picture, put to its reader: the words, or the sentence saying why not.
 fn reading(
     taken: &APictureTaken,
+    turning: &mut Turning<'_, '_>,
+    questions: &mut Questions,
+    road: &dyn TheScreenRoadAsChosen,
+    strings: &Strings,
+    now: SystemTime,
+) -> Result<String, Said> {
+    let application = Filling::of(APPLICATION, taken.application().to_owned());
+    let asked = strings.say(&words::WHAT_THE_READER_IS_ASKED.key(), &application);
+    let asked = match taken.question() {
+        Some(question) => strings.say(
+            &words::WHAT_THE_READER_IS_ASKED_TO_ANSWER.key(),
+            &Filling::nothing()
+                .and_said("asked", &asked)
+                .and("question", question.to_owned()),
+        ),
+        None => asked,
+    }
+    .into_text();
+    asking_the_reader(taken, &asked, turning, questions, road, strings, now)
+}
+
+/// **`asked`, with the picture, put to the reader the person chose** — the
+/// one road a picture leaves by: the rule, the road out, the key, the
+/// indicator and the record (law 1). The words, or the sentence saying why
+/// not; nothing is sent where the answer is a sentence.
+///
+/// `pub(crate)`, for `crate::clicking_where_it_is`, which asks where one
+/// described thing is.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the picture, the question, the turn that carries it and the four things the \n              road out is read from; a struct would exist only to be unpacked"
+)]
+pub(crate) fn asking_the_reader(
+    taken: &APictureTaken,
+    asked: &str,
     turning: &mut Turning<'_, '_>,
     questions: &mut Questions,
     road: &dyn TheScreenRoadAsChosen,
@@ -122,17 +157,6 @@ fn reading(
         return Err(strings.say(&words::THE_READER_HAS_NO_MODEL.key(), &named));
     };
 
-    let asked = strings.say(&words::WHAT_THE_READER_IS_ASKED.key(), &application);
-    let asked = match taken.question() {
-        Some(question) => strings.say(
-            &words::WHAT_THE_READER_IS_ASKED_TO_ANSWER.key(),
-            &Filling::nothing()
-                .and_said("asked", &asked)
-                .and("question", question.to_owned()),
-        ),
-        None => asked,
-    }
-    .into_text();
     let policy = questions.the_rule();
     let by_an_organisation = questions.by_an_organisation();
     let the_road_out = questions.road_out();

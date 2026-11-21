@@ -33,7 +33,7 @@ use alo_software::{Installed, WhatTheCatalogueHolds};
 use crate::acting_on_an_application::Reached;
 use crate::choosing_in_an_application::AChoiceMade;
 use crate::choosing_on_the_file_chooser::AFileChosen;
-use crate::clicking_in_an_applications_window::AClickMade;
+use crate::clicking_in_an_applications_window::{AClickMade, AThingToFind};
 use crate::opening_a_file_in_an_application::AFileOpened;
 use crate::opening_a_menu_in_an_application::AMenuOpened;
 use crate::opening_an_item_in_an_application::AnItemOpened;
@@ -124,10 +124,16 @@ pub enum WhatAVerbDid {
     /// the daemon has it read by whoever the person chose, and only those
     /// words go on. The picture itself never crosses to a client.
     APictureWasTaken(APictureTaken),
-    /// One click was made at a point of the window of an application that
-    /// describes nothing (`accessible.click_at`, ADR 0147 as amended
-    /// 2026-11-17), with the window pictured after it **not yet read**.
+    /// One click was made on a described thing in the window of an
+    /// application that describes nothing (`accessible.click_at`, ADR 0147 as
+    /// amended 2026-11-17 and 2026-11-21), with the window pictured after it
+    /// **not yet read**.
     AClickWasMade(AClickMade),
+    /// **An approved click waits for its point**: what the reader the person
+    /// chose is to find, and the picture to find it in. Nothing is clicked
+    /// yet; the daemon asks the reader and hands its answer to
+    /// `Turning::clicking_where_it_was_found` (`crate::finding_where_to_click`).
+    AThingIsToBeFound(AThingToFind),
 }
 
 impl WhatAVerbDid {
@@ -198,7 +204,8 @@ impl WhatAVerbDid {
             | Self::AMenuWasOpened(_)
             | Self::AKeyWasPressed(_)
             | Self::APictureWasTaken(_)
-            | Self::AClickWasMade(_) => None,
+            | Self::AClickWasMade(_)
+            | Self::AThingIsToBeFound(_) => None,
         }
     }
 
@@ -228,7 +235,8 @@ impl WhatAVerbDid {
             | Self::AMenuWasOpened(_)
             | Self::AKeyWasPressed(_)
             | Self::APictureWasTaken(_)
-            | Self::AClickWasMade(_) => None,
+            | Self::AClickWasMade(_)
+            | Self::AThingIsToBeFound(_) => None,
         }
     }
 
@@ -254,7 +262,8 @@ impl WhatAVerbDid {
             | Self::AMenuWasOpened(_)
             | Self::AKeyWasPressed(_)
             | Self::APictureWasTaken(_)
-            | Self::AClickWasMade(_) => None,
+            | Self::AClickWasMade(_)
+            | Self::AThingIsToBeFound(_) => None,
         }
     }
 
@@ -280,7 +289,8 @@ impl WhatAVerbDid {
             | Self::AMenuWasOpened(_)
             | Self::AKeyWasPressed(_)
             | Self::APictureWasTaken(_)
-            | Self::AClickWasMade(_) => None,
+            | Self::AClickWasMade(_)
+            | Self::AThingIsToBeFound(_) => None,
         }
     }
 
@@ -306,7 +316,8 @@ impl WhatAVerbDid {
             | Self::AMenuWasOpened(_)
             | Self::AKeyWasPressed(_)
             | Self::APictureWasTaken(_)
-            | Self::AClickWasMade(_) => None,
+            | Self::AClickWasMade(_)
+            | Self::AThingIsToBeFound(_) => None,
         }
     }
 
@@ -333,6 +344,16 @@ impl WhatAVerbDid {
     pub const fn menu_opened(&self) -> Option<&AMenuOpened> {
         match self {
             Self::AMenuWasOpened(opened) => Some(opened),
+            _ => None,
+        }
+    }
+
+    /// What the reader is to find before a click, when a click waits for its
+    /// point.
+    #[must_use]
+    pub const fn thing_to_find(&self) -> Option<&AThingToFind> {
+        match self {
+            Self::AThingIsToBeFound(thing) => Some(thing),
             _ => None,
         }
     }
@@ -404,7 +425,8 @@ impl WhatAVerbDid {
             | Self::AMenuWasOpened(_)
             | Self::AKeyWasPressed(_)
             | Self::APictureWasTaken(_)
-            | Self::AClickWasMade(_) => None,
+            | Self::AClickWasMade(_)
+            | Self::AThingIsToBeFound(_) => None,
         }
     }
 }

@@ -45,7 +45,7 @@ fn the_road_of(named: &str) -> Vec<&'static str> {
 
 #[test]
 fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
-    assert_eq!(THE_VERSION, 35);
+    assert_eq!(THE_VERSION, 36);
     let set = the_set().expect("the set builds");
     let named: Vec<&str> = set
         .requests()
@@ -80,7 +80,7 @@ fn the_set_is_versioned_and_holds_a_request_for_every_verb() {
             "press a key in an application",
             "type into a search box without saving",
             "have a picture of a window that describes nothing read",
-            "click by position where a picture of a window showed a thing",
+            "click by description in a window that describes nothing",
             "answer the file chooser",
         ]
     );
@@ -792,36 +792,41 @@ fn the_machine_also_has_a_game_from_the_catalogue() {
     );
 }
 
-/// **Clicking by position is asked of the game**: read it, picture it, click
-/// where its picture's words put the thing — every step about the game.
+/// **Clicking by description is asked of the game**: *Click "Start race" in
+/// SuperTuxKart* — read it, then click describing the button, or read it,
+/// picture it and click; every step about the game, and the click held to
+/// naming the button, never to a point.
 #[test]
 fn the_click_request_is_asked_of_the_game() {
+    use alo_adapters::fallback_verbs::{CLICK_AT, DESCRIPTION, PICTURE_WINDOW, READ_WINDOW};
     let set = the_set().expect("the set builds");
     let request = set
         .requests()
         .iter()
         .find(|request| {
-            request.named() == "click by position where a picture of a window showed a thing"
+            request.named() == "click by description in a window that describes nothing"
         })
         .expect("the set has the click request");
-    assert!(
-        request.words().contains("SuperTuxKart"),
-        "{}",
-        request.words()
-    );
+    assert_eq!(request.words(), "Click \"Start race\" in SuperTuxKart.");
+    let verbs = |road: &[crate::a_road::Step]| {
+        road.iter()
+            .map(crate::a_road::Step::verb)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(verbs(request.road()), [READ_WINDOW, CLICK_AT]);
     assert_eq!(
         request
-            .road()
+            .other_roads()
             .iter()
-            .map(crate::a_road::Step::verb)
+            .map(|road| verbs(road))
             .collect::<Vec<_>>(),
-        [
-            alo_adapters::fallback_verbs::READ_WINDOW,
-            alo_adapters::fallback_verbs::PICTURE_WINDOW,
-            alo_adapters::fallback_verbs::CLICK_AT,
-        ]
+        [vec![READ_WINDOW, PICTURE_WINDOW, CLICK_AT]]
     );
-    for step in request.road() {
+    for step in request
+        .road()
+        .iter()
+        .chain(request.other_roads().iter().flatten())
+    {
         assert!(
             step.expected().iter().any(|(argument, is)| *argument
                 == alo_adapters::fallback_verbs::APPLICATION
@@ -830,6 +835,66 @@ fn the_click_request_is_asked_of_the_game() {
             step.verb(),
             step.expected()
         );
+        if step.verb() == CLICK_AT {
+            assert_eq!(
+                step.described(),
+                [(
+                    DESCRIPTION,
+                    crate::every_other_verb::THE_RACE_BUTTON.to_owned()
+                )]
+            );
+        }
+    }
+}
+
+/// **The scripted reader finds the race button once, at 50% across and 40%
+/// down**, read by the machine's own reading of a reader's answer — the
+/// machine's side of the click, which the model is never told.
+#[test]
+fn the_scripted_reader_finds_the_race_once() {
+    assert_eq!(
+        alo_adapters::where_a_thing_is::found(crate::every_other_verb::WHERE_THE_RACE_STARTS),
+        Ok((50, 40))
+    );
+}
+
+/// **A click describing another thing leaves the road**, as the reader would
+/// find no race button in it; one describing the button in any words takes it.
+#[test]
+fn a_click_describing_another_thing_leaves_the_road() {
+    use crate::a_try::{TheLevel, one_try_at};
+    use crate::testing::{Writing, answering, proposing, reading, the_words};
+    use alo_adapters::fallback_verbs::{APPLICATION, CLICK_AT, DESCRIPTION, READ_WINDOW};
+
+    let set = the_set().expect("the set builds");
+    let request = set
+        .requests()
+        .iter()
+        .find(|request| {
+            request.named() == "click by description in a window that describes nothing"
+        })
+        .expect("the set has it");
+    let game = crate::every_other_verb::THE_GAME_IDENTIFIER;
+    let clicking = |described: &str| {
+        vec![
+            reading(READ_WINDOW, &[(APPLICATION, game)]),
+            proposing(CLICK_AT, &[(APPLICATION, game), (DESCRIPTION, described)]),
+            answering("The race is starting."),
+        ]
+    };
+    for level in [TheLevel::FullAccess, TheLevel::AskEachTime] {
+        let tried = |described: &str| {
+            one_try_at(
+                level,
+                request,
+                set.may_reach(),
+                &crate::testing::the_verbs(),
+                &the_words(),
+                &mut Writing::these(&clicking(described)),
+            )
+        };
+        assert!(tried("the Start Race button").took_the_road(), "{level:?}");
+        assert!(!tried("the Options button").took_the_road(), "{level:?}");
     }
 }
 
@@ -1068,7 +1133,7 @@ fn a_guessed_name_where_nothing_is_named_is_refused_and_the_try_goes_on() {
     use crate::a_try::{TheLevel, Went, one_try_at};
     use crate::testing::{Writing, answering, proposing, reading, the_words};
     use alo_adapters::fallback_verbs::{
-        ACROSS, APPLICATION, CLICK_AT, DOWN, NAME, PICTURE_WINDOW, QUESTION, READ_WINDOW,
+        APPLICATION, CLICK_AT, DESCRIPTION, NAME, PICTURE_WINDOW, QUESTION, READ_WINDOW,
         SELECT_ITEM,
     };
 
@@ -1077,7 +1142,7 @@ fn a_guessed_name_where_nothing_is_named_is_refused_and_the_try_goes_on() {
         .requests()
         .iter()
         .find(|request| {
-            request.named() == "click by position where a picture of a window showed a thing"
+            request.named() == "click by description in a window that describes nothing"
         })
         .expect("the set has it");
     let game = crate::every_other_verb::THE_GAME_IDENTIFIER;
@@ -1088,9 +1153,9 @@ fn a_guessed_name_where_nothing_is_named_is_refused_and_the_try_goes_on() {
             PICTURE_WINDOW,
             &[(APPLICATION, game), (QUESTION, "Where is Start race?")],
         ),
-        // **The point as numbers**, as a model writes a count.
-        format!(
-            r#"{{"format":1,"asks":{{"propose":{{"verb":"{CLICK_AT}","given":[{{"named":"{APPLICATION}","is":"{game}"}},{{"named":"{ACROSS}","is":50}},{{"named":"{DOWN}","is":40}}]}}}}}}"#
+        proposing(
+            CLICK_AT,
+            &[(APPLICATION, game), (DESCRIPTION, "the Start race button")],
         ),
         answering("The race is starting."),
     ];
@@ -1231,7 +1296,7 @@ fn a_guess_with_no_read_first_is_refused_and_the_try_goes_on() {
     use crate::a_try::{TheLevel, Went, one_try_at};
     use crate::testing::{Writing, answering, proposing, reading, the_words};
     use alo_adapters::fallback_verbs::{
-        ACROSS, APPLICATION, CLICK_AT, DOWN, NAME, OPEN_ITEM, PICTURE_WINDOW, QUESTION, READ_WINDOW,
+        APPLICATION, CLICK_AT, DESCRIPTION, NAME, OPEN_ITEM, PICTURE_WINDOW, QUESTION, READ_WINDOW,
     };
 
     let set = the_set().expect("the set builds");
@@ -1239,7 +1304,7 @@ fn a_guess_with_no_read_first_is_refused_and_the_try_goes_on() {
         .requests()
         .iter()
         .find(|request| {
-            request.named() == "click by position where a picture of a window showed a thing"
+            request.named() == "click by description in a window that describes nothing"
         })
         .expect("the set has it");
     let game = crate::every_other_verb::THE_GAME_IDENTIFIER;
@@ -1250,8 +1315,9 @@ fn a_guess_with_no_read_first_is_refused_and_the_try_goes_on() {
             PICTURE_WINDOW,
             &[(APPLICATION, game), (QUESTION, "Where is Start race?")],
         ),
-        format!(
-            r#"{{"format":1,"asks":{{"propose":{{"verb":"{CLICK_AT}","given":[{{"named":"{APPLICATION}","is":"{game}"}},{{"named":"{ACROSS}","is":50}},{{"named":"{DOWN}","is":40}}]}}}}}}"#
+        proposing(
+            CLICK_AT,
+            &[(APPLICATION, game), (DESCRIPTION, "the Start race button")],
         ),
         answering("The race is starting."),
     ];

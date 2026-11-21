@@ -1165,7 +1165,12 @@ running code. It is built once `CLAUDE.md` carries those words (ADR 0143).*
   (`accessible.picture_window`) where the person switched it on for that
   application and chose who reads the pictures, and only the reader's words
   reach alo's model; the person's own model on this computer cannot be handed a
-  picture yet, and alo says so.
+  picture yet, and alo says so. *Built 2026-11-21, not walked:* **alo clicks
+  once on one thing in such a window, described as a person sees it**
+  (`accessible.click_at`, the owner: *"Yes, click by description"*): after the
+  person's OK the reader they chose is asked where it is, through the same
+  road and indicator, and alo clicks only where exactly one is found. Nothing
+  is ever dragged.
   **The person also chooses what reads those pictures**, in Settings → What
   alo can use, under *Pictures and keys*: **no one** (as a machine arrives:
   alo takes no picture and says it cannot see inside the application, and

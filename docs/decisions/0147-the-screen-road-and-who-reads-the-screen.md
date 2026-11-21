@@ -219,6 +219,34 @@ Every click alo makes by position keeps all of these:
 *Not built when this was written*: this amendment is written before the code,
 as the owner's answer 15 asked of the screen road's first change.
 
+## Amended 2026-11-21 — alo clicks by description, and the reader finds where
+
+*The owner, 2026-11-21, relayed by the coordinator: **"Yes, click by
+description"**.* This keeps everything the amendment above allows and changes
+**who says where**. Until now the model was to copy a point — two whole numbers
+of per cent — out of a picture's words and send it. On the heads measured the
+click request took that road 0 of 10 times (counts taken before the click was
+offered only after a read, so they are not a measurement of the last design),
+and a model copying numbers is a model that can copy wrong ones. Now:
+
+- **The model describes the thing as a person sees it** — *the Start race
+  button* — and gives no point. `accessible.click_at` takes `application` and
+  `description`, and the card reads *click “{description}” in {application}*,
+  the application by what a person calls it.
+- **The reader the person chose finds it.** After the one OK (or at once at
+  full access), the window is pictured and that picture goes to the reader
+  through the road every picture takes — the indicator as it leaves, the record
+  afterwards — with one question that asks for one line: how many things match,
+  and the centre of the one that does. **Exactly one found is clicked**, once;
+  none, more than one, or an answer that is not that line is refused in plain
+  words, and nothing is clicked. A reader that cannot read pictures is refused
+  as before.
+- **The model is never told where.** It is told what was clicked and what the
+  window shows after; the point is kept on the machine and in the record.
+- **One approval, two halves**: the approval waits inside the turn while the
+  reader is asked, so nothing outside it can spend it twice, and a click whose
+  answer never comes is written down as refused. Nothing ever drags.
+
 ## What this does not decide
 
 The recognition engine itself; the Settings surface the three choices appear

@@ -332,6 +332,7 @@ pub mod what_files_open_with_here;
 /// the desktop could use it without depending on this service.
 #[cfg(target_os = "linux")]
 pub use alo_interfaces::route_messages;
+pub mod clicking_where_it_is;
 pub mod reading_a_picture;
 pub mod reading_a_picture_words;
 #[cfg(target_os = "linux")]

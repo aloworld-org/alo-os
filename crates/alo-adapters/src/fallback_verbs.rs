@@ -86,18 +86,21 @@ pub const PICTURE_WINDOW: &str = "accessible.picture_window";
 /// (`docs/quirks/two-verbs-taking-the-same-arguments-and-gpt-4o-mini-sends-neither.md`).
 pub const QUESTION: &str = "question";
 
-/// The verb that clicks once at one point of a window that describes nothing,
-/// given as proportions of it (ADR 0147, amended 2026-11-17: *"Allow clicking
-/// by position"*).
+/// The verb that clicks once on one thing in a window that describes nothing,
+/// **described as a person sees it**: the reader the person chose finds where
+/// it is (ADR 0147, amended 2026-11-17: *"Allow clicking by position"*, and
+/// 2026-11-21: *"Yes, click by description"*).
 pub const CLICK_AT: &str = "accessible.click_at";
 
-/// The argument saying how far across the window a click is, in per cent.
-pub const ACROSS: &str = "across";
+/// The argument describing the thing to click as a person sees it, such as
+/// *the Start race button*.
+///
+/// **Not `thing`**: that is `accessible.open_menu`'s argument, and two verbs
+/// of one shape are the ones a model confuses
+/// (`docs/quirks/two-verbs-taking-the-same-arguments-and-gpt-4o-mini-sends-neither.md`).
+pub const DESCRIPTION: &str = "description";
 
-/// The argument saying how far down the window a click is, in per cent.
-pub const DOWN: &str = "down";
-
-/// The whole width or height, in the per cent a click is given in.
+/// The whole width or height, in the per cent a point is found in.
 pub const THE_WHOLE_WAY: u8 = 100;
 
 /// The verb that types one approved text into one field and saves nothing
@@ -440,10 +443,12 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
         )
         .and_then(|verb| verb.changing(picture::PICTURE_CHANGES, Some(picture::PICTURE_LEAVES))),
     )?)?;
-    // **One click at one point, by proportions of the window** (ADR 0147,
-    // amended 2026-11-17, `crate::clicking_at`): a change, one sentence and one
-    // OK at *ask each time*; two numbers from 0 to 100 and no third, so no
-    // pixel, no drag and no second window can arrive.
+    // **One click on one thing, described as a person sees it** (ADR 0147,
+    // amended 2026-11-17 and 2026-11-21, `crate::clicking_at`): a change, one
+    // sentence and one OK at *ask each time*; the application and a
+    // description and no third, so no point, no pixel, no drag and no second
+    // window can arrive from the model. Where the thing is, the reader the
+    // person chose says (`crate::where_a_thing_is`).
     verbs.declare(checked(
         CLICK_AT,
         Verb::checked(
@@ -453,14 +458,9 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), NotLoaded> {
             vec![
                 Arg::taking(APPLICATION, click::CLICK_APPLICATION, Takes::Application),
                 Arg::taking(
-                    ACROSS,
-                    click::CLICK_ACROSS,
-                    Takes::count(0, i64::from(THE_WHOLE_WAY)),
-                ),
-                Arg::taking(
-                    DOWN,
-                    click::CLICK_DOWN,
-                    Takes::count(0, i64::from(THE_WHOLE_WAY)),
+                    DESCRIPTION,
+                    click::CLICK_DESCRIPTION,
+                    Takes::name(LONGEST_NAME),
                 ),
             ],
             Requires::grants_over([APPLICATION]),

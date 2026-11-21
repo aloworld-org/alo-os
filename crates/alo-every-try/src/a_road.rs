@@ -72,6 +72,10 @@ pub struct Step {
     /// The arguments that name a place for text, and the place as the window
     /// shows it: any name the machine's typing takes for it will do.
     fields: Vec<(&'static str, APlaceForText)>,
+    /// The arguments that describe one thing to click, and the words a
+    /// description must name it by: any wording that names it will do, as the
+    /// reader the person chose would find it.
+    described: Vec<(&'static str, String)>,
     /// What the machine answers when the step is taken.
     answered: Answered,
     /// Whether this is a look the model may skip, or take more than once.
@@ -94,6 +98,7 @@ impl Step {
             verb,
             expecting: Vec::new(),
             fields: Vec::new(),
+            described: Vec::new(),
             answered,
             look: false,
             again: false,
@@ -183,6 +188,28 @@ impl Step {
     pub fn expecting_the_field(mut self, argument: &'static str, place: APlaceForText) -> Self {
         self.fields.push((argument, place));
         self
+    }
+
+    /// **And `argument` must describe a thing that `words` names** — *the
+    /// Start race button* and *Start Race* both name *Start race* — as the
+    /// reader the person chose finds a described thing
+    /// (`alo_adapters::where_a_thing_is`): by what it says, not by one
+    /// sentence about it.
+    #[must_use]
+    pub fn expecting_a_description_naming(
+        mut self,
+        argument: &'static str,
+        words: impl Into<String>,
+    ) -> Self {
+        self.described.push((argument, words.into()));
+        self
+    }
+
+    /// The arguments that describe a thing to click, and the words each must
+    /// name it by.
+    #[must_use]
+    pub fn described(&self) -> &[(&'static str, String)] {
+        &self.described
     }
 
     /// The arguments that name a place for text, and those places.

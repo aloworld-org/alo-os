@@ -849,23 +849,42 @@ compositor's `picture-of` (`application-door.md`), and read by
   person's own model on this computer cannot be handed a picture yet, and is
   refused in words with nothing sent.
 
-## The click verb — added 2026-11-17, additively
+## The click verb — added 2026-11-17, additively; by description since 2026-11-21
 
-`accessible.click_at` clicks **once at one point of the window of an application
-that describes nothing**, at a place a picture of it showed — ADR 0147's
-amendment of 2026-11-17 (the owner: *"Allow clicking by position"*). Declared in
-`alo-adapters` (`fallback_verbs.rs`), checked by
-`crates/alo-adapters/src/clicking_at.rs`, carried out through a turn and the
-compositor's `click-at` (`application-door.md`). **Dragging stays the
-person's**: no verb holds a button.
+`accessible.click_at` clicks **once on one described thing in the window of an
+application that describes nothing** — ADR 0147's amendments of 2026-11-17 (the
+owner: *"Allow clicking by position"*) and 2026-11-21 (the owner: **"Yes, click
+by description"**). Declared in `alo-adapters` (`fallback_verbs.rs`), checked by
+`crates/alo-adapters/src/clicking_at.rs`, found by
+`crates/alo-adapters/src/where_a_thing_is.rs`, carried out through a turn
+(`crates/alo-turn/src/finding_where_to_click.rs`) and the compositor's
+`click-at` (`application-door.md`). **Dragging stays the person's**: no verb
+holds a button.
 
 | Arguments | The sentence a person approves |
 |---|---|
-| `application` (an application), `across` and `down` (whole numbers, 0 to 100: per cent of the window from its left and top edges) | *click {across}% across and {down}% down the {application} window* |
+| `application` (an application), `description` (a name, at most 200 characters: the thing as a person sees it, such as *the Start race button*) | *click “{description}” in {application}*, the application said by what a person calls it |
 
-- **A change.** At *ask each time* each click waits for one approval and one
-  approval clicks once; at full access it clicks at once, and is recorded the
-  same way.
+**The model gives no point.** Until 2026-11-21 the verb took `across` and
+`down`, whole per cent of the window, which the model copied out of a picture's
+words. Those two arguments are gone (the verb had not reached `main`, so no
+caller had been offered them). The argument is not named `thing`, because that
+is `accessible.open_menu`'s, and two verbs of one shape are the ones a model
+confuses
+(`docs/quirks/two-verbs-taking-the-same-arguments-and-gpt-4o-mini-sends-neither.md`).
+
+- **A change, in two halves under one approval.** At *ask each time* each click
+  waits for one OK; at full access it runs at once, and is recorded the same
+  way. After the OK the turn runs every check below and pictures the window;
+  then the daemon puts that picture to the reader the person chose, through the
+  road every picture takes, so **the indicator shows it as it leaves and the
+  record keeps it** (law 1). The reader is asked one question
+  (`where_a_thing_is::the_question`) and answers one line: how many things
+  match, then the centre of the one that does, in whole per cent. **Exactly one
+  found is clicked**, once, at that centre. None, more than one, or an answer
+  that is not that one line is refused in plain words, and nothing is clicked.
+  A reader that cannot read pictures — the person's own model on this computer,
+  today — is refused in words, with nothing sent.
 - **Offered only once a read in that turn found a window that describes nothing**,
   as the picture is (`alo_instructing::the_verbs_offered`).
 - **The picture's rules, all of them**: *Pictures and keys* on for that
@@ -876,10 +895,12 @@ person's**: no verb holds a button.
   the default; and nothing while the person holds a button down.
 - **Read again after.** The window is pictured before the click and after it.
   Where the two are the same, or no picture after could be taken, the click is
-  recorded as having run with its outcome **not known**.
-- The answer is `clicked` on the wire: `application`, `across`, `down`,
-  `changed` (`false` is *not known*, never *nothing happened*), and `read` —
-  what the reader said the window shows after — or `not-read`.
+  recorded as having run with its outcome **not known**. Where alo clicked, as
+  the reader found it, is kept in the record beside it.
+- The answer is `clicked` on the wire: `application`, `description`, `changed`
+  (`false` is *not known*, never *nothing happened*), and `read` — what the
+  reader said the window shows after — or `not-read`. **Where it clicked is
+  never in the answer**: the model is told what was clicked, never a point.
 
 **`scroll_to`'s argument is `to`, and `name` is still accepted, deprecated**
 (since 2026-11-17). The verb landed taking `name`, which shaped it like

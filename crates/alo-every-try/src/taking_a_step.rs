@@ -111,7 +111,44 @@ pub fn taking(
             });
         }
     }
+    for (argument, words) in step.described() {
+        let given = call
+            .value(argument)
+            .map_or_else(|| "nothing".to_owned(), Value::describe);
+        // **As the reader finds a described thing**: by the words it says,
+        // whatever sentence they are put in.
+        if !a_description_names(&given, words) {
+            return Err(WentWrong::AnotherValue {
+                step: at,
+                argument: (*argument).to_owned(),
+                expected: format!("a description naming “{words}”"),
+                given,
+            });
+        }
+    }
     Ok(call)
+}
+
+/// Whether `description` names `words`: the same words in the same order,
+/// whatever their case, quotes and spacing.
+#[must_use]
+pub fn a_description_names(description: &str, words: &str) -> bool {
+    let plain = |said: &str| {
+        said.chars()
+            .map(|one| {
+                if one.is_alphanumeric() {
+                    one.to_lowercase().collect::<String>()
+                } else {
+                    " ".to_owned()
+                }
+            })
+            .collect::<String>()
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+    };
+    let words = plain(words);
+    !words.is_empty() && format!(" {} ", plain(description)).contains(&format!(" {words} "))
 }
 
 #[cfg(test)]

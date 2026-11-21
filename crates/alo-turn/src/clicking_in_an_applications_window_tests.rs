@@ -1,7 +1,9 @@
-//! **alo clicking once at a point of an application's window, through a whole
-//! turn** (`accessible.click_at`, ADR 0147 as amended 2026-11-17: *"Allow
-//! clicking by position"*), written from the promise by a second author and not
-//! from the code (law 7): a game whose window describes nothing, a tree that
+//! **alo clicking once on one described thing in an application's window,
+//! through a whole turn** (`accessible.click_at`, ADR 0147 as amended
+//! 2026-11-17: *"Allow clicking by position"*, and 2026-11-21: *"Yes, click by
+//! description"*), first written from the promise by a second author and not
+//! from the code (law 7), and rewritten for the description before the code
+//! that reads the reader's answer was (law 6): a game whose window describes nothing, a tree that
 //! counts every time it is opened, a door that keeps every picture and every
 //! click it is asked for **in the order it was asked**, and the person's two
 //! choices held where a test can turn them while a click waits.
@@ -10,9 +12,14 @@
 //! - at *ask each time* a click waits for one approval, one approval clicks
 //!   once, and a declined one clicks nothing;
 //! - at full access it clicks at once, once;
-//! - the point is given in whole per cent from 0 to 100, reaches the door as
-//!   thousandths of the window, and anything outside the window is refused at
-//!   the call;
+//! - the model describes the thing and gives no point; the reader the person
+//!   chose finds it, and **exactly one found** is clicked, at its centre, as
+//!   thousandths of the window; none, more than one, an answer that is not the
+//!   one line, and a reader that could not be asked each click nothing and are
+//!   refused in words; a description that is not one name is refused at the
+//!   call;
+//! - between the approval and the reader's answer nothing is clicked, and a
+//!   click whose answer never comes is written down as refused;
 //! - no click unless *Pictures and keys* is on for **that** application and
 //!   somebody was chosen to read pictures — read at the moment of the act, so a
 //!   switch turned off while a click waits stops it;
@@ -44,10 +51,11 @@ use std::rc::Rc;
 
 use alo_acting::{Clicked, Pictured, ToClick, ToPicture};
 use alo_adapters::click_words::{
-    A_PASSWORD_FIELD, IT_DESCRIBES_ITSELF, NO_CLICK, NO_ONE_READS, NOT_ALOS_COPY, NOT_IN_FRONT,
-    NOT_KNOWN, NOT_SWITCHED_ON, THE_PERSON_IS_PRESSING,
+    A_PASSWORD_FIELD, CLICKED_THERE, FOUND_MORE_THAN_ONCE, IT_DESCRIBES_ITSELF, NO_CLICK,
+    NO_ONE_READS, NOT_ALOS_COPY, NOT_FOUND, NOT_IN_FRONT, NOT_KNOWN, NOT_SWITCHED_ON,
+    NOT_UNDERSTOOD, THE_PERSON_IS_PRESSING,
 };
-use alo_adapters::fallback_verbs::{ACROSS, APPLICATION, DOWN};
+use alo_adapters::fallback_verbs::{APPLICATION, DESCRIPTION};
 use alo_adapters::{AccessibilityTree, CLICK_AT, Facts, NodeAt, Running, TreeFault, WorkingFully};
 use alo_applications::{Application, Installed};
 use alo_capability::{Given, Grant, Grantee, Grants, PicturesAndKeys, Reach, WhoReadsPictures};
@@ -379,11 +387,15 @@ struct Arranged {
     reads: WhoReadsPictures,
     /// Whether the machine is given the person's choices at all.
     given_the_road: bool,
+    /// What the reader the person chose answers about where the thing is —
+    /// its one line — or the sentence saying why no reader could be asked.
+    reader: Result<&'static str, Word>,
 }
 
 /// The arrangement under which a click is made and changes the window: a game
-/// describing nothing, switched on, read on this computer, and a door that
-/// pictures it, clicks it, and pictures something different afterwards.
+/// describing nothing, switched on, read on this computer, a reader that finds
+/// the thing once at half way across and a quarter of the way down, and a door
+/// that pictures it, clicks it, and pictures something different afterwards.
 fn ready() -> Arranged {
     Arranged {
         shown: Shown::Nothing,
@@ -393,6 +405,42 @@ fn ready() -> Arranged {
         on_in: vec![GAME],
         reads: WhoReadsPictures::ThisComputer,
         given_the_road: true,
+        reader: Ok(FOUND_ONCE),
+    }
+}
+
+/// The reader's line for one thing found, half way across and a quarter down.
+const FOUND_ONCE: &str = "1 50 25";
+
+/// What the model asked to be clicked.
+const DESCRIBED: &str = "the Start race button";
+
+std::thread_local! {
+    /// What the reader answers in this test's thread, set by [`on_a_machine`]
+    /// from the arrangement — the daemon's half, which this crate does not
+    /// hold, standing in.
+    static THE_READER: RefCell<Result<&'static str, Word>> = const { RefCell::new(Ok(FOUND_ONCE)) };
+}
+
+/// What the reader answers now, as the daemon would hand it to the turn.
+fn the_reader_answers() -> Result<String, Said> {
+    THE_READER.with(|reader| match *reader.borrow() {
+        Ok(line) => Ok(line.to_owned()),
+        Err(word) => Err(in_english().say(&word.key(), &Filling::of("application", GAME))),
+    })
+}
+
+/// **The daemon's half**, as `alo-agentd` does it: where a click waits to be
+/// found, the reader is asked and its answer handed back to the turn.
+fn found_and_clicked(
+    turning: &mut Turning<'_, '_>,
+    did: Result<crate::WhatAVerbDid, NotDone>,
+) -> Result<crate::WhatAVerbDid, NotDone> {
+    match did {
+        Ok(did) if did.thing_to_find().is_some() => {
+            turning.clicking_where_it_was_found(the_reader_answers())
+        }
+        other => other,
     }
 }
 
@@ -430,6 +478,7 @@ fn on_a_machine<T>(
     granting: impl FnOnce(&mut Grants),
     doing: impl FnOnce(&mut Machine<'_>, &mut Grants, &Chosen, &Path) -> T,
 ) -> (T, Asked) {
+    THE_READER.with(|reader| *reader.borrow_mut() = arranged.reader);
     let strings = in_english();
     let tool = NoTool;
     let publisher = crate::testing::APublisher::that_publishes();
@@ -519,28 +568,29 @@ fn the_game_is_granted(grants: &mut Grants) {
         .grant(Grant::checked(AGENT, Reach::Application(GAME.to_owned()), noon(), hour()).unwrap());
 }
 
-/// A click in the game, `across` and `down` per cent of its window.
-fn in_the_game_at(across: i64, down: i64) -> Vec<(&'static str, Given)> {
+/// A click in the game on the thing `described`.
+fn in_the_game_on(described: &str) -> Vec<(&'static str, Given)> {
     vec![
         (APPLICATION, Given::text(GAME)),
-        (ACROSS, Given::number(across)),
-        (DOWN, Given::number(down)),
+        (DESCRIPTION, Given::text(described)),
     ]
 }
 
-/// The click most tests make: half way across, a quarter of the way down.
+/// The click most tests make: the Start race button.
 fn the_click() -> Vec<(&'static str, Given)> {
-    in_the_game_at(50, 25)
+    in_the_game_on(DESCRIBED)
 }
 
-/// Propose `given`, approve it, and answer what it did.
+/// Propose `given`, approve it, have the reader find the thing, and answer
+/// what it did.
 fn approving(
     turning: &mut Turning<'_, '_>,
     grants: &Grants,
     given: &[(&'static str, Given)],
 ) -> Result<crate::WhatAVerbDid, NotDone> {
     let id = turning.proposing(CLICK_AT, given, grants, hour(), noon())?;
-    turning.approving(id, grants, noon())
+    let did = turning.approving(id, grants, noon());
+    found_and_clicked(turning, did)
 }
 
 /// Propose [`the_click`] and approve it.
@@ -558,12 +608,20 @@ fn at_full_access(
     given: &[(&'static str, Given)],
 ) -> Result<Changed, NotDone> {
     let at = grants.at_full_access_for(&Grantee::named(AGENT));
-    turning.changing(CLICK_AT, given, &at, hour(), &mut |_: &Said| None, noon())
+    match turning.changing(CLICK_AT, given, &at, hour(), &mut |_: &Said| None, noon()) {
+        Ok(Changed::Done { did, sentence }) => {
+            found_and_clicked(turning, Ok(did)).map(|did| Changed::Done { did, sentence })
+        }
+        other => other,
+    }
 }
 
-/// The sentence `word` says about the game.
+/// The sentence `word` says about the game, and the thing described.
 fn saying(word: Word) -> String {
-    let said = in_english().say(&word.key(), &Filling::of("application", GAME));
+    let said = in_english().say(
+        &word.key(),
+        &Filling::of("application", GAME).and("description", DESCRIBED),
+    );
     assert!(!said.is_a_bug(), "a click's word is not loaded: {said}");
     said.into_text()
 }
@@ -674,10 +732,18 @@ fn one_approval_pictures_clicks_once_and_pictures_again_in_that_order() {
         let id = turning
             .proposing(CLICK_AT, &the_click(), grants, hour(), noon())
             .unwrap();
-        let did = turning.approving(id, grants, noon()).unwrap();
+        let did = turning.approving(id, grants, noon());
+        let did = found_and_clicked(turning, did).unwrap();
         assert!(
             turning.approving(id, grants, noon()).is_err(),
             "one approval was spent twice"
+        );
+        assert!(
+            matches!(
+                turning.clicking_where_it_was_found(the_reader_answers()),
+                Err(NotDone::NotAnswered(_))
+            ),
+            "one approval clicked twice"
         );
         did
     });
@@ -688,7 +754,8 @@ fn one_approval_pictures_clicks_once_and_pictures_again_in_that_order() {
     );
     let made = did.click_made().unwrap();
     assert_eq!(made.application(), GAME);
-    assert_eq!(made.at(), (50, 25), "the point is answered in per cent");
+    assert_eq!(made.description(), DESCRIBED);
+    assert_eq!(made.at(), (50, 25), "not where the reader found it");
     let after = made.after().unwrap();
     assert_eq!(
         after.png(),
@@ -705,7 +772,72 @@ fn one_approval_pictures_clicks_once_and_pictures_again_in_that_order() {
         "a click that changed the window was recorded as not known: {:?}",
         asked.told
     );
+    // **Where alo clicked is in the record**, as the reader found it.
+    let there = in_english()
+        .say(
+            &CLICKED_THERE.key(),
+            &Filling::of("application", GAME)
+                .and("description", DESCRIBED)
+                .and("across", "50")
+                .and("down", "25"),
+        )
+        .into_text();
+    assert!(
+        asked.told.iter().any(|line| line == &there),
+        "where alo clicked is not in the record: {:?}",
+        asked.told
+    );
     holds_no_picture(&asked);
+}
+
+/// **Approved, and nothing clicked until the reader has answered**: the
+/// approval runs every check and takes the picture before, and no more; a
+/// click whose answer never comes is written down as refused when the turn
+/// ends, and nothing was clicked.
+#[test]
+fn nothing_is_clicked_between_the_approval_and_the_readers_answer() {
+    let (thing, asked) = on_a_machine(ready(), the_game_is_granted, |machine, grants, _, there| {
+        let mut turning =
+            Turning::beginning(offering(there), AGENT, hour(), grants, machine).unwrap();
+        let id = turning
+            .proposing(CLICK_AT, &the_click(), grants, hour(), noon())
+            .unwrap();
+        let did = turning.approving(id, grants, noon()).unwrap();
+        let thing = did.thing_to_find().cloned();
+        let _ = turning.ending(grants);
+        thing
+    });
+    let thing = thing.expect("no click waits to be found after the OK");
+    assert_eq!(thing.application(), GAME);
+    assert_eq!(thing.description(), DESCRIBED);
+    assert_eq!(thing.before().png(), a_png(BEFORE).as_slice());
+    assert_eq!(
+        asked.at_the_door,
+        [picture_of_the_game()],
+        "something was clicked before the reader answered"
+    );
+    assert_eq!(
+        asked.entries, 1,
+        "the click never made was not written down"
+    );
+    assert!(
+        asked.written.contains(&saying(NO_CLICK)),
+        "the click never made was not written down as refused: {}",
+        asked.written
+    );
+}
+
+/// **No click waits, so the reader's answer clicks nothing**.
+#[test]
+fn an_answer_with_no_click_waiting_clicks_nothing() {
+    let (answered, asked) = on_a_turn(ready(), the_game_is_granted, |turning, _, _| {
+        turning.clicking_where_it_was_found(Ok(FOUND_ONCE.to_owned()))
+    });
+    assert!(
+        matches!(answered, Err(NotDone::NotAnswered(_))),
+        "{answered:?}"
+    );
+    assert_eq!((asked.at_the_door.len(), asked.entries), (0, 0));
 }
 
 #[test]
@@ -740,48 +872,144 @@ fn at_full_access_a_click_is_made_at_once_and_once() {
     assert_eq!(made.at(), (50, 25));
     assert!(made.changed());
     assert!(sentence.text().contains(GAME), "{sentence}");
+    assert!(sentence.text().contains(DESCRIBED), "{sentence}");
     assert_eq!(asked.at_the_door, around_the_click());
     assert_eq!(asked.entries, 1);
     holds_no_picture(&asked);
 }
 
+/// **The card names the thing and the application**: what a person approves.
 #[test]
-fn the_point_reaches_the_door_in_thousandths_of_the_window() {
-    for (across, down) in [(0, 0), (100, 100), (0, 100), (33, 67), (50, 25), (1, 99)] {
+fn the_card_says_what_is_clicked_and_where() {
+    let (sentence, _) = on_a_turn(ready(), the_game_is_granted, |turning, grants, _| {
+        let id = turning
+            .proposing(CLICK_AT, &the_click(), grants, hour(), noon())
+            .unwrap();
+        turning
+            .proposed(id)
+            .unwrap()
+            .proposal
+            .sentence(&in_english())
+            .into_text()
+    });
+    assert_eq!(sentence, format!("click “{DESCRIBED}” in {GAME}"));
+}
+
+/// **Found once: clicked at its centre**, which reaches the door as
+/// thousandths of the window.
+#[test]
+fn found_once_is_clicked_where_the_reader_found_it_in_thousandths() {
+    for (line, across, down) in [
+        ("1 0 0", 0, 0),
+        ("1 100 100", 1000, 1000),
+        ("1 0 100", 0, 1000),
+        ("1 33 67", 330, 670),
+        ("1, 50, 40", 500, 400),
+        ("1 1 99", 10, 990),
+    ] {
+        let arranged = Arranged {
+            reader: Ok(line),
+            ..ready()
+        };
         let (changed, asked) = on_a_turn(
-            ready(),
+            arranged,
             |_| {},
-            |turning, grants, _| at_full_access(turning, grants, &in_the_game_at(across, down)),
+            |turning, grants, _| at_full_access(turning, grants, &the_click()),
         );
         let Ok(Changed::Done { did, .. }) = changed else {
-            panic!("({across}, {down}) was not clicked: {changed:?}")
+            panic!("{line:?} was not clicked: {changed:?}")
         };
         let made = did.click_made().unwrap();
         assert_eq!(
-            made.at(),
-            (u8::try_from(across).unwrap(), u8::try_from(down).unwrap())
+            (u16::from(made.at().0) * 10, u16::from(made.at().1) * 10),
+            (across, down)
         );
         assert_eq!(
             asked.at_the_door,
             [
                 picture_of_the_game(),
-                click_in_the_game(
-                    u16::try_from(across * 10).unwrap(),
-                    u16::try_from(down * 10).unwrap()
-                ),
+                click_in_the_game(across, down),
                 picture_of_the_game(),
             ],
-            "({across}, {down})"
+            "{line:?}"
         );
     }
 }
 
+/// **Found nowhere, found more than once, or an answer that is not the one
+/// line: nothing is clicked**, at either level, and each is refused in its own
+/// words and written down — after the one picture the reader looked at.
 #[test]
-fn a_point_outside_the_window_is_refused_at_the_call_at_both_levels() {
-    for (across, down) in [(101, 50), (50, 101), (-1, 50), (50, -1), (1000, 1000)] {
+fn a_thing_not_found_once_is_never_clicked_at_either_level() {
+    for (line, word) in [
+        ("0", NOT_FOUND),
+        ("2", FOUND_MORE_THAN_ONCE),
+        ("3 50 25", FOUND_MORE_THAN_ONCE),
+        ("I can see a Start race button.", NOT_UNDERSTOOD),
+        ("1 50 140", NOT_UNDERSTOOD),
+        ("1 50", NOT_UNDERSTOOD),
+        ("1 50 25\nIt is blue.", NOT_UNDERSTOOD),
+    ] {
+        let arranged = || Arranged {
+            reader: Ok(line),
+            ..ready()
+        };
+        let (asking, asked) = on_a_turn(arranged(), the_game_is_granted, |turning, grants, _| {
+            approving_the_click(turning, grants)
+        });
+        refused_saying(&asking, word);
+        assert_eq!(
+            asked.at_the_door,
+            [picture_of_the_game()],
+            "{line:?}: clicked at ask each time"
+        );
+        assert_eq!(asked.entries, 1, "{line:?}");
+        let (full, asked) = on_a_turn(
+            arranged(),
+            |_| {},
+            |turning, grants, _| at_full_access(turning, grants, &the_click()),
+        );
+        refused_saying(&full, word);
+        assert_eq!(asked.clicks(), 0, "{line:?}: clicked at full access");
+        assert_eq!(asked.entries, 1, "{line:?}");
+    }
+}
+
+/// **A reader that could not be asked — the person's own model cannot read
+/// pictures yet — clicks nothing**, refused in the sentence that says why.
+#[test]
+fn a_reader_that_cannot_read_pictures_clicks_nothing() {
+    let arranged = Arranged {
+        reader: Err(alo_adapters::picture_words::NO_ONE_READS),
+        ..ready()
+    };
+    let (did, asked) = on_a_turn(arranged, the_game_is_granted, |turning, grants, _| {
+        approving_the_click(turning, grants)
+    });
+    let Err(not_done) = &did else {
+        panic!("clicked with no reader: {did:?}")
+    };
+    assert!(not_done.was_refused(), "{not_done:?}");
+    let expected = in_english()
+        .say(
+            &alo_adapters::picture_words::NO_ONE_READS.key(),
+            &Filling::of("application", GAME),
+        )
+        .into_text();
+    assert_eq!(not_done.said(&in_english()).into_text(), expected);
+    assert_eq!(asked.at_the_door, [picture_of_the_game()]);
+    assert_eq!(asked.entries, 1);
+}
+
+/// **A description that is not one name is refused at the call**, at both
+/// levels: nothing is opened, pictured or asked.
+#[test]
+fn a_description_that_is_not_one_name_is_refused_at_the_call_at_both_levels() {
+    let long = "a".repeat(alo_adapters::fallback_verbs::LONGEST_NAME + 1);
+    for described in ["the Start/Pause button", long.as_str()] {
         let ((asking, full), asked) =
             on_a_turn(ready(), the_game_is_granted, |turning, grants, _| {
-                let given = in_the_game_at(across, down);
+                let given = in_the_game_on(described);
                 (
                     approving(turning, grants, &given),
                     at_full_access(turning, grants, &given),
@@ -789,21 +1017,21 @@ fn a_point_outside_the_window_is_refused_at_the_call_at_both_levels() {
             });
         assert!(
             matches!(&asking, Err(not_done) if not_done.was_refused()),
-            "({across}, {down}) was not refused at ask each time: {asking:?}"
+            "{described:?} was not refused at ask each time: {asking:?}"
         );
         assert!(
             matches!(&full, Err(not_done) if not_done.was_refused()),
-            "({across}, {down}) was not refused at full access: {full:?}"
+            "{described:?} was not refused at full access: {full:?}"
         );
         assert_eq!(
             (asked.opened, asked.at_the_door.len()),
             (0, 0),
-            "({across}, {down}) reached the window or the door: {:?}",
+            "{described:?} reached the window or the door: {:?}",
             asked.at_the_door
         );
         assert_eq!(
             asked.entries, 2,
-            "({across}, {down}): each refusal is written down"
+            "{described:?}: each refusal is written down"
         );
     }
 }

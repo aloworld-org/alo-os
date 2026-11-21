@@ -1147,6 +1147,13 @@ read again afterwards and recorded *not known* where nothing visibly changed,
 asked for at *ask each time* and not at full access, and never made in a
 terminal, across a pairing, or in a window with a password field.
 
+*Changed 2026-11-21 by the owner — **"Yes, click by description"** — and
+recorded in ADR 0147's amendment of that date.* alo's click names **what** it
+clicks, as a person sees it (`accessible.click_at` takes `application` and
+`description`, never a point), and the reader the person chose finds **where**
+in a picture of the window, under the same OK and through the same indicator.
+Exactly one found is clicked; none or several click nothing.
+
 **17. The screen road for alo — off until the person switches it on, per
 application.** The person's typed commands use the screen road at once. alo uses
 it for an application only after the person has switched it on for that

@@ -386,8 +386,8 @@ pub enum Done {
     /// reader the person chose (`accessible.picture_window`). Added
     /// 2026-11-17, additively.
     PictureRead(APictureRead),
-    /// One click was made at a point of an application's window, given in per
-    /// cent of it (`accessible.click_at`). Added 2026-11-17, additively.
+    /// One click was made on a described thing in an application's window
+    /// (`accessible.click_at`). Added 2026-11-17, additively.
     Clicked(AClickRead),
 }
 
@@ -414,8 +414,9 @@ pub struct APictureRead {
     pub not_read: Option<String>,
 }
 
-/// One click alo made at a point of a window, as it goes back to a client
-/// (`accessible.click_at`, ADR 0147 as amended 2026-11-17). Added additively.
+/// One click alo made on a described thing in a window, as it goes back to a
+/// client (`accessible.click_at`, ADR 0147 as amended 2026-11-17 and
+/// 2026-11-21). Added additively.
 ///
 /// **What it did is said only as far as it can be known**: `changed` is
 /// whether the window's picture after differs from the one before, and
@@ -426,10 +427,11 @@ pub struct APictureRead {
 pub struct AClickRead {
     /// The application.
     pub application: String,
-    /// How far across the window, in per cent.
-    pub across: u8,
-    /// How far down the window, in per cent.
-    pub down: u8,
+    /// The thing clicked, as it was described. **Never where it was**: the
+    /// point is the reader's answer, kept on the machine and in the record,
+    /// and a model told it would be a model learning to give points
+    /// (ADR 0147, amended 2026-11-21).
+    pub description: String,
     /// Whether the window visibly changed; `false` is *not known*.
     pub changed: bool,
     /// What the reader said the window shows after the click, where it read it.
@@ -1000,13 +1002,13 @@ impl Done {
         })
     }
 
-    /// A click made at `at`, in per cent of `application`'s window, whether
-    /// it visibly changed, and what the reader said of the window after — `None`
+    /// A click made on `description` in `application`'s window, whether it
+    /// visibly changed, and what the reader said of the window after — `None`
     /// where nothing on this side read it.
     #[must_use]
     pub fn of_a_click(
         application: &str,
-        at: (u8, u8),
+        description: &str,
         changed: bool,
         read: Option<Result<String, String>>,
     ) -> Self {
@@ -1017,8 +1019,7 @@ impl Done {
         };
         Self::Clicked(AClickRead {
             application: application.to_owned(),
-            across: at.0,
-            down: at.1,
+            description: description.to_owned(),
             changed,
             read,
             not_read,

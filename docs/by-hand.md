@@ -457,11 +457,13 @@ and, where the reader is a service, to send the picture to it.
 
 **By hand:** a person clicks where they want in the window, with the mouse or
 the keyboard's pointer keys — `Sticky keys, slow keys, and keyboard-only
-operation of everything`. The verb clicks once at one point of the window in
-front, given as how far across and down it is, only where the person switched
-*Pictures and keys* on for that application and chose who reads the pictures;
-the approval is what an agent needs, because it is the agent choosing where to
-click and it cannot know for certain what it pressed.
+operation of everything`. The verb clicks once on one thing in the window in
+front, described as a person sees it — the reader the person chose finds where
+it is, and alo clicks there only when it finds exactly one — and only where
+the person switched *Pictures and keys* on for that application and chose who
+reads the pictures; the approval is what an agent needs, because it is the
+agent choosing what to click, the picture goes to the reader, and alo cannot
+know for certain what it pressed.
 
 ### set_the_scheme
 

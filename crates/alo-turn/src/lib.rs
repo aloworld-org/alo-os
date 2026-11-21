@@ -185,6 +185,7 @@ mod clicking_in_an_applications_window_tests;
 pub mod crossing;
 #[cfg(test)]
 mod down_the_corridor;
+mod finding_where_to_click;
 pub mod how_an_application_starts;
 mod installing_an_application;
 pub mod kept;
@@ -265,7 +266,7 @@ pub use became::Became;
 pub use bounding::{Bounding, Doing, Done};
 pub use choosing_in_an_application::AChoiceMade;
 pub use choosing_on_the_file_chooser::AFileChosen;
-pub use clicking_in_an_applications_window::AClickMade;
+pub use clicking_in_an_applications_window::{AClickMade, AThingToFind};
 pub use crossing::Departed;
 pub use how_an_application_starts::{NoRoad, SaysHowAnApplicationStarts, TheRoad};
 pub use kept::Kept;

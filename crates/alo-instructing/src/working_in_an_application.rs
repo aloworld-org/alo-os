@@ -175,14 +175,16 @@ pub fn working_in_an_application(verbs: &Verbs) -> String {
              shows, and never an answer about it before the picture is read"
         ));
     }
-    // **A click by position only where a picture said where** (ADR 0147,
-    // amended 2026-11-17): a named control is still pressed by its name.
-    if verbs.of(PICTURE_WINDOW).is_some() && verbs.of(CLICK_AT).is_some() {
+    // **A click by description, only where nothing has a name** (ADR 0147,
+    // amended 2026-11-17 and 2026-11-21: *"Yes, click by description"*): a
+    // named control is still pressed by its name, and the model never gives a
+    // point — the reader the person chose finds the thing.
+    if verbs.of(CLICK_AT).is_some() {
         acts.push(format!(
-            "to do anything in a window whose read says a picture of it can be read — start, \
-             press or choose something in a game, a photo or a drawing — never a guessed name, \
-             since nothing there has one: {PICTURE_WINDOW} first, asking where that thing is, then \
-             {CLICK_AT} once at the per cent across and down its words gave"
+            "to start, press or choose something in a window whose read says a picture of it can \
+             be read — a game, a photo, a drawing — never a guessed name, since nothing there has \
+             one: {CLICK_AT} once for its application, describing that one thing as a person sees \
+             it, such as the words on it; alo finds where it is and clicks there"
         ));
     }
     format!(

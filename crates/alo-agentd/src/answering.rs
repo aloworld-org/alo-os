@@ -397,7 +397,21 @@ fn answered_to(
                     commands,
                     turning.grantee(),
                 );
-                match turning.approving(waiting, &grants, now) {
+                // **A click by description is found and made under this same
+                // OK** (`crate::clicking_where_it_is`): the reader the person
+                // chose is asked where, and the turn clicks there or refuses.
+                let approved = turning.approving(waiting, &grants, now);
+                let approved = approved.and_then(|did| {
+                    crate::clicking_where_it_is::found_and_clicked(
+                        did,
+                        turning,
+                        questions,
+                        crate::starting::the_screen_road(),
+                        strings,
+                        now,
+                    )
+                });
+                match approved {
                     // **A picture is read before anything is said of it**
                     // (`crate::reading_a_picture`): the client is told the
                     // reader's words, never handed the picture.
