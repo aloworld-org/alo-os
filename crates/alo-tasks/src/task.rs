@@ -378,20 +378,27 @@ impl ATask {
     /// 5. Otherwise finished.
     #[must_use]
     pub fn what_is_happening(&self) -> alo_strings::Word {
+        self.its_status().word()
+    }
+
+    /// **Which status this is**, the answer [`Self::what_is_happening`] says in
+    /// words, in the order of precedence written there.
+    #[must_use]
+    pub fn its_status(&self) -> crate::TheStatus {
         match self.stopping {
-            Stopping::Asked => crate::words::STOPPING,
-            Stopping::CouldNotBeConfirmed => crate::words::STOP_NOT_CONFIRMED,
-            Stopping::Stopped { .. } => crate::words::STOPPED,
+            Stopping::Asked => crate::TheStatus::Stopping,
+            Stopping::CouldNotBeConfirmed => crate::TheStatus::StopNotConfirmed,
+            Stopping::Stopped { .. } => crate::TheStatus::Stopped,
             Stopping::NobodyAsked => {
                 if self.is_waiting_for_the_person() {
-                    crate::words::WAITING_FOR_YOUR_PERMISSION
+                    crate::TheStatus::WaitingForYou
                 } else if self.goes_on
                     || self.activity.doing_now().is_some()
                     || self.conversation.is_alos_turn()
                 {
-                    crate::words::ALO_IS_WORKING
+                    crate::TheStatus::AloIsWorking
                 } else {
-                    crate::words::COMPLETE
+                    crate::TheStatus::Complete
                 }
             }
         }

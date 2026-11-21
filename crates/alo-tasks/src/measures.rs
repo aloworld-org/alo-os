@@ -88,6 +88,30 @@ pub const UNDER_YOUR_LABEL: u32 = 6;
 /// Label/Medium (13 / 18) at the top and the words at 26.
 pub const UNDER_ALOS_LABEL: u32 = 8;
 
+/// How tall the task's status is: a pill, in the heading row.
+///
+/// Measured on `549:154` *Task status · Waiting for your permission* in
+/// `549:135`, and the same on `549:45` (working) and `549:280` (complete): 32
+/// tall, at 22 down a 76 heading, so centred in it, and its right edge at the
+/// row's own padding.
+pub const A_STATUS_IS_TALL: u32 = 32;
+
+/// The status pill's corners: half its height, so its ends are round.
+pub const A_STATUS_CORNER: u32 = 16;
+
+/// Inside each end of the status pill, before its icon or its words.
+pub const INSIDE_A_STATUS: u32 = 12;
+
+/// Between the status's icon and its words.
+pub const BESIDE_A_STATUS_ICON: u32 = 8;
+
+/// The clock and the circled tick on a status, drawn at this size.
+pub const A_STATUS_ICON_IS: u32 = 16;
+
+/// alo's mark on the *alo is working* status, which the design draws smaller
+/// than the other two icons (`549:46`).
+pub const ALOS_STATUS_MARK_IS: u32 = 12;
+
 /// How wide a person's own request is drawn.
 ///
 /// **Narrower than alo's reply on purpose**: a person's words are right aligned

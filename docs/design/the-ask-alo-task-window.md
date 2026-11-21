@@ -226,6 +226,32 @@ not *alo's surface*. Together with *keyboard focus uses a visible navy outline*
 on all five composer components, this section is consistent evidence that focus
 is never teal.
 
+### The status is a pill: the owner, 2026-11-21
+
+**The status is drawn as the approved frames' pill, not as plain words**, by the
+owner's decision of this day after a design audit found the words alone. Read
+with the Figma connector (`get_metadata` and `get_design_context`) on the
+approved alo window frames, page `544:30910`:
+
+| status | node | ground | icon | words |
+|---|---|---|---|---|
+| alo is working | `549:45` | `accent/soft` | alo's open-square mark, **12** (`549:46`), `accent/default` | `accent/default` |
+| Waiting for your permission | `549:154` in `549:135` | `bg/cool` | a clock, **16** (`549:155`), `text/primary` | `text/primary` |
+| Complete | `549:280` in `549:261` | `bg/cool` | a circled tick, **16** (`549:281`), `status/positive` | `text/primary` |
+
+All three: **32 tall**, corner **16** (round ends), **12** inside each end, **8**
+between icon and words, words Label/Medium; at 22 down the 76 heading, so
+centred in it, with the right end at the row's 32 of padding. These are
+`alo_tasks::measures::A_STATUS_IS_TALL`, `A_STATUS_CORNER`, `INSIDE_A_STATUS`,
+`BESIDE_A_STATUS_ICON`, `A_STATUS_ICON_IS` and `ALOS_STATUS_MARK_IS`.
+
+**Three statuses have no frame**: *Stopping…*, *Stopped* and *Stop requested ·
+not confirmed*. They are drawn as the same pill on `bg/cool` with their words in
+`text/primary` and no icon, because the design draws no icon for them; a frame
+for any of them changes one arm of `crate::task_raster`'s `the_status_pill`.
+`crates/alo-shell/src/task_raster_status_tests.rs` holds every status to the
+pill.
+
 ### Which action the one button shows
 
 | Variant | Button |

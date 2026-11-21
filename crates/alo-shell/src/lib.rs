@@ -727,6 +727,8 @@ mod the_nearest_empty_space;
 mod the_record_drawn_on_the_canvas;
 /// The room a maximised or full-screen window fills, display by display.
 mod the_room_a_window_fills;
+/// The clock and the circled tick on a task window's status.
+mod the_status_icons;
 /// Task windows opened into a full view find room as other windows do.
 mod the_task_windows_find_room;
 mod the_terminals_face;

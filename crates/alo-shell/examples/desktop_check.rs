@@ -344,7 +344,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             title: "Tidy my invoices folder",
                             kind: "alo task",
                             status: "alo is working",
-                            alo_is_working: true,
+                            status_is: alo_tasks::TheStatus::AloIsWorking,
                             model: "",
                             destination: "on this machine",
                             invitation: "Reply to alo or change the direction\u{2026}",

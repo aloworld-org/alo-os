@@ -67,7 +67,7 @@ fn drawn(said: &[WhatWasSaid<'_>], scale: DisplayScale) -> Vec<Inked> {
         title: "",
         kind: "",
         status: "",
-        alo_is_working: false,
+        status_is: alo_tasks::TheStatus::Complete,
         model: "",
         destination: "",
         invitation: "",
