@@ -162,18 +162,15 @@ fn the_panel_is_never_on_the_drag_region_or_a_control() {
     }
 }
 
-/// **alo puts no panel over an application's own title bar.**
+/// **A cut title on the band over an application that draws its own header
+/// is shown whole on hover, as on every band.**
 ///
-/// This was a `continue` inside the test above, which made that test vacuous
-/// for half its cases; then an `expect`, which failed. Both were wrong the same
-/// way - the case was never stated.
-///
-/// It is a guarantee rather than an absence. An application that draws its own
-/// header draws its own title, so `edge_of` gives that window no title position
-/// at all and there is nothing of alo's to reveal. A tooltip here would be alo
-/// describing somebody else's text, in alo's font, over their header.
+/// Until 2026-11-21 this held the opposite: such a band carried no title, so
+/// there was nothing of alo's to show whole. The owner's decision of that day
+/// puts the window's title and the application's name on every band, and the
+/// 2026-10-10 ruling that a cut title is shown whole on hover is every band's.
 #[test]
-fn an_application_that_draws_its_own_title_gets_no_panel_from_alo() {
+fn a_cut_title_over_an_application_with_its_own_header_is_shown_whole() {
     let mut fonts = fonts();
     let edge = edge_of(
         window(),
@@ -181,10 +178,9 @@ fn an_application_that_draws_its_own_title_gets_no_panel_from_alo() {
         true,
         smithay::utils::Size::from((1920, 1080)),
     );
-    assert_eq!(
-        edge.title, None,
-        "alo laid out a title on a window that draws its own"
-    );
+    // **Since the owner's decision of 2026-11-21 every band carries the
+    // title**, a window that draws its own header included.
+    assert!(edge.title.is_some());
     let cut = fitted(
         &mut fonts,
         A_LONG_TITLE,
@@ -193,8 +189,8 @@ fn an_application_that_draws_its_own_title_gets_no_panel_from_alo() {
     );
     assert!(cut.cut, "a long title was not cut in 200 pixels");
     assert!(
-        tooltip_of(&edge, &cut, Because::APointerIsOnIt, &mut fonts, THE_OUTPUT).is_none(),
-        "alo showed a panel over an application's own title"
+        tooltip_of(&edge, &cut, Because::APointerIsOnIt, &mut fonts, THE_OUTPUT).is_some(),
+        "a cut title on this band is not shown whole on hover"
     );
 }
 

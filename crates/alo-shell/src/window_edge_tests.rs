@@ -122,8 +122,8 @@ fn revealing_the_controls_does_not_move_or_narrow_the_title() {
 }
 
 /// **An application with its own header gets the controls it lacks**, laid
-/// out at the trailing end like the shell's, and no title of alo's over its
-/// own.
+/// out at the trailing end like the shell's — and, since the owner's decision
+/// of 2026-11-21, the title as every band does.
 #[test]
 fn an_application_with_its_own_header_gets_the_controls_it_lacks() {
     let close_only = Decorations::TheApplicationDraws(crate::window_edge::ItsOwnButtons {
@@ -133,8 +133,7 @@ fn an_application_with_its_own_header_gets_the_controls_it_lacks() {
     let edge = edge_of(specimen(), close_only, true, roomy());
     let does: Vec<OnTheEdge> = edge.controls.iter().map(|it| it.does).collect();
     assert_eq!(does, vec![OnTheEdge::WindowActions, OnTheEdge::Minimise]);
-    assert_eq!(edge.title, None);
-    assert_eq!(edge.the_room_a_title_has(), 0);
+    assert!(edge.title.is_some());
     // The last one ends where the shell's Close ends: the trailing inset.
     assert_eq!(
         edge.controls
@@ -283,4 +282,53 @@ fn the_usable_output_is_divided_by_the_scale_once() {
         the_usable_output(Size::from((2880, 1920)), 200),
         Size::from((1440, 960))
     );
+}
+
+/// **Every band carries the window's title, whoever draws the window's
+/// header** — the owner, 2026-11-21: the band always shows the window's title
+/// and the application's name, on every window, an application that draws its
+/// own header and a task window included (`docs/design/the-window-controls.md`).
+///
+/// A test of the rule: every kind of band there is, through an exhaustive
+/// match, so a new kind does not compile until it is listed. Until this change
+/// `edge_of` laid a title out "only where the shell carries the title", and an
+/// application with its own header or a task window had a band with no title.
+#[test]
+fn every_kind_of_band_carries_a_title_where_it_starts_on_the_shells() {
+    let every = [
+        Decorations::TheShellDraws,
+        Decorations::TheApplicationDraws(crate::window_edge::ItsOwnButtons::NOT_KNOWN),
+        Decorations::TheApplicationDraws(crate::window_edge::ItsOwnButtons {
+            minimise: false,
+            close: true,
+        }),
+        Decorations::ATaskWindow,
+        Decorations::AlosOwnWindow,
+        Decorations::AlosOwnWindowThatIsPlaced,
+    ];
+    for decorations in every {
+        match decorations {
+            Decorations::TheShellDraws
+            | Decorations::TheApplicationDraws(_)
+            | Decorations::ATaskWindow
+            | Decorations::AlosOwnWindow
+            | Decorations::AlosOwnWindowThatIsPlaced => {}
+        }
+        let shown = edge_of(specimen(), decorations, true, roomy());
+        let concealed = edge_of(specimen(), decorations, false, roomy());
+        assert_eq!(
+            shown.title,
+            Some(Point::from((22, 18))),
+            "{decorations:?}: the band carries no title, or not where the shell's starts"
+        );
+        assert!(
+            shown.the_room_a_title_has() > 0,
+            "{decorations:?}: the title has no room"
+        );
+        assert_eq!(
+            (shown.title, shown.title_room),
+            (concealed.title, concealed.title_room),
+            "{decorations:?}: revealing the controls moved the title"
+        );
+    }
 }
