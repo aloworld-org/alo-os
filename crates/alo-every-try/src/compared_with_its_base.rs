@@ -58,7 +58,9 @@ impl Judged {
             Self::BelowTheBarWhereItsBaseMetIt => "below the bar, where its base met it",
             Self::BelowTheBar => "new, and below the bar",
             Self::BrokeTheRatchet => "below every try, where the record says it took every try",
-            Self::NotMeasured => "not measured",
+            Self::NotMeasured => {
+                "not measured: too few tries, or tries the model could not be asked"
+            }
         }
     }
 
@@ -86,6 +88,8 @@ pub struct Row {
     change: (usize, usize),
     /// The base's, if it had the request.
     base: Option<(usize, usize)>,
+    /// The tries the model could not be asked: the change's, and the base's.
+    not_asked: (usize, usize),
     /// How it was judged.
     judged: Judged,
 }
@@ -110,23 +114,31 @@ impl Row {
     }
 }
 
-/// Each level and request's totals, in the order first measured.
-fn totals(measured: &Measured) -> Vec<((String, String), (usize, usize))> {
-    let mut order: Vec<(String, String)> = Vec::new();
-    let mut sums: BTreeMap<(String, String), (usize, usize)> = BTreeMap::new();
-    for (level, named, on, of) in measured.each() {
+/// A level's name and a request.
+type TheRequestAt = (String, String);
+
+/// On the road, tried, and not asked.
+type Sums = (usize, usize, usize);
+
+/// Each level and request's totals — on the road, tried, not asked — in the
+/// order first measured.
+fn totals(measured: &Measured) -> Vec<(TheRequestAt, Sums)> {
+    let mut order: Vec<TheRequestAt> = Vec::new();
+    let mut sums: BTreeMap<TheRequestAt, Sums> = BTreeMap::new();
+    for ((level, named, on, of), not_asked) in measured.each().zip(measured.not_asked()) {
         let key = (level.to_owned(), named.to_owned());
         let sum = sums.entry(key.clone()).or_insert_with(|| {
             order.push(key);
-            (0, 0)
+            (0, 0, 0)
         });
         sum.0 += on;
         sum.1 += of;
+        sum.2 += not_asked;
     }
     order
         .into_iter()
         .map(|key| {
-            let sum = sums.get(&key).copied().unwrap_or((0, 0));
+            let sum = sums.get(&key).copied().unwrap_or((0, 0, 0));
             (key, sum)
         })
         .collect()
@@ -169,18 +181,33 @@ fn judging(change: (usize, usize), base: Option<(usize, usize)>, reached: bool) 
 /// on its totals over every round measured.
 #[must_use]
 pub fn compared(change: &Measured, base: &Measured, record: &Reached) -> Vec<Row> {
-    let base: BTreeMap<(String, String), (usize, usize)> = totals(base).into_iter().collect();
+    let base: BTreeMap<TheRequestAt, Sums> = totals(base).into_iter().collect();
     totals(change)
         .into_iter()
-        .map(|((level, named), sum)| {
+        .map(|((level, named), (on, of, not_asked))| {
             let reached = the_level_named(&level).is_some_and(|at| record.has(at, &named));
-            let base = base.get(&(level.clone(), named.clone())).copied();
+            let base_sum = base.get(&(level.clone(), named.clone())).copied();
+            let base = base_sum.map(|(base_on, base_of, _)| (base_on, base_of));
+            // **A try the model could not be asked makes the comparison not
+            // measured**, on either side (the coordinator, 2026-11-20): nought
+            // of ten beside nought of ten, with the provider out of credit,
+            // read as "no worse than its base" and passed (run 44854527313).
+            let not_asked_anywhere =
+                not_asked > 0 || base_sum.is_some_and(|(_, _, base_not_asked)| base_not_asked > 0);
             Row {
-                judged: judging(sum, base, reached),
+                judged: if not_asked_anywhere {
+                    Judged::NotMeasured
+                } else {
+                    judging((on, of), base, reached)
+                },
                 level,
                 named,
-                change: sum,
+                change: (on, of),
                 base,
+                not_asked: (
+                    not_asked,
+                    base_sum.map_or(0, |(_, _, base_not_asked)| base_not_asked),
+                ),
             }
         })
         .collect()
@@ -236,15 +263,25 @@ pub fn summary_of(rows: &[Row], asked_of: &str) -> String {
     });
     said.push_str("| Level | Request | Change | Base | Judged |\n|---|---|---|---|---|\n");
     for row in rows {
-        let base = row
-            .base
-            .map_or_else(|| "new".to_owned(), |(on, of)| format!("{on} of {of}"));
+        // **A refused try is said as refused**, never folded into the misses.
+        let refused = |count: usize| {
+            if count > 0 {
+                format!(" ({count} not asked)")
+            } else {
+                String::new()
+            }
+        };
+        let base = row.base.map_or_else(
+            || "new".to_owned(),
+            |(on, of)| format!("{on} of {of}{}", refused(row.not_asked.1)),
+        );
         said.push_str(&format!(
-            "| {} | {} | {} of {} | {base} | {} |\n",
+            "| {} | {} | {} of {}{} | {base} | {} |\n",
             row.level,
             row.named,
             row.change.0,
             row.change.1,
+            refused(row.not_asked.0),
             row.judged.said()
         ));
     }
