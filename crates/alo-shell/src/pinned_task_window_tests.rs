@@ -59,6 +59,8 @@ fn a_task_window_draws_the_pixels_it_drew_before() {
         scope_note: "Permissions and model choices apply to this task.",
         files: &files,
         how_many_files: "2 files shared with this task",
+        you: "You",
+        alo: "alo",
     };
     let said = what_was_said();
     let now = every_way(|display, text| {

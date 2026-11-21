@@ -1068,6 +1068,8 @@ fn a_tasks_words() -> crate::task_text::TheWordsInATaskWindow<'static> {
         scope_note: "Permissions and model choices apply to this task.",
         files: &[],
         how_many_files: "",
+        you: "",
+        alo: "",
     }
 }
 

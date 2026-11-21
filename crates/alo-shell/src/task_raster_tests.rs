@@ -49,6 +49,8 @@ pub(super) fn the_words(files: &[String]) -> crate::task_text::TheWordsInATaskWi
         scope_note: "Permissions and model choices apply to this task.",
         files,
         how_many_files: "2 files shared with this task",
+        you: "You",
+        alo: "alo",
     }
 }
 
@@ -386,6 +388,8 @@ fn the_words_are_drawn_and_an_empty_window_draws_none() {
         scope_note: "",
         files: &[],
         how_many_files: "",
+        you: "",
+        alo: "",
     };
     let silent = furniture(
         at,
@@ -519,6 +523,8 @@ fn a_persons_words_are_drawn_further_right_than_alos() {
         scope_note: "",
         files: &[],
         how_many_files: "",
+        you: "",
+        alo: "",
     };
     let drawn = furniture(
         Rectangle::new((0, 0).into(), (1040, 800).into()),

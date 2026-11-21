@@ -1672,6 +1672,11 @@ mod icons_tests;
 #[path = "task_raster_closing_tests.rs"]
 mod closing_tests;
 
+/// Every message in a conversation, with its speaker's label.
+#[cfg(test)]
+#[path = "task_raster_speaker_tests.rs"]
+mod speaker_tests;
+
 /// **Where each text's box starts on its card, and how tall its words are** —
 /// under the rows naming what the change touches, each after what is said
 /// about it (`crate::the_approval_card`).

@@ -87,6 +87,20 @@ pub const STOPPING: Word = Word::saying("tasks.status.stopping", "Stopping\u{202
 pub const COMPLETE: Word = Word::saying("tasks.status.complete", "Complete")
     .noting("The task finished on its own. Not drawn in teal: alo is no longer acting.");
 
+/// Who said a person's own message, above its words in the conversation.
+pub const SPEAKER_YOU: Word = Word::saying("tasks.speaker.you", "You").noting(
+    "The small label above a message the person wrote, inside its bubble. It names who is \
+     speaking and nothing else: the person reading the window. A translation uses the form a \
+     person would use for themselves in a chat, not a formal address.",
+);
+
+/// Who said alo's reply, above its words in the conversation.
+pub const SPEAKER_ALO: Word = Word::saying("tasks.speaker.alo", "alo").noting(
+    "The small label above a reply alo wrote, drawn in alo's teal in every state of the window \
+     because it says who is speaking. **alo is a name**, written in lower case; a language that \
+     writes names in another script may transliterate it, and none translates it.",
+);
+
 /// The invitation in an empty reply field.
 pub const REPLY_TO_ALO: Word = Word::saying(
     "tasks.composer.invitation",
@@ -124,7 +138,7 @@ pub const STOP_NOT_CONFIRMED: Word = Word::saying(
 
 /// Every word this crate can say: the task window's, then its card's and
 /// square's in the right-hand panel (`crate::card_words`).
-pub const EVERY_WORD: [Word; 28] = [
+pub const EVERY_WORD: [Word; 30] = [
     A_TASK,
     ALO_IS_WORKING,
     WAITING_FOR_YOUR_PERMISSION,
@@ -132,6 +146,8 @@ pub const EVERY_WORD: [Word; 28] = [
     STOPPING,
     COMPLETE,
     REPLY_TO_ALO,
+    SPEAKER_YOU,
+    SPEAKER_ALO,
     WHAT_THIS_TASK_REACHES,
     STOP_NOT_CONFIRMED,
     crate::card_words::NEEDS_YOUR_OK,

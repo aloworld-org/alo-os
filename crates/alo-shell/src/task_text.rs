@@ -162,6 +162,10 @@ pub struct TheWordsInATaskWindow<'a> {
     pub files: &'a [String],
     /// How many files are shared, as a sentence.
     pub how_many_files: &'a str,
+    /// Who said a person's message — *You* — drawn above its words.
+    pub you: &'a str,
+    /// Who said alo's reply — *alo* — drawn above its words in alo's teal.
+    pub alo: &'a str,
 }
 
 /// One thing said in a task, as the window draws it.

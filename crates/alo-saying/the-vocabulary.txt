@@ -2332,6 +2332,8 @@ tasks.rail.name	alo task, {state}: {task}
 tasks.rail.needs-you	Needs you
 tasks.rail.stopped	Stopped
 tasks.rail.working	Working
+tasks.speaker.alo	alo
+tasks.speaker.you	You
 tasks.status.complete	Complete
 tasks.status.not-confirmed	Stop requested · not confirmed
 tasks.status.stopped	Stopped
