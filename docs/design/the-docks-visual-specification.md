@@ -134,6 +134,23 @@ assistive technology; tooltip on hover or keyboard focus.*
 repository draws today is a fallback the owner ruled for applications that have
 **no** artwork; it is not what an application with artwork shows.
 
+### The circle is for an application with no icon: the owner, 2026-11-21
+
+**An application that draws its own icon has no circle behind it**, on the bar
+and in *More apps*: the icon stands on the Dock's own ground, as every button
+above draws its artwork. The grey circle (`bg/cool`) with a first letter is
+only the mark of an application with **no** icon.
+
+Until this date the shell kept the circle under every real icon on purpose, so
+a rounded icon's transparent corners showed it and every slot had one
+silhouette (`crate::an_icon_is_drawn_on_its_badge` said so), and *More apps*
+drew every application as a circle and a letter whether it had an icon or not.
+Both are gone. `crates/alo-shell/src/dock_badges_tests.rs` holds the rule: on
+the bar, every slot with artwork shows the Dock's ground through it and every
+slot without shows its circle, on all four edges at one and two times the
+pixels; in *More apps*, each application given an icon loses exactly its own
+circle.
+
 ### Settings and Applications: the owner's two drawings, 2026-11-13
 
 Until this date the Dock drew its own two entries, Settings and Applications,
