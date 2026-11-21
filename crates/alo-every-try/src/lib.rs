@@ -46,6 +46,7 @@ pub mod a_try;
 pub mod answering_the_file_chooser;
 pub mod as_the_machine_names;
 pub mod at_the_provider;
+pub mod compared_with_its_base;
 pub mod counted;
 pub mod every_other_verb;
 pub mod its_own;
