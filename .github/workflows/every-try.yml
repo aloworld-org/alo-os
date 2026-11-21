@@ -71,6 +71,8 @@ on:
 
 permissions:
   contents: read
+  # To see which other every-try runs are asking the model (the wait below).
+  actions: read
 
 concurrency:
   group: every-try-${{ github.ref }}
@@ -79,7 +81,8 @@ concurrency:
 jobs:
   every-try:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    # Long enough to wait its turn for the provider behind other runs.
+    timeout-minutes: 240
     steps:
       # Two commits deep: on a pull request the checkout is the merge of the
       # change into the base as it stands now, and its first parent is that
@@ -185,6 +188,44 @@ jobs:
           way=$(target/release/alo-every-try owns)
           echo "way=$way" >> "$GITHUB_OUTPUT"
           echo "This change owns: $way." | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # **One model-asking run at a time, across the repository** (the
+      # coordinator, 2026-11-20): runs at once made most tries come back
+      # 429. Each run waits, in the order the runs were made, until no earlier
+      # every-try run is still going. A concurrency group cannot do this: it
+      # keeps one waiting run and cancels the rest, which fails their check.
+      - name: Wait for the provider, one run at a time
+        if: steps.own.outputs.mode == 'whole' || steps.way.outputs.way == 'some' || steps.way.outputs.way == 'the-whole-set'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          while :; do
+            earlier=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/every-try.yml/runs?per_page=100" \
+              --jq "[.workflow_runs[] | select(.id < $GITHUB_RUN_ID and (.status == \"in_progress\" or .status == \"queued\" or .status == \"waiting\"))] | length" || echo 0)
+            if [ "$earlier" = 0 ]; then break; fi
+            echo "$earlier earlier every-try run(s) still going; waiting a minute."
+            sleep 60
+          done
+
+      # **What the provider allows**, read once a run from its own rate-limit
+      # headers and shown, so the pace is measured rather than guessed. One
+      # question of one token; the key is never printed.
+      - name: Read what the provider allows
+        if: steps.own.outputs.mode == 'whole' || steps.way.outputs.way == 'some' || steps.way.outputs.way == 'the-whole-set'
+        env:
+          ALO_PROVIDER_KEY: ${{ secrets.ALO_WALK_PROVIDER_KEY }}
+        run: |
+          [ -n "$ALO_PROVIDER_KEY" ] || exit 0
+          curl -s -o /dev/null -D "$RUNNER_TEMP/limits.txt" https://api.openai.com/v1/chat/completions \
+            -H "Authorization: Bearer $ALO_PROVIDER_KEY" -H "content-type: application/json" \
+            -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"ok"}],"max_tokens":1}' || true
+          {
+            echo "### What the provider allows"
+            echo
+            echo '```'
+            grep -i '^x-ratelimit-\|^retry-after\|^HTTP/' "$RUNNER_TEMP/limits.txt" || echo "no rate-limit headers"
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Try the requests against the real model
         if: steps.own.outputs.mode == 'whole' || steps.way.outputs.way == 'some'
