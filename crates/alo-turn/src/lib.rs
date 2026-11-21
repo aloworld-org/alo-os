@@ -210,6 +210,7 @@ mod reading_and_pressing_tests;
 pub mod refusing;
 mod said_in_an_application;
 mod said_of_a_publication;
+mod said_of_a_refusal;
 mod scrolling_in_an_application;
 #[cfg(test)]
 mod scrolling_in_an_application_tests;
