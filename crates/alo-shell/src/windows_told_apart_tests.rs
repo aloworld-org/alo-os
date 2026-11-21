@@ -233,8 +233,8 @@ fn written(frame: &[[f32; 3]], size: (i32, i32), name: &str) {
         .expect("written");
 }
 
-/// **At both sizes the focused window's strip is white and the others' cream,
-/// each strip sits on its window, and the window in front covers the strip of
+/// **At both sizes every strip is the card's white (only the title softens,
+/// the owner, 2026-11-21), each strip sits on its window, and the window in front covers the strip of
 /// the window behind it** — the three things `557:456` says windows are told
 /// apart by.
 #[test]
@@ -253,14 +253,16 @@ fn the_three_windows_are_told_apart_at_both_sizes() {
                 window.body.loc.y - 16,
             )
         };
+        // **One card for every window** (the owner, 2026-11-21): the strip's
+        // ground is the same whatever has the keyboard; only the title softens.
         assert_eq!(strip_of(dolphin), [0xFF, 0xFF, 0xFF], "the focused strip");
-        assert_eq!(strip_of(terminal), [0xFA, 0xF7, 0xF2], "an unfocused strip");
+        assert_eq!(strip_of(terminal), [0xFF, 0xFF, 0xFF], "an unfocused strip");
         // The focused line, just left of Dolphin's content, and the quiet
         // line just left of the terminal's.
         let mid = |window: &AWindow| window.body.loc.y + window.body.size.h / 2;
         assert_eq!(
             at(&frame, size, dolphin.body.loc.x - 1, mid(dolphin)),
-            [0xCB, 0xD5, 0xE1]
+            [0xE7, 0xEB, 0xEF]
         );
         assert_eq!(
             at(&frame, size, terminal.body.loc.x - 1, mid(terminal)),
@@ -278,7 +280,7 @@ fn the_three_windows_are_told_apart_at_both_sizes() {
         );
         assert_eq!(
             at(&frame, size, dolphin.body.loc.x + 360, top),
-            [0xCB, 0xD5, 0xE1]
+            [0xE7, 0xEB, 0xEF]
         );
         written(
             &frame,

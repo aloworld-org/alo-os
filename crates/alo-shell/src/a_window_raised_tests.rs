@@ -52,13 +52,14 @@ fn not_one_pixel_lands_on_the_window() {
     }
 }
 
-/// **The line is one unit, just outside, in the look's colour**: `border/strong`
-/// round the focused window, `border/default` round every other.
+/// **The line is one unit, just outside, in the card's colour**,
+/// `border/default`, round every window whatever has the keyboard (the owner,
+/// 2026-11-21: *"Only the title softens"*).
 #[test]
 fn the_line_is_the_pixel_next_to_the_window_in_the_looks_colour() {
     let window = dolphin();
     for (look, colour) in [
-        (WhichLook::Focused, [0xCB, 0xD5, 0xE1]),
+        (WhichLook::Focused, [0xE7, 0xEB, 0xEF]),
         (WhichLook::NotFocused, [0xE7, 0xEB, 0xEF]),
     ] {
         let bands = round_the_window(window, 1.0, look, (1440, 960));
