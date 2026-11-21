@@ -132,6 +132,12 @@ impl Touching {
             let resolved = match resolving.real(given) {
                 Ok(resolved) => resolved,
                 Err(why) => {
+                    // **Which way, on the journal, never the path**
+                    // (`crate::said_of_a_path_not_resolved`).
+                    eprintln!(
+                        "alo-agentd: {}",
+                        crate::said_of_a_path_not_resolved::said(given, &why)
+                    );
                     let said = match (&why, home) {
                         (RealError::Nothing { path }, Some(home)) => {
                             match one_of_that_name(given, home, grants, &under, at, resolving) {
