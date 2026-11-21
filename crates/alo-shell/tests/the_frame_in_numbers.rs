@@ -32,8 +32,12 @@
 
 use std::path::Path;
 
-/// The reading this test holds the crate to.
-const THE_NUMBERS: &str = "docs/design/the-canvas-in-numbers.md";
+/// The reading this test holds the band to: **the window controls'
+/// specification** since 2026-11-21. Until then it was
+/// `docs/design/the-canvas-in-numbers.md`, whose 48-tall name band the
+/// specification of 2026-11-09 replaced with the 54-tall band every window is
+/// drawn with (`11:31`); the two were held to two heights, and both passed.
+const THE_NUMBERS: &str = "docs/design/the-window-controls.md";
 
 /// That document, as text.
 fn the_numbers() -> String {
@@ -82,8 +86,8 @@ fn pixels_for(named: &str) -> f64 {
 fn the_names_band_is_the_height_the_design_file_gives() {
     assert_eq!(
         alo_shell::the_names_band(),
-        pixels_for("Name band"),
-        "the band this crate places and {THE_NUMBERS}'s reading of the design file \
-         disagree about how tall a frame's name is"
+        pixels_for("| band |"),
+        "the band this crate moves and resizes a window by and {THE_NUMBERS}'s \
+         reading of the design file disagree about how tall a window's band is"
     );
 }

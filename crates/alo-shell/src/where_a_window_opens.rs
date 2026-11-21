@@ -63,7 +63,8 @@ pub const A_SMALL_GAP: i32 = 16;
 
 /// How far in front a window opens when there is no room beside.
 ///
-/// **48, which is one name band** (`crate::window_name_band::BAND_IS_TALL`),
+/// **One band, 54** (`crate::window_name_band::BAND_IS_TALL`; 48 until the band
+/// became one height on 2026-11-21),
 /// down and to the right. Chosen by the owner on 2026-10-09, and the reason it
 /// is that number rather than a smaller one: offsetting by exactly a band
 /// leaves the covered window's own band **completely uncovered**, so rule 5's
