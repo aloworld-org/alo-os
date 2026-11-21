@@ -26,6 +26,9 @@ use crate::display_scale::DisplayScale;
 /// The design's fill for the composer's field in the light appearance, opaque.
 const THE_DESIGNS_FIELD: [u8; 4] = [0xF5, 0xF6, 0xF7, 0xFF];
 
+/// The same colour as a box of words is filled with, which has no alpha.
+const THE_DESIGNS_INK_GROUND: [u8; 3] = [0xF5, 0xF6, 0xF7];
+
 /// **On every Dock that has a composer, its field is the design's colour**:
 /// every edge, at one to one and at twice the pixels, in the light appearance
 /// the design measures.
@@ -86,4 +89,77 @@ fn the_composers_field_is_the_designs_colour_on_every_dock() {
             );
         }
     }
+}
+
+/// **And the field's words are written on that colour**, not on a box of
+/// another one: `painted_text` hands back an opaque box filled with the ground
+/// it is given, so a prompt shaped on the badge's `#EEF2F4` draws a tile of the
+/// old colour round its words on the new field. Asked of the prompt and the
+/// key as the Dock draws them, in the machine's own words, on every edge where
+/// the field is wide enough to hold them.
+#[test]
+fn the_composers_words_are_written_on_the_fields_colour() {
+    let mut light = an_appearance();
+    light.follow(Following::from(Scheme::Light));
+    let look = noon_look(&light, Direction::LeftToRight);
+    let strings = alo_strings::Strings::of(
+        alo_saying::everything_this_machine_can_say().expect("the vocabulary"),
+    );
+    let open = &crate::what_the_dock_has_open::NOTHING;
+    let words = crate::the_docks_words::TheDocksWords::said(&strings, open);
+    let field = THE_DESIGNS_INK_GROUND;
+    let the_badges = crate::desktop_look::DesktopPalette::of(
+        Scheme::Light,
+        alo_appearance::Accent::Indigo.on(Scheme::Light),
+        crate::Contrast::AsDesigned,
+    )
+    .expect("indigo is an accent a person may choose")
+    .badge;
+
+    let mut asked = 0;
+    for edge in Edge::EVERY.into_iter().filter(|edge| edge.runs_across()) {
+        for scale in [DisplayScale::ONE, DisplayScale::of_per_cent(200)] {
+            let mut dock = Dock::shipped();
+            dock.set_edge(edge);
+            let per_cent = i32::from(scale.per_cent());
+            let drawn = crate::dock_raster::picture(
+                &dock,
+                look,
+                (1440 * per_cent / 100, 960 * per_cent / 100),
+                &[],
+                &[],
+                (open, &words),
+                None,
+                &alo_dock::artwork::NOTHING,
+                &mut crate::WindowControlLabels::new()
+                    .expect("the bundled faces")
+                    .fonts,
+                scale,
+            )
+            .unwrap_or_else(|why| panic!("{edge:?} at {scale:?} would not draw: {why:?}"));
+            let at =
+                crate::dock_raster::where_this_slot_is(&drawn.standing, &WhatIsHere::TheComposer)
+                    .unwrap_or_else(|| panic!("the premise: the {edge:?} Dock has a composer"));
+
+            let in_the_field: Vec<_> = drawn
+                .inked
+                .iter()
+                .filter(|ink| crate::painted::on_the_frame(ink.area).overlaps(at))
+                .collect();
+            assert!(
+                !in_the_field.is_empty(),
+                "the premise: {edge:?} at {scale:?} wrote words in the composer's field"
+            );
+            for ink in in_the_field {
+                assert!(
+                    ink.pixels.contains(&field) && !ink.pixels.contains(&the_badges),
+                    "{edge:?} at {scale:?}: words in the composer's field at {:?} are written \
+                     on another ground than the field's #F5F6F7",
+                    ink.area
+                );
+                asked += 1;
+            }
+        }
+    }
+    assert!(asked > 0, "the premise: some words were asked about");
 }
