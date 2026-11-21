@@ -3219,3 +3219,7 @@ mod tests {
 #[cfg(test)]
 #[path = "dock_raster_scale_tests.rs"]
 mod scale_tests;
+
+#[cfg(test)]
+#[path = "dock_composer_field_tests.rs"]
+mod composer_field_tests;
