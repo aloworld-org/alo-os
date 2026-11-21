@@ -42,6 +42,9 @@ rustix = { workspace = true, features = ["event", "net", "process"] }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+# A window as the tree shows it, for the read a turn's offer is opened by
+# (`tests/the_screen_road_opens_after_a_read_of_nothing.rs`).
+alo-adapters = { path = "../alo-adapters" }
 # The real verbs and the real words a turn is about, so the tests script shapes
 # the daemon really sends rather than hand-made ones.
 alo-files = { path = "../alo-files" }

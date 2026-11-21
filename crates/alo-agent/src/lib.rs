@@ -55,6 +55,7 @@ pub mod what_the_person_sent;
 pub use at_the_daemons_socket::AtTheDaemonsSocket;
 pub use driving::{
     a_proposal_answered, driving, driving_about, driving_after, driving_on, driving_until_stopped,
+    the_screen_road_is_open,
 };
 pub use holding_the_turn::{Held, held_until_answered};
 pub use how_far::HowFar;

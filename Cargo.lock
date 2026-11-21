@@ -159,6 +159,7 @@ dependencies = [
 name = "alo-agent"
 version = "0.0.1"
 dependencies = [
+ "alo-adapters",
  "alo-capability",
  "alo-files",
  "alo-instructing",
