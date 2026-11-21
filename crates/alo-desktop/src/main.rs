@@ -584,6 +584,16 @@ mod running {
     }
 
     impl ThisPersonsDesktop {
+        /// **What a person calls this application**, for a line on the
+        /// indicator: its entry's name in their language, and its identifier
+        /// only where no entry names it (`alo_installed::what_a_person_calls_it`).
+        /// Never the list's *VSCodium (com.vscodium.codium)*, which the corner
+        /// said on 2026-11-20.
+        fn what_a_person_calls(&self, application: &str) -> String {
+            alo_installed::what_a_person_calls_it(&self.entries, &self.strings, application)
+                .unwrap_or_else(|| application.to_owned())
+        }
+
         /// Where readings of the machine come from from now on, and the first.
         fn the_machine_is_told_by(
             &mut self,
@@ -1650,7 +1660,7 @@ mod running {
                 for one in asked {
                     let called = installed
                         .knows(one.application())
-                        .map(|application| application.shown(&self.strings));
+                        .map(|_| self.what_a_person_calls(one.application()));
                     self.counting.taken_in(one, called.as_deref(), now);
                 }
             }
@@ -1689,7 +1699,7 @@ mod running {
                 for one in asked {
                     let called = installed
                         .knows(one.application())
-                        .map(|application| application.shown(&self.strings));
+                        .map(|_| self.what_a_person_calls(one.application()));
                     self.working.taken_in(
                         one,
                         called.as_deref(),
@@ -1752,12 +1762,7 @@ mod running {
                 } else {
                     // What a person calls it, for the indicator's line, read
                     // for this opening as `alo_at_work` reads it.
-                    let called = alo_installed::read(&self.entries)
-                        .knows(one.application())
-                        .map_or_else(
-                            || one.application().to_owned(),
-                            |application| application.shown(&self.strings),
-                        );
+                    let called = self.what_a_person_calls(one.application());
                     self.working.opened_in_alos_copy(
                         one.application(),
                         one.file(),
