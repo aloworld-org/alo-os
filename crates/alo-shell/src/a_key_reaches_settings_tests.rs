@@ -370,4 +370,5 @@ fn the_providers_words_are_the_names_said_in_settings() {
     assert_eq!(english(&w::ITS_ADDRESS), said::ADDRESS);
     assert_eq!(english(&w::ITS_KEY), said::KEY);
     assert_eq!(english(&w::ITS_MODEL), said::MODEL);
+    assert_eq!(english(&w::ITS_NEEDS_NO_KEY), said::NEEDS_NO_KEY);
 }

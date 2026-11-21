@@ -18,7 +18,14 @@ fn the_line_names_the_row_quoted() {
 #[test]
 fn the_names_are_the_words_drawn() {
     assert_eq!(
-        [ADD_A_PROVIDER, NAME, ADDRESS, KEY, MODEL],
-        ["Add a provider", "Name", "Address", "Key", "Model"]
+        [ADD_A_PROVIDER, NAME, ADDRESS, KEY, MODEL, NEEDS_NO_KEY],
+        [
+            "Add a provider",
+            "Name",
+            "Address",
+            "Key",
+            "Model",
+            "This service needs no key"
+        ]
     );
 }
