@@ -61,6 +61,10 @@ struct ATasksWords {
     files: Vec<String>,
     /// How many files are shared, as a sentence.
     how_many_files: String,
+    /// Who said a person's message, above its words.
+    you: String,
+    /// Who said alo's reply, above its words.
+    alo: String,
     /// What was said, oldest first.
     said: Vec<(alo_tasks::WhoseBlock, MarkedWords)>,
     /// Which of `said` carries the two answers: the latest proposal, while
@@ -167,6 +171,8 @@ impl TheTasksWords {
                     // rather than invented.
                     files: Vec::new(),
                     how_many_files: String::new(),
+                    you: say(alo_tasks::words::SPEAKER_YOU),
+                    alo: say(alo_tasks::words::SPEAKER_ALO),
                     said: task
                         .conversation()
                         .each()
@@ -324,6 +330,8 @@ impl TheTasksWords {
                     scope_note: &one.scope_note,
                     files: &one.files,
                     how_many_files: &one.how_many_files,
+                    you: &one.you,
+                    alo: &one.alo,
                 },
                 // Built here so the frame borrows these strings rather than
                 // copying them, which is why the bundle has to outlive it.

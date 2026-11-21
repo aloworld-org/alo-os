@@ -153,6 +153,51 @@ const fn ground_of(whose: alo_tasks::WhoseBlock, palette: &TaskPalette) -> [u8; 
     }
 }
 
+/// Who is speaking, written above a message's words.
+#[derive(Debug, Clone, Copy)]
+struct ASpeakersLabel<'a> {
+    /// *You* or *alo*, in the person's language.
+    words: &'a str,
+    /// The style it is written in.
+    style: AStyle,
+    /// Whether it is alo's, which is written in alo's teal.
+    is_alos: bool,
+    /// The room between it and the words under it.
+    under: u32,
+}
+
+/// **The speaker's label each kind of block carries**, measured on the
+/// conversation of `417:27666` (`417:27689`): *You* in Label/Small inside the
+/// person's bubble, 6 above the words; *alo* in Label/Medium, 8 above the
+/// reply, in `accent/default` in every state because it says who is speaking
+/// (`docs/design/the-ask-alo-task-window.md`, *Teal is conditional*). An
+/// account of what was done has a heading of its own and no speaker.
+///
+/// Every kind named with no catch-all, so a new kind of block is a compile
+/// error here rather than a message drawn without its speaker. A label with no
+/// words — a window given none to say — takes no room.
+fn the_speakers_label<'a>(
+    whose: alo_tasks::WhoseBlock,
+    words: &crate::task_text::TheWordsInATaskWindow<'a>,
+) -> Option<ASpeakersLabel<'a>> {
+    let label = match whose {
+        alo_tasks::WhoseBlock::ThePersons => ASpeakersLabel {
+            words: words.you,
+            style: AStyle::SmallLabel,
+            is_alos: false,
+            under: m::UNDER_YOUR_LABEL,
+        },
+        alo_tasks::WhoseBlock::Alos => ASpeakersLabel {
+            words: words.alo,
+            style: AStyle::Label,
+            is_alos: true,
+            under: m::UNDER_ALOS_LABEL,
+        },
+        alo_tasks::WhoseBlock::AnAccount => return None,
+    };
+    (!label.words.is_empty()).then_some(label)
+}
+
 /// The heading's own figures, measured off the design's frame.
 ///
 /// Not in `alo_tasks::measures` because they are this raster's arrangement of
@@ -506,10 +551,49 @@ pub(crate) fn furniture(
         what_each_does.push(lines);
         the_texts_heights.push(heights);
     }
-    let heights: Vec<(alo_tasks::WhoseBlock, u32)> = said
+    // **Each message's speaker, measured as its words are**: how wide and how
+    // tall the label comes out at this text size, for its block to make room
+    // above the words and for the label to be written in a box its own size.
+    // [`None`] for an approved card, whose heading says who is asking, and for
+    // an account of what was done.
+    let the_labels: Vec<Option<(ASpeakersLabel<'_>, u32, u32)>> = said
         .iter()
         .zip(&the_cards)
         .map(|(one, card)| {
+            if card.is_some() {
+                return None;
+            }
+            let label = the_speakers_label(one.whose, words)?;
+            let wide = logical(crate::painted_text::how_wide_as(
+                fonts,
+                label.words,
+                label.style.metrics(measure),
+                &label.style.attrs(),
+            )) + 2;
+            let tall = crate::task_text::how_tall(
+                fonts,
+                crate::task_text::ToWrite {
+                    words: label.words,
+                    marks: &[],
+                    style: label.style,
+                    ground: ground_of(one.whose, &palette),
+                    ink: palette.ink,
+                },
+                px(wide),
+                measure,
+            );
+            Some((
+                label,
+                wide,
+                logical(i32::try_from(tall).unwrap_or(i32::MAX)),
+            ))
+        })
+        .collect();
+    let heights: Vec<(alo_tasks::WhoseBlock, u32)> = said
+        .iter()
+        .zip(&the_cards)
+        .zip(&the_labels)
+        .map(|((one, card), the_label)| {
             if let Some(card) = card {
                 return (one.whose, card.tall());
             }
@@ -542,6 +626,8 @@ pub(crate) fn furniture(
             } else {
                 tall
             };
+            // **And a message by its speaker's label** and the room under it.
+            let tall = tall + the_label.map_or(0, |(label, _, high)| high + label.under);
             // **And a card with answers under it, by the choices row and the
             // gap above it**, so the row is inside the card rather than over
             // whatever is said next.
@@ -1332,13 +1418,14 @@ pub(crate) fn furniture(
         None,
     );
 
-    for (((((one, block), the_card), rows_shown), its_lines), heights) in said
+    for ((((((one, block), the_card), rows_shown), its_lines), heights), the_label) in said
         .iter()
         .zip(blocks.each())
         .zip(&the_cards)
         .zip(&the_rows_shown)
         .zip(&what_each_does)
         .zip(&the_texts_heights)
+        .zip(&the_labels)
     {
         if !block.is_in_view(scrolled, view) {
             continue;
@@ -1551,14 +1638,40 @@ pub(crate) fn furniture(
         } else {
             0
         };
+        // **Who said it, above the words**, at their left and on their ground:
+        // alo's in alo's teal in every state of the window, the person's in
+        // the window's ink. The words then start under it and its room.
+        let left = m::INSIDE_THE_CONVERSATION + block.from_the_left + padding;
+        let above = the_label.map_or(0, |(label, _, high)| high + label.under);
+        if let Some((label, wide, high)) = *the_label {
+            write(
+                label.words,
+                &[],
+                label.style,
+                ground_of(block.whose, &palette),
+                if label.is_alos {
+                    palette.alo
+                } else {
+                    palette.ink
+                },
+                left,
+                (down, high),
+                wide.min(block.wide.saturating_sub(padding * 2)),
+                false,
+                Some((scrolled, the_view)),
+            );
+        }
         write(
             one.words,
             one.marks,
             style_of(block.whose),
             ground_of(block.whose, &palette),
             palette.ink,
-            m::INSIDE_THE_CONVERSATION + block.from_the_left + padding,
-            (down, block.tall.saturating_sub(padding * 2 + below)),
+            left,
+            (
+                down + above,
+                block.tall.saturating_sub(padding * 2 + below + above),
+            ),
             block.wide.saturating_sub(padding * 2),
             false,
             Some((scrolled, the_view)),
@@ -1671,6 +1784,11 @@ mod icons_tests;
 #[cfg(test)]
 #[path = "task_raster_closing_tests.rs"]
 mod closing_tests;
+
+/// Every message in a conversation, with its speaker's label.
+#[cfg(test)]
+#[path = "task_raster_speaker_tests.rs"]
+mod speaker_tests;
 
 /// **Where each text's box starts on its card, and how tall its words are** —
 /// under the rows naming what the change touches, each after what is said

@@ -49,6 +49,8 @@ pub(super) fn the_words(files: &[String]) -> crate::task_text::TheWordsInATaskWi
         scope_note: "Permissions and model choices apply to this task.",
         files,
         how_many_files: "2 files shared with this task",
+        you: "You",
+        alo: "alo",
     }
 }
 
@@ -386,6 +388,8 @@ fn the_words_are_drawn_and_an_empty_window_draws_none() {
         scope_note: "",
         files: &[],
         how_many_files: "",
+        you: "",
+        alo: "",
     };
     let silent = furniture(
         at,
@@ -425,11 +429,21 @@ fn the_words_are_drawn_and_an_empty_window_draws_none() {
     // plus a label per chip and one per thing said. Written as the sum because
     // the first version of this test said *eleven* from a miscount of the
     // seven, and a magic total cannot say which part of it moved.
+    // And one speaker's label per message: *You* and *alo*, never an account's.
     let fixed = 7;
+    let labels = said
+        .iter()
+        .filter(|one| {
+            matches!(
+                one.whose,
+                alo_tasks::WhoseBlock::ThePersons | alo_tasks::WhoseBlock::Alos
+            )
+        })
+        .count();
     assert_eq!(
         spoken.inked.len(),
-        fixed + files.len() + said.len(),
-        "the window drew {} pieces and {fixed} + {} + {} were given to it",
+        fixed + files.len() + said.len() + labels,
+        "the window drew {} pieces and {fixed} + {} + {} + {labels} were given to it",
         spoken.inked.len(),
         files.len(),
         said.len()
@@ -519,6 +533,8 @@ fn a_persons_words_are_drawn_further_right_than_alos() {
         scope_note: "",
         files: &[],
         how_many_files: "",
+        you: "",
+        alo: "",
     };
     let drawn = furniture(
         Rectangle::new((0, 0).into(), (1040, 800).into()),
@@ -865,13 +881,20 @@ fn scrolled_back_the_start_of_the_conversation_is_drawn() {
     )
     .expect("the design's size");
     let (top, _) = the_conversations_view(at);
-    // The request's words, inside its bubble's padding at the top of the view.
-    let the_requests_words = top + i32::try_from(alo_tasks::measures::INSIDE_A_BLOCK).expect("16");
+    // The request, inside its bubble's padding at the top of the view: its
+    // speaker's label first, since 2026-11-20, and its words under the label.
+    let the_request_starts = top + i32::try_from(alo_tasks::measures::INSIDE_A_BLOCK).expect("16");
     let at_the_top = |picture: &TaskPicture| {
         picture
             .inked
             .iter()
-            .any(|one| one.area.loc.y == the_requests_words)
+            .find(|one| one.area.loc.y == the_request_starts)
+            .is_some_and(|label| {
+                picture.inked.iter().any(|words| {
+                    words.area.loc.x == label.area.loc.x
+                        && words.area.loc.y >= label.area.loc.y + label.area.size.h
+                })
+            })
     };
     assert!(
         !at_the_top(&at_the_newest),
@@ -958,6 +981,22 @@ fn the_cards_ink(drawn: &TaskPicture) -> [&crate::painted::Inked; 5] {
             .expect("a piece of ink the order says is there")
     };
     [at(6), at(5), at(4), at(3), at(2)]
+}
+
+/// How many pieces of ink start level with `action` or below it: the card's own
+/// and what is under it.
+///
+/// **Counted from the action, not over the whole window**, for the reason the
+/// test of the row's place gives: a taller card scrolls the conversation, and
+/// since each message carries its speaker's label (2026-11-20) the label of the
+/// message at the top of the view is the first thing scrolled out of it, so a
+/// count of everything drawn changed with the scroll and not with the card.
+fn from_the_action_on(drawn: &TaskPicture, action: &crate::painted::Inked) -> usize {
+    drawn
+        .inked
+        .iter()
+        .filter(|one| one.area.loc.y >= action.area.loc.y)
+        .count()
 }
 
 /// The middle of a piece of ink, across.
@@ -1160,23 +1199,23 @@ fn march() -> crate::task_text::ATouchedRow {
 fn the_file_a_change_touches_has_a_row_between_the_action_and_the_answers() {
     let without = with_the_approved_card(None);
     let with = with_the_approved_card_touching(&[march()]);
-    assert_eq!(
-        with.inked.len(),
-        without.inked.len() + 2,
-        "the file's name and where it is were not both written"
-    );
     let at = |back: usize| {
         with.inked
             .get(with.inked.len() - back)
             .expect("a piece of ink the order says is there")
     };
     let (action, name, where_it_is, allow) = (at(7), at(6), at(5), at(4));
+    let [_, action_before, allow_before, _, _] = the_cards_ink(&without);
+    assert_eq!(
+        from_the_action_on(&with, action),
+        from_the_action_on(&without, action_before) + 2,
+        "the file's name and where it is were not both written"
+    );
     assert!(action.area.loc.y + action.area.size.h <= name.area.loc.y);
     assert!(name.area.loc.y + name.area.size.h <= where_it_is.area.loc.y);
     assert!(where_it_is.area.loc.y + where_it_is.area.size.h <= allow.area.loc.y);
     // Measured from the action, because the conversation opens at its newest
     // words and a taller card scrolls the whole view.
-    let [_, action_before, allow_before, _, _] = the_cards_ink(&without);
     assert_eq!(
         (allow.area.loc.y - action.area.loc.y)
             - (allow_before.area.loc.y - action_before.area.loc.y),
@@ -1223,9 +1262,14 @@ fn where_a_file_is_is_written_from_home() {
 
     let with = with_the_approved_card_touching(&[editor]);
     let without = with_the_approved_card(None);
+    let action = with
+        .inked
+        .get(with.inked.len() - 6)
+        .expect("the action, before the row, the answers and the scope note");
+    let [_, action_before, _, _, _] = the_cards_ink(&without);
     assert_eq!(
-        with.inked.len(),
-        without.inked.len() + 1,
+        from_the_action_on(&with, action),
+        from_the_action_on(&without, action_before) + 1,
         "an application's row wrote a place it does not have"
     );
 }
