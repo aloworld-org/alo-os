@@ -180,8 +180,16 @@ pub struct Call {
     asks: Vec<Ask>,
     /// What names the sentence a person approves. The words are looked up
     /// wherever somebody reads them; the gaps are filled from the values above
-    /// and from nothing else.
+    /// and, for a sentence given with [`Call::saying_instead`], from what the
+    /// machine read below — never from anything a model wrote.
     sentence: Key,
+    /// **Values the machine read itself**, for a sentence given with
+    /// [`Call::saying_instead`] — never a model's words, and never standing
+    /// in for an argument. Written down with the call, so the record can say
+    /// what the person approved; left out when empty, so a call with none is
+    /// written exactly as it always was.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    the_machine_read: BTreeMap<String, String>,
     /// What names what every call of this verb changes, where the verb says
     /// (`Verb::changing`). **Not recorded**: it is the verb's, not this
     /// call's, and the record keeps what ran.
@@ -259,6 +267,7 @@ impl Call {
             values,
             asks,
             sentence: verb.sentence().key().clone(),
+            the_machine_read: BTreeMap::new(),
             changes: verb.what_it_changes().map(Word::key),
             leaves: verb.what_it_leaves().map(Word::key),
         })
@@ -284,6 +293,29 @@ impl Call {
     pub fn leaving_instead(self, instead: Key) -> Self {
         Self {
             leaves: Some(instead),
+            ..self
+        }
+    }
+
+    /// The same call, saying `instead` for the sentence a person approves,
+    /// with these values **the machine read itself** filling the gaps that
+    /// are not the call's own arguments.
+    ///
+    /// **For a call whose verb's one sentence would not be true of it.**
+    /// Opening a file *in a file manager* opens it where a double-click there
+    /// would, in another application, and the card must name that one (the
+    /// owner, 2026-11-17). The call's values are untouched, so what runs is
+    /// still exactly what validated; a value named like an argument is never
+    /// said in its place.
+    #[must_use]
+    pub fn saying_instead(self, instead: Key, the_machine_read: &[(&str, String)]) -> Self {
+        Self {
+            sentence: instead,
+            the_machine_read: the_machine_read
+                .iter()
+                .filter(|(name, _)| !self.values.contains_key(*name))
+                .map(|(name, value)| ((*name).to_owned(), value.clone()))
+                .collect(),
             ..self
         }
     }
@@ -353,6 +385,9 @@ impl Call {
     #[must_use]
     pub fn filling(&self, strings: &Strings) -> Filling {
         let mut filling = Filling::nothing();
+        for (name, value) in &self.the_machine_read {
+            filling = filling.and(name.clone(), value.clone());
+        }
         for (argument, value) in &self.values {
             filling = match (value.words(), value) {
                 (Some(words), _) => {
@@ -1003,5 +1038,58 @@ mod tests {
             !written.contains("move /home/anna/Invoices/march.pdf into"),
             "{written}"
         );
+    }
+
+    /// The other sentence [`Call::saying_instead`] gives a call.
+    const AS_IT_WOULD: Word = Word::saying(
+        "testing.verb.move-file.as-it-would",
+        "move {file} into {into}, as {mover} would",
+    );
+
+    /// **A call can say another sentence, with a value the machine read**:
+    /// the new sentence is the one rendered and the one written down, its
+    /// extra gap is filled from what the machine gave it, and the call's own
+    /// values are untouched — so what runs is still exactly what validated.
+    #[test]
+    fn a_call_can_say_another_sentence_with_a_value_the_machine_read() {
+        let strings = speaking_also(&[AS_IT_WOULD]);
+        let call = moving_march();
+        let values = call.values().clone();
+        let instead = call.saying_instead(AS_IT_WOULD.key(), &[("mover", "Files".to_owned())]);
+        let said = instead.sentence(&strings);
+        assert_eq!(
+            said.text(),
+            "move /home/anna/Invoices/march.pdf into /home/anna/Archive, as Files would"
+        );
+        assert!(said.unfilled().is_empty(), "{said:?}");
+        assert_eq!(instead.sentence_key(), &AS_IT_WOULD.key());
+        assert_eq!(instead.values(), &values, "the call's own values moved");
+        let written = serde_json::to_string(&instead).unwrap();
+        assert!(written.contains("as-it-would"), "{written}");
+        assert!(written.contains("Files"), "{written}");
+    }
+
+    /// **A value the machine read never stands in for one the call carries**:
+    /// named like an argument, the argument's own value is the one said.
+    #[test]
+    fn a_machine_value_never_replaces_an_argument() {
+        let strings = speaking_also(&[AS_IT_WOULD]);
+        let instead = moving_march().saying_instead(
+            AS_IT_WOULD.key(),
+            &[
+                ("mover", "Files".to_owned()),
+                ("file", "/somewhere/else.pdf".to_owned()),
+            ],
+        );
+        let said = instead.sentence(&strings).into_text();
+        assert!(said.contains("/home/anna/Invoices/march.pdf"), "{said}");
+        assert!(!said.contains("/somewhere/else.pdf"), "{said}");
+    }
+
+    /// The test words and these, in English.
+    fn speaking_also(extra: &[Word]) -> Strings {
+        let mut words: Vec<Word> = THE_WORDS.to_vec();
+        words.extend_from_slice(extra);
+        crate::testing::speaking(&words)
     }
 }

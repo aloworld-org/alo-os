@@ -456,6 +456,10 @@ impl TheDoor for Recording<'_> {
         // **The other road, from where the two part** (`ARequest::or_by_another_road`):
         // a try that asks for the other road's next step where this road's
         // next step is something else is held to the other road from here.
+        // **Undone where the step that parted is refused before anybody is
+        // asked**: a refused call changed nothing, so the try is still where
+        // it was, on the road it was on.
+        let was_on = self.on_the_other;
         self.parting_for(asked);
         let road = self.the_road();
         // **A read aside of the road**, which the request declares and the
@@ -500,6 +504,7 @@ impl TheDoor for Recording<'_> {
                 // on from — counted, so a pass that needed one is seen.
                 if let WentWrong::RefusedBeforeAsking { said, .. } = &wrong {
                     self.refused_before_asking += 1;
+                    self.on_the_other = was_on;
                     return Ok(ToAnAgent::refused(said));
                 }
                 // **As the machine answers a file named where there is none**:
@@ -508,6 +513,7 @@ impl TheDoor for Recording<'_> {
                 // named wrongly — the machine sets no limit, and the turn's own
                 // bound on rounds is what ends a model that never listens.
                 if let Some(refused) = self.where_it_is(&wrong) {
+                    self.on_the_other = was_on;
                     return Ok(refused);
                 }
                 // **As the machine answers a slider the window does not show**:
@@ -535,6 +541,7 @@ impl TheDoor for Recording<'_> {
                     self.strings,
                 ) {
                     self.refused_before_asking += 1;
+                    self.on_the_other = was_on;
                     return Ok(refused);
                 }
                 self.wrong = Some(wrong);

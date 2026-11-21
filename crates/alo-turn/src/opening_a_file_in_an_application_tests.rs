@@ -136,6 +136,10 @@ struct Arranged {
     full_access: bool,
     /// How many looks the opened window takes to come in front.
     not_in_front_for: usize,
+    /// What this machine says a file opens with, where it was told.
+    opening: Option<AsThisMachineSays>,
+    /// The other applications granted, by identifier.
+    granted_too: Vec<&'static str>,
 }
 
 impl Arranged {
@@ -144,12 +148,74 @@ impl Arranged {
     fn answering(answering: Result<Opened, NotAtTheDoor>) -> Self {
         Self {
             answering,
-            installed: Installed::holding([Application::called(EDITOR, "VSCodium").unwrap()]),
+            installed: Installed::holding([
+                Application::called(EDITOR, "VSCodium").unwrap(),
+                Application::called(FILES, "Dolphin").unwrap(),
+                Application::called(PAPERS, "Papers").unwrap(),
+            ]),
             the_editor: true,
             the_folder: true,
             full_access: false,
             not_in_front_for: 0,
+            opening: None,
+            granted_too: Vec::new(),
         }
+    }
+
+    /// The same, on a machine that says what a file opens with: the file
+    /// manager granted, and opening it with `opens_with`.
+    fn in_the_file_manager(opens_with: Result<&'static str, &'static str>) -> Self {
+        Self {
+            opening: Some(AsThisMachineSays {
+                opens_with,
+                asked: Rc::new(RefCell::new(0)),
+            }),
+            granted_too: vec![FILES, PAPERS],
+            ..Self::answering(Ok(Opened::InAlosCopy))
+        }
+    }
+}
+
+/// The file manager the person names.
+const FILES: &str = "org.kde.dolphin";
+
+/// What the file opens with, as a double-click in it would.
+const PAPERS: &str = "org.gnome.Papers";
+
+/// What this machine says about what opens what: [`FILES`] opens folders, and
+/// a file opens with `opens_with` — or nothing opens it, for that reason.
+#[derive(Clone)]
+struct AsThisMachineSays {
+    opens_with: Result<&'static str, &'static str>,
+    /// How many times what a file opens with was asked.
+    asked: Rc<RefCell<usize>>,
+}
+
+impl crate::SaysWhatAFileOpensWith for AsThisMachineSays {
+    fn opens_folders(&self, identifier: &str) -> bool {
+        identifier == FILES
+    }
+
+    fn is_a_folder(&self, path: &Path) -> bool {
+        path.is_dir()
+    }
+
+    fn called(&self, identifier: &str) -> Option<String> {
+        match identifier {
+            FILES => Some("Dolphin".to_owned()),
+            PAPERS => Some("Papers".to_owned()),
+            _ => None,
+        }
+    }
+
+    fn opens_with(&self, _: &Path) -> Result<String, crate::NothingOpensIt> {
+        *self.asked.borrow_mut() += 1;
+        self.opens_with.map(str::to_owned).map_err(|why| {
+            crate::NothingOpensIt::because(in_english().say(
+                &alo_applications::words::NOTHING_OPENS.key(),
+                &alo_strings::Filling::of("what", why),
+            ))
+        })
     }
 }
 
@@ -196,8 +262,9 @@ fn on_a_machine(
     let folder = crate::testing::a_folder_of_our_own("opening");
     let file = folder.join("hello.txt");
     std::fs::write(&file, WHAT_IT_SAYS).unwrap();
+    let opening = arranged.opening.clone();
     let answered = {
-        let mut machine = Machine::carrying_out_file_software_and_application_verbs(
+        let machine = Machine::carrying_out_file_software_and_application_verbs(
             &strings,
             &OnThisMachine,
             WhatASoftwareVerbNeeds {
@@ -216,7 +283,22 @@ fn on_a_machine(
             &mut record,
         )
         .unwrap();
+        let mut machine = match &opening {
+            Some(opening) => machine.knowing_what_files_open_with(opening),
+            None => machine,
+        };
         let mut grants = Grants::default();
+        for application in &arranged.granted_too {
+            grants.grant(
+                Grant::checked(
+                    AGENT,
+                    Reach::Application((*application).to_owned()),
+                    noon(),
+                    hour(),
+                )
+                .unwrap(),
+            );
+        }
         if arranged.the_editor {
             grants.grant(
                 Grant::checked(AGENT, Reach::Application(EDITOR.to_owned()), noon(), hour())
@@ -702,4 +784,244 @@ fn waiting_for_an_opened_window_backs_off() {
     }
     assert!(asks_within(Duration::from_secs(10)) <= 8);
     assert!(asks_within(Duration::from_secs(60)) <= 35);
+}
+
+/// The sentence of the one card waiting in `turning`.
+fn the_card(turning: &Turning<'_, '_>) -> String {
+    let waiting: Vec<_> = turning.waiting_at(noon()).collect();
+    assert_eq!(waiting.len(), 1, "one card");
+    waiting
+        .first()
+        .map(|it| it.proposal.sentence(&in_english()).into_text())
+        .unwrap_or_default()
+}
+
+/// **A file opened in a file manager opens as a double-click there would, at
+/// ask each time**: the card names the application the file opens with and
+/// the file manager it was asked of, and one approval asks the door once, to
+/// open the file in that application.
+#[test]
+fn a_file_opened_in_a_file_manager_opens_where_a_double_click_would() {
+    let card = RefCell::new(String::new());
+    let ran = on_a_machine(
+        Arranged::in_the_file_manager(Ok(PAPERS)),
+        |turning, grants, file| {
+            let id = turning.proposing(
+                OPEN_FILE_IN_APPLICATION,
+                &given(FILES, file),
+                grants,
+                hour(),
+                noon(),
+            )?;
+            *card.borrow_mut() = the_card(turning);
+            turning.approving(id, grants, noon()).map(Some)
+        },
+    );
+    assert!(ran.answered.is_ok(), "{:?}", ran.answered);
+    assert_eq!(
+        *card.borrow(),
+        format!("open {} in Papers, as Dolphin would", ran.file.display())
+    );
+    assert_eq!(ran.asked.len(), 1, "one approval, one opening");
+    assert_eq!(
+        ran.asked.first().map(|it| it.application().identifier()),
+        Some(PAPERS)
+    );
+    assert!(ran.unchanged);
+}
+
+/// **And at full access, with no card**, in the same words and to the same
+/// application.
+#[test]
+fn at_full_access_a_file_opened_in_a_file_manager_opens_where_a_double_click_would() {
+    let arranged = Arranged {
+        full_access: true,
+        granted_too: Vec::new(),
+        the_editor: false,
+        the_folder: false,
+        ..Arranged::in_the_file_manager(Ok(PAPERS))
+    };
+    let sentence = RefCell::new(String::new());
+    let ran = on_a_machine(arranged, |turning, grants, file| {
+        let changed = turning.changing(
+            OPEN_FILE_IN_APPLICATION,
+            &given(FILES, file),
+            grants,
+            hour(),
+            &mut |_| None,
+            noon(),
+        )?;
+        let crate::Changed::Done {
+            did,
+            sentence: said,
+        } = changed
+        else {
+            panic!("a change at full access waited: {changed:?}");
+        };
+        *sentence.borrow_mut() = said.into_text();
+        Ok(Some(did))
+    });
+    assert!(ran.answered.is_ok(), "{:?}", ran.answered);
+    assert_eq!(
+        *sentence.borrow(),
+        format!("open {} in Papers, as Dolphin would", ran.file.display())
+    );
+    assert_eq!(
+        ran.asked.first().map(|it| it.application().identifier()),
+        Some(PAPERS)
+    );
+    assert_eq!(ran.asked.len(), 1);
+}
+
+/// **A folder still opens in the file manager**, which is what a
+/// double-click on a folder does there — and what a file opens with is never
+/// asked.
+#[test]
+fn a_folder_opened_in_a_file_manager_opens_in_it() {
+    let arranged = Arranged::in_the_file_manager(Ok(PAPERS));
+    let asked = arranged.opening.as_ref().map(|it| Rc::clone(&it.asked));
+    let ran = on_a_machine(arranged, |turning, grants, file| {
+        let folder = file.parent().unwrap().to_path_buf();
+        proposed_and_approved(turning, grants, FILES, &folder)
+    });
+    assert!(ran.answered.is_ok(), "{:?}", ran.answered);
+    assert_eq!(
+        ran.asked.first().map(|it| it.application().identifier()),
+        Some(FILES)
+    );
+    assert_eq!(asked.map(|it| *it.borrow()), Some(0));
+}
+
+/// **Nothing opens a file of that kind**: refused in the machine's words,
+/// written down, and nothing is opened.
+#[test]
+fn a_file_nothing_opens_is_refused_and_recorded() {
+    let ran = on_a_machine(
+        Arranged::in_the_file_manager(Err("a file of this kind")),
+        |turning, grants, file| proposed_and_approved(turning, grants, FILES, file),
+    );
+    let Err(NotDone::Refused(refused)) = &ran.answered else {
+        panic!("a file nothing opens was opened: {:?}", ran.answered);
+    };
+    assert!(
+        refused
+            .said(&in_english())
+            .text()
+            .starts_with("nothing on this machine opens a file of this kind"),
+        "{refused:?}"
+    );
+    assert!(ran.asked.is_empty(), "the door was asked");
+    assert_eq!(ran.entries, 1, "the refusal is recorded");
+}
+
+/// **A file outside the grants is refused**, and nothing is opened.
+#[test]
+fn a_file_outside_the_grants_opened_in_a_file_manager_is_refused() {
+    let arranged = Arranged {
+        the_folder: false,
+        ..Arranged::in_the_file_manager(Ok(PAPERS))
+    };
+    let ran = on_a_machine(arranged, |turning, grants, file| {
+        proposed_and_approved(turning, grants, FILES, file)
+    });
+    assert!(ran.answered.is_err(), "{:?}", ran.answered);
+    assert!(ran.asked.is_empty(), "the door was asked");
+    assert_eq!(ran.entries, 1, "the refusal is recorded");
+}
+
+/// **What it opens with, not allowed for alo, is wanted for the person's
+/// sheet** — named, so the shell asks whether alo may use it — and nothing
+/// is opened meanwhile. The file manager, allowed, is not wanted.
+#[test]
+fn what_it_opens_with_not_allowed_is_wanted_for_the_sheet() {
+    let wanted = RefCell::new(Vec::new());
+    let arranged = Arranged {
+        granted_too: vec![FILES],
+        ..Arranged::in_the_file_manager(Ok(PAPERS))
+    };
+    let ran = on_a_machine(arranged, |turning, grants, file| {
+        let proposed = turning.proposing(
+            OPEN_FILE_IN_APPLICATION,
+            &given(FILES, file),
+            grants,
+            hour(),
+            noon(),
+        );
+        *wanted.borrow_mut() = turning.applications_wanted().to_vec();
+        proposed.map(|_| None)
+    });
+    assert!(ran.answered.is_err(), "{:?}", ran.answered);
+    assert_eq!(*wanted.borrow(), vec![PAPERS.to_owned()]);
+    assert!(ran.asked.is_empty());
+}
+
+/// **A file manager nobody allowed is left to the grants**, and what the file
+/// opens with is never read for a call that could not reach it.
+#[test]
+fn a_file_manager_nobody_allowed_is_refused_before_anything_is_read() {
+    let arranged = Arranged {
+        granted_too: Vec::new(),
+        ..Arranged::in_the_file_manager(Ok(PAPERS))
+    };
+    let asked = arranged.opening.as_ref().map(|it| Rc::clone(&it.asked));
+    let ran = on_a_machine(arranged, |turning, grants, file| {
+        proposed_and_approved(turning, grants, FILES, file)
+    });
+    assert!(ran.answered.is_err(), "{:?}", ran.answered);
+    assert_eq!(asked.map(|it| *it.borrow()), Some(0), "a kind was read");
+    assert!(ran.asked.is_empty());
+}
+
+/// **A machine that was not told what files open with opens the file in the
+/// application named**, as before.
+#[test]
+fn a_machine_not_told_opens_in_the_application_named() {
+    let arranged = Arranged {
+        granted_too: vec![FILES],
+        ..Arranged::answering(Ok(Opened::InAlosCopy))
+    };
+    let ran = on_a_machine(arranged, |turning, grants, file| {
+        proposed_and_approved(turning, grants, FILES, file)
+    });
+    assert!(ran.answered.is_ok(), "{:?}", ran.answered);
+    assert_eq!(
+        ran.asked.first().map(|it| it.application().identifier()),
+        Some(FILES)
+    );
+}
+
+/// **No card names an application by its identifier where the application
+/// has a name** — at both levels, the sentence a person approves or reads
+/// holds no reverse-DNS identifier, only the names the entries give.
+#[test]
+fn no_card_names_an_application_by_its_identifier_where_it_has_a_name() {
+    let reverse_dns = |said: &str| {
+        said.split(|it: char| it.is_whitespace() || it == ',')
+            .any(|word| word.matches('.').count() >= 2 && word.starts_with(char::is_alphabetic))
+    };
+    let card = RefCell::new(String::new());
+    let _ = on_a_machine(
+        Arranged::in_the_file_manager(Ok(PAPERS)),
+        |turning, grants, file| {
+            turning.proposing(
+                OPEN_FILE_IN_APPLICATION,
+                &given(FILES, file),
+                grants,
+                hour(),
+                noon(),
+            )?;
+            *card.borrow_mut() = the_card(turning);
+            Ok(None)
+        },
+    );
+    let card = card.into_inner();
+    assert!(
+        card.contains("Papers") && card.contains("Dolphin"),
+        "{card}"
+    );
+    assert!(!reverse_dns(&card), "a card names an identifier: {card}");
+    // **And the check itself can fail**: an identifier is caught.
+    assert!(reverse_dns(
+        "open a.pdf in org.gnome.Papers, as Dolphin would"
+    ));
 }

@@ -19,6 +19,7 @@
 //! | Dolphin | open it and say what its window shows | `open_application` done; `accessible.read_window` done |
 //! | Loupe | open `picture.png` and say what its window shows | the file opened in the person's window; `accessible.read_window` done |
 //! | Ark | open `box.tar.gz` and say what is inside | the file opened in the person's window; `accessible.read_window` done |
+//! | Dolphin | open `picture.png` in Dolphin | **the file opened in Loupe**, as a double-click in Dolphin would (the owner, 2026-11-17) |
 //! | Papers | open it and say what its window shows | `open_application` done; `accessible.read_window` done |
 //! | Firefox | open it and say what its window shows | `open_application` done; `accessible.read_window` done |
 //! | Dolphin | close it | `close_application` done |
@@ -78,6 +79,11 @@ pub const READ_WINDOW: &str = "accessible.read_window";
 
 /// The text alo is asked to type into Text Editor.
 pub const THE_TEXT: &str = "Written by alo in Text Editor";
+
+/// **What the person asks to open a file in the file manager**: a picture,
+/// which a double-click in Dolphin opens in Loupe (the owner's decision of
+/// 2026-11-17).
+pub const IN_DOLPHIN: &str = "Open the file picture.png in my home folder in Dolphin.";
 
 /// The journal tag the person's check that the files were made goes under.
 pub const THE_FILES_ARE_MADE: &str = "alo-walk-the-files-are-made";
@@ -245,6 +251,18 @@ fn every_application(walk: Walk) -> Walk {
     // **Loupe** and **Ark**: a file opened in each, and its window read.
     let walk = a_file_opened_and_read(walk, LOUPE, &loupe.1, "loupe");
     let walk = a_file_opened_and_read(walk, ARK, &ark.1, "ark");
+    // **A file opened in Dolphin, as a double-click there would** (the owner,
+    // 2026-11-17): the picture opens in Loupe, what a PNG opens with, and not
+    // in Dolphin.
+    let walk = asking(walk, "every-app-in-dolphin-ask", IN_DOLPHIN)
+        .expect_line_saying(
+            "alo opens picture.png in Dolphin as a double-click would: in Loupe",
+            &opened_a_file_in(LOUPE),
+            Opened::InTheirWindow.written(),
+            Since::Mark,
+            minutes(5),
+        )
+        .look("every-app-in-dolphin", look.at_most(minutes(1)));
     // **Papers** and **Firefox**: opened, and the window read.
     let walk = opened_and_read(walk, PAPERS, &papers.1, "papers");
     let walk = opened_and_read(walk, FIREFOX, &firefox.1, "firefox");
