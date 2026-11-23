@@ -26,7 +26,11 @@ Controls are offered only under a live application grant for
 checks permission again. Reads never start a closed app; use the ordinary
 `open_application` action first. The app's native permission dialogs still
 require the person's choice. Expiry or revocation removes controls from
-discovery and refuses later delivery.
+discovery and refuses later delivery. The validated call also carries the
+checked adapter's application requirement before a proposal can wait. An
+ungranted command is explicitly refused without an approval card. The same
+requirement is checked again when approval is redeemed, and execution records
+name the actual application grant or Full-access authority that allowed it.
 
 | Field | Meaning |
 |---|---|

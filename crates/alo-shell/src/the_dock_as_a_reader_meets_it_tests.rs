@@ -339,3 +339,230 @@ fn a_readers_press_on_what_the_dock_no_longer_holds_does_nothing() {
         "a refused press changed what the Dock has open"
     );
 }
+
+/// A normal desktop publishes the actual drawn Dock, not an explicitly
+/// supplied `Surface::Dock` which the production caller does not pass.
+/// Application controls keep their app ID rather than borrowing window titles.
+#[test]
+fn a_dock_recorded_as_drawn_is_usable_in_the_normal_desktops_published_tree() {
+    const REFERENCE: &str = "org.aloworld.Studio.Verification";
+    let (_runtime, mut server) = a_session("the-normal-desktop-publishes-its-dock");
+    let app = AppId::named(REFERENCE).expect("a named independently installed application");
+    let patch =
+        alo_dock::Patch::of(alo_dock::Spot::at(0, 0), 800, 600).expect("a window's actual patch");
+    let mut windows = alo_dock::Windows::none();
+    windows.opened(alo_dock::Window::of(
+        alo_dock::WindowId::numbered(1),
+        Some(app.clone()),
+        "Studio verification window",
+        patch,
+        alo_dock::HowItSits::OnTheCanvas,
+    ));
+    let holding = alo_dock::Holding::nothing().showing(&windows);
+    let dock = where_the_dock_is(
+        &Dock::shipped(),
+        (1920, 1080),
+        &holding,
+        crate::display_scale::DisplayScale::ONE,
+    )
+    .expect("the ordinary desktop has room for one running application");
+    assert!(
+        slots(&dock).contains(&WhatIsHere::Application(app.clone())),
+        "the premise: the owned application is actually drawn, not overflowed"
+    );
+    server.the_docks_slots_were_drawn("a-display", dock);
+    let tree =
+        server.read_aloud_with_the_frames_open(&words(), &[Surface::Desktop], &TurnedOn::nothing());
+    let controls: Vec<_> = tree
+        .nodes()
+        .iter()
+        .filter(|node| node.name == REFERENCE)
+        .collect();
+    assert_eq!(
+        controls.len(),
+        1,
+        "the actual application is published exactly once"
+    );
+    let control = controls.first().expect("the one published application");
+    for bit in [8, 24, 25, 30] {
+        assert_ne!(
+            control.states[0] & (1 << bit),
+            0,
+            "the drawn Dock application must be enabled, sensitive, showing and visible: bit {bit}"
+        );
+    }
+    assert_eq!(
+        control.press,
+        Some(Pressed::OnTheDock(WhatIsHere::Application(app.clone()))),
+        "the published action keeps the exact application identity"
+    );
+    assert!(tree.the_dock_as_read().contains(&REFERENCE));
+    assert!(
+        !tree
+            .the_dock_as_read()
+            .contains(&"Studio verification window")
+    );
+    let dock = tree
+        .surfaces()
+        .iter()
+        .find_map(|(surface, at)| (*surface == Surface::Dock).then_some(*at))
+        .expect("the Dock's published container");
+    assert_ne!(tree.nodes()[dock].states[0] & (1 << 25), 0);
+}
+
+/// A normal desktop alone is not evidence that the Dock was drawn: its
+/// generic description must not become a phantom showing control surface.
+#[test]
+fn a_desktop_with_no_dock_recorded_as_drawn_does_not_publish_a_showing_dock() {
+    let (_runtime, server) = a_session("the-desktop-before-any-dock-was-drawn");
+    let tree =
+        server.read_aloud_with_the_frames_open(&words(), &[Surface::Desktop], &TurnedOn::nothing());
+    let dock = tree
+        .surfaces()
+        .iter()
+        .find_map(|(surface, at)| (*surface == Surface::Dock).then_some(*at))
+        .expect("the off-screen Dock description still exists");
+    assert_eq!(tree.nodes()[dock].states[0] & (1 << 25), 0);
+    for child in &tree.nodes()[dock].children {
+        assert_eq!(
+            tree.nodes()[*child].states[0] & (1 << 25),
+            0,
+            "no Dock was drawn, so no generic Dock control can be showing"
+        );
+    }
+}
+
+/// Record the current frame through the same set of fixed controls that the
+/// real compositor records even when the Dock gave way to a window.
+fn record_the_current_dock_band(
+    server: &mut Server,
+    display: &str,
+    band: Option<smithay::utils::Rectangle<i32, smithay::utils::Physical>>,
+) {
+    server.the_fixed_controls_were_drawn(
+        display,
+        crate::canvas_fixed_controls::FixedControlsDrawn {
+            dock_band: band,
+            panel_reserved: smithay::utils::Rectangle::from_size((0, 0).into()),
+            what_is_leaving: None,
+            top_controls: None,
+        },
+        alo_appearance::TextScale::default(),
+    );
+}
+
+/// Check the actual Server projection with the production caller's Desktop
+/// surface, including its Dock container and each of its published controls.
+fn the_desktop_publishes_a_dock_showing(server: &Server, showing: bool) {
+    let tree =
+        server.read_aloud_with_the_frames_open(&words(), &[Surface::Desktop], &TurnedOn::nothing());
+    let dock = tree
+        .surfaces()
+        .iter()
+        .find_map(|(surface, at)| (*surface == Surface::Dock).then_some(*at))
+        .expect("the Dock's description remains part of the tree");
+    for at in std::iter::once(&dock).chain(tree.nodes()[dock].children.iter()) {
+        assert_eq!(
+            tree.nodes()[*at].states[0] & (1 << 25) != 0,
+            showing,
+            "the current draw determines whether {:?} is showing",
+            tree.nodes()[*at].name
+        );
+    }
+}
+
+/// A real draw can show the Dock, hide it, and show it again. Its old slots
+/// must not outlive the current absence of its band, and must work on return.
+#[test]
+fn the_desktops_dock_follows_drawn_hidden_and_drawn_again() {
+    let (_runtime, mut server) = a_session("the-dock-follows-the-current-draw");
+    let dock = on_the_edge(Edge::Bottom);
+    server.the_docks_slots_were_drawn("a-display", dock.clone());
+    record_the_current_dock_band(&mut server, "a-display", Some(dock.band));
+    the_desktop_publishes_a_dock_showing(&server, true);
+
+    record_the_current_dock_band(&mut server, "a-display", None);
+    the_desktop_publishes_a_dock_showing(&server, false);
+    assert_eq!(
+        server.a_reader_pressed(Pressed::OnTheDock(WhatIsHere::TheOverflow)),
+        WhatAReaderPressCameTo::NothingOnTheDock,
+        "an action heard before the Dock hid must not reach a hidden control"
+    );
+
+    server.the_docks_slots_were_drawn("a-display", dock.clone());
+    record_the_current_dock_band(&mut server, "a-display", Some(dock.band));
+    the_desktop_publishes_a_dock_showing(&server, true);
+    assert_eq!(
+        server.a_reader_pressed(Pressed::OnTheDock(WhatIsHere::TheOverflow)),
+        WhatAReaderPressCameTo::TheDockDidIt,
+        "returning Dock controls must become usable again"
+    );
+}
+
+/// This refusal is independent of the publication assertion: even a reader
+/// holding yesterday's exact action cannot operate a Dock absent this frame.
+#[test]
+fn a_current_draw_without_a_dock_refuses_an_action_heard_before_it_hid() {
+    let (_runtime, mut server) = a_session("an-old-dock-action-does-not-outlive-the-draw");
+    let dock = on_the_edge(Edge::Bottom);
+    server.the_docks_slots_were_drawn("a-display", dock.clone());
+    record_the_current_dock_band(&mut server, "a-display", Some(dock.band));
+    let tree =
+        server.read_aloud_with_the_frames_open(&words(), &[Surface::Dock], &TurnedOn::nothing());
+    let action = Pressed::OnTheDock(WhatIsHere::TheOverflow);
+    assert!(
+        tree.what_can_be_pressed().contains(&action),
+        "the old action was genuinely published"
+    );
+    record_the_current_dock_band(&mut server, "a-display", None);
+    assert_eq!(
+        server.a_reader_pressed(action),
+        WhatAReaderPressCameTo::NothingOnTheDock,
+        "the current draw, not the retained old slots, authorizes a reader action"
+    );
+}
+
+/// Hiding the first display cannot hide or replace the second display's
+/// visible Dock. Its surviving current slots become the single published Dock.
+#[test]
+fn a_hidden_first_display_leaves_the_other_displays_drawn_dock_usable() {
+    let (_runtime, mut server) = a_session("one-dock-remains-on-another-display");
+    let narrow = where_the_dock_is(
+        &Dock::shipped(),
+        (1920, 1080),
+        &on_the_dock(1),
+        crate::display_scale::DisplayScale::ONE,
+    )
+    .expect("one application's Dock");
+    let wider = on_the_edge(Edge::Bottom);
+    assert!(!slots(&narrow).contains(&WhatIsHere::Application(
+        AppId::named("app-2").expect("the later application")
+    )));
+    server.the_docks_slots_were_drawn("a-display", narrow.clone());
+    record_the_current_dock_band(&mut server, "a-display", Some(narrow.band));
+    server.the_docks_slots_were_drawn("b-display", wider.clone());
+    record_the_current_dock_band(&mut server, "b-display", Some(wider.band));
+
+    record_the_current_dock_band(&mut server, "a-display", None);
+    the_desktop_publishes_a_dock_showing(&server, true);
+    let tree =
+        server.read_aloud_with_the_frames_open(&words(), &[Surface::Desktop], &TurnedOn::nothing());
+    assert!(
+        tree.the_dock_as_read().contains(&"app-2"),
+        "the hidden first display's stale slots replaced the visible second Dock"
+    );
+    let control = tree
+        .nodes()
+        .iter()
+        .find(|node| node.name == "app-2")
+        .expect("the second display's actual application");
+    assert_ne!(control.states[0] & (1 << 25), 0);
+
+    record_the_current_dock_band(&mut server, "b-display", None);
+    the_desktop_publishes_a_dock_showing(&server, false);
+    assert_eq!(
+        server.a_reader_pressed(Pressed::OnTheDock(WhatIsHere::TheOverflow)),
+        WhatAReaderPressCameTo::NothingOnTheDock,
+        "with both Docks hidden no cached control remains usable"
+    );
+}

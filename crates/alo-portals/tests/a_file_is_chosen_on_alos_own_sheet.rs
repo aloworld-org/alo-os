@@ -363,6 +363,18 @@ fn uris(results: &HashMap<String, OwnedValue>) -> Option<Vec<String>> {
     }
 }
 
+/// GTK 4.20.4 reads the URI array before examining the cancellation/refusal
+/// code. No file must therefore be represented by a present, typed empty `as`,
+/// without implying success or exporting anything. Other result fields remain
+/// absent on these answers, and an untyped or differently typed empty fails.
+fn only_empty_uris(results: &HashMap<String, OwnedValue>) -> bool {
+    results.len() == 1
+        && results
+            .get("uris")
+            .is_some_and(|value| value.value_signature().to_string() == "as")
+        && uris(results).is_some_and(|files| files.is_empty())
+}
+
 /// Whether the record's `file` names `path`. The contract says the record
 /// names *the file* and not in which form, so either its path or its address
 /// is accepted.
@@ -539,7 +551,7 @@ fn nothing_chosen_exports_nothing_and_says_why() {
         for method in ["OpenFile", "SaveFile"] {
             let (answer, results) = serving.choose(method, "sheet", no_options());
             assert_eq!(answer, response, "{what} {method}");
-            assert!(results.is_empty(), "{what} {method}: {results:?}");
+            assert!(only_empty_uris(&results), "{what} {method}: {results:?}");
         }
         assert_eq!(serving.sheets_shown().len(), 2, "{what}");
         assert!(serving.exports_asked().is_empty(), "{what} exported");
@@ -581,7 +593,10 @@ fn a_choice_that_cannot_be_believed_exports_nothing() {
         serving.the_person_answers(FileSheetAnswer::Picked(picked.clone()));
         let (response, results) = serving.choose(method, "unbelieved", no_options());
         assert_eq!(response, 2, "{method} {picked:?}");
-        assert!(results.is_empty(), "{method} {picked:?}: {results:?}");
+        assert!(
+            only_empty_uris(&results),
+            "{method} {picked:?}: {results:?}"
+        );
         assert!(
             serving.exports_asked().is_empty(),
             "{method} {picked:?} exported"
@@ -615,8 +630,8 @@ fn a_file_that_could_not_be_handed_over_is_refused_on_a_second_line() {
         serving.the_documents_portal_answers(Err(refused));
         let (response, results) = serving.choose("OpenFile", "export", no_options());
         assert_eq!(response, 2, "{what}");
-        assert_eq!(uris(&results), None, "{what}");
-        assert!(results.is_empty(), "{what}: {results:?}");
+        assert_eq!(uris(&results), Some(Vec::new()), "{what}");
+        assert!(only_empty_uris(&results), "{what}: {results:?}");
         assert_eq!(serving.exports_asked().len(), 1, "{what}");
         match serving.kept().as_slice() {
             [
@@ -642,13 +657,13 @@ fn a_folder_and_save_files_are_not_offered_yet() {
     options.insert("directory", Value::from(true));
     let (response, results) = serving.choose("OpenFile", "folder", options);
     assert_eq!(response, 2);
-    assert!(results.is_empty(), "{results:?}");
+    assert!(only_empty_uris(&results), "{results:?}");
 
     let mut options = no_options();
     options.insert("current_folder", whole_path(&serving.files()));
     let (response, results) = serving.choose("SaveFiles", "several", options);
     assert_eq!(response, 2);
-    assert!(results.is_empty(), "{results:?}");
+    assert!(only_empty_uris(&results), "{results:?}");
 
     assert!(serving.sheets_shown().is_empty());
     assert!(serving.exports_asked().is_empty());
@@ -701,7 +716,7 @@ fn a_caller_with_no_sandbox_is_refused_before_any_sheet() {
     for method in ["OpenFile", "SaveFile"] {
         let (response, results) = serving.choose(method, "unnamed", no_options());
         assert_eq!(response, 2, "{method}");
-        assert!(results.is_empty(), "{method}: {results:?}");
+        assert!(only_empty_uris(&results), "{method}: {results:?}");
     }
     assert!(serving.sheets_shown().is_empty());
     assert!(serving.exports_asked().is_empty());
@@ -725,7 +740,7 @@ fn with_no_desktop_nothing_is_chosen_and_the_record_says_so() {
     let serving = Serving::started("no-desktop", None);
     let (response, results) = serving.choose("OpenFile", "nobody", no_options());
     assert_eq!(response, 2);
-    assert!(results.is_empty(), "{results:?}");
+    assert!(only_empty_uris(&results), "{results:?}");
     assert_eq!(
         serving.kept(),
         [KeptOutcome::FileUnchosen {
@@ -759,4 +774,103 @@ fn a_token_no_handle_can_be_made_from_is_refused_on_the_call() {
     }
     assert!(serving.sheets_shown().is_empty());
     assert!(serving.exports_asked().is_empty());
+}
+
+/// **Cancelling GTK's filtered SaveFile request is a complete non-success
+/// response with a typed empty URI array.** The filter options do not turn a
+/// cancellation into a chosen destination, and nothing is exported or created.
+#[test]
+fn a_cancelled_gtk_save_with_filters_answers_a_typed_empty_uri_array() {
+    let serving = Serving::started("gtk-save-cancel", Some(FileSheetAnswer::Cancelled));
+    let destination = serving.files().join("Screen demonstration.webm");
+    let filter = (
+        "WebM video".to_owned(),
+        vec![(1_u32, "video/webm".to_owned())],
+    );
+    let mut options = no_options();
+    options.insert("current_folder", whole_path(&serving.files()));
+    options.insert(
+        "current_name",
+        Value::from("Screen demonstration.webm".to_owned()),
+    );
+    options.insert("filters", Value::from(vec![filter.clone()]));
+    options.insert("current_filter", Value::from(filter));
+    options.insert("multiple", Value::from(false));
+    options.insert("modal", Value::from(true));
+    let (response, results) = serving.choose("SaveFile", "gtk_save_cancel", options);
+
+    assert_eq!(response, 1, "the person cancelled; no success is implied");
+    assert!(
+        only_empty_uris(&results),
+        "GTK needs an explicit empty as: {results:?}"
+    );
+    assert_eq!(
+        serving.sheets_shown(),
+        [(
+            EDITOR.to_owned(),
+            ToChoose::Save {
+                name: "Screen demonstration.webm".to_owned()
+            },
+            Some(serving.files())
+        )]
+    );
+    assert_eq!(
+        serving.kept(),
+        [KeptOutcome::FileUnchosen {
+            why: NoFile::Cancelled
+        }]
+    );
+    assert!(serving.exports_asked().is_empty());
+    assert!(
+        !destination.exists(),
+        "cancelling must not create a destination"
+    );
+}
+
+/// **Failed SaveFile handover is safe for the same GTK consumer.** The
+/// selected name is recorded, but the failure answers `2` with no URI and
+/// cannot be mistaken for a successful file grant or a saved recording.
+#[test]
+fn a_refused_save_handover_answers_a_typed_empty_uri_array() {
+    for (name, refusal) in [
+        ("gtk-save-no-documents", NotExported::NoDocumentsPortal),
+        ("gtk-save-destination-gone", NotExported::NotThere),
+        ("gtk-save-export-refused", NotExported::Refused),
+    ] {
+        let serving = Serving::started(name, Some(FileSheetAnswer::Cancelled));
+        let destination = serving.files().join("Screen demonstration.webm");
+        serving.the_person_answers(FileSheetAnswer::Picked(destination.clone()));
+        serving.the_documents_portal_answers(Err(refusal));
+        let mut options = no_options();
+        options.insert(
+            "current_name",
+            Value::from("Screen demonstration.webm".to_owned()),
+        );
+        let (response, results) = serving.choose("SaveFile", "gtk_save_refused", options);
+
+        assert_eq!(response, 2, "{name}");
+        assert!(
+            only_empty_uris(&results),
+            "{name}: GTK needs an explicit empty as: {results:?}"
+        );
+        assert_eq!(
+            serving.exports_asked(),
+            [(EDITOR.to_owned(), destination.clone(), ExportedFor::Saving)]
+        );
+        match serving.kept().as_slice() {
+            [
+                KeptOutcome::FileChosen { file, saving },
+                KeptOutcome::FileUnchosen { why },
+            ] => {
+                assert!(names(file, &destination), "{name}: {file}");
+                assert!(*saving, "{name}: this was a save, not an open");
+                assert_eq!(*why, NoFile::NotHandedOver(refusal), "{name}");
+            }
+            other => panic!("{name}: the actual save/refusal was not recorded: {other:?}"),
+        }
+        assert!(
+            !destination.exists(),
+            "{name}: failed handover created a file"
+        );
+    }
 }

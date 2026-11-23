@@ -360,7 +360,21 @@ fn studio_reads_actual_bounded_status_and_sends_only_the_approved_fixed_countdow
         .deliver(&transport, &strings)
         .unwrap();
     assert_eq!(*countdowns.lock().unwrap(), [3]);
+    let boundary = "x".repeat(8192);
+    *status.lock().unwrap() = boundary.clone();
+    let driving = Driving::of(read(), &adapters, &grants, &installed, &strings).unwrap();
+    assert_eq!(
+        alo_adapters::Delivers::read_text(&transport, driving.message()),
+        Ok(boundary.clone())
+    );
+    let answer = driving.deliver(&transport, &strings).unwrap();
+    assert_eq!(answer.reply(), Some(boundary.as_str()));
     *status.lock().unwrap() = "x".repeat(8193);
+    let driving = Driving::of(read(), &adapters, &grants, &installed, &strings).unwrap();
+    assert_eq!(
+        alo_adapters::Delivers::read_text(&transport, driving.message()),
+        Err(alo_adapters::NotDelivered::Refused)
+    );
     assert!(
         Driving::of(read(), &adapters, &grants, &installed, &strings)
             .unwrap()

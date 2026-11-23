@@ -167,6 +167,7 @@ mod tests {
     fn dimensions_are_checked_before_a_frame_can_allocate() {
         assert_eq!(frame_bytes(7680, 4320).unwrap(), 132_710_400);
         assert!(frame_bytes(0, 1080).is_err());
+        assert!(frame_bytes(1920, 0).is_err());
         assert!(frame_bytes(u32::MAX, u32::MAX).is_err());
         assert!(frame_bytes(16_384, 16_384).is_err());
     }

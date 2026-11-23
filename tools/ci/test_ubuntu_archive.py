@@ -1,7 +1,8 @@
 """Independent APT source rewrites using strings and temporary directories only.
 
-rewrite_sources(text) returns text with only HTTP(S) Ubuntu archive URI tokens
-changed to https://archive.ubuntu.com/ubuntu. configure(apt_root) processes the
+rewrite_sources(text) changes HTTP(S) Ubuntu archive URI tokens and the runner's
+exact mirror+file:/etc/apt/apt-mirrors.txt token to the central HTTPS archive.
+configure(apt_root) processes the
 root sources.list and immediate sources.list.d/*.list and *.sources files,
 writes only changed files and returns the number of changed files. No test
 contacts an archive, changes host APT state or invokes a package manager.
@@ -16,9 +17,51 @@ from ubuntu_archive import configure, rewrite_sources
 
 
 CENTRAL = 'https://archive.ubuntu.com/ubuntu'
+RUNNER_MIRROR = 'mirror+file:/etc/apt/apt-mirrors.txt'
 
 
 class SourceText(unittest.TestCase):
+    def test_exact_runner_mirror_list_reaches_central_in_each_source_syntax(self):
+        for before, expected in (
+            (f'deb [arch=amd64 signed-by=/usr/share/keyrings/ubuntu.gpg] {RUNNER_MIRROR} noble main\n',
+             f'deb [arch=amd64 signed-by=/usr/share/keyrings/ubuntu.gpg] {CENTRAL} noble main\n'),
+            (f'Types: deb deb-src\nURIs: {RUNNER_MIRROR}\nSuites: noble noble-updates\n'
+             'Components: main restricted\nSigned-By: /usr/share/keyrings/ubuntu.gpg\n',
+             f'Types: deb deb-src\nURIs: {CENTRAL}\nSuites: noble noble-updates\n'
+             'Components: main restricted\nSigned-By: /usr/share/keyrings/ubuntu.gpg\n'),
+            (f'Types:deb\nURIs:{RUNNER_MIRROR}\nSuites:noble\nComponents:main\n',
+             f'Types:deb\nURIs:{CENTRAL}\nSuites:noble\nComponents:main\n'),
+            (f'URIs: https://example.org/repository\n {RUNNER_MIRROR}\nSuites: noble\n',
+             f'URIs: https://example.org/repository\n {CENTRAL}\nSuites: noble\n'),
+        ):
+            with self.subTest(source=before):
+                self.assertEqual(rewrite_sources(before), expected)
+                self.assertEqual(rewrite_sources(expected), expected)
+
+    def test_runner_mirror_is_exact_and_only_active_source_values_change(self):
+        for uri in (
+            'file:/etc/apt/apt-mirrors.txt',
+            'mirror+file:/etc/apt/apt-security-mirrors.txt',
+            'mirror+file:/etc/apt/other-mirrors.txt',
+            'mirror+file:///etc/apt/apt-mirrors.txt',
+            'mirror+file:/etc/apt/apt-mirrors.txt/',
+            'mirror+file:/etc/apt/apt-mirrors.txt.evil',
+            'mirror+file:/etc/apt/apt-mirrors.txt?other=1',
+            'mirror+file:/etc/apt/apt-mirrors.txt#other',
+            'mirror+https://example.org/etc/apt/apt-mirrors.txt',
+            'https://example.org/mirror+file:/etc/apt/apt-mirrors.txt',
+        ):
+            with self.subTest(uri=uri):
+                for text in (f'deb {uri} noble main\n', f'URIs:{uri}\n'):
+                    self.assertEqual(rewrite_sources(text), text)
+        text = (f'# deb {RUNNER_MIRROR} noble main\n'
+                f'# URIs:{RUNNER_MIRROR}\nDescription: {RUNNER_MIRROR}\n'
+                f'Signed-By: {RUNNER_MIRROR}\n'
+                'URIs: http://security.ubuntu.com/ubuntu/\nSuites: noble-security\n')
+        self.assertEqual(rewrite_sources(text), text)
+        self.assertEqual(rewrite_sources(f'deb {RUNNER_MIRROR} noble main # {RUNNER_MIRROR}\n'),
+                         f'deb {CENTRAL} noble main # {RUNNER_MIRROR}\n')
+
     def test_http_https_country_and_ec2_archive_uris_reach_the_canonical_archive(self):
         for uri in (
             'http://archive.ubuntu.com/ubuntu',
@@ -133,6 +176,38 @@ class SourceText(unittest.TestCase):
 
 
 class ConfigureSources(unittest.TestCase):
+    def test_runner_mirror_sources_change_without_reading_or_rewriting_mirror_lists(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            sources = root / 'sources.list.d'
+            sources.mkdir()
+            before = {
+                root / 'sources.list': f'deb {RUNNER_MIRROR} noble main\n',
+                sources / 'ubuntu.sources': f'URIs: {RUNNER_MIRROR}\r\nSuites: noble\r\n',
+                sources / 'compact.sources': f'URIs:{RUNNER_MIRROR}\nSuites:noble\n',
+            }
+            unchanged = {
+                root / 'apt-mirrors.txt': b'http://us-east-2.ec2.archive.ubuntu.com/ubuntu\n',
+                sources / 'security.sources': b'URIs: mirror+file:/etc/apt/apt-security-mirrors.txt\n',
+                sources / 'other.list': b'deb file:/etc/apt/apt-mirrors.txt noble main\n',
+                sources / 'foreign.sources': b'URIs: mirror+https://example.org/mirrors.txt\n',
+            }
+            for path, data in before.items():
+                path.write_bytes(data.encode())
+            for path, data in unchanged.items():
+                path.write_bytes(data)
+                os.utime(path, ns=(1_000_000_000, 1_000_000_000))
+            metadata = {path: (path.stat().st_ino, path.stat().st_mtime_ns) for path in unchanged}
+            self.assertEqual(configure(root), 3)
+            for path, data in before.items():
+                self.assertEqual(path.read_bytes(), data.replace(RUNNER_MIRROR, CENTRAL).encode())
+            for path, data in unchanged.items():
+                self.assertEqual(path.read_bytes(), data)
+                self.assertEqual((path.stat().st_ino, path.stat().st_mtime_ns), metadata[path])
+            after = {path: (path.stat().st_ino, path.stat().st_mtime_ns) for path in before}
+            self.assertEqual(configure(root), 0)
+            self.assertEqual({path: (path.stat().st_ino, path.stat().st_mtime_ns) for path in before}, after)
+
     def test_only_root_list_and_immediate_source_files_change_and_count_once_each(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

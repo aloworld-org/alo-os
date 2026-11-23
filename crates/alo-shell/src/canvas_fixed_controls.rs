@@ -682,6 +682,11 @@ impl crate::Server {
         drawn: FixedControlsDrawn,
         text: alo_appearance::TextScale,
     ) {
+        // The current draw also records absence. Old slots must neither be
+        // announced nor accept a reader's action after this display hides its Dock.
+        if drawn.dock_band.is_none() {
+            self.dock_as_drawn.remove(named);
+        }
         // **The handle is not converted, and the display's scale is not read
         // here.** The owner's ruling of 2026-10-01 says the floor is 44 × 24
         // *logical*, scaled by the person's text size and nothing else, and

@@ -288,3 +288,7 @@ mod control_bus;
 
 #[path = "control_actions.rs"]
 mod control_actions;
+
+#[cfg(test)]
+#[path = "workspace_handoff_tests.rs"]
+mod workspace_handoff_tests;

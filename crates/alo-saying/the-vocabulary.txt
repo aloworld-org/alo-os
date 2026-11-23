@@ -252,11 +252,11 @@ adapters.studio.cancel-countdown.running-purpose	cancel alo Studio's countdown t
 adapters.studio.cancel-countdown.sentence	cancel alo Studio's recording countdown
 adapters.studio.choose-screen.by-hand	In alo Studio, choose A screen and Choose a screen
 adapters.studio.choose-screen.changes	Opens the system screen picker; no source is selected for the person.
-adapters.studio.choose-screen.purpose	ask the person to choose a screen to record
+adapters.studio.choose-screen.open-picker-purpose	open alo Studio's system screen picker for the person to choose a screen, without starting recording
 adapters.studio.choose-screen.sentence	open alo Studio's system screen picker
 adapters.studio.choose-window.by-hand	In alo Studio, choose A window and Choose a window
 adapters.studio.choose-window.changes	Opens the system window picker; no source is selected for the person.
-adapters.studio.choose-window.purpose	ask the person to choose a window to record
+adapters.studio.choose-window.open-picker-purpose	open alo Studio's system window picker for the person to choose a window, without starting recording
 adapters.studio.choose-window.sentence	open alo Studio's system window picker
 adapters.studio.countdown-five.by-hand	In alo Studio, choose 5 sec under Countdown
 adapters.studio.countdown-five.changes	Selects a five-second countdown before recording starts.

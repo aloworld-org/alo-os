@@ -780,10 +780,12 @@ fn a_reader_finds_close_on_each_task_window_and_presses_it() {
             Role::Button,
             "{window}: Close is not a button"
         );
+        // The localized control name is checked above; the action identifier
+        // is AT-SPI's machine-readable click, independently of that label.
         assert_eq!(
             reader.actions(at).expect("Close answers what it does"),
-            std::slice::from_ref(&close),
-            "{window}: Close does not say it can be pressed"
+            ["click"],
+            "{window}: Close does not publish the click action"
         );
         closes.push(at.clone());
     }

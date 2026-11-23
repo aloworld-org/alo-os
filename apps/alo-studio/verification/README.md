@@ -46,6 +46,30 @@ these tests on pull requests, including real decoder and isolated GTK/AT-SPI
 fixtures. Synthetic test media and patched decoder observations in unit tests
 are never installed acceptance evidence.
 
+The native job also preserves a normal Studio binary before building diagnostic
+features. On a private Xvfb, `test_*playback*.py` exercises actual keyboard and
+AT-SPI playback against that binary, with generated media and private audio
+services. The installed walk uses the same native Play/Pause observer after
+foregrounding the exact Studio window. It uploads saved media before checking
+playback and reports only position advancement/stability; rendered continuity
+and synchronized audio still require the separate media audit.
+
+GTK acknowledges native action dispatch before the button's animated click
+invokes Pause. A one-time normal-app observation measured the Play label
+appearing about 265–270 ms after dispatch, followed by stable position; the
+previous 150 ms sample could precede that acknowledgement. The observer now
+waits at most three seconds for the same owned, visible, sensitive button to
+show Play, then requires the unchanged one-second/80 ms stability check. It
+does not dispatch Pause twice. Same-named child labels are excluded by role;
+replacement, hidden, disabled and wrong-role buttons refuse acknowledgement.
+The asynchronous boundary and refusal cases recur in
+`test_review_playback_pause.py`, alongside the actual normal-app native probe.
+All 27 playback checks passed locally against the normal binary. The complete
+instrument suite passed 458 active checks with six actual-app checks run
+separately; all 24 CI-helper checks passed. Six one-time faults were caught in
+disposable source copies. Removing the final role recheck initially survived;
+an independent fresh-role race test now catches that fault as well.
+
 The separate `studio-agent-probe` binary in `alo-walking` prepares the installed
 permission check. It accepts no arguments and requires
 `STUDIO_PRIVATE_AGENT_WALK=1`. It reads its own Linux credentials, verifies the
@@ -179,3 +203,22 @@ selecting that microphone or launching Studio. Only absence may retry;
 malformed metadata, duplicate stores and configured microphone preferences
 refuse immediately. The startup-order regressions rerun with the verification
 instrument suite. This check does not certify installed audio or media quality.
+
+Installed run 44506785160 on source `493c15d7f048eb40b7ad9a96bdcd508a1d39bb32`
+recorded the screen, paused/resumed, cancelled and completed export, and reopened
+the saved file. It stopped at native Studio foreground readback before playback.
+Its retained screen video passed the lightweight continuity check: 126 frames,
+4.995 fps, no repeated adjacent motion frames, 241 ms maximum timestamp gap and
+41 ms maximum uncovered gap. This is a one-time screen-only observation, not
+window recording, microphone synchronization or completed installed acceptance.
+
+Foreground timeouts now preserve a JSON observation bounded to 1,600 characters:
+requested application/title, bounded root identities, matching frame roles and
+states, active shell state, and a failing read's node and exception class. A
+nested D-Bus error retains its bounded machine error name, never its message or
+arbitrary accessible text. The existing identity, ownership, visibility and
+single-press rules remain unchanged. Eight independent tests first failed for
+missing diagnostics, then passed; four one-time faults were caught in disposable
+copies. The tests recur in the verification-instruments job. A real local normal
+GTK app passes foreground readback, so the installed failure's cause remains
+unresolved until a new installed observation supplies these diagnostics.

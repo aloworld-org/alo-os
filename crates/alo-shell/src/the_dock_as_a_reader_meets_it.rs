@@ -80,12 +80,13 @@ pub(crate) fn as_read(what: &WhatIsHere) -> Option<ASlotAsRead<'_>> {
 impl crate::Server {
     /// What is on the Dock as it was last drawn, in the order it is drawn.
     ///
-    /// **One Dock, the first display's by name.** Every display draws the same
+    /// **One Dock, the first visible display's by name.** Every display draws the same
     /// Dock from the same contents; what can differ is how many applications
     /// fit before the rest go under *Show more apps*. A reader is told one
     /// Dock rather than one per display, because a person has one Dock, and
     /// the first by name is the same one every frame rather than whichever
-    /// display happened to draw last. Empty before any Dock has been drawn.
+    /// display happened to draw last. A draw without a Dock removes that
+    /// display's slots. Empty before any Dock is drawn or while all are hidden.
     #[must_use]
     pub(crate) fn the_docks_slots_as_drawn(&self) -> Vec<WhatIsHere> {
         self.dock_as_drawn

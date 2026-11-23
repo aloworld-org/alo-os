@@ -96,6 +96,7 @@ use crate::became::Became;
 use crate::carrying::carrying_out;
 use crate::machine::Machine;
 use crate::refusing::NotDone;
+use crate::the_application_a_control_reaches::the_application_a_control_reaches;
 use crate::the_control_to_set_is_there::the_control_to_set_is_there;
 use crate::the_sentence_is_about_something::the_sentence_is_about_something;
 use crate::what_a_verb_did::WhatAVerbDid;
@@ -940,7 +941,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             .verbs()
             .call(verb, &alo_publishing::what_the_model_must_give(verb, given))
         {
-            Ok(call) => Ok(call),
+            Ok(call) => Ok(the_application_a_control_reaches(call, self.machine)),
             Err(why) => {
                 let said = why.said(self.machine.strings()).into_text();
                 let entry = Entry::turned_away(verb, &said, self.turn.grantee(), now);

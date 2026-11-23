@@ -216,6 +216,7 @@ mod setting_in_an_application;
 #[cfg(test)]
 mod setting_in_an_application_tests;
 pub mod shortening;
+mod the_application_a_control_reaches;
 pub mod the_applications_here;
 pub mod the_bracket_a_turn_takes;
 mod the_control_to_set_is_there;
