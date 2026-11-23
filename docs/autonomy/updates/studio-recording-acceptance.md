@@ -1,5 +1,30 @@
 # Studio recording acceptance candidate
 
+## Instruction candidate checkpoint published November 23, 2026
+
+Full model run 44520713022 on `235a5e0a76ba35ee63aea52d8a8050a1a7b1f1cf`
+finished with 190/190 Studio trials passing and 411/440 overall passing.
+The 29 failures outside Studio mean the shared instruction change has not met
+full model acceptance. The focused status run separately passed 20/20.
+Both simulated policy labels share reach context and vary approval replies;
+these trials do not establish installed permission or execution behavior.
+
+This checkpoint adds four independently authored owning-crate format tests.
+Hosted mutation testing caught 12 of 13 faults; the missed inverted selector
+was reproduced locally. The new tests fail three assertions under that fault
+and pass with restored source. The owning crate passed 112 tests with one
+ignore, formatting and strict Clippy. These tests recur in owning-crate CI;
+the local deliberate-fault experiment was performed once. A fresh hosted
+mutation result for this checkpoint is still required.
+
+The model evidence artifact is 14532387111 (325384 bytes), SHA-256
+`1ff6958723043568489c6a76b0016e33173be0d1aee328beb5dcbaa00b5ed940`.
+Studio's installed walk remains blocked by foreground activation, and its
+window/audio recording and final native permission flow remain incomplete.
+This is a draft checkpoint, not approval to merge or publish a release.
+
+## Earlier evidence
+
 The latest installed walk, 44492469477 on source
 `1b26cea87135d7b783100ed69996afdf3119c631`, failed before starting its first
 recording. All five initial permission stages passed, including withdrawal;
