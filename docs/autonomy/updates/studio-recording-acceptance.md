@@ -1,5 +1,46 @@
 # Studio recording acceptance candidate
 
+## Checkpoint published November 23, 2026
+
+This branch is unfinished and remains a draft. The November 19 installed walk
+44514969426, on source `0220676bc7487c995ac3c53662df22fc5ab602dd`, passed
+32 checks and failed foreground activation before native playback; 158 checks
+were not reached. Screen recording, pause/resume, export cancellation/saving
+and library reopening completed. The final window was visible but inactive,
+with no accessibility read error. A launch request also appeared during the
+Dock press; the precise focus cause remains unresolved.
+
+The playback verifier correction in `572bc8b31` waits for the same native
+button to acknowledge Pause before measuring the unchanged stability limit.
+Previously recorded validation passed 27 native playback checks, 458 active
+verification checks and 24 CI-helper checks, with six deliberate faults caught.
+
+This checkpoint also retains tests written before the remaining fixes:
+
+- Three independently authored real GTK handoff tests fail because obsolete
+  recording controls remain visible. They require an owned display/session bus
+  and explicit `--ignored` execution. They establish the local window-lifetime
+  issue, not the installed Dock failure's cause; recurring CI wiring remains due.
+- A real variable-rate decoder regression fails because raw output rounds
+  distinct source timestamps to the same nominal-frame tick. The proposed
+  timestamp-precision correction and independent review remain outstanding.
+  This Python regression is included by the existing verification discovery.
+
+These failures were observed before this push; the checkpoint does not claim
+passing acceptance or contain the corresponding production fixes. The retained
+screen recording has 127 frames, with source timestamp gaps from 67 to 307 ms,
+but the audit still refuses it. Window/audio synchronization, installed native
+playback, final agent approval/execution and full installed acceptance remain
+open. Distribution is limited to a local signed repository; no main merge or
+public release is included.
+
+The separate instruction candidate's full repeated model run 44520713022
+passed all 190 Studio trials and 411 of 440 overall. Its 29 other failures
+prevent full model acceptance. Model selection is separate from installed
+permission and execution verification.
+
+## Earlier evidence
+
 The latest installed walk, 44492469477 on source
 `1b26cea87135d7b783100ed69996afdf3119c631`, failed before starting its first
 recording. All five initial permission stages passed, including withdrawal;
